@@ -96,7 +96,7 @@ const INPUT =
 
 const ROLE_TAG: Record<TeamRole, string> = {
   Lead: "bg-primary",
-  Member: "bg-success",
+  Member: "bg-work-status-done",
 };
 
 function RoleTag({ role }: { role: TeamRole }) {
@@ -164,7 +164,7 @@ function RoleMenu({
           onClose();
         }
       }}
-      className="absolute top-12 right-16 z-20 w-[300px] rounded-[10px] border border-line-strong bg-popover py-1 shadow-dialog dark:bg-card"
+      className="absolute top-12 right-16 z-20 w-[302px] rounded-[10px] border border-line-strong bg-popover py-1 shadow-dialog dark:bg-card"
     >
       {roles.map((item) => {
         const checked = member.role === item.role;
@@ -183,11 +183,11 @@ function RoleMenu({
             }}
             className={cn(row, FOCUS)}
           >
-            <span className="mt-1.5">
+            <span className="mt-1.5 flex">
               <RoleTag role={item.role} />
             </span>
             <span>
-              <b className="block text-body leading-[1.45] font-semibold">
+              <b className="block text-nav leading-[1.45] font-semibold">
                 {item.label}
               </b>
               <small className="block text-xs leading-[1.45] text-meta-foreground">
@@ -217,7 +217,7 @@ function RoleMenu({
       >
         <span className="w-2" />
         <span>
-          <b className="block text-body leading-[1.45] font-semibold text-danger-text">
+          <b className="block text-nav leading-[1.45] font-semibold text-danger-text">
             {d.removeFromTeam}
           </b>
           <small className="block text-xs leading-[1.45] text-meta-foreground">
@@ -457,7 +457,7 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
   return (
     <WorkspaceSetupFrame copy={copy} frame={props.frame}>
       {back}
-      <div data-f="dhead" className="flex items-center gap-3.5">
+      <div data-f="dhead" className="flex flex-wrap items-center gap-3.5">
         <TeamTile
           name={t.name}
           tone={identityToneFor(t.id)}
@@ -555,373 +555,382 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
           {d.archivedBanner}
         </p>
       ) : null}
-      <div
-        data-f="dgrid"
-        className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-5"
-      >
-        <section
-          aria-labelledby="team-people"
-          className="rounded-[12px] border border-line bg-popover dark:bg-card"
+      <div className="@container">
+        <div
+          data-f="dgrid"
+          className="grid grid-cols-1 items-start gap-5 @min-[800px]:grid-cols-[minmax(0,1fr)_300px]"
         >
-          <div
-            data-f="card-t"
-            className="flex items-center gap-2 border-b border-line px-3.5 py-3 text-compact font-semibold"
+          <section
+            aria-labelledby="team-people"
+            className="rounded-[12px] border border-line bg-popover dark:bg-card"
           >
-            <span id="team-people">
-              {d.peopleTitle}{" "}
-              <span className="font-normal text-meta-foreground">
-                {t.memberCount}
+            <div
+              data-f="card-t"
+              className="flex items-center gap-2 border-b border-line px-3.5 py-3 text-compact leading-[1.45] font-semibold"
+            >
+              <span id="team-people">
+                {d.peopleTitle}{" "}
+                <span className="font-normal text-meta-foreground">
+                  {t.memberCount}
+                </span>
               </span>
-            </span>
-          </div>
-          {members.status === "loading" ? (
-            <div
-              role="status"
-              aria-label={copy.members.loading}
-              className="flex flex-col gap-2 p-3.5"
-            >
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
             </div>
-          ) : members.status === "error" ? (
-            <div
-              role="alert"
-              className="flex items-center justify-between gap-3 px-3.5 py-3"
-            >
-              <p className="m-0 text-body text-muted-foreground">
-                {copy.members.error}
-              </p>
-              <button
-                type="button"
-                onClick={props.onRetry}
-                className={cn(BTN, FOCUS)}
+            {members.status === "loading" ? (
+              <div
+                role="status"
+                aria-label={copy.members.loading}
+                className="flex flex-col gap-2 p-3.5"
               >
-                {copy.members.retry}
-              </button>
-            </div>
-          ) : (
-            list.map((member, index) => {
-              const person = info.get(member.userId);
-              const memberCaps = teamMemberCapabilities(
-                member,
-                list,
-                t,
-                caps.canEditMembers,
-              );
-              const pending = props.pendingUserIds.has(member.userId);
-              const open = roleMenu === member.userId;
-              const roleLabel =
-                member.role === "Lead" ? d.roleLead : d.roleMember;
-              return (
-                <div
-                  key={member.userId}
-                  data-f="pr"
-                  className={cn(
-                    "relative grid min-h-14 grid-cols-[minmax(0,1fr)_140px_74px_44px] items-center gap-3 px-3.5",
-                    index > 0 && "border-t border-line",
-                    open && "bg-state-selected",
-                  )}
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : members.status === "error" ? (
+              <div
+                role="alert"
+                className="flex items-center justify-between gap-3 px-3.5 py-3"
+              >
+                <p className="m-0 text-body text-muted-foreground">
+                  {copy.members.error}
+                </p>
+                <button
+                  type="button"
+                  onClick={props.onRetry}
+                  className={cn(BTN, FOCUS)}
                 >
-                  <span
-                    data-f="who"
-                    className="flex min-w-0 items-center gap-[11px]"
+                  {copy.members.retry}
+                </button>
+              </div>
+            ) : (
+              list.map((member, index) => {
+                const person = info.get(member.userId);
+                const memberCaps = teamMemberCapabilities(
+                  member,
+                  list,
+                  t,
+                  caps.canEditMembers,
+                );
+                const pending = props.pendingUserIds.has(member.userId);
+                const open = roleMenu === member.userId;
+                const roleLabel =
+                  member.role === "Lead" ? d.roleLead : d.roleMember;
+                return (
+                  <div
+                    key={member.userId}
+                    data-f="pr"
+                    className={cn(
+                      "relative box-content grid min-h-14 grid-cols-[minmax(0,1fr)_140px_74px_44px] items-center gap-3 px-3.5",
+                      index > 0 && "border-t border-line",
+                      open && "bg-state-selected",
+                    )}
                   >
-                    <SpaceAvatar
-                      person={{
-                        id: member.userId,
-                        name: member.displayName,
-                        tone: identityToneFor(member.userId),
-                      }}
-                      className="size-[30px] text-avatar-lg"
-                    />
-                    <span className="min-w-0">
-                      <b className="block truncate text-body leading-[1.45] font-semibold text-foreground">
-                        {member.displayName}
-                        {member.userId === viewer.userId ? (
-                          <span className="ml-1.5 rounded-[4px] bg-state-selected px-[5px] py-px text-key font-semibold text-state-selected-foreground">
-                            {copy.members.you}
-                          </span>
-                        ) : null}
-                      </b>
-                      <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
-                        {[person?.email ?? member.email, person?.title]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </small>
-                    </span>
-                  </span>
-                  <span>
-                    <button
-                      type="button"
-                      aria-haspopup="menu"
-                      aria-expanded={open}
-                      aria-disabled={caps.canEditMembers ? undefined : true}
-                      disabled={pending}
-                      aria-label={formatCopy(d.roleAria, {
-                        name: member.displayName,
-                        role: roleLabel,
-                      })}
-                      onClick={
-                        caps.canEditMembers
-                          ? () =>
-                              setRoleMenu((current) =>
-                                current === member.userId
-                                  ? null
-                                  : member.userId,
-                              )
-                          : undefined
-                      }
-                      className={cn(
-                        "inline-flex h-[30px] items-center gap-1.5 rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground",
-                        caps.canEditMembers
-                          ? "hover:border-line-strong hover:bg-popover dark:hover:bg-card"
-                          : "cursor-default",
-                        open &&
-                          "border-primary bg-popover ring-2 ring-state-selected dark:bg-card",
-                        FOCUS,
-                      )}
+                    <span
+                      data-f="who"
+                      className="flex min-w-0 items-center gap-[11px]"
                     >
-                      <RoleTag role={member.role} />
-                      {roleLabel}
-                      {caps.canEditMembers ? (
-                        <Glyph
-                          name="chevronDown"
-                          className="size-[13px] text-meta-foreground"
-                        />
-                      ) : null}
-                    </button>
-                  </span>
-                  <span className="text-xs text-meta-foreground">
-                    {formatCopy(d.since, {
-                      date: props.formatDay(person?.since ?? t.createdAt),
-                    })}
-                  </span>
-                  <span>
-                    {caps.canEditMembers ? (
+                      <SpaceAvatar
+                        person={{
+                          id: member.userId,
+                          name: member.displayName,
+                          tone: identityToneFor(member.userId),
+                        }}
+                        className="size-[30px] text-avatar-lg"
+                      />
+                      <span className="min-w-0">
+                        <b className="block truncate text-body leading-[1.45] font-semibold text-foreground">
+                          {member.displayName}
+                          {member.userId === viewer.userId ? (
+                            <span className="ml-1.5 rounded-[4px] bg-state-selected px-[5px] py-px text-key font-semibold text-state-selected-foreground">
+                              {copy.members.you}
+                            </span>
+                          ) : null}
+                        </b>
+                        <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
+                          {[person?.email ?? member.email, person?.title]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
+                      </span>
+                    </span>
+                    <span>
                       <button
                         type="button"
-                        disabled={!memberCaps.canRemove || pending}
-                        title={memberCaps.canRemove ? undefined : d.leadRule}
-                        aria-label={formatCopy(d.removeAria, {
+                        aria-haspopup="menu"
+                        aria-expanded={open}
+                        aria-disabled={caps.canEditMembers ? undefined : true}
+                        disabled={pending}
+                        aria-label={formatCopy(d.roleAria, {
                           name: member.displayName,
+                          role: roleLabel,
                         })}
-                        onClick={() => props.onRemove(member.userId)}
+                        onClick={
+                          caps.canEditMembers
+                            ? () =>
+                                setRoleMenu((current) =>
+                                  current === member.userId
+                                    ? null
+                                    : member.userId,
+                                )
+                            : undefined
+                        }
                         className={cn(
-                          "border-0 bg-transparent p-0 text-crumb font-semibold",
-                          memberCaps.canRemove
-                            ? "cursor-pointer text-danger-text"
-                            : "cursor-not-allowed text-meta-foreground opacity-70",
+                          "inline-flex h-[30px] items-center gap-1.5 rounded-[7px] border border-transparent bg-transparent px-[9px] text-compact leading-[1.45] font-medium text-foreground",
+                          caps.canEditMembers
+                            ? "hover:border-line-strong hover:bg-popover dark:hover:bg-card"
+                            : "cursor-default",
+                          open &&
+                            "border-primary bg-popover ring-2 ring-state-selected dark:bg-card",
                           FOCUS,
                         )}
                       >
-                        {d.remove}
+                        <RoleTag role={member.role} />
+                        {roleLabel}
+                        {caps.canEditMembers ? (
+                          <Glyph
+                            name="chevronDown"
+                            className="size-[13px] text-meta-foreground"
+                          />
+                        ) : null}
                       </button>
+                    </span>
+                    <span className="text-xs leading-[1.45] text-meta-foreground">
+                      {formatCopy(d.since, {
+                        date: props.formatDay(person?.since ?? t.createdAt),
+                      })}
+                    </span>
+                    <span>
+                      {caps.canEditMembers ? (
+                        <button
+                          type="button"
+                          disabled={!memberCaps.canRemove || pending}
+                          title={memberCaps.canRemove ? undefined : d.leadRule}
+                          aria-label={formatCopy(d.removeAria, {
+                            name: member.displayName,
+                          })}
+                          onClick={() => props.onRemove(member.userId)}
+                          className={cn(
+                            "border-0 bg-transparent p-0 text-crumb",
+                            memberCaps.canRemove
+                              ? "cursor-pointer font-semibold text-danger-text"
+                              : "cursor-not-allowed font-medium text-meta-foreground opacity-70",
+                            FOCUS,
+                          )}
+                        >
+                          {d.remove}
+                        </button>
+                      ) : null}
+                    </span>
+                    {open ? (
+                      <RoleMenu
+                        copy={copy}
+                        member={member}
+                        caps={memberCaps}
+                        onPick={(role) =>
+                          props.onChangeRole(member.userId, role)
+                        }
+                        onRemove={() => props.onRemove(member.userId)}
+                        onClose={closeRoleMenu}
+                      />
                     ) : null}
-                  </span>
-                  {open ? (
-                    <RoleMenu
-                      copy={copy}
-                      member={member}
-                      caps={memberCaps}
-                      onPick={(role) => props.onChangeRole(member.userId, role)}
-                      onRemove={() => props.onRemove(member.userId)}
-                      onClose={closeRoleMenu}
-                    />
-                  ) : null}
-                </div>
-              );
-            })
-          )}
-          {caps.canEditMembers ? (
-            <div
-              data-f="addrow"
-              className="relative flex flex-col gap-1.5 rounded-b-[12px] border-t border-line bg-background px-3.5 pt-3 pb-3.5"
-            >
-              <label className="flex h-8 w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-state-selected dark:bg-card">
-                <Glyph name="userPlus" />
-                <span className="sr-only">{d.addPeople}</span>
-                <input
-                  ref={addInput}
-                  role="combobox"
-                  aria-expanded={suggestions.length > 0}
-                  aria-controls="team-add-list"
-                  aria-describedby="team-add-hint"
-                  autoComplete="off"
-                  value={query}
-                  placeholder={formatCopy(d.addPlaceholder, {
-                    workspace: props.frame.workspaceName,
-                  })}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && suggestions[0]) {
-                      event.preventDefault();
-                      props.onAddMember({
-                        userId: suggestions[0].id,
-                        role: "Member",
-                      });
-                      setQuery("");
-                    }
-                  }}
-                  className="h-full min-w-0 flex-1 border-0 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
-                />
-              </label>
-              {suggestions.length > 0 ? (
-                <ul
-                  id="team-add-list"
-                  role="listbox"
-                  className="m-0 list-none rounded-[8px] border border-line-strong bg-popover p-1 dark:bg-card"
-                >
-                  {suggestions.map((person, index) => (
-                    <li
-                      key={person.id}
-                      role="option"
-                      aria-selected={index === 0}
-                      onMouseDown={(event) => {
+                  </div>
+                );
+              })
+            )}
+            {caps.canEditMembers ? (
+              <div
+                data-f="addrow"
+                className="relative flex flex-col gap-1.5 rounded-b-[12px] border-t border-line bg-background px-3.5 pt-3 pb-3.5"
+              >
+                <label className="flex h-8 w-full items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-state-selected dark:bg-card">
+                  <Glyph name="userPlus" />
+                  <span className="sr-only">{d.addLabel}</span>
+                  <input
+                    ref={addInput}
+                    role="combobox"
+                    aria-expanded={suggestions.length > 0}
+                    aria-controls="team-add-list"
+                    aria-describedby="team-add-hint"
+                    autoComplete="off"
+                    value={query}
+                    placeholder={formatCopy(d.addPlaceholder, {
+                      workspace: props.frame.workspaceName,
+                    })}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && suggestions[0]) {
                         event.preventDefault();
                         props.onAddMember({
-                          userId: person.id,
+                          userId: suggestions[0].id,
                           role: "Member",
                         });
                         setQuery("");
-                      }}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-compact",
-                        index === 0 && "bg-state-hover-strong",
-                      )}
-                    >
-                      {person.name}
-                      {person.email ? (
-                        <small className="text-xs text-meta-foreground">
-                          {person.email}
-                        </small>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : query.trim() !== "" ? (
-                <p className="m-0 text-xs text-meta-foreground">
-                  {formatCopy(d.addNoMatch, { query: query.trim() })}
-                </p>
-              ) : null}
-              <span
-                id="team-add-hint"
-                className="text-xs leading-normal text-meta-foreground"
-              >
-                {d.addHint}
-              </span>
-            </div>
-          ) : null}
-        </section>
-        <div className="flex flex-col gap-3.5">
-          <section
-            aria-labelledby="team-grant"
-            className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5 dark:bg-card"
-          >
-            <h3
-              id="team-grant"
-              className="m-0 text-compact font-semibold text-muted-foreground"
-            >
-              {d.usageTitle}
-            </h3>
-            {(ext?.usage ?? []).length === 0 ? (
-              <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
-                {d.usageNone}
-              </p>
-            ) : (
-              (ext?.usage ?? []).map((usage) => (
-                <a
-                  key={`${usage.kind}:${usage.id}`}
-                  data-f="grant"
-                  href={props.usageNavigation.getHref(usage)}
-                  onClick={(event) => {
-                    if (!isPlainClick(event)) return;
-                    event.preventDefault();
-                    props.usageNavigation.onNavigate(usage);
-                  }}
-                  className={cn(
-                    "-mx-2 flex items-center gap-2.5 rounded-[8px] p-2 hover:bg-state-hover-strong",
-                    FOCUS,
-                  )}
-                >
-                  {usage.kind === "space" ? (
-                    <IdentityMark
-                      name={usage.name}
-                      markTone={markToneFor(usage.id)}
-                      className="size-7 rounded-[8px] text-mark-xs font-bold"
-                    />
-                  ) : (
-                    <span className="grid size-7 place-items-center rounded-[8px] bg-state-hover-strong text-muted-foreground">
-                      <Glyph name="kanban" />
-                    </span>
-                  )}
-                  <span className="min-w-0">
-                    <b className="block text-nav font-semibold text-foreground">
-                      {usage.kind === "space"
-                        ? spaceLabel(copy, usage.name, usage.spaceType)
-                        : usage.name}
-                    </b>
-                    <small className="block text-xs text-meta-foreground">
-                      {usage.kind === "space"
-                        ? formatCopy(d.usageSpace, {
-                            role: copy.page.spaceRoles[
-                              usage.grant as "Admin" | "Member" | "Viewer"
-                            ],
-                            date: props.formatDay(usage.since ?? t.createdAt),
-                          })
-                        : formatCopy(d.usageBoard, {
-                            level:
-                              copy.page.boardLevels[
-                                usage.grant as
-                                  "manager" | "editor" | "commenter" | "viewer"
-                              ],
-                            date: props.formatDay(usage.since ?? t.createdAt),
-                          })}
-                      {archived ? ` · ${d.usagePaused}` : ""}
-                    </small>
-                  </span>
-                  <Glyph
-                    name="chevronRight"
-                    className="ml-auto size-3.5 text-meta-foreground"
+                      }
+                    }}
+                    className="h-full min-w-0 flex-1 border-0 bg-transparent text-compact text-foreground outline-none placeholder:text-meta-foreground"
                   />
-                </a>
-              ))
-            )}
-            <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
-              {d.usageNoteBefore}
-              <b className="font-semibold text-foreground">{d.usageNoteBold}</b>
-              {d.usageNoteAfter}
-            </p>
-            <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
-              {d.usageNoteChange}
-            </p>
+                </label>
+                {suggestions.length > 0 ? (
+                  <ul
+                    id="team-add-list"
+                    role="listbox"
+                    className="m-0 list-none rounded-[8px] border border-line-strong bg-popover p-1 dark:bg-card"
+                  >
+                    {suggestions.map((person, index) => (
+                      <li
+                        key={person.id}
+                        role="option"
+                        aria-selected={index === 0}
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          props.onAddMember({
+                            userId: person.id,
+                            role: "Member",
+                          });
+                          setQuery("");
+                        }}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-compact",
+                          index === 0 && "bg-state-hover-strong",
+                        )}
+                      >
+                        {person.name}
+                        {person.email ? (
+                          <small className="text-xs text-meta-foreground">
+                            {person.email}
+                          </small>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : query.trim() !== "" ? (
+                  <p className="m-0 text-xs text-meta-foreground">
+                    {formatCopy(d.addNoMatch, { query: query.trim() })}
+                  </p>
+                ) : null}
+                <span
+                  id="team-add-hint"
+                  className="text-xs leading-normal text-meta-foreground"
+                >
+                  {d.addHint}
+                </span>
+              </div>
+            ) : null}
           </section>
-          <section
-            aria-labelledby="team-lead-what"
-            className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5 dark:bg-card"
-          >
-            <h3
-              id="team-lead-what"
-              className="m-0 text-compact font-semibold text-muted-foreground"
+          <div className="flex flex-col gap-3.5">
+            <section
+              aria-labelledby="team-grant"
+              className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5 dark:bg-card"
             >
-              {d.leadTitle}
-            </h3>
-            <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
-              {d.leadText}
-            </p>
-          </section>
-          {caps.canManage && !archived ? (
-            <button
-              type="button"
-              onClick={() => setArchiveOpen(true)}
-              className={cn(
-                "inline-flex h-8 items-center gap-1.5 self-start rounded-[7px] border border-transparent bg-transparent px-3 text-compact font-medium text-danger-text hover:bg-state-hover-strong",
-                FOCUS,
+              <h3
+                id="team-grant"
+                className="m-0 text-compact leading-[1.45] font-semibold text-muted-foreground"
+              >
+                {d.usageTitle}
+              </h3>
+              {(ext?.usage ?? []).length === 0 ? (
+                <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+                  {d.usageNone}
+                </p>
+              ) : (
+                (ext?.usage ?? []).map((usage) => (
+                  <a
+                    key={`${usage.kind}:${usage.id}`}
+                    data-f="grant"
+                    href={props.usageNavigation.getHref(usage)}
+                    onClick={(event) => {
+                      if (!isPlainClick(event)) return;
+                      event.preventDefault();
+                      props.usageNavigation.onNavigate(usage);
+                    }}
+                    className={cn(
+                      "-mx-2 flex items-center gap-2.5 rounded-[8px] p-2 hover:bg-state-hover-strong",
+                      FOCUS,
+                    )}
+                  >
+                    {usage.kind === "space" ? (
+                      <IdentityMark
+                        name={usage.name}
+                        markTone={markToneFor(usage.id)}
+                        className="size-7 rounded-[8px] text-mark-xs font-bold"
+                      />
+                    ) : (
+                      <span className="grid size-7 place-items-center rounded-[8px] bg-state-hover-strong text-muted-foreground">
+                        <Glyph name="kanban" />
+                      </span>
+                    )}
+                    <span className="min-w-0">
+                      <b className="block text-nav leading-[1.45] font-semibold text-foreground">
+                        {usage.kind === "space"
+                          ? spaceLabel(copy, usage.name, usage.spaceType)
+                          : usage.name}
+                      </b>
+                      <small className="block text-xs leading-[1.45] text-meta-foreground">
+                        {usage.kind === "space"
+                          ? formatCopy(d.usageSpace, {
+                              role: copy.page.spaceRoles[
+                                usage.grant as "Admin" | "Member" | "Viewer"
+                              ],
+                              date: props.formatDay(usage.since ?? t.createdAt),
+                            })
+                          : formatCopy(d.usageBoard, {
+                              level:
+                                copy.page.boardLevels[
+                                  usage.grant as
+                                    | "manager"
+                                    | "editor"
+                                    | "commenter"
+                                    | "viewer"
+                                ],
+                              date: props.formatDay(usage.since ?? t.createdAt),
+                            })}
+                        {archived ? ` · ${d.usagePaused}` : ""}
+                      </small>
+                    </span>
+                    <Glyph
+                      name="chevronRight"
+                      className="ml-auto size-4 text-meta-foreground"
+                    />
+                  </a>
+                ))
               )}
+              <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+                {d.usageNoteBefore}
+                <b className="font-semibold text-foreground">
+                  {d.usageNoteBold}
+                </b>
+                {d.usageNoteAfter}
+              </p>
+              <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+                {d.usageNoteChange}
+              </p>
+            </section>
+            <section
+              aria-labelledby="team-lead-what"
+              className="flex flex-col gap-2.5 rounded-[12px] border border-line bg-popover p-3.5 dark:bg-card"
             >
-              <Glyph name="archive" />
-              {d.archive}
-            </button>
-          ) : null}
+              <h3
+                id="team-lead-what"
+                className="m-0 text-compact leading-[1.45] font-semibold text-muted-foreground"
+              >
+                {d.leadTitle}
+              </h3>
+              <p className="m-0 text-crumb leading-[1.55] text-muted-foreground">
+                {d.leadText}
+              </p>
+            </section>
+            {caps.canManage && !archived ? (
+              <button
+                type="button"
+                onClick={() => setArchiveOpen(true)}
+                className={cn(
+                  "inline-flex h-8 items-center gap-1.5 self-start rounded-[7px] border border-transparent bg-transparent px-3 text-compact font-medium text-danger-text hover:bg-state-hover-strong",
+                  FOCUS,
+                )}
+              >
+                <Glyph name="archive" />
+                {d.archive}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <EditDialog

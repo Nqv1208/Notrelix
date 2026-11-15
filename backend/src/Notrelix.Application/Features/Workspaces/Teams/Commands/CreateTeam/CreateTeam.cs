@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
 
@@ -24,9 +25,11 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Resul
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IWorkspaceOwnerUpdateLocker _locker;
 
-    public CreateTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public CreateTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceOwnerUpdateLocker locker)
     {
+        _locker = locker;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -34,8 +37,9 @@ public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, Resul
 
     public async Task<Result<Guid>> Handle(CreateTeamCommand request, CancellationToken ct)
     {
-        var workspace = await _context.Workspaces
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
+        // The workspace row is locked until the write commits, so two creates of one name run one after the other
+        // and the second reads the first's Team (there is no unique index on the name).
+        var workspace = await _locker.LockWorkspaceAsync(request.WorkspaceId, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);

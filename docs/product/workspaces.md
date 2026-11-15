@@ -586,6 +586,10 @@ Creating a Team takes an `Idempotency-Key`: a retry returns the Team the first a
 the same key is refused. The Team list (`GET .../teams`) pages by cursor in name order (id on ties), 50 a page by default
 and at most 200, and includes archived Teams.
 
+A Team name is trimmed, up to 160 characters, and unique, case-insensitively, among the non-deleted Teams of the
+Workspace (`Workspaces_Team_DuplicateName`), on create and on rename. Creating and renaming lock the Workspace row until
+the write commits, so two writes of one name at the same time make one Team.
+
 # 46. WSP-014 — Team membership requires Workspace membership compatibility
 
 A Team belongs to a Workspace.
@@ -593,6 +597,9 @@ A Team belongs to a Workspace.
 A Team Member should reference a principal/member compatible with that Workspace.
 
 Do not allow cross-Workspace Team membership through raw IDs.
+
+A Guest of the Workspace is not a Team member: adding one is refused (`Workspaces_Team_GuestCannotJoin`), and a person who
+is no member of the Workspace is NotFound.
 
 # 47. Team role
 

@@ -6,7 +6,7 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Teams.Commands;
 public class CreateTeamCommandHandlerTests : WorkspaceHandlerTestBase
 {
     private CreateTeamCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, LockerMock.Object);
 
     [Fact]
     public async Task Handle_WhenWorkspaceExists_CreatesTeamSuccessfully()

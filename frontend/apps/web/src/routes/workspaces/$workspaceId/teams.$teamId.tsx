@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { TeamRole } from "@notrelix/features-workspace/core";
@@ -77,34 +77,47 @@ export function TeamPage() {
     [copy],
   );
 
+  // The edit dialog can send a new name and a new description together: each write carries the version the
+  // one before it left, so they run one after the other and read the Team's version when their turn comes.
+  const writes = useRef<Promise<unknown>>(Promise.resolve());
+  const inTurn = useCallback(
+    (run: (expectedVersion: number) => Promise<unknown>) => {
+      writes.current = writes.current
+        .catch(() => undefined)
+        .then(async () => run(await mutations.readVersion(teamId)))
+        .catch(fail);
+    },
+    [fail, mutations, teamId],
+  );
+
   const onRename = useCallback(
     (next: string) => {
       if (version === null) return;
-      mutations.rename.mutate(
-        { teamId, name: next, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(formatCopy(copy.toasts.renamed, { name: next })),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.rename.mutateAsync({
+          teamId,
+          name: next,
+          expectedVersion,
+        });
+        toast.success(formatCopy(copy.toasts.renamed, { name: next }));
+      });
     },
-    [copy, fail, mutations.rename, teamId, version],
+    [copy, inTurn, mutations.rename, teamId, version],
   );
 
   const onDescribe = useCallback(
     (description: string | null) => {
       if (version === null) return;
-      mutations.describe.mutate(
-        { teamId, description, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(formatCopy(copy.toasts.described, { name })),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.describe.mutateAsync({
+          teamId,
+          description,
+          expectedVersion,
+        });
+        toast.success(formatCopy(copy.toasts.described, { name }));
+      });
     },
-    [copy, fail, mutations.describe, name, teamId, version],
+    [copy, inTurn, mutations.describe, name, teamId, version],
   );
 
   const onArchive = useCallback(() => {

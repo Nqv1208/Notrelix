@@ -46,10 +46,14 @@ public class AddTeamMemberCommandHandler : IRequestHandler<AddTeamMemberCommand,
         var workspaceMember = await _context.WorkspaceMembers
             .AsNoTracking()
             .Where(m => m.WorkspaceId == request.WorkspaceId && m.UserId == request.UserId && m.Status == WorkspaceMemberStatus.Active)
-            .Select(m => new { m.Id })
+            .Select(m => new { m.Id, m.Role })
             .FirstOrDefaultAsync(ct);
         if (workspaceMember is null)
             throw new NotFoundException(nameof(WorkspaceMember), request.UserId);
+
+        // WSP-014: a Guest is not a Team member (Guests are reached by direct grants, never through a Team).
+        if (Notrelix.Domain.Workspaces.Rules.WorkspaceMemberRules.TakesGuestSeat(workspaceMember.Role))
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Team_GuestCannotJoin, "A Guest of the workspace cannot be added to a Team.");
 
         var role = Enum.Parse<TeamMemberRole>(request.Role, ignoreCase: true);
         team.AddMember(request.UserId, role, _requestContext.UserId, _dateTimeProvider.UtcNow, workspaceMember.Id);
