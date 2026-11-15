@@ -385,7 +385,11 @@ export function InboxRead({
           className={OUTLINE_CLASS}
         >
           <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          {item.done ? copy.read.reopen : copy.read.done}
+          {item.snoozed
+            ? copy.read.unsnooze
+            : item.done
+              ? copy.read.reopen
+              : copy.read.done}
         </button>
         <SnoozeMenu
           copy={copy}
