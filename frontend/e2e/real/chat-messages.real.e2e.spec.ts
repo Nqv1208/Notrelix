@@ -84,6 +84,8 @@ test("a channel is created and its messages are sent, edited, deleted, paged and
     `/workspaces/${workspace.id}/chat/channels`,
   );
   expect(channels.filter((c) => c.name === channelName)).toHaveLength(1);
+  // The creation is announced in the channel and shows there.
+  await expect(log(page).getByText("created the channel")).toBeVisible();
   // The route first carries a temporary id; the stored id is the one the list returns, and the page ends on it.
   const channelId = channels.find((c) => c.name === channelName)!.id;
   await expect(page).toHaveURL(new RegExp(`/chat/${channelId}`));
@@ -112,6 +114,11 @@ test("a channel is created and its messages are sent, edited, deleted, paged and
       )
     ).filter((c) => c.name === channelName),
   ).toHaveLength(1);
+
+  const opening = (await messages(page, workspace.id, channelId)).items;
+  expect(opening.map((m) => [m.sequence, m.kind, m.content])).toEqual([
+    [1, "system", "created the channel"],
+  ]);
 
   // Send: one bubble, no pending copy, one stored message.
   const first = `First ${unique}`;
@@ -218,7 +225,10 @@ test("a channel is created and its messages are sent, edited, deleted, paged and
   const announced = (
     await messages(page, workspace.id, channelId)
   ).items.filter((m) => m.kind === "system");
-  expect(announced.map((m) => m.content)).toEqual(["joined the channel"]);
+  expect(announced.map((m) => m.content)).toEqual([
+    "created the channel",
+    "joined the channel",
+  ]);
 
   // History: more than one page is paged with a cursor, and an older page loads on scroll.
   // The send limit is 30 a minute per person, so two people write 48 messages between them, so nobody nears it.
