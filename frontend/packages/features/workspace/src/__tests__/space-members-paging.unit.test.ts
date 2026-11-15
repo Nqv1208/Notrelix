@@ -16,6 +16,7 @@ const endpoints: SpacesEndpoints = {
     spaceArchive: (w, s) => `/workspaces/${w}/spaces/${s}/archive`,
     spaceUnarchive: (w, s) => `/workspaces/${w}/spaces/${s}/unarchive`,
     spaceRestore: (w, s) => `/workspaces/${w}/spaces/${s}/restore`,
+    spacesDeleted: (w) => `/workspaces/${w}/spaces/deleted`,
     spaceMove: (w, s) => `/workspaces/${w}/spaces/${s}/move`,
     spaceMembers: (w, s) => `/workspaces/${w}/spaces/${s}/members`,
     spaceMember: (w, s, type, id) =>
