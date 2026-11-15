@@ -79,8 +79,8 @@ export function ChatPermissionsDialog({
   const text = copy.permissions;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="grid-cols-[minmax(0,1fr)] sm:max-w-2xl">
+        <DialogHeader className="pr-8">
           <DialogTitle>{text.title}</DialogTitle>
           <DialogDescription>{text.description}</DialogDescription>
         </DialogHeader>
@@ -181,7 +181,7 @@ function PermissionMatrix({
         </Button>
         <p
           id="chat-permissions-readonly-hint"
-          className="min-w-0 flex-1 text-xs text-muted-foreground"
+          className="min-w-0 basis-full text-xs text-muted-foreground sm:basis-0 sm:flex-1"
         >
           {text.readOnlyPresetHint}
         </p>
@@ -192,7 +192,7 @@ function PermissionMatrix({
           <TableRow>
             <TableHead scope="col">{text.actionHeader}</TableHead>
             {CHAT_PERMISSION_SUBJECTS.map((subject) => (
-              <TableHead key={subject} scope="col">
+              <TableHead key={subject} scope="col" className="px-1 sm:px-2">
                 {text.roles[subject]}
               </TableHead>
             ))}
@@ -207,7 +207,7 @@ function PermissionMatrix({
               {CHAT_PERMISSION_SUBJECTS.map((subject) => {
                 const value = cellOf(cells, subject, action);
                 return (
-                  <TableCell key={subject}>
+                  <TableCell key={subject} className="px-1 sm:px-2">
                     <select
                       aria-label={fillCopy(text.cell, {
                         action: text.actions[action],
@@ -222,7 +222,7 @@ function PermissionMatrix({
                           event.target.value as ChatPermissionCell,
                         )
                       }
-                      className="h-8 w-full min-w-24 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
+                      className="h-8 w-full min-w-[4.75rem] rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
                     >
                       {STATES.filter(
                         (state) =>
