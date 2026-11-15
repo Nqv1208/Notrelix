@@ -137,7 +137,9 @@ GRANT EXECUTE ON FUNCTION ops.record_security_event(
 -- rule first, these are the bound underneath it.
 --
 -- Email (accepted 2026-10-23, IMemberEmailDisclosure): only an ACTIVE OWNER or ADMIN of the Workspace reads
--- email, and only of ACTIVE NON-GUEST members of that same Workspace.
+-- email, and only of ACTIVE NON-GUEST members of that same Workspace. The board import worker (the unbounded
+-- background principal, ops.is_worker_scope()) also resolves Person-column e-mails, under the same subject rule;
+-- the importer's own Owner/Admin check stays in the caller.
 CREATE OR REPLACE FUNCTION ops.disclosable_member_emails(p_workspace uuid, p_user_ids uuid[])
 RETURNS TABLE (user_id uuid, email text)
 LANGUAGE sql
@@ -153,14 +155,15 @@ AS $$
        AND u.id = ANY (p_user_ids)
        AND subject.status = 'Active'
        AND subject.role <> 'Guest'
-       AND ops.current_request_scope() IN ('app', 'user')
-       AND EXISTS (
-            SELECT 1
-              FROM workspace.workspace_members reader
-             WHERE reader.workspace_id = p_workspace
-               AND reader.user_id = ops.current_user_id()
-               AND reader.status = 'Active'
-               AND reader.role IN ('Owner', 'Admin'));
+       AND ((ops.current_request_scope() IN ('app', 'user')
+             AND EXISTS (
+                  SELECT 1
+                    FROM workspace.workspace_members reader
+                   WHERE reader.workspace_id = p_workspace
+                     AND reader.user_id = ops.current_user_id()
+                     AND reader.status = 'Active'
+                     AND reader.role IN ('Owner', 'Admin')))
+            OR ops.is_worker_scope());
 $$;
 
 -- Phone (D15, IMemberPhoneLookup and its callers): a phone is visible only to an ACTIVE NON-GUEST member of
@@ -195,5 +198,5 @@ $$;
 
 REVOKE ALL ON FUNCTION ops.disclosable_member_emails(uuid, uuid[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION ops.shared_member_phones(uuid, uuid[]) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION ops.disclosable_member_emails(uuid, uuid[]) TO notrelix_app;
+GRANT EXECUTE ON FUNCTION ops.disclosable_member_emails(uuid, uuid[]) TO notrelix_app, notrelix_worker;
 GRANT EXECUTE ON FUNCTION ops.shared_member_phones(uuid, uuid[]) TO notrelix_app;
