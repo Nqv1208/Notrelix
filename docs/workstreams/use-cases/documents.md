@@ -178,13 +178,13 @@ Capability letters: see section 1.1. Columns BE and FE say whether code exists: 
 | UC-DCT-H06 | Read a page on a phone app | H | Viewer | yes | yes | Final-M-Docs | none | HARDENING | Built (verified by reading code 2026-11-09, not run): GetPageEndpoint.cs, ListPageBlocksEndpoint.cs, mobile-document-screen.tsx, docs-mobile-screen.mobile.test.tsx. Remaining: owner tests by hand. |
 | UC-DCT-H07 | Use the 320 px page and its overflow sheet | H | Viewer, Editor | yes | yes | Final-Docs-2-320 | none | INTEGRATING | Measured gaps beyond 1 px (paragraph style select 36 px against 30, status pill 79 against 87); other states undrawn |
 | UC-DCT-H08 | Edit with keyboard and screen reader | H | Editor | none | yes | none | none | HARDENING | Built (verified by reading code 2026-11-09, not run): shortcut-catalog.ts, doc-keys.ts, block-handle.tsx, block-move.component.test.tsx, doc-menu-bar.component.test.tsx. Remaining: owner tests by hand. |
-| UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | No cross-tenant negative test |
+| UC-DCT-I01 | See a page only when allowed | I | Viewer | yes | yes | Final-Docs-2 | real | HARDENING | Backend line holds: `DocumentsNonMemberNotFoundTests` compares every Documents route for another-account and same-account outsiders against a made-up id, green locally (3 of 3, Testcontainers) |
 | UC-DCT-I02 | Edit only with edit permission | I | Editor | partial | yes | none | none | HARDENING | Built: every page request checked against its action at Viewer, Editor and Manager (`ResourceLevelEnforcementMatrixTests`); owner tests by hand |
 | UC-DCT-I03 | Share a page with a member | I | Manager | yes | yes | Final-Share | real | HARDENING | Owned by Governance |
 | UC-DCT-I04 | Creator becomes Manager | I | Creator | yes | none | none | none | HARDENING | Built: stored Manager entry asserted (`GovernanceResourcePermissionFlowTests`, CI) and the grant call (`PageCreatorGrantTests`); owner tests by hand |
 | UC-DCT-I05 | Embedding a board never shares it | I | System | partial | partial | none | none | DEFINED | No proof |
-| UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | yes | Final-Docs-2 | none | INTEGRATING | Owner question: a trashed page answers 404 but product section 77 names a 400, and GET still reads a trashed page |
-| UC-DCT-I07 | Lose access while the page is open | I | Editor | none | none | none | none | DEFINED | Behaviour not built |
+| UC-DCT-I06 | Read-only and trashed page states | I | Viewer | partial | partial | Final-Docs-2 | none | INTEGRATING | Decided (night run): a trashed page stays readable to anyone with `ViewPage` and every write is refused with `Documents_Page_CannotEditArchived` (section 77, Doc-Page-Var-Trashed). Built: the read-only note. Missing: the trashed banner, which needs the page read to carry its trash date |
+| UC-DCT-I07 | Lose access while the page is open | I | Editor | none | yes | Doc-Page-Var-LostAccess | none | INTEGRATING | Built: a refused save (403, 404) locks the editor and keeps the unsaved text copyable (`doc-block-saver.unit.test.ts`, `doc-page-surfaces.interaction.component.test.tsx`). Missing: real e2e, and stopping live updates |
 | UC-DCT-J01 | Announce a saved or created page | J | System | yes | none | none | none | INTEGRATING | Only three integration events are announced; reorder does not announce |
 | UC-DCT-J02 | Announce rename, move, restore and delete | J | System | partial | none | none | none | DEFINED | Domain events have no integration event |
 | UC-DCT-J03 | Capture an automatic version | J | System | yes | yes | none | none | INTEGRATING | Owner question: the last-editor-leaves trigger |
@@ -1115,7 +1115,7 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Rules: product doc sections 12, 13, 59, 60; `DCREQ032` to `DCREQ035`; GOV-029; NRX-003, NRX-004.
 - Acceptance: Given a page and a member without access, When they request it, Then `404` identical to a random id. Given a user of another account, Then the same.
 - Evidence: BE `IRequirePermission` on every Documents request, `PostgresPageAuthorizationFacts`, `IResourceVisibility` · FE no-access state in `DocPageScreen` · Design Final-Docs-2 · Tests `PageViewAccessTests`, `PageSearchFactsAdapterTests` · Real e2e `documents.real.e2e.spec.ts` (guest sees it only once shared)
-- State: HARDENING — cross-tenant negative test over the API for every route, RLS test.
+- State: HARDENING — Backend line holds: `DocumentsNonMemberNotFoundTests` (Integration, application role) sends every Documents route as a person of another account and as a same-account non-member, with the real ids and with made-up ones, and requires the same status and body; a route without a row fails it. Green locally 2026-11-15: 3 of 3. Missing: design line (no fidelity spec for the no-access state in `DocPageScreen` against Final-Docs-2) and a real e2e journey for an outsider opening a page.
 
 ### UC-DCT-I02 Edit only with edit permission
 - Capability: I Document permissions
@@ -1185,7 +1185,7 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - Rules: product doc section 77.
 - Acceptance: Given a Viewer, When the page opens, Then every write control is absent and typing is blocked.
 - Evidence: BE `GET /api/v1/pages/{pageId}`, `UpdatePageCommandHandler`, `UpdateBlockCommandHandler`, `RestorePageVersionCommandHandler` · FE read-only note in `DocPageScreen` · Design Final-Docs-2 ("Bạn thấy trang…" note) · Tests `PageTrashedRefusalTests` (rename and block edit of a trashed page refused, rename of a removed page not found), `PageVersionHandlerTests` (restore refused), `PageTests` (rename and move refused when archived), `doc-page-surfaces.interaction.component.test.tsx` (read-only state, `aria-readonly`), `docs-page.mock.e2e.spec.ts` · Real e2e none
-- State: INTEGRATING — Owner question: a trashed page answers 404 but product section 77 names a 400, and GET still reads a trashed page.
+- State: INTEGRATING — Decision (night run, from section 77 and the drawn Doc-Page-Var-Trashed): reads of a trashed page stay allowed for people who can view it, so the page can show its trash banner with Restore; writes are refused by the handler with the rule code, not by hiding the page. Built: the read-only note (`DocAccessNoticeSurface`). Missing: the trashed banner (the page read has no trash date), real e2e.
 
 ### UC-DCT-I07 Lose access while the page is open
 - Capability: I Document permissions
@@ -1198,8 +1198,8 @@ Team capability 9 (team id DCT-009). Requirements `DCREQ032` to `DCREQ035`, `DCR
 - UI states: no access, unsaved text notice.
 - Rules: product doc section 76 (permission revocation while connected); `DCREQ035`.
 - Acceptance: Given an Editor typing, When access is revoked, Then the next save is refused, the editor locks, and their last text is copyable.
-- Evidence: BE authorization pipeline (answers `404`) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — UI behaviour and e2e.
+- Evidence: BE authorization pipeline (answers `404`) · FE `DocBlockSaver.onAccessLost`, `DocAccessNoticeSurface` · Design Doc-Page-Var-LostAccess · Tests `doc-block-saver.unit.test.ts`, `doc-page-surfaces.interaction.component.test.tsx` · Real e2e none
+- State: INTEGRATING — Built: a save refused with 403 or 404 stops saving, locks the editor, shows the banner and keeps the unsaved text copyable. Missing: stop live updates on loss, real e2e.
 
 ## Capability J: Document events and activity
 
