@@ -7,10 +7,11 @@ import {
   ExternalLink,
   Flag,
   MoreHorizontal,
+  TriangleAlert,
   User,
   X,
 } from "lucide-react";
-import { cn, Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
+import { Button, cn, Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
 import { PriorityGlyph } from "../../shared/priority-glyph";
 import { identityMarkClass } from "../../shared/item-display";
 import {
@@ -21,12 +22,15 @@ import {
 import type { SystemCellColumn, TableEditors } from "./table-cell-editors";
 import type { TableFieldEditing } from "./table-field-cell";
 import { TableDuePicker } from "./table-due-picker";
-import type {
-  TableGroupModel,
-  TableRowModel,
-  TableStatusOption,
+import {
+  formatTableCount,
+  type TableGroupModel,
+  type TableRowModel,
+  type TableStatusOption,
 } from "./table-model";
 import { StatusDot } from "./table-parts";
+import { pageButtonClass } from "./table-chrome";
+import { TABLE_GROUP_WINDOW } from "./table-group-section";
 import { TableNoResults } from "./table-states";
 import type { TableRowActions } from "./table-row";
 
@@ -157,7 +161,14 @@ export function TablePhoneList({
   topNote,
   onSelectGroup,
   groupNote,
+  paging,
 }: {
+  /** A board read in pages: a group loaded in part ends in "Đã hiện N trên T" and the next page (BC-Large lg320-*). */
+  paging?: {
+    readonly loadMore: (groupId: string) => void;
+    readonly loading: ReadonlySet<string>;
+    readonly failed: ReadonlySet<string>;
+  };
   /** "Chọn cả nhóm": picks a group's rows up to the bulk limit; absent: no button. */
   onSelectGroup?: (groupId: string) => void;
   /** The note over the list for a group pick that stopped at the limit. */
@@ -546,7 +557,11 @@ export function TablePhoneList({
       {groups.map((group) => {
         const collapsed = collapsedGroupIds.has(group.id);
         const count = group.filteredTotal ?? group.rows.length;
-        const visible = shown[group.id] ?? PHONE_WINDOW;
+        // A paged board shows every row it has read; the foot below reads the next page from the server.
+        const visible = paging
+          ? group.rows.length
+          : (shown[group.id] ?? PHONE_WINDOW);
+        const total = Math.max(count, group.rows.length);
         const headingId = `phone-group-${group.id}`;
         return (
           <section
@@ -763,6 +778,82 @@ export function TablePhoneList({
                 ) : null}
               </ul>
             )}
+            {paging && !collapsed && group.hasMore ? (
+              paging.failed.has(group.id) ? (
+                <div
+                  data-slot="table-load-more-error"
+                  className="-mx-4 px-3 py-2.5"
+                >
+                  <div
+                    role="alert"
+                    className="flex flex-wrap items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text"
+                  >
+                    <TriangleAlert
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-px">
+                      <b className="font-semibold text-foreground">
+                        {copy.group.loadMoreFailed}
+                      </b>
+                      <span>
+                        {fillTableCopy(copy.group.loadMoreFailedBody, {
+                          count: formatTableCount(
+                            Math.min(
+                              TABLE_GROUP_WINDOW,
+                              total - group.rows.length,
+                            ),
+                          ),
+                        })}
+                      </span>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={cn(pageButtonClass, "basis-full text-[14px]")}
+                      onClick={() => paging.loadMore(group.id)}
+                    >
+                      {copy.group.loadMoreRetry}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  data-slot="table-show-more"
+                  className="-mx-4 flex flex-wrap items-center justify-center gap-3 px-3 py-2.5 text-crumb text-muted-foreground"
+                >
+                  <span>
+                    {fillTableCopy(copy.group.shownOf, {
+                      shown: group.rows.length,
+                      total,
+                    })}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn(pageButtonClass, "text-[14px]")}
+                    disabled={paging.loading.has(group.id)}
+                    aria-busy={paging.loading.has(group.id) || undefined}
+                    onClick={() => paging.loadMore(group.id)}
+                  >
+                    {paging.loading.has(group.id)
+                      ? copy.group.loadingMore
+                      : pluralTableCopy(
+                          {
+                            one: copy.group.showMore_one,
+                            other: copy.group.showMore_other,
+                          },
+                          Math.min(
+                            TABLE_GROUP_WINDOW,
+                            total - group.rows.length,
+                          ),
+                        )}
+                  </Button>
+                </div>
+              )
+            ) : null}
           </section>
         );
       })}

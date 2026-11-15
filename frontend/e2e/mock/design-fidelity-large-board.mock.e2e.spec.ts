@@ -9,10 +9,15 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * Also measured: the loading grid (`lg-skel`, needs `VITE_MOCK_LATENCY=slow`) and, at 768 px, the foot (`lg768-win`) and
  * the error row (`lg768-err`).
  *
- * Not measured, and why: `lg-win` and `lg768-win`'s windowed note ("Đang hiện việc 101 đến 108 trên 200") belong to a
- * windowed-rows design that the product does not use (paged load-more keeps every loaded row; the foot is `lg-more`);
- * the 320 px frames (`lg320-*`) need the phone list to read a large board a page at a time, which it does not yet
- * (it shows a local window of the loaded rows, with no foot, error row or "Lên đầu").
+ * At 320 px (phone list): the foot (`lg320-win`), the error banner with its retry under the text (`lg320-err`), "Lên đầu"
+ * (`lg320-jump`) and the loading cards (`lg320-skel`). The artboard's frame is 320 px with a 1 px border, so its
+ * content is 318 px and the app's 320: widths compare after that 2 px, and the offsets from the edges are exact.
+ * The Kanban lane's foot and error are also measured at 768 and 320 px (`lg768-kan`, `lg320-kan`, `lg768-kan-err`,
+ * `lg320-kan-err`); BC-Large draws no Kanban frame at those widths, so they hold the 1440 px lane numbers.
+ *
+ * Not measured, and why: `lg-win`, `lg768-win`'s windowed note and `lg320-win`'s windowed cards ("Đang hiện việc 101
+ * đến 108 trên 200") belong to a windowed-rows design that the product does not use (paged load-more keeps every
+ * loaded row; the foot is `lg-more`).
  *
  * The Kanban lane and card sizes are NOT taken from `BC-Large` (a 256 px lane with 232 x 101.9 cards): the product's
  * Kanban follows `Kanban-Board/Final` (a 266 px lane, 250 x 90.8 cards), which owns them for every board; `BC-Large`
@@ -75,6 +80,31 @@ const MOCK = {
   // lg-skel: the title bars of the loading grid (36 px rows, 10 px bars) at 1440 px.
   skel: { row: 36, bar: 10, titles: [290.4, 384.8, 479.2, 319.4, 413.8] },
   jump: { w: 103.4, h: 44, r: 24, b: 20 },
+  // 320 px frames (phone): the artboard's frame is 320 px with a 1 px border, so its content is 318 px wide and the app's 320.
+  phone: {
+    inner: 318,
+    foot: {
+      h: 64,
+      fs: "12.5px",
+      button: { w: 153.7, h: 44, fs: "14px", fromCentre: -10.3 },
+    },
+    err: {
+      row: { h: 149.6 },
+      banner: { x: 12, w: 294, h: 129.6 },
+      retry: { x: 14, y: 75.6, w: 266, h: 44 },
+    },
+    jump: { w: 107.4, h: 44, r: 12, b: 12 },
+    // lg320-skel: three 84 px cards 10 px apart, 12 px from the edges and 8 px under the toolbar; bars from the card's content.
+    skel: {
+      card: { x: 12, y: 8, w: 294, h: 84, gap: 10 },
+      bars: [
+        { x: 13, y: 13, w: 160.8, h: 10 },
+        { x: 13, y: 31, w: 241.2, h: 12 },
+        { x: 13, y: 51, w: 64, h: 20 },
+        { x: 85, y: 51, w: 48, h: 20 },
+      ],
+    },
+  },
   lane: {
     // From the artboard's lane (232 px inside): the foot wraps its text over the button; the error wraps its text in
     // a 95.4 px column beside the retry, which keeps 14 px from the banner's right edge.
@@ -126,14 +156,17 @@ async function open(page: Page, url: string, dark: boolean, width = 1440) {
 
 const header = (page: Page) =>
   page.locator("[data-table-scroll] [role=row]").first();
-const showMore = (page: Page) => page.locator("[data-slot=table-show-more]");
+const showMore = (page: Page) =>
+  page.locator("[data-slot=table-show-more]:visible");
 
 async function openTable(page: Page, dark: boolean, query = "", width = 1440) {
   await open(page, `${BOARD}?view=table${query}`, dark, width);
   await expect(showMore(page).first()).toBeVisible({ timeout: 90_000 });
-  await expect(
-    page.locator("[data-table-scroll]").getByText("Board có 5.000 việc"),
-  ).toBeVisible();
+  // The phone list draws no board total (the 320 px frames show none).
+  if (width > 500)
+    await expect(
+      page.locator("[data-table-scroll]").getByText("Board có 5.000 việc"),
+    ).toBeVisible();
   await showMore(page).filter({ hasText: "trên 200" }).scrollIntoViewIfNeeded();
 }
 
@@ -315,6 +348,60 @@ for (const dark of [false, true]) {
       near(b.y, MOCK.tablet.foot.button.y, "button.y");
     });
 
+    test(`lg320-win: the foot of the group at 320 px (${mode})`, async ({
+      page,
+    }) => {
+      await openTable(page, dark, "", 320);
+      const foot = showMore(page).filter({ hasText: "trên 200" });
+      await foot.scrollIntoViewIfNeeded();
+      await expect(foot).toContainText(/Đã hiện \d+ trên 200/);
+      const f = await foot.boundingBox();
+      if (!f) throw new Error("no box");
+      near(f.width - (320 - MOCK.phone.inner), MOCK.phone.inner, "foot.w");
+      near(f.height, MOCK.phone.foot.h, "foot.h");
+      expect(await foot.evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+        MOCK.phone.foot.fs,
+      );
+      const button = foot.getByRole("button", { name: "Hiện thêm 50 việc" });
+      expect(await button.evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+        MOCK.phone.foot.button.fs,
+      );
+      const b = await rel(button, foot);
+      near(b.w, MOCK.phone.foot.button.w, "button.w");
+      near(b.h, MOCK.phone.foot.button.h, "button.h");
+      near(b.y, 10, "button.y");
+      near(
+        b.x - f.width / 2,
+        MOCK.phone.foot.button.fromCentre,
+        "button.fromCentre",
+      );
+    });
+
+    test(`lg320-jump: "Lên đầu" sits 12 px from the right and the bottom at 320 px (${mode})`, async ({
+      page,
+    }) => {
+      await openTable(page, dark, "", 320);
+      await showMore(page)
+        .filter({ hasText: "trên 200" })
+        .getByRole("button", { name: "Hiện thêm 50 việc" })
+        .click();
+      await page.locator("[data-table-scroll]").evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+      });
+      const jump = page.getByRole("button", { name: "Lên đầu" });
+      await expect(jump).toBeVisible();
+      const surface = page.locator("[data-slot=main-table-surface]");
+      const [j, s] = await Promise.all([
+        jump.boundingBox(),
+        surface.boundingBox(),
+      ]);
+      if (!j || !s) throw new Error("no box");
+      near(j.width, MOCK.phone.jump.w, "jump.w");
+      near(j.height, MOCK.phone.jump.h, "jump.h");
+      near(s.x + s.width - (j.x + j.width), MOCK.phone.jump.r, "jump.right");
+      near(s.y + s.height - (j.y + j.height), MOCK.phone.jump.b, "jump.bottom");
+    });
+
     test(`lg-jump: "Lên đầu" sits 24 px from the right and 20 px above the bottom (${mode})`, async ({
       page,
     }) => {
@@ -377,6 +464,56 @@ for (const dark of [false, true]) {
     });
   });
 
+  test.describe(`Large board loading cards at 320 px, ${mode}`, () => {
+    test.skip(
+      persona !== "owner" || !large || !slow,
+      "Needs VITE_MOCK_LATENCY=slow",
+    );
+
+    test(`lg320-skel: the cards of the list while the board loads (${mode})`, async ({
+      page,
+    }) => {
+      await open(page, `${BOARD}?view=table`, dark, 320);
+      const wrap = page.locator("[data-slot=main-table-loading-cards]");
+      await expect(wrap).toBeVisible();
+      // One synchronous read: the loading state is gone a moment later.
+      const boxes = await wrap.evaluate((el) => {
+        const r = (e: Element, o: Element) => {
+          const a = e.getBoundingClientRect();
+          const c = o.getBoundingClientRect();
+          return { x: a.x - c.x, y: a.y - c.y, w: a.width, h: a.height };
+        };
+        return {
+          width: el.getBoundingClientRect().width,
+          cards: [...el.children].map((card) => ({
+            box: r(card, el),
+            bars: [...card.querySelectorAll("[data-slot=skeleton]")].map((b) =>
+              r(b, card),
+            ),
+          })),
+        };
+      });
+      expect(boxes.cards).toHaveLength(3);
+      const k = MOCK.phone.skel;
+      // The artboard's content is 318 px wide, the app's 320.
+      const frame = boxes.width - MOCK.phone.inner;
+      boxes.cards.forEach((card, i) => {
+        near(card.box.x, k.card.x, `card${i}.x`);
+        near(card.box.y, k.card.y + i * (k.card.h + k.card.gap), `card${i}.y`);
+        near(card.box.w - frame, k.card.w, `card${i}.w`);
+        near(card.box.h, k.card.h, `card${i}.h`);
+        expect(card.bars).toHaveLength(4);
+        card.bars.forEach((b, j) => {
+          const want = k.bars[j]!;
+          near(b.x, want.x, `card${i}.bar${j}.x`);
+          near(b.y, want.y, `card${i}.bar${j}.y`);
+          near(b.w, want.w, `card${i}.bar${j}.w`);
+          near(b.h, want.h, `card${i}.bar${j}.h`);
+        });
+      });
+    });
+  });
+
   test.describe(`Large board Kanban lane at 1440 px, ${mode}`, () => {
     test.skip(persona !== "owner" || !large || failing, "large-board world");
     test.setTimeout(120_000);
@@ -402,6 +539,30 @@ for (const dark of [false, true]) {
       near(b.y, MOCK.lane.foot.button.y, "button.y");
       near(b.x + b.w / 2, f.width / 2, "button.centre");
     });
+
+    for (const width of [768, 320]) {
+      test(`lg${width}-kan: the lane foot keeps its height and button at ${width} px (${mode})`, async ({
+        page,
+      }) => {
+        await open(page, `${BOARD}?view=kanban`, dark, width);
+        const lane = page.locator("section[aria-label='Đang làm']");
+        const foot = lane.locator("[data-lane-foot]");
+        await expect(foot).toBeVisible({ timeout: 90_000 });
+        await foot.scrollIntoViewIfNeeded();
+        await expect(foot).toContainText(/Đã hiện \d+ trên 200/);
+        const f = await foot.boundingBox();
+        if (!f) throw new Error("no box");
+        near(f.height, MOCK.lane.foot.h, "foot.h");
+        const button = foot.getByRole("button", {
+          name: /^Hiện thêm \d+ việc$/,
+        });
+        const b = await rel(button, foot);
+        near(b.w, MOCK.lane.foot.button.w, "button.w");
+        near(b.h, MOCK.lane.foot.button.h, "button.h");
+        near(b.y, MOCK.lane.foot.button.y, "button.y");
+        near(b.x + b.w / 2, f.width / 2, "button.centre");
+      });
+    }
   });
 
   test.describe(`Large board load-more error at 1440 px, ${mode}`, () => {
@@ -416,7 +577,7 @@ for (const dark of [false, true]) {
         .filter({ hasText: "trên 200" })
         .getByRole("button", { name: "Hiện thêm 50 việc" })
         .click();
-      const row = page.locator("[data-slot=table-load-more-error]");
+      const row = page.locator("[data-slot=table-load-more-error]:visible");
       await expect(row).toBeVisible({ timeout: 30_000 });
       await expect(row).toContainText("Không tải thêm được");
       const head = header(page);
@@ -441,7 +602,7 @@ for (const dark of [false, true]) {
         .filter({ hasText: "trên 200" })
         .getByRole("button", { name: "Hiện thêm 50 việc" })
         .click();
-      const row = page.locator("[data-slot=table-load-more-error]");
+      const row = page.locator("[data-slot=table-load-more-error]:visible");
       await expect(row).toBeVisible({ timeout: 30_000 });
       const r = await row.boundingBox();
       if (!r) throw new Error("no box");
@@ -454,6 +615,35 @@ for (const dark of [false, true]) {
       const t = await rel(retry, banner);
       near(t.w, MOCK.err.retry.w, "retry.w");
       near(t.h, MOCK.err.retry.h, "retry.h");
+    });
+
+    test(`lg320-err: the failed page at 320 px keeps the rows and puts the retry under the text (${mode})`, async ({
+      page,
+    }) => {
+      await openTable(page, dark, "", 320);
+      await showMore(page)
+        .filter({ hasText: "trên 200" })
+        .getByRole("button", { name: "Hiện thêm 50 việc" })
+        .click();
+      const row = page.locator("[data-slot=table-load-more-error]:visible");
+      await expect(row).toBeVisible({ timeout: 30_000 });
+      await expect(row).toContainText("Không tải thêm được");
+      const r = await row.boundingBox();
+      if (!r) throw new Error("no box");
+      // The artboard's content is 318 px wide, the app's 320: widths compare after that 2 px.
+      const frame = r.width - MOCK.phone.inner;
+      near(r.height, MOCK.phone.err.row.h, "row.h");
+      const banner = row.getByRole("alert");
+      const b = await rel(banner, row);
+      near(b.x, MOCK.phone.err.banner.x, "banner.x");
+      near(b.w - frame, MOCK.phone.err.banner.w, "banner.w");
+      near(b.h, MOCK.phone.err.banner.h, "banner.h");
+      const retry = banner.getByRole("button", { name: "Thử lại" });
+      const t = await rel(retry, banner);
+      near(t.x, MOCK.phone.err.retry.x, "retry.x");
+      near(t.y, MOCK.phone.err.retry.y, "retry.y");
+      near(t.w - frame, MOCK.phone.err.retry.w, "retry.w");
+      near(t.h, MOCK.phone.err.retry.h, "retry.h");
     });
 
     test(`lg-kan-err: a failed lane page keeps the cards and shows the error with its retry (${mode})`, async ({
@@ -477,5 +667,40 @@ for (const dark of [false, true]) {
       near(t.h, MOCK.lane.err.retry.h, "retry.h");
       near(b.width - (t.x + t.w), MOCK.lane.err.retry.r, "retry.right");
     });
+
+    for (const width of [768, 320]) {
+      test(`lg${width}-kan-err: a failed lane page keeps the error and its retry at ${width} px (${mode})`, async ({
+        page,
+      }) => {
+        await open(page, `${BOARD}?view=kanban`, dark, width);
+        const lane = page.locator("section[aria-label='Đang làm']");
+        const foot = lane.locator("[data-lane-foot]");
+        await expect(foot).toBeVisible({ timeout: 90_000 });
+        const error = lane.locator("[data-lane-load-error]");
+        // Scrolling the foot into view may already ask for the next page (the lane reads on approach): press only if it did not.
+        await expect(async () => {
+          if (!(await error.isVisible()))
+            await foot
+              .getByRole("button", { name: /^Hiện thêm/ })
+              .click({ timeout: 1_000 })
+              .catch(() => undefined);
+          await expect(error).toBeVisible({ timeout: 2_000 });
+        }).toPass({ timeout: 30_000 });
+        const banner = error.getByRole("alert");
+        const b = await banner.boundingBox();
+        if (!b) throw new Error("no box");
+        // At 768 px the lane is wide enough for the text to sit beside the retry: the 64 px banner of the tablet table.
+        near(
+          b.height,
+          width === 768 ? MOCK.tablet.err.banner.h : MOCK.lane.err.h,
+          "banner.h",
+        );
+        const retry = banner.getByRole("button", { name: "Thử lại" });
+        const t = await rel(retry, banner);
+        near(t.w, MOCK.lane.err.retry.w, "retry.w");
+        near(t.h, MOCK.lane.err.retry.h, "retry.h");
+        near(b.width - (t.x + t.w), MOCK.lane.err.retry.r, "retry.right");
+      });
+    }
   });
 }
