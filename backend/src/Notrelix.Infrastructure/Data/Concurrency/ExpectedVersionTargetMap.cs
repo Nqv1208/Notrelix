@@ -122,6 +122,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspa
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceType;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibility;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace;
@@ -406,6 +407,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ChangeSpaceVisibilityCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ArchiveSpaceCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(UnarchiveSpaceCommand)] = new(SpaceKind, typeof(Space)),
+        // RestoreSpace addresses a deleted Space and stays version-less, as RestoreTeam does.
+        [typeof(DeleteSpaceCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(AddSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(RemoveSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ChangeSpaceMemberRoleCommand)] = new(SpaceKind, typeof(Space)),

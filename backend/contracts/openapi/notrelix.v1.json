@@ -10195,7 +10195,7 @@
           "Documents.Pages",
           "Documents.Pages"
         ],
-        "summary": "Rename a page",
+        "summary": "Rename a page or set its icon",
         "operationId": "Documents.Pages.UpdatePage",
         "parameters": [
           {
@@ -31951,6 +31951,50 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/spaces/deleted": {
+      "get": {
+        "tags": [
+          "Workspaces.Spaces",
+          "Workspaces.Spaces"
+        ],
+        "summary": "Get the deleted spaces that can still be restored (30 days), for a workspace Owner or Admin",
+        "operationId": "Workspaces.Spaces.GetDeletedSpaces",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}": {
       "get": {
         "tags": [
@@ -32063,7 +32107,7 @@
           "Workspaces.Spaces",
           "Workspaces.Spaces"
         ],
-        "summary": "Permanently delete a space",
+        "summary": "Delete a space (restorable for 30 days)",
         "operationId": "Workspaces.Spaces.DeleteSpace",
         "parameters": [
           {
@@ -32082,6 +32126,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "expectedVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -35487,6 +35540,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "icon": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -46098,6 +46155,33 @@
           "weekStart": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentSpaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "restorableUntil": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false

@@ -263,6 +263,32 @@ describe("parseMarkdown", () => {
     ).toBe(true);
   });
 
+  it("removes script and style elements and event-handler tags, but keeps them inside a code fence", () => {
+    const page = parseMarkdown(
+      [
+        "# T",
+        "",
+        "before <script>alert(1)</script> after",
+        "",
+        '<img src=x onerror="steal()"> kept',
+        "",
+        "<style>body{display:none}</style>",
+        "",
+        "```html",
+        "<script>ok()</script>",
+        "```",
+      ].join("\n"),
+    );
+    const text = page.blocks
+      .map((b) => b.content.runs.map((r) => r.text).join(""))
+      .join("|");
+    expect(text).not.toContain("alert(1)");
+    expect(text).not.toContain("onerror");
+    expect(text).not.toContain("display:none");
+    expect(text).toContain("before  after");
+    expect(text).toContain("<script>ok()</script>");
+  });
+
   it("round trips what the export writes", () => {
     const source = [
       block("heading_1", "Goals"),

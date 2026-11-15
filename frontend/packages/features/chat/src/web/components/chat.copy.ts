@@ -470,6 +470,9 @@ export const en = {
     empty: "No replies yet.",
     loadMore: "Load more replies",
     composerLabel: "Reply in thread",
+    archivedBanner:
+      "This thread was archived after a period with no replies. Reply to reopen it.",
+    reopenLabel: "Reply to reopen the thread",
     composerPlaceholder: "Reply in thread…",
     alsoSend: "Also send to channel",
     send: "Send reply",
@@ -488,6 +491,9 @@ export const en = {
     followedEmpty: "You follow no threads yet. Follow a thread to see it here.",
     followedError: "Your threads could not load.",
     openThread: "Open thread",
+    archived: "archived after 14 days without a reply",
+    archivedChip: "Archived",
+    followedCount: "{{count}} threads",
     rootOf: "Thread started by {{name}}",
   },
   pins: {
@@ -1255,6 +1261,9 @@ export const vi: ChatCopy = {
     empty: "Chưa có phản hồi nào.",
     loadMore: "Tải thêm phản hồi",
     composerLabel: "Trả lời trong luồng",
+    archivedBanner:
+      "Luồng đã được lưu trữ do không có phản hồi. Trả lời để mở lại.",
+    reopenLabel: "Trả lời để mở lại luồng",
     composerPlaceholder: "Trả lời trong luồng…",
     alsoSend: "Cũng gửi vào kênh",
     send: "Gửi phản hồi",
@@ -1274,6 +1283,9 @@ export const vi: ChatCopy = {
       "Bạn chưa theo dõi luồng nào. Theo dõi một luồng để xem ở đây.",
     followedError: "Không tải được các luồng của bạn.",
     openThread: "Mở luồng",
+    archived: "đã lưu trữ do không có phản hồi",
+    archivedChip: "Lưu trữ",
+    followedCount: "{{count}} luồng",
     rootOf: "Luồng do {{name}} bắt đầu",
   },
   pins: {

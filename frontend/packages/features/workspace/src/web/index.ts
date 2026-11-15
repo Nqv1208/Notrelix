@@ -198,10 +198,17 @@ export {
   workspaceSpacesCopy,
   type WorkspaceSpacesCopy,
 } from "./spaces/workspace-spaces.copy";
+export {
+  SpaceTrashSurface,
+  type DeletedSpaceFailure,
+  type DeletedSpaceRow,
+  type SpaceTrashSurfaceProps,
+} from "./spaces/space-trash-surface";
 export { useWorkspaceSpacesCopy } from "./spaces/use-workspace-spaces-copy";
 export {
   createUseSpaceMembers,
   createUseSpaceTree,
+  createUseDeletedSpaces,
 } from "./query/hooks/use-spaces";
 export {
   createUseSpaceMutations,

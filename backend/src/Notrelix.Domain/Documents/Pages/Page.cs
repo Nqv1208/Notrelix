@@ -72,6 +72,24 @@ public class Page : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new PageRenamedDomainEvent(AccountId, WorkspaceId, Id, oldTitle, Title, updatedBy, updatedAt));
     }
 
+    /// <summary>Sets the icon (one emoji or token, 32 characters at most); blank restores the default. The same icon is a no-op.</summary>
+    public void SetIcon(string? icon, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (Status == PageStatus.Archived)
+            throw new BusinessRuleException(DocumentRuleCodes.Documents_Page_CannotRenameArchived, "Cannot change the icon of an archived page.");
+        var next = string.IsNullOrWhiteSpace(icon) ? DefaultIcon : icon.Trim();
+        Guard.MaxLength(next, 32);
+
+        if (Icon == next) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Icon = next;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
     public void Move(Guid? newParentId, Guid updatedBy, DateTimeOffset updatedAt, Func<Guid, Guid?> getParentId) =>
         Move(newParentId, SpaceId, updatedBy, updatedAt, getParentId);
 

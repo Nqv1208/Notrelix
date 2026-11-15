@@ -1691,6 +1691,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createSpacesService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.DeleteSpace",
+    operationId: "Workspaces.Spaces.DeleteSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.RestoreSpace",
+    operationId: "Workspaces.Spaces.RestoreSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.GetDeletedSpaces",
+    operationId: "Workspaces.Spaces.GetDeletedSpaces",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
     capability: "Workspaces.Spaces.MoveSpace",
     operationId: "Workspaces.Spaces.MoveSpace",
     mutation: true,

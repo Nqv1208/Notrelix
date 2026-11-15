@@ -717,8 +717,14 @@ export function ChatWorkspace({
     pinner.mutate(
       { messageId: message.id, pinned },
       {
-        onError: () =>
-          setNotice(pinned ? copy.pins.failed : copy.pins.unpinFailed),
+        onError: (error) =>
+          setNotice(
+            !pinned
+              ? copy.pins.unpinFailed
+              : chatFailureOf(error).code === "limit-reached"
+                ? copy.pins.limit
+                : copy.pins.failed,
+          ),
       },
     );
   }
@@ -1384,7 +1390,15 @@ export function ChatWorkspace({
               </SheetContent>
             </Sheet>
           ) : (
-            <aside className="flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72">
+            <aside
+              className={cn(
+                "flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72",
+                // Below 1280 the open side panel needs the room: the channel column would shrink to a sliver.
+                channelId && (channel || conversation) && panel !== null
+                  ? "max-xl:hidden"
+                  : null,
+              )}
+            >
               {sidebar}
             </aside>
           )}
@@ -1991,6 +2005,8 @@ export function ChatWorkspace({
                   copy={copy}
                   authorName={authorName}
                   channelName={channelNameOf}
+                  locale={locale}
+                  timeZone={timeZone}
                   onOpenThread={(rootId) =>
                     setPanel({ kind: "thread", rootId })
                   }

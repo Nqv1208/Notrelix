@@ -27,6 +27,7 @@ import {
   reportsRoute,
   libraryRoute,
   archivedBoardsRoute,
+  deletedSpacesRoute,
   spaceRoute,
 } from "./routes/workspace.routes";
 import {
@@ -91,6 +92,7 @@ export const routeTree = rootRoute.addChildren([
     reportsRoute,
     libraryRoute,
     archivedBoardsRoute,
+    deletedSpacesRoute,
     spaceRoute,
     billingRoute,
     integrationsRoute,
