@@ -1,7 +1,5 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Documents.Abstractions;
-using Notrelix.Application.Features.Documents.DTOs;
-using Notrelix.Application.Features.Documents.Templates.Common;
 using Notrelix.Application.Features.Documents.Templates.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Documents.Templates;
