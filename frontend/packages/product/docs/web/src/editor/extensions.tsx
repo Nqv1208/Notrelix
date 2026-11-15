@@ -590,7 +590,9 @@ export const TodoItem = Node.create<{ context: ContextHolder }>({
           convert.removeAttribute("title");
         } else {
           convert.setAttribute("aria-disabled", "true");
-          convert.title = copy.blocks.convertUnavailable;
+          convert.title = callbacks?.offline
+            ? copy.blocks.convertOffline
+            : copy.blocks.convertUnavailable;
         }
       };
       let latest = node;

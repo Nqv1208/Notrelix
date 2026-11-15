@@ -11,8 +11,7 @@ const endpoints: NotificationsEndpoints = {
     list: "/notifications",
     read: (id) => `/notifications/${id}/read`,
     readAll: (workspaceId) => `/workspaces/${workspaceId}/inbox/read-all`,
-    preferences: (workspaceId) =>
-      `/workspaces/${workspaceId}/notification-preferences`,
+    preferences: "/profile/notification-preferences",
   },
 };
 

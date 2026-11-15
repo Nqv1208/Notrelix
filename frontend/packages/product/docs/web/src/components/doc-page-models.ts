@@ -192,7 +192,7 @@ export interface DocHeaderView {
   readonly presence: readonly DocPerson[];
 }
 
-export type DocSaveState = "saved" | "saving" | "error";
+export type DocSaveState = "saved" | "saving" | "error" | "offline";
 
 export interface DocTocEntry {
   readonly id: string;
@@ -454,6 +454,10 @@ export interface DocPageCallbacks {
   readonly onTodoToggle?: (blockId: string, checked: boolean) => void;
   /** Opens the convert-to-task dialog for a checklist line. */
   readonly onTodoConvert?: (blockId: string) => void;
+  /** Set while a later window of blocks failed to load; reads it again, keeping what shows. */
+  readonly onRetryBlocks?: () => void;
+  /** No connection: structural actions are off and say why. */
+  readonly offline?: boolean;
   readonly onConvertBoard?: (boardId: string) => void;
   readonly onConvertConfirm?: (
     blockId: string,

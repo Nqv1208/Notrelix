@@ -24,6 +24,11 @@ function setup() {
 }
 
 const BLOCKS = `/pages/${INVOICE_DOC_ID}/blocks`;
+
+/** The first window of the block read (a cursor page of at most 1 000). */
+async function listBlocks(api: ReturnType<typeof setup>["api"]) {
+  return (await api.get<{ items: BlockDto[] }>(BLOCKS)).items;
+}
 const text = (value: string) => ({
   v: 1,
   runs: [{ text: value, marks: [] }],
@@ -32,13 +37,34 @@ const text = (value: string) => ({
 describe("Documents blocks keep the producer's final shapes in the mock world", () => {
   it("lists blocks with rich-text content, properties objects, a version and a string position", async () => {
     const { api } = setup();
-    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    const blocks = await listBlocks(api);
     const todo = blocks.find((block) => block.type === "ToDo")!;
     expect(todo.content.v).toBe(1);
     expect(todo.content.runs?.length).toBeGreaterThan(0);
     expect(typeof todo.properties).toBe("object");
     expect(todo.version).toBe(1);
     expect(typeof todo.position).toBe("string");
+  });
+
+  it("pages the block read by 1 000 with an opaque cursor", async () => {
+    const { api } = setup();
+    for (let i = 0; i < 1100; i += 1)
+      await api.post(BLOCKS, { type: "Text", content: text(`line ${i}`) });
+    const first = await api.get<{
+      items: BlockDto[];
+      nextCursor: string | null;
+    }>(BLOCKS);
+    expect(first.items).toHaveLength(1000);
+    expect(first.nextCursor).not.toBeNull();
+    const second = await api.get<{
+      items: BlockDto[];
+      nextCursor: string | null;
+    }>(`${BLOCKS}?cursor=${first.nextCursor}`);
+    expect(second.nextCursor).toBeNull();
+    expect(second.items.length).toBeGreaterThan(0);
+    expect(first.items.length + second.items.length).toBeGreaterThanOrEqual(
+      1100,
+    );
   });
 
   it("creates a block with a client id, refuses a taken id, and refuses an unknown property", async () => {
@@ -65,7 +91,7 @@ describe("Documents blocks keep the producer's final shapes in the mock world", 
 
   it("edits against the version read and answers 412 with the stored block otherwise", async () => {
     const { api } = setup();
-    const [first] = await api.get<BlockDto[]>(BLOCKS);
+    const [first] = await listBlocks(api);
     const saved = await api.patch<BlockDto>(`${BLOCKS}/${first!.id}`, {
       expectedVersion: first!.version,
       content: text("Changed"),
@@ -88,7 +114,7 @@ describe("Documents blocks keep the producer's final shapes in the mock world", 
 
   it("applies a batch all or nothing", async () => {
     const { api } = setup();
-    const before = await api.get<BlockDto[]>(BLOCKS);
+    const before = await listBlocks(api);
     const [first] = before;
     const fresh = "22222222-2222-4222-8222-222222222222";
     await expect(
@@ -99,7 +125,7 @@ describe("Documents blocks keep the producer's final shapes in the mock world", 
         ],
       }),
     ).rejects.toMatchObject({ status: 412 });
-    expect(await api.get<BlockDto[]>(BLOCKS)).toEqual(before);
+    expect(await listBlocks(api)).toEqual(before);
 
     const saved = await api.post<BlockDto[]>(`${BLOCKS}/batch`, {
       blocks: [
@@ -117,15 +143,15 @@ describe("Documents blocks keep the producer's final shapes in the mock world", 
       ],
     });
     expect(saved.map((block) => block.id)).toEqual([fresh, first!.id]);
-    const after = await api.get<BlockDto[]>(BLOCKS);
+    const after = await listBlocks(api);
     expect(after[1]!.id).toBe(fresh);
 
     await api.post(`${BLOCKS}/batch`, {
       blocks: [{ id: fresh, op: "delete", expectedVersion: 1 }],
     });
-    expect(
-      (await api.get<BlockDto[]>(BLOCKS)).some((block) => block.id === fresh),
-    ).toBe(false);
+    expect((await listBlocks(api)).some((block) => block.id === fresh)).toBe(
+      false,
+    );
   });
 });
 
@@ -149,7 +175,7 @@ describe("Documents image and file blocks in the mock world", () => {
     });
     expect(image.type).toBe("Image");
     expect(file.type).toBe("File");
-    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    const blocks = await listBlocks(api);
     expect(blocks.find((block) => block.id === image.id)?.properties).toEqual({
       attachmentId: "a1",
       width: 320,
@@ -177,7 +203,7 @@ describe("Page comments anchored to text in the mock world", () => {
 
   it("stores an anchor on a block of the page and lists it back", async () => {
     const { api } = setup();
-    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    const blocks = await listBlocks(api);
     const paragraph = blocks.find((block) => block.type === "Text")!;
     const anchor = {
       blockId: paragraph.id,
@@ -200,7 +226,7 @@ describe("Page comments anchored to text in the mock world", () => {
 
   it("refuses an anchor on a block that is not on the page, a range that disagrees with its quote, and a reply", async () => {
     const { api } = setup();
-    const blocks = await api.get<BlockDto[]>(BLOCKS);
+    const blocks = await listBlocks(api);
     const blockId = blocks[0]!.id;
     const attempt = (anchor: object, parentCommentId?: string) =>
       api.post(COMMENTS, { contentMd: "x", anchor, parentCommentId });

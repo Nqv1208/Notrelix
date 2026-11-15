@@ -215,7 +215,7 @@ describe("what an invited person sees", () => {
     const preferences = await api.get<{
       version: number;
       rows: { type: string; email: boolean }[];
-    }>(`/workspaces/${id}/notification-preferences`);
+    }>("/profile/notification-preferences");
     expect(preferences.rows.find((row) => row.type === "digest")).toBeDefined();
   });
 });

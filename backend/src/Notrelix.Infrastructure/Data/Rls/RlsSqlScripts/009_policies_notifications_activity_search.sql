@@ -32,6 +32,8 @@ BEGIN
 END $$;
 
 SELECT ops.apply_user_owned_policies('notifications', 'notification_preferences', 'user_id', false, true);
+-- A person's preference matrix is one per account (every workspace): only its owner reads or writes it, no
+-- workspace role (admins included) reaches it; background readers run on the worker login.
 SELECT ops.apply_user_owned_policies('notifications', 'notification_preference_sets', 'user_id', false, true);
 SELECT ops.apply_user_owned_policies('notifications', 'notification_counters', 'user_id', false, true);
 -- A thread mute is the muting member's own; producers read it on the worker login (p_worker_all).

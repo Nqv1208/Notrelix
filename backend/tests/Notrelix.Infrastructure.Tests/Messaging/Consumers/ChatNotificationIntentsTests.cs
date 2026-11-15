@@ -105,7 +105,7 @@ public sealed class ChatNotificationIntentsTests
     {
         var context = CreateContext();
         context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-            Account, Workspace, Ana, [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, false)], Now)!);
+            Ana, [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, false)], Now)!);
         FixQuietHours(context);
         await context.SaveChangesAsync();
 

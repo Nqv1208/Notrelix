@@ -11,15 +11,13 @@ namespace Notrelix.Domain.Tests.Collaboration.Preferences;
 /// </summary>
 public class NotificationPreferenceSetTests
 {
-    private static readonly Guid AccountId = Guid.CreateVersion7();
-    private static readonly Guid WorkspaceId = Guid.CreateVersion7();
     private static readonly Guid UserId = Guid.CreateVersion7();
     private static readonly DateTimeOffset Now = new(2026, 10, 24, 9, 0, 0, TimeSpan.Zero);
 
     private static NotificationPreferenceChange Change(string type, string channel, bool enabled) => new(type, channel, enabled);
 
     private static NotificationPreferenceSet NewSet(params NotificationPreferenceChange[] changes) =>
-        NotificationPreferenceSet.Create(AccountId, WorkspaceId, UserId, changes, Now)!;
+        NotificationPreferenceSet.Create(UserId, changes, Now)!;
 
     [Theory]
     [InlineData("assigned", true, true)]
@@ -63,7 +61,7 @@ public class NotificationPreferenceSetTests
     [Fact]
     public void Create_WithOnlyDefaultValues_CreatesNothing()
     {
-        var set = NotificationPreferenceSet.Create(AccountId, WorkspaceId, UserId,
+        var set = NotificationPreferenceSet.Create(UserId,
             [Change("mention", "in_app", true), Change("digest", "email", false)], Now);
 
         set.Should().BeNull("every requested value already equals its default");
@@ -75,8 +73,6 @@ public class NotificationPreferenceSetTests
         var set = NewSet(Change("mention", "in_app", false), Change("digest", "email", true), Change("assigned", "email", true));
 
         set.Version.Should().Be(1);
-        set.AccountId.Should().Be(AccountId);
-        set.WorkspaceId.Should().Be(WorkspaceId);
         set.UserId.Should().Be(UserId);
         set.CreatedAt.Should().Be(Now);
         set.Entries.Should().HaveCount(2, "assigned/email already holds, so no entry is kept for it");
@@ -143,8 +139,8 @@ public class NotificationPreferenceSetTests
     [Fact]
     public void Create_AnUnknownTypeOrChannel_IsRejected()
     {
-        var type = () => NotificationPreferenceSet.Create(AccountId, WorkspaceId, UserId, [Change("Mention", "in_app", false)], Now);
-        var channel = () => NotificationPreferenceSet.Create(AccountId, WorkspaceId, UserId, [Change("mention", "push", false)], Now);
+        var type = () => NotificationPreferenceSet.Create(UserId, [Change("Mention", "in_app", false)], Now);
+        var channel = () => NotificationPreferenceSet.Create(UserId, [Change("mention", "push", false)], Now);
 
         type.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(CollaborationRuleCodes.Collaboration_NotificationPreference_UnknownType);
         channel.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(CollaborationRuleCodes.Collaboration_NotificationPreference_UnknownChannel);
@@ -176,12 +172,10 @@ public class NotificationPreferenceSetTests
     }
 
     [Fact]
-    public void Create_RejectsEmptyScope()
+    public void Create_RejectsEmptyPerson()
     {
         var change = new[] { Change("mention", "in_app", false) };
 
-        ((Action)(() => NotificationPreferenceSet.Create(Guid.Empty, WorkspaceId, UserId, change, Now))).Should().Throw<Exception>();
-        ((Action)(() => NotificationPreferenceSet.Create(AccountId, Guid.Empty, UserId, change, Now))).Should().Throw<Exception>();
-        ((Action)(() => NotificationPreferenceSet.Create(AccountId, WorkspaceId, Guid.Empty, change, Now))).Should().Throw<Exception>();
+        ((Action)(() => NotificationPreferenceSet.Create(Guid.Empty, change, Now))).Should().Throw<Exception>();
     }
 }
