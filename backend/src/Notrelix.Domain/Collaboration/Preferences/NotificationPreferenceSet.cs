@@ -1,19 +1,17 @@
 namespace Notrelix.Domain.Collaboration.Preferences;
 
 /// <summary>
-/// A person's notification preference matrix in one Workspace: which notification types reach them on which
-/// channels (accepted 2026-10-23, owned by Collaboration). One set per person and Workspace, only for that
-/// person. The set stores explicit choices only; a cell without one has its default
+/// A person's notification preference matrix: which notification types reach them on which channels
+/// (accepted 2026-10-23, owned by Collaboration). One set per person, for their account, applied in every
+/// Workspace they belong to (owner decision 2026-11-15), only for that person. The set stores explicit choices only; a cell without one has its default
 /// (<see cref="NotificationPreferenceDefaults"/>), so no row exists until the person changes something and a
 /// later default change reaches everyone who never chose. Delivery truth stays with the notification itself:
 /// a preference decides whether a channel is attempted, never whether a fact happened.
 /// </summary>
-public sealed class NotificationPreferenceSet : AggregateRoot, IWorkspaceScoped
+public sealed class NotificationPreferenceSet : AggregateRoot
 {
     private readonly List<NotificationPreferenceEntry> _entries = [];
 
-    public Guid AccountId { get; private set; }
-    public Guid WorkspaceId { get; private set; }
     public Guid UserId { get; private set; }
 
     public IReadOnlyCollection<NotificationPreferenceEntry> Entries => _entries;
@@ -25,13 +23,11 @@ public sealed class NotificationPreferenceSet : AggregateRoot, IWorkspaceScoped
     /// requested value already equals its default. Invalid input changes nothing.
     /// </summary>
     public static NotificationPreferenceSet? Create(
-        Guid accountId, Guid workspaceId, Guid userId, IReadOnlyCollection<NotificationPreferenceChange> changes, DateTimeOffset now)
+        Guid userId, IReadOnlyCollection<NotificationPreferenceChange> changes, DateTimeOffset now)
     {
-        Guard.NotEmpty(accountId);
-        Guard.NotEmpty(workspaceId);
         Guard.NotEmpty(userId);
 
-        var set = new NotificationPreferenceSet { AccountId = accountId, WorkspaceId = workspaceId, UserId = userId };
+        var set = new NotificationPreferenceSet { UserId = userId };
         var effective = set.Plan(changes);
         if (effective.Count == 0)
             return null;

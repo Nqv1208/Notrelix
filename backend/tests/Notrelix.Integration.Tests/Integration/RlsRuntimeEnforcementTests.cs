@@ -374,8 +374,9 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// The notification preference matrix is personal state: under the application role a person sees only
-    /// their own set and explicit choices, never another person's in the same workspace.
+    /// The notification preference matrix is personal state, one per account: under the application role a person
+    /// sees, changes and deletes only their own set and explicit choices. The policy knows no workspace role, so a
+    /// workspace admin is another person like any other.
     /// </summary>
     [Fact]
     public async Task NotificationPreferences_AreVisibleOnlyToTheirOwner()
@@ -388,7 +389,7 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
             foreach (var user in new[] { UserId, userB })
             {
                 context.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-                    AccountA, WsA1, user,
+                    user,
                     [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, false)],
                     FixedTime)!);
             }
@@ -407,6 +408,18 @@ public sealed class RlsRuntimeEnforcementTests : IAsyncLifetime
         setsSeenByA.Should().BeEquivalentTo([UserId.ToString()]);
         entriesSeenByB.Should().BeEquivalentTo([userB.ToString()]);
         setsSeenByStranger.Should().BeEmpty("a person never sees another person's preferences");
+
+        var updatedByOther = await QueryScalarsAsAppRoleAsync(
+            $"UPDATE notifications.notification_preferences SET is_enabled = true WHERE user_id = '{UserId}'::uuid RETURNING user_id::text",
+            userId: userB);
+        var deletedByOther = await QueryScalarsAsAppRoleAsync(
+            $"DELETE FROM notifications.notification_preference_sets WHERE user_id = '{UserId}'::uuid RETURNING user_id::text",
+            userId: userB);
+        updatedByOther.Should().BeEmpty("another person cannot change a person's choices");
+        deletedByOther.Should().BeEmpty("another person cannot delete a person's matrix");
+        (await QueryScalarsAsAppRoleAsync(
+            "SELECT user_id::text FROM notifications.notification_preference_sets", userId: UserId))
+            .Should().BeEquivalentTo([UserId.ToString()]);
     }
 
     /// <summary>

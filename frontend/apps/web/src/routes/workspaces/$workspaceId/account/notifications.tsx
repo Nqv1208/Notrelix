@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from "react";
-import { useParams } from "@tanstack/react-router";
 import {
   AccountNotificationsSurface,
   createUseProfile,
@@ -12,15 +11,12 @@ import { createUseNotificationPreferences } from "@notrelix/features-notificatio
 import { useAppRuntime } from "@notrelix/runtime-web";
 
 /**
- * The member's notification choices in the workspace of the route
- * (`Collaboration.Preferences.*`: workspace-scoped, saved with the version
- * they were read at). Mobile and quiet hours have no producer and are not
+ * The person's notification choices (`Collaboration.Preferences.*`: one matrix
+ * for the account, applied in every workspace, saved with the version they
+ * were read at). Mobile and quiet hours have no producer and are not
  * offered.
  */
 export function AccountNotificationsPage() {
-  const { workspaceId = "" } = useParams({ strict: false }) as {
-    workspaceId?: string;
-  };
   const { api: runtimeClient } = useAppRuntime();
   const copy = useAccountNotificationsCopy();
   const [save, setSave] = useState<AccountSaveStatus>({ state: "idle" });
@@ -42,7 +38,7 @@ export function AccountNotificationsPage() {
     [runtimeClient],
   );
   const { profile } = useProfile();
-  const preferences = useNotificationPreferences(workspaceId);
+  const preferences = useNotificationPreferences();
 
   const state = useMemo<AccountNotificationsState>(
     () =>

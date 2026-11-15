@@ -282,7 +282,7 @@ describe("security", () => {
 });
 
 describe("notification preferences", () => {
-  const url = "/workspaces/mock-workspace-primary/notification-preferences";
+  const url = "/profile/notification-preferences";
 
   it("saves the cells that changed with the version they were read at and keeps the version on a no-op", async () => {
     const { api } = client();
@@ -330,20 +330,18 @@ describe("notification preferences", () => {
     ).rejects.toBeDefined();
   });
 
-  it("is per workspace: a save in one does not touch another", async () => {
-    const { api, store } = client();
-    const other = store
-      .getWorkspaces()
-      .find((workspace) => workspace.id !== "mock-workspace-primary");
-    if (!other) return;
+  it("is one matrix for the account: a save is read back whichever workspace is open", async () => {
+    const { api } = client();
     await api.patch(url, {
       expectedVersion: 0,
       rows: [{ type: "digest", email: true }],
     });
-    const untouched = (await api.get(
-      `/workspaces/${other.id}/notification-preferences`,
-    )) as { version: number };
-    expect(untouched.version).toBe(0);
+    const again = (await api.get(url)) as {
+      version: number;
+      rows: { type: string; email: boolean }[];
+    };
+    expect(again.version).toBe(1);
+    expect(again.rows.find((row) => row.type === "digest")?.email).toBe(true);
   });
 });
 

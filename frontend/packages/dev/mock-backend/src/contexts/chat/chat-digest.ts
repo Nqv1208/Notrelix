@@ -97,7 +97,7 @@ export function runDigest(
     if (state.digestSent.has(sentKey)) continue;
     const member = members.find((row) => row.userId === userId);
     if (!member || member.role === "guest") continue;
-    const set = store.accountPages.notificationsOf(userId, workspaceId);
+    const set = store.accountPages.notificationsOf(userId);
     if (!set.rows.digest.email) continue;
 
     const lines: (ChatDigestMail["lines"][number] & { at: string })[] = [];
