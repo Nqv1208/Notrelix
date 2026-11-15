@@ -56,7 +56,7 @@ public class ChatRetentionApplierTests
         _db.Setup(d => d.ChatRetentionPolicies).Returns(() => TestDbSet.Create(_policies).Object);
     }
 
-    private ChatRetentionApplier Applier() => new(_db.Object, _files, _audit, _clock.Object);
+    private ChatRetentionApplier Applier() => new(_db.Object, _files, _audit, new InMemoryChatReadStateStore(_db.Object), _clock.Object);
 
     private RetentionPolicy Rule(int days, RetentionMode mode, Guid? workspace = null)
     {
@@ -394,7 +394,7 @@ public class ChatRetentionApplierTests
     [Theory]
     [InlineData(RetentionMode.Tombstone)]
     [InlineData(RetentionMode.Purge)]
-    public async Task UnreadCountsStayRight_ExpiredMessagesStopCounting_AndTheBoundaryNeverMovesBackwards(RetentionMode mode)
+    public async Task TheSequenceDifference_StaysTheSameWhenMessagesExpire_AndTheBoundaryNeverMovesBackwards(RetentionMode mode)
     {
         var space = Channel();
         Text(space, _bob, ageDays: 100);
@@ -408,7 +408,7 @@ public class ChatRetentionApplierTests
         await Drain(Target(90, mode), space.Id);
 
         var after = await UnreadSummaryBuilder.BuildAsync(_db.Object, _workspaceId, _alice, Now, CancellationToken.None);
-        after.Spaces.Single().UnreadCount.Should().Be(2, "only the two recent messages are still there to read");
+        after.Spaces.Single().UnreadCount.Should().Be(4, "the unread number is a sequence difference, so it still counts the purged messages, as the gap shows");
         after.Spaces.Single().ReadSequence.Should().Be(0);
         after.Spaces.Single().LastSequence.Should().Be(space.LastSequence, "the sequence counter is untouched, so the next message takes the next number");
     }

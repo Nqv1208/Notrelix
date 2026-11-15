@@ -99,7 +99,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         await using var context = _db.CreateOwnerContext(SystemTenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
         var handler = new SendMessageCommandHandler(
-            context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
+            context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>(), new Notrelix.Infrastructure.Data.Chat.ChatReadStateStore(context));
 
         var result = await handler.Handle(
             new SendMessageCommand(_workspaceId, _spaceId, content, clientMessageId, null, mentions), CancellationToken.None);
@@ -164,6 +164,98 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TheStoredCount_FollowsASend_ABroadcast_AnEdit_AReadAndADelete_AndAlwaysEqualsTheRecount()
+    {
+        var first = await SendAsync("hi @Bob", "m-1", Person(3, 4, _bob));
+        await SendAsync("hey @channel", "m-2", new MentionInput(MentionKindWire.BroadcastChannelKind, 4, 8, null, null));
+        (await StoredCountsAsync()).Should().Equal(new Dictionary<Guid, int> { [_bob] = 2, [_carol] = 1, [_author] = 0 });
+        await AssertStoredEqualsRecountAsync();
+
+        // An edit that drops the mention of Bob takes one off him and nothing off Carol.
+        await EditAsync(first.Data!.Message, "hi there");
+        (await StoredCountsAsync()).Should().Equal(new Dictionary<Guid, int> { [_bob] = 1, [_carol] = 1, [_author] = 0 });
+        await AssertStoredEqualsRecountAsync();
+
+        // An edit that adds Carol puts one on her; Bob's broadcast stays.
+        await EditAsync(first.Data.Message, "hi @Carol", Person(3, 6, _carol));
+        (await StoredCountsAsync()).Should().Equal(new Dictionary<Guid, int> { [_bob] = 1, [_carol] = 2, [_author] = 0 });
+        await AssertStoredEqualsRecountAsync();
+
+        // A read up to sequence 1 lowers the count to the mentions after it: the broadcast (sequence 2) stays.
+        await ReadAsync(_carol, 1);
+        (await StoredCountsAsync())[_carol].Should().Be(1);
+        await AssertStoredEqualsRecountAsync();
+
+        await ReadAsync(_carol, 2);
+        (await StoredCountsAsync())[_carol].Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AnAuthorWhoWasCaughtUp_DoesNotSeeTheirOwnMessageAsUnread_AndOneWhoFellBehindDoes()
+    {
+        await SendAsync("one", "m-1");
+        (await BoundaryOfAsync(_author)).Should().Be(1, "the author had read everything before their message");
+
+        // Bob writes while the author is behind: the author's boundary stays.
+        await SendAsAsync(_bob, "from bob", "b-1");
+        await SendAsync("two", "m-2");
+        (await BoundaryOfAsync(_author)).Should().Be(1, "the author never read Bob's message, so their own later message does not move the boundary");
+    }
+
+    private async Task<Dictionary<Guid, int>> StoredCountsAsync()
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        return await context.ChatMemberships.AsNoTracking().Where(m => m.SpaceId == _spaceId).ToDictionaryAsync(m => m.UserId, m => m.MentionCount);
+    }
+
+    private async Task AssertStoredEqualsRecountAsync()
+    {
+        var stored = await StoredCountsAsync();
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        var recount = await MentionCounts.ForSpaceAsync(context, _spaceId, stored.Keys.ToList(), CancellationToken.None);
+        foreach (var (user, count) in stored)
+            count.Should().Be(recount.GetValueOrDefault(user), "the stored count equals the count over the stored mentions");
+    }
+
+    private async Task<long> BoundaryOfAsync(Guid userId)
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        return await context.ChatMemberships.AsNoTracking().Where(m => m.SpaceId == _spaceId && m.UserId == userId).Select(m => m.ReadSequence).SingleAsync();
+    }
+
+    private async Task ReadAsync(Guid userId, long sequence)
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        (await new ChatReadStateStore(context).AdvanceAsync(_workspaceId, _spaceId, userId, sequence, CancellationToken.None)).Should().BeTrue();
+    }
+
+    private async Task SendAsAsync(Guid author, string content, string clientMessageId)
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await new SendMessageCommandHandler(
+                context, RequestAs(author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true),
+                new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>(), new ChatReadStateStore(context))
+            .Handle(new SendMessageCommand(_workspaceId, _spaceId, content, clientMessageId, null), CancellationToken.None);
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+    }
+
+    private async Task EditAsync(MessageDto message, string content, params MentionInput[] mentions)
+    {
+        await using var context = _db.CreateOwnerContext(SystemTenant());
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var current = await context.ChatMessages.AsNoTracking().Where(m => m.Id == message.Id).Select(m => m.Version).SingleAsync();
+        var result = await new Notrelix.Application.Features.Chat.Messages.Commands.EditMessage.EditMessageCommandHandler(
+                context, RequestAs(_author).Object, Members().Object, new FixedClock(Now.AddMinutes(1)), Broadcasters(true),
+                new InMemoryChatMessageAttachments(), new ChatReadStateStore(context))
+            .Handle(new Notrelix.Application.Features.Chat.Messages.Commands.EditMessage.EditMessageCommand(_workspaceId, message.Id, content, current, mentions), CancellationToken.None);
+        result.Succeeded.Should().BeTrue();
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+    }
+
+    [Fact]
     public async Task ABroadcastCountsForEveryMemberButTheAuthor_InOneGroupedQuery()
     {
         await SendAsync("hey @channel", "m-1", new MentionInput(MentionKindWire.BroadcastChannelKind, 4, 8, null, null));
@@ -183,7 +275,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         await using (var transaction = await context.Database.BeginTransactionAsync())
         {
             var delete = await new DeleteMessageCommandHandler(
-                    context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), new InMemoryChatMessageAttachments())
+                    context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), new InMemoryChatMessageAttachments(), new Notrelix.Infrastructure.Data.Chat.ChatReadStateStore(context))
                 .Handle(new DeleteMessageCommand(_workspaceId, sent.Data!.Message.Id, sent.Data.Message.Version), CancellationToken.None);
             delete.Succeeded.Should().BeTrue();
             await context.SaveChangesAsync();
@@ -210,7 +302,7 @@ public sealed class ChatMentionIntegrationTests : IAsyncLifetime
         {
             await using var transaction = await context.Database.BeginTransactionAsync();
             var handler = new SendMessageCommandHandler(
-                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>());
+                context, RequestAs(_author).Object, Members().Object, new ChatSpaceSequenceAllocator(context), new FixedClock(Now), Broadcasters(true), new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>(), new Notrelix.Infrastructure.Data.Chat.ChatReadStateStore(context));
             result = await handler.Handle(
                 new SendMessageCommand(_workspaceId, direct.Id, "hi @Bob and @Carol", "d-1", null, [Person(3, 4, _bob), Person(12, 6, _carol)]),
                 CancellationToken.None);
