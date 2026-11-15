@@ -629,6 +629,18 @@ export function ChatWorkspace({
     setPanel(null);
   }, [channelId]);
 
+  // A stored send keeps its bubble until a window shows the message (then the history's copy takes over) or the
+  // channel is left; no timer. The cleanup reads the sender of the channel it ran for.
+  useEffect(() => {
+    if (!pendingAll.some((entry) => entry.storedMessageId !== undefined))
+      return;
+    sender.discardStored(new Set(flat.map((message) => message.id)));
+  }, [flat, pendingAll]);
+  useEffect(() => {
+    const leaving = sender.discardStored;
+    return () => leaving();
+  }, [channelId]);
+
   function handleSend(
     content: string,
     payload?: ChatMentionPayload,

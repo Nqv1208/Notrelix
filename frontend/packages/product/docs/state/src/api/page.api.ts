@@ -66,6 +66,7 @@ export interface PageApiEndpoints {
     comments: (pageId: string) => string;
     commentsPage: (pageId: string) => string;
     history: (pageId: string) => string;
+    activity: (pageId: string) => string;
     search: (workspaceId: string) => string;
     move: (pageId: string) => string;
     moveToSpace: (pageId: string) => string;

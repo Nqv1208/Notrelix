@@ -73,6 +73,34 @@ export type HistoryDtoApi = {
   createdAt: string;
 };
 
+/** One fact of `Documents.Pages.GetPageActivity` (`ActivityLogDto`): a page renamed, moved, trashed or restored. */
+export type PageActivityEntryDtoApi = {
+  id: string;
+  actorId: string;
+  actorName?: string | null;
+  actorAvatarUrl?: string | null;
+  /** An English phrase without the actor, for a client that does not know `type`. */
+  action: string;
+  /** The stable type of the fact; the client words it in its own language. */
+  type?: string | null;
+  kind?: string | null;
+  resourceTitle?: string | null;
+  createdAt: string;
+  change?: {
+    fieldName?: string | null;
+    from?: string | null;
+    to?: string | null;
+  } | null;
+};
+
+/** `Documents.Pages.GetPageActivity`: one page of the feed, newest first. */
+export type PageActivityPageDtoApi = {
+  data: PageActivityEntryDtoApi[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 /**
  * `Documents.Blocks.ListPageBlocks` (`BlockDto`). `content` and `properties`
  * are JSON objects: rich text v1 (`{ v: 1, runs }`) for a text-like block, `{}`

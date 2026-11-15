@@ -96,6 +96,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DueDateNotificationSweeper>();
         AddWorker<DueDateNotificationService>();
 
+        // Documents: capture an automatic version of a page whose editing went quiet for five minutes.
+        services.AddOptions<PageQuietVersionSweepOptions>()
+            .Bind(configuration.GetSection(PageQuietVersionSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<PageQuietVersionSweepOptions>, PageQuietVersionSweepOptionsValidator>();
+        services.AddScoped<PageQuietVersionSweeper>();
+        AddWorker<PageQuietVersionSweepService>();
+
         // Work Management: run queued board file imports and exports, and remove expired export files.
         services.AddScoped<BoardTransferRunner>();
         AddWorker<BoardTransferService>();
