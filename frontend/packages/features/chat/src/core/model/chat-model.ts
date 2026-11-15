@@ -76,6 +76,8 @@ export interface PendingMessage {
   /** The mentions that travel with the content, kept so a retry sends the same ones. */
   readonly mentions?: readonly ChatMentionInput[];
   readonly confirmBroadcast?: boolean;
+  /** Set once the server stored the send: the bubble waits for that message in a window, then goes. */
+  readonly storedMessageId?: string;
 }
 
 /** The pending sends that the server has not already stored, oldest first. */

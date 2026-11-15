@@ -122,13 +122,15 @@ export function MessageActionBar({
       data-placement={placement}
       onKeyDown={handleKeyDown}
       className={cn(
-        "absolute z-10 flex items-center gap-0.5 whitespace-nowrap rounded-full border border-border bg-popover p-0.5 text-popover-foreground shadow-md transition-opacity duration-100 motion-reduce:transition-none pointer-coarse:hidden",
+        "absolute z-10 flex items-center gap-0.5 whitespace-nowrap rounded-full border border-border bg-popover p-0.5 text-popover-foreground shadow-md transition-[opacity,transform,visibility] duration-fast ease-out motion-reduce:transition-none pointer-coarse:hidden",
         placement === "side" ? "top-1/2 -translate-y-1/2" : "bottom-full mb-1",
         placement === "side" && side === "start" && "end-full me-2",
         placement === "side" && side === "end" && "start-full ms-2",
         placement === "top" && side === "start" && "end-0",
         placement === "top" && side === "end" && "start-0",
-        visible ? "visible opacity-100" : "pointer-events-none opacity-0",
+        visible
+          ? "visible scale-100 opacity-100"
+          : "pointer-events-none scale-95 opacity-0",
       )}
     >
       {side === "start" ? timeLabel : null}

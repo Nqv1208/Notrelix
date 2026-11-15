@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
   EyeOff,
@@ -50,6 +50,8 @@ export interface ChatConversationHeaderProps {
   readonly onHide: () => void;
   /** Opens the message search (UC-CHT-H07). */
   readonly onSearch?: () => void;
+  /** Panel toggles (Pins, Following) drawn in the header actions. */
+  readonly actions?: ReactNode;
 }
 
 /** The header of an open conversation: who it is with, the details toggle and the hide action. */
@@ -65,6 +67,7 @@ export function ChatConversationHeader({
   onToggleDetails,
   onHide,
   onSearch,
+  actions,
 }: ChatConversationHeaderProps) {
   const title = conversationTitle(conversation, viewerId, nameOf);
   const counterpart = directCounterpart(conversation, viewerId);
@@ -116,6 +119,7 @@ export function ChatConversationHeader({
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {actions}
         {onSearch ? (
           <Button
             variant="ghost"

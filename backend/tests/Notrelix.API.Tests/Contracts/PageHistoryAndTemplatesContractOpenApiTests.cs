@@ -15,6 +15,7 @@ public class PageHistoryAndTemplatesContractOpenApiTests
 
     [Theory]
     [InlineData("/api/v1/pages/{pageId}/history", "get")]
+    [InlineData("/api/v1/pages/{pageId}/activity", "get")]
     [InlineData("/api/v1/pages/{pageId}/versions", "get")]
     [InlineData("/api/v1/pages/{pageId}/versions", "post")]
     [InlineData("/api/v1/pages/{pageId}/versions/{versionId}", "get")]
@@ -25,6 +26,18 @@ public class PageHistoryAndTemplatesContractOpenApiTests
     public void TheRoutes_Exist(string path, string verb)
     {
         Paths.GetProperty(path).TryGetProperty(verb, out _).Should().BeTrue($"{verb} {path}");
+    }
+
+    [Fact]
+    public void ThePageActivityFeed_IsPaged_AndAnswersWithTheSharedActivityPage()
+    {
+        var operation = Paths.GetProperty("/api/v1/pages/{pageId}/activity").GetProperty("get");
+
+        operation.GetProperty("operationId").GetString().Should().Be("Documents.Pages.GetPageActivity");
+        operation.GetProperty("parameters").EnumerateArray().Select(p => p.GetProperty("name").GetString())
+            .Should().BeEquivalentTo(["pageId", "page", "pageSize"]);
+        Schema("ResourceActivityPageDto").GetProperty("properties").EnumerateObject().Select(p => p.Name)
+            .Should().BeEquivalentTo(["data", "total", "page", "pageSize"]);
     }
 
     [Fact]

@@ -4215,6 +4215,11 @@
           "name": "PageArchived",
           "context": "Documents",
           "maturity": "Stub"
+        },
+        {
+          "name": "PageTrashedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
         }
       ]
     },
@@ -4402,6 +4407,424 @@
           "maturity": "Stub"
         }
       ]
+    },
+    {
+      "name": "page.deleted",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Documents.PageDeletedIntegrationEvent",
+      "producerContext": "Documents",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "pageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": []
+    },
+    {
+      "name": "page.moved",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Documents.PageMovedIntegrationEvent",
+      "producerContext": "Documents",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "pageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "oldParentId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "newParentId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "PageMovedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
+      "name": "page.renamed",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Documents.PageRenamedIntegrationEvent",
+      "producerContext": "Documents",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "pageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "oldTitle",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "newTitle",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "PageRenamedActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
+      "name": "page.restored",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Documents.PageRestoredIntegrationEvent",
+      "producerContext": "Documents",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "pageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": [
+        {
+          "name": "PageRestoredActivityConsumer",
+          "context": "Collaboration",
+          "maturity": "Implemented"
+        }
+      ]
+    },
+    {
+      "name": "page.space-changed",
+      "version": 1,
+      "clrType": "Notrelix.Application.Events.Documents.PageSpaceChangedIntegrationEvent",
+      "producerContext": "Documents",
+      "classification": "Business",
+      "compatibility": "Backward",
+      "deprecated": false,
+      "scope": {
+        "tenantScope": "Workspace",
+        "carriesAccountId": true,
+        "carriesWorkspaceId": true
+      },
+      "serializedProperties": [
+        {
+          "name": "pageId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "oldSpaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "newSpaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "eventId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "sourceEventId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "messageName",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "nullable": false
+        },
+        {
+          "name": "accountId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "workspaceId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "actorUserId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "correlationId",
+          "type": "Guid",
+          "nullable": false
+        },
+        {
+          "name": "causationId",
+          "type": "Guid?",
+          "nullable": true
+        },
+        {
+          "name": "occurredAt",
+          "type": "DateTimeOffset",
+          "nullable": false
+        }
+      ],
+      "piiFields": [],
+      "sensitiveFields": [],
+      "consumers": []
     },
     {
       "name": "realtime.resource-changed",
