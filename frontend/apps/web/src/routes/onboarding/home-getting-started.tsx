@@ -59,7 +59,7 @@ export function HomeGettingStarted({
         return {
           key: item.key,
           title: t.inviteMore,
-          note: t.inviteMoreNoneNote,
+          note: item.done ? t.inviteMoreDoneNote : t.inviteMoreNoneNote,
           done: item.done,
           href: `/workspaces/${workspaceId}/members`,
         };

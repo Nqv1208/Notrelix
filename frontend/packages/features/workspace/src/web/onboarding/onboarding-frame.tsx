@@ -11,7 +11,7 @@ export const FIELD_INPUT_CLASS =
   "box-border h-10 max-md:h-touch w-full rounded-[8px] border border-line-strong bg-popover px-3 text-body text-foreground outline-none placeholder:text-meta-foreground focus:border-focus-ring focus:ring-[3px] focus:ring-brand-subtle aria-invalid:border-danger-text aria-invalid:ring-1 aria-invalid:ring-danger-text";
 
 export const BUTTON_PRIMARY_CLASS =
-  "inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-primary bg-primary px-4 text-body font-semibold text-primary-foreground outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:border-state-disabled disabled:bg-state-disabled disabled:text-state-disabled-foreground max-md:h-touch";
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-primary bg-primary px-4 text-body font-semibold text-primary-foreground outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:border-state-disabled disabled:bg-state-disabled disabled:text-state-disabled-foreground aria-disabled:cursor-not-allowed aria-disabled:border-state-disabled aria-disabled:bg-state-disabled aria-disabled:text-state-disabled-foreground max-md:h-touch";
 
 export const BUTTON_OUTLINE_CLASS =
   "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[8px] border border-line-strong bg-popover px-4 text-body font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50 max-md:h-touch";
@@ -108,7 +108,9 @@ export function StepBar({
                 "flex items-center gap-[7px] text-crumb leading-[1.45]",
                 state === "current"
                   ? "font-[650] text-foreground"
-                  : "font-medium text-muted-foreground",
+                  : state === "todo"
+                    ? "font-medium text-meta-foreground"
+                    : "font-medium text-muted-foreground",
               )}
             >
               <span
@@ -116,7 +118,7 @@ export function StepBar({
                 className={cn(
                   "grid size-4.5 shrink-0 place-items-center rounded-full border-[1.5px] text-rail-label font-bold",
                   state === "todo"
-                    ? "border-line-strong text-muted-foreground"
+                    ? "border-line-strong text-meta-foreground"
                     : "border-primary bg-primary text-primary-foreground",
                 )}
               >
