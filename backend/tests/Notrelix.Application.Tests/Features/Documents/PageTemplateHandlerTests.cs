@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Documents.Templates.Commands.CreatePageFromT
 using Notrelix.Application.Features.Documents.Templates.Commands.CreatePageTemplate;
 using Notrelix.Application.Features.Documents.Templates.Queries.ListPageTemplates;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Documents.Blocks;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Documents.Templates;
@@ -125,7 +126,7 @@ public sealed class PageTemplateHandlerTests
         f.Templates.Add(Template("Draft", WorkspaceId, publish: false));
         f.Templates.Add(Template("Elsewhere", Guid.CreateVersion7(), publish: true));
 
-        var result = await new ListPageTemplatesQueryHandler(f.Context).Handle(new ListPageTemplatesQuery(WorkspaceId), CancellationToken.None);
+        var result = await new ListPageTemplatesQueryHandler(f.Context, f.Request(), MembersWithRole("Member")).Handle(new ListPageTemplatesQuery(WorkspaceId), CancellationToken.None);
 
         result.Data!.Select(t => t.Name).Should().Equal("Alpha", "Zeta");
     }
@@ -226,6 +227,14 @@ public sealed class PageTemplateHandlerTests
 
         added.Should().BeEmpty();
         pagesAdded.Should().BeEmpty();
+    }
+
+    private static IWorkspaceMemberFacts MembersWithRole(string role)
+    {
+        var members = new Mock<IWorkspaceMemberFacts>();
+        members.Setup(m => m.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid user, CancellationToken _) => new WorkspaceMemberFact(user, role, true));
+        return members.Object;
     }
 
     private static PageTemplate Template(string name, Guid workspaceId, bool publish)

@@ -130,7 +130,11 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSp
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
 using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
+using Notrelix.Application.Features.Documents.Templates.Commands.ArchivePageTemplate;
+using Notrelix.Application.Features.Documents.Templates.Commands.DeletePageTemplate;
+using Notrelix.Application.Features.Documents.Templates.Commands.UpdatePageTemplate;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Templates;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceMemberRole;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
@@ -386,6 +390,10 @@ public sealed class ExpectedVersionTargetMap
         // Documents — page rename and move under another parent: the page version the editor read.
         [typeof(UpdatePageCommand)] = new("documents.page", typeof(Page)),
         [typeof(MovePageCommand)] = new("documents.page", typeof(Page)),
+        // Documents — template rename, archive and delete: the template version the manager read.
+        [typeof(UpdatePageTemplateCommand)] = new("documents.page-template", typeof(PageTemplate)),
+        [typeof(ArchivePageTemplateCommand)] = new("documents.page-template", typeof(PageTemplate)),
+        [typeof(DeletePageTemplateCommand)] = new("documents.page-template", typeof(PageTemplate)),
 
         // Accounts — Account rename quotes the Account version the settings screen read (UC-ACC-C01)
         [typeof(RenameAccountCommand)] = new(AccountKind, typeof(Account)),

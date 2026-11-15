@@ -3625,6 +3625,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Documents.Templates.Commands.ArchivePageTemplate.ArchivePageTemplateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Templates.Commands.ArchivePageTemplate.ArchivePageTemplateCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Documents.Templates.Commands.CreatePageFromTemplate.CreatePageFromTemplateCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -3672,6 +3697,56 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Documents.Templates.Commands.CreatePageTemplate.CreatePageTemplateCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Templates.Commands.DeletePageTemplate.DeletePageTemplateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Templates.Commands.DeletePageTemplate.DeletePageTemplateCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Documents.Templates.Commands.UpdatePageTemplate.UpdatePageTemplateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Templates.Commands.UpdatePageTemplate.UpdatePageTemplateCommandHandler"
     ]
   },
   {

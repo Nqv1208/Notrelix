@@ -122,6 +122,9 @@ public sealed class DocumentsNonMemberNotFoundTests : IAsyncLifetime
         yield return ("restore a version", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/versions/{i.Version}/restore", i => "{\"currentBlocks\":[]}");
         yield return ("list templates", HttpMethod.Get, i => $"/api/v1/workspaces/{i.Workspace}/page-templates", null);
         yield return ("save a template", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/page-templates", i => $"{{\"pageId\":\"{i.Page}\",\"name\":\"x\"}}");
+        yield return ("rename a template", HttpMethod.Patch, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}", i => "{\"name\":\"x\",\"expectedVersion\":1}");
+        yield return ("archive a template", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}/archive", i => "{\"expectedVersion\":1}");
+        yield return ("delete a template", HttpMethod.Delete, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}?expectedVersion=1", null);
         yield return ("create a page from a template", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}/pages", i => "{}");
     }
 
