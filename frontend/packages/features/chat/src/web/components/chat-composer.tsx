@@ -503,7 +503,7 @@ export function ChatComposer({
 
   return (
     <div className="shrink-0 bg-background px-2.5 pb-2.5 md:px-5 md:pb-4 xl:pb-1">
-      <div className="relative mx-auto w-full max-w-[720px]">
+      <div className="relative mx-auto w-full max-w-[720px] 2xl:max-w-[1000px]">
         {trigger ? (
           <MentionPopover
             id={listId}
@@ -543,7 +543,7 @@ export function ChatComposer({
         ) : (
           <form
             className={cn(
-              "flex flex-col overflow-hidden rounded-[26px] border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
+              "flex flex-col overflow-hidden rounded-[26px] border border-input bg-card shadow-xs transition-[border-color,box-shadow] duration-fast ease-out focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
               disabled && "opacity-60",
               dragging && "border-ring ring-[3px] ring-ring/30",
             )}
@@ -676,7 +676,7 @@ export function ChatComposer({
                 <Button
                   type="submit"
                   size="icon"
-                  className="size-10 shrink-0 rounded-full"
+                  className="size-10 shrink-0 rounded-full transition-[opacity,transform,background-color] duration-fast ease-out active:scale-95 disabled:scale-90 motion-reduce:transform-none"
                   aria-label={copy.composer.send}
                   title={`${copy.composer.send} (Enter)`}
                   disabled={disabled || busy || tooLong || !check.ok}
