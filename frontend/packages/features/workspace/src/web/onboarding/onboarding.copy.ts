@@ -51,7 +51,7 @@ export const en = {
     free: "{{address}} is available",
     taken: "{{slug}} is taken, try {{suggestion}}",
     useSuggestion: "Use {{suggestion}}",
-    invalid: "Use 3 to 30 lowercase letters, digits and dashes.",
+    invalid: "Use 3 to 63 lowercase letters, digits and dashes.",
     checking: "Checking the address…",
     slugHint:
       "Lowercase letters, digits and dashes. People open the workspace through this address.",
@@ -380,7 +380,7 @@ export const vi: OnboardingCopy = {
     free: "{{address}} còn trống",
     taken: "{{slug}} đã có người dùng, thử {{suggestion}}",
     useSuggestion: "Dùng {{suggestion}}",
-    invalid: "Dùng 3–30 ký tự: chữ thường, số và dấu gạch ngang.",
+    invalid: "Dùng 3–63 ký tự: chữ thường, số và dấu gạch ngang.",
     checking: "Đang kiểm tra địa chỉ…",
     slugHint:
       "Chữ thường, số và dấu gạch ngang. Mọi người mở workspace qua địa chỉ này.",
