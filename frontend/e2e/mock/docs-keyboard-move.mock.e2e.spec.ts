@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -72,4 +73,24 @@ test("a click then Alt+Shift+ArrowDown moves the clicked block and announces its
   await expect(
     page.getByRole("status").filter({ hasText: /\d/ }),
   ).not.toHaveCount(0);
+});
+
+test("after a keyboard move axe finds no serious violation at 1440 and 390", async ({
+  page,
+}) => {
+  const editor = await openEditor(page);
+  await editor.locator("> *").nth(2).click();
+  await page.keyboard.press("Alt+Shift+ArrowUp");
+  await expect(
+    page.getByRole("status").filter({ hasText: /\d/ }),
+  ).not.toHaveCount(0);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(
+      results.violations
+        .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+        .map((v) => `${width}: ${v.id} ${v.nodes.length}`),
+    ).toEqual([]);
+  }
 });

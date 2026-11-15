@@ -46,15 +46,13 @@ test("a block create the producer refuses is not stored, the person is told, and
   await page.locator("article h1").click();
   expect((await refused).status()).toBeGreaterThanOrEqual(400);
 
-  // The person is told: the page is read-only or the bar says it was not saved.
+  // The person is told: the page turns read-only and hands the unsaved text back.
+  await expect(editor).toHaveAttribute("aria-readonly", "true");
   await expect(
-    page
-      .locator('[aria-readonly="true"]')
-      .or(page.getByText(/Not saved/))
-      .first(),
-  ).toBeVisible();
+    page.getByRole("blockquote", { name: "Your unsaved text" }),
+  ).toHaveText(line);
   // The typed text is never taken back from the person.
-  await expect(page.getByText(line)).toBeVisible();
+  await expect(editor.getByText(line)).toBeVisible();
 
   // Nothing was stored.
   const restored = await apiWrite(page, "POST", `/pages/${docId}/restore`, {});
