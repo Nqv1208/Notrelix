@@ -7,6 +7,7 @@ import type { ChatCopy } from "./chat.copy";
 import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
 import { ChatPanelHeader } from "./chat-panel-header";
+import { chatFailureOf } from "../../core/api/chat-failure";
 import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
 import {
   RowActivityProvider,
@@ -103,7 +104,13 @@ export function ChatThreadPanel({
         onSuccess: () => {
           setDraft("");
         },
-        onError: () => setNotice(copy.thread.sendFailed),
+        onError: (error) =>
+          // A 429 says to wait; the draft stays either way.
+          setNotice(
+            chatFailureOf(error).kind === "rate-limited"
+              ? copy.feedback.rateLimited
+              : copy.thread.sendFailed,
+          ),
       },
     );
   }

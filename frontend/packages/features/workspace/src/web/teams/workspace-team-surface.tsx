@@ -353,7 +353,23 @@ function EditDialog({
  * email; where the Team has access; what a lead is; archive. Only workspace
  * admins write; an archived Team is read-only until it is restored.
  */
+const NARROW = "(max-width: 639px)";
+
+/** True on a phone-width window: the add-person placeholder takes its short copy. */
+function useNarrow() {
+  return React.useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia(NARROW);
+      query.addEventListener("change", notify);
+      return () => query.removeEventListener("change", notify);
+    },
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
+}
+
 export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
+  const narrow = useNarrow();
   const { copy, team, members, ext, viewer } = props;
   const d = copy.detail;
   const [roleMenu, setRoleMenu] = React.useState<string | null>(
@@ -751,9 +767,13 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
                     aria-describedby="team-add-hint"
                     autoComplete="off"
                     value={query}
-                    placeholder={formatCopy(d.addPlaceholder, {
-                      workspace: props.frame.workspaceName,
-                    })}
+                    placeholder={
+                      narrow
+                        ? d.addPlaceholderShort
+                        : formatCopy(d.addPlaceholder, {
+                            workspace: props.frame.workspaceName,
+                          })
+                    }
                     onChange={(event) => setQuery(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && suggestions[0]) {

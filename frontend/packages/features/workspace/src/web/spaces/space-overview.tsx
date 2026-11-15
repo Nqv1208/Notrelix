@@ -287,7 +287,13 @@ export function BoardsSection({
           {o.boardsEmpty}
         </p>
       ) : (
-        <div data-f="list" className={LIST}>
+        <div
+          data-f="list"
+          className={cn(
+            LIST,
+            "max-xl:overflow-x-auto max-xl:[&>*]:min-w-[760px]",
+          )}
+        >
           <div
             data-f="lh"
             aria-hidden="true"

@@ -367,13 +367,16 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
         membersCount={props.membersCount}
         showSettings={manage || tab === "settings"}
       />
-      <div data-f="body" className="flex min-h-0 flex-1 overflow-hidden">
+      <div
+        data-f="body"
+        className="flex min-h-0 flex-1 overflow-hidden max-md:flex-col max-md:overflow-auto"
+      >
         {tab === "overview" ? (
           <>
             <div
               data-f="col"
               className={cn(
-                "flex min-w-0 flex-1 flex-col gap-7 overflow-auto px-7 pt-[22px] pb-8",
+                "flex min-w-0 flex-1 flex-col gap-7 overflow-auto px-7 pt-[22px] pb-8 max-md:flex-none max-md:overflow-visible max-md:px-4",
                 props.firstSteps && "box-content max-w-[820px]",
               )}
             >
@@ -450,7 +453,7 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
               <aside
                 data-f="aside"
                 aria-label={copy.aside.label}
-                className="box-border flex w-[340px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line bg-popover px-5 pt-5 pb-7 dark:bg-card"
+                className="box-border flex w-[340px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line max-md:w-full max-md:overflow-visible max-md:border-t max-md:border-l-0 bg-popover px-5 pt-5 pb-7 dark:bg-card"
               >
                 {!props.firstSteps && props.attention ? (
                   <AttentionBlock copy={copy} rows={props.attention} />

@@ -98,7 +98,7 @@ function UsageRow({
   return (
     <div
       data-f="ur"
-      className="grid grid-cols-[148px_minmax(0,1fr)_128px] items-center gap-4 border-t border-line px-4 py-[11px] first:border-t-0"
+      className="grid grid-cols-1 items-center gap-x-4 gap-y-1.5 border-t @lg:grid-cols-[148px_minmax(0,1fr)_128px] border-line px-4 py-[11px] first:border-t-0"
     >
       <div>
         <b className="block text-nav leading-[1.45] font-semibold text-foreground">
@@ -109,7 +109,7 @@ function UsageRow({
         </small>
       </div>
       <div>{children}</div>
-      <div className="text-right text-crumb leading-[1.45] whitespace-nowrap text-muted-foreground">
+      <div className="text-crumb leading-[1.45] whitespace-nowrap text-muted-foreground @lg:text-right">
         {value}
       </div>
     </div>
@@ -483,259 +483,275 @@ function AdminOverview(
           </div>
         </div>
       ) : null}
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-5">
-        <div className="flex min-w-0 flex-col gap-3.5">
-          <section
-            data-f="plan"
-            aria-labelledby="plan-t"
-            className={cn(CARD, "flex items-start gap-3.5 px-[18px] py-4")}
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3
-                  id="plan-t"
-                  className="m-0 text-sheet-title leading-[1.45] font-[650] tracking-[-0.01em] text-foreground"
-                >
-                  {planName}
-                </h3>
-                <Tag tone={pastDue ? "warn" : "ok"}>
-                  {pastDue ? copy.plan.pastDue : copy.plan.active}
-                </Tag>
-                <Tag>{copy.plan.yearly}</Tag>
-                {downgrade ? (
-                  <Tag tone="acc">
-                    {formatCopy(copy.plan.pendingDowngrade, {
-                      plan: copy.plan.names[downgrade.to],
-                      day: fullDay(downgrade.at),
-                    })}
+      {/* Container queries: the content width, not the window, decides (the sidebar may be pinned). */}
+      <div className="@container">
+        <div className="grid grid-cols-1 items-start gap-5 @3xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="flex min-w-0 flex-col gap-3.5">
+            <section
+              data-f="plan"
+              aria-labelledby="plan-t"
+              className={cn(
+                CARD,
+                "flex flex-col items-start gap-3.5 px-[18px] py-4 @lg:flex-row",
+              )}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3
+                    id="plan-t"
+                    className="m-0 text-sheet-title leading-[1.45] font-[650] tracking-[-0.01em] text-foreground"
+                  >
+                    {planName}
+                  </h3>
+                  <Tag tone={pastDue ? "warn" : "ok"}>
+                    {pastDue ? copy.plan.pastDue : copy.plan.active}
                   </Tag>
+                  <Tag>{copy.plan.yearly}</Tag>
+                  {downgrade ? (
+                    <Tag tone="acc">
+                      {formatCopy(copy.plan.pendingDowngrade, {
+                        plan: copy.plan.names[downgrade.to],
+                        day: fullDay(downgrade.at),
+                      })}
+                    </Tag>
+                  ) : null}
+                </div>
+                <p className="mt-1.5 mb-0 text-crumb leading-[1.55] text-muted-foreground">
+                  {formatCopy(copy.plan.period, {
+                    from: fullDay(data.plan.periodStart),
+                    to: fullDay(data.plan.periodEnd),
+                    renew: fullDay(data.plan.autoRenewAt),
+                  })}
+                  <br />
+                  {formatCopy(copy.plan.price, {
+                    price: moneyLabel(f, copy.money, data.plan.unitPrice),
+                    vat: data.plan.vatPercent,
+                  })}
+                </p>
+                {pastDue ? (
+                  <p
+                    id="seat-why"
+                    className="mt-1 mb-0 text-crumb leading-[1.55] text-warning-text"
+                  >
+                    {formatCopy(copy.plan.buyBlocked, {
+                      number: pastDue.number,
+                    })}
+                  </p>
                 ) : null}
               </div>
-              <p className="mt-1.5 mb-0 text-crumb leading-[1.55] text-muted-foreground">
-                {formatCopy(copy.plan.period, {
-                  from: fullDay(data.plan.periodStart),
-                  to: fullDay(data.plan.periodEnd),
-                  renew: fullDay(data.plan.autoRenewAt),
-                })}
-                <br />
-                {formatCopy(copy.plan.price, {
-                  price: moneyLabel(f, copy.money, data.plan.unitPrice),
-                  vat: data.plan.vatPercent,
-                })}
-              </p>
-              {pastDue ? (
-                <p
-                  id="seat-why"
-                  className="mt-1 mb-0 text-crumb leading-[1.55] text-warning-text"
-                >
-                  {formatCopy(copy.plan.buyBlocked, { number: pastDue.number })}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <div className="flex gap-2">
-                <NavAnchor link={links.compare} className={BILLING_BTN}>
-                  {copy.plan.change}
-                </NavAnchor>
-                <button
-                  type="button"
-                  aria-haspopup="dialog"
-                  disabled={Boolean(pastDue)}
-                  aria-describedby={pastDue ? "seat-why" : undefined}
-                  onClick={props.onBuy}
-                  className={BILLING_BTN_PRIMARY}
-                >
-                  {pastDue ? null : <BillingGlyph name="plus" />}
-                  {copy.plan.buy}
-                </button>
-              </div>
-            </div>
-          </section>
-          {usageSection(copy, f, data, links)}
-          <section data-f="card" aria-labelledby="feat-t" className={CARD}>
-            <div className="flex items-center gap-2 border-b border-line px-4 py-3 text-compact leading-[1.45] font-semibold">
-              <span id="feat-t">{copy.features.title}</span>
-            </div>
-            <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-              <div className="flex flex-col gap-2 px-4 py-3.5">
-                <h4 className="m-0 text-crumb leading-[1.45] font-semibold text-muted-foreground">
-                  {formatCopy(copy.features.included, { plan: planName })}
-                </h4>
-                <FeatureList copy={copy} keys={data.features.included} />
-              </div>
-              <div className="flex flex-col gap-2 rounded-br-[12px] border-l border-line bg-background px-4 py-3.5">
-                <h4 className="m-0 text-crumb leading-[1.45] font-semibold text-muted-foreground">
-                  {copy.features.upgrade}
-                </h4>
-                <FeatureList copy={copy} keys={data.features.upgrade} plus />
-                <div className="mt-auto flex gap-3.5 pt-1">
-                  <NavAnchor link={links.compare} className={LNKB}>
-                    {copy.features.compare}
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <div className="flex gap-2">
+                  <NavAnchor link={links.compare} className={BILLING_BTN}>
+                    {copy.plan.change}
                   </NavAnchor>
                   <button
                     type="button"
-                    onClick={props.onContactSales}
-                    className={LNKB}
+                    aria-haspopup="dialog"
+                    disabled={Boolean(pastDue)}
+                    aria-describedby={pastDue ? "seat-why" : undefined}
+                    onClick={props.onBuy}
+                    className={BILLING_BTN_PRIMARY}
                   >
-                    {copy.features.advise}
+                    {pastDue ? null : <BillingGlyph name="plus" />}
+                    {copy.plan.buy}
                   </button>
                 </div>
               </div>
-            </div>
-          </section>
-        </div>
-        <div className="flex min-w-0 flex-col gap-3.5">
-          <section data-f="box" aria-labelledby="pay-t" className={BOX}>
-            <h3 id="pay-t" className={BOX_TITLE}>
-              {copy.payment.title}
-            </h3>
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-[26px] w-9 shrink-0 place-items-center rounded-[5px] border border-line-strong bg-background text-muted-foreground">
-                <BillingGlyph name="bank" className="size-[15px]" />
-              </span>
-              <span>
-                <b className="block text-nav leading-[1.45] font-semibold text-foreground">
-                  {copy.payment.transfer}
-                </b>
-                <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
-                  {copy.payment.transferHint}
-                </small>
-              </span>
-            </div>
-            {card ? (
+            </section>
+            {usageSection(copy, f, data, links)}
+            <section data-f="card" aria-labelledby="feat-t" className={CARD}>
+              <div className="flex items-center gap-2 border-b border-line px-4 py-3 text-compact leading-[1.45] font-semibold">
+                <span id="feat-t">{copy.features.title}</span>
+              </div>
+              <div className="grid grid-cols-1 @lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+                <div className="flex flex-col gap-2 px-4 py-3.5">
+                  <h4 className="m-0 text-crumb leading-[1.45] font-semibold text-muted-foreground">
+                    {formatCopy(copy.features.included, { plan: planName })}
+                  </h4>
+                  <FeatureList copy={copy} keys={data.features.included} />
+                </div>
+                <div className="flex flex-col gap-2 rounded-br-[12px] border-t border-line bg-background @lg:border-t-0 @lg:border-l px-4 py-3.5">
+                  <h4 className="m-0 text-crumb leading-[1.45] font-semibold text-muted-foreground">
+                    {copy.features.upgrade}
+                  </h4>
+                  <FeatureList copy={copy} keys={data.features.upgrade} plus />
+                  <div className="mt-auto flex gap-3.5 pt-1">
+                    <NavAnchor link={links.compare} className={LNKB}>
+                      {copy.features.compare}
+                    </NavAnchor>
+                    <button
+                      type="button"
+                      onClick={props.onContactSales}
+                      className={LNKB}
+                    >
+                      {copy.features.advise}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div className="flex min-w-0 flex-col gap-3.5">
+            <section data-f="box" aria-labelledby="pay-t" className={BOX}>
+              <h3 id="pay-t" className={BOX_TITLE}>
+                {copy.payment.title}
+              </h3>
               <div className="flex items-center gap-2.5">
-                <span className="grid h-[26px] w-9 shrink-0 place-items-center rounded-[5px] border border-line-strong bg-background text-mark-sm leading-none font-bold text-muted-foreground">
-                  {card.brand}
+                <span className="grid h-[26px] w-9 shrink-0 place-items-center rounded-[5px] border border-line-strong bg-background text-muted-foreground">
+                  <BillingGlyph name="bank" className="size-[15px]" />
                 </span>
                 <span>
                   <b className="block text-nav leading-[1.45] font-semibold text-foreground">
-                    {formatCopy(copy.payment.card, {
+                    {copy.payment.transfer}
+                  </b>
+                  <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
+                    {copy.payment.transferHint}
+                  </small>
+                </span>
+              </div>
+              {card ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="grid h-[26px] w-9 shrink-0 place-items-center rounded-[5px] border border-line-strong bg-background text-mark-sm leading-none font-bold text-muted-foreground">
+                    {card.brand}
+                  </span>
+                  <span>
+                    <b className="block text-nav leading-[1.45] font-semibold text-foreground">
+                      {formatCopy(copy.payment.card, {
+                        brand: card.brand,
+                        last4: card.last4,
+                      })}
+                    </b>
+                    <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
+                      {card.status === "declined" && card.declinedAt
+                        ? formatCopy(copy.payment.cardDeclined, {
+                            day: shortDay(f, card.declinedAt),
+                            expires: monthYear(card.expires),
+                          })
+                        : formatCopy(copy.payment.cardOk, {
+                            expires: monthYear(card.expires),
+                          })}
+                    </small>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={props.onUnavailable}
+                    aria-label={formatCopy(copy.payment.changeCardLabel, {
                       brand: card.brand,
                       last4: card.last4,
                     })}
-                  </b>
-                  <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
-                    {card.status === "declined" && card.declinedAt
-                      ? formatCopy(copy.payment.cardDeclined, {
-                          day: shortDay(f, card.declinedAt),
-                          expires: monthYear(card.expires),
-                        })
-                      : formatCopy(copy.payment.cardOk, {
-                          expires: monthYear(card.expires),
-                        })}
-                  </small>
-                </span>
-                <button
-                  type="button"
-                  onClick={props.onUnavailable}
-                  aria-label={formatCopy(copy.payment.changeCardLabel, {
-                    brand: card.brand,
-                    last4: card.last4,
-                  })}
+                    className={cn(LNKB, "ml-auto")}
+                  >
+                    {copy.payment.changeCard}
+                  </button>
+                </div>
+              ) : null}
+              <p className="m-0 text-crumb leading-[1.55] text-meta-foreground">
+                {copy.payment.note}
+              </p>
+              <div className="my-0.5 h-px bg-line" />
+              {data.invoiceProfile ? (
+                <>
+                  <div className="text-crumb leading-[1.5] text-foreground">
+                    <span className="block text-caption tracking-normal leading-[1.5] text-meta-foreground">
+                      {copy.payment.invoiceFor}
+                    </span>
+                    {data.invoiceProfile.company}
+                    <br />
+                    {formatCopy(copy.payment.invoiceTax, {
+                      taxId: data.invoiceProfile.taxId,
+                      address: data.invoiceProfile.address,
+                    })}
+                  </div>
+                  <div className="text-crumb leading-[1.5] text-foreground">
+                    <span className="block text-caption tracking-normal leading-[1.5] text-meta-foreground">
+                      {copy.payment.emailLabel}
+                    </span>
+                    {data.invoiceProfile.email}
+                  </div>
+                </>
+              ) : null}
+              <button
+                type="button"
+                onClick={props.onUnavailable}
+                className={cn(LNKB, "self-start")}
+              >
+                {copy.payment.editProfile}
+              </button>
+            </section>
+            <section data-f="box" aria-labelledby="inv-t" className={BOX}>
+              <div className="flex items-center gap-2">
+                <h3 id="inv-t" className={BOX_TITLE}>
+                  {copy.recent.title}
+                </h3>
+                <NavAnchor
+                  link={links.invoices}
                   className={cn(LNKB, "ml-auto")}
                 >
-                  {copy.payment.changeCard}
-                </button>
+                  {copy.recent.all}
+                </NavAnchor>
               </div>
-            ) : null}
-            <p className="m-0 text-crumb leading-[1.55] text-meta-foreground">
-              {copy.payment.note}
-            </p>
-            <div className="my-0.5 h-px bg-line" />
-            {data.invoiceProfile ? (
-              <>
-                <div className="text-crumb leading-[1.5] text-foreground">
-                  <span className="block text-caption tracking-normal leading-[1.5] text-meta-foreground">
-                    {copy.payment.invoiceFor}
-                  </span>
-                  {data.invoiceProfile.company}
-                  <br />
-                  {formatCopy(copy.payment.invoiceTax, {
-                    taxId: data.invoiceProfile.taxId,
-                    address: data.invoiceProfile.address,
-                  })}
-                </div>
-                <div className="text-crumb leading-[1.5] text-foreground">
-                  <span className="block text-caption tracking-normal leading-[1.5] text-meta-foreground">
-                    {copy.payment.emailLabel}
-                  </span>
-                  {data.invoiceProfile.email}
-                </div>
-              </>
-            ) : null}
-            <button
-              type="button"
-              onClick={props.onUnavailable}
-              className={cn(LNKB, "self-start")}
-            >
-              {copy.payment.editProfile}
-            </button>
-          </section>
-          <section data-f="box" aria-labelledby="inv-t" className={BOX}>
-            <div className="flex items-center gap-2">
-              <h3 id="inv-t" className={BOX_TITLE}>
-                {copy.recent.title}
-              </h3>
-              <NavAnchor link={links.invoices} className={cn(LNKB, "ml-auto")}>
-                {copy.recent.all}
-              </NavAnchor>
-            </div>
-            <ul className="-mx-3.5 m-0 list-none p-0">
-              {(data.recentInvoices ?? []).map((invoice) => (
-                <li
-                  key={invoice.id}
-                  className="flex items-center gap-2.5 border-t border-line px-3.5 py-[9px]"
-                >
-                  <NavAnchor
-                    link={links.invoice(invoice.id)}
-                    className="group min-w-0 flex-1"
+              <ul className="-mx-3.5 m-0 list-none p-0">
+                {(data.recentInvoices ?? []).map((invoice) => (
+                  <li
+                    key={invoice.id}
+                    className="flex items-center gap-2.5 border-t border-line px-3.5 py-[9px]"
                   >
-                    <b
-                      className={cn(
-                        MONO,
-                        "block text-compact leading-[1.45] font-semibold group-hover:text-brand-ink",
-                      )}
+                    <NavAnchor
+                      link={links.invoice(invoice.id)}
+                      className="group min-w-0 flex-1"
                     >
-                      {invoice.number}
+                      <b
+                        className={cn(
+                          MONO,
+                          "block text-compact leading-[1.45] font-semibold group-hover:text-brand-ink",
+                        )}
+                      >
+                        {invoice.number}
+                      </b>
+                      <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
+                        {recentLine(copy, f, invoice)}
+                      </small>
+                    </NavAnchor>
+                    <Tag tone={invoice.status === "overdue" ? "warn" : "ok"}>
+                      {invoice.status === "overdue"
+                        ? copy.recent.overdue
+                        : copy.recent.paid}
+                    </Tag>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section data-f="box" aria-labelledby="mgr-t" className={BOX}>
+              <h3 id="mgr-t" className={BOX_TITLE}>
+                {copy.managers.title}
+              </h3>
+              {data.managers.map((manager) => (
+                <div key={manager.id} className="flex items-center gap-2.5">
+                  <PersonMark
+                    person={manager}
+                    className="size-6 text-mark-xs"
+                  />
+                  <span>
+                    <b className="block text-nav leading-[1.45] font-semibold text-foreground">
+                      {manager.isViewer
+                        ? formatCopy(copy.managers.you, { name: manager.name })
+                        : manager.name}
                     </b>
                     <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
-                      {recentLine(copy, f, invoice)}
+                      {manager.role === "owner"
+                        ? formatCopy(copy.managers.owner, {
+                            note: manager.note,
+                          })
+                        : formatCopy(copy.managers.delegate, {
+                            month: monthYear(manager.note),
+                          })}
                     </small>
-                  </NavAnchor>
-                  <Tag tone={invoice.status === "overdue" ? "warn" : "ok"}>
-                    {invoice.status === "overdue"
-                      ? copy.recent.overdue
-                      : copy.recent.paid}
-                  </Tag>
-                </li>
+                  </span>
+                </div>
               ))}
-            </ul>
-          </section>
-          <section data-f="box" aria-labelledby="mgr-t" className={BOX}>
-            <h3 id="mgr-t" className={BOX_TITLE}>
-              {copy.managers.title}
-            </h3>
-            {data.managers.map((manager) => (
-              <div key={manager.id} className="flex items-center gap-2.5">
-                <PersonMark person={manager} className="size-6 text-mark-xs" />
-                <span>
-                  <b className="block text-nav leading-[1.45] font-semibold text-foreground">
-                    {manager.isViewer
-                      ? formatCopy(copy.managers.you, { name: manager.name })
-                      : manager.name}
-                  </b>
-                  <small className="block text-caption tracking-normal leading-[1.45] text-meta-foreground">
-                    {manager.role === "owner"
-                      ? formatCopy(copy.managers.owner, { note: manager.note })
-                      : formatCopy(copy.managers.delegate, {
-                          month: monthYear(manager.note),
-                        })}
-                  </small>
-                </span>
-              </div>
-            ))}
-            <p className={BOX_TEXT}>{copy.managers.note}</p>
-          </section>
+              <p className={BOX_TEXT}>{copy.managers.note}</p>
+            </section>
+          </div>
         </div>
       </div>
     </section>
