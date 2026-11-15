@@ -49,7 +49,12 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
     const queryClient = useQueryClient();
     const treeKey = workspaceQueryKeys.spaceTree(workspaceId);
     const refreshTree = () =>
-      queryClient.invalidateQueries({ queryKey: treeKey });
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.spaceDetails(workspaceId),
+        }),
+        queryClient.invalidateQueries({ queryKey: treeKey }),
+      ]);
     const refreshMembers = async (spaceId: string) => {
       await queryClient.invalidateQueries({
         queryKey: workspaceQueryKeys.spaceMembers(workspaceId, spaceId),

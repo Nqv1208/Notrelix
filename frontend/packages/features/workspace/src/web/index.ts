@@ -208,6 +208,7 @@ export { useWorkspaceSpacesCopy } from "./spaces/use-workspace-spaces-copy";
 export {
   createUseSpaceMembers,
   createUseSpaceTree,
+  createUseSpace,
   createUseDeletedSpaces,
 } from "./query/hooks/use-spaces";
 export {

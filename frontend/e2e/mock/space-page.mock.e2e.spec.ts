@@ -283,6 +283,60 @@ test.describe("Department page (owner)", () => {
     expect(serious(list)).toEqual([]);
   });
 
+  test("a department id that does not exist reads as not found with a way back", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "vi");
+      } catch {
+        // Private mode: the defaults apply.
+      }
+    });
+    await page.goto(`${WORKSPACE}/spaces/mock-space-missing`);
+    await expect(page.getByText("Không có phòng ban này")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Về Trang chủ" }),
+    ).toBeVisible();
+  });
+
+  for (const width of [1440, 1024, 390]) {
+    for (const mode of ["light", "dark"]) {
+      test(`a missing department reads as not found at ${width} px in the ${mode} theme`, async ({
+        page,
+      }, testInfo) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.addInitScript(
+          ([theme]) => {
+            try {
+              window.localStorage.setItem("notrelix-locale", "vi");
+              window.localStorage.setItem("notrelix-theme-mode", theme!);
+            } catch {
+              // Private mode: the defaults apply.
+            }
+          },
+          [mode],
+        );
+        await page.goto(`${WORKSPACE}/spaces/mock-space-missing`);
+        await expect(page.getByText("Không có phòng ban này")).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: "Về Trang chủ" }),
+        ).toBeVisible();
+        expect(
+          await page.evaluate(
+            () =>
+              document.documentElement.scrollWidth -
+              document.documentElement.clientWidth,
+          ),
+        ).toBeLessThanOrEqual(0);
+        await testInfo.attach(`not-found-${width}-${mode}`, {
+          body: await page.screenshot(),
+          contentType: "image/png",
+        });
+      });
+    }
+  }
+
   test("an empty department shows the first steps and they lead somewhere", async ({
     page,
   }) => {

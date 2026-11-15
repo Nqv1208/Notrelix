@@ -12,7 +12,10 @@ import {
 import { workspaceQueryKeys } from "../../../query/keys";
 import { spaceTreeFixture } from "../../../verification/workspace-spaces-fixtures";
 import { createUseSpaceMutations } from "../../hooks/mutations/use-space-mutations";
-import { createUseSpaceTree } from "../../query/hooks/use-spaces";
+import {
+  createUseSpace,
+  createUseSpaceTree,
+} from "../../query/hooks/use-spaces";
 import {
   spaceExpansionStorageKey,
   useSpaceTreeExpansion,
@@ -227,5 +230,36 @@ describe("Space state (OT-5)", () => {
     );
     act(() => safe.result.current.setExpanded("sp-x", true));
     expect(safe.result.current.expandedIds.has("sp-x")).toBe(true);
+  });
+
+  it("reads one Space by id: pending, the live record, and NotFound as an error", async () => {
+    const pending = deferred<unknown>();
+    const get = vi.fn(() => pending.promise);
+    const { wrapper } = setup();
+    const useSpace = createUseSpace({
+      api: asClient({ get }),
+      endpoints,
+    });
+    const { result } = renderHook(() => useSpace("ws-a", "sp-it"), { wrapper });
+    expect(result.current.isPending).toBe(true);
+    expect(get).toHaveBeenCalledWith("/workspaces/ws-a/spaces/sp-it");
+    pending.resolve({
+      id: "sp-it",
+      name: "IT",
+      description: null,
+      spaceType: "Department",
+      visibility: "Private",
+      isArchived: false,
+      version: 4,
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toMatchObject({ name: "IT", version: 4 });
+
+    const gone = createUseSpace({
+      api: asClient({ get: vi.fn().mockRejectedValue({ status: 404 }) }),
+      endpoints,
+    });
+    const missing = renderHook(() => gone("ws-a", "sp-none"), { wrapper });
+    await waitFor(() => expect(missing.result.current.isError).toBe(true));
   });
 });
