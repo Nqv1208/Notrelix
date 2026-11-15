@@ -65,7 +65,7 @@ describe("docs comment threads", () => {
       screen.getByRole("checkbox", { name: /Hiện bình luận đã xử lý/ }),
     );
     const buttons = screen.getAllByRole("button", {
-      name: docsCopy.comments.resolveThread,
+      name: docsCopy.comments.resolveAction,
     });
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]!);
@@ -76,13 +76,13 @@ describe("docs comment threads", () => {
     const onCommentReopen = vi.fn();
     panel({ onCommentReopen });
     expect(
-      screen.queryByRole("button", { name: docsCopy.comments.reopenThread }),
+      screen.queryByRole("button", { name: docsCopy.comments.reopenAction }),
     ).toBeNull();
     fireEvent.click(
       screen.getByRole("checkbox", { name: /Hiện bình luận đã xử lý/ }),
     );
     const buttons = screen.getAllByRole("button", {
-      name: docsCopy.comments.reopenThread,
+      name: docsCopy.comments.reopenAction,
     });
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]!);
@@ -114,6 +114,60 @@ describe("docs comment threads", () => {
     expect(onCommentDelete).toHaveBeenCalledWith("open");
   });
 
+  it("FUI[docs.page.side-panel:comment-reply] shows replies under their thread and sends one with its thread starter", () => {
+    const onCommentCreate = vi.fn();
+    panel({ onCommentCreate }, [
+      {
+        ...THREADS[0]!,
+        replies: [{ ...THREADS[0]!, id: "r1", body: "Answered", mine: false }],
+      },
+    ]);
+    expect(screen.getByText("Answered")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.comments.replyAction }),
+    );
+    const field = screen.getByRole("textbox", {
+      name: docsCopy.comments.reply,
+    });
+    fireEvent.change(field, { target: { value: "Thanks" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onCommentCreate).toHaveBeenCalledWith("Thanks", "open");
+  });
+
+  it("FUI[docs.page.side-panel:comment-compose-limits] refuses a comment over the limit and tells a viewer they cannot comment", () => {
+    const onCommentCreate = vi.fn();
+    const view = panel({ onCommentCreate });
+    const field = screen.getByRole("textbox", {
+      name: docsCopy.comments.compose,
+    });
+    fireEvent.change(field, { target: { value: "x".repeat(10_012) } });
+    expect(screen.getByRole("alert").textContent).toContain("12");
+    expect(
+      (
+        screen.getByRole("button", {
+          name: docsCopy.comments.send,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onCommentCreate).not.toHaveBeenCalled();
+    view.unmount();
+    renderPureUi(
+      <DocSidePanelSurface
+        copy={docsCopy}
+        tab="comments"
+        tasks={[]}
+        relatedDocs={[]}
+        toc={TOC}
+        comments={[]}
+        callbacks={{}}
+      />,
+    );
+    expect(screen.getByText(docsCopy.comments.denied)).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByText(docsCopy.comments.emptyTitle)).toBeTruthy();
+  });
+
   it("offers resolve and reopen only to the thread starter or an editor", () => {
     // Someone else's threads, viewer cannot edit the page: nothing to resolve.
     panel({}, [
@@ -124,10 +178,10 @@ describe("docs comment threads", () => {
       screen.getByRole("checkbox", { name: /Hiện bình luận đã xử lý/ }),
     );
     expect(
-      screen.queryByRole("button", { name: docsCopy.comments.resolveThread }),
+      screen.queryByRole("button", { name: docsCopy.comments.resolveAction }),
     ).toBeNull();
     expect(
-      screen.queryByRole("button", { name: docsCopy.comments.reopenThread }),
+      screen.queryByRole("button", { name: docsCopy.comments.reopenAction }),
     ).toBeNull();
     expect(
       screen.queryByRole("button", { name: docsCopy.comments.delete }),

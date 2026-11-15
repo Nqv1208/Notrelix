@@ -223,7 +223,7 @@ describe("comments in the side panel", () => {
     );
     expect(screen.getByText("brave new")).toBeTruthy();
     const field = screen.getByRole("textbox", {
-      name: docsCopy.comments.reply,
+      name: docsCopy.comments.compose,
     });
     expect(document.activeElement).toBe(field);
     await act(async () => {
