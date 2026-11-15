@@ -157,6 +157,7 @@ export const endpoints = {
     comments: (pageId: string) => `/pages/${pageId}/comments`,
     commentsPage: (pageId: string) => `/pages/${pageId}/comments/page`,
     history: (pageId: string) => `/pages/${pageId}/history`,
+    activity: (pageId: string) => `/pages/${pageId}/activity`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,
     moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,

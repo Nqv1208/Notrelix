@@ -30,6 +30,7 @@ public static class MapPageEndpoints
         pageGroup.MapDeletePage();
         pageGroup.MapGetPageBreadcrumb();
         pageGroup.MapGetPageHistory();
+        pageGroup.MapGetPageActivity();
         pageGroup.MapGetPageBacklinks();
         pageGroup.MapMovePageToSpace();
         pageGroup.MapMovePage();
