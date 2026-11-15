@@ -19,18 +19,28 @@ function defaultStorage(): PanelStorage | null {
   }
 }
 
-function read(storage: PanelStorage | null, key: string): boolean {
-  if (!storage) return true;
+/** The panel is a sheet over the page below the `sm` breakpoint, so a phone starts with it closed. */
+function openByDefault(): boolean {
   try {
-    return storage.getItem(key) !== "0";
+    return !window.matchMedia("(max-width: 639px)").matches;
   } catch {
     return true;
   }
 }
 
+function read(storage: PanelStorage | null, key: string): boolean {
+  if (!storage) return openByDefault();
+  try {
+    const saved = storage.getItem(key);
+    return saved === null ? openByDefault() : saved !== "0";
+  } catch {
+    return openByDefault();
+  }
+}
+
 /**
  * Whether the document side panel is open: a per-viewer UI preference
- * (FE-AGENTS §28), not server state. Open by default; the choice survives
+ * (FE-AGENTS §28), not server state. Open by default on wide screens, closed on a phone; the choice survives
  * reloads and a blocked store only costs the memory.
  */
 export function useDocPanelOpen(
