@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -29,6 +30,11 @@ async function open(page: Page, path: string, heading: string) {
     page.getByRole("heading", { level: 1, name: heading }),
   ).toBeVisible();
 }
+
+const serious = (result: Awaited<ReturnType<AxeBuilder["analyze"]>>) =>
+  result.violations
+    .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+    .map((v) => `${v.id}: ${v.nodes[0]?.html.slice(0, 120)}`);
 
 const create = (page: Page) =>
   page.getByRole("button", { name: "Tạo mới", exact: true });
@@ -199,9 +205,7 @@ test.describe("Department page (owner)", () => {
     await expect(page.getByRole("alertdialog")).toBeHidden();
   });
 
-  test("Archive of an empty department asks first and Delete stays inert", async ({
-    page,
-  }) => {
+  test("Archive of an empty department asks first", async ({ page }) => {
     await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).not.toHaveAttribute("aria-disabled", "true");
@@ -213,10 +217,69 @@ test.describe("Department page (owner)", () => {
     await page.keyboard.press("Escape");
     await expect(confirm).toBeHidden();
     await expect(archive).toBeFocused();
+  });
+
+  test("Delete is blocked while the department has content, with the reason", async ({
+    page,
+  }) => {
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const remove = page.getByRole("button", { name: "Xoá phòng ban" });
     await expect(remove).toHaveAttribute("aria-disabled", "true");
+    await expect(
+      page.getByText(/Hãy chuyển hoặc xoá chúng trước/),
+    ).toBeVisible();
     await remove.click({ force: true });
     await expect(page.getByRole("group")).toHaveCount(0);
+  });
+
+  test("Delete asks for the name, lands on the deleted list and Restore brings the department back", async ({
+    page,
+  }) => {
+    await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
+    await expect(page.getByText(/Khôi phục được trong 30 ngày/)).toBeVisible();
+    const remove = page.getByRole("button", { name: "Xoá phòng ban" });
+    await remove.click();
+    const group = page.getByRole("group", {
+      name: /^Xoá Phòng Nhân sự khỏi/,
+    });
+    await expect(group).toBeVisible();
+    await expect(group.getByText(/Phòng ban đã xoá 30 ngày/)).toBeVisible();
+    const confirm = group.getByRole("button", { name: "Xoá phòng ban" });
+    await expect(confirm).toHaveAttribute("aria-disabled", "true");
+    await group.getByRole("textbox").fill("Phòng Nhân sự");
+    await expect(confirm).not.toHaveAttribute("aria-disabled", "true");
+    await confirm.click();
+    // The department leaves the tree and the deleted list shows it with its deadline.
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Phòng ban đã xoá" }),
+    ).toBeVisible();
+    await expect(page.getByText("Nhân sự", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Khôi phục được đến/)).toBeVisible();
+    await page.getByRole("button", { name: "Khôi phục" }).click();
+    await expect(page.getByText(/Không có phòng ban nào bị xoá/)).toBeVisible();
+    await page
+      .getByRole("link", { name: /Nhân sự/ })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Nhân sự" }),
+    ).toBeVisible();
+  });
+
+  test("the delete confirmation and the deleted list have no serious accessibility violation", async ({
+    page,
+  }) => {
+    await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
+    await page.getByRole("button", { name: "Xoá phòng ban" }).click();
+    await expect(page.getByRole("group", { name: /^Xoá/ })).toBeVisible();
+    const open1 = await new AxeBuilder({ page }).analyze();
+    expect(serious(open1)).toEqual([]);
+    await page.goto(`${WORKSPACE}/deleted-spaces`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Phòng ban đã xoá" }),
+    ).toBeVisible();
+    const list = await new AxeBuilder({ page }).analyze();
+    expect(serious(list)).toEqual([]);
   });
 
   test("an empty department shows the first steps and they lead somewhere", async ({
@@ -388,6 +451,20 @@ test.describe("Department page for a member who does not manage it", () => {
       "aria-disabled",
       "true",
     );
+    await expect(
+      page.getByRole("button", { name: "Xoá phòng ban" }),
+    ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  test("the deleted departments say who the page is for", async ({ page }) => {
+    await open(page, ENGINEERING, "Công nghệ");
+    await page.goto(`${WORKSPACE}/deleted-spaces`);
+    await expect(
+      page.getByText(/Chỉ Owner hoặc Admin của workspace mới xem/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Về Trang chủ" }),
+    ).toBeVisible();
   });
 });
 

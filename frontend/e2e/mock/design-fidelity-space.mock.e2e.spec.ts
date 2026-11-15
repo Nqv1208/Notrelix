@@ -543,6 +543,92 @@ test.describe("Department page geometry at 1440 px (owner)", () => {
     expect(await colour(remove, "color")).toBe(COLOUR.danger);
   });
 
+  test("the delete confirmation under the danger row", async ({ page }) => {
+    // Nhân sự is empty, so Delete is open to it; the mockup draws the same confirmation under Công nghệ.
+    await openSpace(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
+    const remove = page.getByRole("button", { name: "Xoá phòng ban" });
+    const row = f(page, "drow").nth(1);
+    expectRect(
+      await rel(page, row),
+      { x: 47, width: 722, height: 53.31 },
+      "row",
+    );
+    const trigger = await box(remove);
+    expect(
+      Math.abs(trigger.width - 115.23),
+      "button width",
+    ).toBeLessThanOrEqual(1);
+    expect(Math.abs(trigger.height - 28), "button height").toBeLessThanOrEqual(
+      1,
+    );
+    expect(
+      Math.abs(trigger.x + trigger.width - ((await box(row)).x + 722)),
+      "button at the row's right edge",
+    ).toBeLessThanOrEqual(1);
+    await remove.click();
+    const confirm = f(page, "confirm");
+    const origin = await box(confirm);
+    const within = async (locator: Locator): Promise<Rect> => {
+      const found = await box(locator);
+      return {
+        x: found.x - origin.x,
+        y: found.y - origin.y,
+        width: found.width,
+        height: found.height,
+      };
+    };
+    expectRect(
+      await within(confirm),
+      { x: 0, y: 0, width: 722, height: 138.38 },
+      "confirm",
+    );
+    expect(await style(confirm, "border-radius")).toBe("10px");
+    expect(await colour(confirm, "background-color")).toBe(COLOUR.dangerSoft);
+    expect(await colour(confirm, "border-top-color")).toBe(COLOUR.danger);
+    expectRect(
+      await within(page.locator("#space-delete-q")),
+      { x: 13, y: 13, width: 696, height: 18.13 },
+      "question",
+    );
+    expect(await style(page.locator("#space-delete-q"), "font-size")).toBe(
+      "12.5px",
+    );
+    expect(await style(page.locator("#space-delete-q"), "font-weight")).toBe(
+      "600",
+    );
+    expectRect(
+      await within(confirm.locator("> span")),
+      { x: 13, y: 39.12, width: 696, height: 18.13 },
+      "text, one line",
+    );
+    expectRect(
+      await within(confirm.locator("label")),
+      { x: 13, y: 65.25, width: 696, height: 18.13 },
+      "label",
+    );
+    const input = confirm.getByRole("textbox");
+    expectRect(
+      await within(input),
+      { x: 13, y: 91.37, width: 518.42, height: 34 },
+      "name field",
+    );
+    expect(await colour(input, "background-color")).toBe(COLOUR.panel);
+    expectRect(
+      await within(confirm.getByRole("button", { name: "Huỷ" })),
+      { x: 539.42, y: 94.37, width: 45.48, height: 28 },
+      "cancel",
+    );
+    const red = confirm.getByRole("button", { name: "Xoá phòng ban" });
+    expectRect(
+      await within(red),
+      { x: 592.91, y: 94.37, width: 116.09, height: 28 },
+      "delete",
+    );
+    expect(await colour(red, "background-color")).toBe(COLOUR.danger);
+    expect(await colour(red, "color")).toBe(COLOUR.panel);
+    expect(await colour(red, "border-top-color")).toBe(COLOUR.danger);
+  });
+
   test("the first steps of a department with nothing in it", async ({
     page,
   }) => {
@@ -663,6 +749,32 @@ test.describe("Department page in the dark theme (owner)", () => {
     expect(await colour(f(page, "h1"), "color")).not.toBe(COLOUR.ink);
     expect(await colour(f(page, "aside"), "background-color")).not.toBe(
       COLOUR.panel,
+    );
+  });
+
+  test("draws the delete confirmation in the dark danger colours", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-theme-mode", "dark");
+      } catch {
+        // Private mode: the light theme applies.
+      }
+    });
+    await openSpace(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
+    await page.getByRole("button", { name: "Xoá phòng ban" }).click();
+    const confirm = f(page, "confirm");
+    expectRect(
+      await rel(page, confirm),
+      { x: 47, width: 722, height: 138.38 },
+      "confirm",
+    );
+    expect(await colour(confirm, "border-top-color")).toBe(
+      "rgb(255, 107, 129)",
+    );
+    expect(await colour(confirm.getByRole("textbox"), "background-color")).toBe(
+      "rgb(26, 32, 40)",
     );
   });
 });
