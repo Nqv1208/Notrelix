@@ -104,7 +104,7 @@ const TEMPLATES: Readonly<
       stages: ["Ứng tuyển", "Phỏng vấn", "Đề nghị", "Nhận việc"],
       fields: [],
       sample: [],
-      bars: [100, 96, 40, 20],
+      bars: [100, 58, 30, 14],
     },
     {
       id: "support",
@@ -139,7 +139,7 @@ const TEMPLATES: Readonly<
       stages: ["Applied", "Interview", "Offer", "Hired"],
       fields: [],
       sample: [],
-      bars: [100, 96, 40, 20],
+      bars: [100, 58, 30, 14],
     },
     {
       id: "support",

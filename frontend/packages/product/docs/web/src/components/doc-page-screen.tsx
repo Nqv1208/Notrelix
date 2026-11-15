@@ -1670,6 +1670,7 @@ export function createDocPageScreen({
           onMovePage: undefined,
           onMovePageTo: undefined,
           onDuplicatePage: undefined,
+          onImportOpen: undefined,
         };
     callbacksRef.current = callbacks;
     const saveState: DocSaveState =
