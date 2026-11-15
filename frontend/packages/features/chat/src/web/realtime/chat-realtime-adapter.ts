@@ -266,8 +266,20 @@ export function createChatRealtimeAdapter(
       });
     }
 
-    // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId).
-    if (frame.clientMessageId !== null) {
+    // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId). Only once a loaded
+    // window holds the message: a frame that fell outside the window on screen (a send from an older window) must not
+    // take the bubble away, the send's own answer drops it when the newest window shows the stored copy.
+    const clientMessageId = frame.clientMessageId;
+    if (
+      clientMessageId !== null &&
+      queryClient
+        .getQueriesData<ChatMessagesCache>({ queryKey: prefix })
+        .some(([, cache]) =>
+          cache?.pages.some((page) =>
+            page.items.some((item) => item.clientMessageId === clientMessageId),
+          ),
+        )
+    ) {
       queryClient.setQueryData<PendingMessage[]>(pendingKey, (entries) =>
         entries
           ? entries.filter(
@@ -306,6 +318,12 @@ export function createChatRealtimeAdapter(
         createdAt: frame.preview.createdAt,
       });
     }
+    // The reader is looking at that space's newest message: the frame's count is already read (the read boundary moves
+    // with the message), so it is skipped instead of flashing a badge until the boundary lands.
+    const viewing = queryClient.getQueryData<string | null>(
+      chatQueryKeys.viewing(workspaceId),
+    );
+    if (viewing === frame.spaceId) return;
     const summary = queryClient.getQueryData<ChatUnreadSummary>(key);
     // Nothing loaded yet: the summary fetches on its first read.
     if (!summary) return;

@@ -634,13 +634,39 @@ public sealed class RealtimeConnection
         var now = _clock.GetTimestamp();
         lock (subscription.Sync)
         {
-            if (subscription.HasTyped && _clock.GetElapsedTime(subscription.LastTypingTicks, now) < _options.TypingMinInterval)
+            // A stop is never throttled (it only ends an indicator that a start made), and it re-arms the start, so
+            // the next keystroke after a stop is always delivered. Only a start inside an active run is throttled.
+            if (message.Stopped)
+            {
+                if (!subscription.HasTyped)
+                {
+                    return;
+                }
+
+                subscription.HasTyped = false;
+            }
+            else
+            {
+                if (subscription.HasTyped && _clock.GetElapsedTime(subscription.LastTypingTicks, now) < _options.TypingMinInterval)
+                {
+                    return;
+                }
+
+                subscription.HasTyped = true;
+                subscription.LastTypingTicks = now;
+            }
+
+            // Flood bound for start/stop alternation: a window of at most 30 signals per 10 seconds per subscription.
+            if (_clock.GetElapsedTime(subscription.TypingWindowTicks, now) > TimeSpan.FromSeconds(10))
+            {
+                subscription.TypingWindowTicks = now;
+                subscription.TypingWindowCount = 0;
+            }
+
+            if (++subscription.TypingWindowCount > 30)
             {
                 return;
             }
-
-            subscription.HasTyped = true;
-            subscription.LastTypingTicks = now;
         }
 
         var authorization = await _authorizer.AuthorizeAsync(_principal, subscription.Scope, token).ConfigureAwait(false);
@@ -651,7 +677,7 @@ public sealed class RealtimeConnection
         }
 
         PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
-            RealtimeEphemeralKinds.Typing, subscription.WorkspaceId, _principal.UserId));
+            RealtimeEphemeralKinds.Typing, subscription.WorkspaceId, _principal.UserId, message.Stopped ? RealtimeEphemeralStates.TypingStop : null));
     }
 
     /// <summary>A presence heartbeat: remembered in memory only, and announced to the channel subscriptions of this connection.</summary>
@@ -770,7 +796,8 @@ public sealed class RealtimeConnection
         {
             case RealtimeEphemeralKinds.Typing:
                 EnqueueEphemeral(subscription, RealtimeProtocol.Typing(
-                    subscription.Id, signal.UserId, (long)_options.TypingExpiry.TotalMilliseconds));
+                    subscription.Id, signal.UserId,
+                    signal.State == RealtimeEphemeralStates.TypingStop ? 0 : (long)_options.TypingExpiry.TotalMilliseconds));
                 break;
             case RealtimeEphemeralKinds.Presence when RealtimePresenceStates.IsValid(signal.State):
                 EnqueueEphemeral(subscription, RealtimeProtocol.Presence(
@@ -924,6 +951,8 @@ public sealed class RealtimeConnection
         public IAsyncDisposable? EphemeralHandle { get; set; }
         public bool HasTyped { get; set; }
         public long LastTypingTicks { get; set; }
+        public long TypingWindowTicks { get; set; }
+        public int TypingWindowCount { get; set; }
         public volatile bool Acknowledged;
         public volatile bool Cancelled;
     }

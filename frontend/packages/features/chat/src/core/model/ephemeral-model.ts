@@ -32,8 +32,8 @@ export interface ChatEphemeralPort {
     spaceId: string,
     listener: (event: ChatEphemeralEvent) => void,
   ) => () => void;
-  /** Tells the space's subscribers the caller is typing. */
-  readonly sendTyping: (spaceId: string) => void;
+  /** Tells the space's subscribers the caller is typing, or (`stopped`) that the caller stopped. */
+  readonly sendTyping: (spaceId: string, stopped?: boolean) => void;
   /** Reports the caller's presence (a heartbeat). */
   readonly sendPresence: (state: ChatPresenceState) => void;
 }
@@ -252,9 +252,9 @@ export class PresenceStore extends Observable {
 export function createTypingThrottle(
   clock: Pick<EphemeralClock, "now"> = systemEphemeralClock,
   intervalMs: number = TYPING_THROTTLE_MS,
-): (spaceId: string) => boolean {
+): ((spaceId: string) => boolean) & { reset: (spaceId: string) => boolean } {
   const lastSent = new Map<string, number>();
-  return (spaceId) => {
+  const throttle = (spaceId: string): boolean => {
     const now = clock.now();
     const last = lastSent.get(spaceId);
     if (last !== undefined && now - last < intervalMs) return false;
@@ -266,4 +266,8 @@ export function createTypingThrottle(
     lastSent.set(spaceId, now);
     return true;
   };
+  /** After a stop the next keystroke is a new start, sent at once. */
+  return Object.assign(throttle, {
+    reset: (spaceId: string) => lastSent.delete(spaceId),
+  });
 }

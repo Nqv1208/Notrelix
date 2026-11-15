@@ -59,7 +59,8 @@ export function ChatPage() {
           { workspaceId, channelId: spaceId },
           listener,
         ),
-      sendTyping: (spaceId) => realtimeClient.sendTyping(spaceId),
+      sendTyping: (spaceId, stopped) =>
+        realtimeClient.sendTyping(spaceId, stopped),
       sendPresence: (state) => realtimeClient.sendPresence(state),
     }),
     [realtimeClient, workspaceId],

@@ -19,6 +19,9 @@ export const chatQueryKeys = {
   /** Client-only projection of the sends not yet confirmed (converges on the server copy). */
   pending: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pending", channelId),
+  /** Client-only: the channel the reader is looking at, newest message on screen and page visible (or null). */
+  viewing: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "viewing"),
   /** The mention picker of one space (people, broadcast permission, member count). */
   mentionables: (workspaceId: string, spaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "mentionables", spaceId),
