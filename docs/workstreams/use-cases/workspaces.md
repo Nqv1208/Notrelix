@@ -1257,11 +1257,11 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `name` or `description`, `expectedVersion`.
 - Output: Updated Team, version +1.
 - Main flow: 1. `PUT .../teams/{teamId}` or `PUT .../teams/{teamId}/description`. 2. Version check.
-- No-op / rejection / concurrency / retry: Same value: no-op. Stale: 409. Archived Team: accepts no change.
+- No-op / rejection / concurrency / retry: Same value: no-op. Stale: 412. Archived Team: accepts no change.
 - UI states: Inline edit, conflict, pending.
 - Rules: [workspaces](../../product/workspaces.md) section 48.2; WGREQ036.
-- Acceptance: Given a stale version, Then 409 and no change.
-- Evidence: BE `PUT .../teams/{teamId}`, `PUT .../description`, `RenameTeamCommandHandler`, `UpdateTeamDescriptionCommandHandler` · FE `workspace-team-surface.tsx` (edit dialog), `use-team-mutations.ts` · Design `Final-Teams` · Tests `TeamVersionTests`, `TeamWriteConcurrencyIntegrationTests` · FE `workspace-teams.mock.e2e.spec.ts` (7 passed: 6 owner, 1 member), component tests `workspace-teams.interaction` and `workspace-team.interaction` (24 passed), axe over the `workspace-teams` stories (28 of 28 passed, no critical or serious finding) · Design diff `design-fidelity-teams.mock.e2e.spec.ts` (10 of 10 passed: list, one Team, create dialog, archive confirm, member page, light and dark, 1 px, `e2e/support/artboards/teams.json`; the board is drawn at 1440 px only; 390 and 1024 px reviewed by screenshot, Vietnamese, light and dark) · Real e2e `workspace-teams.real.e2e.spec.ts` (real stack, project notrelix-fe-real-e2e, branch feat/workspace-teams-done, 2 of 2 passed: one Admin journey through the page and one rejection journey) · Lane run 2026-11-15: Domain `TeamVersionTests` (6) and `TeamTests` (rename and description, no-op, archived refuses), Integration `TeamWriteConcurrencyIntegrationTests` (5 passed: a stale version is 412 and changes nothing), real e2e: the edit dialog renames and describes in one save (the two writes now run in turn, each on the version the one before left); the same name again is 204 and bumps no version; a stale version is 412 and the name stays; an archived Team refuses a rename. The stale answer is 412 (Precondition Failed), not the 409 the catalog line says.
+- Acceptance: Given a stale version, Then 412 and no change.
+- Evidence: BE `PUT .../teams/{teamId}`, `PUT .../description`, `RenameTeamCommandHandler`, `UpdateTeamDescriptionCommandHandler` · FE `workspace-team-surface.tsx` (edit dialog), `use-team-mutations.ts` · Design `Final-Teams` · Tests `TeamVersionTests`, `TeamWriteConcurrencyIntegrationTests` · FE `workspace-teams.mock.e2e.spec.ts` (7 passed: 6 owner, 1 member), component tests `workspace-teams.interaction` and `workspace-team.interaction` (24 passed), axe over the `workspace-teams` stories (28 of 28 passed, no critical or serious finding) · Design diff `design-fidelity-teams.mock.e2e.spec.ts` (10 of 10 passed: list, one Team, create dialog, archive confirm, member page, light and dark, 1 px, `e2e/support/artboards/teams.json`; the board is drawn at 1440 px only; 390 and 1024 px reviewed by screenshot, Vietnamese, light and dark) · Real e2e `workspace-teams.real.e2e.spec.ts` (real stack, project notrelix-fe-real-e2e, branch feat/workspace-teams-done, 2 of 2 passed: one Admin journey through the page and one rejection journey) · Lane run 2026-11-15: Domain `TeamVersionTests` (6) and `TeamTests` (rename and description, no-op, archived refuses), Integration `TeamWriteConcurrencyIntegrationTests` (5 passed: a stale version is 412 and changes nothing), real e2e: the edit dialog renames and describes in one save (the two writes now run in turn, each on the version the one before left); the same name again is 204 and bumps no version; a stale version is 412 and the name stays; an archived Team refuses a rename. The stale answer is 412 (Precondition Failed), as everywhere in the API.
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-15, branch feat/workspace-teams-done); see the Evidence line.
 
 ### UC-WSP-L05 Add a person to a Team
@@ -1271,7 +1271,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`, `role` (Member or Lead), `expectedVersion`.
 - Output: Team membership; Team version +1.
 - Main flow: 1. `POST .../teams/{teamId}/members`. 2. Version check. 3. Domain adds.
-- No-op / rejection / concurrency / retry: Foreign or Guest user: refused. Duplicate: refused or no-op. Stale: 409.
+- No-op / rejection / concurrency / retry: Foreign or Guest user: refused. Duplicate: refused or no-op. Stale: 412.
 - UI states: Add dialog, conflict, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 46, 78; WSP-014; WGREQ035.
 - Acceptance: Given a foreign user id, Then refused and nothing changes.
@@ -1285,7 +1285,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`, `newRole`, `expectedVersion`.
 - Output: New Team role. The last Lead cannot be downgraded.
 - Main flow: 1. `PUT .../teams/{teamId}/members/{userId}/role`.
-- No-op / rejection / concurrency / retry: Last Lead: refused (TeamLeadRules). Stale: 409.
+- No-op / rejection / concurrency / retry: Last Lead: refused (TeamLeadRules). Stale: 412.
 - UI states: Role menu, reason when blocked.
 - Rules: [workspaces](../../product/workspaces.md) section 47; WSP-014.
 - Acceptance: Given one Lead, When lowered, Then refused.
@@ -1299,7 +1299,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `userId`, `expectedVersion`.
 - Output: Membership Removed.
 - Main flow: 1. `DELETE .../teams/{teamId}/members/{userId}?expectedVersion=`.
-- No-op / rejection / concurrency / retry: Last Lead: refused. Stale: 409.
+- No-op / rejection / concurrency / retry: Last Lead: refused. Stale: 412.
 - UI states: Confirmation naming lost access.
 - Rules: [workspaces](../../product/workspaces.md) section 46; GOV-026.
 - Acceptance: Given a person with Team-based access, When removed, Then that access ends.
@@ -1313,7 +1313,7 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Input: `teamId`, `expectedVersion`.
 - Output: Archived Team grants nothing and accepts no change; unarchive restores it.
 - Main flow: 1. `POST .../teams/{teamId}/archive` or `.../unarchive`.
-- No-op / rejection / concurrency / retry: Already in the state: no-op. Stale: 409. The row menu says who loses access first.
+- No-op / rejection / concurrency / retry: Already in the state: no-op. Stale: 412. The row menu says who loses access first.
 - UI states: Confirmation naming consequences, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 44.3, 48.1; WSP-024, WSP-025; WGREQ036.
 - Acceptance: Given a Team with a Space entry, When archived, Then its members lose that role.
