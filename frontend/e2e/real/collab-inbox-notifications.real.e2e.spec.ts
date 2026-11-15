@@ -86,12 +86,12 @@ test("a mention reaches the Inbox only while the in-app mention preference is on
   const setMention = async (inApp: boolean) => {
     const read = await apiRead<Preferences>(
       s.reader,
-      `/workspaces/${s.workspace.id}/notification-preferences`,
+      "/profile/notification-preferences",
     );
     const saved = await apiWrite(
       s.reader,
       "PATCH",
-      `/workspaces/${s.workspace.id}/notification-preferences`,
+      "/profile/notification-preferences",
       {
         expectedVersion: read.version,
         rows: [{ type: "mention", inApp }],
