@@ -764,16 +764,6 @@ export function ChatWorkspace({
     if (isMobile) setPanel(null);
   }
 
-  /** There is no per-message address yet, so the link is the channel's own address. */
-  function handleCopyChannelLink(done: string, failed: string) {
-    const write = navigator.clipboard?.writeText(window.location.href);
-    if (!write) return setNotice(failed);
-    void write.then(
-      () => setNotice(done),
-      () => setNotice(failed),
-    );
-  }
-
   function handleOpenThread(message: ChatMessage) {
     setPanel({ kind: "thread", rootId: message.threadRootId ?? message.id });
   }
@@ -2022,12 +2012,6 @@ export function ChatWorkspace({
                   unpinBusy={pinner.isPending}
                   onUnpin={(message) => handleTogglePin(message, false)}
                   onOpenMessage={handleOpenPinned}
-                  onCopyLink={() =>
-                    handleCopyChannelLink(
-                      copy.pins.linkCopied,
-                      copy.pins.linkFailed,
-                    )
-                  }
                 />
               ) : null}
               {panel.kind === "mentions" ? (

@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   AlertTriangle,
   ArrowUp,
-  Link2,
   MoreHorizontal,
   Pin,
   PinOff,
@@ -161,21 +160,19 @@ export interface PinRowMenuProps {
   /** The pin's text, so the trigger names which pin it acts on. */
   readonly snippet: string;
   readonly onOpenMessage: () => void;
-  readonly onCopyLink: () => void;
   /** Absent when the caller may not unpin. */
   readonly onUnpin?: () => void;
   readonly disabled?: boolean;
 }
 
 /**
- * The menu of one pinned message (Chat-Pins boards): Open message, Copy link, then Unpin in red after a rule. A 220 popup
+ * The menu of one pinned message (Chat-Pins boards): Open message, then Unpin in red after a rule. A 220 popup
  * from 768 px, a bottom sheet titled "Pinned messages" on a phone.
  */
 export function PinRowMenu({
   copy,
   snippet,
   onOpenMessage,
-  onCopyLink,
   onUnpin,
   disabled = false,
 }: PinRowMenuProps) {
@@ -214,12 +211,6 @@ export function PinRowMenu({
               icon: ArrowUp,
               onSelect: onOpenMessage,
             },
-            {
-              key: "link",
-              label: text.copyLink,
-              icon: Link2,
-              onSelect: onCopyLink,
-            },
             ...(onUnpin
               ? [
                   {
@@ -246,10 +237,6 @@ export function PinRowMenu({
         <DropdownMenuItem className={PIN_MENU_ITEM} onSelect={onOpenMessage}>
           <ArrowUp className="size-3.5" aria-hidden="true" />
           {text.openMessage}
-        </DropdownMenuItem>
-        <DropdownMenuItem className={PIN_MENU_ITEM} onSelect={onCopyLink}>
-          <Link2 className="size-3.5" aria-hidden="true" />
-          {text.copyLink}
         </DropdownMenuItem>
         {onUnpin ? (
           <>

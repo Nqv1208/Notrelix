@@ -220,15 +220,11 @@ for (const theme of ["light", "dark"] as const) {
           await expect(sheet).toBeVisible();
           await page.waitForTimeout(500);
           const box = (await sheet.boundingBox())!;
-          // Board: 390 x 231, three 48 rows whose labels sit 2 px below the row centre.
+          // Board: 390 x 231 with three 48 rows; Copy link is not offered (no message address yet), so 183 with two rows.
           close(box.width, 390);
-          close(box.height, 231, 1.5);
+          close(box.height, 183, 1.5);
           const rows = sheet.getByRole("button", { name: /./ });
-          const names = [
-            copy.pins.goToMessage,
-            copy.pins.copyLink,
-            copy.pins.unpinAction,
-          ];
+          const names = [copy.pins.goToMessage, copy.pins.unpinAction];
           for (const [i, name] of names.entries()) {
             const row = await rel(
               sheet,
@@ -237,7 +233,7 @@ for (const theme of ["light", "dark"] as const) {
             close(row.h, 48);
             close(row.y, 67 + i * 48, 1.5);
           }
-          expect(await rows.count()).toBeGreaterThanOrEqual(4);
+          expect(await rows.count()).toBeGreaterThanOrEqual(3);
           await settle(page, `pin-menu-${tag}`, sheet);
           return;
         }
@@ -245,15 +241,15 @@ for (const theme of ["light", "dark"] as const) {
         await expect(menu).toBeVisible();
         await page.waitForTimeout(300);
         const box = (await menu.boundingBox())!;
-        // Board: 220 wide, 139 high (three 40 rows, a rule, 4 padding), radius 12.
+        // Board: 220 wide, 139 high with three 40 rows, a rule and 4 padding; without Copy link 99, the rows keep their board offsets.
         close(box.width, 220);
-        close(box.height, 139, 1.5);
+        close(box.height, 99, 1.5);
         expect(
           await menu.evaluate((el) => getComputedStyle(el).borderTopLeftRadius),
         ).toBe("12px");
         const items = menu.getByRole("menuitem");
-        expect(await items.count()).toBe(3);
-        for (const [i, y] of [5, 45, 94].entries()) {
+        expect(await items.count()).toBe(2);
+        for (const [i, y] of [5, 54].entries()) {
           const item = await rel(menu, items.nth(i));
           close(item.h, 40);
           close(item.y, y, 1.5);
@@ -262,7 +258,7 @@ for (const theme of ["light", "dark"] as const) {
         const icon = await rel(menu, items.nth(0).locator("svg"));
         close(icon.x, 19, 1.5);
         close(icon.w, 14);
-        await expect(items.nth(2)).toHaveAttribute(
+        await expect(items.nth(1)).toHaveAttribute(
           "data-variant",
           "destructive",
         );
@@ -305,12 +301,11 @@ for (const theme of ["light", "dark"] as const) {
           await page.waitForTimeout(500);
           const box = (await sheet.boundingBox())!;
           close(box.width, 390);
-          close(box.height, 231, 1.5);
+          close(box.height, 183, 1.5);
           const rows = sheet.getByRole("button");
           for (const [i, name] of [
             copy.thread.unfollowThread,
             copy.thread.mute,
-            copy.thread.copyLink,
           ].entries()) {
             const r = await rel(
               sheet,
@@ -319,7 +314,7 @@ for (const theme of ["light", "dark"] as const) {
             close(r.h, 48);
             close(r.y, 67 + i * 48, 1.5);
           }
-          expect(await rows.count()).toBeGreaterThanOrEqual(4);
+          expect(await rows.count()).toBeGreaterThanOrEqual(3);
           await settle(page, `thread-menu-${tag}`, sheet);
           return;
         }
@@ -327,15 +322,15 @@ for (const theme of ["light", "dark"] as const) {
         await expect(menu).toBeVisible();
         await page.waitForTimeout(300);
         const box = (await menu.boundingBox())!;
-        // Board: 220 wide, 122 high (three 36 rows, 6 padding), radius 12, 13.5 labels.
+        // Board: 220 wide, 122 high with three 36 rows and 6 padding; two rows here (no Copy link), so 86; radius 12, 13.5 labels.
         close(box.width, 220);
-        close(box.height, 122, 1.5);
+        close(box.height, 86, 1.5);
         expect(
           await menu.evaluate((el) => getComputedStyle(el).borderTopLeftRadius),
         ).toBe("12px");
         const items = menu.getByRole("menuitem");
-        expect(await items.count()).toBe(3);
-        for (let i = 0; i < 3; i++) {
+        expect(await items.count()).toBe(2);
+        for (let i = 0; i < 2; i++) {
           const item = await rel(menu, items.nth(i));
           close(item.h, 36);
           close(item.y, 7 + i * 36, 1.5);

@@ -80,7 +80,6 @@ export interface PinsPanelProps {
   /** Asks to unpin; the workspace confirms first. */
   readonly onUnpin: (message: ChatMessage) => void;
   readonly onOpenMessage: (message: ChatMessage) => void;
-  readonly onCopyLink: (message: ChatMessage) => void;
   readonly unpinBusy: boolean;
 }
 
@@ -98,7 +97,6 @@ export function PinsPanel({
   canUnpin,
   onUnpin,
   onOpenMessage,
-  onCopyLink,
   unpinBusy,
 }: PinsPanelProps) {
   const pins = hooks.usePins(workspaceId, channelId);
@@ -188,7 +186,6 @@ export function PinsPanel({
                     snippet={pin.message.content ?? ""}
                     disabled={unpinBusy}
                     onOpenMessage={() => onOpenMessage(pin.message)}
-                    onCopyLink={() => onCopyLink(pin.message)}
                     onUnpin={
                       canUnpin(pin) ? () => onUnpin(pin.message) : undefined
                     }

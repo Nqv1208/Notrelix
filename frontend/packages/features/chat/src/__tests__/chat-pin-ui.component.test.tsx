@@ -119,7 +119,6 @@ describe("PinRowMenu", () => {
   function menu(onUnpin?: () => void) {
     const handlers = {
       onOpenMessage: vi.fn(),
-      onCopyLink: vi.fn(),
     };
     render(
       <PinRowMenu
@@ -139,24 +138,20 @@ describe("PinRowMenu", () => {
       },
     );
 
-  it("offers Open message, Copy link and a red Unpin after a rule", async () => {
+  it("offers Open message and a red Unpin, and no Copy link until message links exist", async () => {
     const onUnpin = vi.fn();
     const handlers = menu(onUnpin);
     openMenu();
     const items = await screen.findAllByRole("menuitem");
     expect(items.map((item) => item.textContent)).toEqual([
       "Open message",
-      "Copy link",
       "Unpin",
     ]);
-    expect(items[2]!.getAttribute("data-variant")).toBe("destructive");
+    expect(items[1]!.getAttribute("data-variant")).toBe("destructive");
     fireEvent.click(items[0]!);
     expect(handlers.onOpenMessage).toHaveBeenCalledTimes(1);
     openMenu();
     fireEvent.click((await screen.findAllByRole("menuitem"))[1]!);
-    expect(handlers.onCopyLink).toHaveBeenCalledTimes(1);
-    openMenu();
-    fireEvent.click((await screen.findAllByRole("menuitem"))[2]!);
     expect(onUnpin).toHaveBeenCalledTimes(1);
   });
 
@@ -164,10 +159,7 @@ describe("PinRowMenu", () => {
     menu(undefined);
     openMenu();
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual([
-      "Open message",
-      "Copy link",
-    ]);
+    expect(items.map((item) => item.textContent)).toEqual(["Open message"]);
   });
 
   it("is a bottom sheet titled Pinned messages on a phone", () => {
@@ -202,7 +194,6 @@ describe("ThreadMoreMenu", () => {
     const handlers = {
       onToggleFollow: vi.fn(),
       onToggleMute: vi.fn(),
-      onCopyLink: vi.fn(),
     };
     render(
       <ThreadMoreMenu
@@ -220,14 +211,13 @@ describe("ThreadMoreMenu", () => {
       key: "Enter",
     });
 
-  it("unfollows, mutes and copies the link while following, in Vietnamese", async () => {
+  it("unfollows and mutes while following, in Vietnamese, with no copy-link entry", async () => {
     const handlers = threadMenu(true);
     open();
     const items = await screen.findAllByRole("menuitem");
     expect(items.map((item) => item.textContent)).toEqual([
       "Tắt theo dõi luồng",
       "Tắt tiếng",
-      "Sao chép liên kết",
     ]);
     fireEvent.click(items[0]!);
     expect(handlers.onToggleFollow).toHaveBeenCalledTimes(1);
@@ -237,18 +227,15 @@ describe("ThreadMoreMenu", () => {
     threadMenu(false);
     open();
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent)).toEqual([
-      "Theo dõi luồng",
-      "Sao chép liên kết",
-    ]);
+    expect(items.map((item) => item.textContent)).toEqual(["Theo dõi luồng"]);
   });
 
-  it("holds the follow entries while a change is in flight but still copies the link", async () => {
+  it("holds the entries while a change is in flight", async () => {
     threadMenu(true, false, true);
     open();
     const items = await screen.findAllByRole("menuitem");
     expect(items[0]!.getAttribute("aria-disabled")).toBe("true");
-    expect(items[2]!.getAttribute("aria-disabled")).toBeNull();
+    expect(items[1]!.getAttribute("aria-disabled")).toBe("true");
   });
 
   it("is a bottom sheet titled Thread on a phone", () => {
@@ -257,9 +244,8 @@ describe("ThreadMoreMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tuỳ chọn luồng" }));
     const sheet = screen.getByTestId("chat-thread-sheet");
     expect(sheet.textContent).toContain("Luồng trả lời");
-    fireEvent.click(
-      within(sheet).getByRole("button", { name: "Sao chép liên kết" }),
-    );
-    expect(handlers.onCopyLink).toHaveBeenCalledTimes(1);
+    fireEvent.click(within(sheet).getByRole("button", { name: "Tắt tiếng" }));
+    expect(handlers.onToggleMute).toHaveBeenCalledTimes(1);
+    expect(sheet.textContent).not.toContain("Sao chép liên kết");
   });
 });

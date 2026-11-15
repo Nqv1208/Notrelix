@@ -74,7 +74,6 @@ export function ChatThreadPanel({
   const [draft, setDraft] = useState("");
   const [alsoSend, setAlsoSend] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [activity] = useState(createRowActivityStore);
 
   const root = thread.data?.pages[0]?.root ?? null;
@@ -135,17 +134,6 @@ export function ChatThreadPanel({
     );
   }
 
-  /** There is no per-reply address yet, so the link is the channel's own address. */
-  function copyLink() {
-    setNotice(null);
-    const write = navigator.clipboard?.writeText(window.location.href);
-    if (!write) return setNotice(copy.thread.linkFailed);
-    void write.then(
-      () => setInfo(copy.thread.linkCopied),
-      () => setNotice(copy.thread.linkFailed),
-    );
-  }
-
   return (
     <section
       aria-label={copy.thread.panelLabel}
@@ -181,7 +169,6 @@ export function ChatThreadPanel({
             busy={follower.isPending}
             onToggleFollow={toggleFollow}
             onToggleMute={toggleMute}
-            onCopyLink={copyLink}
           />
         ) : null}
       </ChatPanelHeader>
@@ -349,11 +336,6 @@ export function ChatThreadPanel({
         >
           <Archive className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           {copy.thread.archivedBanner}
-        </p>
-      ) : null}
-      {info ? (
-        <p role="status" className="mx-3 mb-1 text-xs text-muted-foreground">
-          {info}
         </p>
       ) : null}
       {notice ? (

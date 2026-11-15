@@ -4,7 +4,6 @@ import {
   BellOff,
   BellPlus,
   BellRing,
-  Link2,
   MoreHorizontal,
 } from "lucide-react";
 import {
@@ -26,11 +25,10 @@ export interface ThreadMoreMenuProps {
   readonly busy: boolean;
   readonly onToggleFollow: () => void;
   readonly onToggleMute: () => void;
-  readonly onCopyLink: () => void;
 }
 
 /**
- * The thread "more" menu (Chat-Thread boards): follow or unfollow the thread, mute it while following, copy the link. A
+ * The thread "more" menu (Chat-Thread boards): follow or unfollow the thread, mute it while following. There is no copy-link entry: no message address exists yet. A
  * 220 popup from 768 px, a bottom sheet titled "Thread" on a phone. Archiving a thread is not offered: no sweep stores it.
  */
 export function ThreadMoreMenu({
@@ -40,7 +38,6 @@ export function ThreadMoreMenu({
   busy,
   onToggleFollow,
   onToggleMute,
-  onCopyLink,
 }: ThreadMoreMenuProps) {
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -62,7 +59,6 @@ export function ThreadMoreMenu({
           },
         ]
       : []),
-    { key: "link", label: text.copyLink, icon: Link2, onSelect: onCopyLink },
   ];
   const trigger = (
     <Button
