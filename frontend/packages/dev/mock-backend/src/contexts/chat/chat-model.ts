@@ -275,6 +275,8 @@ export const CHAT_SYSTEM_TEXT = {
   unarchived: "unarchived the channel",
   renamed: (name: string) => `renamed the channel to ${name}`,
   pinned: "pinned a message",
+  groupMemberAdded: "added a member to the group",
+  groupMemberLeft: "left the group",
 } as const;
 
 /** An export of one person's chat data (backend ChatExportJob). The file is kept as text; the real one is an object in storage. */
