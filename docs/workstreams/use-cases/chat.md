@@ -536,12 +536,12 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - Actors and permission: Workspace Owner, Admin, Member; Guest only in spaces they were added to.
 - Preconditions: Member of the spaces.
 - Input: None.
-- Output: Per-space unread count and a total on the rail icon.
-- Main flow: 1. GET /api/v1/workspaces/{workspaceId}/chat/me/unread. 2. Counts are last sequence minus read boundary, excluding own messages and muted spaces for the total.
-- No-op / rejection / concurrency / retry: Large counts display as 99+.
+- Output: Per-space unread state and a total on the rail icon. A channel is unread or not (bold and a dot, no number); a direct or group conversation shows a number.
+- Main flow: 1. GET /api/v1/workspaces/{workspaceId}/chat/me/unread. 2. The unread value is the last sequence minus the read boundary, read from stored columns (no row count): an upper bound that includes system, deleted and purged messages. A person's own message moves their own boundary when they were caught up. Muted spaces are left out of the total.
+- No-op / rejection / concurrency / retry: Large numbers display as 99+. Counting rule change (2026-11): exact per-channel message counts are dropped from the sidebar so a send is O(1) and the summary does not depend on the backlog (the Discord and Slack model; see Product CHT-009).
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009.
-- Acceptance: Given 120 unread, then the badge shows 99+ and the divider still finds the first unread.
+- Acceptance: Given 120 unread in a direct conversation, then the badge shows 99+ and the divider still finds the first unread; given 120 unread in a channel, then the channel shows bold and a dot and no number.
 - Evidence: BE GET /api/v1/workspaces/{workspaceId}/chat/me/unread (Chat.ReadState.Unread, GetUnreadSummary) · FE the badges of chat-sidebar.tsx · Mock frontend/packages/dev/mock-backend/src/contexts/chat/read-state.handlers.ts (chat.readState.unread) · Tests ReadStateHandlerTests, ChatReadStateIntegrationTests, ChatReadStateRlsTests, chat-sidebar.component.test.tsx · Design none yet · Real e2e none yet
 - State: HARDENING — Built to the use case: backend, mock, UI and tests exist (checked by operation, handler, component and test file; the owner tests and sets DONE). Not done: real e2e, design record, owner check, axe record.
 
@@ -578,8 +578,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - Actors and permission: Workspace Owner, Admin, Member; Guest only in spaces they were added to.
 - Preconditions: A message mentions the person.
 - Input: None.
-- Output: A mention count per space that persists until the mention is read.
-- Main flow: 1. Mention facts increment a per-space mention counter. 2. Reading past it clears it.
+- Output: A mention count per space that persists until the mention is read, capped at 99+ in the sidebar.
+- Main flow: 1. The send that stores a mention adds one to the stored mention count of each member it reaches (named people; every member for @channel and @here), in one UPDATE, with no recount; thread replies count the same way. 2. An edit or a delete takes the stored mentions off. 3. A read sets the count to the mentions after the new boundary. 4. The realtime frame carries the new count, the unread value and a preview of the message (at most 140 characters) for members who are active, not muted and can read the space.
 - No-op / rejection / concurrency / retry: A mention in a muted space counts but does not badge.
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-009, CHT-010.

@@ -256,6 +256,8 @@ export interface BoardSettingsSurfaceProps {
   deletedFields?: DeletedFieldsPanelProps;
   /** The forms of the board: when given, the page has a "Forms" section. */
   forms?: BoardFormsPanelProps;
+  /** The form builder of the open form (replaces the forms list while a form is open). */
+  formBuilder?: ReactNode;
   /** The workspace's board templates: when given, the page has a "Board templates" section. */
   templates?: BoardTemplatesPanelProps;
   /** The Kanban view's own settings (lane limit, who manages statuses), shown in its panel. */

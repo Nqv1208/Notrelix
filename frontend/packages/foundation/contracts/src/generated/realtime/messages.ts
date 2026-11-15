@@ -96,7 +96,15 @@ export interface ChatSpaceChangedPayload {
 }
 
 export interface ChatUnreadChangedPayload {
+  "lastSequence"?: number;
   "mentions": number;
+  "preview"?: {
+    "authorId": string;
+    "createdAt": string;
+    "kind": string;
+    "sequence": number;
+    "text"?: string;
+  };
   "spaceId": string;
   "unread": number;
 }

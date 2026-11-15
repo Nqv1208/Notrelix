@@ -191,3 +191,34 @@ describe("projectTableLanes", () => {
     );
   });
 });
+
+describe("projectTableLanes under paging", () => {
+  const input = (hideDone: boolean) => ({
+    sort: DEFAULT_TABLE_SORT,
+    hideDone,
+    statusRank: rankNone,
+    isOverdue: () => false,
+    narrowed: false,
+  });
+
+  it("counts a finished lane from the server's total, not from its loaded cards", () => {
+    const open: KanbanStatusLane = {
+      ...lane("todo", "Todo", [card("a")], 4990),
+      filteredTotal: 4990,
+      hasMore: true,
+    };
+    const done: KanbanStatusLane = {
+      ...lane("done", "Done", [card("d1", { statusCategory: "done" })], 10),
+      category: "done",
+      filteredTotal: 10,
+      hasMore: true,
+    };
+    const hidden = projectTableLanes({ ...input(true), lanes: [open, done] });
+    expect(hidden.visibleCount).toBe(4990);
+    expect(hidden.hiddenCount).toBe(10);
+    expect(hidden.doneHiddenCount).toBe(10);
+    const shown = projectTableLanes({ ...input(false), lanes: [open, done] });
+    expect(shown.visibleCount).toBe(5000);
+    expect(shown.hiddenCount).toBe(0);
+  });
+});

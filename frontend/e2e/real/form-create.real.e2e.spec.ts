@@ -46,13 +46,13 @@ test("a board manager creates a form that starts as a draft and opens in the bui
   const response = await created;
   expect(response.status()).toBe(201);
   expect(response.request().headers()["idempotency-key"]).toBeTruthy();
-  await expect(page).toHaveURL(/\/forms\/[^/]+\/edit$/);
+  await expect(page).toHaveURL(/\/settings\?section=forms&form=[^&]+$/);
   await expect(page.getByRole("textbox", { name: "Form name" })).toHaveValue(
     title,
   );
   // A draft with no question cannot be published yet.
   await expect(page.getByRole("button", { name: "Publish" })).toBeDisabled();
-  const formId = /\/forms\/([^/]+)\/edit$/.exec(page.url())![1]!;
+  const formId = /[?&]form=([^&]+)/.exec(page.url())![1]!;
   const form = await formRead(page, formId);
   expect(form.status).toBe("Draft");
 

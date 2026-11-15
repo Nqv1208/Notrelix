@@ -53,7 +53,7 @@ test.describe("Board forms (owner)", () => {
       .fill("Yêu cầu cấp quyền");
     await page.getByRole("button", { name: "Tạo", exact: true }).click();
 
-    await expect(page).toHaveURL(/\/forms\/[^/]+\/edit$/);
+    await expect(page).toHaveURL(/\/settings\?section=forms&form=[^&]+$/);
     await expect(
       page.getByRole("textbox", { name: "Tên biểu mẫu" }),
     ).toHaveValue("Yêu cầu cấp quyền");

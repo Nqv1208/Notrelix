@@ -157,6 +157,7 @@ describe("docs web pure surfaces", () => {
         .getAllByRole("textbox")
         .every((box) => box.getAttribute("aria-readonly") === "true"),
     ).toBe(true);
+    expect(screen.getByText(docsCopy.notice.readOnlyTitle)).toBeTruthy();
     readOnly.unmount();
 
     const failed = renderPureUi(
@@ -243,6 +244,64 @@ describe("docs web pure surfaces", () => {
         .getByRole("button", { name: docsCopy.header.approve })
         .getAttribute("aria-disabled"),
     ).toBe("true");
+  });
+
+  it("FUI[docs.page.toolbar:offline] turns copy, move and trash off with the connection reason while offline", () => {
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenFileMenuScenario()}
+        callbacks={{ offline: true }}
+      />,
+    );
+    for (const name of [
+      docsCopy.fileMenu.duplicate,
+      docsCopy.fileMenu.move,
+      docsCopy.fileMenu.trash,
+    ]) {
+      const item = screen.getByRole("menuitem", { name });
+      expect(item.getAttribute("aria-disabled")).toBe("true");
+      expect(item.getAttribute("title")).toBe(docsCopy.fileMenu.offline);
+    }
+  });
+
+  it("FUI[docs.page.article:offline] turns Convert to task off with the connection reason while offline", () => {
+    renderPureUi(
+      <DocArticleSurface {...ARTICLE} callbacks={{ offline: true }} />,
+    );
+    const buttons = screen.getAllByRole("button", {
+      name: /Chuyển .* thành việc|Chuyển thành việc/,
+    });
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) {
+      expect(button.getAttribute("aria-disabled")).toBe("true");
+      expect(button.getAttribute("title")).toBe(docsCopy.blocks.convertOffline);
+    }
+  });
+
+  it("FUI[docs.page.article:rest-failed] offers a retry for the rest of a large page and keeps the blocks shown", () => {
+    const onRetryBlocks = vi.fn();
+    renderPureUi(
+      <DocArticleSurface {...ARTICLE} callbacks={{ onRetryBlocks }} />,
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      docsCopy.blocks.restFailed,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.blocks.restRetry }),
+    );
+    expect(onRetryBlocks).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(HEADER.title)).toBeTruthy();
+  });
+
+  it("FUI[docs.page.bar:offline] says the changes are not saved yet while the connection is gone", () => {
+    renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="offline" />,
+    );
+
+    expect(
+      screen.getByRole("status").textContent?.includes(docsCopy.header.offline),
+    ).toBe(true);
+    expect(screen.queryByText(docsCopy.header.saved)).toBeNull();
   });
 
   it("FUI[docs.page.toolbar:menus] opens the File menu and routes its actions through callbacks", () => {
@@ -564,5 +623,32 @@ describe("docs web pure surfaces", () => {
       "Kế toán hằng tháng",
     );
     expect(onConvertBoard).toHaveBeenCalledWith("board-2");
+  });
+});
+
+describe("DocPageScreenSurface after the right to edit is lost", () => {
+  it("says so, keeps the unsaved text copyable and offers a way out", () => {
+    const copyText = vi.fn();
+    const leave = vi.fn();
+    renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenReadOnlyScenario()}
+        accessLost={{ text: "my unsaved line", copied: false }}
+        callbacks={{ onAccessLostCopy: copyText, onLeavePage: leave }}
+      />,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(docsCopy.notice.lostTitle);
+    expect(
+      screen.getByLabelText(docsCopy.notice.unsavedLabel).textContent,
+    ).toBe("my unsaved line");
+    fireEvent.click(
+      within(alert).getByRole("button", { name: docsCopy.notice.copyUnsaved }),
+    );
+    fireEvent.click(
+      within(alert).getByRole("button", { name: docsCopy.notice.leave }),
+    );
+    expect(copyText).toHaveBeenCalledTimes(1);
+    expect(leave).toHaveBeenCalledTimes(1);
   });
 });

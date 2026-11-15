@@ -404,10 +404,7 @@ export function createOnboardingApi(api: OnboardingApiClient) {
           api.get<CurrentUserOutput>(endpoints.auth.profile, QUIET),
           // The matrix is optional: without it the page offers the default.
           api
-            .get<PreferencesOutput>(
-              endpoints.notifications.preferences(workspaceId),
-              QUIET,
-            )
+            .get<PreferencesOutput>(endpoints.notifications.preferences, QUIET)
             .catch(() => undefined),
         ]);
       const readable = (boards ?? []).filter((board) => !board.isArchived);
@@ -448,7 +445,7 @@ export function createOnboardingApi(api: OnboardingApiClient) {
     },
     /**
      * The name goes to the person's profile and the email choice to their
-     * notification matrix of this workspace: "digest" keeps the daily digest
+     * notification matrix (one for every workspace): "digest" keeps the daily digest
      * email, "mentions" turns it off; a mention always emails.
      */
     async saveJoin(
@@ -456,7 +453,7 @@ export function createOnboardingApi(api: OnboardingApiClient) {
       input: { displayName: string; notifyEmail: "digest" | "mentions" },
     ) {
       const current = await api.get<PreferencesOutput>(
-        endpoints.notifications.preferences(workspaceId),
+        endpoints.notifications.preferences,
         QUIET,
       );
       await api.patch<unknown>(
@@ -465,7 +462,7 @@ export function createOnboardingApi(api: OnboardingApiClient) {
         QUIET,
       );
       await api.patch<unknown>(
-        endpoints.notifications.preferences(workspaceId),
+        endpoints.notifications.preferences,
         {
           expectedVersion: current?.version ?? 0,
           rows: [

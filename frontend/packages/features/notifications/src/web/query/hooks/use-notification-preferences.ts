@@ -1,3 +1,4 @@
+import { useAccountId } from "@notrelix/query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createNotificationsService,
@@ -25,7 +26,7 @@ export function isVersionConflict(error: unknown): boolean {
 }
 
 /**
- * One member's notification choices in one workspace. A save sends the cells
+ * One person's notification choices, the same in every workspace. A save sends the cells
  * that changed with the version they were read at; a 412 refetches the
  * authoritative choices and surfaces the failure so the page can say so.
  */
@@ -35,13 +36,14 @@ export function createUseNotificationPreferences({
 }: UseNotificationPreferencesDeps) {
   const service = createNotificationsService(api, endpoints);
 
-  return function useNotificationPreferences(workspaceId: string) {
+  return function useNotificationPreferences() {
+    const accountId = useAccountId();
     const queryClient = useQueryClient();
-    const key = notificationsQueryKeys.preferences(workspaceId);
+    const key = notificationsQueryKeys.preferences(accountId);
 
     const query = useQuery({
       queryKey: key,
-      queryFn: () => service.getPreferences(workspaceId),
+      queryFn: () => service.getPreferences(),
       retry: false,
     });
 
@@ -61,7 +63,7 @@ export function createUseNotificationPreferences({
             },
           ];
         });
-        return service.updatePreferences(workspaceId, {
+        return service.updatePreferences({
           expectedVersion: current?.version ?? next.version,
           rows: changed,
         });

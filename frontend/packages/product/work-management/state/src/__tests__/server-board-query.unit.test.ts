@@ -11,7 +11,11 @@ import {
 } from "@notrelix/work-management-core";
 import { createBoardApi } from "../api/board.api";
 import { groupCardsBySelectField } from "../hooks/use-board-kanban";
-import { searchMembersOf, serverFilterOf } from "../hooks/server-view-criteria";
+import {
+  dateWindowCondition,
+  searchMembersOf,
+  serverFilterOf,
+} from "../hooks/server-view-criteria";
 import {
   filterKanbanLanes,
   type KanbanLaneFilter,
@@ -328,5 +332,47 @@ describe("the board read on the wire", () => {
     const query = new URLSearchParams(urls[0]!.split("?")[1]);
     expect(query.has("qMembers")).toBe(false);
     expect(query.has("groupBy")).toBe(false);
+  });
+});
+
+describe("a date window", () => {
+  const none: KanbanLaneFilter = {
+    statusOptionIds: [],
+    priorities: [],
+    assigneeIds: [],
+    labelIds: [],
+    overdue: false,
+  } as unknown as KanbanLaneFilter;
+  const decode = (filter: string | null) =>
+    parseCompoundFilter(filter ?? "")?.conditions.map((c) => [
+      c.fieldId,
+      c.operator,
+      ...c.values,
+    ]);
+
+  it("says the span, the due or one Date field as a condition the server evaluates", () => {
+    expect(dateWindowCondition("span", "2026-10-26", "2026-12-07")).toEqual(
+      expect.objectContaining({
+        fieldId: "$span",
+        values: ["2026-10-26", "2026-12-07"],
+      }),
+    );
+    expect(dateWindowCondition("due", "a", "b").fieldId).toBe("$due");
+    expect(dateWindowCondition("field-x", "a", "b")).toEqual({
+      fieldId: "field-x",
+      operator: "between",
+      values: ["a", "b"],
+    });
+  });
+
+  it("goes beside the facets as one of all of them, and is refused beside an any-of filter", () => {
+    const window = dateWindowCondition("due", "2026-10-26", "2026-12-07");
+    expect(decode(serverFilterOf(none, undefined, [status], window))).toEqual([
+      ["$due", "between", "2026-10-26", "2026-12-07"],
+    ]);
+    const anyOf = parseCompoundFilter(
+      "c2:or~field-priority.has_any.p-high~field-priority.has_any.p-low",
+    )!;
+    expect(serverFilterOf(none, anyOf, [status, priority], window)).toBeNull();
   });
 });

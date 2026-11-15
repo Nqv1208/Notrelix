@@ -213,8 +213,21 @@
           "type": "object",
           "properties": {
             "spaceId": { "type": "string", "format": "uuid" },
-            "unread": { "type": "integer" },
-            "mentions": { "type": "integer" }
+            "unread": { "type": "integer", "description": "The sequence difference between the space's last message and this person's read boundary; 0 when read. A channel shows only that it is above 0; a direct conversation shows it as a number." },
+            "mentions": { "type": "integer", "description": "The stored count of unread messages that mention this person or broadcast to the space." },
+            "lastSequence": { "type": "integer", "description": "The newest sequence the frame knows." },
+            "preview": {
+              "type": "object",
+              "description": "The new message as a short preview (text at most 140 characters), present on the frame of a new message and null on a read change. Sent only to active, unmuted members who can read the space.",
+              "properties": {
+                "sequence": { "type": "integer" },
+                "authorId": { "type": "string", "format": "uuid" },
+                "kind": { "type": "string" },
+                "text": { "type": "string", "maxLength": 140 },
+                "createdAt": { "type": "string", "format": "date-time" }
+              },
+              "required": ["sequence", "authorId", "kind", "createdAt"]
+            }
           },
           "required": ["spaceId", "unread", "mentions"]
         }

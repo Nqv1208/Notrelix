@@ -305,12 +305,12 @@ function ChannelButton({
   readonly copy: ChatCopy;
   readonly onSelect: (channelId: string) => void;
 }) {
-  const badge = unread && !unread.muted ? unreadBadge(unread.count) : null;
   const muted = unread?.muted === true || channel.notificationLevel === "none";
   // A mention in a muted channel counts but does not badge (UC-CHT-D04).
   const mentionBadge =
     unread && !muted ? unreadBadge(unread.mentions ?? 0) : null;
   const isPrivate = channel.kind === "channel_private";
+  // A channel shows that it is unread (bold and a dot), never how many: the count is a sequence difference, not a count of rows.
   const unreadHere = !muted && unread !== undefined && unread.count > 0;
   return (
     <button
@@ -320,8 +320,7 @@ function ChannelButton({
       aria-label={channelLabel(
         isPrivate,
         channel.name,
-        badge,
-        unread?.count ?? 0,
+        unreadHere,
         muted,
         copy,
         unread?.mentions ?? 0,
@@ -355,13 +354,12 @@ function ChannelButton({
           @{mentionBadge}
         </span>
       ) : null}
-      {badge ? (
+      {unreadHere ? (
         <span
           aria-hidden="true"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-micro font-bold text-brand-solid-foreground tabular-nums"
-        >
-          {badge}
-        </span>
+          data-testid="chat-unread-dot"
+          className="size-2 shrink-0 rounded-full bg-brand-solid"
+        />
       ) : null}
     </button>
   );
@@ -370,8 +368,7 @@ function ChannelButton({
 function channelLabel(
   isPrivate: boolean,
   name: string,
-  badge: string | null,
-  count: number,
+  unreadHere: boolean,
   muted: boolean,
   copy: ChatCopy,
   mentions = 0,
@@ -379,17 +376,7 @@ function channelLabel(
   const parts = [
     `${isPrivate ? copy.sidebar.privateLabel : copy.sidebar.publicLabel}: ${name}`,
   ];
-  if (badge && count > 0) {
-    parts.push(
-      pluralCopy(
-        {
-          one: copy.sidebar.unreadCount_one,
-          other: copy.sidebar.unreadCount_other,
-        },
-        count,
-      ),
-    );
-  }
+  if (unreadHere) parts.push(copy.sidebar.unreadLabel);
   if (!muted && mentions > 0) {
     parts.push(
       pluralCopy(

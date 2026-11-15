@@ -5,6 +5,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * (`render.py Final-T-Calendar.dc.html out.html state=thang sidebar=mo mode=sang|dem`). The numbers were read from
  * the rendered artboard, boxes relative to the bar's (or the tray's) top-left. Tolerance is 1 px.
  *
+ * The 40 px month chips (`me`) are measured below against the week row's top: 42 px under it (the 36 px day number
+ * row and a 2 px gap), 40 px high, an 8 px radius, 12.5 px type, a 3 px inset each side of the day column.
+ *
  * Measured: the 56 px bar (Hôm nay, the two arrows, the range switch, 44 px hit areas), the grid's origin and
  * weekday header, the 91.7 px day columns, and the 256 px tray (title, card, 44 px set-date button, legend).
  *
@@ -13,7 +16,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *   add controls the artboard puts in its separate 56 px page bar, so the range switch sits further left;
  * - the page bar (`t-top`), which this lane does not rebuild: week-row heights follow the taller grid and are not
  *   compared;
- * - the 40 px month chips (`me`) and the 48x44 "+n" button: the month grid keeps the desktop 24 px chips;
+ * - the 48x44 "+n" button: the month keeps the "+n" text button of the desktop grid;
  * - the card's tag chip ("Mua sắm") and status line: the card has no label or status in the undated list;
  * - the artboard's hint wording ("Đặt hạn"): the app's reads "Đặt ngày" (the date field is the board's pick).
  * Dark holds the same boxes, since the artboard's dark render moves colours only.
@@ -182,5 +185,27 @@ for (const dark of [false, true]) {
       { x: 15, width: 24, height: 14 },
       "legend swatch",
     );
+  });
+
+  test(`thang ${dark ? "dark" : "light"}: the month chips are 40 px high with an 8 px radius`, async ({
+    page,
+  }) => {
+    await openCalendar(page, dark);
+    const week = page
+      .locator("[data-calendar-view] [data-calendar-week]")
+      .first();
+    const chip = week.locator('[data-calendar-event][aria-label*="ERP-129"]');
+    await expect(chip).toBeVisible();
+    const [w, c] = await Promise.all([week.boundingBox(), chip.boundingBox()]);
+    if (!w || !c) throw new Error("no boxes");
+    expect(Math.abs(c.y - w.y - 42), `chip y ${c.y - w.y}`).toBeLessThanOrEqual(
+      1,
+    );
+    expect(c.height).toBeCloseTo(40, 0);
+    expect(Math.abs(c.width - (w.width / 7 - 6))).toBeLessThanOrEqual(1);
+    expect(await style(chip, "border-radius")).toBe("8px");
+    expect(await style(chip, "font-size")).toBe("12.5px");
+    const days = await week.locator("[data-day]").first().boundingBox();
+    expect(days?.height).toBeCloseTo(36, 0);
   });
 }

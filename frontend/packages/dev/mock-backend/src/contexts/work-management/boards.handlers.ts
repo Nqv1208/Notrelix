@@ -34,6 +34,10 @@ import type {
   BoardDtoApi,
   BoardViewDtoApi,
 } from "@notrelix/work-management-core";
+import {
+  ASSIGNEE_FIELD_ID,
+  parseCompoundFilter,
+} from "@notrelix/work-management-core";
 import { defineMockOperation } from "../../operations/types";
 import {
   ok,
@@ -319,11 +323,87 @@ function projectField(
   };
 }
 
+interface PagedLane {
+  readonly optionId: string;
+  readonly total: number;
+  /** The items that pass the filter, in stored (due) order. */
+  readonly matches: readonly MockCardRecord[];
+}
+
+/**
+ * The Status lanes of a board the server reads a page at a time, under the filter wire form. Only the conditions the
+ * large board draws are read (a status or a person); any other condition lets an item through.
+ */
+function pagedLanes(
+  board: MockBoardRecord,
+  store: MockStore,
+  filterWire: string,
+): PagedLane[] {
+  const status = store
+    .getColumns(board.id)
+    .find((column) => column.fieldType === "status");
+  if (!status) return [];
+  const filter = parseCompoundFilter(filterWire);
+  const personColumns = new Set(
+    store
+      .getColumns(board.id)
+      .filter(
+        (column) =>
+          column.fieldType === "user" || column.fieldType === "person",
+      )
+      .map((column) => column.id),
+  );
+  const passes = (card: MockCardRecord) => {
+    if (!filter || filter.conditions.length === 0) return true;
+    const results = filter.conditions.map((condition) => {
+      if (condition.operator !== "has_any") return true;
+      if (condition.fieldId === status.id)
+        return condition.values.includes(
+          String(store.getFieldValues(card.id)[status.id] ?? ""),
+        );
+      if (
+        condition.fieldId === ASSIGNEE_FIELD_ID ||
+        personColumns.has(condition.fieldId)
+      )
+        return (card.assigneeUserIds ?? []).some((id) =>
+          condition.values.includes(id),
+        );
+      return true;
+    });
+    return filter.join === "or"
+      ? results.some(Boolean)
+      : results.every(Boolean);
+  };
+  const cards = store
+    .getLists(board.id)
+    .flatMap((list) => store.getCards(list.id))
+    .filter((card) => !card.isArchived && !card.parentItemId);
+  return (status.options ?? []).map((option) => {
+    const inLane = cards.filter(
+      (card) => store.getFieldValues(card.id)[status.id] === option.id,
+    );
+    return {
+      optionId: option.id,
+      total: inLane.length,
+      matches: inLane.filter(passes),
+    };
+  });
+}
+
 /** `GET /boards/{id}/full` in the shape of the generated `FullBoardDto`. */
 function projectFullBoard(
   board: MockBoardRecord,
   store: MockStore,
+  paged?: { readonly size: number; readonly filter: string },
 ): GeneratedFullBoardDto {
+  const lanes = paged ? pagedLanes(board, store, paged.filter) : undefined;
+  const firstPage = lanes
+    ? new Set(
+        lanes.flatMap((lane) =>
+          lane.matches.slice(0, paged!.size).map((card) => card.id),
+        ),
+      )
+    : undefined;
   const itemIds = store
     .getLists(board.id)
     .flatMap((list) => store.getCards(list.id))
@@ -364,9 +444,30 @@ function projectFullBoard(
       version: 1,
       boardItems: store
         .getCards(list.id)
-        .filter((card) => !card.parentItemId && !card.isArchived)
+        .filter(
+          (card) =>
+            !card.parentItemId &&
+            !card.isArchived &&
+            (!firstPage || firstPage.has(card.id)),
+        )
         .map((card, cardIndex) => projectItemSummary(card, cardIndex, store)),
     })),
+    ...(lanes
+      ? {
+          lanes: lanes.map((lane) => ({
+            optionId: lane.optionId,
+            itemCount: lane.total,
+            filteredCount: lane.matches.length,
+            nextCursor:
+              lane.matches.length > paged!.size ? String(paged!.size) : null,
+          })),
+          totalItems: lanes.reduce((sum, lane) => sum + lane.total, 0),
+          filteredTotal: lanes.reduce(
+            (sum, lane) => sum + lane.matches.length,
+            0,
+          ),
+        }
+      : {}),
     members: projectBoardPeople(board.id, store, false),
     viewers: projectBoardPeople(board.id, store, true),
     version: board.version ?? 1,
@@ -897,10 +998,57 @@ export const boardsOperations = [
     contract: { kind: "gap", gapId: "CTR-GAP-TODO" } as any,
     method: "GET",
     route: "/boards/:id/full",
-    async handle({ params, store }) {
+    async handle({ params, store, request }) {
       const b = store.getBoard(params.id);
       if (!b) return notFound("Board not found");
-      return ok<GeneratedFullBoardDto>(projectFullBoard(b, store));
+      const query = new URL(request.url).searchParams;
+      const size = Number(query.get("pageSize"));
+      return ok<GeneratedFullBoardDto>(
+        projectFullBoard(
+          b,
+          store,
+          store.isPagedBoard(b.id) && size > 0
+            ? { size, filter: query.get("filter") ?? "" }
+            : undefined,
+        ),
+      );
+    },
+  }),
+
+  // ─── GET /boards/:boardId/items/lanes/:lane ───────────────────────────────
+
+  defineMockOperation<{ boardId: string; lane: string }, never, unknown>({
+    id: "boards.lane",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.BoardItems.ListLane",
+    },
+    method: "GET",
+    route: "/boards/:boardId/items/lanes/:lane",
+    async handle({ params, store, request }) {
+      const board = store.getBoard(params.boardId);
+      if (!board || !store.isPagedBoard(board.id))
+        return notFound("Board not found");
+      const query = new URL(request.url).searchParams;
+      const lanes = pagedLanes(board, store, query.get("filter") ?? "");
+      const lane = lanes.find((entry) => entry.optionId === params.lane);
+      if (!lane) return notFound("Lane not found");
+      const start = Math.max(0, Number(query.get("cursor") ?? 0) || 0);
+      const limit = Math.min(
+        200,
+        Math.max(1, Number(query.get("limit")) || 50),
+      );
+      const page = lane.matches.slice(start, start + limit);
+      const next = start + page.length;
+      return ok({
+        items: page.map((card, index) => ({
+          groupId: card.listId,
+          item: projectItemSummary(card, start + index, store),
+        })),
+        itemCount: lane.total,
+        filteredCount: lane.matches.length,
+        nextCursor: next < lane.matches.length ? String(next) : null,
+      });
     },
   }),
 
