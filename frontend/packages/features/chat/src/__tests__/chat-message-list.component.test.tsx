@@ -6,7 +6,7 @@ import {
 } from "../web/components/chat-message-list";
 import { buildChatRows, type PendingMessage } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
-import { en } from "../web/components/chat.copy";
+import { en, vi as viCopy } from "../web/components/chat.copy";
 
 const ME = "user-me";
 const OTHER = "user-other";
@@ -176,6 +176,22 @@ describe("ChatMessageList", () => {
     render(<ChatMessageList {...props({ messages })} />);
     expect(screen.getByText("joined the channel")).not.toBeNull();
     expect(screen.getByText(/^System:/)).not.toBeNull();
+  });
+
+  it("says group, not channel, for the announcements of a group, in both languages", () => {
+    const messages = [
+      message(1, { kind: "system", content: "added a member to the group" }),
+    ];
+    render(<ChatMessageList {...props({ messages })} />);
+    expect(screen.getByText("added a member to the group")).not.toBeNull();
+    expect(Object.keys(viCopy.list.systemText)).toEqual(
+      Object.keys(en.list.systemText),
+    );
+    expect(viCopy.list.systemText["added a member to the group"]).toMatch(
+      /nhóm/,
+    );
+    expect(viCopy.list.systemText["left the group"]).toMatch(/nhóm/);
+    expect(viCopy.list.systemText["left the channel"]).toMatch(/kênh/);
   });
 
   it("offers edit and delete in the More menu only on the caller's own message", async () => {

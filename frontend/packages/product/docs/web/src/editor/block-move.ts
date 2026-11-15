@@ -1,5 +1,10 @@
 import { Extension, type Editor } from "@tiptap/core";
-import { Selection, TextSelection, type Transaction } from "@tiptap/pm/state";
+import {
+  NodeSelection,
+  Selection,
+  TextSelection,
+  type Transaction,
+} from "@tiptap/pm/state";
 
 /** Transaction meta set when a block was moved: where it went. */
 export const BLOCK_MOVE_META = "docBlockMove";
@@ -75,8 +80,31 @@ function restoreCaret(
   }
 }
 
+/**
+ * ProseMirror reads a click's caret on the browser's `selectionchange` event,
+ * which a busy page delivers after the next key. A key right after a click
+ * would then move the block of the old caret, so the caret is read from the
+ * page here first.
+ */
+function syncCaretFromDom(editor: Editor): void {
+  const { view, state } = editor;
+  if (state.selection instanceof NodeSelection || !view.hasFocus()) return;
+  const dom = view.dom.ownerDocument.getSelection();
+  if (!dom?.anchorNode || !view.dom.contains(dom.anchorNode)) return;
+  try {
+    const pos = view.posAtDOM(dom.anchorNode, dom.anchorOffset);
+    if (pos === state.selection.from && state.selection.empty) return;
+    view.dispatch(
+      state.tr.setSelection(TextSelection.near(state.doc.resolve(pos))),
+    );
+  } catch {
+    // The page's selection is outside the text: the editor's own caret stands.
+  }
+}
+
 /** Moves the block holding the caret one place up (-1) or down (1). */
 export function moveBlockBy(editor: Editor, direction: 1 | -1): boolean {
+  syncCaretFromDom(editor);
   const from = blockIndexAt(editor, editor.state.selection.from);
   return moveBlock(editor, from, from + direction);
 }

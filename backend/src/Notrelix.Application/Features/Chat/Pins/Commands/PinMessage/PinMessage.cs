@@ -50,6 +50,7 @@ public class PinMessageCommandHandler(
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, message.SpaceId, cancellationToken);
         if (!space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), message.SpaceId);
+        ChannelAccess.RequireInHistory(space, userId, message);
         if (space.IsArchived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
 
