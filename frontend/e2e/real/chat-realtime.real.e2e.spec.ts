@@ -232,15 +232,18 @@ test("a message, an edit, a delete, typing, unread badges, a lost connection and
   expect(stored.items.filter((m) => m.content === missedOne)).toHaveLength(1);
 
   // Presence: a direct conversation shows the other person as online while both are connected.
-  const dm = await apiWrite<{ id: string }>(
+  const dm = await apiWrite<{ conversation: { id: string } }>(
     owner,
     "POST",
     `/workspaces/${ws}/chat/conversations`,
     { kind: "direct", userId: readerMe.userId },
   );
   expect(dm.status).toBeLessThan(300);
-  await reader.goto(`${base}/chat/dm/${dm.data!.id}`);
-  await owner.goto(`${base}/chat/dm/${dm.data!.id}`);
+  const dmId = dm.data!.conversation.id;
+  expect(dmId).toMatch(/^[0-9a-f-]{36}$/);
+  await reader.goto(`${base}/chat/dm/${dmId}`);
+  await owner.goto(`${base}/chat/dm/${dmId}`);
+  await expect(owner).toHaveURL(new RegExp(`/chat/dm/${dmId}$`));
   await expect(owner.locator('[data-presence="online"]').first()).toBeVisible({
     timeout: 30_000,
   });

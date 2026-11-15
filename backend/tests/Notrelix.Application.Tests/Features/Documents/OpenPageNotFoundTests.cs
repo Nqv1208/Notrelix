@@ -62,6 +62,6 @@ public sealed class OpenPageNotFoundTests
             .ReturnsAsync(new List<Guid>());
         var requestContext = new FakeCurrentRequestContext().AsUser(UserId);
         requestContext.Tenant.SetWorkspace(AccountId, WorkspaceId, UserId);
-        return (new GetPageQueryHandler(context.Object, visibility.Object, requestContext), new GetPageBlocksQueryHandler(context.Object));
+        return (new GetPageQueryHandler(context.Object, visibility.Object, requestContext, Mock.Of<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess>()), new GetPageBlocksQueryHandler(context.Object));
     }
 }

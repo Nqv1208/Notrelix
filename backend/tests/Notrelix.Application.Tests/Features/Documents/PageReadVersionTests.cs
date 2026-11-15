@@ -30,7 +30,7 @@ public sealed class PageReadVersionTests
         var page = NewPage("Playbook", spaceId: SpaceId);
         page.Rename("Playbook v2", UserId, Now.AddMinutes(1));
         page.Version.Should().Be(2, "the rename advanced the aggregate version");
-        var sut = new GetPageQueryHandler(Context(page), Visibility(page), Actor());
+        var sut = new GetPageQueryHandler(Context(page), Visibility(page), Actor(), Mock.Of<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess>());
 
         var dto = (await sut.Handle(new GetPageQuery(page.Id), CancellationToken.None)).Data!;
 
@@ -42,7 +42,7 @@ public sealed class PageReadVersionTests
     public async Task GetPage_DoesNotDiscloseAHiddenSpace_WhileStillExposingTheVersion()
     {
         var page = NewPage("Audit", spaceId: SpaceId);
-        var sut = new GetPageQueryHandler(Context(page), Visibility([page], visibleSpaces: []), Actor());
+        var sut = new GetPageQueryHandler(Context(page), Visibility([page], visibleSpaces: []), Actor(), Mock.Of<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess>());
 
         var dto = (await sut.Handle(new GetPageQuery(page.Id), CancellationToken.None)).Data!;
 

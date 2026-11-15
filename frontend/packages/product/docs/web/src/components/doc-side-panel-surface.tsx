@@ -637,34 +637,36 @@ export function DocSidePanelSurface({
       aria-label={p.label}
       className="box-content flex w-[308px] shrink-0 flex-col border-l border-border bg-doc-panel max-sm:absolute max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-dropdown max-sm:h-[72%] max-sm:w-auto max-sm:rounded-t-[16px] max-sm:border-t max-sm:border-l-0 max-sm:shadow-popover"
     >
-      <div
-        role="tablist"
-        aria-label={p.tabs}
-        className="flex shrink-0 gap-0.5 border-b border-border px-3"
-      >
-        {tabs.map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === entry.id}
-            onClick={() => callbacks?.onPanelTab?.(entry.id)}
-            className={cn(
-              TAB,
-              tab === entry.id &&
-                "border-b-primary font-semibold text-foreground",
-            )}
-          >
-            {entry.label}
-          </button>
-        ))}
+      <div className="relative shrink-0">
+        <div
+          role="tablist"
+          aria-label={p.tabs}
+          className="flex gap-0.5 border-b border-border px-3"
+        >
+          {tabs.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === entry.id}
+              onClick={() => callbacks?.onPanelTab?.(entry.id)}
+              className={cn(
+                TAB,
+                tab === entry.id &&
+                  "border-b-primary font-semibold text-foreground",
+              )}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
         {callbacks?.onPanelOpenChange ? (
           <button
             type="button"
             aria-label={p.close}
             title={p.close}
             onClick={() => callbacks.onPanelOpenChange?.(false)}
-            className="my-auto ml-auto grid size-7 shrink-0 place-items-center rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="absolute top-1/2 right-3 grid size-7 -translate-y-1/2 shrink-0 place-items-center rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <X aria-hidden="true" className="size-4 stroke-[1.8]" />
           </button>

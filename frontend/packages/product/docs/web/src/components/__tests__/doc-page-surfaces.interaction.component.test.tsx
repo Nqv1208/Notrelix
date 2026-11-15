@@ -136,7 +136,27 @@ describe("docs web pure surfaces", () => {
       <DocPageScreenSurface {...docsPageScreenNotFoundScenario()} />,
     );
     expect(screen.getByText(docsCopy.notFound)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: docsCopy.notFoundTitle }),
+    ).toBeTruthy();
+    // Nothing to leave to: no button.
+    expect(screen.queryByRole("button", { name: docsCopy.notFoundBack })).toBe(
+      null,
+    );
     missing.unmount();
+
+    const onLeavePage = vi.fn();
+    const withWayBack = renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenNotFoundScenario()}
+        callbacks={{ onLeavePage }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.notFoundBack }),
+    );
+    expect(onLeavePage).toHaveBeenCalledTimes(1);
+    withWayBack.unmount();
 
     const empty = renderPureUi(
       <DocPageScreenSurface {...docsPageScreenEmptyScenario()} />,
@@ -257,6 +277,7 @@ describe("docs web pure surfaces", () => {
       docsCopy.fileMenu.duplicate,
       docsCopy.fileMenu.move,
       docsCopy.fileMenu.trash,
+      docsCopy.fileMenu.importPage,
     ]) {
       const item = screen.getByRole("menuitem", { name });
       expect(item.getAttribute("aria-disabled")).toBe("true");

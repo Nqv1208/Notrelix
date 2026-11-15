@@ -517,5 +517,25 @@ test("unread and mention badges, the read boundary on two devices, the first unr
     }
   }
 
+  // D07: Mark all as read clears the dot, the mention badge and the totals in one step; a message sent after it stays unread.
+  const markAll = reader.page.getByRole("button", {
+    name: "Mark all as read",
+  });
+  await expect(markAll).toBeVisible();
+  await markAll.click();
+  await expect(xButton.getByTestId("chat-unread-dot")).toHaveCount(0, {
+    timeout: 20_000,
+  });
+  await expect(
+    channelButton(reader.page, names.y).getByTestId("chat-mention-badge"),
+  ).toHaveCount(0);
+  await expect(markAll).toHaveCount(0);
+  const cleared = await summaryOf(reader.page);
+  expect(cleared.totalUnread).toBe(0);
+  expect(cleared.totalMentions).toBe(0);
+  await send(ids.x, `after all ${unique}`);
+  await expect(xButton).toHaveAccessibleName(/unread/i, { timeout: 20_000 });
+  await expect(markAll).toBeVisible();
+
   await reader.context.close();
 });

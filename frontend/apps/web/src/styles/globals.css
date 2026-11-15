@@ -147,6 +147,10 @@
   --text-mark-3xs--line-height: var(--type-mark-3xs-line-height);
   --text-mark-3xs--font-weight: var(--type-mark-3xs-weight);
   --text-mark-3xs--letter-spacing: var(--type-mark-3xs-tracking);
+  --text-mark-4xs: var(--type-mark-4xs-size);
+  --text-mark-4xs--line-height: var(--type-mark-4xs-line-height);
+  --text-mark-4xs--font-weight: var(--type-mark-4xs-weight);
+  --text-mark-4xs--letter-spacing: var(--type-mark-4xs-tracking);
   --text-avatar-sm: var(--type-avatar-sm-size);
   --text-avatar-sm--line-height: var(--type-avatar-sm-line-height);
   --text-avatar-sm--font-weight: var(--type-avatar-sm-weight);
