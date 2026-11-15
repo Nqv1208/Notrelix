@@ -24,9 +24,11 @@ export function serverFilterOf(
   facets: KanbanLaneFilter,
   compound: CompoundFilter | undefined,
   fields: readonly FieldDefinition[],
+  /** A condition the view adds beside the facets (a calendar's date window): always one of "all of". */
+  extra?: FilterCondition,
 ): string | null {
   if (facets.overdue) return null;
-  const conditions: FilterCondition[] = [];
+  const conditions: FilterCondition[] = extra ? [extra] : [];
   const anyOf = (fieldId: string, values: readonly string[]) =>
     conditions.push({ fieldId, operator: "has_any", values: [...values] });
   if (facets.statusOptionIds.length > 0) {
@@ -61,6 +63,26 @@ export function serverFilterOf(
     join: "and",
     conditions: [...conditions, ...own],
   });
+}
+
+/** The condition that keeps the items whose dates touch [from, to] (day keys): the span, the due, or one Date field. */
+export function dateWindowCondition(
+  basis: string,
+  from: string,
+  to: string,
+): FilterCondition {
+  if (basis === "span")
+    // `overlaps` exists on the wire only (the server's `$span` pseudo field); no client filter evaluates it.
+    return {
+      fieldId: "$span",
+      operator: "overlaps" as unknown as FilterCondition["operator"],
+      values: [from, to],
+    };
+  return {
+    fieldId: basis === "due" ? "$due" : basis,
+    operator: "between",
+    values: [from, to],
+  };
 }
 
 /**
