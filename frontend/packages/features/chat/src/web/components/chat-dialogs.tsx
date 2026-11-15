@@ -344,7 +344,7 @@ export function ModerateMessageDialog({
       <DialogContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>{text.title}</DialogTitle>
+            <DialogTitle className="leading-snug">{text.title}</DialogTitle>
             <DialogDescription>{text.body}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
