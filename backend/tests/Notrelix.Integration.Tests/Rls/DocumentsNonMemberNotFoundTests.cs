@@ -10,7 +10,6 @@ using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Documents.Templates;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.Identity.Users;
-using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
