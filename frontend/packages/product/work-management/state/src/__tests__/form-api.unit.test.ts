@@ -172,6 +172,11 @@ describe("createFormApi", () => {
     const post = vi.fn(async () => undefined);
     await apiWith({ post }).reopenSubmission("s-9");
     expect(post).toHaveBeenCalledWith("/form-submissions/s-9/reopen", {});
+    await apiWith({ post }).reopenSubmission("s-9", true);
+    expect(post).toHaveBeenLastCalledWith(
+      "/form-submissions/s-9/reopen?clearItem=true",
+      {},
+    );
   });
 
   it("writes only the settings a question has", () => {
