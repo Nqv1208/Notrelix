@@ -45,7 +45,7 @@ const host = {
 } as unknown as DocPageHost;
 
 describe("the document page when its blocks cannot be read", () => {
-  it("says the document did not open instead of showing an empty page to type in", async () => {
+  it("says the document did not load, with a retry, instead of showing an empty page to type in", async () => {
     const api = {
       get: vi.fn(async (url: string) => {
         if (url.endsWith("/blocks") || url.includes("/blocks?"))
@@ -86,7 +86,7 @@ describe("the document page when its blocks cannot be read", () => {
         </QueryClientProvider>,
       );
     });
-    const title = docPageCopy("vi").notFoundTitle;
+    const title = docPageCopy("vi").loadFailedTitle;
     for (let attempt = 0; attempt < 60; attempt += 1) {
       if ((mount.textContent ?? "").includes(title)) break;
       await act(async () => {
