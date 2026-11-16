@@ -192,7 +192,7 @@ Products compared and what was taken:
 | UC-WSP-K02 | Read the Space tree and list Spaces | K | Any non-Guest member | yes | yes | Final-Space | workspace-spaces.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-K03 | Read one Space | K | Any member who can see the Space | yes | yes | Final-Space | workspace-space-read.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
 | UC-WSP-K04 | Rename a Space or edit its description | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
-| UC-WSP-K05 | Change a Space's type | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | INTEGRATING | No control to change a Space's type (no artboard shows one): owner question. |
+| UC-WSP-K05 | Change a Space's type | K | Owner, Admin, Space Admin | yes | yes | Final-Space | none | DONE | Type select in the settings panel; see the State line. |
 | UC-WSP-K06 | Change a Space's visibility | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
 | UC-WSP-K07 | Move or reorder a Space | K | Owner, Admin, Space Admin | yes | partial | Final-Space | none | INTEGRATING | Tree drag not built (no artboard shows it); the Move picker is the only control. |
 | UC-WSP-K08 | Archive or unarchive a Space | K | Owner, Admin, Space Admin | yes | yes | Final-Space | workspace-space-manage.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
@@ -1063,8 +1063,8 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - UI states: Select, pending.
 - Rules: [workspaces](../../product/workspaces.md) sections 41, 44.1.
 - Acceptance: Given a Folder, When set to Department, Then the type changes and visibility stays.
-- Evidence: BE `PUT .../spaces/{spaceId}/type`, `ChangeSpaceTypeCommandHandler` · FE `spaces.service.ts` · Design `Final-Space` · Tests `SpaceTests` · Real e2e none
-- State: INTEGRATING — No control to change a Space's type (no artboard shows one): owner question.
+- Evidence: BE `PUT .../spaces/{spaceId}/type`, `ChangeSpaceTypeCommandHandler` · FE `space-settings-panel.tsx`, `spaces.service.ts` · Design `Final-Space` (no board draws the control) · Tests `SpaceHierarchyIntegrationTests`, `space-page.interaction.component.test.tsx`, `space-page.mock.e2e.spec.ts` · Real e2e workspace-space-type.real.e2e.spec.ts
+- State: DONE — Line 1: `SpaceHierarchyIntegrationTests` (17 passed): Folder to Department keeps visibility, the same type is a no-op (version unchanged), a Member is refused, an admin of another workspace gets NotFound, a stale version is 412 (existing every-versioned-edit case); the archived Space refusal is in the domain. Line 2: a Type select (the create dialog's Select and labels) sits in the "Place in the tree" card of the settings tab, enabled for Owner, Admin and Space Admin, disabled for others and while archived; choosing the same type sends nothing; the save invalidates the tree and the Space record; `space-page.mock.e2e.spec.ts` and the component test pass. Line 3: no board draws it, so `design-fidelity-space.mock.e2e.spec.ts` passes unchanged (12 passed) and the row was reviewed at 1440, 1024 and 390, light and dark, in Vietnamese, with no horizontal scroll. Line 4: `workspace-space-type.real.e2e.spec.ts` 1 passed on the real stack, 2026-11-16 (Folder to Department from the UI, visibility stays, stale write 412, Member refused).
 
 ### UC-WSP-K06 Change a Space's visibility
 - Capability: K Spaces (added by this catalog)

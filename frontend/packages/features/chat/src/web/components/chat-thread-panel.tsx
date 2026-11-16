@@ -143,6 +143,7 @@ export function ChatThreadPanel({
       <ChatPanelHeader
         title={copy.thread.title}
         subtitle={spaceLabel}
+        subtitleAlways
         closeLabel={copy.thread.close}
         onClose={onClose}
       >

@@ -182,6 +182,10 @@ export const endpoints = {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/page-templates`,
     createPage: (workspaceId: string, templateId: string) =>
       `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
+    detail: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}`,
+    archive: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/archive`,
   },
   // WorkManagement.Templates.*: workspace board templates.
   boardTemplates: {

@@ -376,6 +376,29 @@ export interface DocTemplateActionView {
   readonly failed: boolean;
 }
 
+/** One template of the gallery, as its row shows it. */
+export interface DocTemplateRowView {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly blockCount: number;
+  /** The caller saved it or is a Workspace Admin. */
+  readonly canManage: boolean;
+}
+
+/** The templates dialog: the list and what the last write on a row answered. */
+export interface DocTemplatesView {
+  readonly status: "loading" | "error" | "ready";
+  readonly templates: readonly DocTemplateRowView[];
+  /** The row a write is running on. */
+  readonly busyId: string | null;
+  /** `conflict` = the template changed since the list was read (nothing was written). */
+  readonly failure: {
+    readonly id: string;
+    readonly kind: "conflict" | "forbidden" | "notFound" | "failed";
+  } | null;
+}
+
 /** The import dialog's state: reading and cleaning the file, then creating the page. */
 export interface DocImportView {
   readonly busy: boolean;
@@ -398,6 +421,7 @@ export type DocOverlay =
   | { readonly kind: "saveVersion" }
   | { readonly kind: "restoreVersion" }
   | { readonly kind: "saveTemplate" }
+  | { readonly kind: "templates" }
   | { readonly kind: "importPage" }
   | { readonly kind: "shortcuts" }
   | { readonly kind: "wordCount" }
@@ -520,6 +544,16 @@ export interface DocPageCallbacks {
   readonly onRestoreVersion?: () => void;
   readonly onSaveTemplateOpen?: () => void;
   readonly onSaveTemplate?: (name: string, description: string) => void;
+  /** Opens the templates dialog: rename, archive or delete a template. */
+  readonly onTemplatesOpen?: () => void;
+  readonly onTemplatesRetry?: () => void;
+  readonly onTemplateRename?: (
+    id: string,
+    name: string,
+    description: string,
+  ) => void;
+  readonly onTemplateArchive?: (id: string) => void;
+  readonly onTemplateDelete?: (id: string) => void;
   readonly onImportOpen?: () => void;
   readonly onImportFile?: (file: File) => void;
   readonly onCommentCreate?: (body: string, parentId?: string) => void;

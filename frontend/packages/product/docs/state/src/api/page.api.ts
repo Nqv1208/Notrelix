@@ -59,8 +59,12 @@ export interface DocsFileClient {
 export interface DocsApiClient {
   get<T>(url: string, options?: DocsRequestOptions): Promise<T>;
   post<T>(url: string, body: unknown, options?: DocsRequestOptions): Promise<T>;
-  patch<T>(url: string, body: unknown): Promise<T>;
-  delete<T>(url: string): Promise<T>;
+  patch<T>(
+    url: string,
+    body: unknown,
+    options?: DocsRequestOptions,
+  ): Promise<T>;
+  delete<T>(url: string, options?: DocsRequestOptions): Promise<T>;
 }
 
 export interface PageApiEndpoints {
@@ -88,6 +92,8 @@ export interface PageApiEndpoints {
   pageTemplates: {
     list: (workspaceId: string) => string;
     createPage: (workspaceId: string, templateId: string) => string;
+    detail: (workspaceId: string, templateId: string) => string;
+    archive: (workspaceId: string, templateId: string) => string;
   };
   resourcePermissions: {
     list: (resourceKind: string, resourceId: string) => string;

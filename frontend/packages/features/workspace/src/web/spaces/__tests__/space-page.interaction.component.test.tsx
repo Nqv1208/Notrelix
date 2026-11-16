@@ -573,6 +573,12 @@ describe("WorkspaceSpaceSurface", () => {
     expect(document.activeElement).toBe(open);
   });
 
+  it("FUI[workspace.space-page:type] shows the type for a manager as an enabled select", () => {
+    renderPage(spacePageSettingsScenario());
+    const type = screen.getByRole("combobox", { name: copy.create.typeLabel });
+    expect(type.hasAttribute("disabled")).toBe(false);
+  });
+
   it("FUI[workspace.space-page:move] moves the department from the tree placement", () => {
     const { props } = renderPage(spacePageSettingsScenario());
     fireEvent.click(

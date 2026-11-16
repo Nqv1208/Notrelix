@@ -45,6 +45,7 @@ function panel(hooks: ReturnType<typeof setup>["hooks"], onOpen = vi.fn()) {
       authorName={() => "Author"}
       channelName={() => "# general"}
       onOpenThread={onOpen}
+      onClose={vi.fn()}
     />
   );
 }
@@ -54,9 +55,9 @@ describe("FollowedThreadsPanel", () => {
     const { hooks, wrapper } = setup();
     render(panel(hooks), { wrapper });
     await waitFor(() =>
-      expect(screen.getByText(en.thread.followedEmpty)).toBeTruthy(),
+      expect(screen.getByText(en.thread.followedEmptyTitle)).toBeTruthy(),
     );
-    expect(viCopy.thread.followedEmpty.length).toBeGreaterThan(0);
+    expect(viCopy.thread.followedEmptyTitle.length).toBeGreaterThan(0);
   });
 
   it("lists a followed thread, opens it, and shows no unread badge when everything is read", async () => {

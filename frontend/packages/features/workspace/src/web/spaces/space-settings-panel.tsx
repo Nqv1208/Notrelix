@@ -9,10 +9,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@notrelix/ui-web";
 import {
   archiveBlocked,
   SPACE_RESTORE_DAYS,
+  SPACE_TYPES,
   type SpaceContentCounts,
   type SpaceNode,
   type SpaceType,
@@ -418,6 +424,29 @@ export function SpaceSettingsPanel({
         <p data-f="hint" className={HINT}>
           {placeHint}
         </p>
+        <div className="flex flex-col gap-[5px]">
+          <label htmlFor="space-type" className={LABEL}>
+            {copy.create.typeLabel}
+          </label>
+          <Select
+            value={space.type}
+            disabled={readOnly || saving}
+            onValueChange={(value) => {
+              if (value !== space.type) onSave({ type: value as SpaceType });
+            }}
+          >
+            <SelectTrigger id="space-type" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SPACE_TYPES.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {copy.types[option]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </section>
 
       <section
