@@ -151,9 +151,17 @@ A message has 1 to 4,000 characters after trim, or at least one attachment. Mark
 
 # 13. CHT-009 — Read state is a monotonic boundary
 
-Read state is per person and space. Mark-read only moves the boundary forward. Unread count is derived from the boundary and the space's last sequence, not a mutable counter (COL-014, COL-015).
+Read state is per person and space: one row per member and space holds the read boundary (`read_sequence`) and a stored `mention_count`. Mark-read only moves the boundary forward (COL-014, COL-015).
 
-A mention to a person is counted separately from the unread count.
+Counting rule (changed 2026-11): the product no longer counts the unread messages of a channel. A send must cost one row per mentioned member, not a recount of every member's backlog, so:
+
+- A channel is unread when its last sequence is past the person's boundary. It shows bold and a dot, never a number. The unread value carried by the API and the realtime frame is the sequence difference (sequences are dense per space), an upper bound that also contains system messages, tombstones and purged messages; clients use it only as "above zero".
+- A direct or group conversation shows the sequence difference as a number, capped at "99+".
+- A mention (a named mention, `@channel` or `@here`) shows an exact number, capped at "99+". The number is stored: a send adds one for each member the mention reaches, an edit or a delete takes the stored mentions off, and a mark-read sets it to the mentions that remain after the new boundary, so it heals at every read.
+- A person's own message does not make a channel unread for them when they had read everything before it.
+- A muted channel keeps its numbers but does not badge or get a frame (CHT-019).
+
+Reason: O(1) send and O(1) summary whatever the backlog. This is the model of Discord and Slack: Slack's `conversations.info` returns `last_read` and counts only mentions and direct messages in `unread_count_display` (https://api.slack.com/methods/conversations.info), and Discord keeps a last-message id per channel and a read state with `last_message_id` and `mention_count` per channel and user (https://discord.com/developers/docs/resources/channel, channel `last_message_id`).
 
 # 14. CHT-010 — Mentions reuse Collaboration identity rules
 

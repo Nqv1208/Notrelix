@@ -30,7 +30,10 @@ export type {
   PageVersion,
   PageTemplate,
   CreatePageTemplatePayload,
+  UpdatePageTemplatePayload,
+  PageTemplateVersionPayload,
   CreatePageFromTemplatePayload,
+  DuplicatedPage,
   PageFromTemplate,
 } from "@notrelix/docs-core";
 
@@ -44,6 +47,7 @@ export type {
   PageVersionDetailDtoApi,
   RestorePageVersionResultDtoApi,
   PageTemplateDtoApi,
+  DuplicatedPageDtoApi,
   PageFromTemplateDtoApi,
 } from "./dto";
 

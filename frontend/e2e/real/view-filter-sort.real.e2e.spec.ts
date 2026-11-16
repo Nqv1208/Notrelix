@@ -139,6 +139,17 @@ test("the server filters and sorts a paged board, the table asks for it, and a r
 
   // Group by a field of the board: the member's own state, written to the server; an outsider's write to it is the
   // identical NotFound.
+  // A board made through the API has no saved view, and a member's own state is written against a view: the
+  // board gets its shared table view first.
+  const made = await apiWrite(page, "POST", `/boards/${board}/views`, {
+    name: "Table",
+    viewMode: "Table",
+    position: 0,
+    config: "{}",
+    visibility: "Board",
+  });
+  expect(made.status).toBeLessThan(300);
+  await page.goto(`/workspaces/${workspace.id}/boards/${board}?view=table`);
   await page.getByRole("button", { name: /^Group/ }).click();
   await page.getByRole("menuitemradio", { name: /^Assignee/ }).click();
   await expect(

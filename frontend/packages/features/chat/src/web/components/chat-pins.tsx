@@ -1,9 +1,12 @@
-import { Pin, PinOff } from "lucide-react";
-import { Button, Skeleton } from "@notrelix/ui-web";
+import { Pin } from "lucide-react";
+import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMessage, ChatPin } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
+import { avatarToneOf, initialsOf } from "./chat-initials";
 import { formatClock } from "./chat-message-row";
+import { ChatPanelHeader } from "./chat-panel-header";
+import { PinRowMenu } from "./chat-pin-ui";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
 export interface PinnedBarProps {
@@ -70,8 +73,13 @@ export interface PinsPanelProps {
   readonly locale: string;
   readonly timeZone?: string;
   readonly authorName: (userId: string) => string;
+  /** The channel as the header names it, such as "# erp-rollout". */
+  readonly spaceLabel: string;
+  readonly onClose: () => void;
   readonly canUnpin: (pin: ChatPin) => boolean;
+  /** Asks to unpin; the workspace confirms first. */
   readonly onUnpin: (message: ChatMessage) => void;
+  readonly onOpenMessage: (message: ChatMessage) => void;
   readonly unpinBusy: boolean;
 }
 
@@ -84,8 +92,11 @@ export function PinsPanel({
   locale,
   timeZone,
   authorName,
+  spaceLabel,
+  onClose,
   canUnpin,
   onUnpin,
+  onOpenMessage,
   unpinBusy,
 }: PinsPanelProps) {
   const pins = hooks.usePins(workspaceId, channelId);
@@ -97,9 +108,20 @@ export function PinsPanel({
       className="flex min-h-0 flex-1 flex-col"
       data-testid="chat-pins-panel"
     >
-      <h2 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
-        {copy.pins.title}
-      </h2>
+      <ChatPanelHeader
+        title={copy.pins.title}
+        subtitle={fillCopy(copy.pins.subtitle, {
+          space: spaceLabel,
+          count: String(items.length),
+        })}
+        closeLabel={copy.pins.close}
+        onClose={onClose}
+      />
+      {items.length > 0 ? (
+        <p className="border-b border-border px-4 py-2.5 text-compact text-muted-foreground max-md:hidden">
+          {fillCopy(copy.pins.summary, { count: String(items.length) })}
+        </p>
+      ) : null}
       {pins.isPending ? (
         <div role="status" className="flex flex-col gap-3 p-4">
           <span className="sr-only">{copy.pins.title}</span>
@@ -129,48 +151,63 @@ export function PinsPanel({
         </div>
       ) : (
         <ul
-          className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2"
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto"
           aria-label={copy.pins.title}
         >
-          {items.map((pin) => (
-            <li
-              key={pin.message.id}
-              className="flex flex-col gap-1 rounded-md border border-border p-2.5"
-              data-testid="chat-pin-item"
-            >
-              <div className="flex items-baseline gap-2 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">
-                  {authorName(pin.message.authorId)}
-                </span>
-                <time dateTime={pin.message.createdAt} className="tabular-nums">
-                  {formatClock(pin.message.createdAt, locale, timeZone)}
-                </time>
-              </div>
-              <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm">
-                {pin.message.deleted ? copy.list.deleted : pin.message.content}
-              </p>
-              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span>
+          {items.map((pin) => {
+            const author = authorName(pin.message.authorId);
+            return (
+              <li
+                key={pin.message.id}
+                className="border-b border-border px-4 py-3"
+                data-testid="chat-pin-item"
+              >
+                <div className="flex items-center gap-2">
+                  <Avatar className="size-[18px]" aria-hidden="true">
+                    <AvatarFallback
+                      className={cn(
+                        "text-mark-xs font-[650]",
+                        avatarToneOf(pin.message.authorId),
+                      )}
+                    >
+                      {initialsOf(author)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-compact font-bold">{author}</span>
+                  <time
+                    dateTime={pin.message.createdAt}
+                    className="text-micro font-medium tracking-[.01em] text-muted-foreground tabular-nums"
+                  >
+                    {pinDayLabel(pin.message.createdAt, locale, timeZone)}
+                  </time>
+                  <span className="flex-1" />
+                  <PinRowMenu
+                    copy={copy}
+                    snippet={pin.message.content ?? ""}
+                    disabled={unpinBusy}
+                    onOpenMessage={() => onOpenMessage(pin.message)}
+                    onUnpin={
+                      canUnpin(pin) ? () => onUnpin(pin.message) : undefined
+                    }
+                  />
+                </div>
+                <p className="mt-1.5 mb-1 line-clamp-3 text-sm leading-[1.5] break-words whitespace-pre-wrap">
+                  {pin.message.deleted
+                    ? copy.list.deleted
+                    : pin.message.content}
+                </p>
+                <p className="text-xs text-muted-foreground">
                   {fillCopy(copy.pins.pinnedBy, {
                     name: authorName(pin.pinnedBy),
                   })}
-                </span>
-                {canUnpin(pin) ? (
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="ghost"
-                    disabled={unpinBusy}
-                    aria-label={`${copy.toolbar.unpin}: ${pin.message.content ?? ""}`}
-                    onClick={() => onUnpin(pin.message)}
-                  >
-                    <PinOff aria-hidden="true" />
-                    {copy.toolbar.unpin}
-                  </Button>
-                ) : null}
-              </div>
-            </li>
-          ))}
+                  <span className="max-md:hidden">
+                    {" · "}
+                    {formatClock(pin.pinnedAt, locale, timeZone)}
+                  </span>
+                </p>
+              </li>
+            );
+          })}
         </ul>
       )}
       {pins.hasNextPage ? (
@@ -188,4 +225,17 @@ export function PinsPanel({
       ) : null}
     </section>
   );
+}
+
+/** "Thứ Hai 10/11": the weekday and the day and month, as the Pins board draws a pinned message's date. */
+function pinDayLabel(iso: string, locale: string, timeZone?: string): string {
+  const parts = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
+  }).formatToParts(new Date(iso));
+  const part = (type: string) =>
+    parts.find((entry) => entry.type === type)?.value ?? "";
+  return `${part("weekday")} ${part("day")}/${part("month")}`;
 }

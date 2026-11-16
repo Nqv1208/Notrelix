@@ -15,6 +15,9 @@ public record GetPageBacklinksQuery(Guid PageId) : IQuery<Result<PageBacklinksDt
 
 public class GetPageBacklinksQueryHandler : IRequestHandler<GetPageBacklinksQuery, Result<PageBacklinksDto>>
 {
+    /// <summary>The most referrers one answer lists (by title); the panel is a short list, never a page of the whole tenant.</summary>
+    public const int MaxBacklinks = 200;
+
     private readonly IDocumentDbContext _context;
     private readonly IPageBacklinkReader _reader;
     private readonly IResourceVisibility _visibility;
@@ -53,6 +56,7 @@ public class GetPageBacklinksQueryHandler : IRequestHandler<GetPageBacklinksQuer
             .Where(page => readable.Contains(page.Id) && page.DeletedAt == null && page.Status != PageStatus.Archived)
             .OrderBy(page => page.Title)
             .Select(page => new { page.Id, page.Title, page.Icon, page.SpaceId })
+            .Take(MaxBacklinks)
             .ToListAsync(ct);
 
         return Result<PageBacklinksDto>.Success(new PageBacklinksDto(pages

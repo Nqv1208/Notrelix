@@ -103,15 +103,31 @@ public class PinHandlerTests
 
     private PinMessageCommandHandler PinHandler() =>
         new(_db.Object, _context.Object, _members.Object, _sequences.Object, new ChatSystemMessages(_db.Object, _sequences.Object, _clock.Object), _clock.Object, new InMemoryChatMessageAttachments());
-    private UnpinMessageCommandHandler UnpinHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
+    private UnpinMessageCommandHandler UnpinHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, new ChatSystemMessages(_db.Object, _sequences.Object, _clock.Object), _clock.Object);
     private ListPinsQueryHandler ListPinsHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
-    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits);
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>());
+    private SendMessageCommandHandler SendHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _broadcast.Object, new InMemoryChatMessageAttachments(), _limits, Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>());
 
     private int SystemMessageCount(Space space) => _messages.Count(m => m.SpaceId == space.Id && m.IsSystem);
 
     // ---- Pin (UC-CHT-F06) ----------------------------------------------------------------------
+
+    [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_pin_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _owner], Guid.NewGuid(), Now);
+        group.AddMember(_outsider, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+
+        AsUser(_outsider);
+        var act = () => PinHandler().Handle(new PinMessageCommand(_workspaceId, before.Id), CancellationToken.None);
+        await act.Should().ThrowAsync<AppNotFoundException>();
+
+        AsUser(_member);
+        (await PinHandler().Handle(new PinMessageCommand(_workspaceId, before.Id), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
 
     [Fact]
     public async Task Pinning_stores_the_pin_announces_it_and_takes_the_lock_first()
@@ -238,6 +254,7 @@ public class PinHandlerTests
 
         result.Succeeded.Should().BeTrue();
         _pins.Should().BeEmpty();
+        SystemMessageCount(space).Should().Be(2, "the pin and the unpin are each announced");
     }
 
     [Fact]
@@ -250,6 +267,7 @@ public class PinHandlerTests
 
         result.Succeeded.Should().BeTrue();
         _pins.Should().BeEmpty();
+        SystemMessageCount(space).Should().Be(0, "a no-op announces nothing");
     }
 
     // ---- List pins (UC-CHT-F07) -----------------------------------------------------------------

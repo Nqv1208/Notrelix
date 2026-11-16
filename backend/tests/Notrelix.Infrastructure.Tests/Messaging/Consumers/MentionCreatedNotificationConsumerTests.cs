@@ -2,6 +2,9 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Events.Collaboration;
+using Notrelix.Application.Features.Documents.Public.PageViewAccess;
+using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 using Notrelix.Application.Common.Context;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Abstractions;
@@ -24,7 +27,7 @@ public sealed class MentionCreatedNotificationConsumerTests
     public async Task FirstDelivery_CreatesOneNotificationAndOneRecipient()
     {
         var inner = CreateContext();
-        var consumer = new MentionCreatedNotificationConsumer(inner, NullLogger<MentionCreatedNotificationConsumer>.Instance);
+        var consumer = new MentionCreatedNotificationConsumer(inner, Audience(), AllowAll(), NullLogger<MentionCreatedNotificationConsumer>.Instance);
 
         await consumer.Consume(ConsumeFor(Message()));
 
@@ -36,7 +39,7 @@ public sealed class MentionCreatedNotificationConsumerTests
     public async Task RedeliveryAfterTheFirstCommit_IsSkippedByTheFastPath()
     {
         var inner = CreateContext();
-        var consumer = new MentionCreatedNotificationConsumer(inner, NullLogger<MentionCreatedNotificationConsumer>.Instance);
+        var consumer = new MentionCreatedNotificationConsumer(inner, Audience(), AllowAll(), NullLogger<MentionCreatedNotificationConsumer>.Instance);
         var message = Message();
         await consumer.Consume(ConsumeFor(message));
 
@@ -51,7 +54,7 @@ public sealed class MentionCreatedNotificationConsumerTests
         // The pre-check finds nothing; the other delivery commits the same deduplication key before this save.
         var inner = CreateContext();
         var racing = new RacingNotificationContext(inner, DeduplicationViolation());
-        var consumer = new MentionCreatedNotificationConsumer(racing, NullLogger<MentionCreatedNotificationConsumer>.Instance);
+        var consumer = new MentionCreatedNotificationConsumer(racing, Audience(), AllowAll(), NullLogger<MentionCreatedNotificationConsumer>.Instance);
 
         var act = () => consumer.Consume(ConsumeFor(Message()));
 
@@ -67,10 +70,74 @@ public sealed class MentionCreatedNotificationConsumerTests
         var racing = new RacingNotificationContext(inner, new DbUpdateException(
             "unique",
             new Exception("23505: duplicate key value violates unique constraint \"ux_notification_recipients_other\"")));
-        var consumer = new MentionCreatedNotificationConsumer(racing, NullLogger<MentionCreatedNotificationConsumer>.Instance);
+        var consumer = new MentionCreatedNotificationConsumer(racing, Audience(), AllowAll(), NullLogger<MentionCreatedNotificationConsumer>.Instance);
 
         await consumer.Invoking(c => c.Consume(ConsumeFor(Message())))
             .Should().ThrowAsync<DbUpdateException>("only the deduplication key makes a delivery a no-op");
+    }
+
+    [Fact]
+    public async Task SelfMention_CreatesNothing()
+    {
+        var inner = CreateContext();
+        var consumer = new MentionCreatedNotificationConsumer(inner, Audience(), AllowAll(), NullLogger<MentionCreatedNotificationConsumer>.Instance);
+        var self = Guid.CreateVersion7();
+
+        await consumer.Consume(ConsumeFor(Message() with { MentionedUserId = self, MentionedByUserId = self }));
+
+        inner.NotificationItems.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AMutedThread_CreatesNothing()
+    {
+        var inner = CreateContext();
+        var message = Message();
+        inner.NotificationThreadMutes.Add(NotificationThreadMuteRecord.Create(
+            message.AccountId!.Value, message.WorkspaceId!.Value, message.MentionedUserId, message.TargetType, message.TargetId, DateTimeOffset.UtcNow));
+        await inner.SaveChangesAsync();
+        var consumer = new MentionCreatedNotificationConsumer(inner, Audience(), AllowAll(), NullLogger<MentionCreatedNotificationConsumer>.Instance);
+
+        await consumer.Consume(ConsumeFor(message));
+
+        inner.NotificationItems.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("documents.page", false)]
+    [InlineData("documents.page", true)]
+    [InlineData("work-management.board-item", false)]
+    [InlineData("work-management.board-item", true)]
+    public async Task ASourceThePersonCannotViewNow_CreatesNothing(string kind, bool canView)
+    {
+        var inner = CreateContext();
+        var message = Message() with { TargetType = kind };
+        var consumer = new MentionCreatedNotificationConsumer(
+            inner, Audience(canView ? message.MentionedUserId : null, message), canView ? AllowAll() : DenyAll(),
+            NullLogger<MentionCreatedNotificationConsumer>.Instance);
+
+        await consumer.Consume(ConsumeFor(message));
+
+        inner.NotificationItems.Count().Should().Be(canView ? 1 : 0);
+    }
+
+    private static IPageViewAccess AllowAll() => Mock.Of<IPageViewAccess>(a =>
+        a.CanViewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(true));
+
+    private static IPageViewAccess DenyAll() => Mock.Of<IPageViewAccess>(a =>
+        a.CanViewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(false));
+
+    /// <summary>An audience in which only <paramref name="visibleTo"/> can see the message's item (nobody when null).</summary>
+    private static ItemAudience Audience(Guid? visibleTo = null, MentionCreatedIntegrationEvent? message = null)
+    {
+        var board = Guid.CreateVersion7();
+        var work = new Mock<IWorkItemNotificationFacts>();
+        work.Setup(w => w.FindAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkItemNotificationFacts(board, "Item", false, null));
+        var visibility = new Mock<IResourceVisibility>();
+        visibility.Setup(v => v.VisibleBoardIdsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid user, CancellationToken _) => user == visibleTo ? new[] { board } : []);
+        return new ItemAudience(work.Object, visibility.Object);
     }
 
     private static DbUpdateException DeduplicationViolation() =>

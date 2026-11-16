@@ -17,7 +17,10 @@ public record PageDto(
     Guid? SpaceId = null,
     // The title of the parent page when the caller can see it, so a picker can say where a page sits;
     // null at the top of a Space or when the parent is not visible (never disclosed). Set by the list read.
-    string? ParentTitle = null
+    string? ParentTitle = null,
+    // Whether the caller may edit the page (the decision a write of it gets); set by the single-page read
+    // only, null on lists. Derived state for a read-only editor: the server still authorizes every write.
+    bool? CanEdit = null
 );
 
 /// <summary>
@@ -134,11 +137,19 @@ public record PageTemplateDto(
     string Icon,
     int BlockCount,
     Guid? CreatedBy,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    long Version,
+    bool CanManage
 );
 
 /// <summary>A page created from a template; <c>DroppedBlockCount</c> counts the image, file and video blocks that were not copied.</summary>
 public record PageFromTemplateDto(
+    Guid PageId,
+    int DroppedBlockCount
+);
+
+/// <summary>A duplicated page; <c>DroppedBlockCount</c> counts the image, file and video blocks that were not copied.</summary>
+public record DuplicatedPageDto(
     Guid PageId,
     int DroppedBlockCount
 );

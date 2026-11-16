@@ -123,7 +123,7 @@ public class ReactionHandlerTests
     private AddReactionCommandHandler AddHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _limits);
     private RemoveReactionCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
     private ListReactorsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object);
-    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments());
+    private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>());
 
     private static ReactionSummaryDto Summary(MessageReactionsDto dto, string kind) =>
         dto.Reactions.Single(r => r.Emoji == kind);
@@ -379,6 +379,41 @@ public class ReactionHandlerTests
     }
 
     // ---- Who reacted (UC-CHT-G07) -------------------------------------------------------------
+
+    [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_react_to_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _otherMember], _owner, Now);
+        group.AddMember(_guest, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+
+        AsUser(_guest);
+        var act = () => AddHandler().Handle(new AddReactionCommand(_workspaceId, before.Id, "👍"), CancellationToken.None);
+        await act.Should().ThrowAsync<AppNotFoundException>();
+        _reactions.Should().BeEmpty();
+
+        AsUser(_otherMember);
+        (await AddHandler().Handle(new AddReactionCommand(_workspaceId, before.Id, "👍"), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_member_added_to_a_group_later_gets_not_found_for_the_reactors_of_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _otherMember], _owner, Now);
+        group.AddMember(_guest, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+        Existing(before, _otherMember, "👍");
+
+        AsUser(_guest);
+        var act = () => ListHandler().Handle(new ListReactorsQuery(_workspaceId, before.Id, null, null, 50), CancellationToken.None);
+        await act.Should().ThrowAsync<AppNotFoundException>();
+
+        AsUser(_otherMember);
+        (await ListHandler().Handle(new ListReactorsQuery(_workspaceId, before.Id, null, null, 50), CancellationToken.None))
+            .Data!.Items.Should().ContainSingle();
+    }
 
     [Fact]
     public async Task Listing_reactors_returns_the_earliest_reaction_first_with_its_emoji_and_person()

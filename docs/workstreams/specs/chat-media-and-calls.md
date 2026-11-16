@@ -47,7 +47,7 @@ Recording and transcription of calls, stage or broadcast channels, calls across 
 
 - **Gallery:** the ordered attachments of one message shown as a grid.
 - **Voice message:** a message with one audio attachment, a duration and a waveform.
-- **Sticker:** a Notrelix-owned image from a pack; not an attachment.
+- **Sticker:** a Notrelix-owned image from a pack; not an attachment. Only Notrelix packs exist; Workspaces cannot upload stickers and there is no third-party GIF provider for now.
 - **Call:** a time-bounded real-time audio or video session attached to a space (channel, direct or group conversation).
 - **Participant:** a person who joined the call.
 - **Media plane:** the SFU and TURN service that carries audio and video. **Signalling:** call state frames on the gateway.
@@ -64,7 +64,7 @@ Message             + kind: user | system | call            -- call = system mes
 Message             + sticker_id nullable                    -- sticker message has no text and no attachment
 
 Call                id, workspace_id, space_id, initiator_id, kind (voice|video), state,
-                    end_reason, started_at, answered_at, ended_at, room_key, version
+                    end_reason, started_at, answered_at, ended_at, room_key, region, version
 CallParticipant     call_id, person_id, joined_at, left_at, audio_on, video_on, sharing_screen
 ```
 
@@ -77,6 +77,8 @@ Call: Ringing -> Active -> Ended
 Participant: Invited -> Joined -> Left
 ```
 
+`region` is the media host region the room was created in (for example `ap-southeast-1`, Singapore). The server sets it from configuration (`Chat:Calls:Region`) when it creates the room; a client never supplies it and cannot change it.
+
 Transitions are commands with an expected `version`; a transition from `Ended` is rejected with a stable code.
 
 ## 5. Invariants
@@ -84,10 +86,10 @@ Transitions are commands with an expected `version`; a transition from `Ended` i
 1. At most one `Ringing` or `Active` call per space.
 2. A person is in at most one `Active` call at a time (a second invite answers `Busy`).
 3. Only members of the space who are not blocked by the other party can be invited; a Guest or a read-only member cannot initiate.
-4. A direct call has exactly two participants; a group call is capped by `ChatLimits.CallMaxParticipants` (proposed 25 voice, 12 video).
+4. A direct call has exactly two participants; a group call is capped by `ChatLimits.CallMaxParticipants` (25 voice, 12 video; owner decision 2026-11-16).
 5. `Ringing` ends as `Missed` after 45 seconds without an answer.
 6. Every terminal state writes exactly one `call` system message in the space with `(call_id)` unique per space, so a retry never writes two.
-7. A voice message is at most `ChatLimits.VoiceMaxSeconds` (proposed 300) and one audio attachment.
+7. A voice message is at most `ChatLimits.VoiceMaxSeconds` (300, five minutes; owner decision 2026-11-16) and one audio attachment.
 8. A message has either text with attachments, a sticker, or a voice attachment; never a sticker plus attachments.
 9. The server never returns a media token to a person who is not a participant of an `Active` or `Ringing` call.
 
@@ -119,9 +121,9 @@ Invariant 5 of SPEC-CHAT-FOUNDATION (a read boundary only increases) is amended 
 
 ## 8. Infrastructure
 
-- **SFU:** LiveKit (owner decision pending, SYS-ADR-002 decision 7) as a container next to `redis` and `rabbitmq` in the compose files (`docker-compose.yml`, `.dev`, `.staging`, `.prod`), plus TURN (built in or coturn), UDP port range, TLS.
-- **Configuration:** `Chat:Calls:Enabled`, `Chat:Calls:SfuUrl`, `Chat:Calls:ApiKey` and `ApiSecret` (secrets from the secret store, never in compose files), `Chat:Calls:TokenTtlSeconds` (60), `Chat:Calls:RingSeconds` (45).
-- **Ports:** `IChatCallMediaGateway` (create room, issue token, end room, receive SFU webhooks) with a fake for tests; `IChatGifProvider` behind a workspace setting.
+- **SFU:** self-hosted LiveKit (owner decision 2026-11-16, SYS-ADR-002 decision 7), with LiveKit Cloud as the fallback behind the same `IChatCallMediaGateway` port, hosted in Singapore (`ap-southeast-1`), as a container next to `redis` and `rabbitmq` in the compose files (`docker-compose.yml`, `.dev`, `.staging`, `.prod`), plus TURN (built in or coturn), UDP port range, TLS.
+- **Configuration:** `Chat:Calls:Enabled`, `Chat:Calls:SfuUrl`, `Chat:Calls:ApiKey` and `ApiSecret` (secrets from the secret store, never in compose files), `Chat:Calls:TokenTtlSeconds` (60), `Chat:Calls:RingSeconds` (45), `Chat:Calls:Region` (`ap-southeast-1`, copied to `Call.region`), `Chat:Calls:LogRetentionMonths` (12).
+- **Ports:** `IChatCallMediaGateway` (create room, issue token, end room, receive SFU webhooks) with a fake for tests; `IChatGifProvider` is not built for now (own stickers only); the port is added only when a provider is chosen later.
 - **Webhooks:** SFU participant-joined and room-finished events reconcile call state; the endpoint verifies the signature and is idempotent.
 - **Jobs:** a hosted service ends calls stuck `Ringing` after the ring limit and calls with no participants after 60 seconds.
 - **Observability:** metrics for calls started, answered, missed, ended by reason, join latency and token errors; a log line per transition with `callId` and `spaceId`, no media content.
@@ -129,7 +131,7 @@ Invariant 5 of SPEC-CHAT-FOUNDATION (a read boundary only increases) is amended 
 
 ## 9. Data and migration
 
-Expand-only migrations: tables `chat.calls`, `chat.call_participants`, `chat.sticker_packs`, `chat.stickers`; nullable column `chat.messages.sticker_id`; new message kind value `call` stored as text. RLS through `ops.apply_scoped_business_policies('chat', ...)` for the new tables; stickers of a global pack have a null Workspace and read-only policy. No contract step.
+Call logs (`chat.calls` and `chat.call_participants` rows) are kept 12 months, then a hosted job deletes them; the `call` system message stays in the conversation under the normal message retention. `chat.calls.region` is a non-null text column filled by the server. Expand-only migrations: tables `chat.calls`, `chat.call_participants`, `chat.sticker_packs`, `chat.stickers`; nullable column `chat.messages.sticker_id`; new message kind value `call` stored as text. RLS through `ops.apply_scoped_business_policies('chat', ...)` for the new tables; stickers of a global pack have a null Workspace and read-only policy. No contract step.
 
 ## 10. Failure semantics
 
@@ -169,16 +171,16 @@ Every call control is a labelled button; the incoming call is an alert dialog wi
 
 1. Phase 4a: attachment media metadata and thumbnails (Collaboration extension), gallery, upload progress, viewer.
 2. Phase 4b: voice messages, message link, mark unread, create task from a message.
-3. Phase 4c: stickers, then GIF provider behind a setting.
+3. Phase 4c: stickers from the Notrelix set. No GIF provider for now.
 4. Phase 5: `Call` domain, REST, signalling frames, SFU port with fake, hosted jobs, infrastructure manifests, one-to-one UI.
 5. Phase 6: group calls, screen share, participant list, rate limits and load test.
 
-## 16. Blocking open questions (owner)
+## 16. Open questions (closed by the owner on 2026-11-16)
 
-1. SFU hosting: self-hosted LiveKit, managed provider, or mediasoup.
-2. GIF provider or own stickers only.
-3. Voice message limit (proposed 5 minutes) and group call caps.
-4. Retention of call logs and of stickers uploaded by a Workspace.
+1. SFU hosting: self-hosted LiveKit, with LiveKit Cloud as the fallback behind `IChatCallMediaGateway`. Media host region: Singapore.
+2. GIF provider: none for now; Notrelix-owned stickers only.
+3. Voice message limit: 5 minutes. Group call caps: 25 participants for voice, 12 for video.
+4. Retention of call logs: 12 months. Stickers uploaded by a Workspace: not applicable, Workspaces cannot upload stickers.
 
 ## 17. Final feature acceptance
 

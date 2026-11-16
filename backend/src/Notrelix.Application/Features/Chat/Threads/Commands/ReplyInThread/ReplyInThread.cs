@@ -49,7 +49,8 @@ public class ReplyInThreadCommandHandler(
     IDateTimeProvider clock,
     IBroadcastAuthorizer broadcast,
     IChatMessageAttachments attachments,
-    IChatRateLimiter rateLimits) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
+    IChatRateLimiter rateLimits,
+    IChatReadStateStore readStates) : IRequestHandler<ReplyInThreadCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(ReplyInThreadCommand request, CancellationToken cancellationToken)
     {
@@ -64,6 +65,7 @@ public class ReplyInThreadCommandHandler(
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, root.SpaceId, cancellationToken);
         if (!space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), root.SpaceId);
+        ChannelAccess.RequireInHistory(space, userId, root);
         if (space.IsArchived)
             throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
         if (root.IsThreadReply || root.IsSystem)
@@ -144,6 +146,9 @@ public class ReplyInThreadCommandHandler(
             now);
         db.ChatMessages.Add(reply);
         await MessageMentions.ReplaceAsync(db, reply, resolution.Spans, hadBefore: false, cancellationToken);
+        await readStates.AdvanceAuthorAsync(request.WorkspaceId, space.Id, userId, sequence, cancellationToken);
+        await readStates.AddMentionsAsync(
+            request.WorkspaceId, space.Id, sequence, reply.CreatedAt, userId, MentionAudience.From(resolution.Spans), cancellationToken);
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
 

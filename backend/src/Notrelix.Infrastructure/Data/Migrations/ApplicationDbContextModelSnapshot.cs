@@ -2765,6 +2765,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_messages");
 
+                    b.HasIndex("Content")
+                        .HasDatabaseName("ix_messages_content_trgm")
+                        .HasFilter("kind = 'User' AND deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Content"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Content"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("SpaceId", "Sequence")
                         .IsUnique()
                         .IsDescending(false, true)
@@ -2777,6 +2784,13 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("SpaceId", "AuthorId", "ClientMessageId")
                         .IsUnique()
                         .HasDatabaseName("ux_messages_space_author_client_message");
+
+                    b.HasIndex("SpaceId", "Sequence", "AuthorId")
+                        .IsDescending(false, true, false)
+                        .HasDatabaseName("ix_messages_unread_count")
+                        .HasFilter("kind = 'User' AND deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("SpaceId", "Sequence", "AuthorId"), new[] { "AccountId", "WorkspaceId" });
 
                     b.ToTable("messages", "chat");
                 });
@@ -3809,10 +3823,6 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3840,16 +3850,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDefaultValue(1L)
                         .HasColumnName("version");
 
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("workspace_id");
-
                     b.HasKey("Id")
                         .HasName("pk_notification_preference_sets");
 
-                    b.HasIndex("WorkspaceId", "UserId")
+                    b.HasIndex("UserId")
                         .IsUnique()
-                        .HasDatabaseName("ux_notification_preference_sets_member");
+                        .HasDatabaseName("ux_notification_preference_sets_user");
 
                     b.ToTable("notification_preference_sets", "notifications");
                 });

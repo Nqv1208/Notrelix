@@ -24,6 +24,10 @@ import type {
 } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import {
+  setConversationUnread,
+  touchConversation,
+} from "../query/conversation-cache";
+import {
   isChatMessageEvent,
   parseChatMessageFrame,
   parseChatAttachmentFrame,
@@ -176,7 +180,14 @@ export function createChatRealtimeAdapter(
       threadRootId: rootId,
       threadSequence: frame.threadSequence,
     };
-    applyStoredReply(queryClient, workspaceId, reply);
+    if (frame.contentOmitted) {
+      // The reply's text did not fit the frame: the open thread refetches instead of showing a blank reply.
+      void queryClient.invalidateQueries({
+        queryKey: chatQueryKeys.thread(workspaceId, rootId),
+      });
+    } else {
+      applyStoredReply(queryClient, workspaceId, reply);
+    }
     return backfill(workspaceId, channelId, frame.sequence - 1);
   }
 
@@ -198,25 +209,31 @@ export function createChatRealtimeAdapter(
       if (envelope.eventType === "chat.message.created") {
         return applyThreadReplyCreated(frame, envelope, workspaceId, channelId);
       }
-      queryClient.setQueriesData(
-        { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
-        (data: unknown) =>
-          patchMessageInData(data, frame.id, (message) =>
-            message.version >= frame.version
-              ? message
-              : {
-                  ...message,
-                  content: frame.deleted ? null : frame.content,
-                  edited: frame.editedAt !== null || message.edited,
-                  editedAt: frame.editedAt ?? message.editedAt,
-                  deleted: frame.deleted,
-                  deletedAt: frame.deleted
-                    ? (message.deletedAt ?? envelope.timestamp)
-                    : message.deletedAt,
-                  version: frame.version,
-                },
-          ),
-      );
+      if (frame.contentOmitted) {
+        // An edit whose text did not fit keeps the old text until the thread refetches.
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId),
+        });
+      } else
+        queryClient.setQueriesData(
+          { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
+          (data: unknown) =>
+            patchMessageInData(data, frame.id, (message) =>
+              message.version >= frame.version
+                ? message
+                : {
+                    ...message,
+                    content: frame.deleted ? null : frame.content,
+                    edited: frame.editedAt !== null || message.edited,
+                    editedAt: frame.editedAt ?? message.editedAt,
+                    deleted: frame.deleted,
+                    deletedAt: frame.deleted
+                      ? (message.deletedAt ?? envelope.timestamp)
+                      : message.deletedAt,
+                    version: frame.version,
+                  },
+            ),
+        );
     }
 
     let refetchFrom: number | null = null;
@@ -247,8 +264,36 @@ export function createChatRealtimeAdapter(
       (cache) => (cache ? reduce(cache) : cache),
     );
 
-    // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId).
-    if (frame.clientMessageId !== null) {
+    // The conversation list shows the newest message of a conversation: it moves in the cache.
+    if (
+      envelope.eventType === "chat.message.created" &&
+      frame.threadRootId === null &&
+      !frame.deleted &&
+      !frame.contentOmitted
+    ) {
+      touchConversation(queryClient, workspaceId, channelId, {
+        sequence: frame.sequence,
+        authorId: frame.authorId,
+        kind: frame.kind,
+        text: frame.content,
+        createdAt: frame.createdAt ?? envelope.timestamp,
+      });
+    }
+
+    // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId). Only once a loaded
+    // window holds the message: a frame that fell outside the window on screen (a send from an older window) must not
+    // take the bubble away, the send's own answer drops it when the newest window shows the stored copy.
+    const clientMessageId = frame.clientMessageId;
+    if (
+      clientMessageId !== null &&
+      queryClient
+        .getQueriesData<ChatMessagesCache>({ queryKey: prefix })
+        .some(([, cache]) =>
+          cache?.pages.some((page) =>
+            page.items.some((item) => item.clientMessageId === clientMessageId),
+          ),
+        )
+    ) {
       queryClient.setQueryData<PendingMessage[]>(pendingKey, (entries) =>
         entries
           ? entries.filter(
@@ -277,12 +322,34 @@ export function createChatRealtimeAdapter(
       await queryClient.invalidateQueries({ queryKey: key });
       return;
     }
+    // A background conversation shows its newest message without being read: the frame's preview patches the list in place.
+    if (frame.preview) {
+      touchConversation(queryClient, workspaceId, frame.spaceId, {
+        sequence: frame.preview.sequence,
+        authorId: frame.preview.authorId,
+        kind: frame.preview.kind === "system" ? "system" : "user",
+        text: frame.preview.text,
+        createdAt: frame.preview.createdAt,
+      });
+    }
+    // The reader is looking at that space's newest message: the frame's count is already read (the read boundary moves
+    // with the message), so it is skipped instead of flashing a badge until the boundary lands.
+    const viewing = queryClient.getQueryData<string | null>(
+      chatQueryKeys.viewing(workspaceId),
+    );
+    if (viewing === frame.spaceId) return;
     const summary = queryClient.getQueryData<ChatUnreadSummary>(key);
     // Nothing loaded yet: the summary fetches on its first read.
     if (!summary) return;
     const outcome = applyUnreadFrame(summary, frame);
     if (outcome.kind === "applied") {
       queryClient.setQueryData<ChatUnreadSummary>(key, outcome.summary);
+      setConversationUnread(
+        queryClient,
+        workspaceId,
+        frame.spaceId,
+        frame.unread,
+      );
     } else if (outcome.kind === "unknown-space") {
       // A channel the summary does not list yet: revalidate the list and the summary.
       await context.invalidateQueries([

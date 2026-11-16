@@ -3,7 +3,9 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using Notrelix.Application.Features.Chat.Conversations.Commands.SetConversationVisibility;
 using Notrelix.Application.Features.Chat.Conversations.Queries.ListConversations;
+using Notrelix.Application.Features.Chat.Reactions.Queries.ListReactors;
 using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
@@ -182,6 +184,40 @@ public sealed class ChatConversationRlsTests : IAsyncLifetime
             .Handle(new SetConversationVisibilityCommand(_a.WorkspaceId, _spaceId, true), CancellationToken.None);
 
         await hide.Should().ThrowAsync<NotFoundException>("a conversation the caller is not in is not found");
+    }
+
+    [Fact]
+    public async Task AGroupMemberAddedLaterGetsNotFoundForTheReactorsOfAMessageFromBeforeTheJoin()
+    {
+        var late = await AppRoleMembers.AddAsync(_fixture, _a, "DmLate", WorkspaceRole.Member, WorkspaceMemberStatus.Active, "hash");
+        var group = Space.CreateGroup(_a.AccountId, _a.WorkspaceId, "late", [_bob.Id, _outsider.Id], _a.User.Id, Now);
+        group.AddParticipant(late.Id, Now.AddHours(1));
+        var before = Message.CreateUserMessage(_a.AccountId, _a.WorkspaceId, group.Id, 1, _bob.Id, "before the join", "rls-group-before", null, Now);
+        var reaction = Reaction.Create(_a.AccountId, _a.WorkspaceId, group.Id, before.Id, _bob.Id, "👍", Now);
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using (var seed = _fixture.CreateOwnerContext(system))
+        {
+            seed.ChatSpaces.Add(group);
+            seed.ChatMessages.Add(before);
+            seed.ChatReactions.Add(reaction);
+            await seed.SaveChangesAsync();
+        }
+
+        var (original, originalContext, originalMembers) = await AsPersonAsync(_bob.Id, "Member");
+        await using (original)
+        {
+            var seen = await new ListReactorsQueryHandler(original, originalContext.Object, originalMembers.Object)
+                .Handle(new ListReactorsQuery(_a.WorkspaceId, before.Id, null, null, 50), CancellationToken.None);
+            seen.Data!.Items.Should().ContainSingle("the positive control: the people who were there keep the whole history");
+        }
+
+        var (db, context, members) = await AsPersonAsync(late.Id, "Member");
+        await using var _ = db;
+        var act = () => new ListReactorsQueryHandler(db, context.Object, members.Object)
+            .Handle(new ListReactorsQuery(_a.WorkspaceId, before.Id, null, null, 50), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>("the message is from before this member joined the group");
     }
 
     /// <summary>

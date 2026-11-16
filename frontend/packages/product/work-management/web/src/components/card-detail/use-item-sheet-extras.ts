@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   canRetryItemFileUpload,
   useCreateItemField,
@@ -62,7 +63,16 @@ export function useItemSheetExtras(card: CardDetail): {
 } {
   const copy = useItemPageCopy();
   const { cards } = useWorkManagementServices();
-  const fileUploads = useItemFileUploads(card.id, card.workspaceId);
+  const fileUploads = useItemFileUploads(
+    card.id,
+    card.workspaceId,
+    ({ name, error }) => {
+      const words = { name, title: card.title };
+      if (error === null)
+        toast.success(fillSheetCopy(copy.files.uploadedAfterClose, words));
+      else toast.error(fillSheetCopy(copy.files.uploadFailedAfterClose, words));
+    },
+  );
   const deleteFile = useDeleteCardFile(card.id, card.workspaceId);
   const follow = useItemFollowing(card.id, card.workspaceId);
   const children = useItemChildItems(card.id, card.workspaceId, card.boardId);

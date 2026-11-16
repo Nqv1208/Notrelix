@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -25,7 +33,6 @@ import {
   Pin,
   Plus,
   WifiOff,
-  X,
 } from "lucide-react";
 import {
   chatFailureOf,
@@ -33,9 +40,7 @@ import {
 } from "../../core/api/chat-failure";
 import { chatQueryKeys } from "../../query/keys";
 import {
-  buildChatRows,
   checkMessageContent,
-  unconfirmedPending,
   type PendingMessage,
 } from "../../core/model/chat-model";
 import { messageActionGrants } from "../../core/model/message-display-model";
@@ -56,7 +61,6 @@ import {
   type ChatMentionPayload,
   type ChatConversation,
   type ChatStartConversationInput,
-  type ChatHistoryAnchor,
   type ChatSearchHit,
   type ChatMessage,
   type ChatPermissionEntry,
@@ -66,24 +70,24 @@ import { cn } from "@notrelix/ui-web";
 import { ReplyChip } from "./chat-quote";
 import { ChatThreadPanel } from "./chat-thread-panel";
 import { PinnedBar, PinsPanel } from "./chat-pins";
+import { PinLimitBanner, UnpinDialog } from "./chat-pin-ui";
 import { FollowedThreadsPanel } from "./chat-followed-threads";
 import { MentionsPanel } from "./chat-mentions-panel";
+import { ChatPanelTabs, panelTabId } from "./chat-panel-tabs";
 import { ChatMentionProvider } from "./chat-mention-context";
 import type { QuoteView } from "./chat-message-row";
-import {
-  createChatHooks,
-  flattenPages,
-  type ChatHookDeps,
-} from "../query/create-chat-hooks";
+import { createChatHooks, type ChatHookDeps } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
-import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import {
-  ChatMessageList,
-  type ChatListStatus,
-  type ChatScrollRequest,
-} from "./chat-message-list";
+  ChatComposer,
+  type ChatComposerMentions,
+  type ChatComposerProps,
+} from "./chat-composer";
+import { ChatMessageList, type ChatListStatus } from "./chat-message-list";
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
+import { useChannelTimeline } from "./use-channel-timeline";
+import { ChatMessageLinkProvider } from "./chat-link-context";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
 import { ChatRateLimitNotice } from "./chat-rate-limit";
@@ -96,6 +100,7 @@ import {
 import {
   ConfirmDialog,
   CreateChannelDialog,
+  DeleteChannelDialog,
   ModerateMessageDialog,
   RenameChannelDialog,
   type CreateChannelValues,
@@ -144,6 +149,17 @@ export interface ChatWorkspaceProps {
   /** Names of the Workspace members by user id (the host supplies them). */
   readonly people: ReadonlyMap<string, string>;
   readonly onOpenChannel: (channelId: string) => void;
+  /**
+   * Message links (UC-CHT-B10). `buildMessageLink` returns the address of a message of the open space (the host owns the routes);
+   * without it no Copy link entry is shown. `linkedSequence` is the `?m=` of the address the page was opened with: the history
+   * opens around it and the message is highlighted.
+   */
+  readonly buildMessageLink?: (target: {
+    readonly spaceId: string;
+    readonly conversation: boolean;
+    readonly sequence: number;
+  }) => string;
+  readonly linkedSequence?: number | null;
   /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
@@ -154,24 +170,6 @@ export interface ChatWorkspaceProps {
    */
   readonly ephemeral?: ChatEphemeralPort;
   readonly timeZone?: string;
-}
-
-const LATEST: ChatHistoryAnchor = { kind: "latest" };
-
-interface ChannelLock {
-  readonly channelId: string;
-  readonly anchor: ChatHistoryAnchor;
-  /** The first unread sequence when the channel opened (the "New" divider). */
-  readonly firstUnread: number | null;
-}
-
-/** A search hit being opened: the space to open, the message to land on and, for a thread reply, the thread to show. */
-interface SearchJump {
-  readonly spaceId: string;
-  readonly messageId: string;
-  readonly sequence: number;
-  readonly threadRootId: string | null;
-  readonly applied: boolean;
 }
 
 /** The right-hand panel: one thread, the channel's pins, or the threads the caller follows. */
@@ -206,6 +204,8 @@ function failureText(kind: ChatFailureKind, copy: ChatCopy): string {
       return copy.create.nameTaken;
     case "archived":
       return copy.composer.archived;
+    case "last-manager":
+      return copy.membership.lastManager;
     case "broadcast-confirmation":
       return copy.mentions.broadcastConfirmFailed;
     default:
@@ -218,6 +218,44 @@ function failureText(kind: ChatFailureKind, copy: ChatCopy): string {
  * composer) and the channel dialogs. It owns the server state through the
  * query hooks and only shows what the cache holds.
  */
+/**
+ * The channel composer with its draft. The text lives here, not in the workspace, so a keystroke re-renders the
+ * composer only and not the message list. Drafts are kept per channel while the page is open (UC-CHT-B07).
+ */
+function ChatDraftComposer({
+  draftKey,
+  drafts,
+  onSend,
+  onTypingStop,
+  ...rest
+}: Omit<ChatComposerProps, "value" | "onChange"> & {
+  readonly draftKey: string;
+  readonly drafts: RefObject<Record<string, string>>;
+  /** The caller stopped typing: the draft emptied, was sent, or lost the focus. */
+  readonly onTypingStop?: () => void;
+}) {
+  const [value, setValue] = useState(drafts.current[draftKey] ?? "");
+  function change(next: string) {
+    setValue(next);
+    if (next.length === 0) delete drafts.current[draftKey];
+    else drafts.current[draftKey] = next;
+    if (next.trim().length === 0) onTypingStop?.();
+  }
+  return (
+    <div className="contents" onBlur={() => onTypingStop?.()}>
+      <ChatComposer
+        {...rest}
+        value={value}
+        onChange={change}
+        onSend={(...args) => {
+          onSend(...args);
+          change("");
+        }}
+      />
+    </div>
+  );
+}
+
 export function ChatWorkspace({
   deps,
   workspaceId,
@@ -229,6 +267,8 @@ export function ChatWorkspace({
   onCloseConversation,
   people,
   onOpenChannel,
+  buildMessageLink,
+  linkedSequence = null,
   onBackToList,
   connection = "live",
   ephemeral,
@@ -258,8 +298,6 @@ export function ChatWorkspace({
   const [linkError, setLinkError] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [jump, setJump] = useState<SearchJump | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // ─── Server state ─────────────────────────────────────────────────────────
   const channels = hooks.useChannels(ws);
@@ -298,53 +336,18 @@ export function ChatWorkspace({
       null)
     : null;
 
-  // A new message in a conversation moves its unread count; the list row (preview, order) follows it.
-  const unreadSignature = unread.data?.totalUnread ?? null;
-  const signatureSeen = useRef(unreadSignature);
-  useEffect(() => {
-    if (!offersConversations || signatureSeen.current === unreadSignature)
-      return;
-    signatureSeen.current = unreadSignature;
-    void queryClient.invalidateQueries({
-      queryKey: chatQueryKeys.conversations(ws),
-      refetchType: "active",
-    });
-  }, [unreadSignature, offersConversations, queryClient, ws]);
-
-  // The history opens once per visit: at the first unread message when there is
-  // one (D03), otherwise at the newest. The choice does not move while the reader
-  // is in the channel, even when the unread summary refreshes.
-  const lockRef = useRef<ChannelLock | null>(null);
-  if (
-    channelId &&
-    lockRef.current?.channelId !== channelId &&
-    (unread.isFetched || unread.isError)
-  ) {
-    const first = unreadRow?.firstUnreadSequence ?? null;
-    lockRef.current = {
-      channelId,
-      anchor: first !== null ? { kind: "around", sequence: first } : LATEST,
-      firstUnread: first,
-    };
-  }
-  const lock =
-    channelId && lockRef.current?.channelId === channelId
-      ? lockRef.current
-      : null;
-  const anchor = lock?.anchor ?? LATEST;
-
-  const messages = hooks.useMessages(ws, ch, anchor);
-  const flat = useMemo(() => flattenPages(messages.data), [messages.data]);
-  const pendingQuery = hooks.usePendingSends(ws, ch);
-  const pendingAll = pendingQuery.data ?? [];
-  const pendingHere = useMemo(
-    () =>
-      unconfirmedPending(
-        pendingAll.filter((entry) => entry.spaceId === ch),
-        flat,
-      ),
-    [pendingAll, flat, ch],
-  );
+  const timeline = useChannelTimeline({
+    hooks,
+    workspaceId: ws,
+    channelId,
+    linkedSequence,
+    unreadSettled: unread.isFetched || unread.isError,
+    firstUnreadSequence: unreadRow?.firstUnreadSequence ?? null,
+    timeZone,
+    // The panel state is declared below; the hook only calls this from an effect, after the first render.
+    onShowThread: (rootId) => setPanel({ kind: "thread", rootId }),
+  });
+  const { messages, flat, pendingAll, pendingHere, rows, hasNewer } = timeline;
   // Sends the server answered with 429: held as they are, retried when the wait is over (UC-CHT-H08).
   const limitedEntries = useMemo(
     () =>
@@ -353,19 +356,6 @@ export function ChatWorkspace({
       ),
     [pendingHere],
   );
-  // The divider stays where the visit found it, even as messages arrive.
-  const firstUnread = lock ? lock.firstUnread : null;
-  const rows = useMemo(
-    () =>
-      buildChatRows({
-        messages: flat,
-        pending: pendingHere,
-        firstUnread,
-        timeZone,
-      }),
-    [flat, pendingHere, firstUnread, timeZone],
-  );
-
   // ─── Writes ───────────────────────────────────────────────────────────────
   const sender = hooks.useSendMessage(ws, ch, viewerId);
   const channelAdder = hooks.useAddMembers(ws, ch);
@@ -375,7 +365,7 @@ export function ChatWorkspace({
   const permissionsWriter = hooks.useSetChannelPermissions(ws, ch);
   const linker = hooks.useLinkChannel(ws, ch);
   const unlinker = hooks.useUnlinkChannel(ws, ch);
-  const reader = hooks.useMarkRead(ws);
+  const allReader = hooks.useMarkAllRead(ws);
   const levelWriter = hooks.useSetNotificationLevel(ws);
   const starter = hooks.useStartConversation(ws);
   const participantAdder = hooks.useAddParticipants(ws, ch);
@@ -385,6 +375,8 @@ export function ChatWorkspace({
   const creator = hooks.useCreateChannel(ws);
   const updater = hooks.useUpdateChannel(ws, ch);
   const archiver = hooks.useArchiveChannel(ws, ch);
+  const memberRemover = hooks.useRemoveMember(ws, ch, viewerId);
+  const channelDeleter = hooks.useDeleteChannel(ws, ch);
   const joiner = hooks.useJoinChannel(ws);
   const reactor = hooks.useReaction(ws);
   const pinner = hooks.usePinMessage(ws, ch);
@@ -411,19 +403,22 @@ export function ChatWorkspace({
   // ─── Local interaction state ──────────────────────────────────────────────
   // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
   // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
-  const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
-  const [scrollRequest, setScrollRequest] = useState<ChatScrollRequest | null>(
-    null,
-  );
-  const [atBottom, setAtBottom] = useState(true);
+  const drafts = useRef<Record<string, string>>({});
   const [editing, setEditing] = useState<EditState | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ChatMessage | null>(null);
+  const [confirmUnpin, setConfirmUnpin] = useState<ChatMessage | null>(null);
+  const [unpinFailed, setUnpinFailed] = useState(false);
+  const [pinLimit, setPinLimit] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [leaveChannelOpen, setLeaveChannelOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [permissionsError, setPermissionsError] = useState<string | null>(null);
   const [moderateTarget, setModerateTarget] = useState<ChatMessage | null>(
     null,
@@ -442,87 +437,28 @@ export function ChatWorkspace({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [panel, setPanel] = useState<SidePanel | null>(null);
-  const requestedFor = useRef<string | null>(null);
-  const nonce = useRef(0);
-
-  function request(target: "divider" | "bottom") {
-    nonce.current += 1;
-    setScrollRequest({ nonce: nonce.current, target });
-  }
-
-  // Open the channel at its divider (or the newest) once its history has loaded.
-  useEffect(() => {
-    if (!channelId || !messages.isSuccess || !lock) return;
-    const key = `${channelId}|${JSON.stringify(anchor)}`;
-    if (requestedFor.current === key) return;
-    requestedFor.current = key;
-    nonce.current += 1;
-    setScrollRequest({
-      nonce: nonce.current,
-      target: lock.firstUnread !== null ? "divider" : "bottom",
-    });
-    setAtBottom(true);
-  }, [channelId, messages.isSuccess, lock, anchor]);
-
-  // Read state: the boundary moves to the newest message only when it is
-  // loaded and on screen (the reader is at the bottom and the page is visible).
-  const newest = flat[flat.length - 1];
-  const hasNewer = messages.hasNextPage === true;
-  useEffect(() => {
-    if (!channelId || !newest || hasNewer || !atBottom) return;
-    if (
-      typeof document !== "undefined" &&
-      document.visibilityState === "hidden"
-    )
-      return;
-    reader.markRead(channelId, newest.sequence);
-    // reader is stable per hook call; the sequence and the position are the inputs.
-  }, [channelId, newest?.sequence, hasNewer, atBottom]);
-
-  function jumpToLatest() {
-    if (channelId) {
-      lockRef.current = { channelId, anchor: LATEST, firstUnread: null };
-      requestedFor.current = null;
-    }
-    request("bottom");
-  }
-
-  // A search hit (UC-CHT-H07): once its space is open, show the message. A message already loaded is only highlighted; otherwise the
-  // history reopens around its sequence. A thread reply opens its thread. The highlight fades from state after a few seconds.
-  useEffect(() => {
-    if (!jump || jump.applied || !lock || channelId !== jump.spaceId) return;
-    if (!flat.some((entry) => entry.id === jump.messageId)) {
-      const target: ChatHistoryAnchor = {
-        kind: "around",
-        sequence: jump.sequence,
-      };
-      lockRef.current = {
-        channelId: jump.spaceId,
-        anchor: target,
-        firstUnread: null,
-      };
-      requestedFor.current = `${jump.spaceId}|${JSON.stringify(target)}`;
-    }
-    if (jump.threadRootId !== null) {
-      setPanel({ kind: "thread", rootId: jump.threadRootId });
-    }
-    setJump({ ...jump, applied: true });
-  }, [jump, lock, flat, channelId]);
-
-  useEffect(() => {
-    if (highlightId === null) return;
-    const timer = setTimeout(() => setHighlightId(null), 6000);
-    return () => clearTimeout(timer);
-  }, [highlightId]);
+  const sidePanelId = useId();
+  const messageLink = useMemo(
+    () =>
+      buildMessageLink
+        ? (message: ChatMessage): string | null =>
+            message.threadRootId && !message.alsoSentToChannel
+              ? null
+              : buildMessageLink({
+                  spaceId: message.spaceId,
+                  conversation: conversationId !== null,
+                  sequence: message.sequence,
+                })
+        : null,
+    [buildMessageLink, conversationId],
+  );
 
   function openSearchHit(hit: ChatSearchHit) {
-    setHighlightId(hit.messageId);
-    setJump({
+    timeline.openMessage({
       spaceId: hit.spaceId,
       messageId: hit.messageId,
       sequence: hit.sequence,
       threadRootId: hit.alsoSentToChannel ? null : hit.threadRootId,
-      applied: false,
     });
     setListOpen(false);
     if (hit.spaceId === channelId) return;
@@ -553,7 +489,6 @@ export function ChatWorkspace({
           : channel.capabilities?.canPost === false
             ? copy.composer.readOnly
             : null;
-  const draft = drafts[ch] ?? "";
   // What the message actions offer here: archived is read-only, and the server's capabilities decide the rest.
   const grants = messageActionGrants({
     archived: channel?.isArchived === true,
@@ -592,22 +527,24 @@ export function ChatWorkspace({
       ? { id: newestMessage.id, authorId: newestMessage.authorId }
       : null,
   );
-  const notifyTyping = useTypingSignal(ephemeral, channelId);
-
-  function setDraft(value: string) {
-    if (!channelId) return;
-    setDrafts((prev) => {
-      const next = { ...prev };
-      if (value.length === 0) delete next[channelId];
-      else next[channelId] = value;
-      return next;
-    });
-  }
+  const typingSignal = useTypingSignal(ephemeral, channelId);
 
   // A reply and an open panel belong to one channel: both close when the channel changes.
   useEffect(() => {
     setReplyTo(null);
     setPanel(null);
+  }, [channelId]);
+
+  // A stored send keeps its bubble until a window shows the message (then the history's copy takes over) or the
+  // channel is left; no timer. The cleanup reads the sender of the channel it ran for.
+  useEffect(() => {
+    if (!pendingAll.some((entry) => entry.storedMessageId !== undefined))
+      return;
+    sender.discardStored(new Set(flat.map((message) => message.id)));
+  }, [flat, pendingAll]);
+  useEffect(() => {
+    const leaving = sender.discardStored;
+    return () => leaving();
   }, [channelId]);
 
   function handleSend(
@@ -616,11 +553,9 @@ export function ChatWorkspace({
     files?: readonly File[],
   ) {
     if (!channelId) return;
-    if (hasNewer) jumpToLatest();
     sender.send(content, replyTo?.id ?? null, payload, files);
     setReplyTo(null);
-    setDraft("");
-    request("bottom");
+    timeline.afterSend();
   }
 
   function handleReact(message: ChatMessage, emoji: string, add: boolean) {
@@ -631,13 +566,48 @@ export function ChatWorkspace({
   }
 
   function handleTogglePin(message: ChatMessage, pinned: boolean) {
+    // Unpinning is announced to everyone, so it asks first (Chat-Pins boards).
+    if (!pinned) {
+      setUnpinFailed(false);
+      setConfirmUnpin(message);
+      return;
+    }
     pinner.mutate(
       { messageId: message.id, pinned },
       {
-        onError: () =>
-          setNotice(pinned ? copy.pins.failed : copy.pins.unpinFailed),
+        onError: (error) =>
+          chatFailureOf(error).code === "limit-reached"
+            ? setPinLimit(ch)
+            : setNotice(copy.pins.failed),
       },
     );
+  }
+
+  function handleUnpinConfirm() {
+    if (!confirmUnpin) return;
+    pinner.mutate(
+      { messageId: confirmUnpin.id, pinned: false },
+      {
+        onSuccess: () => {
+          setConfirmUnpin(null);
+          setPinLimit(null);
+        },
+        onError: () => setUnpinFailed(true),
+      },
+    );
+  }
+
+  /** "Open message" of a pin: lands on the message like a search hit, and a phone leaves the Pins page. */
+  function handleOpenPinned(message: ChatMessage) {
+    timeline.openMessage({
+      spaceId: message.spaceId,
+      messageId: message.id,
+      sequence: message.sequence,
+      threadRootId: message.alsoSentToChannel
+        ? null
+        : (message.threadRootId ?? null),
+    });
+    if (isMobile) setPanel(null);
   }
 
   function handleOpenThread(message: ChatMessage) {
@@ -913,6 +883,55 @@ export function ChatWorkspace({
     );
   }
 
+  /** Leaves the open channel for another one, or for the bare chat page when there is none. */
+  function closeChannel() {
+    const other = channels.data?.find(
+      (entry) => entry.id !== ch && entry.isMember,
+    );
+    if (other) onOpenChannel(other.id);
+    else (onCloseConversation ?? onBackToList)?.();
+  }
+
+  function handleLeaveChannel() {
+    if (!channel) return;
+    const wasPrivate = channel.kind === "channel_private";
+    memberRemover.mutate(viewerId, {
+      onSuccess: () => {
+        setLeaveChannelOpen(false);
+        // A public channel stays readable (the header offers Join again); a private one is gone for the caller.
+        if (wasPrivate) closeChannel();
+      },
+      onError: (error) => {
+        setLeaveChannelOpen(false);
+        setNotice(failureText(chatFailureOf(error).kind, copy));
+      },
+    });
+  }
+
+  function handleRemoveMember() {
+    if (removeTarget === null) return;
+    memberRemover.mutate(removeTarget, {
+      onSuccess: () => setRemoveTarget(null),
+      onError: (error) => {
+        setRemoveTarget(null);
+        setNotice(failureText(chatFailureOf(error).kind, copy));
+      },
+    });
+  }
+
+  function handleDeleteChannel() {
+    if (!channel) return;
+    setDeleteError(null);
+    channelDeleter.mutate(channel.version, {
+      onSuccess: () => {
+        setDeleteOpen(false);
+        closeChannel();
+      },
+      onError: (error) =>
+        setDeleteError(failureText(chatFailureOf(error).kind, copy)),
+    });
+  }
+
   function handleJoin(targetId: string, onJoined?: () => void) {
     joiner.mutate(targetId, {
       onSuccess: () => onJoined?.(),
@@ -1086,12 +1105,13 @@ export function ChatWorkspace({
   const messagesFailure = messages.isError
     ? chatFailureOf(messages.error).kind
     : null;
+  // An own send shows its bubble at once, even while the first window is still loading.
   const listStatus: ChatListStatus =
     detailFailure === "not-found" || detailFailure === "forbidden"
       ? "no-access"
       : messagesFailure === "not-found" || messagesFailure === "forbidden"
         ? "no-access"
-        : messages.isPending || !channelId
+        : !channelId || (messages.isPending && pendingHere.length === 0)
           ? "loading"
           : messages.isError
             ? "error"
@@ -1148,12 +1168,12 @@ export function ChatWorkspace({
     [viewerId, people, channels.data, browse.data, onOpenChannel],
   );
 
-  const viewerName = people.get(viewerId);
-  const viewer =
-    viewerId && viewerName ? { id: viewerId, name: viewerName } : null;
-  // On a narrow screen with no channel open, the list is the page.
+  // On a narrow screen with no channel open, the list is the page. A person with direct messages and no channel needs it
+  // too: it is where they open a conversation and start a new one.
   const listOnly =
-    isMobile && channelId === null && (channels.data?.length ?? 0) > 0;
+    isMobile &&
+    channelId === null &&
+    ((channels.data?.length ?? 0) > 0 || offersConversations);
   const openList = () => (onBackToList ? onBackToList() : setListOpen(true));
 
   const conversationList: ChatConversationListView | null = offersConversations
@@ -1194,6 +1214,7 @@ export function ChatWorkspace({
   const spaceName = conversation
     ? conversationTitle(conversation, viewerId, nameOf)
     : (channel?.name ?? "");
+  const panelSpaceLabel = conversation ? spaceName : `# ${spaceName}`;
   const spaceReady =
     conversationId !== null ? conversation !== null : channel !== null;
 
@@ -1236,82 +1257,172 @@ export function ChatWorkspace({
         canManageWorkspace && !isGuest ? () => setAdminOpen(true) : undefined
       }
       onSearch={() => setSearchOpen(true)}
+      onMarkAllRead={() =>
+        allReader.mutate(undefined, {
+          // The unread counts stay as they were and the button stays usable for a retry.
+          onError: () =>
+            toast.error(copy.sidebar.markAllReadFailed, {
+              id: "chat-mark-all-read",
+            }),
+        })
+      }
+      markingAllRead={allReader.isPending}
       onCreate={() => {
         setCreateError(null);
         setCreateOpen(true);
       }}
       onJoin={(id) => handleJoin(id, () => onOpenChannel(id))}
       onRetry={() => void channels.refetch()}
-      viewer={viewer}
     />
+  );
+
+  const panelToggles = (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant={panel?.kind === "pins" ? "secondary" : "ghost"}
+        aria-pressed={panel?.kind === "pins"}
+        onClick={() => togglePanel({ kind: "pins" })}
+      >
+        <Pin aria-hidden="true" />
+        <span className="max-lg:sr-only">{copy.pins.tab}</span>
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={panel?.kind === "following" ? "secondary" : "ghost"}
+        aria-pressed={panel?.kind === "following"}
+        onClick={() => togglePanel({ kind: "following" })}
+      >
+        <MessagesSquare aria-hidden="true" />
+        <span className="max-lg:sr-only">{copy.thread.followedTab}</span>
+      </Button>
+    </>
   );
 
   return (
     <ChatMentionProvider value={mentionContext}>
-      <ChatHighlightProvider value={highlightId}>
-        <div className="flex h-full min-h-0 w-full">
-          {listOnly ? (
-            <div className="flex min-h-0 w-full flex-col bg-sidebar">
-              {sidebar}
-            </div>
-          ) : isMobile ? (
-            <Sheet open={listOpen} onOpenChange={setListOpen}>
-              <SheetContent side="left" className="w-72 p-0">
-                <SheetHeader className="sr-only">
-                  <SheetTitle>{copy.sidebar.listTitle}</SheetTitle>
-                  <SheetDescription>{copy.sidebar.navLabel}</SheetDescription>
-                </SheetHeader>
-                <div className="flex h-full flex-col">{sidebar}</div>
-              </SheetContent>
-            </Sheet>
-          ) : (
-            <aside className="flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72">
-              {sidebar}
-            </aside>
-          )}
+      <ChatMessageLinkProvider value={messageLink}>
+        <ChatHighlightProvider value={timeline.highlightId}>
+          <div className="relative flex h-full min-h-0 w-full">
+            {listOnly ? (
+              <div className="flex min-h-0 w-full flex-col bg-sidebar">
+                {sidebar}
+              </div>
+            ) : isMobile ? (
+              <Sheet open={listOpen} onOpenChange={setListOpen}>
+                <SheetContent side="left" className="w-72 p-0">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>{copy.sidebar.listTitle}</SheetTitle>
+                    <SheetDescription>{copy.sidebar.navLabel}</SheetDescription>
+                  </SheetHeader>
+                  <div className="flex h-full flex-col">{sidebar}</div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <aside
+                className={cn(
+                  "flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72",
+                  // Below 1280 the open side panel needs the room: the channel column would shrink to a sliver. The followed
+                  // list is a page on a tablet (Chat-Followed-T), so the channel column stays beside it.
+                  channelId &&
+                    (channel || conversation) &&
+                    panel !== null &&
+                    panel.kind !== "following"
+                    ? "max-xl:hidden"
+                    : null,
+                )}
+              >
+                {sidebar}
+              </aside>
+            )}
 
-          {listOnly ? null : (
-            <section
-              className={cn(
-                "flex min-h-0 min-w-0 flex-1 flex-col",
-                isMobile && panel !== null && "hidden",
-              )}
-              aria-label={copy.page.title}
-            >
-              {!channelId ? (
-                <div className="flex flex-1 items-center justify-center p-6">
-                  {channels.data && channels.data.length === 0 ? (
-                    <Empty>
+            {listOnly ? null : (
+              <section
+                className={cn(
+                  "flex min-h-0 min-w-0 flex-1 flex-col",
+                  isMobile && panel !== null && "hidden",
+                  panel?.kind === "following" && "md:max-xl:hidden",
+                )}
+                aria-label={copy.page.title}
+              >
+                {!channelId ? (
+                  <div className="flex flex-1 items-center justify-center p-6">
+                    {channels.data && channels.data.length === 0 ? (
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <MessageSquareText aria-hidden="true" />
+                          </EmptyMedia>
+                          <EmptyTitle>
+                            {isGuest
+                              ? copy.page.guestNoChannelsTitle
+                              : copy.page.noChannelsTitle}
+                          </EmptyTitle>
+                          <EmptyDescription>
+                            {isGuest
+                              ? copy.page.guestNoChannelsBody
+                              : copy.page.noChannelsBody}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                        {viewerRole !== null && !isGuest ? (
+                          <Button onClick={() => setCreateOpen(true)}>
+                            <Plus aria-hidden="true" />
+                            {copy.page.createChannel}
+                          </Button>
+                        ) : null}
+                      </Empty>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {copy.page.chooseChannel}
+                      </p>
+                    )}
+                  </div>
+                ) : conversationId !== null && conversation === null ? (
+                  conversationsQuery.isPending ? (
+                    <div
+                      role="status"
+                      className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
+                    >
+                      {copy.page.loadingChannel}
+                    </div>
+                  ) : (
+                    <Empty className="flex-1">
                       <EmptyHeader>
                         <EmptyMedia variant="icon">
                           <MessageSquareText aria-hidden="true" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                          {isGuest
-                            ? copy.page.guestNoChannelsTitle
-                            : copy.page.noChannelsTitle}
-                        </EmptyTitle>
+                        <EmptyTitle>{copy.dm.view.notFoundTitle}</EmptyTitle>
                         <EmptyDescription>
-                          {isGuest
-                            ? copy.page.guestNoChannelsBody
-                            : copy.page.noChannelsBody}
+                          {copy.dm.view.notFoundBody}
                         </EmptyDescription>
                       </EmptyHeader>
-                      {viewerRole !== null && !isGuest ? (
-                        <Button onClick={() => setCreateOpen(true)}>
-                          <Plus aria-hidden="true" />
-                          {copy.page.createChannel}
-                        </Button>
-                      ) : null}
+                      <Button
+                        onClick={() => {
+                          setNewMessageError(null);
+                          setNewMessageOpen(true);
+                        }}
+                      >
+                        {copy.dm.view.newMessage}
+                      </Button>
                     </Empty>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {copy.page.chooseChannel}
-                    </p>
-                  )}
-                </div>
-              ) : conversationId !== null && conversation === null ? (
-                conversationsQuery.isPending ? (
+                  )
+                ) : conversationId === null &&
+                  channel === null &&
+                  detailFailure !== null ? (
+                  <Empty className="flex-1">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <MessageSquareText aria-hidden="true" />
+                      </EmptyMedia>
+                      <EmptyTitle>{copy.list.noAccess}</EmptyTitle>
+                      <EmptyDescription>
+                        {copy.list.noAccessBody}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                ) : !spaceReady ? (
                   <div
                     role="status"
                     className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
@@ -1319,780 +1430,760 @@ export function ChatWorkspace({
                     {copy.page.loadingChannel}
                   </div>
                 ) : (
-                  <Empty className="flex-1">
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <MessageSquareText aria-hidden="true" />
-                      </EmptyMedia>
-                      <EmptyTitle>{copy.dm.view.notFoundTitle}</EmptyTitle>
-                      <EmptyDescription>
-                        {copy.dm.view.notFoundBody}
-                      </EmptyDescription>
-                    </EmptyHeader>
-                    <Button
-                      onClick={() => {
-                        setNewMessageError(null);
-                        setNewMessageOpen(true);
+                  <>
+                    {conversation ? (
+                      <ChatConversationHeader
+                        conversation={conversation}
+                        viewerId={viewerId}
+                        nameOf={nameOf}
+                        copy={copy}
+                        detailsOpen={panel?.kind === "details"}
+                        blocked={counterpartBlocked}
+                        presenceOf={ephemeral ? presenceOf : undefined}
+                        onOpenList={openList}
+                        onToggleDetails={() => togglePanel({ kind: "details" })}
+                        onHide={() => handleVisibility(true)}
+                        onSearch={() => setSearchOpen(true)}
+                        actions={panelToggles}
+                      />
+                    ) : channel ? (
+                      <ChatHeader
+                        channel={channel}
+                        members={members}
+                        viewerId={viewerId}
+                        canManage={canManage}
+                        joining={joiner.isPending}
+                        authorName={authorName}
+                        presenceOf={ephemeral ? presenceOf : undefined}
+                        copy={copy}
+                        onOpenList={openList}
+                        onRename={() => {
+                          setRenameError(null);
+                          setRenameOpen(true);
+                        }}
+                        onToggleArchive={() => setArchiveOpen(true)}
+                        onLeave={
+                          channel.isMember
+                            ? () => setLeaveChannelOpen(true)
+                            : undefined
+                        }
+                        onDelete={
+                          canManage
+                            ? () => {
+                                setDeleteError(null);
+                                setDeleteOpen(true);
+                              }
+                            : undefined
+                        }
+                        onRemoveMember={
+                          canManage && !channel.isArchived
+                            ? setRemoveTarget
+                            : undefined
+                        }
+                        canManagePermissions={
+                          channel.capabilities?.canManagePermissions ?? false
+                        }
+                        onPermissions={() => {
+                          setPermissionsError(null);
+                          setPermissionsOpen(true);
+                        }}
+                        workspaceId={ws}
+                        onLinkResource={
+                          canManage && !channel.isArchived
+                            ? () => {
+                                setLinkError(null);
+                                setLinkOpen(true);
+                              }
+                            : undefined
+                        }
+                        onUnlinkResource={
+                          canManage && !channel.isArchived
+                            ? handleUnlink
+                            : undefined
+                        }
+                        onJoin={() => handleJoin(ch)}
+                        onSearch={() => setSearchOpen(true)}
+                        actions={panelToggles}
+                        onSetLevel={handleLevel}
+                      />
+                    ) : null}
+                    {connection === "reconnecting" ? (
+                      <ChatStatusBanner tone="warning" icon={<WifiOff />}>
+                        {copy.list.reconnecting}
+                      </ChatStatusBanner>
+                    ) : null}
+                    {channel?.isArchived ? (
+                      <ChatStatusBanner tone="info" icon={<Archive />}>
+                        {copy.header.archivedNotice}
+                      </ChatStatusBanner>
+                    ) : null}
+                    {channel &&
+                    !channel.isArchived &&
+                    channel.isMember &&
+                    channel.capabilities?.canPost === false ? (
+                      <ChatStatusBanner tone="info" icon={<Lock />}>
+                        {copy.composer.readOnly}
+                      </ChatStatusBanner>
+                    ) : null}
+                    {conversation?.isHidden ? (
+                      <ChatStatusBanner
+                        tone="info"
+                        icon={<EyeOff />}
+                        action={
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={visibility.isPending}
+                            onClick={() => handleVisibility(false)}
+                          >
+                            {copy.dm.view.show}
+                          </Button>
+                        }
+                      >
+                        {copy.dm.view.hiddenNotice}
+                      </ChatStatusBanner>
+                    ) : null}
+                    {counterpartBlocked && counterpartId ? (
+                      <ChatStatusBanner
+                        tone="warning"
+                        icon={<Ban />}
+                        action={
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setBlockTarget({
+                                userId: counterpartId,
+                                blocked: false,
+                              })
+                            }
+                          >
+                            {copy.dm.view.unblock}
+                          </Button>
+                        }
+                      >
+                        {fillCopy(copy.dm.view.blockedNotice, {
+                          name: nameOf(counterpartId),
+                        })}
+                      </ChatStatusBanner>
+                    ) : null}
+                    {pinLimit === ch ? (
+                      <PinLimitBanner
+                        copy={copy}
+                        onView={() => setPanel({ kind: "pins" })}
+                      />
+                    ) : null}
+                    <PinnedBar
+                      copy={copy}
+                      count={pinCount}
+                      newest={pinnedNewest}
+                      newestAuthor={
+                        pinnedNewest ? authorName(pinnedNewest.authorId) : ""
+                      }
+                      onOpen={() => togglePanel({ kind: "pins" })}
+                    />
+                    <ChatMessageList
+                      channelName={spaceName}
+                      emptyState={
+                        conversation
+                          ? {
+                              title: fillCopy(
+                                conversation.kind === "group"
+                                  ? copy.dm.view.introGroup
+                                  : copy.dm.view.introDirect,
+                                { name: spaceName },
+                              ),
+                              body: copy.dm.view.introBody,
+                            }
+                          : undefined
+                      }
+                      rows={rows}
+                      status={listStatus}
+                      hasOlder={messages.hasPreviousPage === true}
+                      isLoadingOlder={messages.isFetchingPreviousPage}
+                      hasNewer={hasNewer}
+                      isLoadingNewer={messages.isFetchingNextPage}
+                      scrollRequest={timeline.scrollRequest}
+                      editing={
+                        editing
+                          ? {
+                              messageId: editing.messageId,
+                              draft: editing.draft,
+                              busy: editor.isPending,
+                            }
+                          : null
+                      }
+                      staleNotice={notice}
+                      viewerId={viewerId}
+                      authorName={authorName}
+                      locale={locale}
+                      timeZone={timeZone}
+                      copy={copy}
+                      pendingEntries={pendingHere}
+                      onRetryLoad={() => void messages.refetch()}
+                      onOlderNeeded={() => {
+                        if (!messages.isFetchingPreviousPage)
+                          void messages.fetchPreviousPage();
                       }}
-                    >
-                      {copy.dm.view.newMessage}
-                    </Button>
-                  </Empty>
-                )
-              ) : conversationId === null &&
-                channel === null &&
-                detailFailure !== null ? (
-                <Empty className="flex-1">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <MessageSquareText aria-hidden="true" />
-                    </EmptyMedia>
-                    <EmptyTitle>{copy.list.noAccess}</EmptyTitle>
-                    <EmptyDescription>
-                      {copy.list.noAccessBody}
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              ) : !spaceReady ? (
+                      onNewerNeeded={() => {
+                        if (!messages.isFetchingNextPage)
+                          void messages.fetchNextPage();
+                      }}
+                      onAtBottomChange={timeline.setAtBottom}
+                      onJumpLatest={timeline.jumpToLatest}
+                      onEdit={grants.editOwn ? handleEditStart : undefined}
+                      onEditDraftChange={(value) =>
+                        setEditing((current) =>
+                          current ? { ...current, draft: value } : current,
+                        )
+                      }
+                      onEditSave={handleEditSave}
+                      onEditCancel={() => setEditing(null)}
+                      onDelete={
+                        grants.deleteOwn
+                          ? (message) => setConfirmDelete(message)
+                          : undefined
+                      }
+                      onModerate={
+                        grants.moderate
+                          ? (message) => {
+                              setModerateError(null);
+                              setModerateTarget(message);
+                            }
+                          : undefined
+                      }
+                      onRetryPending={(entry: PendingMessage) =>
+                        sender.retry(entry)
+                      }
+                      onDiscardPending={(id) => sender.discard(id)}
+                      onBackToList={isMobile ? openList : undefined}
+                      workspaceId={ws}
+                      hooks={hooks}
+                      pinnedIds={pinnedIds}
+                      threadCounts={threadCountQuery.data}
+                      quoteOf={quoteOf}
+                      onReact={grants.react ? handleReact : undefined}
+                      onReply={
+                        grants.reply
+                          ? (message) => setReplyTo(message)
+                          : undefined
+                      }
+                      onOpenThread={handleOpenThread}
+                      onTogglePin={grants.pin ? handleTogglePin : undefined}
+                      attachmentsReadOnly={channel?.isArchived === true}
+                      showNames={conversation?.kind !== "direct"}
+                      typingIds={
+                        ephemeral
+                          ? typingIds.filter((id) => id !== viewerId)
+                          : undefined
+                      }
+                      onOpenQuote={(id) =>
+                        document
+                          .getElementById(`message-${id}`)
+                          ?.scrollIntoView({ block: "center" })
+                      }
+                    />
+                    {ephemeral ? (
+                      <ChatTypingIndicator
+                        names={typingIds
+                          .filter((id) => id !== viewerId)
+                          .map((id) => authorName(id))}
+                        copy={copy}
+                      />
+                    ) : null}
+                    {limitedEntries.length > 0 ? (
+                      <ChatRateLimitNotice
+                        key={
+                          limitedEntries[limitedEntries.length - 1]!
+                            .clientMessageId
+                        }
+                        seconds={
+                          limitedEntries[limitedEntries.length - 1]!
+                            .retryAfterSeconds ?? 1
+                        }
+                        limit={
+                          limitedEntries[limitedEntries.length - 1]!.limit ??
+                          "rate-limited"
+                        }
+                        copy={copy}
+                        onRetry={() => {
+                          for (const entry of limitedEntries)
+                            sender.retry(entry);
+                        }}
+                      />
+                    ) : null}
+                    <ChatDraftComposer
+                      key={ch}
+                      draftKey={ch}
+                      drafts={drafts}
+                      channelName={spaceName}
+                      labelOverride={
+                        conversation
+                          ? fillCopy(copy.dm.view.composer, { name: spaceName })
+                          : undefined
+                      }
+                      disabledReason={composerDisabledReason}
+                      copy={copy}
+                      onTyping={ephemeral ? typingSignal.start : undefined}
+                      onTypingStop={ephemeral ? typingSignal.stop : undefined}
+                      onSend={handleSend}
+                      mentions={composerMentions}
+                      attachments={{ draftKey: ch }}
+                      slowModeSeconds={channel?.slowModeSeconds ?? 0}
+                      leading={
+                        replyTo ? (
+                          <ReplyChip
+                            copy={copy}
+                            name={authorName(replyTo.authorId)}
+                            text={
+                              replyTo.deleted
+                                ? copy.list.deleted
+                                : (replyTo.content ?? "")
+                            }
+                            onCancel={() => setReplyTo(null)}
+                          />
+                        ) : null
+                      }
+                    />
+                  </>
+                )}
+              </section>
+            )}
+
+            {channelId && (channel || conversation) && panel !== null ? (
+              <aside
+                className={cn(
+                  "flex min-h-0 w-full flex-col border-border bg-background md:w-[340px] md:border-s md:shrink-0 xl:w-[360px]",
+                  // Between a tablet and a laptop the room would be left about 180 px wide beside the shell, the list and
+                  // the details, so a conversation's details slide over the room instead of squeezing it.
+                  conversation !== null &&
+                    panel.kind === "details" &&
+                    "md:max-xl:absolute md:max-xl:inset-y-0 md:max-xl:end-0 md:max-xl:z-20 md:max-xl:shadow-lg",
+                  // On a tablet the followed list takes the whole column, as a page (Chat-Followed-T).
+                  panel.kind === "following" &&
+                    "md:max-xl:w-auto md:max-xl:flex-1 md:max-xl:border-s-0",
+                )}
+                aria-label={copy.panel.label}
+                data-testid="chat-side-panel"
+              >
+                <ChatPanelTabs
+                  active={panel.kind}
+                  details={
+                    conversation
+                      ? conversation.kind === "group"
+                        ? "group"
+                        : "direct"
+                      : null
+                  }
+                  mentionBadge={
+                    (unread.data?.totalMentions ?? 0) > 0
+                      ? unreadBadge(unread.data?.totalMentions ?? 0)
+                      : null
+                  }
+                  panelId={sidePanelId}
+                  // The thread, the pins and the followed list draw their own header and close control at every width.
+                  hidden={
+                    panel.kind === "thread" ||
+                    panel.kind === "pins" ||
+                    panel.kind === "following"
+                  }
+                  copy={copy}
+                  onSelect={(kind) => setPanel({ kind })}
+                  onClose={() => setPanel(null)}
+                />
                 <div
-                  role="status"
-                  className="flex flex-1 items-center justify-center text-sm text-muted-foreground"
+                  role="tabpanel"
+                  id={sidePanelId}
+                  aria-labelledby={
+                    panel.kind === "thread"
+                      ? undefined
+                      : panelTabId(sidePanelId, panel.kind)
+                  }
+                  aria-label={
+                    panel.kind === "thread" ? copy.panel.label : undefined
+                  }
+                  className="contents"
                 >
-                  {copy.page.loadingChannel}
-                </div>
-              ) : (
-                <>
-                  {conversation ? (
-                    <ChatConversationHeader
+                  {panel.kind === "details" && conversation ? (
+                    <ChatConversationDetails
                       conversation={conversation}
                       viewerId={viewerId}
                       nameOf={nameOf}
                       copy={copy}
-                      detailsOpen={panel?.kind === "details"}
+                      locale={locale}
                       blocked={counterpartBlocked}
                       presenceOf={ephemeral ? presenceOf : undefined}
-                      onOpenList={openList}
-                      onToggleDetails={() => togglePanel({ kind: "details" })}
+                      busy={visibility.isPending || leaver.isPending}
+                      onBlock={() =>
+                        counterpartId &&
+                        setBlockTarget({ userId: counterpartId, blocked: true })
+                      }
+                      onUnblock={() =>
+                        counterpartId &&
+                        setBlockTarget({
+                          userId: counterpartId,
+                          blocked: false,
+                        })
+                      }
+                      onAddPeople={() => {
+                        setAddPeopleError(null);
+                        setAddPeopleOpen(true);
+                      }}
+                      onLeave={() => setLeaveOpen(true)}
                       onHide={() => handleVisibility(true)}
-                      onSearch={() => setSearchOpen(true)}
                     />
-                  ) : channel ? (
-                    <ChatHeader
-                      channel={channel}
-                      members={members}
-                      viewerId={viewerId}
-                      canManage={canManage}
-                      joining={joiner.isPending}
-                      authorName={authorName}
-                      presenceOf={ephemeral ? presenceOf : undefined}
-                      copy={copy}
-                      onOpenList={openList}
-                      onRename={() => {
-                        setRenameError(null);
-                        setRenameOpen(true);
-                      }}
-                      onToggleArchive={() => setArchiveOpen(true)}
-                      canManagePermissions={
-                        channel.capabilities?.canManagePermissions ?? false
-                      }
-                      onPermissions={() => {
-                        setPermissionsError(null);
-                        setPermissionsOpen(true);
-                      }}
+                  ) : null}
+                  {panel.kind === "thread" ? (
+                    <ChatThreadPanel
+                      key={panel.rootId}
+                      hooks={hooks}
                       workspaceId={ws}
-                      onLinkResource={
-                        canManage && !channel.isArchived
-                          ? () => {
-                              setLinkError(null);
-                              setLinkOpen(true);
-                            }
-                          : undefined
-                      }
-                      onUnlinkResource={
-                        canManage && !channel.isArchived
-                          ? handleUnlink
-                          : undefined
-                      }
-                      onJoin={() => handleJoin(ch)}
-                      onSearch={() => setSearchOpen(true)}
-                      onSetLevel={handleLevel}
+                      rootId={panel.rootId}
+                      viewerId={viewerId}
+                      authorName={authorName}
+                      copy={copy}
+                      locale={locale}
+                      timeZone={timeZone}
+                      pinnedIds={pinnedIds}
+                      spaceLabel={panelSpaceLabel}
+                      mentionBase={{
+                        selfId: viewerId,
+                        people,
+                        channels: mentionChannels,
+                      }}
+                      onClose={() => setPanel(null)}
+                      onReact={grants.react ? handleReact : undefined}
+                      onTogglePin={grants.pin ? handleTogglePin : undefined}
+                      attachmentsReadOnly={channel?.isArchived === true}
                     />
                   ) : null}
-                  {connection === "reconnecting" ? (
-                    <ChatStatusBanner tone="warning" icon={<WifiOff />}>
-                      {copy.list.reconnecting}
-                    </ChatStatusBanner>
-                  ) : null}
-                  {channel?.isArchived ? (
-                    <ChatStatusBanner tone="info" icon={<Archive />}>
-                      {copy.header.archivedNotice}
-                    </ChatStatusBanner>
-                  ) : null}
-                  {channel &&
-                  !channel.isArchived &&
-                  channel.isMember &&
-                  channel.capabilities?.canPost === false ? (
-                    <ChatStatusBanner tone="info" icon={<Lock />}>
-                      {copy.composer.readOnly}
-                    </ChatStatusBanner>
-                  ) : null}
-                  {conversation?.isHidden ? (
-                    <ChatStatusBanner
-                      tone="info"
-                      icon={<EyeOff />}
-                      action={
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={visibility.isPending}
-                          onClick={() => handleVisibility(false)}
-                        >
-                          {copy.dm.view.show}
-                        </Button>
-                      }
-                    >
-                      {copy.dm.view.hiddenNotice}
-                    </ChatStatusBanner>
-                  ) : null}
-                  {counterpartBlocked && counterpartId ? (
-                    <ChatStatusBanner
-                      tone="warning"
-                      icon={<Ban />}
-                      action={
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setBlockTarget({
-                              userId: counterpartId,
-                              blocked: false,
-                            })
-                          }
-                        >
-                          {copy.dm.view.unblock}
-                        </Button>
-                      }
-                    >
-                      {fillCopy(copy.dm.view.blockedNotice, {
-                        name: nameOf(counterpartId),
-                      })}
-                    </ChatStatusBanner>
-                  ) : null}
-                  <PinnedBar
-                    copy={copy}
-                    count={pinCount}
-                    newest={pinnedNewest}
-                    newestAuthor={
-                      pinnedNewest ? authorName(pinnedNewest.authorId) : ""
-                    }
-                    onOpen={() => togglePanel({ kind: "pins" })}
-                  />
-                  <div className="flex items-center justify-end gap-1 border-b border-border px-3 py-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={panel?.kind === "pins" ? "secondary" : "ghost"}
-                      aria-pressed={panel?.kind === "pins"}
-                      onClick={() => togglePanel({ kind: "pins" })}
-                    >
-                      <Pin aria-hidden="true" />
-                      {copy.pins.tab}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={
-                        panel?.kind === "following" ? "secondary" : "ghost"
-                      }
-                      aria-pressed={panel?.kind === "following"}
-                      onClick={() => togglePanel({ kind: "following" })}
-                    >
-                      <MessagesSquare aria-hidden="true" />
-                      {copy.thread.followedTab}
-                    </Button>
-                  </div>
-                  <ChatMessageList
-                    channelName={spaceName}
-                    emptyState={
-                      conversation
-                        ? {
-                            title: fillCopy(
-                              conversation.kind === "group"
-                                ? copy.dm.view.introGroup
-                                : copy.dm.view.introDirect,
-                              { name: spaceName },
-                            ),
-                            body: copy.dm.view.introBody,
-                          }
-                        : undefined
-                    }
-                    rows={rows}
-                    status={listStatus}
-                    hasOlder={messages.hasPreviousPage === true}
-                    isLoadingOlder={messages.isFetchingPreviousPage}
-                    hasNewer={hasNewer}
-                    isLoadingNewer={messages.isFetchingNextPage}
-                    scrollRequest={scrollRequest}
-                    editing={
-                      editing
-                        ? {
-                            messageId: editing.messageId,
-                            draft: editing.draft,
-                            busy: editor.isPending,
-                          }
-                        : null
-                    }
-                    staleNotice={notice}
-                    viewerId={viewerId}
-                    authorName={authorName}
-                    locale={locale}
-                    timeZone={timeZone}
-                    copy={copy}
-                    pendingEntries={pendingHere}
-                    onRetryLoad={() => void messages.refetch()}
-                    onOlderNeeded={() => {
-                      if (!messages.isFetchingPreviousPage)
-                        void messages.fetchPreviousPage();
-                    }}
-                    onNewerNeeded={() => {
-                      if (!messages.isFetchingNextPage)
-                        void messages.fetchNextPage();
-                    }}
-                    onAtBottomChange={setAtBottom}
-                    onJumpLatest={jumpToLatest}
-                    onEdit={grants.editOwn ? handleEditStart : undefined}
-                    onEditDraftChange={(value) =>
-                      setEditing((current) =>
-                        current ? { ...current, draft: value } : current,
-                      )
-                    }
-                    onEditSave={handleEditSave}
-                    onEditCancel={() => setEditing(null)}
-                    onDelete={
-                      grants.deleteOwn
-                        ? (message) => setConfirmDelete(message)
-                        : undefined
-                    }
-                    onModerate={
-                      grants.moderate
-                        ? (message) => {
-                            setModerateError(null);
-                            setModerateTarget(message);
-                          }
-                        : undefined
-                    }
-                    onRetryPending={(entry: PendingMessage) =>
-                      sender.retry(entry)
-                    }
-                    onDiscardPending={(id) => sender.discard(id)}
-                    onBackToList={isMobile ? openList : undefined}
-                    workspaceId={ws}
-                    hooks={hooks}
-                    pinnedIds={pinnedIds}
-                    threadCounts={threadCountQuery.data}
-                    quoteOf={quoteOf}
-                    onReact={grants.react ? handleReact : undefined}
-                    onReply={
-                      grants.reply
-                        ? (message) => setReplyTo(message)
-                        : undefined
-                    }
-                    onOpenThread={handleOpenThread}
-                    onTogglePin={grants.pin ? handleTogglePin : undefined}
-                    attachmentsReadOnly={channel?.isArchived === true}
-                    showNames={conversation?.kind !== "direct"}
-                    typingIds={
-                      ephemeral
-                        ? typingIds.filter((id) => id !== viewerId)
-                        : undefined
-                    }
-                    onOpenQuote={(id) =>
-                      document
-                        .getElementById(`message-${id}`)
-                        ?.scrollIntoView({ block: "center" })
-                    }
-                  />
-                  {ephemeral ? (
-                    <ChatTypingIndicator
-                      names={typingIds
-                        .filter((id) => id !== viewerId)
-                        .map((id) => authorName(id))}
+                  {panel.kind === "pins" ? (
+                    <PinsPanel
+                      hooks={hooks}
+                      workspaceId={ws}
+                      channelId={ch}
                       copy={copy}
+                      locale={locale}
+                      timeZone={timeZone}
+                      authorName={authorName}
+                      spaceLabel={panelSpaceLabel}
+                      onClose={() => setPanel(null)}
+                      canUnpin={() => true}
+                      unpinBusy={pinner.isPending}
+                      onUnpin={(message) => handleTogglePin(message, false)}
+                      onOpenMessage={handleOpenPinned}
                     />
                   ) : null}
-                  {limitedEntries.length > 0 ? (
-                    <ChatRateLimitNotice
-                      key={
-                        limitedEntries[limitedEntries.length - 1]!
-                          .clientMessageId
-                      }
-                      seconds={
-                        limitedEntries[limitedEntries.length - 1]!
-                          .retryAfterSeconds ?? 1
-                      }
-                      limit={
-                        limitedEntries[limitedEntries.length - 1]!.limit ??
-                        "rate-limited"
-                      }
+                  {panel.kind === "mentions" ? (
+                    <MentionsPanel
+                      rows={unread.data?.spaces ?? []}
                       copy={copy}
-                      onRetry={() => {
-                        for (const entry of limitedEntries) sender.retry(entry);
+                      nameOf={(row) =>
+                        conversationsQuery.data?.some(
+                          (entry) => entry.id === row.spaceId,
+                        )
+                          ? conversationTitle(
+                              conversationsQuery.data.find(
+                                (entry) => entry.id === row.spaceId,
+                              )!,
+                              viewerId,
+                              nameOf,
+                            )
+                          : channelNameOf(row.spaceId) || row.name
+                      }
+                      onOpen={(spaceId) => {
+                        const isConversation = conversationsQuery.data?.some(
+                          (entry) => entry.id === spaceId,
+                        );
+                        if (isConversation) onOpenConversation?.(spaceId);
+                        else onOpenChannel(spaceId);
                       }}
                     />
                   ) : null}
-                  <ChatComposer
-                    channelName={spaceName}
-                    labelOverride={
-                      conversation
-                        ? fillCopy(copy.dm.view.composer, { name: spaceName })
-                        : undefined
-                    }
-                    value={draft}
-                    disabledReason={composerDisabledReason}
-                    copy={copy}
-                    onChange={setDraft}
-                    onTyping={ephemeral ? notifyTyping : undefined}
-                    onSend={handleSend}
-                    mentions={composerMentions}
-                    attachments={{ draftKey: ch }}
-                    slowModeSeconds={channel?.slowModeSeconds ?? 0}
-                    leading={
-                      replyTo ? (
-                        <ReplyChip
-                          copy={copy}
-                          name={authorName(replyTo.authorId)}
-                          text={
-                            replyTo.deleted
-                              ? copy.list.deleted
-                              : (replyTo.content ?? "")
-                          }
-                          onCancel={() => setReplyTo(null)}
-                        />
-                      ) : null
-                    }
-                  />
-                </>
-              )}
-            </section>
-          )}
-
-          {channelId && (channel || conversation) && panel !== null ? (
-            <aside
-              className={cn(
-                "flex min-h-0 w-full flex-col border-s border-border bg-background md:w-96 md:shrink-0",
-              )}
-              aria-label={copy.panel.label}
-              data-testid="chat-side-panel"
-            >
-              <div
-                role="tablist"
-                aria-label={copy.panel.label}
-                className="flex items-center gap-1 border-b border-border px-2 py-1"
-              >
-                {conversation ? (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={panel.kind === "details"}
-                    onClick={() => setPanel({ kind: "details" })}
-                    className={cn(
-                      "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                      panel.kind === "details"
-                        ? "bg-muted"
-                        : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    {conversation.kind === "group"
-                      ? copy.dm.details.groupTitle
-                      : copy.dm.details.dmTitle}
-                  </button>
-                ) : null}
-                {panel.kind === "thread" ? (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected
-                    className="rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium"
-                  >
-                    {copy.thread.title}
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={panel.kind === "pins"}
-                  onClick={() => setPanel({ kind: "pins" })}
-                  className={cn(
-                    "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                    panel.kind === "pins"
-                      ? "bg-muted"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {copy.pins.tab}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={panel.kind === "following"}
-                  onClick={() => setPanel({ kind: "following" })}
-                  className={cn(
-                    "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                    panel.kind === "following"
-                      ? "bg-muted"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {copy.thread.followedTab}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={panel.kind === "mentions"}
-                  onClick={() => setPanel({ kind: "mentions" })}
-                  className={cn(
-                    "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                    panel.kind === "mentions"
-                      ? "bg-muted"
-                      : "text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {copy.mentions.tab}
-                  {(unread.data?.totalMentions ?? 0) > 0 ? (
-                    <span
-                      aria-hidden="true"
-                      className="ms-1.5 rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground tabular-nums"
-                    >
-                      {unreadBadge(unread.data?.totalMentions ?? 0)}
-                    </span>
+                  {panel.kind === "following" ? (
+                    <FollowedThreadsPanel
+                      hooks={hooks}
+                      workspaceId={ws}
+                      copy={copy}
+                      authorName={authorName}
+                      channelName={channelNameOf}
+                      locale={locale}
+                      timeZone={timeZone}
+                      onClose={() => setPanel(null)}
+                      onOpenThread={(rootId) =>
+                        setPanel({ kind: "thread", rootId })
+                      }
+                    />
                   ) : null}
-                </button>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  className="ms-auto"
-                  aria-label={copy.pins.close}
-                  title={copy.pins.close}
-                  onClick={() => setPanel(null)}
-                >
-                  <X aria-hidden="true" />
-                </Button>
-              </div>
-              {panel.kind === "details" && conversation ? (
-                <ChatConversationDetails
-                  conversation={conversation}
-                  viewerId={viewerId}
-                  nameOf={nameOf}
-                  copy={copy}
-                  locale={locale}
-                  blocked={counterpartBlocked}
-                  presenceOf={ephemeral ? presenceOf : undefined}
-                  busy={visibility.isPending || leaver.isPending}
-                  onBlock={() =>
-                    counterpartId &&
-                    setBlockTarget({ userId: counterpartId, blocked: true })
-                  }
-                  onUnblock={() =>
-                    counterpartId &&
-                    setBlockTarget({ userId: counterpartId, blocked: false })
-                  }
-                  onAddPeople={() => {
-                    setAddPeopleError(null);
-                    setAddPeopleOpen(true);
-                  }}
-                  onLeave={() => setLeaveOpen(true)}
-                  onHide={() => handleVisibility(true)}
-                />
-              ) : null}
-              {panel.kind === "thread" ? (
-                <ChatThreadPanel
-                  key={panel.rootId}
-                  hooks={hooks}
-                  workspaceId={ws}
-                  rootId={panel.rootId}
-                  viewerId={viewerId}
-                  authorName={authorName}
-                  copy={copy}
-                  locale={locale}
-                  timeZone={timeZone}
-                  pinnedIds={pinnedIds}
-                  mentionBase={{
-                    selfId: viewerId,
-                    people,
-                    channels: mentionChannels,
-                  }}
-                  onClose={() => setPanel(null)}
-                  onReact={grants.react ? handleReact : undefined}
-                  onTogglePin={grants.pin ? handleTogglePin : undefined}
-                  attachmentsReadOnly={channel?.isArchived === true}
-                />
-              ) : null}
-              {panel.kind === "pins" ? (
-                <PinsPanel
-                  hooks={hooks}
-                  workspaceId={ws}
-                  channelId={ch}
-                  copy={copy}
-                  locale={locale}
-                  timeZone={timeZone}
-                  authorName={authorName}
-                  canUnpin={() => true}
-                  unpinBusy={pinner.isPending}
-                  onUnpin={(message) => handleTogglePin(message, false)}
-                />
-              ) : null}
-              {panel.kind === "mentions" ? (
-                <MentionsPanel
-                  rows={unread.data?.spaces ?? []}
-                  copy={copy}
-                  nameOf={(row) =>
-                    conversationsQuery.data?.some(
-                      (entry) => entry.id === row.spaceId,
-                    )
-                      ? conversationTitle(
-                          conversationsQuery.data.find(
-                            (entry) => entry.id === row.spaceId,
-                          )!,
-                          viewerId,
-                          nameOf,
-                        )
-                      : channelNameOf(row.spaceId) || row.name
-                  }
-                  onOpen={(spaceId) => {
-                    const isConversation = conversationsQuery.data?.some(
-                      (entry) => entry.id === spaceId,
-                    );
-                    if (isConversation) onOpenConversation?.(spaceId);
-                    else onOpenChannel(spaceId);
-                  }}
-                />
-              ) : null}
-              {panel.kind === "following" ? (
-                <FollowedThreadsPanel
-                  hooks={hooks}
-                  workspaceId={ws}
-                  copy={copy}
-                  authorName={authorName}
-                  channelName={channelNameOf}
-                  onOpenThread={(rootId) =>
-                    setPanel({ kind: "thread", rootId })
-                  }
-                />
-              ) : null}
-            </aside>
-          ) : null}
+                </div>
+              </aside>
+            ) : null}
 
-          <CreateChannelDialog
-            open={createOpen}
-            busy={creator.isPending}
-            error={createError}
-            copy={copy}
-            onOpenChange={setCreateOpen}
-            onSubmit={handleCreate}
-          />
-          {channel ? (
-            <RenameChannelDialog
-              key={channel.id}
-              open={renameOpen}
-              busy={updater.isPending}
-              initialName={channel.name}
-              initialTopic={channel.topic}
-              initialSlowMode={channel.slowModeSeconds ?? 0}
-              error={renameError}
+            <CreateChannelDialog
+              open={createOpen}
+              busy={creator.isPending}
+              error={createError}
               copy={copy}
-              onOpenChange={setRenameOpen}
-              onSubmit={handleRename}
+              onOpenChange={setCreateOpen}
+              onSubmit={handleCreate}
             />
-          ) : null}
-          {channel ? (
-            <ConfirmDialog
-              open={archiveOpen}
-              title={
-                channel.isArchived
-                  ? copy.archive.titleUnarchive
-                  : copy.archive.titleArchive
-              }
-              body={
-                channel.isArchived
-                  ? copy.archive.bodyUnarchive
-                  : copy.archive.bodyArchive
-              }
-              confirmLabel={
-                channel.isArchived
-                  ? copy.archive.confirmUnarchive
-                  : copy.archive.confirmArchive
-              }
-              cancelLabel={copy.archive.cancel}
-              busy={archiver.isPending}
-              onOpenChange={setArchiveOpen}
-              onConfirm={handleArchive}
-            />
-          ) : null}
-          {offersConversations ? (
-            <ChatNewMessageDialog
-              open={newMessageOpen}
-              busy={starter.isPending}
-              people={pickable}
-              error={newMessageError}
-              copy={copy}
-              onOpenChange={setNewMessageOpen}
-              onSubmit={handleStart}
-            />
-          ) : null}
-          {conversation?.kind === "group" ? (
-            <>
-              <ChatAddPeopleDialog
-                open={addPeopleOpen}
-                busy={participantAdder.isPending}
-                candidates={addCandidates}
-                roomLeft={groupRoomLeft(conversation.participants.length)}
-                error={addPeopleError}
+            {channel ? (
+              <RenameChannelDialog
+                key={channel.id}
+                open={renameOpen}
+                busy={updater.isPending}
+                initialName={channel.name}
+                initialTopic={channel.topic}
+                initialSlowMode={channel.slowModeSeconds ?? 0}
+                error={renameError}
                 copy={copy}
-                onOpenChange={setAddPeopleOpen}
-                onSubmit={handleAddPeople}
+                onOpenChange={setRenameOpen}
+                onSubmit={handleRename}
               />
+            ) : null}
+            {channel ? (
               <ConfirmDialog
-                open={leaveOpen}
-                title={copy.dm.details.leaveTitle}
-                body={copy.dm.details.leaveBody}
-                confirmLabel={copy.dm.details.leaveConfirm}
-                cancelLabel={copy.dm.details.cancel}
-                destructive
-                busy={leaver.isPending}
-                onOpenChange={setLeaveOpen}
-                onConfirm={handleLeave}
+                open={archiveOpen}
+                title={
+                  channel.isArchived
+                    ? copy.archive.titleUnarchive
+                    : copy.archive.titleArchive
+                }
+                body={
+                  channel.isArchived
+                    ? copy.archive.bodyUnarchive
+                    : copy.archive.bodyArchive
+                }
+                confirmLabel={
+                  channel.isArchived
+                    ? copy.archive.confirmUnarchive
+                    : copy.archive.confirmArchive
+                }
+                cancelLabel={copy.archive.cancel}
+                busy={archiver.isPending}
+                onOpenChange={setArchiveOpen}
+                onConfirm={handleArchive}
               />
-            </>
-          ) : null}
-          {blockTarget ? (
-            <ConfirmDialog
-              open
-              title={fillCopy(
-                blockTarget.blocked
-                  ? copy.dm.details.blockTitle
-                  : copy.dm.details.unblockTitle,
-                { name: nameOf(blockTarget.userId) },
-              )}
-              body={
-                blockTarget.blocked
-                  ? copy.dm.details.blockBody
-                  : copy.dm.details.unblockBody
-              }
-              confirmLabel={
-                blockTarget.blocked
-                  ? copy.dm.details.blockConfirm
-                  : copy.dm.details.unblockConfirm
-              }
-              cancelLabel={copy.dm.details.cancel}
-              destructive={blockTarget.blocked}
-              busy={blocker.isPending}
-              onOpenChange={(open) => {
-                if (!open) setBlockTarget(null);
-              }}
-              onConfirm={handleBlockConfirm}
-            />
-          ) : null}
-          {channel ? (
-            <ChatPermissionsDialog
-              open={permissionsOpen}
-              copy={copy}
-              permissions={permissionsQuery.data}
-              loading={permissionsQuery.isPending}
-              loadFailed={permissionsQuery.isError}
-              busy={permissionsWriter.isPending}
-              error={permissionsError}
-              onOpenChange={setPermissionsOpen}
-              onRetry={() => void permissionsQuery.refetch()}
-              onSave={handleSavePermissions}
-            />
-          ) : null}
-          {channel ? (
-            <ChatLinkDialog
-              key={`${channel.id}:${linkOpen ? "open" : "closed"}`}
-              open={linkOpen}
-              copy={copy}
-              workspaceId={ws}
+            ) : null}
+            {channel ? (
+              <>
+                <ConfirmDialog
+                  open={leaveChannelOpen}
+                  title={copy.membership.leaveTitle}
+                  body={
+                    channel.kind === "channel_private"
+                      ? copy.membership.leaveBodyPrivate
+                      : copy.membership.leaveBodyPublic
+                  }
+                  confirmLabel={copy.membership.leaveConfirm}
+                  cancelLabel={copy.membership.cancel}
+                  destructive
+                  busy={memberRemover.isPending}
+                  onOpenChange={setLeaveChannelOpen}
+                  onConfirm={handleLeaveChannel}
+                />
+                <ConfirmDialog
+                  open={removeTarget !== null}
+                  title={fillCopy(copy.membership.removeTitle, {
+                    name: removeTarget ? authorName(removeTarget) : "",
+                  })}
+                  body={copy.membership.removeBody}
+                  confirmLabel={copy.membership.removeConfirm}
+                  cancelLabel={copy.membership.cancel}
+                  destructive
+                  busy={memberRemover.isPending}
+                  onOpenChange={(next) => {
+                    if (!next) setRemoveTarget(null);
+                  }}
+                  onConfirm={handleRemoveMember}
+                />
+                <DeleteChannelDialog
+                  open={deleteOpen}
+                  busy={channelDeleter.isPending}
+                  channelName={channel.name}
+                  error={deleteError}
+                  copy={copy}
+                  onOpenChange={setDeleteOpen}
+                  onConfirm={handleDeleteChannel}
+                />
+              </>
+            ) : null}
+            {offersConversations ? (
+              <ChatNewMessageDialog
+                open={newMessageOpen}
+                busy={starter.isPending}
+                people={pickable}
+                error={newMessageError}
+                copy={copy}
+                onOpenChange={setNewMessageOpen}
+                onSubmit={handleStart}
+              />
+            ) : null}
+            {conversation?.kind === "group" ? (
+              <>
+                <ChatAddPeopleDialog
+                  open={addPeopleOpen}
+                  busy={participantAdder.isPending}
+                  candidates={addCandidates}
+                  roomLeft={groupRoomLeft(conversation.participants.length)}
+                  error={addPeopleError}
+                  copy={copy}
+                  onOpenChange={setAddPeopleOpen}
+                  onSubmit={handleAddPeople}
+                />
+                <ConfirmDialog
+                  open={leaveOpen}
+                  title={copy.dm.details.leaveTitle}
+                  body={copy.dm.details.leaveBody}
+                  confirmLabel={copy.dm.details.leaveConfirm}
+                  cancelLabel={copy.dm.details.cancel}
+                  destructive
+                  busy={leaver.isPending}
+                  onOpenChange={setLeaveOpen}
+                  onConfirm={handleLeave}
+                />
+              </>
+            ) : null}
+            {blockTarget ? (
+              <ConfirmDialog
+                open
+                title={fillCopy(
+                  blockTarget.blocked
+                    ? copy.dm.details.blockTitle
+                    : copy.dm.details.unblockTitle,
+                  { name: nameOf(blockTarget.userId) },
+                )}
+                body={
+                  blockTarget.blocked
+                    ? copy.dm.details.blockBody
+                    : copy.dm.details.unblockBody
+                }
+                confirmLabel={
+                  blockTarget.blocked
+                    ? copy.dm.details.blockConfirm
+                    : copy.dm.details.unblockConfirm
+                }
+                cancelLabel={copy.dm.details.cancel}
+                destructive={blockTarget.blocked}
+                busy={blocker.isPending}
+                onOpenChange={(open) => {
+                  if (!open) setBlockTarget(null);
+                }}
+                onConfirm={handleBlockConfirm}
+              />
+            ) : null}
+            {channel ? (
+              <ChatPermissionsDialog
+                open={permissionsOpen}
+                copy={copy}
+                permissions={permissionsQuery.data}
+                loading={permissionsQuery.isPending}
+                loadFailed={permissionsQuery.isError}
+                busy={permissionsWriter.isPending}
+                error={permissionsError}
+                onOpenChange={setPermissionsOpen}
+                onRetry={() => void permissionsQuery.refetch()}
+                onSave={handleSavePermissions}
+              />
+            ) : null}
+            {channel ? (
+              <ChatLinkDialog
+                key={`${channel.id}:${linkOpen ? "open" : "closed"}`}
+                open={linkOpen}
+                copy={copy}
+                workspaceId={ws}
+                hooks={hooks}
+                busy={linker.isPending}
+                error={linkError}
+                onOpenChange={setLinkOpen}
+                onConfirm={handleLink}
+              />
+            ) : null}
+            <ChatSearchPanel
+              open={searchOpen}
+              onOpenChange={setSearchOpen}
               hooks={hooks}
-              busy={linker.isPending}
-              error={linkError}
-              onOpenChange={setLinkOpen}
-              onConfirm={handleLink}
+              workspaceId={ws}
+              copy={copy}
+              locale={locale}
+              timeZone={timeZone}
+              spaces={searchSpaces}
+              people={people}
+              authorName={authorName}
+              onOpenHit={openSearchHit}
             />
-          ) : null}
-          <ChatSearchPanel
-            open={searchOpen}
-            onOpenChange={setSearchOpen}
-            hooks={hooks}
-            workspaceId={ws}
-            copy={copy}
-            locale={locale}
-            timeZone={timeZone}
-            spaces={searchSpaces}
-            people={people}
-            authorName={authorName}
-            onOpenHit={openSearchHit}
-          />
-          <ChatBlockedPeopleDialog
-            open={blockedOpen}
-            userIds={blockedPeople ?? []}
-            status={
-              blockedQuery.isError
-                ? "error"
-                : blockedQuery.isPending
-                  ? "loading"
-                  : "ready"
-            }
-            nameOf={nameOf}
-            busyId={
-              blocker.isPending ? (blocker.variables?.userId ?? null) : null
-            }
-            copy={copy}
-            onOpenChange={setBlockedOpen}
-            onUnblock={(userId) =>
-              blocker.mutate(
-                { userId, blocked: false },
-                { onError: () => setNotice(copy.dm.blocked.unblockFailed) },
-              )
-            }
-          />
-          <ChatAdminSettings
-            open={adminOpen}
-            onOpenChange={setAdminOpen}
-            hooks={hooks}
-            workspaceId={ws}
-            viewerRole={viewerRole}
-            people={people}
-            locale={locale}
-            copy={copy}
-          />
-          <ModerateMessageDialog
-            open={moderateTarget !== null}
-            busy={moderator.isPending}
-            error={moderateError}
-            copy={copy}
-            onOpenChange={(open) => {
-              if (!open) setModerateTarget(null);
-            }}
-            onSubmit={handleModerate}
-          />
-          <ConfirmDialog
-            open={confirmDelete !== null}
-            title={copy.list.deleteTitle}
-            body={copy.list.deleteBody}
-            confirmLabel={copy.list.confirmDelete}
-            cancelLabel={copy.list.cancel}
-            destructive
-            busy={deleter.isPending}
-            onOpenChange={(open) => {
-              if (!open) setConfirmDelete(null);
-            }}
-            onConfirm={handleDeleteConfirm}
-          />
-        </div>
-      </ChatHighlightProvider>
+            <ChatBlockedPeopleDialog
+              open={blockedOpen}
+              userIds={blockedPeople ?? []}
+              status={
+                blockedQuery.isError
+                  ? "error"
+                  : blockedQuery.isPending
+                    ? "loading"
+                    : "ready"
+              }
+              nameOf={nameOf}
+              busyId={
+                blocker.isPending ? (blocker.variables?.userId ?? null) : null
+              }
+              copy={copy}
+              onOpenChange={setBlockedOpen}
+              onUnblock={(userId) =>
+                blocker.mutate(
+                  { userId, blocked: false },
+                  { onError: () => setNotice(copy.dm.blocked.unblockFailed) },
+                )
+              }
+            />
+            <ChatAdminSettings
+              open={adminOpen}
+              onOpenChange={setAdminOpen}
+              hooks={hooks}
+              workspaceId={ws}
+              viewerRole={viewerRole}
+              people={people}
+              locale={locale}
+              copy={copy}
+            />
+            <ModerateMessageDialog
+              open={moderateTarget !== null}
+              busy={moderator.isPending}
+              error={moderateError}
+              copy={copy}
+              onOpenChange={(open) => {
+                if (!open) setModerateTarget(null);
+              }}
+              onSubmit={handleModerate}
+            />
+            <UnpinDialog
+              open={confirmUnpin !== null}
+              copy={copy}
+              actorName={authorName(viewerId)}
+              busy={pinner.isPending}
+              failed={unpinFailed}
+              onOpenChange={(open) => {
+                if (!open) setConfirmUnpin(null);
+              }}
+              onConfirm={handleUnpinConfirm}
+            />
+            <ConfirmDialog
+              open={confirmDelete !== null}
+              title={copy.list.deleteTitle}
+              body={copy.list.deleteBody}
+              confirmLabel={copy.list.confirmDelete}
+              cancelLabel={copy.list.cancel}
+              destructive
+              busy={deleter.isPending}
+              onOpenChange={(open) => {
+                if (!open) setConfirmDelete(null);
+              }}
+              onConfirm={handleDeleteConfirm}
+            />
+          </div>
+        </ChatHighlightProvider>
+      </ChatMessageLinkProvider>
     </ChatMentionProvider>
   );
 }

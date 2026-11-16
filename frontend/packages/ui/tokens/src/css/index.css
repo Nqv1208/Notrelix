@@ -30,6 +30,7 @@
   --type-scale-21: 1.3125rem;
   --type-scale-22: 1.375rem;
   --type-scale-26: 1.625rem;
+  --type-scale-6p5: 0.40625rem;
   --type-scale-10p4: 0.6510417rem;
   --type-scale-10p5: 0.65625rem;
   --type-scale-13p5: 0.84375rem;
@@ -160,6 +161,11 @@
   --type-mark-3xs-weight: 700;
   --type-mark-3xs-tracking: 0em;
   --type-mark-3xs-family: var(--font-family-sans);
+  --type-mark-4xs-size: var(--type-scale-6p5);
+  --type-mark-4xs-line-height: 1rem;
+  --type-mark-4xs-weight: 700;
+  --type-mark-4xs-tracking: 0em;
+  --type-mark-4xs-family: var(--font-family-sans);
   --type-avatar-sm-size: var(--type-scale-8p5);
   --type-avatar-sm-line-height: 1rem;
   --type-avatar-sm-weight: 700;

@@ -49,7 +49,8 @@ public class SendMessageCommandHandler(
     IDateTimeProvider clock,
     IBroadcastAuthorizer broadcast,
     IChatMessageAttachments attachments,
-    IChatRateLimiter rateLimits) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
+    IChatRateLimiter rateLimits,
+    IChatReadStateStore readStates) : IRequestHandler<SendMessageCommand, Result<SendMessageResultDto>>
 {
     public async Task<Result<SendMessageResultDto>> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
@@ -100,8 +101,9 @@ public class SendMessageCommandHandler(
 
         if (request.ReplyToId is { } replyToId)
         {
+            var floor = ChannelAccess.HistoryFloor(space, userId);
             var quoted = await db.ChatMessages.AsNoTracking().AnyAsync(
-                m => m.Id == replyToId && m.SpaceId == space.Id, cancellationToken);
+                m => m.Id == replyToId && m.SpaceId == space.Id && (floor == null || m.CreatedAt >= floor), cancellationToken);
             if (!quoted)
                 throw new NotFoundException(nameof(Message), replyToId);
         }
@@ -131,6 +133,10 @@ public class SendMessageCommandHandler(
 
         db.ChatMessages.Add(message);
         await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: false, cancellationToken);
+        // O(1) read state: the author's own message is not their unread, and each mentioned member's count goes up by one (no recount).
+        await readStates.AdvanceAuthorAsync(request.WorkspaceId, space.Id, userId, sequence, cancellationToken);
+        await readStates.AddMentionsAsync(
+            request.WorkspaceId, space.Id, sequence, message.CreatedAt, userId, MentionAudience.From(resolution.Spans), cancellationToken);
         // A new message brings a hidden conversation back to every list that hid it (UC-CHT-E07).
         ConversationVisibility.ShowAgain(space);
         return Result<SendMessageResultDto>.Success(new SendMessageResultDto(

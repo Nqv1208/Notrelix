@@ -7,10 +7,11 @@ import {
   ExternalLink,
   Flag,
   MoreHorizontal,
+  TriangleAlert,
   User,
   X,
 } from "lucide-react";
-import { cn, Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
+import { Button, cn, Sheet, SheetContent, SheetTitle } from "@notrelix/ui-web";
 import { PriorityGlyph } from "../../shared/priority-glyph";
 import { identityMarkClass } from "../../shared/item-display";
 import {
@@ -18,14 +19,18 @@ import {
   pluralTableCopy,
   type MainTableCopy,
 } from "./main-table.copy";
-import type { TableEditors } from "./table-cell-editors";
+import type { SystemCellColumn, TableEditors } from "./table-cell-editors";
+import type { TableFieldEditing } from "./table-field-cell";
 import { TableDuePicker } from "./table-due-picker";
-import type {
-  TableGroupModel,
-  TableRowModel,
-  TableStatusOption,
+import {
+  formatTableCount,
+  type TableGroupModel,
+  type TableRowModel,
+  type TableStatusOption,
 } from "./table-model";
 import { StatusDot } from "./table-parts";
+import { pageButtonClass } from "./table-chrome";
+import { TABLE_GROUP_WINDOW } from "./table-group-section";
 import { TableNoResults } from "./table-states";
 import type { TableRowActions } from "./table-row";
 
@@ -44,6 +49,14 @@ const PRIORITY_CLASS = {
   medium: "text-muted-foreground",
   low: "text-meta-foreground",
 } as const;
+
+const CONFLICT_COLUMNS: readonly SystemCellColumn[] = [
+  "status",
+  "assignee",
+  "due",
+  "priority",
+  "title",
+];
 
 type SheetView = "menu" | "assign" | "due" | "priority";
 
@@ -142,12 +155,20 @@ export function TablePhoneList({
   onGroupToggle,
   onOpenItem,
   onStatusChange,
+  fieldEditing,
   selectedIds,
   onRowSelectedChange,
   topNote,
   onSelectGroup,
   groupNote,
+  paging,
 }: {
+  /** A board read in pages: a group loaded in part ends in "Đã hiện N trên T" and the next page (BC-Large lg320-*). */
+  paging?: {
+    readonly loadMore: (groupId: string) => void;
+    readonly loading: ReadonlySet<string>;
+    readonly failed: ReadonlySet<string>;
+  };
   /** "Chọn cả nhóm": picks a group's rows up to the bulk limit; absent: no button. */
   onSelectGroup?: (groupId: string) => void;
   /** The note over the list for a group pick that stopped at the limit. */
@@ -177,7 +198,9 @@ export function TablePhoneList({
   onClearFilter: () => void;
   onGroupToggle: (groupId: string) => void;
   onOpenItem: (id: string) => void;
-  onStatusChange: (id: string, optionId: string) => void;
+  onStatusChange: (id: string, optionId: string, inCell?: boolean) => void;
+  /** The open version conflicts of the rows; the first one opens a bottom sheet with both values (UC-WM-B33). */
+  fieldEditing?: TableFieldEditing;
 }) {
   const t = copy.phone;
   const [shown, setShown] = useState<Record<string, number>>({});
@@ -198,6 +221,28 @@ export function TablePhoneList({
   const keyOf = (row: TableRowModel) => row.key ?? row.title;
   const canTick = canEdit && Boolean(doneOption);
   const picking = (selectedIds?.size ?? 0) > 0;
+  // A write that lost to someone else's save: the sheet names who, shows both values and asks (no toast-only path).
+  const conflict = (() => {
+    if (!fieldEditing?.systemConflictOf) return null;
+    for (const row of rows)
+      for (const column of CONFLICT_COLUMNS) {
+        const open = fieldEditing.systemConflictOf(row.id, column);
+        if (open) return { row, column, open };
+      }
+    return null;
+  })();
+  const theirsOf = (row: TableRowModel, column: SystemCellColumn) =>
+    (column === "title"
+      ? row.title
+      : column === "status"
+        ? row.status?.name
+        : column === "assignee"
+          ? (row.assignee?.name ?? copy.row.unassigned)
+          : column === "due"
+            ? row.due.text
+            : row.priority
+              ? copy.row.priority[row.priority]
+              : copy.row.noPriority) || copy.fields.empty;
 
   const actions: TableRowActions | undefined = rowActions
     ? {
@@ -238,7 +283,7 @@ export function TablePhoneList({
             currentLabel={t.current}
             onClick={() => {
               close();
-              editors.onAssignee(row.id, null);
+              editors.onAssignee(row.id, null, true);
             }}
           />
           {editors.members.map((member) => (
@@ -260,7 +305,7 @@ export function TablePhoneList({
               currentLabel={t.current}
               onClick={() => {
                 close();
-                editors.onAssignee(row.id, member.userId);
+                editors.onAssignee(row.id, member.userId, true);
               }}
             />
           ))}
@@ -323,7 +368,7 @@ export function TablePhoneList({
               currentLabel={t.current}
               onClick={() => {
                 close();
-                editors.onPriority(row.id, option.id);
+                editors.onPriority(row.id, option.id, true);
               }}
             />
           ))}
@@ -358,7 +403,7 @@ export function TablePhoneList({
                 onClick={() => {
                   close();
                   if (option.id !== row.status?.id)
-                    onStatusChange(row.id, option.id);
+                    onStatusChange(row.id, option.id, true);
                 }}
               />
             ))}
@@ -512,7 +557,11 @@ export function TablePhoneList({
       {groups.map((group) => {
         const collapsed = collapsedGroupIds.has(group.id);
         const count = group.filteredTotal ?? group.rows.length;
-        const visible = shown[group.id] ?? PHONE_WINDOW;
+        // A paged board shows every row it has read; the foot below reads the next page from the server.
+        const visible = paging
+          ? group.rows.length
+          : (shown[group.id] ?? PHONE_WINDOW);
+        const total = Math.max(count, group.rows.length);
         const headingId = `phone-group-${group.id}`;
         return (
           <section
@@ -625,7 +674,7 @@ export function TablePhoneList({
                           )}
                           onClick={() => {
                             const next = done ? openOption : doneOption;
-                            if (next) onStatusChange(row.id, next.id);
+                            if (next) onStatusChange(row.id, next.id, true);
                           }}
                           className="grid size-11 flex-none cursor-pointer place-items-center rounded-[12px] border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
                         >
@@ -729,9 +778,148 @@ export function TablePhoneList({
                 ) : null}
               </ul>
             )}
+            {paging && !collapsed && group.hasMore ? (
+              paging.failed.has(group.id) ? (
+                <div
+                  data-slot="table-load-more-error"
+                  className="-mx-4 px-3 py-2.5"
+                >
+                  <div
+                    role="alert"
+                    className="flex flex-wrap items-start gap-2.5 rounded-[10px] bg-danger-subtle px-3.5 py-2.5 text-[13px] leading-[1.4] text-danger-text"
+                  >
+                    <TriangleAlert
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-px">
+                      <b className="font-semibold text-foreground">
+                        {copy.group.loadMoreFailed}
+                      </b>
+                      <span>
+                        {fillTableCopy(copy.group.loadMoreFailedBody, {
+                          count: formatTableCount(
+                            Math.min(
+                              TABLE_GROUP_WINDOW,
+                              total - group.rows.length,
+                            ),
+                          ),
+                        })}
+                      </span>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={cn(pageButtonClass, "basis-full text-[14px]")}
+                      onClick={() => paging.loadMore(group.id)}
+                    >
+                      {copy.group.loadMoreRetry}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  data-slot="table-show-more"
+                  className="-mx-4 flex flex-wrap items-center justify-center gap-3 px-3 py-2.5 text-crumb text-muted-foreground"
+                >
+                  <span>
+                    {fillTableCopy(copy.group.shownOf, {
+                      shown: group.rows.length,
+                      total,
+                    })}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn(pageButtonClass, "text-[14px]")}
+                    disabled={paging.loading.has(group.id)}
+                    aria-busy={paging.loading.has(group.id) || undefined}
+                    onClick={() => paging.loadMore(group.id)}
+                  >
+                    {paging.loading.has(group.id)
+                      ? copy.group.loadingMore
+                      : pluralTableCopy(
+                          {
+                            one: copy.group.showMore_one,
+                            other: copy.group.showMore_other,
+                          },
+                          Math.min(
+                            TABLE_GROUP_WINDOW,
+                            total - group.rows.length,
+                          ),
+                        )}
+                  </Button>
+                </div>
+              )
+            ) : null}
           </section>
         );
       })}
+      <Sheet
+        open={conflict !== null}
+        onOpenChange={(open) =>
+          !open &&
+          conflict &&
+          fieldEditing?.onSystemUseTheirs?.(conflict.row.id, conflict.column)
+        }
+      >
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          role="alertdialog"
+          aria-describedby={undefined}
+          className="gap-0 rounded-t-[14px] bg-popover px-5 pt-1.5 pb-6 text-popover-foreground data-[side=bottom]:border-t-0"
+        >
+          {conflict ? (
+            <>
+              <div
+                aria-hidden="true"
+                className="mx-auto mb-3 h-1.25 w-9 shrink-0 rounded-[3px] bg-line-strong"
+              />
+              <SheetTitle className="m-0 text-[16px] leading-[1.35] font-semibold">
+                {fillTableCopy(copy.fields.conflictTitle, {
+                  who: conflict.open.byName ?? copy.fields.staleSomeone,
+                  field: copy.columns[conflict.column],
+                  value: theirsOf(conflict.row, conflict.column),
+                })}
+              </SheetTitle>
+              <p className="m-0 mt-1 text-compact text-muted-foreground">
+                {fillTableCopy(copy.fields.conflictYours, {
+                  value: conflict.open.mine || copy.fields.empty,
+                })}
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    fieldEditing?.onSystemKeepMine?.(
+                      conflict.row.id,
+                      conflict.column,
+                    )
+                  }
+                  className="h-11 cursor-pointer rounded-xl border border-line-strong bg-popover text-[15px] font-medium focus-visible:outline-2 focus-visible:outline-ring dark:bg-card"
+                >
+                  {t.conflictKeep}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    fieldEditing?.onSystemUseTheirs?.(
+                      conflict.row.id,
+                      conflict.column,
+                    )
+                  }
+                  className="h-11 cursor-pointer rounded-xl border-0 bg-primary text-[15px] font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  {t.conflictUse}
+                </button>
+              </div>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <Sheet
         open={target !== undefined}
         onOpenChange={(open) => !open && close()}

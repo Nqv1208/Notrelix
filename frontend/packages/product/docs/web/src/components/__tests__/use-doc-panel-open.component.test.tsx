@@ -26,6 +26,23 @@ function Probe({ viewer, storage }: { viewer: string; storage: PanelStorage }) {
 }
 
 describe("useDocPanelOpen", () => {
+  it("starts closed on a phone until the person opens it, and a saved choice wins", () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("639px"),
+    })) as typeof window.matchMedia;
+    try {
+      const view = renderPureUi(<Probe viewer="u1" storage={fakeStorage()} />);
+      expect(screen.getByRole("button", { name: "closed" })).toBeTruthy();
+      view.unmount();
+      const saved = fakeStorage({ [docPanelStorageKey("u1")]: "1" });
+      renderPureUi(<Probe viewer="u1" storage={saved} />);
+      expect(screen.getByRole("button", { name: "open" })).toBeTruthy();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
   it("is open by default and remembers a close per viewer", () => {
     const storage = fakeStorage();
     const first = renderPureUi(<Probe viewer="u1" storage={storage} />);

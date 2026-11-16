@@ -12,7 +12,8 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Commands.SubmitForm
 [IdempotencyOperation("work-management.forms.submit-form.v1")]
 public record SubmitFormCommand(
     Guid FormId,
-    Dictionary<string, JsonElement> Answers)
+    Dictionary<string, JsonElement> Answers,
+    string? Honeypot = null)
     : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.CreateItem;
@@ -39,6 +40,9 @@ public class SubmitFormCommandHandler : IRequestHandler<SubmitFormCommand, Resul
         if (form is null || form.IsDeleted) throw new NotFoundException("Form", request.FormId);
 
         form.EnsureAcceptsSubmissions();
+
+        // A filled honeypot is a bot: answer as a success so it learns nothing, and store nothing.
+        if (!string.IsNullOrWhiteSpace(request.Honeypot)) return Result<Guid>.Success(Guid.CreateVersion7());
 
         var mappedIds = form.Questions.Where(q => q.BoardFieldId.HasValue).Select(q => q.BoardFieldId!.Value).ToList();
         var optionIds = mappedIds.Count == 0

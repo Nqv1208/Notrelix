@@ -540,6 +540,20 @@ export const workFeedOperations = [
     },
   }),
   defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.unread",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkInboxEntryUnread",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/unread",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      markInbox(store, params.id, { type: "unread" });
+      return noContent();
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
     id: "wsFeed.inbox.done",
     contract: {
       kind: "openapi",

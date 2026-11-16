@@ -57,13 +57,11 @@ describe("unreadBadge", () => {
 });
 
 describe("ChatSidebar", () => {
-  it("marks the open channel as the current page and names unread counts for a screen reader", () => {
+  it("marks the open channel as the current page and names its unread state for a screen reader", () => {
     render(<ChatSidebar {...props()} />);
     const open = screen.getByRole("button", { name: /general/ });
     expect(open.getAttribute("aria-current")).toBe("page");
-    expect(open.getAttribute("aria-label") ?? "").toContain(
-      "120 unread messages",
-    );
+    expect(open.getAttribute("aria-label") ?? "").toContain("Unread messages");
     expect(
       screen
         .getByRole("button", { name: /leadership/ })
@@ -165,16 +163,66 @@ describe("ChatSidebar", () => {
     ).not.toBeNull();
   });
 
-  it("shows the caller in the footer when the host knows their name", () => {
-    const { unmount } = render(
+  it("has no account footer: the caller lives only in the app rail", () => {
+    render(<ChatSidebar {...props()} />);
+    const nav = screen.getByRole("navigation", { name: en.sidebar.navLabel });
+    expect(screen.queryByText("Nguyễn Thu Hà")).toBeNull();
+    expect(nav.querySelector("footer")).toBeNull();
+    expect(nav.querySelector("[data-slot=avatar]")).toBeNull();
+    // The last block of the column is the channel list, never an account strip.
+    expect(nav.lastElementChild?.querySelector("ul")).not.toBeNull();
+  });
+});
+
+describe("ChatSidebar mark all as read", () => {
+  it("offers the button only while something is unread, calls once and is disabled while pending", () => {
+    const onMarkAllRead = vi.fn();
+    const quiet = render(
       <ChatSidebar
-        {...props({ viewer: { id: "me", name: "Nguyễn Thu Hà" } })}
+        {...props({
+          unreadBySpace: new Map([["c-general", { count: 0, muted: false }]]),
+          onMarkAllRead,
+        })}
       />,
     );
-    expect(screen.getByText("Nguyễn Thu Hà")).not.toBeNull();
-    unmount();
-    render(<ChatSidebar {...props({ viewer: null })} />);
-    expect(screen.queryByText("Nguyễn Thu Hà")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
+    quiet.unmount();
+
+    const mutedOnly = render(
+      <ChatSidebar
+        {...props({
+          unreadBySpace: new Map([["c-general", { count: 5, muted: true }]]),
+          onMarkAllRead,
+        })}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
+    mutedOnly.unmount();
+
+    const busy = render(<ChatSidebar {...props({ onMarkAllRead })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
+    expect(onMarkAllRead).toHaveBeenCalledTimes(1);
+    busy.rerender(
+      <ChatSidebar {...props({ onMarkAllRead, markingAllRead: true })} />,
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Mark all as read",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("is absent without a handler", () => {
+    render(<ChatSidebar {...props()} />);
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
   });
 });
 

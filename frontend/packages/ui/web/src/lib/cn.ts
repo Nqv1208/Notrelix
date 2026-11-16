@@ -38,6 +38,7 @@ export const TEXT_ROLES = [
   "crumb",
   "micro",
   "mark-3xs",
+  "mark-4xs",
   "avatar-sm",
   "avatar-md",
   "avatar-lg",

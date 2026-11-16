@@ -1,17 +1,12 @@
+import { safeReturnPath } from "@notrelix/features-auth";
+
 /**
- * Sanitizes an internal return URL to prevent open redirect vulnerabilities.
- * Keeps pathname + search + hash if it is a valid internal relative URL starting with a single slash.
+ * The internal path to return to after sign-in, or "/" when the input is not one.
+ * Uses the same rule as the sign-in page and the backend, so a path that one of
+ * them accepts is not dropped by another (a query that carries a link, say).
  */
 export function sanitizeInternalReturnUrl(input: string): string {
-  if (!input || typeof input !== "string") return "/";
-  // Must start with single slash and not double slash or javascript:
-  if (!input.startsWith("/") || input.startsWith("//")) return "/";
-  if (input.includes(":\\") || input.includes(":/")) return "/";
-  // Browsers read a backslash as a slash and drop tabs and line breaks inside a URL,
-  // so "/\\host" and "/\t/host" can both mean "//host".
-  // eslint-disable-next-line no-control-regex
-  if (/[\\\u0000-\u001f\u007f]/.test(input)) return "/";
-  return input;
+  return safeReturnPath(input) ?? "/";
 }
 
 /** Pages a person without a session opens on purpose: a 401 there must not bounce them to sign-in. */

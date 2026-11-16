@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/query";
 import {
   type InfiniteData,
   type QueryClient,
@@ -5,9 +6,11 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery,
+  replaceEqualDeep,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { setConversationUnread, touchConversation } from "./conversation-cache";
 import {
   createChatService,
   type ChatApiClient,
@@ -84,7 +87,8 @@ export interface ChatHookDeps {
 
 const CHANNEL_STALE_MS = 30_000;
 /** The badge refreshes on this interval until the realtime stream (S1.8) pushes it. */
-const UNREAD_REFRESH_MS = 60_000;
+/** The counters follow the realtime frames; this safety read is rare because the server's count costs the whole unread backlog. */
+const UNREAD_REFRESH_MS = 300_000;
 
 function anchorKey(anchor: ChatHistoryAnchor): string {
   return anchor.kind === "latest" ? "latest" : `around-${anchor.sequence}`;
@@ -106,6 +110,13 @@ function readPending(
  * The Chat hooks of one host. Built once per runtime (`useMemo` on the client),
  * the same way the other feature packages expose their hooks.
  */
+/** The read request waits this long, so a run of new messages sends one boundary. */
+const READ_DEBOUNCE_MS = 1000;
+
+/** The files of each unconfirmed send; they go to the message once the server stored it. Owned by the module, not a component, so a retry after the channel was left still has them. */
+const pendingFiles = new Map<string, readonly File[]>();
+onSessionReset(() => pendingFiles.clear());
+
 export function createChatHooks(deps: ChatHookDeps) {
   const service = createChatService(deps.api, deps.endpoints);
 
@@ -174,7 +185,7 @@ export function createChatHooks(deps: ChatHookDeps) {
       queryKey: chatQueryKeys.unread(workspaceId),
       queryFn: () => service.getUnread(workspaceId),
       refetchInterval: UNREAD_REFRESH_MS,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
       enabled: workspaceId.length > 0,
     });
   }
@@ -189,6 +200,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     channelId: string,
     anchor: ChatHistoryAnchor,
   ) {
+    const messagesBase = chatQueryKeys.messages(workspaceId, channelId);
     return useInfiniteQuery<
       ChatMessagePage,
       Error,
@@ -196,10 +208,7 @@ export function createChatHooks(deps: ChatHookDeps) {
       QueryKey,
       ChatMessageCursor
     >({
-      queryKey: [
-        ...chatQueryKeys.messages(workspaceId, channelId),
-        anchorKey(anchor),
-      ],
+      queryKey: [...messagesBase, anchorKey(anchor)],
       queryFn: ({ pageParam }) =>
         service.listMessages(
           workspaceId,
@@ -221,6 +230,17 @@ export function createChatHooks(deps: ChatHookDeps) {
       ): ChatMessageCursor | undefined =>
         last.hasNewer && last.items.length > 0
           ? { after: last.items[last.items.length - 1]!.sequence }
+          : undefined,
+      structuralSharing: shareMessages,
+      // A jump to the newest messages keeps the window on screen until the new one arrives, so a send made from
+      // an older window shows its bubble at once instead of a skeleton.
+      placeholderData: (previous, previousQuery) =>
+        previousQuery &&
+        previousQuery.queryKey.length === messagesBase.length + 1 &&
+        messagesBase.every(
+          (part, index) => previousQuery.queryKey[index] === part,
+        )
+          ? previous
           : undefined,
       enabled: workspaceId.length > 0 && channelId.length > 0,
       staleTime: CHANNEL_STALE_MS,
@@ -255,8 +275,6 @@ export function createChatHooks(deps: ChatHookDeps) {
     const queryClient = useQueryClient();
     const pendingKey = chatQueryKeys.pending(workspaceId, channelId);
     const messagesKey = chatQueryKeys.messages(workspaceId, channelId);
-    /** The files of each unconfirmed send; they go to the message once the server stored it. */
-    const filesRef = useRef(new Map<string, readonly File[]>());
 
     const mutation = useMutation({
       mutationFn: (input: {
@@ -276,7 +294,7 @@ export function createChatHooks(deps: ChatHookDeps) {
           voiceMessage: input.voiceMessage ?? false,
         }),
       onMutate: async (input) => {
-        await queryClient.cancelQueries({ queryKey: messagesKey });
+        // The bubble goes in before anything is awaited, so it renders in the render of the keypress.
         const current = readPending(queryClient, pendingKey);
         const exists = current.some(
           (entry) => entry.clientMessageId === input.clientMessageId,
@@ -291,6 +309,8 @@ export function createChatHooks(deps: ChatHookDeps) {
           failure: null,
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
+          replyToId: input.replyToId,
+          voiceMessage: input.voiceMessage,
         };
         queryClient.setQueryData<PendingMessage[]>(
           pendingKey,
@@ -302,28 +322,56 @@ export function createChatHooks(deps: ChatHookDeps) {
               )
             : [...current, next],
         );
+        // Only a loaded list needs its in-flight refetch stopped (it could overwrite the stored copy that
+        // joins it). Cancelling the very first load would leave the list pending with nothing to retry it.
+        const loaded = queryClient
+          .getQueriesData({ queryKey: messagesKey })
+          .some(([, data]) => data !== undefined);
+        if (loaded) await queryClient.cancelQueries({ queryKey: messagesKey });
       },
       onSuccess: (message: ChatMessage, input) => {
-        queryClient.setQueryData<PendingMessage[]>(
-          pendingKey,
-          readPending(queryClient, pendingKey).filter(
-            (entry) => entry.clientMessageId !== input.clientMessageId,
-          ),
-        );
         queryClient.setQueriesData<ChatMessagesCache>(
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
         );
+        const landed = queryClient
+          .getQueryCache()
+          .findAll({ queryKey: messagesKey })
+          .some(
+            (query) =>
+              query.isActive() &&
+              (query.state.data as ChatMessagesCache | undefined)?.pages.some(
+                (page) => page.items.some((item) => item.id === message.id),
+              ),
+          );
+        // Sent from an older window the message has no window on screen to join yet: the bubble stays, marked stored,
+        // until a window holds the copy (the list hides a pending entry the history holds) or the channel is left.
+        const entries = readPending(queryClient, pendingKey);
+        queryClient.setQueryData<PendingMessage[]>(
+          pendingKey,
+          landed
+            ? entries.filter(
+                (entry) => entry.clientMessageId !== input.clientMessageId,
+              )
+            : entries.map((entry) =>
+                entry.clientMessageId === input.clientMessageId
+                  ? { ...entry, storedMessageId: message.id }
+                  : entry,
+              ),
+        );
         // The message is stored (and shown): its files go to it now, even if one of them fails later.
-        const files = filesRef.current.get(input.clientMessageId);
+        const files = pendingFiles.get(input.clientMessageId);
         if (files) {
-          filesRef.current.delete(input.clientMessageId);
+          pendingFiles.delete(input.clientMessageId);
           enqueueUploads({ queryClient, service, workspaceId }, message, files);
         }
-        // A conversation's list row shows its newest message: refresh it (a no-op when no list is mounted).
-        void queryClient.invalidateQueries({
-          queryKey: chatQueryKeys.conversations(workspaceId),
-          refetchType: "active",
+        // A conversation's list row shows its newest message: it moves in the cache, the list is not read again.
+        touchConversation(queryClient, workspaceId, channelId, {
+          sequence: message.sequence,
+          authorId: message.authorId,
+          kind: message.kind,
+          text: message.content,
+          createdAt: message.createdAt,
         });
       },
       onError: (error, input) => {
@@ -354,7 +402,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     ): string {
       const clientMessageId = newClientMessageId();
       if (files && files.length > 0) {
-        filesRef.current.set(clientMessageId, files);
+        pendingFiles.set(clientMessageId, files);
       }
       mutation.mutate({
         clientMessageId,
@@ -372,14 +420,16 @@ export function createChatHooks(deps: ChatHookDeps) {
       mutation.mutate({
         clientMessageId: entry.clientMessageId,
         content: entry.content,
+        replyToId: entry.replyToId,
         mentions: entry.mentions,
         confirmBroadcast: entry.confirmBroadcast,
+        voiceMessage: entry.voiceMessage,
       });
     }
 
     /** Drops a pending entry the user no longer wants to send. */
     function discard(clientMessageId: string): void {
-      filesRef.current.delete(clientMessageId);
+      pendingFiles.delete(clientMessageId);
       queryClient.setQueryData<PendingMessage[]>(
         pendingKey,
         readPending(queryClient, pendingKey).filter(
@@ -388,7 +438,26 @@ export function createChatHooks(deps: ChatHookDeps) {
       );
     }
 
-    return { send, retry, discard, isPending: mutation.isPending };
+    /** Drops the stored sends whose bubble still waits for a window: on leaving the channel, or once a window holds them. */
+    function discardStored(onlyIn?: ReadonlySet<string>): void {
+      const entries = readPending(queryClient, pendingKey);
+      const kept = entries.filter(
+        (entry) =>
+          entry.storedMessageId === undefined ||
+          (onlyIn !== undefined && !onlyIn.has(entry.storedMessageId)),
+      );
+      if (kept.length !== entries.length) {
+        queryClient.setQueryData<PendingMessage[]>(pendingKey, kept);
+      }
+    }
+
+    return {
+      send,
+      retry,
+      discard,
+      discardStored,
+      isPending: mutation.isPending,
+    };
   }
 
   /** Edit of the caller's own message; a stale version refetches the history (412). */
@@ -609,32 +678,23 @@ export function createChatHooks(deps: ChatHookDeps) {
 
   /**
    * Mark read (UC-CHT-D02). The boundary only moves forward: a candidate at or
-   * below the cached or the already-sent boundary is not sent at all.
+   * below the cached or the already-sent boundary is not sent at all. The unread
+   * badge drops at once; the request is held for READ_DEBOUNCE_MS so a stream of
+   * new messages sends one boundary, and goes out early when the page is left
+   * (blur, hidden, pagehide) or the list unmounts.
    */
   function useMarkRead(workspaceId: string) {
     const queryClient = useQueryClient();
     const unreadKey = chatQueryKeys.unread(workspaceId);
-    /** The highest boundary this hook has sent per channel (the cache may lag behind). */
+    /** The highest boundary this hook has queued or sent per channel (the cache may lag behind). */
     const sentRef = useRef(new Map<string, number>());
+    /** Boundaries waiting for the debounce, by channel. */
+    const queuedRef = useRef(new Map<string, number>());
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const mutation = useMutation({
       mutationFn: (input: { spaceId: string; upToSequence: number }) =>
         service.markRead(workspaceId, input.spaceId, input.upToSequence),
-      onMutate: async (input) => {
-        await queryClient.cancelQueries({ queryKey: unreadKey });
-        queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (summary) =>
-          summary
-            ? {
-                ...summary,
-                spaces: summary.spaces.map((row) =>
-                  row.spaceId === input.spaceId
-                    ? unreadAfterRead(row, input.upToSequence)
-                    : row,
-                ),
-              }
-            : summary,
-        );
-      },
       onSuccess: (boundary) => {
         queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (summary) =>
           summary
@@ -660,6 +720,37 @@ export function createChatHooks(deps: ChatHookDeps) {
       },
     });
 
+    /** Sends the queued boundaries now. */
+    function flush(): void {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      const queued = [...queuedRef.current];
+      queuedRef.current.clear();
+      for (const [spaceId, upToSequence] of queued) {
+        mutation.mutate({ spaceId, upToSequence });
+      }
+    }
+    const flushRef = useRef(flush);
+    flushRef.current = flush;
+
+    useEffect(() => {
+      const run = () => flushRef.current();
+      const onHidden = () => {
+        if (document.visibilityState === "hidden") run();
+      };
+      window.addEventListener("blur", run);
+      window.addEventListener("pagehide", run);
+      document.addEventListener("visibilitychange", onHidden);
+      return () => {
+        window.removeEventListener("blur", run);
+        window.removeEventListener("pagehide", run);
+        document.removeEventListener("visibilitychange", onHidden);
+        run();
+      };
+    }, []);
+
     /** Reports the sequence the user has seen; a no-op when it would not move the boundary. */
     function markRead(spaceId: string, upToSequence: number): boolean {
       const summary = queryClient.getQueryData<ChatUnreadSummary>(unreadKey);
@@ -670,11 +761,36 @@ export function createChatHooks(deps: ChatHookDeps) {
       };
       if (!shouldReportRead(upToSequence, known)) return false;
       sentRef.current.set(spaceId, nextReadBoundary(known.sent, upToSequence));
-      mutation.mutate({ spaceId, upToSequence });
+      queuedRef.current.set(
+        spaceId,
+        nextReadBoundary(queuedRef.current.get(spaceId) ?? 0, upToSequence),
+      );
+      // The badge does not wait for the request.
+      let unreadNow: number | null = null;
+      queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (current) =>
+        current
+          ? {
+              ...current,
+              spaces: current.spaces.map((entry) => {
+                if (entry.spaceId !== spaceId) return entry;
+                const next = unreadAfterRead(entry, upToSequence);
+                unreadNow = next.unreadCount;
+                return next;
+              }),
+            }
+          : current,
+      );
+      if (unreadNow !== null) {
+        setConversationUnread(queryClient, workspaceId, spaceId, unreadNow);
+      }
+      timerRef.current ??= setTimeout(
+        () => flushRef.current(),
+        READ_DEBOUNCE_MS,
+      );
       return true;
     }
 
-    return { markRead, isPending: mutation.isPending };
+    return { markRead, flush, isPending: mutation.isPending };
   }
 
   /** Mark every channel as read (UC-CHT-D07). */
@@ -811,6 +927,54 @@ export function createChatHooks(deps: ChatHookDeps) {
         void queryClient.invalidateQueries({
           queryKey: chatQueryKeys.mentionables(workspaceId, channelId),
         });
+      },
+    });
+  }
+
+  /**
+   * Leave the channel (the caller's own id) or remove another member (UC-CHT-A07). The channel, its messages and its
+   * mention offers of the person who loses access are dropped from this client when it is the caller.
+   */
+  function useRemoveMember(
+    workspaceId: string,
+    channelId: string,
+    viewerId: string,
+  ) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (userId: string) =>
+        service.removeMember(workspaceId, channelId, userId),
+      onSuccess: (_result, userId) => {
+        if (userId === viewerId) {
+          queryClient.removeQueries({
+            queryKey: chatQueryKeys.messages(workspaceId, channelId),
+          });
+        }
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.mentionables(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
+      },
+    });
+  }
+
+  /** Delete the channel (soft delete with a recovery window); the expected version travels with the call. */
+  function useDeleteChannel(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (expectedVersion: number) =>
+        service.deleteChannel(workspaceId, channelId, expectedVersion),
+      onSuccess: () => {
+        queryClient.removeQueries({
+          queryKey: chatQueryKeys.messages(workspaceId, channelId),
+        });
+        queryClient.removeQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
       },
     });
   }
@@ -1364,6 +1528,8 @@ export function createChatHooks(deps: ChatHookDeps) {
     useArchiveChannel,
     useJoinChannel,
     useAddMembers,
+    useRemoveMember,
+    useDeleteChannel,
     useThreadReplies,
     useThreadCounts,
     useReplyInThread,
@@ -1381,6 +1547,29 @@ export function createChatHooks(deps: ChatHookDeps) {
 export type ChatHooks = ReturnType<typeof createChatHooks>;
 
 /** The loaded message pages as one ordered list (oldest first, once per id). */
+/**
+ * Keeps the identity of a message whose content did not change. The default sharing compares pages by position,
+ * so loading an older page shifts every index and clones every loaded message; each clone re-renders its row.
+ */
+export function shareMessages(oldData: unknown, newData: unknown): unknown {
+  const before = oldData as InfiniteData<ChatMessagePage> | undefined;
+  const after = newData as InfiniteData<ChatMessagePage> | undefined;
+  if (!before || !after) return newData;
+  const known = new Map<string, ChatMessage>();
+  for (const page of before.pages)
+    for (const message of page.items) known.set(message.id, message);
+  return {
+    ...after,
+    pages: after.pages.map((page) => ({
+      ...page,
+      items: page.items.map((message) => {
+        const old = known.get(message.id);
+        return old ? replaceEqualDeep(old, message) : message;
+      }),
+    })),
+  };
+}
+
 export function flattenPages(
   data: InfiniteData<ChatMessagePage, ChatMessageCursor> | undefined,
 ): ChatMessage[] {

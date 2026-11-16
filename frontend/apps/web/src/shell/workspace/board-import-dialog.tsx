@@ -139,6 +139,13 @@ export function BoardImportDialog({
   const [checking, setChecking] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [lost, setLost] = useState(false);
+  // A failed check or confirm: told under the step, with "Check again" (detail: the server's field errors).
+  const [problem, setProblem] = useState<{
+    kind: "check" | "confirm";
+    detail: string;
+  } | null>(null);
+  const [recheck, setRecheck] = useState(0);
+  const failedPolls = useRef(0);
   const [sending, setSending] = useState(false);
   const [denied, setDenied] = useState(false);
   // A confirm the board is over its published item limit refused (D78.8): nothing was created, the run stays here.
@@ -155,6 +162,8 @@ export function BoardImportDialog({
     setPreview(null);
     setJobId(null);
     setLost(false);
+    setProblem(null);
+    failedPolls.current = 0;
     setSending(false);
     setDenied(false);
     setLimit(null);
@@ -203,9 +212,21 @@ export function BoardImportDialog({
       return status === "succeeded" || status === "failed" ? false : 500;
     },
     queryFn: () =>
-      api.api.get<Job>(endpoints.boards.importJob(boardId, jobId!), {
-        skipGlobalErrorToast: true,
-      }),
+      api.api
+        .get<Job>(endpoints.boards.importJob(boardId, jobId!), {
+          skipGlobalErrorToast: true,
+        })
+        .then(
+          (answer) => {
+            failedPolls.current = 0;
+            return answer;
+          },
+          (error: unknown) => {
+            // Three polls in a row without an answer: the job is lost to this screen.
+            if (++failedPolls.current >= 3) setLost(true);
+            throw error;
+          },
+        ),
   });
   const status = job.data?.status ?? (jobId ? "queued" : null);
   const failed = status === "failed";
@@ -290,6 +311,7 @@ export function BoardImportDialog({
     if (!open || !upload?.jobId || step === 1 || step === 4) return;
     const mine = ++check.current;
     setChecking(true);
+    setProblem(null);
     api.api
       .post<Preview>(
         endpoints.boards.importPreview(boardId, upload.jobId),
@@ -299,13 +321,15 @@ export function BoardImportDialog({
       .then((result) => {
         if (mine === check.current) setPreview(result);
       })
-      .catch(() => {
-        if (mine === check.current) setPreview(null);
+      .catch((error: unknown) => {
+        if (mine !== check.current) return;
+        setPreview(null);
+        setProblem({ kind: "check", detail: detailOf(error) });
       })
       .finally(() => {
         if (mine === check.current) setChecking(false);
       });
-  }, [mapping, upload?.jobId, step, open, api.api, boardId]);
+  }, [mapping, upload?.jobId, step, open, api.api, boardId, recheck]);
 
   const checkOf = (column: number) =>
     preview?.checks?.find((x) => x.column === column);
@@ -335,6 +359,8 @@ export function BoardImportDialog({
     if (!upload?.jobId || sending) return;
     setSending(true);
     setLost(false);
+    setProblem(null);
+    failedPolls.current = 0;
     setLimit(null);
     try {
       const result = await api.api.post<Job>(
@@ -349,8 +375,10 @@ export function BoardImportDialog({
       const named = limitOf(error);
       if (named) setLimit({ max: named.max });
       else if (code === 403 || code === 404) setDenied(true);
-      else if (code === 400) setPreview(null);
-      else setLost(true);
+      else if (code === 400) {
+        setPreview(null);
+        setProblem({ kind: "confirm", detail: detailOf(error) });
+      } else setLost(true);
     } finally {
       setSending(false);
     }
@@ -1070,6 +1098,32 @@ export function BoardImportDialog({
           </div>
         ) : null}
 
+        {problem && (shown === 2 || shown === 3) ? (
+          <div className="flex flex-col gap-2">
+            <FrameBanner
+              tone="err"
+              role="alert"
+              icon={<TriangleAlert aria-hidden="true" />}
+              title={
+                problem.kind === "check" ? copy.checkFailed : copy.confirmFailed
+              }
+              body={problem.detail || copy.checkFailedBody}
+            />
+            <button
+              type="button"
+              className={cn(GHOST, "self-start")}
+              onClick={() =>
+                problem.kind === "check"
+                  ? setRecheck((n) => n + 1)
+                  : void send()
+              }
+            >
+              <RotateCw aria-hidden="true" className="size-4" />
+              {copy.checkAgain}
+            </button>
+          </div>
+        ) : null}
+
         {shown === 4 ? (
           <div className="flex flex-col gap-3.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-150">
             {lost ? (
@@ -1354,6 +1408,14 @@ export function BoardImportDialog({
       </FrameFooter>
     </FrameDialog>
   );
+}
+
+/** The server's field errors of a refused request, one line; empty when it names none. */
+function detailOf(error: unknown): string {
+  const fields = (
+    error as { validationErrors?: Record<string, string[]> } | null
+  )?.validationErrors;
+  return fields ? Object.values(fields).flat().join(" ") : "";
 }
 
 function FileCard({

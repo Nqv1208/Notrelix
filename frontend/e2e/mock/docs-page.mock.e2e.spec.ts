@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * The document page of the mock world (owner persona, the Kế toán process
  * page): what the header and the meta line say, the links and contents panels,
- * the comments, turning a checklist line into a work item, the version compare
+ * the comments, turning a checklist line into a work item, the version history
  * and the share dialog's page permissions. Geometry against the mockup is
  * `design-fidelity-docs`; the mock world resets on every page load.
  */
@@ -178,43 +178,69 @@ test.describe("Document page (owner)", () => {
     );
   });
 
-  test("versions: the compare opens on the newest version and follows the one picked, with what changed since", async ({
+  test("versions: the panel lists the history, a version opens read-only, a named one is saved and a restore is confirmed", async ({
     page,
   }) => {
     await openDoc(page);
     await page.getByRole("menuitem", { name: "Tệp", exact: true }).click();
     await page.getByRole("menuitem", { name: /Lịch sử phiên bản/ }).click();
-    const bar = page.getByRole("region", { name: /phiên bản/i }).first();
-    await expect(bar).toContainText("11/10 16:40");
-    await page.getByRole("button", { name: /^15:42 Lý Thu Trang/ }).click();
-    await expect(bar).toContainText("10/10 15:42");
-    await expect(bar).toContainText("Lý Thu Trang");
-    // Step 3 as it read, and the two checklist lines added after it.
-    const step = page
-      .getByRole("listitem")
-      .filter({ hasText: "Hoá đơn sai lệch" });
-    await expect(step.locator("del")).toHaveText(["1%", "kế toán trưởng"]);
-    await expect(step.locator("ins")).toHaveText(["0,5%", "trưởng nhóm"]);
-    await expect(page.getByText("Đã thêm sau phiên bản này:")).toHaveCount(2);
+    const panel = page.getByRole("complementary", {
+      name: "Lịch sử phiên bản",
+    });
+    await expect(panel.getByText("Hiện tại", { exact: true })).toBeVisible();
+    const bar = page.locator('div[role="status"]', {
+      hasText: "Trang này chỉ để xem.",
+    });
+    await expect(bar).toHaveCount(0);
 
     // The named version, and only it when the filter is on.
-    await expect(page.getByText("Bản trình Ban giám đốc")).toBeVisible();
-    await page
-      .getByRole("checkbox", { name: "Chỉ hiện phiên bản đã đặt tên" })
-      .check();
-    await expect(page.getByText("Bản trình Ban giám đốc")).toBeVisible();
-    await expect(page.getByText("Sửa bước 3")).toHaveCount(0);
+    await expect(panel.getByText("Bản trình Ban giám đốc")).toBeVisible();
+    const filter = panel.getByRole("checkbox", { name: "Chỉ bản đã đặt tên" });
+    await filter.check();
+    await expect(panel.getByText("Bản trình Ban giám đốc")).toBeVisible();
+    await expect(panel.getByRole("listitem")).toHaveCount(1);
+    await filter.uncheck();
 
-    // An older version has fewer blocks: the compare follows it.
+    // An older version opens as the page was: read-only, no editor and no marks of change.
+    await panel.getByRole("button", { name: /^15:42 / }).click();
+    await expect(bar).toContainText("phiên bản");
+    await expect(bar).toContainText("15:42 ngày 10/10");
+    await expect(page.locator("article ins, article del")).toHaveCount(0);
+    await expect(
+      page.locator('article [contenteditable]:not([contenteditable="false"])'),
+    ).toHaveCount(0);
+
+    // Back to the current page, and the newest entry is the page as it stands.
+    await bar.getByRole("button", { name: "Quay lại bản hiện tại" }).click();
+    await expect(bar).toHaveCount(0);
+
+    // Save the page under a name: it is listed first on its day.
+    await panel.getByRole("button", { name: "Lưu phiên bản có tên" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Lưu", exact: true }).click();
+    await expect(dialog.getByRole("alert")).toHaveText(
+      "Hãy đặt tên cho phiên bản này.",
+    );
+    await dialog
+      .getByRole("textbox", { name: "Tên phiên bản" })
+      .fill("Bản chốt đóng sổ T10");
+    await dialog.getByRole("button", { name: "Lưu", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(panel.getByText("Bản chốt đóng sổ T10")).toBeVisible();
+
+    // Restore the older version after a confirm; the panel closes.
+    await panel.getByRole("button", { name: /^15:42 / }).click();
+    await bar.getByRole("button", { name: "Khôi phục bản này" }).click();
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByRole("heading", { name: /^Khôi phục phiên bản \d+\?$/ }),
+    ).toBeVisible();
     await page
-      .getByRole("checkbox", { name: "Chỉ hiện phiên bản đã đặt tên" })
-      .uncheck();
-    await page
-      .getByRole("button", { name: /05\/10|14:20/ })
-      .last()
+      .getByRole("dialog")
+      .getByRole("button", { name: "Khôi phục", exact: true })
       .click();
-    await expect(bar).toContainText("05/10 14:20");
-    await page.getByRole("button", { name: "Đóng" }).first().click();
+    await expect(panel).toHaveCount(0);
     await expect(bar).toHaveCount(0);
   });
 

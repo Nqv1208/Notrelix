@@ -12,6 +12,8 @@ export type PageDtoApi = {
   /** The Page aggregate version, sent back as `expectedVersion` by a versioned write. */
   version?: number;
   spaceId?: string | null;
+  /** Whether the caller may edit the page (the decision a write gets); the single-page read only. */
+  canEdit?: boolean | null;
   /**
    * Beyond the producer's `PageDto` (gap `CTR-GAP-DOCS-PAGE-EXT`): the review
    * state, who is on the page and the short tree name. A producer that does
@@ -47,6 +49,7 @@ export type CommentDtoApi = {
   contentMd: string;
   createdAt: string;
   isEdited: boolean;
+  parentCommentId?: string | null;
   /** The comment's version: edit and delete quote it, and a stale one is refused. */
   version?: number;
   /** A deleted comment that still has replies: it keeps no author and no text. */
@@ -70,6 +73,34 @@ export type HistoryDtoApi = {
   /** Gap `CTR-GAP-DOCS-PAGE-EXT`: a version the member named. */
   versionName?: string | null;
   createdAt: string;
+};
+
+/** One fact of `Documents.Pages.GetPageActivity` (`ActivityLogDto`): a page renamed, moved, trashed or restored. */
+export type PageActivityEntryDtoApi = {
+  id: string;
+  actorId: string;
+  actorName?: string | null;
+  actorAvatarUrl?: string | null;
+  /** An English phrase without the actor, for a client that does not know `type`. */
+  action: string;
+  /** The stable type of the fact; the client words it in its own language. */
+  type?: string | null;
+  kind?: string | null;
+  resourceTitle?: string | null;
+  createdAt: string;
+  change?: {
+    fieldName?: string | null;
+    from?: string | null;
+    to?: string | null;
+  } | null;
+};
+
+/** `Documents.Pages.GetPageActivity`: one page of the feed, newest first. */
+export type PageActivityPageDtoApi = {
+  data: PageActivityEntryDtoApi[];
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 /**
@@ -151,6 +182,14 @@ export type PageTemplateDtoApi = {
   blockCount: number;
   createdBy?: string | null;
   createdAt: string;
+  version: number;
+  canManage: boolean;
+};
+
+/** `Documents.Pages.DuplicatePage`. */
+export type DuplicatedPageDtoApi = {
+  pageId: string;
+  droppedBlockCount: number;
 };
 
 /** `Documents.Templates.CreatePageFromTemplate`. */

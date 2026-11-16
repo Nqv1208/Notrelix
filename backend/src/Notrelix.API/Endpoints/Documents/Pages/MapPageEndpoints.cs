@@ -17,6 +17,7 @@ public static class MapPageEndpoints
         workspaceGroup.MapSearchPages();
         workspaceGroup.MapListTrashedPages();
         workspaceGroup.MapCreatePage();
+        workspaceGroup.MapDuplicatePage();
 
         var pageGroup = app
             .MapGroup("/api/v1/pages/{pageId:guid}")
@@ -30,6 +31,7 @@ public static class MapPageEndpoints
         pageGroup.MapDeletePage();
         pageGroup.MapGetPageBreadcrumb();
         pageGroup.MapGetPageHistory();
+        pageGroup.MapGetPageActivity();
         pageGroup.MapGetPageBacklinks();
         pageGroup.MapMovePageToSpace();
         pageGroup.MapMovePage();

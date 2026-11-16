@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -65,6 +66,20 @@ public static class ChannelAccess
         var mustBeMember = !space.IsPublic || string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
         if (mustBeMember && !space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), space.Id);
+    }
+
+    /// <summary>
+    /// The earliest moment a person may read in a space: the time they joined a group conversation, so a person added later sees the
+    /// history from their join point only (UC-CHT-E03). Null for a channel and for a direct conversation, whose history is whole.
+    /// </summary>
+    public static DateTimeOffset? HistoryFloor(Space space, Guid userId) =>
+        space.Kind == SpaceKind.Group ? space.GetActiveMembership(userId)?.JoinedAt : null;
+
+    /// <summary>A message older than the caller's <see cref="HistoryFloor"/> is the same NotFound as a missing one, so its existence is not revealed.</summary>
+    public static void RequireInHistory(Space space, Guid userId, Message message)
+    {
+        if (HistoryFloor(space, userId) is { } floor && message.CreatedAt < floor)
+            throw new NotFoundException(nameof(Message), message.Id);
     }
 
     /// <summary>

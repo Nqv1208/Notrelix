@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { TeamRole } from "@notrelix/features-workspace/core";
@@ -77,34 +77,47 @@ export function TeamPage() {
     [copy],
   );
 
+  // The edit dialog can send a new name and a new description together: each write carries the version the
+  // one before it left, so they run one after the other and read the Team's version when their turn comes.
+  const writes = useRef<Promise<unknown>>(Promise.resolve());
+  const inTurn = useCallback(
+    (run: (expectedVersion: number) => Promise<unknown>) => {
+      writes.current = writes.current
+        .catch(() => undefined)
+        .then(async () => run(await mutations.readVersion(teamId)))
+        .catch(fail);
+    },
+    [fail, mutations, teamId],
+  );
+
   const onRename = useCallback(
     (next: string) => {
       if (version === null) return;
-      mutations.rename.mutate(
-        { teamId, name: next, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(formatCopy(copy.toasts.renamed, { name: next })),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.rename.mutateAsync({
+          teamId,
+          name: next,
+          expectedVersion,
+        });
+        toast.success(formatCopy(copy.toasts.renamed, { name: next }));
+      });
     },
-    [copy, fail, mutations.rename, teamId, version],
+    [copy, inTurn, mutations.rename, teamId, version],
   );
 
   const onDescribe = useCallback(
     (description: string | null) => {
       if (version === null) return;
-      mutations.describe.mutate(
-        { teamId, description, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(formatCopy(copy.toasts.described, { name })),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.describe.mutateAsync({
+          teamId,
+          description,
+          expectedVersion,
+        });
+        toast.success(formatCopy(copy.toasts.described, { name }));
+      });
     },
-    [copy, fail, mutations.describe, name, teamId, version],
+    [copy, inTurn, mutations.describe, name, teamId, version],
   );
 
   const onArchive = useCallback(() => {
@@ -131,43 +144,50 @@ export function TeamPage() {
     );
   }, [copy, fail, mutations.unarchive, name, teamId, version]);
 
+  // Member writes run in turn too: callbacks passed to `mutate` fire only for the latest call, so a second
+  // row's write would leave the first one busy and unreported, and both would quote the same Team version.
   const onAddMember = useCallback(
     ({ userId, role }: AddTeamMemberInput) => {
       if (version === null) return;
-      mutations.addMember.mutate(
-        { teamId, userId, role, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.memberAdded, { name: memberName(userId) }),
-            ),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.addMember.mutateAsync({
+          teamId,
+          userId,
+          role,
+          expectedVersion,
+        });
+        toast.success(
+          formatCopy(copy.toasts.memberAdded, { name: memberName(userId) }),
+        );
+      });
     },
-    [copy, fail, memberName, mutations.addMember, teamId, version],
+    [copy, inTurn, memberName, mutations.addMember, teamId, version],
   );
 
   const onChangeRole = useCallback(
     (userId: string, role: TeamRole) => {
       if (version === null) return;
       pending.add(userId);
-      mutations.changeRole.mutate(
-        { teamId, userId, role, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.roleChanged, {
-                name: memberName(userId),
-                role: copy.roles[role],
-              }),
-            ),
-          onError: fail,
-          onSettled: () => pending.remove(userId),
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        try {
+          await mutations.changeRole.mutateAsync({
+            teamId,
+            userId,
+            role,
+            expectedVersion,
+          });
+          toast.success(
+            formatCopy(copy.toasts.roleChanged, {
+              name: memberName(userId),
+              role: copy.roles[role],
+            }),
+          );
+        } finally {
+          pending.remove(userId);
+        }
+      });
     },
-    [copy, fail, memberName, mutations.changeRole, pending, teamId, version],
+    [copy, inTurn, memberName, mutations.changeRole, pending, teamId, version],
   );
 
   const onRemove = useCallback(
@@ -175,19 +195,30 @@ export function TeamPage() {
       if (version === null) return;
       const removed = memberName(userId);
       pending.add(userId);
-      mutations.removeMember.mutate(
-        { teamId, userId, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.memberRemoved, { name: removed }),
-            ),
-          onError: fail,
-          onSettled: () => pending.remove(userId),
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        try {
+          await mutations.removeMember.mutateAsync({
+            teamId,
+            userId,
+            expectedVersion,
+          });
+          toast.success(
+            formatCopy(copy.toasts.memberRemoved, { name: removed }),
+          );
+        } finally {
+          pending.remove(userId);
+        }
+      });
     },
-    [copy, fail, memberName, mutations.removeMember, pending, teamId, version],
+    [
+      copy,
+      inTurn,
+      memberName,
+      mutations.removeMember,
+      pending,
+      teamId,
+      version,
+    ],
   );
 
   const candidates = useMemo<readonly TeamCandidate[]>(

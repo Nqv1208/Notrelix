@@ -288,35 +288,48 @@ export function toCommentViews(
   viewerId?: string,
   canEdit = false,
 ): DocCommentView[] {
-  return [...comments]
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  const sorted = [...comments].sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
+  const ids = new Set(sorted.map((comment) => comment.id));
+  // A reply whose thread starter is gone from the list stands as a thread of its own.
+  const isReply = (comment: PageComment) =>
+    !!comment.parentId && ids.has(comment.parentId);
+  const view = (comment: PageComment): DocCommentView => {
+    // A stored anchor wins; a "> quote" body is the older way to say it.
+    const { quote: legacyQuote, text } = comment.anchor
+      ? { quote: null, text: comment.body.trim() }
+      : splitQuote(comment.body);
+    const quote = comment.anchor?.quote ?? legacyQuote;
+    const date = new Date(comment.createdAt);
+    const day = relativeDay(date, now);
+    return {
+      id: comment.id,
+      author: personFor(comment.authorId),
+      quote,
+      ...(comment.anchor ? { anchored: true } : {}),
+      ...(comment.resolved ? { resolved: true } : {}),
+      ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
+      // Comments here are top-level, so the author is the thread starter.
+      ...(canEdit || (viewerId && comment.authorId === viewerId)
+        ? { canResolve: true }
+        : {}),
+      body: text,
+      when:
+        day === "today"
+          ? copy.comments.today
+          : day === "yesterday"
+            ? copy.comments.yesterday
+            : dayMonth(date),
+    };
+  };
+  return sorted
+    .filter((comment) => !isReply(comment))
     .map((comment) => {
-      // A stored anchor wins; a "> quote" body is the older way to say it.
-      const { quote: legacyQuote, text } = comment.anchor
-        ? { quote: null, text: comment.body.trim() }
-        : splitQuote(comment.body);
-      const quote = comment.anchor?.quote ?? legacyQuote;
-      const date = new Date(comment.createdAt);
-      const day = relativeDay(date, now);
-      return {
-        id: comment.id,
-        author: personFor(comment.authorId),
-        quote,
-        ...(comment.anchor ? { anchored: true } : {}),
-        ...(comment.resolved ? { resolved: true } : {}),
-        ...(viewerId && comment.authorId === viewerId ? { mine: true } : {}),
-        // Comments here are top-level, so the author is the thread starter.
-        ...(canEdit || (viewerId && comment.authorId === viewerId)
-          ? { canResolve: true }
-          : {}),
-        body: text,
-        when:
-          day === "today"
-            ? copy.comments.today
-            : day === "yesterday"
-              ? copy.comments.yesterday
-              : dayMonth(date),
-      };
+      const replies = sorted
+        .filter((reply) => reply.parentId === comment.id)
+        .map(view);
+      return replies.length > 0 ? { ...view(comment), replies } : view(comment);
     });
 }
 
@@ -328,12 +341,25 @@ export function toVersionViews(
   personFor: (userId: string) => DocPerson,
 ): DocVersionView[] {
   return [...versions]
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map((entry) => {
+    .sort((a, b) => b.versionNumber - a.versionNumber)
+    .map((entry, index) => {
       const date = new Date(entry.createdAt);
       const day = relativeDay(date, now);
+      // The producer names a restore's two entries after the version they cite.
+      const cited = /^(?:Restored from|Before restoring) version (\d+)$/.exec(
+        entry.name ?? "",
+      )?.[1];
+      const tag =
+        entry.kind === "restore"
+          ? cited
+            ? fillDocCopy(copy.versions.restoredFrom, { n: cited })
+            : (entry.name ?? "")
+          : entry.kind === "automatic" && cited
+            ? fillDocCopy(copy.versions.beforeRestore, { n: cited })
+            : copy.versions.automatic;
       return {
         id: entry.id,
+        number: entry.versionNumber,
         kind: entry.kind,
         author: personFor(entry.createdBy ?? ""),
         time: clock(date),
@@ -342,10 +368,11 @@ export function toVersionViews(
             ? copy.versions.today
             : day === "yesterday"
               ? copy.versions.yesterday
-              : dayMonth(date),
-        stamp: `${dayMonth(date)} ${clock(date)}`,
+              : `${dayMonth(date)}/${date.getFullYear()}`,
+        stamp: `${clock(date)} ${copy.versions.dayWord} ${dayMonth(date)}`,
+        tag,
+        ...(index === 0 ? { current: true } : {}),
         // Only a version a person named carries that name; the others read by kind.
-        summary: copy.versions.kinds[entry.kind],
         ...(entry.kind === "named" && entry.name ? { name: entry.name } : {}),
       };
     });

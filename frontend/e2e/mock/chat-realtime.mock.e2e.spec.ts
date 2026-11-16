@@ -9,8 +9,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 const WORKSPACE = "mock-workspace-primary";
 const GENERAL = "c1000000-0000-4000-8000-000000000001";
-const ENGINEERING = "c1000000-0000-4000-8000-000000000002";
+// The owner muted engineering in the seed (no badge, no unread frame): the badge test watches random, where the owner is a member.
+const RANDOM = "c1000000-0000-4000-8000-000000000005";
 const OTHER_MEMBER = "mock-user-member";
+const RANDOM_MEMBER = "mock-user-admin";
 
 type MockHost = {
   __notrelixMockInjectChat?: (
@@ -21,7 +23,12 @@ type MockHost = {
   __notrelixMockRealtime?: { simulateState(state: string): void };
 };
 
-async function inject(page: Page, spaceId: string, content: string) {
+async function inject(
+  page: Page,
+  spaceId: string,
+  content: string,
+  authorId = OTHER_MEMBER,
+) {
   const ok = await page.evaluate(
     ([space, author, text]) =>
       (globalThis as MockHost).__notrelixMockInjectChat?.(
@@ -29,7 +36,7 @@ async function inject(page: Page, spaceId: string, content: string) {
         author!,
         text!,
       ) ?? false,
-    [spaceId, OTHER_MEMBER, content] as const,
+    [spaceId, authorId, content] as const,
   );
   expect(ok).toBe(true);
 }
@@ -53,19 +60,17 @@ test("a message from another member appears live and is announced politely", asy
   );
 });
 
-test("the unread badge of a background channel moves without opening it", async ({
+test("a background channel shows its unread dot without opening it", async ({
   page,
 }) => {
   await openChannel(page, GENERAL);
   const channels = page.getByRole("navigation", { name: /^(Channels|Kênh)$/ });
-  const engineering = channels.getByRole("button", { name: /engineering/ });
-  const before = (await engineering.textContent()) ?? "";
+  const random = channels.getByRole("button", { name: /random/ });
 
-  await inject(page, ENGINEERING, `Badge ${Date.now()}`);
+  await inject(page, RANDOM, `Badge ${Date.now()}`, RANDOM_MEMBER);
 
-  await expect
-    .poll(async () => (await engineering.textContent()) ?? "")
-    .not.toBe(before);
+  // A channel shows that it is unread (a dot), never a count.
+  await expect(random.getByTestId("chat-unread-dot")).toBeVisible();
 });
 
 test("a reconnect keeps the open channel current", async ({ page }) => {
@@ -112,4 +117,21 @@ test("a message while the reader is scrolled up does not move the list; the jump
 
   await jump.click();
   await expect(log.getByText(text)).toBeInViewport();
+});
+
+test("a message over the 1300-byte frame cap arrives with its full text, never as an empty bubble", async ({
+  page,
+}) => {
+  await openChannel(page, GENERAL);
+  const stamp = Date.now();
+  const head = `Long ${stamp} start`;
+  const tail = `end ${stamp} marker`;
+  // 1600 bytes of text: the mock leaves it out of the frame (same cap as the backend) and the client fetches it by sequence.
+  const text = `${head} ${"filler words ".repeat(120)}${tail}`;
+  expect(new TextEncoder().encode(text).length).toBeGreaterThan(1300);
+  await inject(page, GENERAL, text);
+
+  const log = page.getByRole("log");
+  await expect(log.getByText(tail)).toBeVisible();
+  await expect(log.getByText(head)).toBeVisible();
 });

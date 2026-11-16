@@ -16,6 +16,7 @@ import type { ChatConversation } from "../core/types/chat";
 import { buildChatRows, type PendingMessage } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
 import { en } from "../web/components/chat.copy";
+import { ChatMessageLinkProvider } from "../web/components/chat-link-context";
 
 const ME = "user-me";
 const OTHER = "user-other";
@@ -176,10 +177,11 @@ describe("Messenger layout: own messages right, others left", () => {
     expect(avatars("m-3")).toBe(1);
     expect(rowOf("m-4").querySelector("[data-avatar-slot]")).toBeNull();
     expect(within(rowOf("m-4")).queryByText("Me")).toBeNull();
-    // The corners toward the avatar are reduced inside the group.
-    expect(
-      (rowOf("m-2").querySelector("[data-bubble]") as HTMLElement).className,
-    ).toContain("rounded-ss-sm");
+    // Only the last bubble of a group has the tail corner; the middle one is plain.
+    const cls = (id: string) =>
+      (rowOf(id).querySelector("[data-bubble]") as HTMLElement).className;
+    expect(cls("m-2")).not.toContain("rounded-es-");
+    expect(cls("m-3")).toContain("rounded-es-[6px]");
   });
 
   it("puts the clock time beside the author name at the start of a group and beside Sent, as machine-readable time elements", () => {
@@ -341,12 +343,11 @@ describe("Messenger message kinds", () => {
     expect(replyCaption(null, true, "Me", ME, en)).toBeNull();
   });
 
-  it("rounds a single bubble fully and narrows the inner corners of a run on the author's side", () => {
-    expect(bubbleShape(true, false, true)).toBe("rounded-2xl");
-    expect(bubbleShape(true, true, false)).toContain("rounded-se-sm");
-    expect(bubbleShape(true, true, false)).toContain("rounded-ee-sm");
-    expect(bubbleShape(false, false, false)).toContain("rounded-es-sm");
-    expect(bubbleShape(false, true, true)).toContain("rounded-ss-sm");
+  it("rounds every bubble 14 px and gives only a group's last bubble a 6 px tail on the author's side", () => {
+    expect(bubbleShape(true, false, false)).toBe("rounded-[14px]");
+    expect(bubbleShape(true, true, true)).toContain("rounded-ee-[6px]");
+    expect(bubbleShape(false, false, true)).toContain("rounded-es-[6px]");
+    expect(bubbleShape(false, true, false)).toBe("rounded-[14px]");
   });
 });
 
@@ -483,6 +484,55 @@ describe("Messenger action bar", () => {
         await screen.findByRole("menuitem", { name: "Copy text" }),
       );
       expect(writeText).toHaveBeenCalledWith("text 1");
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it("offers Copy link only with a link builder, and copies the address it builds (UC-CHT-B10)", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const row = (
+      <ChatMessageRow
+        message={message(7)}
+        author={{ name: "Minh Quân" }}
+        continued={false}
+        isOwn={false}
+        locale="en"
+        timeZone={TZ}
+        copy={en}
+      />
+    );
+    try {
+      const bare = render(row);
+      fireEvent.keyDown(screen.getByRole("button", { name: "More actions" }), {
+        key: "Enter",
+      });
+      await screen.findByRole("menuitem", { name: "Copy text" });
+      expect(screen.queryByRole("menuitem", { name: "Copy link" })).toBeNull();
+      bare.unmount();
+
+      render(
+        <ChatMessageLinkProvider
+          value={(entry) =>
+            entry.threadRootId
+              ? null
+              : `https://x.test/chat/s?m=${entry.sequence}`
+          }
+        >
+          {row}
+        </ChatMessageLinkProvider>,
+      );
+      fireEvent.keyDown(screen.getByRole("button", { name: "More actions" }), {
+        key: "Enter",
+      });
+      fireEvent.click(
+        await screen.findByRole("menuitem", { name: "Copy link" }),
+      );
+      expect(writeText).toHaveBeenCalledWith("https://x.test/chat/s?m=7");
     } finally {
       Reflect.deleteProperty(navigator, "clipboard");
     }

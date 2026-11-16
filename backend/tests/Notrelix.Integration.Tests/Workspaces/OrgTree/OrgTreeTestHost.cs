@@ -120,6 +120,7 @@ internal sealed class OrgTreeTestHost
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker, Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
         services.AddScoped<ApplicationDbContext>(sp => _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -179,6 +180,8 @@ internal sealed class OrgTreeTestHost
             Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
             Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess,
+            Notrelix.Application.Features.Documents.Pages.Services.PageEditAccess>();
 
         services.AddScoped<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts, Notrelix.Application.Features.Identity.Users.Services.IdentityUserFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Domains.IAccountDomainFacts, Notrelix.Application.Features.Accounts.Members.AccountDomainFactsProvider>();

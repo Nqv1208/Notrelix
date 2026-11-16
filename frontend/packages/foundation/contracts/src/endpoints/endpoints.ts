@@ -114,7 +114,10 @@ export const endpoints = {
       `/workspaces/${workspaceId}/spaces/${spaceId}/archive`,
     spaceUnarchive: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/unarchive`,
-    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace).
+    // Workspaces.Spaces.GetDeletedSpaces: the deleted Spaces inside the 30-day restore window.
+    spacesDeleted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/deleted`,
+    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace and sends `?expectedVersion=`).
     spaceRestore: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/restore`,
     spaceMove: (workspaceId: string, spaceId: string) =>
@@ -152,11 +155,14 @@ export const endpoints = {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,
     tree: (workspaceId: string) => `/workspaces/${workspaceId}/pages/tree`,
     detail: (pageId: string) => `/pages/${pageId}`,
+    duplicate: (workspaceId: string, pageId: string) =>
+      `/workspaces/${workspaceId}/pages/${pageId}/duplicate`,
     breadcrumb: (pageId: string) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId: string) => `/pages/${pageId}/blocks`,
     comments: (pageId: string) => `/pages/${pageId}/comments`,
     commentsPage: (pageId: string) => `/pages/${pageId}/comments/page`,
     history: (pageId: string) => `/pages/${pageId}/history`,
+    activity: (pageId: string) => `/pages/${pageId}/activity`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,
     moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,
@@ -176,6 +182,10 @@ export const endpoints = {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/page-templates`,
     createPage: (workspaceId: string, templateId: string) =>
       `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
+    detail: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}`,
+    archive: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/archive`,
   },
   // WorkManagement.Templates.*: workspace board templates.
   boardTemplates: {
@@ -323,9 +333,8 @@ export const endpoints = {
     // Collaboration.Inbox.ReadAll (workspace-scoped Inbox).
     readAll: (workspaceId: string) =>
       `/workspaces/${workspaceId}/inbox/read-all`,
-    // Collaboration.Preferences.*: one member's choices in one workspace.
-    preferences: (workspaceId: string) =>
-      `/workspaces/${workspaceId}/notification-preferences`,
+    // Collaboration.Preferences.*: one person's choices, the same in every workspace.
+    preferences: "/profile/notification-preferences",
   },
   // Chat.* (REST prefix /api/v1/workspaces/{workspaceId}/chat). A channel is a space: the same GUID.
   chat: {
@@ -577,6 +586,7 @@ export const endpoints = {
       `/forms/${formId}/questions/${questionId}`,
     submissions: (formId: string) => `/forms/${formId}/submissions`,
     submissionsPage: (formId: string) => `/forms/${formId}/submissions/page`,
+    submissionCounts: (formId: string) => `/forms/${formId}/submissions/counts`,
     submission: (submissionId: string) => `/form-submissions/${submissionId}`,
     process: (submissionId: string) =>
       `/form-submissions/${submissionId}/process`,

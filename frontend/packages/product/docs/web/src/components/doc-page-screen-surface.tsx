@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
-import { Skeleton } from "@notrelix/ui-web";
+import { Button, NotFoundState, Skeleton } from "@notrelix/ui-web";
 import type { DocPageCopy } from "./doc-page.copy";
 import {
   DocArticleSurface,
   type DocArticleSurfaceProps,
 } from "./doc-article-surface";
+import { DocAccessNoticeSurface } from "./doc-access-notice-surface";
 import { DocPageBarSurface } from "./doc-page-bar-surface";
 import {
   DocPageSetupDialogSurface,
@@ -43,6 +44,7 @@ import type {
   DocHistoryActionView,
   DocImportView,
   DocTemplateActionView,
+  DocTemplatesView,
 } from "./doc-page-models";
 import {
   DocBoardPickerDialogSurface,
@@ -59,6 +61,7 @@ import {
   DocSaveVersionDialogSurface,
 } from "./doc-history-dialogs-surface";
 import { DocShareDialogSurface } from "./doc-share-dialog-surface";
+import { DocTemplatesDialogSurface } from "./doc-templates-dialog-surface";
 import { DocSidePanelSurface } from "./doc-side-panel-surface";
 import {
   DEFAULT_TOOLBAR_CURRENT,
@@ -72,13 +75,22 @@ import {
 
 export interface DocVersionsState {
   readonly list: readonly DocVersionView[];
+  /** The version the page shows; null while it shows its current content. */
   readonly selectedId: string | null;
   readonly namedOnly: boolean;
   readonly onNamedOnlyChange?: (value: boolean) => void;
+  /** Whether the viewer may save a named version. */
+  readonly canSave?: boolean;
+  /** The chosen version's content: `loading` and `error` replace the page. */
+  readonly snapshotStatus?: "ready" | "loading" | "error";
+  readonly onSnapshotRetry?: () => void;
+  /** The list read: `loading` and `error` replace the entries. */
+  readonly status?: "ready" | "loading" | "error";
+  readonly onRetry?: () => void;
 }
 
 export interface DocPageScreenSurfaceProps {
-  readonly status?: "ready" | "loading" | "notFound";
+  readonly status?: "ready" | "loading" | "notFound" | "loadFailed";
   readonly copy: DocPageCopy;
   readonly header: DocHeaderView;
   readonly saveState: DocSaveState;
@@ -108,11 +120,15 @@ export interface DocPageScreenSurfaceProps {
   readonly editor?: Editor | null;
   readonly recoveries?: readonly DocRecoveryView[];
   readonly copiedRecoveryId?: string | null;
+  /** The right to edit was lost while the page was open (see `DocAccessNoticeSurface`). */
+  readonly accessLost?: { readonly text: string; readonly copied: boolean };
   readonly versions?: DocVersionsState;
   /** The history dialogs' write state (save version, restore). */
   readonly history?: DocHistoryActionView;
   /** The "Save as template" dialog's write state. */
   readonly templateAction?: DocTemplateActionView;
+  /** The templates dialog's list and write state. */
+  readonly templates?: DocTemplatesView;
   /** The import dialog's state. */
   readonly importState?: DocImportView;
   readonly share?: DocShareView;
@@ -159,7 +175,7 @@ export interface DocPageTools {
 /**
  * The document page (Final-Docs-2): the document bar, the menu bar and
  * formatting toolbar, the page sheet and the side panel; version history
- * swaps the toolbar for a compare banner and the side tabs for the list.
+ * swaps the toolbar for nothing, shows the page read-only, and adds the version bar while a version is open.
  */
 export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
   const { copy, status = "ready" } = props;
@@ -179,10 +195,36 @@ export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
     );
   }
 
+  if (status === "loadFailed") {
+    return (
+      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8">
+        <NotFoundState
+          title={copy.loadFailedTitle}
+          description={copy.loadFailed}
+          action={
+            <Button variant="outline" onClick={props.callbacks?.onRetryLoad}>
+              {copy.loadRetry}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   if (status === "notFound") {
     return (
-      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8 text-center text-compact leading-[1.45] text-meta-foreground">
-        {copy.notFound}
+      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8">
+        <NotFoundState
+          title={copy.notFoundTitle}
+          description={copy.notFound}
+          action={
+            props.callbacks?.onLeavePage ? (
+              <Button variant="outline" onClick={props.callbacks.onLeavePage}>
+                {copy.notFoundBack}
+              </Button>
+            ) : undefined
+          }
+        />
       </div>
     );
   }
@@ -216,9 +258,11 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     editor,
     recoveries,
     copiedRecoveryId,
+    accessLost,
     versions,
     history,
     templateAction,
+    templates,
     importState,
     share,
     trash,
@@ -261,9 +305,11 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     return () => element.removeEventListener("scroll", update);
   }, [tocIds]);
 
-  const viewing = versions
-    ? (versions.list.find((entry) => entry.id === versions.selectedId) ?? null)
-    : null;
+  const viewing =
+    versions && versions.selectedId
+      ? (versions.list.find((entry) => entry.id === versions.selectedId) ??
+        null)
+      : null;
   const shareOpen = overlay.kind === "share" && share !== undefined;
   const dialogOpen =
     shareOpen ||
@@ -273,6 +319,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     (overlay.kind === "saveVersion" && history !== undefined) ||
     (overlay.kind === "restoreVersion" && history !== undefined) ||
     (overlay.kind === "saveTemplate" && templateAction !== undefined) ||
+    (overlay.kind === "templates" && templates !== undefined) ||
     (overlay.kind === "importPage" && importState !== undefined) ||
     (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
     (overlay.kind === "boardPicker" && pickerBoards !== undefined) ||
@@ -309,6 +356,21 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         aria-hidden={dialogOpen || undefined}
         inert={dialogOpen || undefined}
       >
+        {focusMode || !viewing ? null : (
+          <DocVersionBarSurface
+            copy={copy}
+            version={viewing}
+            callbacks={callbacks}
+          />
+        )}
+        {focusMode || versions ? null : (
+          <DocAccessNoticeSurface
+            copy={copy}
+            accessLost={accessLost}
+            readOnly={readOnly}
+            callbacks={callbacks}
+          />
+        )}
         {focusMode ? (
           <button
             type="button"
@@ -329,16 +391,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             callbacks={callbacks}
           />
         )}
-        {focusMode ? null : versions ? (
-          viewing ? (
-            <DocVersionBarSurface
-              copy={copy}
-              version={viewing}
-              canRestore={history?.canRestore ?? false}
-              callbacks={callbacks}
-            />
-          ) : null
-        ) : (
+        {focusMode || versions ? null : (
           <DocToolbarSurface
             copy={copy}
             current={toolbar}
@@ -363,12 +416,35 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             }
           />
         )}
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1">
           <div
             ref={scroller}
             className="flex min-w-0 flex-1 justify-center overflow-auto px-8 pt-9 pb-16"
           >
-            <DocArticleSurface {...articleProps} />
+            {viewing && versions?.snapshotStatus === "loading" ? (
+              <p
+                role="status"
+                className="m-0 text-compact text-meta-foreground"
+              >
+                {copy.versions.snapshotLoading}
+              </p>
+            ) : viewing && versions?.snapshotStatus === "error" ? (
+              <div
+                role="alert"
+                className="flex flex-col items-start gap-2 text-compact text-meta-foreground"
+              >
+                <p className="m-0">{copy.versions.snapshotError}</p>
+                <button
+                  type="button"
+                  onClick={versions.onSnapshotRetry}
+                  className="inline-flex h-7.5 items-center rounded-[7px] border border-line-strong bg-doc-panel px-3 font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  {copy.versions.retry}
+                </button>
+              </div>
+            ) : (
+              <DocArticleSurface {...articleProps} />
+            )}
           </div>
           {versions ? (
             <DocVersionPanelSurface
@@ -376,7 +452,10 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               versions={versions.list}
               selectedId={versions.selectedId}
               namedOnly={versions.namedOnly}
+              canSave={versions.canSave}
               onNamedOnlyChange={versions.onNamedOnlyChange}
+              status={versions.status}
+              onRetry={versions.onRetry}
               callbacks={callbacks}
             />
           ) : panelOpen && !focusMode ? (
@@ -429,7 +508,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
       {overlay.kind === "restoreVersion" && history && viewing ? (
         <DocRestoreVersionDialogSurface
           copy={copy}
-          stamp={viewing.stamp}
+          version={viewing}
           action={history}
           callbacks={callbacks}
         />
@@ -438,6 +517,13 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         <DocSaveTemplateDialogSurface
           copy={copy}
           action={templateAction}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "templates" && templates ? (
+        <DocTemplatesDialogSurface
+          copy={copy}
+          view={templates}
           callbacks={callbacks}
         />
       ) : null}

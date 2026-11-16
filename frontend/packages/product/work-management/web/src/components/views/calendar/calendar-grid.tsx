@@ -77,7 +77,7 @@ function dayAt(
  * height. `null` until measured (and in tests without layout): nothing is
  * collapsed then, except by the caller's default.
  */
-function useWeekCapacity(weekCount: number, enabled: boolean) {
+function useWeekCapacity(weekCount: number, enabled: boolean, tall: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const [capacity, setCapacity] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -87,13 +87,13 @@ function useWeekCapacity(weekCount: number, enabled: boolean) {
     }
     const measure = () => {
       const height = element.clientHeight;
-      if (height > 0) setCapacity(weekRowCapacity(height / weekCount));
+      if (height > 0) setCapacity(weekRowCapacity(height / weekCount, tall));
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [enabled, weekCount]);
+  }, [enabled, weekCount, tall]);
   return { ref, capacity: enabled ? capacity : null };
 }
 
@@ -127,6 +127,8 @@ export interface CalendarGridProps {
   onResizeHandle?: Pick<CalendarHandlesProps, "onPointerDown">;
   onChangeDates?: CalendarEventProps["onChangeDates"];
   onUnschedule?: CalendarEventProps["onUnschedule"];
+  /** Final-T-Calendar month: 40 px chips under a 36 px day number row. */
+  tall?: boolean;
 }
 
 /**
@@ -138,7 +140,11 @@ export interface CalendarGridProps {
 export function CalendarGrid(props: CalendarGridProps) {
   const { copy, range, weeks, canEdit } = props;
   const month = range === "month";
-  const { ref, capacity } = useWeekCapacity(weeks.length, month);
+  const { ref, capacity } = useWeekCapacity(
+    weeks.length,
+    month,
+    props.tall === true,
+  );
   // Without a measured height a month week shows three rows, the 1440 x 900
   // layout; the week view grows with its content.
   const maxRows = month ? (capacity ?? 3) : null;
@@ -209,6 +215,7 @@ function CalendarWeek({
   onResizeHandle,
   onChangeDates,
   onUnschedule,
+  tall = false,
 }: CalendarGridProps & {
   days: readonly DayKey[];
   wrap: boolean;
@@ -319,7 +326,12 @@ function CalendarWeek({
           );
         })}
       </div>
-      <div className="relative grid grid-flow-row-dense grid-cols-7 gap-y-[3px] pt-1 pb-1.5">
+      <div
+        className={cn(
+          "relative grid grid-flow-row-dense grid-cols-7",
+          tall ? "gap-y-0.5 pt-1 pb-0" : "gap-y-[3px] pt-1 pb-1.5",
+        )}
+      >
         {days.map((day) => {
           const outside = range === "month" && !sameMonth(day, monthOf);
           const isToday = day === today;
@@ -331,7 +343,8 @@ function CalendarWeek({
               tabIndex={day === anchorDay ? 0 : -1}
               aria-current={isToday ? "date" : undefined}
               className={cn(
-                "flex h-6.5 items-center gap-1.5 px-2 text-crumb leading-[1.45] font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                tall ? "h-9" : "h-6.5",
+                "flex items-center gap-1.5 px-2 text-crumb leading-[1.45] font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                 outside && "font-medium text-calendar-faint",
               )}
               style={{ gridColumn: columnOf(day), gridRow: 1 }}
@@ -375,6 +388,7 @@ function CalendarWeek({
                 span={placement.span}
                 row={placement.row}
                 wrap={wrap}
+                tall={tall}
                 lifting={
                   drag?.source === "entry" && drag.id === placement.entry.id
                 }
@@ -406,7 +420,10 @@ function CalendarWeek({
           <div key={`more-${more.col}`} role="gridcell" className="contents">
             <button
               type="button"
-              className="mx-1 flex h-6 min-w-0 cursor-pointer items-center rounded-[6px] border-0 bg-transparent px-1.5 text-xs leading-[1.45] font-semibold text-brand-ink hover:shadow-[inset_0_0_0_1px_var(--line-strong)] focus-visible:outline-2 focus-visible:outline-ring"
+              className={cn(
+                "mx-1 flex min-w-0 cursor-pointer items-center border-0 bg-transparent px-1.5 text-xs leading-[1.45] font-semibold text-brand-ink hover:shadow-[inset_0_0_0_1px_var(--line-strong)] focus-visible:outline-2 focus-visible:outline-ring",
+                tall ? "h-10 rounded-[8px]" : "h-6 rounded-[6px]",
+              )}
               style={{
                 gridColumn: `${more.col} / span 1`,
                 gridRow: (maxRows ?? 3) + 1,

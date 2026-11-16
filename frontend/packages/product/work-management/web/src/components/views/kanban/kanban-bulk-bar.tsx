@@ -77,23 +77,21 @@ export function KanbanBulkBar({
     return () => clearTimeout(timer);
   }, [done]);
   const archiveWindow = useArchiveUndoWindow((itemIds, settled) => {
-    bulk.mutate(
-      { itemIds, change: { type: "archive" } },
-      {
-        onError: (error) => {
-          const failed = bulkFailedItemId(error);
-          const title = failed ? titleOf(failed) : undefined;
-          toast.error(
-            limitMessage(error) ??
-              (title
-                ? fillTableCopy(copy.failed.bulkItem, { title })
-                : copy.failed.bulk),
-            { id: "kanban-bulk" },
-          );
-        },
-        onSettled: settled,
-      },
-    );
+    // Promise callbacks, not per-call mutate callbacks: a second write on this hook drops those.
+    bulk
+      .mutateAsync({ itemIds, change: { type: "archive" } })
+      .catch((error) => {
+        const failed = bulkFailedItemId(error);
+        const title = failed ? titleOf(failed) : undefined;
+        toast.error(
+          limitMessage(error) ??
+            (title
+              ? fillTableCopy(copy.failed.bulkItem, { title })
+              : copy.failed.bulk),
+          { id: "kanban-bulk" },
+        );
+      })
+      .finally(settled);
   });
   const pendingArchive = archiveWindow.pendingIds;
   useEffect(() => {
@@ -149,44 +147,39 @@ export function KanbanBulkBar({
   const write = (change: BulkItemChange, done?: string) => {
     const picked = [...ids];
     const inverse = inverseOf(change);
-    bulk.mutate(
-      { itemIds: picked, change },
-      {
-        // The pick is spent only once the server took the change; a refusal keeps it and names the item.
-        onSuccess: () => {
-          if (done) toast.success(done, { id: "kanban-bulk" });
-          const text = doneText(change, picked.length);
-          if (text)
-            setDone({
-              text,
-              onUndo: inverse
-                ? () => {
-                    setDone(null);
-                    bulk.mutate(
-                      { itemIds: picked, change: inverse },
-                      {
-                        onError: (error) =>
-                          toast.error(limitMessage(error) ?? copy.failed.bulk, {
-                            id: "kanban-bulk",
-                          }),
-                      },
+    void bulk.mutateAsync({ itemIds: picked, change }).then(
+      // The pick is spent only once the server took the change; a refusal keeps it and names the item.
+      () => {
+        if (done) toast.success(done, { id: "kanban-bulk" });
+        const text = doneText(change, picked.length);
+        if (text)
+          setDone({
+            text,
+            onUndo: inverse
+              ? () => {
+                  setDone(null);
+                  bulk
+                    .mutateAsync({ itemIds: picked, change: inverse })
+                    .catch((error) =>
+                      toast.error(limitMessage(error) ?? copy.failed.bulk, {
+                        id: "kanban-bulk",
+                      }),
                     );
-                  }
-                : undefined,
-            });
-          onClear();
-        },
-        onError: (error) => {
-          const failed = bulkFailedItemId(error);
-          const title = failed ? titleOf(failed) : undefined;
-          toast.error(
-            limitMessage(error) ??
-              (title
-                ? fillTableCopy(copy.failed.bulkItem, { title })
-                : copy.failed.bulk),
-            { id: "kanban-bulk" },
-          );
-        },
+                }
+              : undefined,
+          });
+        onClear();
+      },
+      (error) => {
+        const failed = bulkFailedItemId(error);
+        const title = failed ? titleOf(failed) : undefined;
+        toast.error(
+          limitMessage(error) ??
+            (title
+              ? fillTableCopy(copy.failed.bulkItem, { title })
+              : copy.failed.bulk),
+          { id: "kanban-bulk" },
+        );
       },
     );
   };

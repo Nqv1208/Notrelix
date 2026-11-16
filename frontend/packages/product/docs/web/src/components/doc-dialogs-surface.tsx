@@ -22,14 +22,17 @@ import type {
 import { useModalFocus } from "./doc-share-dialog-surface";
 
 export const OUTLINE =
-  "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
+  "inline-flex h-8 max-sm:h-11 items-center gap-1.5 rounded-[7px] border border-line-strong bg-doc-panel px-3 text-compact leading-[1.45] font-medium text-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-default disabled:opacity-60";
 
 export const PRIMARY = cn(
   OUTLINE,
   "border-primary bg-brand-solid font-semibold text-brand-solid-foreground hover:bg-brand-solid",
 );
 
-const DANGER = cn(OUTLINE, "border-danger-text font-semibold text-danger-text");
+export const DANGER = cn(
+  OUTLINE,
+  "border-danger-text font-semibold text-danger-text",
+);
 
 export const FIELD =
   "box-border h-9.5 w-full rounded-[9px] border border-line-strong bg-doc-panel px-2.5 text-compact leading-[1.45] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
@@ -39,12 +42,15 @@ export function DialogFrame({
   title,
   closeLabel,
   width = 520,
+  sheet = false,
   onClose,
   children,
 }: {
   title: string;
   closeLabel: string;
   width?: number;
+  /** Version history: lower on a desktop, a bottom sheet on a phone (Doc-Ver). */
+  sheet?: boolean;
   onClose?: () => void;
   children: ReactNode;
 }) {
@@ -53,7 +59,10 @@ export function DialogFrame({
   const onKeyDown = useModalFocus(dialog, onClose);
   return (
     <div
-      className="fixed inset-0 z-modal flex items-start justify-center bg-modal-scrim pt-14"
+      className={cn(
+        "fixed inset-0 z-modal flex items-start justify-center bg-modal-scrim pt-14",
+        sheet && "pt-24 max-xl:pt-20 max-sm:items-end max-sm:pt-0",
+      )}
       onKeyDown={onKeyDown}
     >
       <div
@@ -63,7 +72,11 @@ export function DialogFrame({
         tabIndex={-1}
         aria-labelledby={titleId}
         style={{ width }}
-        className="relative flex max-h-[calc(100vh-7rem)] max-w-[calc(100%-2rem)] flex-col rounded-[14px] bg-doc-panel shadow-dialog outline-none"
+        className={cn(
+          "relative flex max-h-[calc(100vh-7rem)] max-w-[calc(100%-2rem)] flex-col rounded-[14px] bg-doc-panel shadow-dialog outline-none",
+          sheet &&
+            "max-sm:max-h-[90%] max-sm:w-full! max-sm:max-w-full max-sm:rounded-b-none max-sm:rounded-t-[16px]",
+        )}
       >
         <div className="flex items-center gap-2.5 px-5 pt-[18px] pb-1">
           <h2 id={titleId} className="text-dialog-title">
@@ -73,7 +86,11 @@ export function DialogFrame({
             type="button"
             aria-label={closeLabel}
             onClick={onClose}
-            className="ml-auto grid size-8 shrink-0 place-items-center rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className={cn(
+              "ml-auto grid size-8 shrink-0 place-items-center max-sm:size-11 rounded-[7px] text-meta-foreground outline-none hover:bg-state-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring",
+              sheet &&
+                "relative max-sm:size-8 max-sm:after:absolute max-sm:after:-inset-1.5 max-sm:after:content-['']",
+            )}
           >
             <X aria-hidden="true" className="size-4 stroke-[1.8]" />
           </button>

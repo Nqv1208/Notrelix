@@ -9,6 +9,25 @@ namespace Notrelix.Integration.Tests.Messaging;
 public class MessagingRegistrationTests
 {
     [Fact]
+    public void EveryApplicationEventMapper_IsRegistered()
+    {
+        // A mapper that is not registered turns its domain fact into no integration event: nothing reaches the
+        // bus and the feature built on it (live reactions, live files) silently never fires.
+        var services = new ServiceCollection();
+        services.AddMessaging(new ConfigurationBuilder().Build());
+
+        var registered = services
+            .Where(d => d.ServiceType == typeof(IIntegrationEventMapper))
+            .Select(d => d.ImplementationType)
+            .ToHashSet();
+        var mappers = typeof(Notrelix.Application.EventMappers.IntegrationEventMapperBase<,>).Assembly
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IIntegrationEventMapper).IsAssignableFrom(t));
+
+        mappers.Where(t => !registered.Contains(t)).Select(t => t.Name).Should().BeEmpty();
+    }
+
+    [Fact]
     public void CalendarConsumer_ProductionEndpointName_IsStable()
     {
         var configuration = new ConfigurationBuilder()

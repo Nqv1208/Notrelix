@@ -605,9 +605,11 @@ function MainTableSurfaceBody({
                 onGroupToggle={onGroupToggle}
                 onOpenItem={onOpenItem}
                 onStatusChange={onStatusChange}
+                fieldEditing={fieldEditing}
                 selectedIds={selectedIds}
                 onRowSelectedChange={canEdit ? onRowSelectedChange : undefined}
                 onSelectGroup={onSelectGroup}
+                paging={paging}
                 groupNote={
                   groupPickNote ? (
                     <TableBulkNotice
@@ -890,10 +892,18 @@ function MainTableSurfaceBody({
       )}
 
       {deep ? (
-        <div className="absolute right-6 bottom-5 z-10">
+        <div
+          className={cn(
+            "absolute right-6 bottom-5 z-10",
+            phone && "right-3 bottom-3",
+          )}
+        >
           <Button
             type="button"
-            className="h-11 gap-1.5 rounded-[7px] px-3.5 text-[13px] font-semibold shadow-popover"
+            className={cn(
+              "h-11 gap-1.5 rounded-[7px] px-3.5 text-[13px] font-semibold shadow-popover",
+              phone && "text-[14px]",
+            )}
             onClick={jumpToTop}
           >
             <ArrowUp aria-hidden="true" className="size-4" />

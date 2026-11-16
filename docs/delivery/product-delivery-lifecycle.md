@@ -28,6 +28,8 @@ review_on:
 
 # Product Delivery Lifecycle
 
+Working a use case? Start with [`use-case-playbook.md`](use-case-playbook.md), the one page of working steps.
+
 > **A use case is DONE when its pull request proves four lines and the lead merges it. A version is released when the owner has run its journeys on the release candidate and no P0 or P1 defect is open.**
 
 This document owns how product work moves from the use-case catalog to a released version: who decides what, when a use case is DONE, how work is split into lanes, and how a version is accepted.
@@ -99,7 +101,8 @@ A use case is DONE only when all four hold on the same commit. [`definition-of-d
 # 5. DEL-005 — The pull request sets DONE; the lead merges
 
 - The lane's pull request moves each use case to DONE in the catalog when DEL-003 holds, and applies the use case's "Canonical updates required" text to the owning product document.
-- The lead reads the diff and the Evidence lines, and merges. There is no separate acceptance round and no second agent re-runs the use case.
+- A pull request edits only the State cells of catalog rows and never a count table. Counts are generated from the catalogs (`make uc-counts`, and the CI job summary); `make docs-check` fails on an unknown State value or a duplicate use case id.
+- The lead reads the diff and the Evidence lines. One coordinator session merges each PR as soon as its own head is green and fixes forward if the develop push CI breaks (see the playbook §8). There is no separate acceptance round and no second agent re-runs the use case.
 - If the lead finds a line that does not hold, the use case stays at its state, the lead says which line, and the lane fixes it in the same pull request.
 - The owner does not gate individual use cases. The owner accepts versions (DEL-012).
 
@@ -118,8 +121,8 @@ A use case is DONE only when all four hold on the same commit. [`definition-of-d
 
 | Limit | Value |
 |---|---|
-| Lanes in parallel | At most 3 |
-| Heavy runs (Testcontainers, compose stack, real e2e, full suites) | One at a time, through a shared lock directory (`mkdir` is the lock) |
+| Lanes in parallel | At most 2 |
+| Heavy runs (Testcontainers, compose stack, real e2e, full suites) | One at a time, through a shared lock directory (`mkdir` is the lock) with an owner token that only its owner releases; steps in [`use-case-playbook.md`](use-case-playbook.md) §7 |
 | Context of one engineer | Hand over near the context limit: commit, push, write the handoff file `.superpowers/handoffs/<lane>.md` (untracked), report; a fresh engineer continues from the file |
 | Two lanes touching one file | The lead orders them; the later lane merges the earlier one's `develop` result into its branch (no history rewrite) |
 
@@ -138,7 +141,7 @@ A use case is DONE only when all four hold on the same commit. [`definition-of-d
 |---|---|---|
 | R0 Scope | Owner confirms the release's allocation in [`product-roadmap.md`](../workstreams/product-roadmap.md) and records the owner decisions the release needs | Allocation and decisions recorded |
 | R1 Build | Lanes build and merge use cases (DEL-005 to DEL-007) | Use cases DONE on `develop` |
-| R2 Scope closed | Every use case in scope is DONE; catalog counts re-taken with awk; only fixes land after this | All in-scope use cases DONE, or moved by DEL-010 |
+| R2 Scope closed | Every use case in scope is DONE; catalog counts read from `make uc-counts`; only fixes land after this | All in-scope use cases DONE, or moved by DEL-010 |
 | R3 Candidate | `develop` merges to `main`; `release/X.Y` is cut; `vX.Y.Z-rc.N` is tagged; the full regression runs once on the candidate commit: `CI gate`, the whole real e2e suite, migration upgrade from the previous released version | Regression green |
 | R4 Owner acceptance | The owner runs the release's journeys on the candidate (DEL-012) | Every journey passes; no P0 or P1 open |
 | R5 Release | `vX.Y.Z` is tagged on the release branch | Tag exists |
@@ -194,7 +197,7 @@ A version is released when, on its release branch:
 2. no P0 or P1 defect is open;
 3. `CI gate` is green, the whole real e2e suite is green on the candidate commit, and migrations upgrade from the previous released version;
 4. the owner passed every acceptance journey on the candidate;
-5. the catalog counts in [`use-cases/README.md`](../workstreams/use-cases/README.md) §8 were re-taken for the release.
+5. the catalog counts printed by `make uc-counts` were read for the release.
 
 This list is the only definition of release readiness. [`ci-cd-architecture.md`](ci-cd-architecture.md) §13.2 points here.
 

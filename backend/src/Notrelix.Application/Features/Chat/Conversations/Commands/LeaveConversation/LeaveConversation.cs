@@ -45,7 +45,7 @@ public class LeaveConversationCommandHandler(
             return Result.Success();
         }
 
-        await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberLeft, cancellationToken);
+        await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.GroupMemberLeft, cancellationToken);
         return Result.Success();
     }
 }

@@ -299,6 +299,15 @@ describe("WorkspaceSpaceSurface", () => {
     ).toBe("/workspaces/ws-product");
   });
 
+  it("FUI[workspace.space-page:space-error] offers a retry when the department cannot be read", () => {
+    const { props } = renderPage(spacePageNotFoundScenario(), {
+      space: { status: "error" },
+    });
+    expect(screen.getByText(copy.page.error)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.page.retry }));
+    expect(props.onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it("FUI[workspace.space-page:members-render] lists teams with their people, then people with role, source and activity", () => {
     renderMembers();
     const list = screen.getByRole("table", {
@@ -564,6 +573,12 @@ describe("WorkspaceSpaceSurface", () => {
     expect(document.activeElement).toBe(open);
   });
 
+  it("FUI[workspace.space-page:type] shows the type for a manager as an enabled select", () => {
+    renderPage(spacePageSettingsScenario());
+    const type = screen.getByRole("combobox", { name: copy.create.typeLabel });
+    expect(type.hasAttribute("disabled")).toBe(false);
+  });
+
   it("FUI[workspace.space-page:move] moves the department from the tree placement", () => {
     const { props } = renderPage(spacePageSettingsScenario());
     fireEvent.click(
@@ -576,9 +591,58 @@ describe("WorkspaceSpaceSurface", () => {
     renderPage(spacePageSettingsBlockedScenario());
     const archive = screen.getByRole("button", { name: copy.settings.archive });
     expect(archive.getAttribute("aria-disabled")).toBe("true");
+    // Archive and Delete both say what is inside.
     expect(
-      screen.getByText(/còn 2 phòng ban con, 6 board và 3 tài liệu/),
-    ).toBeTruthy();
+      screen.getAllByText(/còn 2 phòng ban con, 6 board và 3 tài liệu/),
+    ).toHaveLength(2);
+  });
+
+  it("FUI[workspace.space-page:delete-blocked] explains why a department with content cannot be deleted", () => {
+    const onDelete = vi.fn();
+    renderPage(spacePageSettingsBlockedScenario(), { onDelete });
+    const remove = screen.getByRole("button", { name: copy.settings.delete });
+    expect(remove.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(remove);
+    expect(screen.queryByRole("group")).toBeNull();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.space-page:delete-pending] shows Deleting while the write runs and ignores a second click", () => {
+    const onDelete = vi.fn();
+    renderPage(spacePageSettingsScenario(), { onDelete, deleting: true });
+    const group = screen.getByRole("group", {
+      name: /^Xoá Phòng Công nghệ khỏi Minh An Group\?/,
+    });
+    fireEvent.change(within(group).getByLabelText(/Gõ/), {
+      target: { value: "Phòng Công nghệ" },
+    });
+    const pending = within(group).getByRole("button", {
+      name: copy.settings.deleting,
+    });
+    expect(pending.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(pending);
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.space-page:delete-refused] shows the producer's refusal when hidden content blocks delete", () => {
+    renderPage(spacePageSettingsEmptyScenario(), {
+      onDelete: vi.fn(),
+      deleteRefused: true,
+    });
+    expect(screen.getByText(copy.settings.deleteBlockedUnknown)).toBeTruthy();
+  });
+
+  it("FUI[workspace.space-page:delete-trash] words the 30 days and opens the deleted departments", () => {
+    const onOpenTrash = vi.fn();
+    renderPage(spacePageSettingsEmptyScenario(), {
+      onDelete: vi.fn(),
+      onOpenTrash,
+    });
+    expect(screen.getByText(/Khôi phục được trong 30 ngày/)).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.settings.deleteTrash }),
+    );
+    expect(onOpenTrash).toHaveBeenCalledTimes(1);
   });
 
   it("FUI[workspace.space-page:archive] archives an empty department after confirmation", () => {
@@ -597,7 +661,7 @@ describe("WorkspaceSpaceSurface", () => {
     expect(props.onArchive).toHaveBeenCalledTimes(1);
   });
 
-  it("FUI[workspace.space-page:delete-inert] draws Delete inert while no delete write exists", () => {
+  it("FUI[workspace.space-page:delete-inert] draws Delete inert while the person cannot delete", () => {
     renderPage(spacePageSettingsEmptyScenario());
     const remove = screen.getByRole("button", { name: copy.settings.delete });
     expect(remove.getAttribute("aria-disabled")).toBe("true");

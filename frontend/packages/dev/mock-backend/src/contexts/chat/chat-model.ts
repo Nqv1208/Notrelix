@@ -197,7 +197,7 @@ export const CHAT_LIMITS = {
   /** Days without a reply after which a thread is archived (backend ChatLimits.ThreadInactivityDays). */
   threadInactivityDays: 7,
   /** The largest message payload of a realtime frame, in UTF-8 bytes (ChatRealtime.MaxPayloadBytes). */
-  realtimePayloadMaxBytes: 3000,
+  realtimePayloadMaxBytes: 1300,
   /** Recipients of one message's unread fan-out (ChatRealtime.MaxUnreadRecipients). */
   unreadRecipientsMax: 2000,
   /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
@@ -266,6 +266,7 @@ export const CHAT_REACTION_PALETTE: readonly string[] = [
 
 /** The announcements the backend writes as system messages (ChatSystemMessages). */
 export const CHAT_SYSTEM_TEXT = {
+  created: "created the channel",
   memberJoined: "joined the channel",
   memberLeft: "left the channel",
   memberRemoved: "was removed from the channel",
@@ -274,6 +275,9 @@ export const CHAT_SYSTEM_TEXT = {
   unarchived: "unarchived the channel",
   renamed: (name: string) => `renamed the channel to ${name}`,
   pinned: "pinned a message",
+  unpinned: "unpinned a message",
+  groupMemberAdded: "added a member to the group",
+  groupMemberLeft: "left the group",
 } as const;
 
 /** An export of one person's chat data (backend ChatExportJob). The file is kept as text; the real one is an object in storage. */

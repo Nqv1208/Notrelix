@@ -164,6 +164,22 @@ export function addMonths(key: DayKey, months: number): DayKey {
   return toDayKey(targetYear, targetMonth, Math.min(day, last));
 }
 
+/**
+ * The days the server reads for the month of `anchor`: its whole weeks and a day each side (an item's due is
+ * stored as an instant, so its day may differ by one from the member's). Week and day ranges read the same
+ * month, so stepping inside it reads nothing.
+ */
+export function calendarReadWindow(anchor: DayKey): {
+  from: DayKey;
+  to: DayKey;
+} {
+  const weeks = monthWeeks(anchor);
+  return {
+    from: addDays(weeks[0]![0]!, -1),
+    to: addDays(weeks[weeks.length - 1]![6]!, 1),
+  };
+}
+
 /** The weeks of the month of `anchor`, Monday first, padded to whole weeks. */
 export function monthWeeks(anchor: DayKey): DayKey[][] {
   const { year, month } = parseDayKey(anchor);
@@ -344,9 +360,11 @@ export function layoutWeek(
 }
 
 /** The most event rows that fit a week of `weekHeight` px (month grid). */
-export function weekRowCapacity(weekHeight: number): number {
+export function weekRowCapacity(weekHeight: number, tall = false): number {
   // 4 px top padding + 26 px day number row + 6 px bottom padding; each event
-  // row is 24 px plus the 3 px row gap.
+  // row is 24 px plus the 3 px row gap. The touch month (Final-T-Calendar) has
+  // a 36 px number row and 40 px chips with a 2 px gap, and no bottom padding.
+  if (tall) return Math.max(1, Math.floor((weekHeight - 40) / 42));
   return Math.max(1, Math.floor((weekHeight - 36) / 27));
 }
 
@@ -437,4 +455,11 @@ export function rescheduledDays(
     endDay: toDay,
     shift,
   };
+}
+
+/** The board's statuses for "Chuyển sang…": the options, the item's current one, and the write. */
+export interface CalendarStatusMenu {
+  readonly options: readonly { id: string; label: string; color: string }[];
+  currentOf: (itemId: string) => string | null;
+  onChange: (entry: CalendarEntry, optionId: string) => void;
 }

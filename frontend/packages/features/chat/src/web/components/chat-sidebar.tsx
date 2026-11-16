@@ -1,5 +1,6 @@
 import {
   BellOff,
+  CheckCheck,
   Hash,
   Lock,
   Plus,
@@ -7,10 +8,9 @@ import {
   Search,
   Settings,
 } from "lucide-react";
-import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
+import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatChannel } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
-import { avatarToneOf, initialsOf } from "./chat-initials";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 import {
   ChatConversationSection,
@@ -25,12 +25,6 @@ export interface ChannelUnread {
 }
 
 export type ChannelListStatus = "loading" | "ready" | "error";
-
-/** The caller, shown in the footer when the host knows their name. */
-export interface ChatSidebarViewer {
-  readonly id: string;
-  readonly name: string;
-}
 
 export interface ChatSidebarProps {
   readonly channels: readonly ChatChannel[];
@@ -52,11 +46,12 @@ export interface ChatSidebarProps {
   readonly onOpenSettings?: () => void;
   /** Opens the message search (UC-CHT-H07). */
   readonly onSearch?: () => void;
+  /** Marks every space as read (UC-CHT-D07); the button shows only while something is unread. */
+  readonly onMarkAllRead?: () => void;
+  readonly markingAllRead?: boolean;
   readonly onJoin: (channelId: string) => void;
   readonly onRetry: () => void;
   readonly joiningId: string | null;
-  /** The caller; the footer is left out when it is null. */
-  readonly viewer?: ChatSidebarViewer | null;
   /** The direct and group conversations section; left out when the host does not offer conversations. */
   readonly conversations?: ChatConversationListView | null;
   /** The category names by group id (`Chat.ChannelGroups.List`); a group without one keeps the numbered fallback. */
@@ -102,13 +97,12 @@ export function groupChannels(
 }
 
 const HEADING =
-  "px-2 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
+  "-mx-2 pt-3.5 pr-3 pb-1 pl-2.5 text-micro leading-[1.45] font-[650] tracking-[.04em] text-muted-foreground uppercase";
 
 /**
  * The channel column: the caller's channels grouped under headings, each with
  * its unread badge (muted channels are dimmed and show no badge), a lock for a
- * private channel, a browse section for public channels to join, and the
- * caller in the footer.
+ * private channel, a browse section for public channels to join.
  */
 export function ChatSidebar({
   channels,
@@ -123,23 +117,43 @@ export function ChatSidebar({
   onCreate,
   onOpenSettings,
   onSearch,
+  onMarkAllRead,
+  markingAllRead = false,
   onJoin,
   onRetry,
   joiningId,
-  viewer = null,
   conversations = null,
   groupNames,
 }: ChatSidebarProps) {
   const groups = groupChannels(channels);
+  const anyUnread =
+    [...unreadBySpace.values()].some((u) => !u.muted && u.count > 0) ||
+    (conversations?.conversations ?? []).some(
+      (c) => c.notificationLevel !== "none" && conversations!.unreadOf(c) > 0,
+    );
 
   return (
     <nav
       aria-label={copy.sidebar.navLabel}
       className="flex min-h-0 flex-1 flex-col bg-sidebar text-sidebar-foreground"
     >
-      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-        <h2 className="text-sm font-semibold">{copy.sidebar.listTitle}</h2>
+      <div className="flex items-center justify-between gap-2 px-3.5 pt-3.5 pb-2.5 max-md:h-14 max-md:px-3 max-md:py-0">
+        <h2 className="text-item-heading font-[650] max-md:text-calendar-title">
+          {copy.sidebar.listTitle}
+        </h2>
         <div className="flex items-center gap-1">
+          {onMarkAllRead && anyUnread ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.sidebar.markAllRead}
+              title={copy.sidebar.markAllRead}
+              disabled={markingAllRead}
+              onClick={onMarkAllRead}
+            >
+              <CheckCheck aria-hidden="true" />
+            </Button>
+          ) : null}
           {onSearch ? (
             <Button
               variant="ghost"
@@ -179,13 +193,13 @@ export function ChatSidebar({
       {/* A jump-to field with no handler yet: visual only, so it is not a control. */}
       <div
         aria-hidden="true"
-        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm text-muted-foreground"
+        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-[10px] max-md:hidden border border-border bg-card px-2.5 text-compact text-muted-foreground"
       >
         <Search className="size-3.5 shrink-0" />
         <span className="truncate">{copy.sidebar.jumpTo}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2">
         {status === "loading" ? (
           <div role="status" className="space-y-2 px-1 pt-2">
             <span className="sr-only">{copy.sidebar.loading}</span>
@@ -222,9 +236,9 @@ export function ChatSidebar({
                 className="flex flex-col"
               >
                 <h3 className={HEADING}>{heading}</h3>
-                <ul className="flex flex-col gap-0.5">
+                <ul className="flex flex-col gap-px">
                   {group.channels.map((channel) => (
-                    <li key={channel.id}>
+                    <li key={channel.id} className="max-md:-mx-2">
                       <ChannelButton
                         channel={channel}
                         active={channel.id === activeChannelId}
@@ -263,7 +277,7 @@ export function ChatSidebar({
                 {browse.channels.map((channel) => (
                   <li
                     key={channel.id}
-                    className="flex h-8 items-center gap-2 px-2 text-sm text-muted-foreground"
+                    className="flex h-8 items-center gap-[9px] px-2.5 text-sm text-muted-foreground max-md:-mx-2 max-md:min-h-12 max-md:gap-3 max-md:px-4"
                   >
                     <Hash className="size-3.5 shrink-0" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate">
@@ -272,6 +286,7 @@ export function ChatSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="max-md:min-h-11"
                       disabled={joiningId === channel.id}
                       aria-label={`${copy.sidebar.join} #${channel.name}`}
                       onClick={() => onJoin(channel.id)}
@@ -285,21 +300,6 @@ export function ChatSidebar({
           </section>
         ) : null}
       </div>
-
-      {viewer ? (
-        <div className="flex items-center gap-2.5 border-t border-border px-3 py-2.5">
-          <Avatar className="size-8" aria-hidden="true">
-            <AvatarFallback
-              className={cn("text-xs font-semibold", avatarToneOf(viewer.id))}
-            >
-              {initialsOf(viewer.name)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-            {viewer.name}
-          </span>
-        </div>
-      ) : null}
     </nav>
   );
 }
@@ -329,12 +329,12 @@ function ChannelButton({
   readonly copy: ChatCopy;
   readonly onSelect: (channelId: string) => void;
 }) {
-  const badge = unread && !unread.muted ? unreadBadge(unread.count) : null;
   const muted = unread?.muted === true || channel.notificationLevel === "none";
   // A mention in a muted channel counts but does not badge (UC-CHT-D04).
   const mentionBadge =
     unread && !muted ? unreadBadge(unread.mentions ?? 0) : null;
   const isPrivate = channel.kind === "channel_private";
+  // A channel shows that it is unread (bold and a dot), never how many: the count is a sequence difference, not a count of rows.
   const unreadHere = !muted && unread !== undefined && unread.count > 0;
   return (
     <button
@@ -344,18 +344,17 @@ function ChannelButton({
       aria-label={channelLabel(
         isPrivate,
         channel.name,
-        badge,
-        unread?.count ?? 0,
+        unreadHere,
         muted,
         copy,
         unread?.mentions ?? 0,
       )}
       className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-lg px-2 text-start text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
+        "flex h-8 w-full items-center gap-[9px] rounded-[8px] px-2.5 text-start text-sm outline-none max-md:h-auto max-md:min-h-12 max-md:gap-3 max-md:rounded-none max-md:px-4 max-md:py-3 transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
         active
-          ? "bg-state-selected font-semibold text-state-selected-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-        unreadHere && !active && "font-semibold text-foreground",
+          ? "bg-state-selected font-[650] text-state-selected-foreground"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground active:bg-sidebar-accent/70",
+        unreadHere && !active && "font-[650] text-foreground",
         muted && !active && "opacity-60",
       )}
     >
@@ -374,18 +373,17 @@ function ChannelButton({
         <span
           aria-hidden="true"
           data-testid="chat-mention-badge"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground tabular-nums"
+          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-micro font-bold text-destructive-foreground tabular-nums"
         >
           @{mentionBadge}
         </span>
       ) : null}
-      {badge ? (
+      {unreadHere ? (
         <span
           aria-hidden="true"
-          className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand-solid px-1.5 text-xs font-bold text-brand-solid-foreground tabular-nums"
-        >
-          {badge}
-        </span>
+          data-testid="chat-unread-dot"
+          className="size-2 shrink-0 rounded-full bg-brand-solid"
+        />
       ) : null}
     </button>
   );
@@ -394,8 +392,7 @@ function ChannelButton({
 function channelLabel(
   isPrivate: boolean,
   name: string,
-  badge: string | null,
-  count: number,
+  unreadHere: boolean,
   muted: boolean,
   copy: ChatCopy,
   mentions = 0,
@@ -403,17 +400,7 @@ function channelLabel(
   const parts = [
     `${isPrivate ? copy.sidebar.privateLabel : copy.sidebar.publicLabel}: ${name}`,
   ];
-  if (badge && count > 0) {
-    parts.push(
-      pluralCopy(
-        {
-          one: copy.sidebar.unreadCount_one,
-          other: copy.sidebar.unreadCount_other,
-        },
-        count,
-      ),
-    );
-  }
+  if (unreadHere) parts.push(copy.sidebar.unreadLabel);
   if (!muted && mentions > 0) {
     parts.push(
       pluralCopy(

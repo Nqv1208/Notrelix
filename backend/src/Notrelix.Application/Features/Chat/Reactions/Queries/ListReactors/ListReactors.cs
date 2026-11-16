@@ -40,6 +40,7 @@ public class ListReactorsQueryHandler(
 
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, message.SpaceId, cancellationToken);
         ChannelAccess.RequireVisible(space, caller, userId);
+        ChannelAccess.RequireInHistory(space, userId, message);
 
         var query = db.ChatReactions.AsNoTracking().Where(r => r.MessageId == message.Id);
         if (request.Kind is not null)

@@ -92,6 +92,16 @@ test("a member fills a published form and the answers reach the inbox once; an e
   expect(replay.data).toBe(first.data);
   expect(await submissionsOf(page, form.id)).toHaveLength(2);
 
+  // A filled honeypot is answered as a success and stores nothing.
+  const bot = await apiWrite<string>(
+    member$,
+    "POST",
+    `/forms/${form.id}/submissions`,
+    { answers: { title: "Buy now" }, website: "http://spam.example" },
+  );
+  expect(bot.status).toBe(201);
+  expect(await submissionsOf(page, form.id)).toHaveLength(2);
+
   // Rejection: an answer the form does not accept is refused with the question named.
   const invalid = await apiWrite(
     member$,

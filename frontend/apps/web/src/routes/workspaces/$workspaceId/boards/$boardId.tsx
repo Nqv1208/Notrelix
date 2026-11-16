@@ -276,7 +276,13 @@ export function BoardPage() {
 
   return (
     <BoardHeaderCopyContext.Provider value={headerCopy}>
-      <BoardHeaderDataContext.Provider value={{ ...headerData, trashCount }}>
+      <BoardHeaderDataContext.Provider
+        value={{
+          ...headerData,
+          trashCount,
+          loading: !board && !boardError,
+        }}
+      >
         <BoardLayoutShell
           workspaceId={workspaceId}
           boardId={boardId}

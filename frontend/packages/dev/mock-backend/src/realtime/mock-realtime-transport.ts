@@ -262,7 +262,21 @@ export class MockRealtimeTransport implements RealtimeTransport {
     };
   }
 
-  sendTyping(channelId: string): void {
+  sendTyping(channelId: string, stopped = false): void {
+    if (stopped) {
+      // A stop ends the indicator at once and re-arms the next start.
+      lastTypingAt.delete(`${this.viewerId}|${channelId}`);
+      deliverEphemeral(
+        {
+          kind: "typing",
+          channelId,
+          userId: this.viewerId,
+          expiresInMs: 0,
+        },
+        this,
+      );
+      return;
+    }
     simulateMockTyping(channelId, this.viewerId, this);
   }
 

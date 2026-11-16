@@ -143,8 +143,14 @@ function versionRefusal(form: MockForm, expected: number | string | undefined) {
     return validationError({
       expectedVersion: ["ExpectedVersion must be a positive value."],
     });
-  if (version !== form.version)
-    return conflict("The form changed since it was read.");
+  if (version !== form.version) {
+    // The producer names who saved first (changedByName), as a stale view or saved-filter write does.
+    const refused = conflict("The form changed since it was read.");
+    return {
+      ...refused,
+      body: { ...refused.body, changedByName: "Hà Nguyễn" },
+    };
+  }
   return null;
 }
 
@@ -573,6 +579,33 @@ export const formsOperations = [
 
   defineMockOperation<
     FormParams,
+    never,
+    { new: number; processed: number; rejected: number; spam: number }
+  >({
+    id: "forms.submissions.counts",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Forms.CountSubmissions",
+    },
+    method: "GET",
+    route: "/forms/:formId/submissions/counts",
+    async handle({ params, store }) {
+      const { form, refusal } = readable(store, params.formId);
+      if (!form) return refusal;
+      if (!canEditBoard(form.boardId, store)) return forbidden();
+      const counts = { new: 0, processed: 0, rejected: 0, spam: 0 };
+      for (const s of store.forms.submissions(form.id)) {
+        if (s.status === "Rejected") counts.rejected += 1;
+        else if (s.status === "Spam") counts.spam += 1;
+        else if (s.status !== "Deleted")
+          counts[s.createdItemId ? "processed" : "new"] += 1;
+      }
+      return ok(counts);
+    },
+  }),
+
+  defineMockOperation<
+    FormParams,
     { answers?: Record<string, unknown> },
     unknown
   >({
@@ -676,9 +709,14 @@ export const formsOperations = [
     },
     method: "POST",
     route: "/form-submissions/:submissionId/reopen",
-    async handle({ params, store }) {
+    async handle({ params, query, store }) {
       const { submission, refusal } = submissionOf(store, params.submissionId);
       if (!submission) return refusal;
+      // The undo of "create item from response": the response forgets its item.
+      if (query.clearItem === "true" && submission.createdItemId) {
+        submission.createdItemId = null;
+        submission.processedAt = null;
+      }
       // The undo of a rejection, a spam mark or a delete: back to the New tab.
       if (submission.status === "Accepted") return noContent();
       submission.status = "Accepted";

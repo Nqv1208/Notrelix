@@ -80,6 +80,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DeletedWorkspacePurger>();
         AddWorker<DeletedWorkspacePurgeService>();
 
+        // Workspaces: purge the Spaces (departments) deleted more than 30 days ago (restore is over by then).
+        services.AddOptions<DeletedSpacePurgeOptions>()
+            .Bind(configuration.GetSection(DeletedSpacePurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedSpacePurgeOptions>, DeletedSpacePurgeOptionsValidator>();
+        services.AddScoped<DeletedSpacePurger>();
+        AddWorker<DeletedSpacePurgeService>();
+
         // Work Management: purge the boards deleted more than 30 days ago (restore is over by then). Off by default.
         services.AddOptions<DeletedBoardPurgeOptions>()
             .Bind(configuration.GetSection(DeletedBoardPurgeOptions.SectionName))
@@ -95,6 +103,14 @@ public static class BackgroundJobsRegistration
         services.AddSingleton<IValidateOptions<DueDateNotificationOptions>, DueDateNotificationOptionsValidator>();
         services.AddScoped<DueDateNotificationSweeper>();
         AddWorker<DueDateNotificationService>();
+
+        // Documents: capture an automatic version of a page whose editing went quiet for five minutes.
+        services.AddOptions<PageQuietVersionSweepOptions>()
+            .Bind(configuration.GetSection(PageQuietVersionSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<PageQuietVersionSweepOptions>, PageQuietVersionSweepOptionsValidator>();
+        services.AddScoped<PageQuietVersionSweeper>();
+        AddWorker<PageQuietVersionSweepService>();
 
         // Work Management: run queued board file imports and exports, and remove expired export files.
         services.AddScoped<BoardTransferRunner>();

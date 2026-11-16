@@ -55,7 +55,9 @@ public class AddConversationParticipantsCommandHandler(
             if (space.AddParticipant(candidate, now))
             {
                 added.Add(candidate);
-                await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberAdded, cancellationToken);
+                var announced = await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.GroupMemberAdded, cancellationToken);
+                // The earlier messages are not theirs to read, so they are not theirs to be unread either.
+                space.GetActiveMembership(candidate)?.AdvanceReadSequence(announced);
             }
         }
 

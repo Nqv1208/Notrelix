@@ -60,6 +60,13 @@ export interface DocBlockSaverOptions {
   /** A block was refused as stale: the saver took the stored one instead. */
   readonly onConflict?: (conflict: BlockConflict) => void;
   /**
+   * The producer answered a write 403 or 404: the member lost the right to
+   * edit this page. Saving stops for good (a retry would be refused the same
+   * way) and `unsaved` is every block the member changed that was not stored,
+   * so the text can be copied out.
+   */
+  readonly onAccessLost?: (unsaved: readonly BlockDraft[]) => void;
+  /**
    * Blocks of the document changed outside the member's edits (a stored block
    * replaced a stale one, or others' changes were merged): the editor shows
    * `drafts`.
@@ -178,6 +185,7 @@ export class DocBlockSaver {
   private again = false;
   private status: SaverStatus = "saved";
   private disposed = false;
+  private locked = false;
 
   constructor(
     private readonly writer: BlockWriter,
@@ -193,7 +201,7 @@ export class DocBlockSaver {
 
   /** The editor's document changed: save it after the debounce. */
   change(next: readonly BlockDraft[]): void {
-    if (this.disposed) return;
+    if (this.disposed || this.locked) return;
     this.latest = next.map((draft) => ({ ...draft }));
     if (this.hasWork()) this.setStatus("saving");
     this.cancelTimer();
@@ -205,20 +213,20 @@ export class DocBlockSaver {
     }, this.options.debounceMs ?? 600);
   }
 
-  /** Writes whatever is pending now (route leave, hidden tab, unmount). */
-  flush(): Promise<void> {
+  /** Writes whatever is pending now (route leave, hidden tab, unmount); answers whether nothing is left unstored. */
+  flush(): Promise<boolean> {
     this.cancelTimer();
-    if (this.running) {
-      this.again = true;
-      return this.running;
+    if (this.locked) return Promise.resolve(!this.hasWork());
+    if (this.running) this.again = true;
+    else {
+      this.running = this.run().finally(() => {
+        this.running = null;
+      });
     }
-    this.running = this.run().finally(() => {
-      this.running = null;
-    });
-    return this.running;
+    return (this.running as Promise<void>).then(() => !this.hasWork());
   }
 
-  retry(): Promise<void> {
+  retry(): Promise<boolean> {
     return this.flush();
   }
 
@@ -243,8 +251,18 @@ export class DocBlockSaver {
    * Structure changes wait until nothing is pending. Answers whether
    * everything was merged.
    */
-  mergeStored(stored: readonly BlockDraft[]): boolean {
+  mergeStored(read: readonly BlockDraft[]): boolean {
     if (this.disposed) return true;
+    // A refetch that started before a save landed holds older blocks: keep ours.
+    const mine = new Map(this.snapshot.map((draft) => [draft.id, draft]));
+    const stored = read.map((draft) => {
+      const have = mine.get(draft.id);
+      return have?.version !== undefined &&
+        draft.version !== undefined &&
+        draft.version < have.version
+        ? have
+        : draft;
+    });
     const pendingIds = this.pendingIds();
     const document = this.latest ?? this.snapshot;
     const same =
@@ -338,11 +356,28 @@ export class DocBlockSaver {
           continue;
         }
         this.setStatus("error");
+        const status = (error as { status?: unknown } | null)?.status;
+        if (status === 403 || status === 404) this.lose();
         return;
       }
       this.options.onSaved?.(this.snapshot);
     } while (this.again || this.hasWork());
     this.setStatus("saved");
+  }
+
+  /** The right to edit is gone: stop saving and hand over what was never stored. */
+  private lose(): void {
+    this.locked = true;
+    const diff = this.latest
+      ? diffBlockDrafts(this.snapshot, this.latest)
+      : null;
+    const ids = new Set([
+      ...(diff?.updates.map((entry) => entry.id) ?? []),
+      ...(diff?.creates.map((entry) => entry.draft.id) ?? []),
+    ]);
+    this.options.onAccessLost?.(
+      (this.latest ?? []).filter((draft) => ids.has(draft.id)),
+    );
   }
 
   private async send(ops: readonly BlockWrite[]): Promise<void> {

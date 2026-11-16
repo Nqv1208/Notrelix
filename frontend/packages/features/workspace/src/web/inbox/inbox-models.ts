@@ -124,6 +124,8 @@ export interface InboxActions {
   readonly onMute: (item: InboxItemView) => void;
   /** Moves the notification to Done; omitted draws the button inert. */
   readonly onDone?: (item: InboxItemView) => void;
+  /** Marks a read notification unread again; it stays in the list. */
+  readonly onMarkUnread?: (item: InboxItemView) => void;
   /** Takes a done notification back into the inbox. */
   readonly onReopen?: (item: InboxItemView) => void;
 }
@@ -148,6 +150,10 @@ export interface InboxItemView {
   readonly muted?: boolean;
   /** The member marked it done (it lives in the Done list). */
   readonly done?: boolean;
+  /** It is hidden until a later time; "Done" is true too, so it can be taken back. */
+  readonly snoozed?: boolean;
+  /** When a snoozed row returns, in words ("08:00 tomorrow"); drawn as the clock pill. */
+  readonly snoozedWhen?: string | null;
   /** The item the notification is about, when the reply can go to it. */
   readonly itemId?: string | null;
   /** The page the notification is about, when the reply can go to it. */

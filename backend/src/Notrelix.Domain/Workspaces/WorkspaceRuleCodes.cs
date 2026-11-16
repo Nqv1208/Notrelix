@@ -70,6 +70,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Team_CannotDowngradeLastLead = "Workspaces_Team_CannotDowngradeLastLead";
     public const string Workspaces_Team_LastLeadCannotLeave = "Workspaces_Team_LastLeadCannotLeave";
     public const string Workspaces_Team_DuplicateName = "Workspaces_Team_DuplicateName";
+    public const string Workspaces_Team_GuestCannotJoin = "Workspaces_Team_GuestCannotJoin";
 
     // ── TeamMember ────────────────────────────────────────────────────────
     public const string Workspaces_TeamMember_AlreadyActive = "Workspaces_TeamMember_AlreadyActive";
@@ -82,6 +83,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Space_CannotChangeTypeArchived = "Workspaces_Space_CannotChangeTypeArchived";
     public const string Workspaces_Space_CannotUnarchiveNonArchived = "Workspaces_Space_CannotUnarchiveNonArchived";
     public const string Workspaces_Space_ParentInOtherWorkspace = "Workspaces_Space_ParentInOtherWorkspace";
+    public const string Workspaces_Space_RestoreWindowExpired = "Workspaces_Space_RestoreWindowExpired";
     public const string Workspaces_Space_ParentNotActive = "Workspaces_Space_ParentNotActive";
     public const string Workspaces_Space_MoveCreatesCycle = "Workspaces_Space_MoveCreatesCycle";
     public const string Workspaces_Space_DuplicateSiblingName = "Workspaces_Space_DuplicateSiblingName";

@@ -8,8 +8,9 @@ using Notrelix.Domain.Documents.Versions;
 
 namespace Notrelix.Application.Features.Documents.Versions.Commands.CreatePageVersion;
 
-/// <summary>Saves the page as it is now as a named history entry. A person who may edit the page may do it.</summary>
-public record CreatePageVersionCommand(Guid PageId, string Name) : ICommand<Result<PageVersionDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+/// <summary>Saves the page as it is now as a named history entry. A person who may edit the page may do it. A retry with the same key returns the same entry.</summary>
+[IdempotencyOperation("documents.versions.create-page-version.v1")]
+public record CreatePageVersionCommand(Guid PageId, string Name) : ICommand<Result<PageVersionDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);

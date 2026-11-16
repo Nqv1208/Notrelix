@@ -499,6 +499,8 @@ Later template edits do not silently mutate existing Pages unless a linked-templ
 
 Template status/lifecycle is separate from Page lifecycle.
 
+A template is managed (renamed, archived, deleted) by the person who saved it or by an active Workspace Owner or Admin. Archiving a template removes it from the list and never changes pages already made from it; deleting removes it for good. A change quotes the template version the manager read and a stale version is refused with `412`.
+
 # 56. Template content validation
 
 Template Blocks obey normal Block-Type schemas and validation.
@@ -530,6 +532,8 @@ manage template
 Governance evaluates authorization.
 
 Rename, move to Space and save as template require `UpdatePage`; trash and restore require `ArchivePage`; permanent delete requires `DeletePage`.
+
+Template management (rename, archive, delete) needs no resource-level Governance action: any member who can see the workspace reaches the command, and Documents allows it to the template creator and to an active Workspace Owner or Admin by role. A custom role grant does not extend it.
 
 # 60. DCT-019 — Documents does not authorize by visibility alone
 

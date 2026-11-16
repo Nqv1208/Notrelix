@@ -41,22 +41,22 @@ Requirement ids cited are `IAREQ` ids of the spec: `IAREQ001` to `IAREQ005` (use
 
 Letters follow the Identity list in the team spec (section 4, Identity), in order. Registration, password recovery and the device list have no line of their own in the team spec; they are filed under the capability they serve (B, C).
 
-| Letter | Capability (team spec) | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
-|---|---|---|---|---|---|---|---|---|
-| A | Session bootstrap | 4 | 1 | 0 | 0 | 0 | 3 | 0 |
-| B | Login (with registration, email confirmation, password recovery, company SSO) | 9 | 0 | 0 | 0 | 0 | 8 | 1 |
-| C | Logout (with the device list) | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
-| D | Session expiration | 5 | 0 | 1 | 0 | 0 | 4 | 0 |
-| E | OAuth start | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
-| F | OAuth callback | 2 | 0 | 0 | 0 | 2 | 0 | 0 |
-| G | Provider linking and unlinking | 2 | 0 | 2 | 0 | 0 | 0 | 0 |
-| H | MFA enrollment | 3 | 0 | 0 | 0 | 0 | 3 | 0 |
-| I | MFA challenge | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
-| J | MFA recovery (with disable) | 5 | 0 | 0 | 0 | 0 | 3 | 2 |
-| K | Security settings (with step-up, password, sign-in email) | 11 | 2 | 2 | 0 | 4 | 3 | 0 |
-| L | API token lifecycle | 8 | 3 | 4 | 0 | 0 | 0 | 1 |
-| M | Identity profile read and update | 5 | 0 | 0 | 1 | 4 | 0 | 0 |
-|  | Total | 61 | 6 | 9 | 1 | 11 | 30 | 4 |
+| Letter | Capability (team spec)                                                        | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
+| ------ | ----------------------------------------------------------------------------- | --------- | ------- | ------------ | ----------- | --------- | ---- | ------- |
+| A      | Session bootstrap                                                             | 4         | 1       | 0            | 0           | 0         | 3    | 0       |
+| B      | Login (with registration, email confirmation, password recovery, company SSO) | 9         | 0       | 0            | 0           | 0         | 8    | 1       |
+| C      | Logout (with the device list)                                                 | 4         | 0       | 0            | 0           | 0         | 4    | 0       |
+| D      | Session expiration                                                            | 5         | 0       | 1            | 0           | 0         | 4    | 0       |
+| E      | OAuth start                                                                   | 1         | 0       | 0            | 0           | 1         | 0    | 0       |
+| F      | OAuth callback                                                                | 2         | 0       | 0            | 0           | 2         | 0    | 0       |
+| G      | Provider linking and unlinking                                                | 2         | 0       | 2            | 0           | 0         | 0    | 0       |
+| H      | MFA enrollment                                                                | 3         | 0       | 0            | 0           | 0         | 3    | 0       |
+| I      | MFA challenge                                                                 | 2         | 0       | 0            | 0           | 0         | 2    | 0       |
+| J      | MFA recovery (with disable)                                                   | 5         | 0       | 0            | 0           | 0         | 3    | 2       |
+| K      | Security settings (with step-up, password, sign-in email)                     | 11        | 2       | 2            | 0           | 4         | 3    | 0       |
+| L      | API token lifecycle                                                           | 8         | 3       | 4            | 0           | 0         | 0    | 1       |
+| M      | Identity profile read and update                                              | 5         | 0       | 0            | 1           | 4         | 0    | 0       |
+|        | Total                                                                         | 61        | 6       | 9            | 1           | 11        | 30   | 4       |
 
 Thirty use cases are DONE in the index (A01, A02, A03, B01, B02, B03, B04, B05, B06, B07, B09, C01, C02, C03, C04, D01, D02, D03, D05, H01, H02, H03, I01, I02, J01, J02, J03, K03, K04, K05). The acceptance history below predates several of these rows; the index rows and State lines are the state of record. C01, C02, C04, D03, H03 and J02 were accepted 2026-11-02 by an independent acceptance agent on all five lines (their Evidence lines carry the run). A second independent run on develop `876ebfb57` accepted B04, B05, I02 and J01 and held B06, B07, B09, D01 and I01, each with its gap in the State line: the brand panel of the drawn Final-Auth screens is not within 1 px (logo box, brand name size, tagline 8 px high and one weight light; no check measures it), a reset followed by a sign-in in the same clock second gets an access token the server refuses (it makes `password-reset.real.e2e.spec.ts` fail about one run in six), and the offline retry screen's button is 36 px at 390 px. A third independent run on develop `28ef68aaf` accepted B09, D01 and I01 (the brand panel, the same-second token and the 44 px retry button were fixed and re-measured against the live canvas) and kept B06 and B07 at HARDENING: a visitor who opens or reloads `/forgot-password` or `/reset-password` directly is sent to sign-in and told the session ended (`isSignedOutRoute` lists only `/sign-in`, `/sign-up` and `/invite`); the mock backend and the real spec, which both reach those pages from `/sign-in`, hide it. Of the earlier eight, six were accepted 2026-11-01 by an acceptance agent against §7 of the catalog README, and H02 and K03, rejected that day on one line each, accepted again by the fix lane that closed those lines (the lead reviews their Evidence lines at merge); the rest have no recorded owner check or 1 px design diff yet. HARDENING means a `frontend/e2e/real` spec runs the flow against the real backend: the password sign-in (every real spec signs in through `frontend/e2e/real/support/real-session.ts`) the sign-up with email confirmation (`email-confirmation.real.e2e.spec.ts`), the session read and a session revoked from another device (`session-bootstrap.real.e2e.spec.ts`: A01, A03, C03, D02) and turning two-factor on and off with step-up (`mfa-enrollment-step-up.real.e2e.spec.ts`: H01, H02, J03, K03, K04, K05) and a person with only a provider (`provider-step-up.real.e2e.spec.ts`: K03, K06; no provider runs on the development stack, so only the offer and the refusal run). The provider sign-in has a real spec only for the refusal (`microsoft-sign-in.real.e2e.spec.ts`), so E01 stays INTEGRATING. Since 2026-11-02 the real stack also runs password reset with the ten-wrong-password lock (`password-reset.real.e2e.spec.ts`: B06, B07, B09), the second step at sign-in, recovery codes and their renewal (`second-step-sign-in.real.e2e.spec.ts`: H03, I01, I02, J01, J02), the confirmation link sent again (`email-confirmation-resend.real.e2e.spec.ts`: B05; `email-confirmation.real.e2e.spec.ts` was fixed to read the masked address of the development log: B04), and sign-out, the device list, sign-out of all other devices and refresh rotation with replay (`sign-out-and-sessions.real.e2e.spec.ts`: C01, C02, C04, D01, D03). Nothing else in Identity has a real end-to-end spec.
 
@@ -75,108 +75,108 @@ Thirty use cases are DONE in the index (A01, A02, A03, B01, B02, B03, B04, B05, 
 
 ## 1.3 Defects in shipped code
 
-| Defect | Where | Use case |
-|---|---|---|
-| Reset flow mismatch (fixed in this build): email carries a code, the page promised a link, no reset page | `backend/src/Notrelix.Application/Features/Identity/Auth/Commands/ForgotPassword/ForgotPassword.cs`; `frontend/packages/features/auth/src/web/components/auth-forgot-surface.tsx`; `frontend/apps/web/src/routes/` | B07 |
-| Forgot-password answers an error only when the account exists and the mail fails to send: a side channel that names real accounts | `ForgotPassword.cs` (`email-send-failed` branch) | B06 |
-| Register answered "Email is already in use" (fixed in this build: one neutral answer, the owner notified by mail) | `backend/src/Notrelix.Application/Features/Identity/Registration/Commands/Register/RegisterCommandHandler.cs` | B03 |
-| Same disclosure on email change, to a signed-in person | `Profiles/Commands/UpdateEmail/UpdateEmail.cs` | K09 |
-| Email change: no step-up, no notice to the old address, login email changes before the new one is proven | `UpdateEmail.cs`; purpose `ChangeSecurityIdentity` exists in `Security/DTOs/StepUpTypes.cs` and nothing uses it | K09 |
-| Revoke-others needs no step-up (owner decision 48): built, tests pending | `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs` | C04 |
-| API token scopes are not enforced; `scopes: null` at issue; expiry optional (a token may never expire) | `ApiTokens/Commands/CreateApiToken/CreateApiTokenCommand.cs`; `backend/src/Notrelix.Infrastructure/Auth/ApiTokens/ApiTokenAuthenticationHandler.cs` | L02, L04, L05 |
-| Unbounded reads: the session list returned every session ever created (bounded now, tests pending); the token list has no page | `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; `ApiTokens/Queries/ListApiTokens/ListApiTokensQuery.cs` | C02, L01 |
-| Refresh: no reuse detection, a new 30-day session per refresh (sliding forever), the session id changes at every refresh | `Auth/Commands/RefreshToken/RefreshToken.cs` | D01, D03, D05 |
-| Refresh reads only the cookie; the mobile bearer transport of decision 47 is absent | `backend/src/Notrelix.API/Endpoints/Identity/Auth/Commands/RefreshTokenEndpoint.cs` | A04 |
-| Dead code: `IdentifySignInQueryHandler` always returns password; user disable and delete exist in Domain with no Application caller | `Auth/Queries/IdentifySignIn/IdentifySignIn.cs`; `backend/src/Notrelix.Domain/Identity/Users/User.cs` | B08, D04 |
-| Mock-only frontend paths: company SSO round trip, security flows against `account-security.handlers.ts` | `frontend/packages/dev/mock-backend/src/contexts/account/` | B08 |
-| Endpoints with no explicit rate-limit policy attribute: `/auth/logout`, `/auth/mfa/enrollment/start`, `/auth/mfa/disable`, `/auth/mfa/recovery-codes/regenerate`, `/auth/email-verification/confirm`, `/auth/email-verification/request`, `/auth/me`, `/auth/bootstrap`, `/profile/*` | `backend/src/Notrelix.API/Endpoints/Identity/Auth/Commands/` | J02, J03, H01, B04 |
-| No Application-level tests for the MFA, session and OAuth handlers (only Domain, Infrastructure and a few API tests) | `backend/tests/Notrelix.Application.Tests/Features/Identity/` | H, I, J, C, E to G |
-| No expected version on the security writes (disable MFA, revoke token, unlink). They are idempotent single-owner writes; ID-015 asks for protection where a stale write could overwrite newer state | `Mfa/Commands/DisableMfa/`, `ApiTokens/Commands/RevokeApiToken/` | J03, L03 |
+| Defect                                                                                                                                                                                                                                                                                | Where                                                                                                                                                                                                              | Use case           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| Reset flow mismatch (fixed in this build): email carries a code, the page promised a link, no reset page                                                                                                                                                                              | `backend/src/Notrelix.Application/Features/Identity/Auth/Commands/ForgotPassword/ForgotPassword.cs`; `frontend/packages/features/auth/src/web/components/auth-forgot-surface.tsx`; `frontend/apps/web/src/routes/` | B07                |
+| Forgot-password answers an error only when the account exists and the mail fails to send: a side channel that names real accounts                                                                                                                                                     | `ForgotPassword.cs` (`email-send-failed` branch)                                                                                                                                                                   | B06                |
+| Register answered "Email is already in use" (fixed in this build: one neutral answer, the owner notified by mail)                                                                                                                                                                     | `backend/src/Notrelix.Application/Features/Identity/Registration/Commands/Register/RegisterCommandHandler.cs`                                                                                                      | B03                |
+| Same disclosure on email change, to a signed-in person                                                                                                                                                                                                                                | `Profiles/Commands/UpdateEmail/UpdateEmail.cs`                                                                                                                                                                     | K09                |
+| Email change: no step-up, no notice to the old address, login email changes before the new one is proven                                                                                                                                                                              | `UpdateEmail.cs`; purpose `ChangeSecurityIdentity` exists in `Security/DTOs/StepUpTypes.cs` and nothing uses it                                                                                                    | K09                |
+| Revoke-others needs no step-up (owner decision 48): built, tests pending                                                                                                                                                                                                              | `Sessions/Commands/RevokeOtherSessions/RevokeOtherSessions.cs`                                                                                                                                                     | C04                |
+| API token scopes are not enforced; `scopes: null` at issue; expiry optional (a token may never expire)                                                                                                                                                                                | `ApiTokens/Commands/CreateApiToken/CreateApiTokenCommand.cs`; `backend/src/Notrelix.Infrastructure/Auth/ApiTokens/ApiTokenAuthenticationHandler.cs`                                                                | L02, L04, L05      |
+| Unbounded reads: the session list returned every session ever created (bounded now, tests pending); the token list has no page                                                                                                                                                        | `Sessions/Queries/GetUserSessions/GetUserSessionsQuery.cs`; `ApiTokens/Queries/ListApiTokens/ListApiTokensQuery.cs`                                                                                                | C02, L01           |
+| Refresh: no reuse detection, a new 30-day session per refresh (sliding forever), the session id changes at every refresh                                                                                                                                                              | `Auth/Commands/RefreshToken/RefreshToken.cs`                                                                                                                                                                       | D01, D03, D05      |
+| Refresh reads only the cookie; the mobile bearer transport of decision 47 is absent                                                                                                                                                                                                   | `backend/src/Notrelix.API/Endpoints/Identity/Auth/Commands/RefreshTokenEndpoint.cs`                                                                                                                                | A04                |
+| Dead code: `IdentifySignInQueryHandler` always returns password; user disable and delete exist in Domain with no Application caller                                                                                                                                                   | `Auth/Queries/IdentifySignIn/IdentifySignIn.cs`; `backend/src/Notrelix.Domain/Identity/Users/User.cs`                                                                                                              | B08, D04           |
+| Mock-only frontend paths: company SSO round trip, security flows against `account-security.handlers.ts`                                                                                                                                                                               | `frontend/packages/dev/mock-backend/src/contexts/account/`                                                                                                                                                         | B08                |
+| Endpoints with no explicit rate-limit policy attribute: `/auth/logout`, `/auth/mfa/enrollment/start`, `/auth/mfa/disable`, `/auth/mfa/recovery-codes/regenerate`, `/auth/email-verification/confirm`, `/auth/email-verification/request`, `/auth/me`, `/auth/bootstrap`, `/profile/*` | `backend/src/Notrelix.API/Endpoints/Identity/Auth/Commands/`                                                                                                                                                       | J02, J03, H01, B04 |
+| No Application-level tests for the MFA, session and OAuth handlers (only Domain, Infrastructure and a few API tests)                                                                                                                                                                  | `backend/tests/Notrelix.Application.Tests/Features/Identity/`                                                                                                                                                      | H, I, J, C, E to G |
+| No expected version on the security writes (disable MFA, revoke token, unlink). They are idempotent single-owner writes; ID-015 asks for protection where a stale write could overwrite newer state                                                                                   | `Mfa/Commands/DisableMfa/`, `ApiTokens/Commands/RevokeApiToken/`                                                                                                                                                   | J03, L03           |
 
 ## 1.4 Enterprise baseline
 
 Compared with Auth0 refresh-token rotation ([Auth0](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation)), Okta ([Okta](https://developer.okta.com/docs/guides/refresh-tokens/refresh-token-rotation/)), Notion SAML and SCIM ([Notion](https://www.notion.com/help/saml-sso-configuration)), Slack with Microsoft Entra provisioning ([Microsoft](https://learn.microsoft.com/en-ca/Entra/Identity/saas-apps/slack-provisioning-tutorial)) and GitHub fine-grained tokens ([GitHub](https://docs.github.com/en/enterprise-server@3.22/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)).
 
-| Table stake | Leaders | Notrelix today | Use case |
-|---|---|---|---|
-| Reuse detection on a rotated refresh credential, with a grace window; revoke the family | Auth0, Okta | none | D03 |
-| Absolute session lifetime and idle limit, set by policy | Auth0, Notion Enterprise | sliding 30 days, no cap | D05 |
-| SAML or OIDC single sign-on per verified domain, enforced | Notion, Slack | stub | B08 |
-| SCIM deprovisioning ends sessions and tokens | Slack, Entra | Accounts holds a SCIM directory model; Identity has no deprovision effect | D04, L08 |
-| Required MFA by policy, per account | Slack, Notion Enterprise | no policy fact | J05 |
-| Admin or recovery path when the second factor is lost | all | none | J04 |
-| Scoped, expiring, creator-bound tokens; last-used shown; a maximum lifetime set by the owner | GitHub | creator-bound only | L05 to L08 |
-| New-device and security-change notice by email | all | none | K10 |
-| Password set for a provider-only account | Slack, Notion | not offered | K08 |
-| Passkeys (WebAuthn) | Auth0, Okta, GitHub | none | not covered, Part 6 |
+| Table stake                                                                                  | Leaders                  | Notrelix today                                                            | Use case            |
+| -------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------- | ------------------- |
+| Reuse detection on a rotated refresh credential, with a grace window; revoke the family      | Auth0, Okta              | none                                                                      | D03                 |
+| Absolute session lifetime and idle limit, set by policy                                      | Auth0, Notion Enterprise | sliding 30 days, no cap                                                   | D05                 |
+| SAML or OIDC single sign-on per verified domain, enforced                                    | Notion, Slack            | stub                                                                      | B08                 |
+| SCIM deprovisioning ends sessions and tokens                                                 | Slack, Entra             | Accounts holds a SCIM directory model; Identity has no deprovision effect | D04, L08            |
+| Required MFA by policy, per account                                                          | Slack, Notion Enterprise | no policy fact                                                            | J05                 |
+| Admin or recovery path when the second factor is lost                                        | all                      | none                                                                      | J04                 |
+| Scoped, expiring, creator-bound tokens; last-used shown; a maximum lifetime set by the owner | GitHub                   | creator-bound only                                                        | L05 to L08          |
+| New-device and security-change notice by email                                               | all                      | none                                                                      | K10                 |
+| Password set for a provider-only account                                                     | Slack, Notion            | not offered                                                               | K08                 |
+| Passkeys (WebAuthn)                                                                          | Auth0, Okta, GitHub      | none                                                                      | not covered, Part 6 |
 
 # 2. Index
 
 Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440), `Final-M-Account` (390) are the artboards of the design canvas (README section 7). "none" means no artboard draws the screen.
 
-| ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
-|---|---|---|---|---|---|---|---|---|---|
-| UC-IDN-A01 | Read the signed-in person | A | Signed-in person | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-A02 | Bootstrap read for a client | A | Signed-in person | yes | no | none | no | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-A03 | Get and send the CSRF token | A | Browser client | yes | yes | n/a | yes | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-A04 | Mobile token transport | A | Mobile client | no | no | Final-M-Auth | no | DEFINED | header and body transport absent |
-| UC-IDN-B01 | Identify the sign-in method | B | Visitor | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-B02 | Sign in with email and password | B | Visitor | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-B03 | Register | B | Visitor | yes | yes | Final-Auth | yes | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-B04 | Confirm the email from the link | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-B05 | Request or resend the confirmation | B | Visitor, signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-B06 | Ask for a password reset | B | Visitor | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-B07 | Complete a password reset | B | Visitor | yes | no | none | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-B08 | Sign in through the company provider | B | Visitor | no | mock only | Final-Auth | no | BLOCKED | Accounts enforcement fact, protocol |
-| UC-IDN-B09 | Lock sign-in after repeated failures | B | Visitor | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-C01 | Sign out this device | C | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-C02 | List my sessions and devices | C | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-C03 | Sign out one other device | C | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-C04 | Sign out all other devices | C | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-D01 | Refresh the session silently | D | Signed-in client | yes | yes | n/a | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-D02 | Session expired or revoked | D | Signed-in person | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-D03 | Reject a replayed refresh credential | D | System | yes | n/a | n/a | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-D04 | End access when a person is disabled | D | System | partial | no | none | no | IMPLEMENTING | release 0.3 by owner decision 2026-11-03; no caller, no revocation |
-| UC-IDN-D05 | Bound the absolute session lifetime | D | System | yes | n/a | n/a | no | DONE | closed 2026-11-03, see the Evidence line |
-| UC-IDN-E01 | Start Google or Microsoft sign-in | E | Visitor | yes | yes | Final-Auth | no | HARDENING | built and unit-tested; real spec needs a provider test double |
-| UC-IDN-F01 | Complete provider sign-in | F | Visitor | yes | yes | Final-Auth | no | HARDENING | built and unit-tested; real spec needs a provider test double |
-| UC-IDN-F02 | Refuse a stale, replayed or colliding callback | F | Visitor | yes | yes | none | no | HARDENING | replay refusal tested at the endpoint; no artboard for the error sentences |
-| UC-IDN-G01 | Link a provider to my account | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
-| UC-IDN-G02 | Unlink a provider | G | Signed-in person | yes | no | none | no | IMPLEMENTING | no screen |
-| UC-IDN-H01 | Start second-factor enrollment | H | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-H02 | Verify and activate the second factor | H | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01 by the fix lane for the lead to review; wrong-code and backup-codes states not drawn (reviewed) |
-| UC-IDN-H03 | Read the second-factor status | H | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-I01 | Answer the second step at sign-in | I | Visitor | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-I02 | Expire a challenge after wrong codes | I | Visitor | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-J01 | Sign in with a recovery code | J | Visitor | yes | yes | Final-Auth | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-J02 | Regenerate recovery codes | J | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-02, see the Evidence line |
-| UC-IDN-J03 | Turn the second factor off | J | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01; the policy-blocked refusal waits on J05 |
-| UC-IDN-J04 | Recover an account that lost both factors | J | Person, Account admin | no | no | none | no | BLOCKED | who may reset another person |
-| UC-IDN-J05 | Enforce an account-required second factor | J | System | no | no | none | no | BLOCKED | Accounts policy fact |
-| UC-IDN-K01 | Read my security summary | K | Signed-in person | yes | yes | Final-Account | no | HARDENING | real spec missing |
-| UC-IDN-K02 | Read my security activity | K | Signed-in person | yes | yes | Final-Account | no | HARDENING | real spec missing |
-| UC-IDN-K03 | Ask which step-up factor applies | K | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01 by the fix lane for the lead to review; both provider prompts are undrawn (reviewed) |
-| UC-IDN-K04 | Step up with a second-factor code | K | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-K05 | Step up with the password | K | Signed-in person | yes | yes | Final-Account | yes | DONE | accepted 2026-11-01, see the Evidence line |
-| UC-IDN-K06 | Step up with a linked provider | K | Signed-in person | yes | yes | none | yes | HARDENING | no provider runs on the development stack, so the success round trip is proven with a fake provider and the mock; the real spec covers the refusal |
-| UC-IDN-K07 | Change my password | K | Signed-in person | yes | yes | Final-Account | no | HARDENING | real spec missing; same-password refusal now unit-tested |
-| UC-IDN-K08 | Set a first password (enterprise baseline) | K | Signed-in person | no | no | none | no | DEFINED | provider-only accounts |
-| UC-IDN-K09 | Change my sign-in email | K | Signed-in person | yes | no | none | no | IMPLEMENTING | step-up built; pending-email model, old-address notice, neutral answer, screen, artboard |
-| UC-IDN-K10 | Notify me of security changes (enterprise baseline) | K | System | no | no | none | no | DEFINED | no mail |
-| UC-IDN-K11 | Operator audit of identity security changes | K | Auditor | partial | n/a | n/a | no | IMPLEMENTING | owner is Governance audit |
-| UC-IDN-L01 | List workspace API tokens | L | Workspace Owner or Admin | yes | no | none | no | IMPLEMENTING | no screen, unbounded |
-| UC-IDN-L02 | Issue an API token | L | Workspace Owner or Admin | yes | no | none | no | IMPLEMENTING | no screen, optional expiry |
-| UC-IDN-L03 | Revoke an API token | L | Workspace Owner or Admin | yes | no | none | no | IMPLEMENTING | no screen |
-| UC-IDN-L04 | Call the API with a token | L | Integration client | yes | n/a | n/a | no | IMPLEMENTING | scopes not enforced |
-| UC-IDN-L05 | Limit a token to chosen scopes | L | Workspace Owner or Admin | no | no | none | no | BLOCKED | scope vocabulary |
-| UC-IDN-L06 | Cap token lifetime (enterprise baseline) | L | System | no | no | none | no | DEFINED | rule not coded |
-| UC-IDN-L07 | Show when a token was last used (enterprise baseline) | L | Workspace Owner or Admin | no | no | none | no | DEFINED | no column |
-| UC-IDN-L08 | Stop tokens of a person who leaves | L | System | no | n/a | n/a | no | DEFINED | no rule |
-| UC-IDN-M01 | Change my display name | M | Signed-in person | yes | yes | Final-Account | no | HARDENING | limit and photo-address rules unit-tested; real spec missing |
-| UC-IDN-M02 | Read and save my preferences | M | Signed-in person | yes | yes | Final-Account | no | HARDENING | conflict tested at the handler; real spec missing |
-| UC-IDN-M03 | Upload my profile photo | M | Signed-in person | yes | yes | Final-Account | no | HARDENING | real spec missing |
-| UC-IDN-M04 | Remove my profile photo | M | Signed-in person | yes | yes | Final-Account | no | HARDENING | real spec missing; sweep proven in the Integration host (needs Docker) |
-| UC-IDN-M05 | Read a person's photo | M | Signed-in person | yes | yes | Final-Account | no | INTEGRATING | tests and owner check |
+| ID         | Use case                                              | Capability | Actors                    | BE      | FE        | Design        | Real e2e | State        | Gap                                                                                                                                                |
+| ---------- | ----------------------------------------------------- | ---------- | ------------------------- | ------- | --------- | ------------- | -------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UC-IDN-A01 | Read the signed-in person                             | A          | Signed-in person          | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-A02 | Bootstrap read for a client                           | A          | Signed-in person          | yes     | no        | none          | no       | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-A03 | Get and send the CSRF token                           | A          | Browser client            | yes     | yes       | n/a           | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-A04 | Mobile token transport                                | A          | Mobile client             | no      | no        | Final-M-Auth  | no       | DEFINED      | header and body transport absent                                                                                                                   |
+| UC-IDN-B01 | Identify the sign-in method                           | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-B02 | Sign in with email and password                       | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-B03 | Register                                              | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-B04 | Confirm the email from the link                       | B          | Visitor, signed-in person | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-B05 | Request or resend the confirmation                    | B          | Visitor, signed-in person | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-B06 | Ask for a password reset                              | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-B07 | Complete a password reset                             | B          | Visitor                   | yes     | no        | none          | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-B08 | Sign in through the company provider                  | B          | Visitor                   | no      | mock only | Final-Auth    | no       | BLOCKED      | Accounts enforcement fact, protocol                                                                                                                |
+| UC-IDN-B09 | Lock sign-in after repeated failures                  | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-C01 | Sign out this device                                  | C          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-C02 | List my sessions and devices                          | C          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-C03 | Sign out one other device                             | C          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01, see the Evidence line                                                                                                         |
+| UC-IDN-C04 | Sign out all other devices                            | C          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-D01 | Refresh the session silently                          | D          | Signed-in client          | yes     | yes       | n/a           | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-D02 | Session expired or revoked                            | D          | Signed-in person          | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-01, see the Evidence line                                                                                                         |
+| UC-IDN-D03 | Reject a replayed refresh credential                  | D          | System                    | yes     | n/a       | n/a           | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-D04 | End access when a person is disabled                  | D          | System                    | partial | no        | none          | no       | IMPLEMENTING | release 0.3 by owner decision 2026-11-03; no caller, no revocation                                                                                 |
+| UC-IDN-D05 | Bound the absolute session lifetime                   | D          | System                    | yes     | n/a       | n/a           | no       | DONE         | closed 2026-11-03, see the Evidence line                                                                                                           |
+| UC-IDN-E01 | Start Google or Microsoft sign-in                     | E          | Visitor                   | yes     | yes       | Final-Auth    | no       | HARDENING    | built and unit-tested; real spec needs a provider test double                                                                                      |
+| UC-IDN-F01 | Complete provider sign-in                             | F          | Visitor                   | yes     | yes       | Final-Auth    | no       | HARDENING    | built and unit-tested; real spec needs a provider test double                                                                                      |
+| UC-IDN-F02 | Refuse a stale, replayed or colliding callback        | F          | Visitor                   | yes     | yes       | none          | no       | HARDENING    | replay refusal tested at the endpoint; no artboard for the error sentences                                                                         |
+| UC-IDN-G01 | Link a provider to my account                         | G          | Signed-in person          | yes     | no        | none          | no       | IMPLEMENTING | no screen                                                                                                                                          |
+| UC-IDN-G02 | Unlink a provider                                     | G          | Signed-in person          | yes     | no        | none          | no       | IMPLEMENTING | no screen                                                                                                                                          |
+| UC-IDN-H01 | Start second-factor enrollment                        | H          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01, see the Evidence line                                                                                                         |
+| UC-IDN-H02 | Verify and activate the second factor                 | H          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01 by the fix lane for the lead to review; wrong-code and backup-codes states not drawn (reviewed)                                |
+| UC-IDN-H03 | Read the second-factor status                         | H          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-I01 | Answer the second step at sign-in                     | I          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-I02 | Expire a challenge after wrong codes                  | I          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-J01 | Sign in with a recovery code                          | J          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-J02 | Regenerate recovery codes                             | J          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                                                         |
+| UC-IDN-J03 | Turn the second factor off                            | J          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01; the policy-blocked refusal waits on J05                                                                                       |
+| UC-IDN-J04 | Recover an account that lost both factors             | J          | Person, Account admin     | no      | no        | none          | no       | BLOCKED      | who may reset another person                                                                                                                       |
+| UC-IDN-J05 | Enforce an account-required second factor             | J          | System                    | no      | no        | none          | no       | BLOCKED      | Accounts policy fact                                                                                                                               |
+| UC-IDN-K01 | Read my security summary                              | K          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack                                                           |
+| UC-IDN-K02 | Read my security activity                             | K          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack                                                           |
+| UC-IDN-K03 | Ask which step-up factor applies                      | K          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01 by the fix lane for the lead to review; both provider prompts are undrawn (reviewed)                                           |
+| UC-IDN-K04 | Step up with a second-factor code                     | K          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01, see the Evidence line                                                                                                         |
+| UC-IDN-K05 | Step up with the password                             | K          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01, see the Evidence line                                                                                                         |
+| UC-IDN-K06 | Step up with a linked provider                        | K          | Signed-in person          | yes     | yes       | none          | yes      | HARDENING    | no provider runs on the development stack, so the success round trip is proven with a fake provider and the mock; the real spec covers the refusal |
+| UC-IDN-K07 | Change my password                                    | K          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack                                                           |
+| UC-IDN-K08 | Set a first password (enterprise baseline)            | K          | Signed-in person          | no      | no        | none          | no       | DEFINED      | provider-only accounts                                                                                                                             |
+| UC-IDN-K09 | Change my sign-in email                               | K          | Signed-in person          | yes     | no        | none          | no       | IMPLEMENTING | step-up built; pending-email model, old-address notice, neutral answer, screen, artboard                                                           |
+| UC-IDN-K10 | Notify me of security changes (enterprise baseline)   | K          | System                    | no      | no        | none          | no       | DEFINED      | no mail                                                                                                                                            |
+| UC-IDN-K11 | Operator audit of identity security changes           | K          | Auditor                   | partial | n/a       | n/a           | no       | IMPLEMENTING | owner is Governance audit                                                                                                                          |
+| UC-IDN-L01 | List workspace API tokens                             | L          | Workspace Owner or Admin  | yes     | no        | none          | no       | IMPLEMENTING | no screen, unbounded                                                                                                                               |
+| UC-IDN-L02 | Issue an API token                                    | L          | Workspace Owner or Admin  | yes     | no        | none          | no       | IMPLEMENTING | no screen, optional expiry                                                                                                                         |
+| UC-IDN-L03 | Revoke an API token                                   | L          | Workspace Owner or Admin  | yes     | no        | none          | no       | IMPLEMENTING | no screen                                                                                                                                          |
+| UC-IDN-L04 | Call the API with a token                             | L          | Integration client        | yes     | n/a       | n/a           | no       | IMPLEMENTING | scopes not enforced                                                                                                                                |
+| UC-IDN-L05 | Limit a token to chosen scopes                        | L          | Workspace Owner or Admin  | no      | no        | none          | no       | BLOCKED      | scope vocabulary                                                                                                                                   |
+| UC-IDN-L06 | Cap token lifetime (enterprise baseline)              | L          | System                    | no      | no        | none          | no       | DEFINED      | rule not coded                                                                                                                                     |
+| UC-IDN-L07 | Show when a token was last used (enterprise baseline) | L          | Workspace Owner or Admin  | no      | no        | none          | no       | DEFINED      | no column                                                                                                                                          |
+| UC-IDN-L08 | Stop tokens of a person who leaves                    | L          | System                    | no      | n/a       | n/a           | no       | DEFINED      | no rule                                                                                                                                            |
+| UC-IDN-M01 | Change my display name                                | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                                                            |
+| UC-IDN-M02 | Read and save my preferences                          | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                                                            |
+| UC-IDN-M03 | Upload my profile photo                               | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                                                            |
+| UC-IDN-M04 | Remove my profile photo                               | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                                                            |
+| UC-IDN-M05 | Read a person's photo                                 | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                                                            |
 
 # 3. Use cases
 
@@ -185,6 +185,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability A: Session bootstrap
 
 ### UC-IDN-A01 Read the signed-in person
+
 - Capability: A Session bootstrap
 - Actors and permission: any signed-in person; authentication only (ID-012), no Governance permission.
 - Preconditions: a valid session cookie or token.
@@ -199,6 +200,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-A02 Bootstrap read for a client
+
 - Capability: A Session bootstrap
 - Actors and permission: any signed-in person; authentication only.
 - Preconditions: a valid session.
@@ -213,6 +215,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-A03 Get and send the CSRF token
+
 - Capability: A Session bootstrap
 - Actors and permission: any browser client; public endpoint.
 - Preconditions: none.
@@ -227,6 +230,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-A04 Mobile token transport
+
 - Capability: A Session bootstrap
 - Actors and permission: mobile client; public sign-in endpoints.
 - Preconditions: header `X-Notrelix-Client: mobile` on the request.
@@ -243,6 +247,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability B: Login
 
 ### UC-IDN-B01 Identify the sign-in method
+
 - Capability: B Login
 - Actors and permission: any visitor; public, rate limit `AuthCredentialByIp`.
 - Preconditions: none.
@@ -257,6 +262,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-B02 Sign in with email and password
+
 - Capability: B Login
 - Actors and permission: any visitor; public, `AuthCredentialByIp`.
 - Preconditions: an Active account with a password credential.
@@ -271,6 +277,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-B03 Register
+
 - Capability: B Login
 - Actors and permission: any visitor; public, `AuthCredentialByIp`.
 - Preconditions: the email is not registered.
@@ -285,6 +292,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — lines 1–4 proven in the lane pull request (2026-11-03, branch fix/workspaces-acceptance-gaps); see the Evidence line.
 
 ### UC-IDN-B04 Confirm the email from the link
+
 - Capability: B Login
 - Actors and permission: any visitor holding the link token; public.
 - Preconditions: an unused, unexpired verification token.
@@ -299,6 +307,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the endpoint carries the `AuthCredentialByIp` limit (429 documented). Real spec `email-confirmation.real.e2e.spec.ts` passes again: it expected the onboarding page right after sign-up, but registering also provisions the personal workspace (UC-WSP-A02, an event consumer), so the app opens the personal workspace once that has run and the onboarding page until then; the spec accepts either and does its work from `/onboarding`. Known race for the Workspaces owner: a new member can see onboarding for a moment before the workspace exists. Copy (2026-11-02): a live link past its expiry answers `identity.email-verification.token-expired` (still 400) and the page says 'This link has expired' with the new-link form; an unknown or used link keeps the generic answer and the dead-link page (`ConfirmEmailTests` 4, web flow tests +2).
 
 ### UC-IDN-B05 Request or resend the confirmation
+
 - Capability: B Login
 - Actors and permission: a signed-in person (request) or a visitor with the email (resend); `AuthCredentialByIp` on resend.
 - Preconditions: the email is unconfirmed.
@@ -313,6 +322,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the sign-up page and the onboarding notice wait 60 seconds after a send and say when asking is refused (429); the onboarding notice used to disappear when the new link went out, so the person was told nothing, and now stays and says it went out; the token of a link is spent once however many times the page mounts (the page called confirm twice and showed a dead link over a confirmed address; found by the real spec). Backend: Application `ResendEmailVerificationTests` 4 (known, rate limited, unknown and confirmed answer success and issue nothing), `EmailVerificationTokenIssuerTests` 1 (an earlier link is revoked by the next). Frontend: web component tests for both countdowns. At 390 px the onboarding notice's 'Send the link again' is a 44 px target and the onboarding header and step bar no longer squeeze (only the current step names itself on a phone); the real resend spec measures it. The mock backend answers the resend route (`auth.resendEmailVerification`, on the consumer surface), so the verify page's sent state works on the mock. A failed confirmation call is forgotten, so a retry with the same token asks the server again (component test). Moved Storybook baselines to regenerate: onboarding stories at the mobile width.
 
 ### UC-IDN-B06 Ask for a password reset
+
 - Capability: B Login
 - Actors and permission: any visitor; public, `AuthCredentialByIp`.
 - Preconditions: none.
@@ -327,6 +337,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02 at develop `e368b0dc2` (branch accept/batch-7); see the Evidence line.
 
 ### UC-IDN-B07 Complete a password reset
+
 - Capability: B Login
 - Actors and permission: any visitor who holds the one-time code; public, `AuthCredentialByIp`.
 - Preconditions: a code issued by UC-IDN-B06, unexpired and unused.
@@ -341,6 +352,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02 at develop `e368b0dc2` (branch accept/batch-7); see the Evidence line.
 
 ### UC-IDN-B08 Sign in through the company provider
+
 - Capability: B Login
 - Actors and permission: visitor whose email domain an Account verified; public.
 - Preconditions: an Account fact says the domain is verified and the identity provider enforces sign-in (see [accounts](accounts.md)).
@@ -355,6 +367,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: BLOCKED. Waits on the Accounts decision that adds the enforcement fact and the verified-domain rule (Part 5), and on the protocol choice (Part 4).
 
 ### UC-IDN-B09 Lock sign-in after repeated failures
+
 - Capability: B Login
 - Actors and permission: any visitor; applies to every credential check.
 - Preconditions: none.
@@ -371,6 +384,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability C: Logout
 
 ### UC-IDN-C01 Sign out this device
+
 - Capability: C Logout
 - Actors and permission: signed-in person; own session only.
 - Preconditions: a session.
@@ -385,6 +399,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the page asks before ending this device and the sign-out of an already ended session is a success.
 
 ### UC-IDN-C02 List my sessions and devices
+
 - Capability: C Logout
 - Actors and permission: signed-in person; own rows only.
 - Preconditions: none.
@@ -399,6 +414,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the list holds every live session and at most 20 ended ones.
 
 ### UC-IDN-C03 Sign out one other device
+
 - Capability: C Logout
 - Actors and permission: signed-in person; own session; no step-up (lead decision).
 - Preconditions: the target session is the caller's and Active.
@@ -413,6 +429,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). Built: an expired session answers success like a revoked one (it used to raise a rule error); the page asks before ending this device, drops the cached state and leaves for sign-in; a 404 refreshes the list with a notice.
 
 ### UC-IDN-C04 Sign out all other devices
+
 - Capability: C Logout
 - Actors and permission: signed-in person; step-up required (owner decision 48).
 - Preconditions: the current session is bound to the request; a step-up proof of purpose `RevokeOtherSessions`.
@@ -429,6 +446,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability D: Session expiration
 
 ### UC-IDN-D01 Refresh the session silently
+
 - Capability: D Session expiration
 - Actors and permission: holder of a refresh credential; public endpoint, `AuthRefreshByIp`.
 - Preconditions: an Active, unexpired session for the refresh credential.
@@ -443,6 +461,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02 at develop `28ef68aaf` (branch accept/batch-6). Built: the silent refresh keeps the session on a network failure, a 429 or a 5xx and ends it only on a 401; the offline state is a screen with one 'Try again' button that is 44 px at 390 px; rotation keeps the session id and the idle expiry, with a ten-second grace for the replaced credential and the 90-day cap.
 
 ### UC-IDN-D02 Session expired or revoked
+
 - Capability: D Session expiration
 - Actors and permission: signed-in person.
 - Preconditions: a 401 that refresh cannot repair.
@@ -457,6 +476,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). Built: the notice on the sign-in page (en and vi); the mock e2e that follows the sign-out redirect expects the address without `reason`.
 
 ### UC-IDN-D03 Reject a replayed refresh credential
+
 - Capability: D Session expiration
 - Actors and permission: system.
 - Preconditions: a refresh credential already rotated.
@@ -471,6 +491,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the replay window and the theft response.
 
 ### UC-IDN-D04 End access when a person is disabled
+
 - Capability: D Session expiration
 - Actors and permission: Account administrator or SCIM deprovisioning (see [accounts](accounts.md)); the system applies the effect.
 - Preconditions: a User moves to Inactive, Suspended or deprovisioned.
@@ -485,6 +506,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: IMPLEMENTING; release 0.3 by owner decision 2026-11-03. Not built in this pass: nothing in the product can disable a person yet, so an Identity command would have no caller; it needs the Accounts caller (who may disable whom, SCIM deprovisioning) first. Missing: the command, the session and token revocation, the caller in Accounts, tests. Lead decision (2026-10-30): disabling revokes every session and token at once.
 
 ### UC-IDN-D05 Bound the absolute session lifetime
+
 - Capability: D Session expiration
 - Actors and permission: system.
 - Preconditions: a session chain.
@@ -501,6 +523,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability E: OAuth start
 
 ### UC-IDN-E01 Start Google or Microsoft sign-in
+
 - Capability: E OAuth start
 - Actors and permission: any visitor; public, `AuthCredentialByIp`.
 - Preconditions: the provider is enabled by configuration.
@@ -517,6 +540,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability F: OAuth callback
 
 ### UC-IDN-F01 Complete provider sign-in
+
 - Capability: F OAuth callback
 - Actors and permission: visitor returning from the provider; public, `AuthCredentialByIp`.
 - Preconditions: a valid, unused state.
@@ -531,6 +555,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: HARDENING. Built: the ID token check (issuer, audience, authorized party, expiry, nonce held with the state; the Google token was decoded with no check and a payload with URL-safe characters failed to decode); the same check for Microsoft, whose UserInfo answer must name the same subject; an enabled provider must ask for `openid` and have a known issuer; the atomic state; the failure redirect carries a code. Tested: Infrastructure `OidcIdTokenValidatorTests` (accepted, and refused for issuer, audience, nonce, missing nonce, authorized party and expiry), Integration `CompletedOAuthLoginCommandHandlerTests`, API `OAuthCallbackMfaTests`. Missing: owner check, real spec (needs a provider test double), 1 px diff. The ID token signature is not verified (the token comes from the token endpoint over TLS, OIDC Core 3.1.3.7); verify it against the JWKS if a token ever arrives another way. Decided 2026-10-30 (ID section 27.1): Microsoft sends no verified-email claim, so a Microsoft identity signs in only when already linked and never creates an account (`email-unverified` for anyone else).
 
 ### UC-IDN-F02 Refuse a stale, replayed or colliding callback
+
 - Capability: F OAuth callback
 - Actors and permission: visitor or attacker; public.
 - Preconditions: none.
@@ -547,6 +572,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability G: Provider linking and unlinking
 
 ### UC-IDN-G01 Link a provider to my account
+
 - Capability: G Provider linking and unlinking
 - Actors and permission: signed-in person; step-up of purpose `LinkOAuth`.
 - Preconditions: the provider is enabled; the provider subject is not linked to another User.
@@ -561,6 +587,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: IMPLEMENTING. Missing: the screen, an artboard, Application and API tests.
 
 ### UC-IDN-G02 Unlink a provider
+
 - Capability: G Provider linking and unlinking
 - Actors and permission: signed-in person; step-up of purpose `UnlinkOAuth`; `AuthSensitiveByUser`.
 - Preconditions: the provider is linked and the person keeps another viable sign-in method (password or another provider).
@@ -577,6 +604,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability H: MFA enrollment
 
 ### UC-IDN-H01 Start second-factor enrollment
+
 - Capability: H MFA enrollment
 - Actors and permission: signed-in person; own account.
 - Preconditions: no active second factor.
@@ -591,6 +619,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). Built: the endpoint carries the `AuthSensitiveByUser` limit and answers `Cache-Control: no-store` (the answer holds the secret); the page waits during a start. Decided 2026-10-30 and built: starting an enrollment needs a single-use step-up proof of the new purpose `EnrollMfa` (no proof: 412 `identity.security.step-up-required`; a wrong, spent or other-purpose proof: 400 `identity.security.step-up-invalid`); an account that already has a factor answers 409 first and keeps the proof; the page asks for the password, then starts.
 
 ### UC-IDN-H02 Verify and activate the second factor
+
 - Capability: H MFA enrollment
 - Actors and permission: signed-in person; `AuthSensitiveByUser`.
 - Preconditions: a pending method.
@@ -605,6 +634,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02 at `6ac912d0c` (branch accept/batch-1); earlier accepted 2026-11-01 by the fix lane that closed the one rejected line, at `4f75dfe77` on branch idn/h02-k03 (PR into develop); the lead reviews this Evidence line at merge. Built: a unique partial index `ux_user_mfa_methods_active_per_type` on `identity.user_mfa_methods (user_id, type) WHERE status = 'Active'` (migration `AddUserMfaActiveFactorGuard`; it first disables, never deletes, duplicate active rows and keeps the earliest verified) next to the version token every aggregate root already carries (`ApplicationDbContext` marks `AggregateRoot.Version` as a concurrency token; the earlier statement that `UserMfaMethod` has none was wrong). The loser of two parallel activations fails at commit and its whole transaction rolls back: one active method, one recovery batch. Known limits: the loser has spent its own proof (the page asks again); the data session answers the lost race 412 and a unique violation 409 (`PreconditionFailedProblemTests`, `ExceptionMappingBehaviorTests`), but no test drives that one endpoint over HTTP; wrong-code message and backup-codes panel are not drawn (reviewed, built from account page components and tokens).
 
 ### UC-IDN-H03 Read the second-factor status
+
 - Capability: H MFA enrollment
 - Actors and permission: signed-in person; own status.
 - Preconditions: none.
@@ -621,6 +651,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability I: MFA challenge
 
 ### UC-IDN-I01 Answer the second step at sign-in
+
 - Capability: I MFA challenge
 - Actors and permission: visitor who passed the first step; public, `AuthCredentialByIp`.
 - Preconditions: a live challenge held in an httpOnly cookie (also after a provider sign-in).
@@ -635,6 +666,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02 at develop `28ef68aaf` (branch accept/batch-6). Built: the code boxes shrink instead of overflowing, 'Use a backup code' and 'Back to sign-in' are 44 px, the drawn `xac-minh` is within 1 px apart from the lead's decided missing remember-device row, and the brand panel is within 1 px of Final-Auth.
 
 ### UC-IDN-I02 Expire a challenge after wrong codes
+
 - Capability: I MFA challenge
 - Actors and permission: visitor.
 - Preconditions: a live challenge.
@@ -651,6 +683,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability J: MFA recovery
 
 ### UC-IDN-J01 Sign in with a recovery code
+
 - Capability: J MFA recovery
 - Actors and permission: visitor who passed the first step.
 - Preconditions: a live challenge; an unused recovery code.
@@ -665,6 +698,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the backup-code field of the second step, its wrong-code message and success; 'Use an authenticator app' and 'Back to sign-in' are 44 px at 390 px. The screen sits in the `xac-minh` frame (the brand panel of that frame is a gap of UC-IDN-I01, not of this use case's own undrawn states).
 
 ### UC-IDN-J02 Regenerate recovery codes
+
 - Capability: J MFA recovery
 - Actors and permission: signed-in person; step-up of purpose `RegenerateRecoveryCodes`.
 - Preconditions: an active second factor.
@@ -679,6 +713,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02. Built: the proof-gated renewal.
 
 ### UC-IDN-J03 Turn the second factor off
+
 - Capability: J MFA recovery
 - Actors and permission: signed-in person; step-up of purpose `DisableMfa`.
 - Preconditions: an active factor; no Account policy requires it (UC-IDN-J05).
@@ -693,6 +728,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). Built: the endpoint carries the `AuthSensitiveByUser` limit; the confirmation says what turning off does and its button is the danger one; the producer ends every session of the person, this one included (reason `mfa-disabled`, access cut off), so the page shows "Two-factor authentication is off" with a Sign in button instead of reading anything further; the mock does the same. Carried out of J03 until they can exist: the refusal and the 'blocked with reason' state for an Account policy that requires two-factor belong to UC-IDN-J05, which is BLOCKED on a decision; no policy fact exists anywhere, so no such refusal can happen today. The lead may overrule this carve-out.
 
 ### UC-IDN-J04 Recover an account that lost both factors
+
 - Capability: J MFA recovery
 - Actors and permission: the person, and an Account administrator who may reset another person's second factor (see [accounts](accounts.md)).
 - Preconditions: no authenticator and no recovery code.
@@ -707,6 +743,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: BLOCKED. Needs a decision on who may reset another person's second factor, what proof the person gives, and the delay and notice. A wrong choice weakens account takeover defence.
 
 ### UC-IDN-J05 Enforce an account-required second factor
+
 - Capability: J MFA recovery
 - Actors and permission: system; the requirement belongs to Accounts or Governance, the method belongs to Identity (ID-007).
 - Preconditions: an Account policy "require MFA" (not in the product docs yet).
@@ -723,6 +760,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 ## Capability K: Security settings
 
 ### UC-IDN-K01 Read my security summary
+
 - Capability: K Security settings
 - Actors and permission: signed-in person; own facts only.
 - Preconditions: none.
@@ -733,10 +771,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, success, error.
 - Rules: ID section 67 (account security facts), ID-011; IAREQ055.
 - Acceptance: Given a person with a password and a factor, when the summary is read, then the four facts match their state and no other person's.
-- Evidence: BE `Security/Queries/GetAccountSecuritySummary`; API `Auth/Commands/SecurityStepUpEndpoints.cs` (`GET /api/v1/auth/security/summary`) · FE `.../account/security.tsx` · Design Final-Account · Tests Application `GetAccountSecuritySummaryTests`, API `SecuritySummaryEndpointTests` · Real e2e none
-- State: HARDENING. Tested: Application `GetAccountSecuritySummaryTests` (own active sessions only, the password change time of the caller only, provider names without subject ids, not found for a caller with no user row), API `SecuritySummaryEndpointTests` (401 without auth; typed summary without secrets). Missing: owner check, real spec.
+- Evidence: BE `Security/Queries/GetAccountSecuritySummary`; API `Auth/Commands/SecurityStepUpEndpoints.cs` (`GET /api/v1/auth/security/summary`) · FE `.../account/security.tsx` · Design Final-Account · Tests Application `GetAccountSecuritySummaryTests`, API `SecuritySummaryEndpointTests` · Real e2e `frontend/e2e/real/account-security.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Tested: Application `GetAccountSecuritySummaryTests` (own active sessions only, the password change time of the caller only, provider names without subject ids, not found for a caller with no user row), API `SecuritySummaryEndpointTests` (401 without auth; typed summary without secrets). Real e2e: `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack (2 of 2): the summary of the person's own two sessions, a password and no factor, with no secret in the answer.
 
 ### UC-IDN-K02 Read my security activity
+
 - Capability: K Security settings
 - Actors and permission: signed-in person; own lines only.
 - Preconditions: none.
@@ -747,10 +786,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: loading, empty, success, error.
 - Rules: ID section 67A.
 - Acceptance: Given a failed sign-in on my account, when I read activity, then one line shows. Given a guess on an unknown email, then no line exists anywhere.
-- Evidence: BE `Security/Queries/GetSecurityActivity`; Infrastructure `BackgroundJobs/SecurityActivityRetention.cs`; API `Auth/Commands/SecurityStepUpEndpoints.cs` (`GET /api/v1/auth/security/activity`) · FE `.../account/security.tsx` · Design Final-Account · Tests Application `GetSecurityActivityTests`, Domain `SecurityActivityEntryTests`, Integration `SecurityActivityHttpFlowTests`, `SecurityEventWriteTests` · Real e2e none
-- State: HARDENING. Tested: Application `GetSecurityActivityTests` (reads only the current user's feed; a cursor when more rows exist; limit and cursor validation), Domain `SecurityActivityEntryTests`, Integration `SecurityActivityHttpFlowTests`. Missing: owner check, real spec.
+- Evidence: BE `Security/Queries/GetSecurityActivity`; Infrastructure `BackgroundJobs/SecurityActivityRetention.cs`; API `Auth/Commands/SecurityStepUpEndpoints.cs` (`GET /api/v1/auth/security/activity`) · FE `.../account/security.tsx` · Design Final-Account · Tests Application `GetSecurityActivityTests`, Domain `SecurityActivityEntryTests`, Integration `SecurityActivityHttpFlowTests`, `SecurityEventWriteTests` · Real e2e `frontend/e2e/real/account-security.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Tested: Application `GetSecurityActivityTests` (reads only the current user's feed; a cursor when more rows exist; limit and cursor validation), Domain `SecurityActivityEntryTests`, Integration `SecurityActivityHttpFlowTests`. Real e2e: `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack (2 of 2): the activity list shows the sign-in and, after the change, the password change.
 
 ### UC-IDN-K03 Ask which step-up factor applies
+
 - Capability: K Security settings
 - Actors and permission: signed-in person; `AuthSensitiveByUser`.
 - Preconditions: a sensitive action is about to run.
@@ -765,6 +805,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE — accepted by independent acceptance 2026-11-02 at `6ac912d0c` (branch accept/batch-1); earlier accepted 2026-11-01 by the fix lane at `4f75dfe77` on branch idn/h02-k03 (PR into develop), after the lead's ruling that it waits for the provider step-up screen; the lead reviews this Evidence line at merge. Built: with the provider factor the page shows "Confirm with <provider>" for each linked provider (the summary names them) instead of a password field, leaves for `GET /api/v1/auth/oauth/{provider}/step-up/start` with the page to come back to, and on return spends the proof on the action that asked (UC-IDN-K06). Known limits: a person with a provider and no password still sees "Change password" on the page, which asks for a current password they do not have (K07 and the first-password flow K08 own it); the success round trip needs a real provider, which the development stack has none of (see K06).
 
 ### UC-IDN-K04 Step up with a second-factor code
+
 - Capability: K Security settings
 - Actors and permission: signed-in person; `AuthSensitiveByUser`.
 - Preconditions: an active factor; a challenge bound to this session.
@@ -779,6 +820,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). Built: the step-up challenge dies at the fifth wrong code (it was removed only by the attempt after it, as the sign-in challenge used to be); a code that already opened something is refused (UC-IDN-I01 guard, shared verifier); the dead-challenge state on the page. Known limit (UC-IDN-D01): the proof is bound to a session id that refresh replaces, so a proof held across a refresh is refused and the page shows the expired state. Observed, not gating: the throttled message reads 'Try again in 1 seconds' (no singular form in the copy).
 
 ### UC-IDN-K05 Step up with the password
+
 - Capability: K Security settings
 - Actors and permission: signed-in person with a password and no second factor.
 - Preconditions: a password credential.
@@ -790,9 +832,10 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Rules: ID section 67, ID-006.
 - Acceptance: Given the right password, when step-up completes, then one proof exists; given a wrong one, then none.
 - Evidence: BE `Security/Commands/CompleteStepUpPassword`; API `SecurityStepUpEndpoints.cs` (`POST /api/v1/auth/security/step-up/complete-password`) · FE `account-password-panel.tsx` · Design Final-Account · Tests Application `SecurityStepUpServiceThrottleTests` · Run: Integration `AccountSecurityIntegrationTests` (10), `MfaFlowTests` (30), Application `SecurityStepUpServiceThrottleTests` (5), `SecurityStepUpServiceConsumeTests` (7) · Real e2e `frontend/e2e/real/mfa-enrollment-step-up.real.e2e.spec.ts` (turning on is bought with the current password) · Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). Backend: Application `SecurityStepUpServiceFactorTests` 16 (a right password issues one proof bound to user, session and purpose; a wrong one answers invalid-password; a provider-only person is refused and gets no proof), `SecurityStepUpServiceThrottleTests` 5 (locked attempt is not verified, wrong counts, right clears the budget), Integration `AccountSecurityIntegrationTests` 10 (lock after the maximum wrong guesses even for the right password with Retry-After, another person on the same address is not locked, success resets the budget) and `MfaFlowTests` 30. No expected version exists on these writes: each is an absolute, idempotent end state or a single-use proof consumed atomically (catalog §1.3, ID-015). Sessions and factors belong to a person, not to a workspace, so the cross-tenant negative is the other person's id. Frontend: `account-security.interaction.component.test.tsx` 16 and `account-security-flows.interaction.component.test.tsx` 9 (vitest web), `apps/web` `account-pages.component.test.tsx` 33 (password entry; wrong password in words with `aria-invalid`; throttled; pending). Keyboard: the account-security-flows spec types the password and Enter at the proof step. Accessibility: axe (all rules, colour contrast included) on the password prompt and the wrong-password message at 1440 and 390 px in light and dark: no serious or critical violation (`frontend/e2e/mock/account-security-flows.mock.e2e.spec.ts`, 7 passed; `design-fidelity-account.mock.e2e.spec.ts` 4 passed; `account-pages.mock.e2e.spec.ts` 8 passed on the same run, 46 of 46 for the mock specs of this batch: flows 7, sign-in 7, card popup and copy link 20, design fidelity 4, account pages 8). Design, measured: the security page at 1440 in light and dark within 1 px of Final-Account `bao-mat` (`design-fidelity-account.mock.e2e.spec.ts`); at 390 the account-security-flows spec asserts no sideways scroll, every button and field at least 44 px tall and axe clean in each state. Reviewed, no artboard draws them: the password prompt and the wrong-password message. Built from the account page components and tokens on the pattern of the security page; acceptance screenshots at 1440, 1024 and 390 in light and dark were taken by the build lane and the acceptance agent opened the password prompt at 1024 in light. No 1024 artboard exists and no spec asserts 1024, so 1024 is reviewed from screenshots only. Real e2e: `mfa-enrollment-step-up.real.e2e.spec.ts` 1 passed: turning on is bought with the current password; a wrong password is refused first. Real stack, run at `a6898a75e`: `mfa-enrollment-step-up.real.e2e.spec.ts` 1 passed, `session-bootstrap.real.e2e.spec.ts` 3 passed (12 of 12 in the run with `work-item-states.real.e2e.spec.ts`). Lead acceptance: every line in §7 held on this run.
-- State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`). 
+- State: DONE. Accepted 2026-11-01 by an acceptance agent that did not build it, at `a6898a75e` (branch accept/first-done-batch-2 on develop `f830571c4`).
 
 ### UC-IDN-K06 Step up with a linked provider
+
 - Capability: K Security settings
 - Actors and permission: signed-in person with only provider sign-in.
 - Preconditions: a linked provider.
@@ -805,7 +848,9 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Acceptance: Given a provider-only person, when step-up completes, then one proof exists.
 - Evidence: BE `OAuth/Commands/StartOAuthStepUp`, `CompleteOAuthStepUp` (`OAuthStepUpResult`), `Security/DTOs/StepUpResults.cs` (`ProviderStepUpClaimResult`), `Common/Security/Auth/ICookieService.cs`; Infrastructure `Auth/Cookies/CookieService.cs`; API `Auth/Commands/StartOAuthStepUpEndpoint.cs`, `CompleteOAuthStepUpEndpoint.cs`, `SecurityStepUpEndpoints.cs` (`POST /api/v1/auth/security/step-up/claim-provider`) · FE `packages/features/account/src/web/security/account-security-surface.tsx` (provider prompt), `apps/web/src/routes/workspaces/$workspaceId/account/security.tsx`, `account.service.ts` (`providerStepUpPath`, `claimProviderStepUp`) · Design none (undrawn, built from tokens) · Tests Application `CompleteOAuthStepUpTests` 7, API `OAuthStepUpProofHandoffTests` 10, Integration `MfaFlowTests` (the provider proof tests), FE and mock as in K03 · Real e2e `frontend/e2e/real/provider-step-up.real.e2e.spec.ts` (the offer and the refusal; the provider login itself cannot run here)
 - State: HARDENING. Built 2026-11-01 with the K03 fix at `4f75dfe77`. Runs end to end against the real backend up to the provider: the offer, the start, the refusal and the empty claim. Gap: no Google or Microsoft app is set up on the development stack, so a real provider login that grants the proof has not run; the grant, the cookie handoff, the claim, the single use and the use of the proofs by enrolment are proven with a fake provider (Application, API, Integration) and the mock backend plays the round trip in the page. Owner check and a real provider run are the way to DONE. Not covered: linking or unlinking a provider by step-up (G01, G02) and the first password for a person with no password (K08).
+
 ### UC-IDN-K07 Change my password
+
 - Capability: K Security settings
 - Actors and permission: signed-in person with a password; step-up of purpose `ChangePassword`; `AuthSensitiveByUser`.
 - Preconditions: current password correct.
@@ -816,10 +861,11 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - UI states: validation error, pending, success, locked.
 - Rules: ID sections 12, 20; ID-006; IAREQ015, IAREQ056.
 - Acceptance: Given a second device, when the password changes, then that device is signed out. Given a wrong current password, then no change.
-- Evidence: BE `Auth/Commands/ChangePassword/ChangePassword.cs`; API `Auth/Commands/ChangePasswordEndpoint.cs` (`POST /api/v1/auth/change-password`) · FE `account-password-panel.tsx`, `packages/features/account/src/core/password.ts` · Design Final-Account · Tests Application `ChangePasswordTests`, Application `ChangePasswordCommandValidatorTests`, API `ChangePasswordEndpointTests`, FE `password.unit.test.ts` · Real e2e none
-- State: HARDENING. Built: the current password and (with a factor on) the proof are both checked and share the step-up lockout; the validator refuses the same password; every session, this one too, ends and the user's access tokens are cut off. Tested: Application `ChangePasswordTests` (guess budget exhausted, wrong current password counts against the user and changes nothing, proof consumed once, sessions revoked), Application `ChangePasswordCommandValidatorTests` (new: the same password refused, short password refused, missing current password refused), API `ChangePasswordEndpointTests`. Missing: owner check, real spec.
+- Evidence: BE `Auth/Commands/ChangePassword/ChangePassword.cs`; API `Auth/Commands/ChangePasswordEndpoint.cs` (`POST /api/v1/auth/change-password`) · FE `account-password-panel.tsx`, `packages/features/account/src/core/password.ts` · Design Final-Account · Tests Application `ChangePasswordTests`, Application `ChangePasswordCommandValidatorTests`, API `ChangePasswordEndpointTests`, FE `password.unit.test.ts` · Real e2e `frontend/e2e/real/account-security.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Built: the current password and (with a factor on) the proof are both checked and share the step-up lockout; the validator refuses the same password; every session, this one too, ends and the user's access tokens are cut off. Tested: Application `ChangePasswordTests` (guess budget exhausted, wrong current password counts against the user and changes nothing, proof consumed once, sessions revoked), Application `ChangePasswordCommandValidatorTests` (new: the same password refused, short password refused, missing current password refused), API `ChangePasswordEndpointTests`. Real e2e: `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack (2 of 2): the same password and a wrong current password are refused, a change ends the other device's session, the old password stops working and the new one signs in.
 
 ### UC-IDN-K08 Set a first password (enterprise baseline)
+
 - Capability: K Security settings
 - Actors and permission: signed-in person with no password credential (provider sign-in).
 - Preconditions: step-up by provider.
@@ -834,6 +880,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DEFINED. Missing: all. Lead decision (2026-10-30): offered through the provider step-up.
 
 ### UC-IDN-K09 Change my sign-in email
+
 - Capability: K Security settings
 - Actors and permission: signed-in person; step-up of purpose `ChangeSecurityIdentity` (lead decision).
 - Preconditions: the new email is free.
@@ -848,6 +895,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: IMPLEMENTING. Built (security stop-gap inside the lead decision): the step-up. Missing: the pending-email model (the sign-in email still changes before the new address is proven), the old-address notice, the neutral answer, other sessions ending on confirmation, the screen, an artboard. `UpdateEmailTests` call the command without a proof and need updating. A session without proof can no longer change the sign-in email, which closed an account takeover path (change the email, then reset the password to it).
 
 ### UC-IDN-K10 Notify me of security changes (enterprise baseline)
+
 - Capability: K Security settings
 - Actors and permission: system; the person receives.
 - Preconditions: a security event.
@@ -862,6 +910,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - State: DEFINED. Missing: all. Lead decision (2026-10-30): the events above are mailed, new-device mail only for a client address and agent not seen in the last 90 days.
 
 ### UC-IDN-K11 Operator audit of identity security changes
+
 - Capability: K Security settings
 - Actors and permission: Account or platform auditor under Governance (see the audit use cases of the governance catalog).
 - Preconditions: audit read permission.
@@ -880,6 +929,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 Tokens are workspace-scoped credentials bound to the person who issued them (`ApiToken.Create` takes account, workspace and user). They are issued and revoked under the workspace route; the permission is `ManageApiTokens` on the workspace resource (Governance, see [workspace-governance](../teams/workspace-governance.md)).
 
 ### UC-IDN-L01 List workspace API tokens
+
 - Capability: L API token lifecycle
 - Actors and permission: Workspace Owner or Admin (`ManageApiTokens`); a person without it gets the same NotFound as a missing workspace.
 - Preconditions: none.
@@ -894,6 +944,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: IMPLEMENTING. Missing: screen, artboard, paging, real spec.
 
 ### UC-IDN-L02 Issue an API token
+
 - Capability: L API token lifecycle
 - Actors and permission: Workspace Owner or Admin (`ManageApiTokens`); step-up of purpose `IssueApiToken`.
 - Preconditions: a bound session; the email is confirmed (to be decided with workspace rules).
@@ -908,6 +959,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: IMPLEMENTING. Missing: screen, artboard, required expiry (L06), scopes (L05), idempotency note.
 
 ### UC-IDN-L03 Revoke an API token
+
 - Capability: L API token lifecycle
 - Actors and permission: Workspace Owner or Admin (`ManageApiTokens`).
 - Preconditions: the token belongs to the workspace.
@@ -922,6 +974,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: IMPLEMENTING. Missing: screen, artboard, real spec.
 
 ### UC-IDN-L04 Call the API with a token
+
 - Capability: L API token lifecycle
 - Actors and permission: an integration client holding a token; the acting principal is an API token (ID-013).
 - Preconditions: an Active, unexpired token.
@@ -936,6 +989,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: IMPLEMENTING. Missing: scope enforcement (L05), a decision that tokens may not reach person-level Identity routes (sessions, security, profile).
 
 ### UC-IDN-L05 Limit a token to chosen scopes
+
 - Capability: L API token lifecycle
 - Actors and permission: Workspace Owner or Admin issuing the token.
 - Preconditions: a published scope vocabulary.
@@ -950,6 +1004,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: BLOCKED. Needs a product decision on the scope vocabulary (per context, read and write) and on whether a token may call person-level routes; a token acting as a full user is a security-principal choice.
 
 ### UC-IDN-L06 Cap token lifetime (enterprise baseline)
+
 - Capability: L API token lifecycle
 - Actors and permission: system, at issue.
 - Preconditions: none.
@@ -964,6 +1019,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: DEFINED. Missing: rule and tests. Lead decision (2026-10-30): expiry required, at most 365 days.
 
 ### UC-IDN-L07 Show when a token was last used (enterprise baseline)
+
 - Capability: L API token lifecycle
 - Actors and permission: Workspace Owner or Admin.
 - Preconditions: none.
@@ -978,6 +1034,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - State: DEFINED. Missing: DTO column, screen.
 
 ### UC-IDN-L08 Stop tokens of a person who leaves
+
 - Capability: L API token lifecycle
 - Actors and permission: system.
 - Preconditions: the issuer is disabled (UC-IDN-D04) or removed from the workspace (Workspaces).
@@ -994,6 +1051,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 ## Capability M: Identity profile
 
 ### UC-IDN-M01 Change my display name
+
 - Capability: M Identity profile read and update
 - Actors and permission: signed-in person; own profile only (IAREQ011).
 - Preconditions: none.
@@ -1004,10 +1062,11 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - UI states: pristine, dirty with save bar, pending, success, validation error (empty, or longer than 200 characters).
 - Rules: ID section 7 (display change never changes security identity); IAREQ010, IAREQ011.
 - Acceptance: Given a new name, when saved, then it shows in `/auth/me`. Given a blank name, then a validation error.
-- Evidence: BE `Profiles/Commands/UpdateProfile/UpdateProfile.cs`; API `Profile/Commands/UpdateProfileEndpoint.cs` (`PATCH /api/v1/profile`) · FE `.../account/profile.tsx`, `use-update-profile.ts` · Design Final-Account, Final-M-Account · Tests Application `UpdateProfileTests`, Application `UpdateProfileCommandValidatorTests`, Domain `UserNameTests`, API `ProfileEndpointTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: HARDENING. Built: one constant `User.MaxNameLength` = 200 used by the user and both validators; the page refuses a longer name; the external photo address must be an absolute https address without credentials and at most 500 characters; a signed-in person who no longer exists answers 401 like the session read. Tested: Application `UpdateProfileCommandValidatorTests` (new: a name at 200 accepted, 201 refused, blank refused; https address accepted; http, credentials, relative, `javascript:` and over 500 characters refused), Application `UpdateProfileTests` (a missing person gets the session failure). Correction: Domain `UserNameTests` has no 101-character test (`UserName` has no length rule; the limit is on `User`), so it needs no update. Missing: owner check, real spec. The external address still duplicates M03; the web never sends it.
+- Evidence: BE `Profiles/Commands/UpdateProfile/UpdateProfile.cs`; API `Profile/Commands/UpdateProfileEndpoint.cs` (`PATCH /api/v1/profile`) · FE `.../account/profile.tsx`, `use-update-profile.ts` · Design Final-Account, Final-M-Account · Tests Application `UpdateProfileTests`, Application `UpdateProfileCommandValidatorTests`, Domain `UserNameTests`, API `ProfileEndpointTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e `frontend/e2e/real/account-profile.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Built: one constant `User.MaxNameLength` = 200 used by the user and both validators; the page refuses a longer name; the external photo address must be an absolute https address without credentials and at most 500 characters; a signed-in person who no longer exists answers 401 like the session read. Tested: Application `UpdateProfileCommandValidatorTests` (new: a name at 200 accepted, 201 refused, blank refused; https address accepted; http, credentials, relative, `javascript:` and over 500 characters refused), Application `UpdateProfileTests` (a missing person gets the session failure). Correction: Domain `UserNameTests` has no 101-character test (`UserName` has no length rule; the limit is on `User`), so it needs no update. The external address still duplicates M03; the web never sends it. Real e2e: `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack (2 of 2): a new name shows in `/auth/me`, and a blank name cannot be saved.
 
 ### UC-IDN-M02 Read and save my preferences
+
 - Capability: M Identity profile read and update
 - Actors and permission: signed-in person; own preferences.
 - Preconditions: none.
@@ -1018,10 +1077,11 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - UI states: loading, pristine, dirty, pending, validation error, conflict (nothing was saved; the page says so and shows what is stored), success.
 - Rules: ID section 7 (D15); ID-015.
 - Acceptance: Given two devices, when both save from version 3, then one succeeds and one gets 412 and changes nothing.
-- Evidence: BE `Profiles/Queries/GetAccountPreferences`, `Profiles/Commands/UpdateAccountPreferences/UpdateAccountPreferences.cs`; API `Profile/Commands/AccountPreferencesEndpoints.cs` (`GET`, `PATCH /api/v1/profile/preferences`) · FE `.../account/profile.tsx`, `appearance.tsx`, `packages/features/account/src/core/phone.ts`, `web/profile/account-profile-surface.tsx` · Design Final-Account, Final-M-Account · Tests Domain `UserProfileAccountPreferencesTests`, `UserPreferencesTests`, Application `UpdateAccountPreferencesTests`, `GetAccountPreferencesTests`, API `AccountPreferencesEndpointTests`, FE `phone.unit.test.ts` · Real e2e none
-- State: HARDENING. Built: the page shows a conflict sentence on a 412 instead of the generic error. Tested: Application `UpdateAccountPreferencesTests` (a stale version throws the precondition failure and leaves the profile untouched; a version claimed before anything is saved is refused; partial update advances the version once; no change is a no-op), API `AccountPreferencesEndpointTests` (missing `expectedVersion` is a 400); the 412 problem mapping is tested generically in API `PreconditionFailedProblemTests`. Not tested over HTTP: a stale preferences PATCH (the API host mocks that handler). Missing: owner check, real spec. The profile page saves the name, the preferences and the job title in three calls; a failure after the first leaves it saved.
+- Evidence: BE `Profiles/Queries/GetAccountPreferences`, `Profiles/Commands/UpdateAccountPreferences/UpdateAccountPreferences.cs`; API `Profile/Commands/AccountPreferencesEndpoints.cs` (`GET`, `PATCH /api/v1/profile/preferences`) · FE `.../account/profile.tsx`, `appearance.tsx`, `packages/features/account/src/core/phone.ts`, `web/profile/account-profile-surface.tsx` · Design Final-Account, Final-M-Account · Tests Domain `UserProfileAccountPreferencesTests`, `UserPreferencesTests`, Application `UpdateAccountPreferencesTests`, `GetAccountPreferencesTests`, API `AccountPreferencesEndpointTests`, FE `phone.unit.test.ts` · Real e2e `frontend/e2e/real/account-profile.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Built: the page shows a conflict sentence on a 412 instead of the generic error. Tested: Application `UpdateAccountPreferencesTests` (a stale version throws the precondition failure and leaves the profile untouched; a version claimed before anything is saved is refused; partial update advances the version once; no change is a no-op), API `AccountPreferencesEndpointTests` (missing `expectedVersion` is a 400); the 412 problem mapping is tested generically in API `PreconditionFailedProblemTests`. Not tested over HTTP: a stale preferences PATCH (the API host mocks that handler). The profile page saves the name, the preferences and the job title in three calls; a failure after the first leaves it saved. Real e2e: `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack (2 of 2): another device saves first, the stale save shows the conflict sentence and changes nothing.
 
 ### UC-IDN-M03 Upload my profile photo
+
 - Capability: M Identity profile read and update
 - Actors and permission: signed-in person; own photo.
 - Preconditions: none.
@@ -1032,10 +1092,11 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - UI states: pending (the photo buttons wait and a status line says the photo is updating), success, unsupported, too large (the web refuses above 1,500,000 bytes before sending, the producer above 2,000,000).
 - Rules: ID section 7 (photo).
 - Acceptance: Given a PNG renamed `.jpg`, when uploaded, then it is accepted by its bytes; given an SVG, then 415.
-- Evidence: BE `Profiles/Commands/UploadAvatar/UploadAvatar.cs`; API `Profile/Commands/AvatarEndpoints.cs` (`PUT /api/v1/profile/avatar`) · FE `.../account/profile.tsx` · Design Final-Account · Tests Application `AvatarCommandsTests`, API `AvatarEndpointTests`, Domain `UserAvatarTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e none
-- State: HARDENING. Tested: Application `AvatarCommandsTests` (format derived from the bytes, not the declared type; over-cap refused and registered for cleanup; exact cap accepted; replacing points at the new object), API `AvatarEndpointTests` (non-image 415 with the stable code, JSON body 415, over the cap 413 and nothing stored, a PNG served with hardening headers), Domain `UserAvatarTests`. Missing: owner check, real spec.
+- Evidence: BE `Profiles/Commands/UploadAvatar/UploadAvatar.cs`; API `Profile/Commands/AvatarEndpoints.cs` (`PUT /api/v1/profile/avatar`) · FE `.../account/profile.tsx` · Design Final-Account · Tests Application `AvatarCommandsTests`, API `AvatarEndpointTests`, Domain `UserAvatarTests`; mock e2e `account-pages.mock.e2e.spec.ts` · Real e2e `frontend/e2e/real/account-profile.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Tested: Application `AvatarCommandsTests` (format derived from the bytes, not the declared type; over-cap refused and registered for cleanup; exact cap accepted; replacing points at the new object), API `AvatarEndpointTests` (non-image 415 with the stable code, JSON body 415, over the cap 413 and nothing stored, a PNG served with hardening headers), Domain `UserAvatarTests`. Real e2e: `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack (2 of 2): an SVG is refused with the unsupported sentence, a PNG named `.jpg` is accepted by its bytes.
 
 ### UC-IDN-M04 Remove my profile photo
+
 - Capability: M Identity profile read and update
 - Actors and permission: signed-in person; own photo.
 - Preconditions: none.
@@ -1046,10 +1107,11 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - UI states: destructive confirmation (in place, the safe answer is focused and focus returns to the button), pending, success.
 - Rules: ID section 7.
 - Acceptance: Given a photo, when removed, then a read of it answers 404.
-- Evidence: BE `Profiles/Commands/RemoveAvatar/RemoveAvatar.cs`; API `Profile/Commands/AvatarEndpoints.cs` (`DELETE /api/v1/profile/avatar`) · FE `.../account/profile.tsx` · Design Final-Account · Tests Application `AvatarCommandsTests`, API `AvatarEndpointTests`, Infrastructure `AvatarObjectReaperTests`, Integration `AccountWorkspacesAndAvatarRlsIntegrationTests` · Real e2e none
-- State: HARDENING. Built: the confirmation and the pending state. Tested: Application `AvatarCommandsTests.Remove_ClearsThePhoto_AndIsIdempotent`, API `AvatarEndpointTests` (remove, then the read is 404), Infrastructure `AvatarObjectReaperTests` (only avatar objects older than the grace period are offered; the store refuses to delete what it cannot prove unreferenced; a failing delete is retried), Integration `AccountWorkspacesAndAvatarRlsIntegrationTests.Avatar_UploadReplaceRemove_UnderTheAppRole_AndTheSweepReapsOnlyUnreferencedObjects` (runs in CI, not locally). Missing: owner check, real spec.
+- Evidence: BE `Profiles/Commands/RemoveAvatar/RemoveAvatar.cs`; API `Profile/Commands/AvatarEndpoints.cs` (`DELETE /api/v1/profile/avatar`) · FE `.../account/profile.tsx` · Design Final-Account · Tests Application `AvatarCommandsTests`, API `AvatarEndpointTests`, Infrastructure `AvatarObjectReaperTests`, Integration `AccountWorkspacesAndAvatarRlsIntegrationTests` · Real e2e `frontend/e2e/real/account-profile.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Built: the confirmation and the pending state. Tested: Application `AvatarCommandsTests.Remove_ClearsThePhoto_AndIsIdempotent`, API `AvatarEndpointTests` (remove, then the read is 404), Infrastructure `AvatarObjectReaperTests` (only avatar objects older than the grace period are offered; the store refuses to delete what it cannot prove unreferenced; a failing delete is retried), Integration `AccountWorkspacesAndAvatarRlsIntegrationTests.Avatar_UploadReplaceRemove_UnderTheAppRole_AndTheSweepReapsOnlyUnreferencedObjects` (runs in CI, not locally). Real e2e: `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack (2 of 2): the confirmation asks first, keeping changes nothing, removing makes the read answer 404.
 
 ### UC-IDN-M05 Read a person's photo
+
 - Capability: M Identity profile read and update
 - Actors and permission: the person, or an active member of a Workspace they share (the product text names no guest exclusion; the stricter non-guest rule is the phone's, ID section 7).
 - Preconditions: an uploaded photo.
@@ -1060,8 +1122,8 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - UI states: image, initials fallback.
 - Rules: ID section 7; ID-012.
 - Acceptance: Given a reader who shares no workspace, when they read it, then 404 identical to "no photo".
-- Evidence: BE `Profiles/Queries/GetUserAvatar`; API `Users/MapUserAvatarEndpoints.cs` (`GET /api/v1/users/{userId}/avatar`) · FE `packages/features/account/src/web/profile/account-profile-surface.tsx` · Design Final-Account · Tests Application `GetUserAvatarTests`, API `AvatarEndpointTests` · Real e2e none
-- State: INTEGRATING. Nothing changed in this build; the read already answers one 404 for a stranger, for a person without a photo and for a person who does not exist. Missing: tests and owner check, real spec, cross-workspace negative at the HTTP level.
+- Evidence: BE `Profiles/Queries/GetUserAvatar`; API `Users/MapUserAvatarEndpoints.cs` (`GET /api/v1/users/{userId}/avatar`) · FE `packages/features/account/src/web/profile/account-profile-surface.tsx` · Design Final-Account · Tests Application `GetUserAvatarTests`, API `AvatarEndpointTests` · Real e2e `frontend/e2e/real/account-profile.real.e2e.spec.ts`
+- State: DONE (set 2026-11-17). Nothing changed in this build; the read already answers one 404 for a stranger, for a person without a photo and for a person who does not exist. Real e2e: `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack (2 of 2): the person reads their own photo with `nosniff`; a stranger who shares no workspace gets the same 404 as a person with no photo.
 
 # 4. Product decisions applied
 
@@ -1106,19 +1168,19 @@ For `docs/workstreams/teams/identity-accounts.md`: add "registration and email c
 
 # 6. Not covered
 
-| Product-doc section | Reason |
-|---|---|
-| Sections 1 to 3, 10, 11, 21, 36, 37, 71 to 77 (mission, vocabulary, checklists, source alignment, stop conditions) | Principles and checklists, not user actions; they are cited by the rules lines above. |
-| Sections 4, 5, 6, 63 (stable principal, email is not identity) | Held by every use case that changes the email or links a provider (UC-IDN-K09, F02); no separate action exists. |
-| Section 8 and 56 (deleted or anonymized User), 9, 57 | Owner decision 48: no account deletion or data export yet. The Domain `User` has soft delete; no use case is offered until the owner decides retention. |
-| Section 29, 45 (OAuth for external business providers) | Integrations owns it; see [automation-integrations](automation-integrations.md). |
-| Sections 30, 31 (account IdP configuration) and SCIM directory | Accounts owns configuration; Identity only authenticates (UC-IDN-B08) and ends access (UC-IDN-D04); see [accounts](accounts.md). |
+| Product-doc section                                                                                                                     | Reason                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sections 1 to 3, 10, 11, 21, 36, 37, 71 to 77 (mission, vocabulary, checklists, source alignment, stop conditions)                      | Principles and checklists, not user actions; they are cited by the rules lines above.                                                                                                                                                                                                              |
+| Sections 4, 5, 6, 63 (stable principal, email is not identity)                                                                          | Held by every use case that changes the email or links a provider (UC-IDN-K09, F02); no separate action exists.                                                                                                                                                                                    |
+| Section 8 and 56 (deleted or anonymized User), 9, 57                                                                                    | Owner decision 48: no account deletion or data export yet. The Domain `User` has soft delete; no use case is offered until the owner decides retention.                                                                                                                                            |
+| Section 29, 45 (OAuth for external business providers)                                                                                  | Integrations owns it; see [automation-integrations](automation-integrations.md).                                                                                                                                                                                                                   |
+| Sections 30, 31 (account IdP configuration) and SCIM directory                                                                          | Accounts owns configuration; Identity only authenticates (UC-IDN-B08) and ends access (UC-IDN-D04); see [accounts](accounts.md).                                                                                                                                                                   |
 | Sections 40 to 44, 60, 61, 68 to 70 (relations to Accounts, Workspaces, Governance, Billing, workspace switch, suspension, entitlement) | Boundaries, not actions. The default workspace is an Identity fact on the profile but its choice is validated and cleared by Workspaces; it is covered in [workspaces](workspaces.md). The sign-in email port `IIdentityUserFacts` is a consumer port covered by the Workspaces members use cases. |
-| Sections 46, 47, 48 (service and system principals, acting principal) | Automation and platform own execution principals; see [automation-integrations](automation-integrations.md) and [platform-foundation](platform-foundation.md). API token principals are in UC-IDN-L04. |
-| Section 50, 51 (events and facts) | The only cross-boundary Identity fact with a consumer is registration completed (UC-IDN-B03); other facts wait for a consumer. |
-| Section 64, 65 (identity merge) | Not supported on purpose. A colliding provider or email is refused (UC-IDN-F02); merge needs a product and security policy first. |
-| Invited registration of a guest | The invitation belongs to Workspaces; Identity only registers the person; see [workspaces](workspaces.md). |
-| Passkeys (WebAuthn), SCIM-driven Identity changes | Enterprise baseline items without product rule or owner demand; listed in the baseline table of Part 1. |
+| Sections 46, 47, 48 (service and system principals, acting principal)                                                                   | Automation and platform own execution principals; see [automation-integrations](automation-integrations.md) and [platform-foundation](platform-foundation.md). API token principals are in UC-IDN-L04.                                                                                             |
+| Section 50, 51 (events and facts)                                                                                                       | The only cross-boundary Identity fact with a consumer is registration completed (UC-IDN-B03); other facts wait for a consumer.                                                                                                                                                                     |
+| Section 64, 65 (identity merge)                                                                                                         | Not supported on purpose. A colliding provider or email is refused (UC-IDN-F02); merge needs a product and security policy first.                                                                                                                                                                  |
+| Invited registration of a guest                                                                                                         | The invitation belongs to Workspaces; Identity only registers the person; see [workspaces](workspaces.md).                                                                                                                                                                                         |
+| Passkeys (WebAuthn), SCIM-driven Identity changes                                                                                       | Enterprise baseline items without product rule or owner demand; listed in the baseline table of Part 1.                                                                                                                                                                                            |
 
 ## Endpoints with no use case
 

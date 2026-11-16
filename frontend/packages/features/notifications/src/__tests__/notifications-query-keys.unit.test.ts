@@ -17,10 +17,10 @@ describe("notificationsQueryKeys Q7 purity tests", () => {
     }
   });
 
-  it("keys the preferences by workspace, never by account", () => {
-    const key = notificationsQueryKeys.preferences("ws-1");
+  it("keys the preferences by account, never by workspace", () => {
+    const key = notificationsQueryKeys.preferences("acc-1");
     expect(() => assertNotrelixQueryKey(key)).not.toThrow();
-    expect(key[0]).toBe("workspace");
-    expect(key[1]).toBe("ws-1");
+    expect(key[0]).toBe("account");
+    expect(key[1]).toBe("acc-1");
   });
 });

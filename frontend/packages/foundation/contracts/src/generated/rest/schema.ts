@@ -1678,6 +1678,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification of the caller unread again
+         * @description The entry stays in the list, unread. A notification that is not the caller's, already unread, done or snoozed, changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.MarkInboxEntryUnread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/done": {
         parameters: {
             query?: never;
@@ -1847,7 +1867,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/workspaces/{workspaceId}/notification-preferences": {
+    "/api/v1/profile/notification-preferences": {
         parameters: {
             query?: never;
             header?: never;
@@ -1855,7 +1875,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get the caller's notification preferences in a workspace
+         * Get the caller's notification preferences (every workspace)
          * @description One row per notification type (assigned, mention, approval, overdue, watching, invitation, digest) with its in-app and email value; a cell the caller never changed has its default. Version is 0 until the first change is saved.
          */
         get: operations["Collaboration.Preferences.GetNotificationPreferences"];
@@ -1865,7 +1885,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change the caller's notification preferences in a workspace
+         * Change the caller's notification preferences (every workspace)
          * @description Partial and all-or-nothing: only the named channels of the named types change. Answers the full matrix, 412 when expectedVersion is stale, 400 or 422 for an unknown type or no change requested. Setting values that already hold changes nothing and keeps the version.
          */
         patch: operations["Collaboration.Preferences.UpdateNotificationPreferences"];
@@ -1897,7 +1917,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List blocks for a page */
+        /**
+         * List the blocks of a page, 1 000 at a time
+         * @description Position order, at most 1 000 a window. Pass nextCursor back as cursor for the next window.
+         */
         get: operations["Documents.Blocks.ListPageBlocks"];
         put?: never;
         /** Create a new block */
@@ -2032,6 +2055,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/pages/{pageId}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicate a page without its subpages */
+        post: operations["Documents.Pages.DuplicatePage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}": {
         parameters: {
             query?: never;
@@ -2047,7 +2087,7 @@ export interface paths {
         delete: operations["Documents.Pages.DeletePage"];
         options?: never;
         head?: never;
-        /** Rename a page */
+        /** Rename a page or set its icon */
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
@@ -2111,6 +2151,23 @@ export interface paths {
         };
         /** Get page history */
         get: operations["Documents.Pages.GetPageHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the activity feed of a page (rename, move, trash, restore) */
+        get: operations["Documents.Pages.GetPageActivity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2199,6 +2256,50 @@ export interface paths {
         put?: never;
         /** Create a page from a template */
         post: operations["Documents.Templates.CreatePageFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/page-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a template
+         * @description Pages made from it stay. Pass expectedVersion as a query parameter; 412 when it is stale.
+         */
+        delete: operations["Documents.Templates.DeletePageTemplate"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename a template or change its description
+         * @description The creator or a Workspace Admin. A stale expectedVersion is 412.
+         */
+        patch: operations["Documents.Templates.UpdatePageTemplate"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/page-templates/{templateId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a template
+         * @description It leaves the gallery; pages already made from it are unchanged. Archiving an archived template is a no-op. A stale expectedVersion is 412.
+         */
+        post: operations["Documents.Templates.ArchivePageTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5916,6 +6017,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/{formId}/submissions/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count the submissions of a form by tab
+         * @description Totals over all responses, not one page: new, processed, rejected and spam.
+         */
+        get: operations["WorkManagement.Forms.CountSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/form-submissions/{submissionId}/process": {
         parameters: {
             query?: never;
@@ -7244,6 +7365,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/spaces/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the deleted spaces that can still be restored (30 days), for a workspace Owner or Admin */
+        get: operations["Workspaces.Spaces.GetDeletedSpaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}": {
         parameters: {
             query?: never;
@@ -7256,7 +7394,7 @@ export interface paths {
         /** Rename a space */
         put: operations["Workspaces.Spaces.RenameSpace"];
         post?: never;
-        /** Permanently delete a space */
+        /** Delete a space (restorable for 30 days) */
         delete: operations["Workspaces.Spaces.DeleteSpace"];
         options?: never;
         head?: never;
@@ -8212,6 +8350,9 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.DuplicatePageRequest": {
+            title?: string | null;
+        };
         "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
             /** Format: uuid */
             parentId?: string | null;
@@ -8228,6 +8369,7 @@ export interface components {
             title?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            icon?: string | null;
         };
         "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
             title?: string | null;
@@ -8241,6 +8383,16 @@ export interface components {
             pageId?: string;
             name?: string | null;
             description?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Templates.Requests.PageTemplateVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Documents.Templates.Requests.UpdatePageTemplateRequest": {
+            name?: string | null;
+            description?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Versions.Requests.CreatePageVersionRequest": {
             name?: string | null;
@@ -8806,6 +8958,7 @@ export interface components {
             answers?: {
                 [key: string]: unknown;
             } | null;
+            website?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
             title?: string | null;
@@ -9212,6 +9365,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfApprovalRequestDto": {
             items?: components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.ApprovalRequestDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfBlockDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -9901,6 +10059,12 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string | null;
         };
+        "Notrelix.Application.Features.Documents.DTOs.DuplicatedPageDto": {
+            /** Format: uuid */
+            pageId?: string;
+            /** Format: int32 */
+            droppedBlockCount?: number;
+        };
         "Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto": {
             /** Format: uuid */
             id?: string;
@@ -9939,6 +10103,7 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
             parentTitle?: string | null;
+            canEdit?: boolean | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
             /** Format: uuid */
@@ -9969,6 +10134,9 @@ export interface components {
             createdBy?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            version?: number;
+            canManage?: boolean;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto": {
             /** Format: uuid */
@@ -11268,6 +11436,16 @@ export interface components {
             value?: unknown;
             errorCode?: string | null;
         };
+        "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto": {
+            /** Format: int32 */
+            new?: number;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int32 */
+            rejected?: number;
+            /** Format: int32 */
+            spam?: number;
+        };
         "Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionDto": {
             /** Format: uuid */
             id?: string;
@@ -11753,6 +11931,17 @@ export interface components {
             language?: string | null;
             timeZone?: string | null;
             weekStart?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
             /** Format: uuid */
@@ -17229,6 +17418,29 @@ export interface operations {
             };
         };
     };
+    "Collaboration.Notifications.MarkInboxEntryUnread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Collaboration.Notifications.MarkInboxEntryDone": {
         parameters: {
             query?: never;
@@ -17538,9 +17750,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -17560,9 +17770,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspaceId: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -17706,7 +17914,10 @@ export interface operations {
     };
     "Documents.Blocks.ListPageBlocks": {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
             header?: never;
             path: {
                 pageId: string;
@@ -17721,7 +17932,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.BlockDto"][];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfBlockDto"];
                 };
             };
         };
@@ -18141,6 +18352,52 @@ export interface operations {
             };
         };
     };
+    "Documents.Pages.DuplicatePage": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.DuplicatePageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.DuplicatedPageDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Documents.Pages.GetPage": {
         parameters: {
             query?: never;
@@ -18295,6 +18552,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageHistoryDto"][];
+                };
+            };
+        };
+    };
+    "Documents.Pages.GetPageActivity": {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Activity.DTOs.ResourceActivityPageDto"];
                 };
             };
         };
@@ -18486,6 +18768,193 @@ export interface operations {
             };
         };
     };
+    "Documents.Templates.DeletePageTemplate": {
+        parameters: {
+            query?: {
+                expectedVersion?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Documents.Templates.UpdatePageTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Templates.Requests.UpdatePageTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Documents.Templates.ArchivePageTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Templates.Requests.PageTemplateVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Documents.Versions.ListPageVersions": {
         parameters: {
             query?: {
@@ -18514,7 +18983,10 @@ export interface operations {
     "Documents.Versions.CreatePageVersion": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 pageId: string;
             };
@@ -18529,11 +19001,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -18563,7 +19051,10 @@ export interface operations {
     "Documents.Versions.RestorePageVersion": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 pageId: string;
                 versionId: string;
@@ -18579,6 +19070,8 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
@@ -18594,6 +19087,13 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Precondition Failed */
             412: {
                 headers: {
@@ -18602,6 +19102,13 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -27750,6 +28257,28 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Forms.CountSubmissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.WorkManagement.Common.DTOs.FormSubmissionCountsDto"];
+                };
+            };
+        };
+    };
     "WorkManagement.Forms.ProcessSubmission": {
         parameters: {
             query?: never;
@@ -27883,7 +28412,9 @@ export interface operations {
     };
     "WorkManagement.Forms.ReopenSubmission": {
         parameters: {
-            query?: never;
+            query?: {
+                clearItem?: boolean;
+            };
             header: {
                 /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
                 "Idempotency-Key": string;
@@ -30551,6 +31082,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Spaces.GetDeletedSpaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Spaces.GetSpace": {
         parameters: {
             query?: never;
@@ -30603,7 +31156,9 @@ export interface operations {
     };
     "Workspaces.Spaces.DeleteSpace": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;

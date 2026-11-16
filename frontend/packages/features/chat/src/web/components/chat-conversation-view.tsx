@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
   EyeOff,
@@ -50,6 +50,8 @@ export interface ChatConversationHeaderProps {
   readonly onHide: () => void;
   /** Opens the message search (UC-CHT-H07). */
   readonly onSearch?: () => void;
+  /** Panel toggles (Pins, Following) drawn in the header actions. */
+  readonly actions?: ReactNode;
 }
 
 /** The header of an open conversation: who it is with, the details toggle and the hide action. */
@@ -65,6 +67,7 @@ export function ChatConversationHeader({
   onToggleDetails,
   onHide,
   onSearch,
+  actions,
 }: ChatConversationHeaderProps) {
   const title = conversationTitle(conversation, viewerId, nameOf);
   const counterpart = directCounterpart(conversation, viewerId);
@@ -100,22 +103,23 @@ export function ChatConversationHeader({
         className="size-9"
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <h1 className="flex min-w-0 items-center gap-2 text-base font-semibold text-foreground">
-          <span className="truncate">{title}</span>
+        <h1 className="truncate text-base font-semibold text-foreground">
+          {title}
+        </h1>
+        <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           {blocked ? (
-            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="shrink-0 rounded-full border border-border px-1.5 text-xs font-medium">
               {copy.dm.details.blockedBadge}
             </span>
-          ) : null}
-        </h1>
-        <p
-          className="truncate text-xs text-muted-foreground"
-          data-testid="chat-conversation-subtitle"
-        >
-          {subtitle}
+          ) : (
+            <span className="truncate" data-testid="chat-conversation-subtitle">
+              {subtitle}
+            </span>
+          )}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {actions}
         {onSearch ? (
           <Button
             variant="ghost"

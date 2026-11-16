@@ -103,6 +103,40 @@ public sealed class RealtimeTypingPresenceTests
     }
 
     [Fact]
+    public async Task A_stop_reaches_the_others_at_once_inside_the_rate_limit_and_the_next_start_is_delivered()
+    {
+        var bus = NewBus();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, Options(o => o.TypingMinInterval = TimeSpan.FromSeconds(30)));
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
+        (await alice.ReceiveAsync("typing")).GetProperty("expiresInMs").GetInt64().Should().Be(5000);
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp", state = "stop" });
+        var stop = await alice.ReceiveAsync("typing");
+        stop.GetProperty("userId").GetGuid().Should().Be(Bob);
+        stop.GetProperty("expiresInMs").GetInt64().Should().Be(0);
+
+        // The stop re-armed the start: it is not held back by the 30 s limit.
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
+        (await alice.ReceiveAsync("typing")).GetProperty("expiresInMs").GetInt64().Should().Be(5000);
+    }
+
+    [Fact]
+    public async Task A_stop_without_a_start_and_a_stop_with_an_unknown_state_are_not_delivered()
+    {
+        var bus = NewBus();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob);
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp", state = "stop" });
+        (await NothingArrivesAsync(alice, "typing")).Should().BeTrue("nothing was started");
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp", state = "bogus" });
+        await NothingArrivesAsync(alice, "typing");
+    }
+
+    [Fact]
     public async Task Typing_on_an_unknown_subscription_or_a_non_channel_scope_is_ignored_without_a_reply()
     {
         var bus = NewBus();

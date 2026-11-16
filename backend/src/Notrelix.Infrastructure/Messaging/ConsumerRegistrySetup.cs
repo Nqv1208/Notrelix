@@ -196,6 +196,46 @@ public static class ConsumerRegistrySetup
 
             new ConsumerDefinition
             {
+                ConsumerName = "PageRenamedActivityConsumer",
+                EventName = "page.renamed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-renamed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page being renamed",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageMovedActivityConsumer",
+                EventName = "page.moved",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-moved-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page being moved",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageTrashedActivityConsumer",
+                EventName = "page.archived",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-trashed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page going to the trash",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageRestoredActivityConsumer",
+                EventName = "page.restored",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-restored-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page being restored",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ItemCreatedActivityConsumer",
                 EventName = "board.item.created",
                 EventVersion = 2,
@@ -802,7 +842,17 @@ public static class ConsumerRegistrySetup
                 EventVersion = 1,
                 EndpointName = "notrelix-chat-message-realtime-v1",
                 BoundedContext = "Chat",
-                Description = "Publishes a new message to the realtime gateway (channel frame) and fans out unread counts to the per-user stream",
+                Description = "Publishes a new message to the realtime gateway (channel frame)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageCreatedUnreadConsumer",
+                EventName = "chat.message.created",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-unread-fan-out-v1",
+                BoundedContext = "Chat",
+                Description = "Fans out the unread and mention counts of a new message to the per-user stream, apart from the channel frame",
                 Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition

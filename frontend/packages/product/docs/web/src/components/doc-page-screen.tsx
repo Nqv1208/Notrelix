@@ -1,4 +1,5 @@
 import { useDocLive } from "./use-doc-live";
+import { useOnline } from "./use-online";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AttachmentUploads,
@@ -21,6 +22,9 @@ import {
   createUseCreateVersion,
   createUseRestoreVersion,
   createUseCreatePageTemplate,
+  createUseManagePageTemplates,
+  createUsePageTemplates,
+  createUseDuplicatePage,
   createUseImportPage,
   createUsePage,
   createUsePageBlocks,
@@ -38,7 +42,6 @@ import {
   createUsePageHistory,
   type Block,
   type BlockType,
-  type DocSaveState,
   type DocsApiClient,
   type PageApiEndpoints,
 } from "@notrelix/docs-state";
@@ -55,6 +58,7 @@ import { useDocPageCopy } from "./use-doc-page-copy";
 import type { UseDocPageHost } from "./doc-page-host";
 import {
   blockText,
+  clock,
   dayMonth,
   editedAtLabel,
   referencesOf,
@@ -64,7 +68,6 @@ import {
   toHtml,
   toTocEntries,
   toVersionViews,
-  markVersionDiff,
   toolbarCurrent,
 } from "./doc-page-mapping";
 import type {
@@ -79,8 +82,9 @@ import type {
   DocTaskResolution,
   DocPerson,
   DocMarkTargets,
+  DocTemplatesView,
 } from "./doc-page-models";
-import { isRestrictedTask } from "./doc-page-models";
+import { isRestrictedTask, type DocSaveState } from "./doc-page-models";
 import { readImportFile } from "../import/read-import-file";
 import { DocPageScreenSurface } from "./doc-page-screen-surface";
 import { useDocPanelOpen } from "./use-doc-panel-open";
@@ -108,15 +112,28 @@ interface CreateDocPageScreenDeps {
 
 const NONE: DocOverlay = { kind: "none" };
 
-/** Blocks that point at a page's own attachments: a copy leaves them behind (this client has no video block yet). */
-const ATTACHMENT_BLOCKS: ReadonlySet<BlockType> = new Set(["image", "file"]);
-
 /** Types whose Enter makes another block of the same kind. */
 const REPEATING: ReadonlySet<BlockType> = new Set([
   "numbered_list",
   "bulleted_list",
   "todo",
 ]);
+
+/** The page is not there for this viewer (404) or not theirs to read (403), as opposed to a failed read. */
+function isGone(error: unknown): boolean {
+  const { status } = (error ?? {}) as { status?: unknown };
+  return status === 404 || status === 403;
+}
+
+/** Why a template write was refused, as its row words it. */
+function templateWriteFailure(
+  error: unknown,
+): "conflict" | "forbidden" | "notFound" | "failed" {
+  const { status } = (error ?? {}) as { status?: unknown };
+  if (status === 412) return "conflict";
+  if (status === 403) return "forbidden";
+  return status === 404 ? "notFound" : "failed";
+}
 
 /** Why a move was refused, as the dialog words it. */
 function moveFailure(
@@ -129,6 +146,27 @@ function moveFailure(
   if (status === 412) return "conflict";
   if (code === "documents.page.subtree-not-permitted") return "subtree";
   return status === 400 ? "rule" : "failed";
+}
+
+/** How many blocks a refused restore found changed, added or gone since the person read the page. */
+function conflictCountOf(error: unknown, seen: readonly Block[]): number {
+  const details = (error as { details?: { extensions?: unknown } } | null)
+    ?.details;
+  const current = (
+    details?.extensions as { currentBlocks?: unknown } | undefined
+  )?.currentBlocks;
+  if (!Array.isArray(current)) return 0;
+  const was = new Map(seen.map((block) => [block.id, block.version]));
+  const now = new Map(
+    (current as Array<{ id: string; version: number }>).map((block) => [
+      block.id,
+      block.version,
+    ]),
+  );
+  let changed = 0;
+  for (const [id, version] of now) if (was.get(id) !== version) changed += 1;
+  for (const id of was.keys()) if (!now.has(id)) changed += 1;
+  return changed;
 }
 
 /** The producer refused a trash, restore or delete because some page under the page is not the caller's to change. */
@@ -225,7 +263,10 @@ export function createDocPageScreen({
   const useCreateVersion = createUseCreateVersion(api, endpoints);
   const useRestoreVersion = createUseRestoreVersion(api, endpoints);
   const useCreatePageTemplate = createUseCreatePageTemplate(api, endpoints);
+  const usePageTemplates = createUsePageTemplates(api, endpoints);
+  const useManagePageTemplates = createUseManagePageTemplates(api, endpoints);
   const useImportPage = createUseImportPage(api, endpoints);
+  const useDuplicatePage = createUseDuplicatePage(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
   const useMovePage = createUseMovePage(api, endpoints);
@@ -245,6 +286,10 @@ export function createDocPageScreen({
     const blocksQuery = usePageBlocks(workspaceId, pageId) as {
       data: Block[] | undefined;
       isLoading: boolean;
+      isError: boolean;
+      error?: unknown;
+      refetch: () => unknown;
+      retryRest?: () => void;
     };
     const breadcrumbQuery = usePageBreadcrumb(workspaceId, pageId);
     const commentsQuery = usePageComments(workspaceId, pageId);
@@ -265,13 +310,37 @@ export function createDocPageScreen({
     const createVersion = useCreateVersion(workspaceId, pageId);
     const restoreVersion = useRestoreVersion(workspaceId, pageId);
     const createTemplate = useCreatePageTemplate(workspaceId);
+    const manageTemplates = useManagePageTemplates(workspaceId);
+    const [templateFailure, setTemplateFailure] =
+      useState<DocTemplatesView["failure"]>(null);
+    const [templateBusy, setTemplateBusy] = useState<string | null>(null);
     const importPage = useImportPage(workspaceId);
+    const duplicatePage = useDuplicatePage(workspaceId);
     const [importing, setImporting] = useState<DocImportView>(IDLE_IMPORT);
 
     const page = pageQuery.data ?? null;
     const blocks = useMemo(() => blocksQuery.data ?? [], [blocksQuery.data]);
 
     const [overlay, setOverlay] = useState<DocOverlay>(NONE);
+    const templatesQuery = usePageTemplates(
+      workspaceId,
+      overlay.kind === "templates",
+    );
+    /** One template write: it quotes the version the list holds, and a refusal says why on that row. */
+    const runTemplateWrite = (
+      id: string,
+      write: (version: number) => Promise<unknown>,
+    ) => {
+      const template = templatesQuery.data?.find((item) => item.id === id);
+      if (!template) return;
+      setTemplateFailure(null);
+      setTemplateBusy(id);
+      void write(template.version)
+        .catch((error: unknown) =>
+          setTemplateFailure({ id, kind: templateWriteFailure(error) }),
+        )
+        .finally(() => setTemplateBusy(null));
+    };
     const [panelTab, setPanelTab] = useState<DocPanelTab>("links");
     const [focusedId, setFocusedId] = useState<string | null>(null);
     const [versions, setVersions] = useState<{
@@ -385,10 +454,10 @@ export function createDocPageScreen({
       () => toVersionViews(versionsQuery.data ?? [], copy, now, host.personFor),
       [copy, versionsQuery.data, host.personFor, now],
     );
-    // The version compared with the page: the newest one unless another is chosen.
-    const selectedVersionId = versions
-      ? (versions.selectedId ?? versionList[0]?.id ?? null)
-      : null;
+    // The version the page shows: none while it shows its current content.
+    const selectedVersionId = versions?.selectedId ?? null;
+    // The blocks the viewer saw when a restore was asked (a conflict counts what changed).
+    const restoreSeen = useRef<readonly Block[]>([]);
     const snapshotQuery = useVersionSnapshot(
       workspaceId,
       pageId,
@@ -433,23 +502,27 @@ export function createDocPageScreen({
     const pickerBoards = host.boardChoices;
 
     const blockViews = useMemo(() => {
-      const views = toBlockViews(blocks, {
-        boards: host.boards,
-        resolveTask,
-        pages: readablePages,
-        pageHref: host.pageHref,
-        board: host.board,
-        quotes:
-          panelTab === "comments" && !versions
-            ? comments.flatMap((comment) =>
-                comment.quote ? [comment.quote] : [],
-              )
-            : [],
-      });
-      return versions && snapshotQuery.data
-        ? markVersionDiff(views, blocks, snapshotQuery.data.blocks)
-        : views;
+      const views = toBlockViews(
+        selectedVersionId && snapshotQuery.data
+          ? snapshotQuery.data.blocks
+          : blocks,
+        {
+          boards: host.boards,
+          resolveTask,
+          pages: readablePages,
+          pageHref: host.pageHref,
+          board: host.board,
+          quotes:
+            panelTab === "comments" && !versions
+              ? comments.flatMap((comment) =>
+                  comment.quote ? [comment.quote] : [],
+                )
+              : [],
+        },
+      );
+      return views;
     }, [
+      selectedVersionId,
       blocks,
       comments,
       host.board,
@@ -518,7 +591,20 @@ export function createDocPageScreen({
       null,
     );
     const toastedRef = useRef(false);
+    // The right to edit was lost while the page was open: saving stopped and
+    // what was never stored waits here to copy.
+    const [accessLost, setAccessLost] = useState<{
+      readonly text: string;
+      readonly copied: boolean;
+    } | null>(null);
+    const online = useOnline();
+    const unsavedRef = useRef(false);
     const saver = useDocSaver(workspaceId, pageId, blocksQuery.data, {
+      onAccessLost: (unsaved) =>
+        setAccessLost({
+          text: unsaved.map(draftRecoveryText).filter(Boolean).join("\n\n"),
+          copied: false,
+        }),
       onConflict: ({ blockId, local, server }) => {
         const changed = !local || !draftEquals(local, server);
         if (!changed) return;
@@ -533,6 +619,27 @@ export function createDocPageScreen({
       },
       onRebased: (drafts) => richRef.current?.applyDrafts(drafts),
     });
+    // Unsent typing stays in the open tab: the browser warns before it closes, and
+    // the connection coming back sends it with its expected versions (conflicts follow the rebase).
+    useEffect(() => {
+      const warn = (event: BeforeUnloadEvent) => {
+        if (!unsavedRef.current) return;
+        event.preventDefault();
+        event.returnValue = "";
+      };
+      window.addEventListener("beforeunload", warn);
+      return () => window.removeEventListener("beforeunload", warn);
+    }, []);
+    const wasOnlineRef = useRef(online);
+    const { retry: retryEditor } = editor;
+    const { retry: retrySaver } = saver;
+    useEffect(() => {
+      if (online && !wasOnlineRef.current) {
+        retryEditor();
+        void retrySaver();
+      }
+      wasOnlineRef.current = online;
+    }, [online, retryEditor, retrySaver]);
     const initialDrafts = useMemo(
       () =>
         [...blocks].sort((a, b) => a.position - b.position).map(draftOfBlock),
@@ -540,7 +647,14 @@ export function createDocPageScreen({
     );
     const contextKey = useMemo(
       () => ({}),
-      [host.tasks, host.tasksReady, host.board, host.boards, readablePages],
+      [
+        host.tasks,
+        host.tasksReady,
+        host.board,
+        host.boards,
+        readablePages,
+        online,
+      ],
     );
     // The page's files: uploads in flight, the stored files and their bytes.
     const rememberAttachment = useRememberPageAttachment(workspaceId, pageId);
@@ -629,14 +743,14 @@ export function createDocPageScreen({
       pageId,
       ready: !pageQuery.isLoading && !blocksQuery.isLoading && page !== null,
       initial: initialDrafts,
-      editable: host.canEdit,
+      editable: host.canEdit && !accessLost,
       placeholder: copy.blockPlaceholder,
       emptyPlaceholder: copy.blocks.emptyDoc,
       label: copy.blockPlaceholder,
       contextKey,
       context: {
         copy,
-        readOnly: !host.canEdit,
+        readOnly: !host.canEdit || !!accessLost,
         media,
         callbacks: {
           onOpenPagePicker: (blockId) =>
@@ -645,9 +759,10 @@ export function createDocPageScreen({
             callbacksRef.current?.onOpenBoardPicker?.(blockId),
           onOpenComment: (id) => callbacksRef.current?.onOpenComment?.(id),
           onTodoConvert:
-            host.canEdit && host.canConvertTodo !== false
+            host.canEdit && host.canConvertTodo !== false && online
               ? (blockId) => callbacksRef.current?.onTodoConvert?.(blockId)
               : undefined,
+          offline: !online,
           onEditorCommand: (command) =>
             callbacksRef.current?.onEditorCommand?.(command),
         },
@@ -823,8 +938,42 @@ export function createDocPageScreen({
     if (pageQuery.isLoading || blocksQuery.isLoading) {
       return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
     }
-    if (!page) {
-      return <DocPageScreenSurface status="notFound" copy={copy} {...EMPTY} />;
+    // Blocks that failed to read are not an empty page: typing there would write beside the stored blocks.
+    if (!page && pageQuery.isError && !isGone(pageQuery.error)) {
+      return (
+        <DocPageScreenSurface
+          status="loadFailed"
+          copy={copy}
+          callbacks={{ onRetryLoad: () => void pageQuery.refetch() }}
+          {...EMPTY}
+        />
+      );
+    }
+    // Blocks that failed to read (not 404/403) can be read again; the page is not an empty one to type in.
+    if (
+      page &&
+      blocksQuery.isError &&
+      !blocksQuery.data &&
+      !isGone(blocksQuery.error)
+    ) {
+      return (
+        <DocPageScreenSurface
+          status="loadFailed"
+          copy={copy}
+          callbacks={{ onRetryLoad: () => void blocksQuery.refetch() }}
+          {...EMPTY}
+        />
+      );
+    }
+    if (!page || (blocksQuery.isError && !blocksQuery.data)) {
+      return (
+        <DocPageScreenSurface
+          status="notFound"
+          copy={copy}
+          callbacks={{ onLeavePage: host.leaveDoc }}
+          {...EMPTY}
+        />
+      );
     }
 
     const title = page.title;
@@ -838,8 +987,11 @@ export function createDocPageScreen({
     const latestActivity = (historyQuery.data ?? [])
       .slice()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    const viewedVersion = selectedVersionId
+      ? (versionList.find((entry) => entry.id === selectedVersionId) ?? null)
+      : null;
     const header: DocHeaderView = {
-      title,
+      title: snapshotQuery.data?.title ?? title,
       crumbs,
       editedBy: latestActivity
         ? host.personFor(latestActivity.actorId).name
@@ -893,6 +1045,17 @@ export function createDocPageScreen({
               kind: "board" as const,
               label: boardChipSource.name,
               href: boardChipSource.href,
+            },
+          ]
+        : []),
+      ...(viewedVersion
+        ? [
+            {
+              id: "version",
+              kind: "version" as const,
+              label: fillDocCopy(copy.versions.viewingChip, {
+                n: viewedVersion.number,
+              }),
             },
           ]
         : []),
@@ -961,7 +1124,18 @@ export function createDocPageScreen({
           );
         },
       });
-    const callbacks: DocPageCallbacks = {
+    // An action that reads the stored page waits for the save; if it fails the action does not run.
+    const afterSaved = (action: () => void) =>
+      void saver.flush().then((stored) => {
+        if (stored) action();
+        else
+          host.notify?.(copy.header.saveBlocked, {
+            label: copy.header.retry,
+            run: () => afterSaved(action),
+          });
+      });
+    const liveCallbacks: DocPageCallbacks = {
+      onRetryBlocks: blocksQuery.retryRest,
       onTitleCommit: host.canEdit ? editor.updateTitle : undefined,
       onBlockCommit: host.canEdit
         ? (blockId, text) => {
@@ -983,11 +1157,9 @@ export function createDocPageScreen({
         host.canEdit && host.canConvertTodo !== false
           ? (blockId) =>
               // The line is converted by its stored id: save it first.
-              void saver
-                .flush()
-                .then(() =>
-                  setOverlay({ kind: "convertTask", blockId, boardId: null }),
-                )
+              afterSaved(() =>
+                setOverlay({ kind: "convertTask", blockId, boardId: null }),
+              )
           : undefined,
       onConvertBoard: (boardId) =>
         setOverlay((current) =>
@@ -1154,7 +1326,7 @@ export function createDocPageScreen({
           }
         : undefined,
       onSaveVersion: (name) => {
-        void saver.flush().then(() =>
+        afterSaved(() =>
           createVersion.mutate(name, {
             onSuccess: () => {
               setOverlay(NONE);
@@ -1163,18 +1335,18 @@ export function createDocPageScreen({
           }),
         );
       },
-      onRestoreVersionOpen: host.canEdit
-        ? () => {
-            restoreVersion.reset();
-            setOverlay({ kind: "restoreVersion" });
-          }
-        : undefined,
+      // A viewer may open the dialog: it says who can restore.
+      onRestoreVersionOpen: () => {
+        restoreVersion.reset();
+        setOverlay({ kind: "restoreVersion" });
+      },
       onRestoreVersion: () => {
-        if (!selectedVersionId) return;
+        if (!selectedVersionId || !host.canEdit) return;
         const stamp = versionList.find(
           (entry) => entry.id === selectedVersionId,
         )?.stamp;
-        void saver.flush().then(() =>
+        restoreSeen.current = blocks;
+        afterSaved(() =>
           restoreVersion.mutate(selectedVersionId, {
             onSuccess: () => {
               setOverlay(NONE);
@@ -1193,7 +1365,7 @@ export function createDocPageScreen({
           }
         : undefined,
       onSaveTemplate: (name, description) => {
-        void saver.flush().then(() =>
+        afterSaved(() =>
           createTemplate.mutate(
             { pageId, name, description: description || undefined },
             {
@@ -1205,6 +1377,34 @@ export function createDocPageScreen({
           ),
         );
       },
+      onTemplatesOpen: () => {
+        setTemplateFailure(null);
+        setOverlay({ kind: "templates" });
+      },
+      onTemplatesRetry: () => void templatesQuery.refetch(),
+      onTemplateRename: (id, name, description) =>
+        runTemplateWrite(id, (version) =>
+          manageTemplates.rename.mutateAsync({
+            templateId: id,
+            name,
+            description: description || undefined,
+            expectedVersion: version,
+          }),
+        ),
+      onTemplateArchive: (id) =>
+        runTemplateWrite(id, (version) =>
+          manageTemplates.archive.mutateAsync({
+            templateId: id,
+            expectedVersion: version,
+          }),
+        ),
+      onTemplateDelete: (id) =>
+        runTemplateWrite(id, (version) =>
+          manageTemplates.remove.mutateAsync({
+            templateId: id,
+            expectedVersion: version,
+          }),
+        ),
       onImportOpen: host.canEdit
         ? () => {
             setImporting(IDLE_IMPORT);
@@ -1357,6 +1557,13 @@ export function createDocPageScreen({
         setVersions({ selectedId: null, namedOnly: false });
       },
       onCloseVersions: () => setVersions(null),
+      onCloseVersionView: () => {
+        setOverlay(NONE);
+        setVersions((current) =>
+          current ? { ...current, selectedId: null } : current,
+        );
+      },
+      // Even the newest entry opens as a copy: the page may have changed since it was captured.
       onSelectVersion: (id) =>
         setVersions((current) =>
           current ? { ...current, selectedId: id } : current,
@@ -1375,6 +1582,15 @@ export function createDocPageScreen({
           });
         }
       },
+      onAccessLostCopy: () => {
+        const text = accessLost?.text;
+        if (!text) return;
+        void navigator.clipboard
+          ?.writeText(text)
+          .then(() => setAccessLost((c) => (c ? { ...c, copied: true } : c)))
+          .catch(() => undefined);
+      },
+      onLeavePage: host.leaveDoc,
       onRecoveryCopy: (id) => {
         const text = recoveries.find((entry) => entry.id === id)?.draft;
         if (!text) return;
@@ -1462,36 +1678,34 @@ export function createDocPageScreen({
       onDuplicatePage: host.canEdit
         ? () => {
             setOverlay(NONE);
-            // Images and files belong to this page's attachments: they stay behind.
-            const drafts = richEditor.currentDrafts() ?? [];
-            const copied = drafts
-              .filter((draft) => !ATTACHMENT_BLOCKS.has(draft.type))
-              .map((draft) => ({
-                type: draft.type,
-                content: draft.content,
-                properties: draft.properties,
-              }));
-            const dropped = drafts.length - copied.length;
-            importPage.mutate(
-              {
-                title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
-                blocks: copied,
-                parentId: page.parentId,
-                spaceId: page.spaceId ?? null,
-              },
-              {
-                onSuccess: (createdId) => {
-                  host.notify?.(
-                    dropped > 0
-                      ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
-                          count: dropped,
-                        })
-                      : copy.fileMenu.makeCopyDone,
-                  );
-                  host.openPage?.(createdId);
+            if (duplicatePage.isPending) return;
+            host.notify?.(copy.fileMenu.makeCopyPending);
+            // The server copies the saved blocks: write the open edits first.
+            afterSaved(() =>
+              duplicatePage.mutate(
+                {
+                  pageId,
+                  title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
                 },
-                onError: () => host.notify?.(copy.fileMenu.makeCopyFailed),
-              },
+                {
+                  onSuccess: (copied) => {
+                    host.notify?.(
+                      copied.droppedBlockCount > 0
+                        ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
+                            count: copied.droppedBlockCount,
+                          })
+                        : copy.fileMenu.makeCopyDone,
+                    );
+                    host.openPage?.(copied.pageId);
+                  },
+                  onError: (error) =>
+                    host.notify?.(
+                      (error as { status?: unknown }).status === 403
+                        ? copy.fileMenu.makeCopyForbidden
+                        : copy.fileMenu.makeCopyFailed,
+                    ),
+                },
+              ),
             );
           }
         : undefined,
@@ -1530,31 +1744,50 @@ export function createDocPageScreen({
         deleteComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
         if (id === activeCommentId) setActiveCommentId(null);
       },
-      onCommentCreate: (body) => {
-        const anchor = pendingAnchor;
+      onCommentCreate: (body, parentId) => {
+        const anchor = parentId ? null : pendingAnchor;
         if (!anchor) {
-          createComment.mutate({ pageId, body });
+          createComment.mutate({
+            pageId,
+            body,
+            ...(parentId ? { parentId } : {}),
+          });
           return;
         }
         // The block the comment names must be stored before the producer can check it.
-        void saver
-          .flush()
-          .then(() =>
-            createComment.mutate(
-              { pageId, body, anchor },
-              { onSuccess: () => setPendingAnchor(null) },
-            ),
-          );
+        afterSaved(() =>
+          createComment.mutate(
+            { pageId, body, anchor },
+            { onSuccess: () => setPendingAnchor(null) },
+          ),
+        );
       },
     };
 
+    // Typing stays on while offline; moving, trashing, copying and converting wait for the connection.
+    const callbacks: DocPageCallbacks = online
+      ? liveCallbacks
+      : {
+          ...liveCallbacks,
+          offline: true,
+          onTodoConvert: undefined,
+          onTrashPage: undefined,
+          onConfirmTrashPage: undefined,
+          onMovePage: undefined,
+          onMovePageTo: undefined,
+          onDuplicatePage: undefined,
+          onImportOpen: undefined,
+        };
     callbacksRef.current = callbacks;
     const saveState: DocSaveState =
       editor.saveState === "error" || saver.saveState === "error"
         ? "error"
-        : editor.saveState === "saving" || saver.saveState === "saving"
-          ? "saving"
-          : "saved";
+        : !online
+          ? "offline"
+          : editor.saveState === "saving" || saver.saveState === "saving"
+            ? "saving"
+            : "saved";
+    unsavedRef.current = saveState !== "saved";
 
     return (
       <DocPageScreenSurface
@@ -1564,6 +1797,7 @@ export function createDocPageScreen({
         editor={richEditor.editor}
         recoveries={recoveryViews}
         copiedRecoveryId={copiedRecoveryId}
+        accessLost={accessLost ?? undefined}
         chips={chips}
         why={why}
         blocks={blockViews}
@@ -1604,6 +1838,21 @@ export function createDocPageScreen({
                 list: versionList,
                 selectedId: selectedVersionId,
                 namedOnly: versions.namedOnly,
+                canSave: host.canEdit,
+                snapshotStatus: !selectedVersionId
+                  ? "ready"
+                  : snapshotQuery.isError
+                    ? "error"
+                    : snapshotQuery.isPending
+                      ? "loading"
+                      : "ready",
+                onSnapshotRetry: () => void snapshotQuery.refetch(),
+                status: versionsQuery.isError
+                  ? "error"
+                  : versionsQuery.isPending
+                    ? "loading"
+                    : "ready",
+                onRetry: () => void versionsQuery.refetch(),
                 onNamedOnlyChange: (namedOnly) =>
                   setVersions((current) =>
                     current ? { ...current, namedOnly } : current,
@@ -1621,11 +1870,32 @@ export function createDocPageScreen({
               ? "conflict"
               : "failed"
             : null,
+          conflictCount: conflictCountOf(
+            restoreVersion.error,
+            restoreSeen.current,
+          ),
+          conflictTime: clock(now),
         }}
         importState={importing}
         templateAction={{
           saving: createTemplate.isPending,
           failed: createTemplate.isError,
+        }}
+        templates={{
+          status: templatesQuery.isError
+            ? "error"
+            : templatesQuery.isPending
+              ? "loading"
+              : "ready",
+          templates: (templatesQuery.data ?? []).map((template) => ({
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            blockCount: template.blockCount,
+            canManage: template.canManage,
+          })),
+          busyId: templateBusy,
+          failure: templateFailure,
         }}
         share={
           host.share
@@ -1701,7 +1971,7 @@ export function createDocPageScreen({
             ? convertTodoFailedStep(convertTodo.error)
             : null,
         }}
-        readOnly={!host.canEdit}
+        readOnly={!host.canEdit || !!accessLost}
         canComment
         canFormat={host.canEdit}
         callbacks={callbacks}

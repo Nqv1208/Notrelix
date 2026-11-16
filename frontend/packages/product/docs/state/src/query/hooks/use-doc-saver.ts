@@ -43,6 +43,8 @@ function toBlock(
 export interface DocSaverOptions {
   /** A block was refused as stale: the editor shows the stored one. */
   readonly onConflict?: (conflict: BlockConflict) => void;
+  /** The member lost the right to edit: saving stopped; these changes were never stored. */
+  readonly onAccessLost?: (unsaved: readonly BlockDraft[]) => void;
   /** The stored document changed outside the member's edits: show `drafts`. */
   readonly onRebased?: (drafts: readonly BlockDraft[]) => void;
 }
@@ -86,6 +88,7 @@ export function createUseDocSaver(
           onStatus: setStatus,
           onConflict: (conflict) => optionsRef.current.onConflict?.(conflict),
           onRebased: (drafts) => optionsRef.current.onRebased?.(drafts),
+          onAccessLost: (unsaved) => optionsRef.current.onAccessLost?.(unsaved),
           onSaved: (drafts) => {
             const known = new Map(
               (queryClient.getQueryData<Block[]>(key) ?? []).map((block) => [

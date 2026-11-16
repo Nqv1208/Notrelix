@@ -82,8 +82,16 @@ describe("WorkspaceMembersSurface", () => {
     );
   });
 
-  it("FUI[workspace.members:last-owner] never offers demoting, suspending or removing the last owner", () => {
+  it("shows an admin every role as text with the reason, without a role picker", () => {
     renderMembers(membersAdminScenario());
+    const grace = rowOf("Grace Hopper");
+    expect(within(grace).queryByRole("combobox")).toBeNull();
+    expect(within(grace).getByText(copy.blocked["owner-only"])).toBeTruthy();
+  });
+
+  it("FUI[workspace.members:last-owner] never offers demoting, suspending or removing the last owner", () => {
+    // An owner viewer: the role picker is an owner's control.
+    renderMembers();
     const ada = rowOf("Ada Lovelace");
     expect(within(ada).queryByRole("combobox")).toBeNull();
     expect(within(ada).queryByRole("button")).toBeNull();

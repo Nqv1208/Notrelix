@@ -386,6 +386,14 @@ Identity's `IMemberDeliveryAddresses` (a Guest has none). It runs under the syst
 
 The chat search (UC-CHT-H07) reads `Search` (`RateLimiting:Chat:Search`, default 30 per minute per person and 300 per minute per Workspace). It has no other options: it reads the live message table, with no index and no worker.
 
+`Workspaces:Spaces:Purge` (Infrastructure, `DeletedSpacePurgeOptions`, validated on start by
+`DeletedSpacePurgeOptionsValidator`) configures the purge of deleted Spaces (`DeletedSpacePurgeService`, a hosted
+service; the window is `Space.RestoreWindow`, 30 days after the delete). On by default (`Enabled` true, `Interval`
+1 hour, `BatchSize` 20, same ranges as the board purge). Each pass claims, under the system context with the RLS
+worker scope, one Space deleted more than 30 days ago that has no child Space row (`FOR UPDATE SKIP LOCKED`) and, in
+one transaction, removes its member entries, its closure rows (`space_paths`), the Space row, and writes an audit fact
+`PurgeSpace` (actor type System, Critical). A Space holds no content when deleted, so nothing else is removed.
+
 `WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
 `DeletedBoardPurgeOptionsValidator`) configures the purge of deleted boards (`DeletedBoardPurgeService`, a hosted
 service; the window is the Domain constant of 30 days after the delete, `Board.RestoreWindow`, and restore after it is
@@ -419,6 +427,20 @@ repeat passes add nothing. It runs under the system (worker) context with the RL
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 500 | Items read per batch. Range 1 to 5000. |
 | `OverdueGraceDays` | 3 | Local days after the due day an Item can still be reported overdue. Range 1 to 14. |
+
+`Documents:QuietVersionSweep` (Infrastructure, `PageQuietVersionSweepOptions`, validated on start by
+`PageQuietVersionSweepOptionsValidator`) configures the automatic version taken when editing goes quiet
+(`PageQuietVersionSweepService`, a hosted service; no delayed-message transport exists, so the delay is a sweep): a page
+with no block save for five minutes (`IPageVersionRecorder.QuietPeriod`) gets an Automatic history entry, as the editor of
+its newest block save, unless its content equals the newest entry. It is idempotent, runs beside the ten-minute rule that
+still captures long continuous sessions, and runs under the system (worker) context with the RLS worker scope:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is captured by the sweep. |
+| `Interval` | `00:01:00` (1 minute) | Time between passes. Range 10 seconds to 1 hour. |
+| `Lookback` | `00:30:00` (30 minutes) | How far past the quiet period a page is still looked at. Range the interval to 1 day. |
+| `BatchSize` | 200 | Pages captured per pass, each in its own transaction. Range 1 to 5000. |
 
 Session cookies: `CookieService` marks the access and refresh cookies `Secure` (and `SameSite=None`)
 only when the environment is `Production`. The staging Compose overlay in this repository serves plain

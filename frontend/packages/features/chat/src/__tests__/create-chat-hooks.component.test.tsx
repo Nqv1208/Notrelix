@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
 import {
   MockStore,
@@ -219,9 +219,113 @@ describe("useMarkRead", () => {
       result.current.read.markRead(general, 250);
     });
     expect(boundaryOf()).toBe(310);
+    // The request is held for a second; leaving the page sends it at once.
+    act(() => {
+      result.current.read.flush();
+    });
+    await waitFor(async () => {
+      const sent = await hooks.service.getUnread(WORKSPACE);
+      expect(
+        sent.spaces.find((row) => row.spaceId === general)?.readSequence,
+      ).toBe(310);
+    });
     const server = await hooks.service.getUnread(WORKSPACE);
     expect(
       server.spaces.find((row) => row.spaceId === general)?.readSequence,
     ).toBe(310);
+  });
+
+  it("holds the read request for a run of boundaries and sends the highest one when the page is left", async () => {
+    const { hooks, wrapper } = setup();
+    const general = await channelIdNamed(hooks, "general");
+    const markRead = vi.spyOn(hooks.service, "markRead");
+    const { result } = renderHook(
+      () => ({
+        unread: hooks.useUnreadSummary(WORKSPACE),
+        read: hooks.useMarkRead(WORKSPACE),
+      }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.unread.isSuccess).toBe(true));
+
+    act(() => {
+      result.current.read.markRead(general, 305);
+      result.current.read.markRead(general, 310);
+    });
+    expect(markRead).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(new Event("blur"));
+    });
+    await waitFor(() => expect(markRead).toHaveBeenCalledTimes(1));
+    expect(markRead).toHaveBeenCalledWith(WORKSPACE, general, 310);
+  });
+});
+
+describe("useSendMessage while the first window loads", () => {
+  it("keeps the own bubble and lets the first window land, so the list is not left loading", async () => {
+    const store = new MockStore({ ...defaultConfig });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const client = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: async (input, init) => {
+        const url = new URL(
+          String(input instanceof Request ? input.url : input),
+        );
+        if (
+          (init?.method ?? "GET") === "GET" &&
+          url.pathname.endsWith("/messages")
+        ) {
+          await gate;
+        }
+        return createMockFetch(store)(input, init);
+      },
+    });
+    const hooks = createChatHooks({
+      api: client.api,
+      endpoints: client.endpoints,
+    });
+    const viewer = store.getCurrentUser().id;
+    const general = await channelIdNamed(hooks, "general");
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(
+      () => ({
+        list: hooks.useMessages(WORKSPACE, general, { kind: "latest" }),
+        send: hooks.useSendMessage(WORKSPACE, general, viewer),
+        pending: hooks.usePendingSends(WORKSPACE, general),
+      }),
+      { wrapper: wrap },
+    );
+    expect(result.current.list.isPending).toBe(true);
+
+    act(() => {
+      result.current.send.send("sent during load");
+    });
+    await waitFor(() => expect(result.current.pending.data).toHaveLength(1));
+    await act(async () => {
+      release();
+    });
+    // The window lands: the send must not have cancelled the first fetch for good.
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true), {
+      timeout: 3000,
+    });
+    await waitFor(() =>
+      expect(
+        flattenPages(result.current.list.data).filter(
+          (m) => m.content === "sent during load",
+        ),
+      ).toHaveLength(1),
+    );
   });
 });

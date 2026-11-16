@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { Check } from "lucide-react";
 import { NotrelixLogoMark, cn } from "@notrelix/ui-web";
 import type { OnboardingCopy } from "./onboarding.copy";
@@ -11,13 +12,13 @@ export const FIELD_INPUT_CLASS =
   "box-border h-10 max-md:h-touch w-full rounded-[8px] border border-line-strong bg-popover px-3 text-body text-foreground outline-none placeholder:text-meta-foreground focus:border-focus-ring focus:ring-[3px] focus:ring-brand-subtle aria-invalid:border-danger-text aria-invalid:ring-1 aria-invalid:ring-danger-text";
 
 export const BUTTON_PRIMARY_CLASS =
-  "inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-primary bg-primary px-4 text-body font-semibold text-primary-foreground outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:border-state-disabled disabled:bg-state-disabled disabled:text-state-disabled-foreground max-md:h-touch";
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-primary bg-primary whitespace-nowrap px-4 text-body font-semibold text-primary-foreground outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:border-state-disabled disabled:bg-state-disabled disabled:text-state-disabled-foreground aria-disabled:cursor-not-allowed aria-disabled:border-state-disabled aria-disabled:bg-state-disabled aria-disabled:text-state-disabled-foreground max-md:h-touch";
 
 export const BUTTON_OUTLINE_CLASS =
-  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-[8px] border border-line-strong bg-popover px-4 text-body font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50 max-md:h-touch";
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-line-strong bg-popover whitespace-nowrap px-4 text-body font-medium text-foreground outline-none hover:bg-state-hover focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50 max-md:h-touch";
 
 export const BUTTON_QUIET_CLASS =
-  "inline-flex h-10 cursor-pointer items-center justify-center rounded-[8px] border-0 bg-transparent px-3 text-body font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-touch";
+  "inline-flex h-10 cursor-pointer items-center justify-center rounded-[8px] border-0 bg-transparent whitespace-nowrap px-4 text-body font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-touch";
 
 export const OPTION_CLASS =
   "inline-flex h-10 cursor-pointer items-center gap-2 rounded-[10px] border border-line-strong bg-popover pr-3.5 pl-3 text-item-ui leading-[1.45] font-medium text-foreground has-[:checked]:border-primary has-[:checked]:bg-brand-subtle has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus-ring max-md:h-touch";
@@ -44,6 +45,27 @@ export function Hint({ id, children }: { id?: string; children: ReactNode }) {
     <p id={id} className="m-0 text-crumb leading-normal text-meta-foreground">
       {children}
     </p>
+  );
+}
+
+/** A quiet card with an icon: what a step promises (the Onboarding mockup's note). */
+export function NoteCard({
+  icon: Icon,
+  children,
+}: {
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-[10px] border border-line bg-popover px-3.5 py-3 text-item-small leading-normal text-muted-foreground">
+      <span
+        aria-hidden="true"
+        className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-state-hover text-foreground"
+      >
+        <Icon className="size-4" />
+      </span>
+      <p className="m-0">{children}</p>
+    </div>
   );
 }
 
@@ -108,16 +130,20 @@ export function StepBar({
                 "flex items-center gap-[7px] text-crumb leading-[1.45]",
                 state === "current"
                   ? "font-[650] text-foreground"
-                  : "font-medium text-muted-foreground",
+                  : state === "todo"
+                    ? "font-medium text-meta-foreground"
+                    : "font-medium text-muted-foreground",
               )}
             >
               <span
                 aria-hidden="true"
                 className={cn(
-                  "grid size-4.5 shrink-0 place-items-center rounded-full border-[1.5px] text-rail-label font-bold",
+                  "grid size-4.5 shrink-0 place-items-center rounded-full text-rail-label font-bold",
                   state === "todo"
-                    ? "border-line-strong text-muted-foreground"
-                    : "border-primary bg-primary text-primary-foreground",
+                    ? "border-[1.5px] border-line-strong text-meta-foreground"
+                    : state === "current"
+                      ? "border-[1.5px] border-primary bg-primary text-primary-foreground"
+                      : "bg-primary text-primary-foreground",
                 )}
               >
                 {state === "done" ? (
@@ -216,7 +242,7 @@ export function OnboardingFrame({
         <main className="flex min-w-0 flex-col px-6 lg:px-10">
           <div className="mx-auto flex w-full max-w-160 flex-1 flex-col gap-5 pt-7 pb-[22px]">
             {children}
-            <div className="mt-auto flex items-center justify-between gap-2.5 border-t border-line pt-4">
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-2.5 border-t border-line pt-4">
               {footer}
             </div>
           </div>

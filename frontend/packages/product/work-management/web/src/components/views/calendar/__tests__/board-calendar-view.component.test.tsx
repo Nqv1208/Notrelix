@@ -4,6 +4,7 @@ import { I18nProvider } from "@notrelix/i18n";
 import {
   fireEvent,
   renderPureUi,
+  act,
   screen,
   waitFor,
   within,
@@ -76,6 +77,8 @@ function fakeServices(
     updateCard?: () => Promise<void>;
     /** Reads answer a copy and a write needs the current item version, as a server does. */
     versioned?: boolean;
+    /** The Calendar view's saved `calendarDateField`. */
+    savedDateField?: string;
   } = {},
 ) {
   const board = erpBoardScenario();
@@ -119,6 +122,22 @@ function fakeServices(
     boards: {
       getFullBoard: vi.fn(async () =>
         overrides.versioned ? structuredClone(board) : board,
+      ),
+      listSavedViews: vi.fn(async () =>
+        overrides.savedDateField
+          ? [
+              {
+                id: "view-cal",
+                name: "Calendar",
+                viewMode: "calendar",
+                viewConfig: { calendarDateField: overrides.savedDateField },
+                isDefault: true,
+                visibility: "board",
+                createdBy: null,
+                version: 1,
+              },
+            ]
+          : [],
       ),
     },
     access: { getBoardAccess: vi.fn(async () => access) },
@@ -281,6 +300,38 @@ describe("BoardCalendarView on the ERP board", () => {
     );
   });
 
+  it("still reports a failed move when another item was moved before the first answered", async () => {
+    let calls = 0;
+    let refuse!: (error: Error) => void;
+    const { container } = renderCalendar(erpOwnerAccess(), {
+      updateCard: () =>
+        ++calls === 1
+          ? new Promise<void>((_resolve, reject) => {
+              refuse = reject;
+            })
+          : Promise.resolve(),
+    });
+    await ready();
+    const move = (key: string, day: string) => {
+      fireEvent.dragStart(eventOf(container, key), {
+        dataTransfer: dataTransfer(),
+      });
+      const target = dayCell(container, day);
+      fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
+      fireEvent.drop(target, { dataTransfer: dataTransfer() });
+    };
+    move("ERP-151", "2026-10-21");
+    await waitFor(() => expect(calls).toBe(1));
+    move("ERP-146", "2026-10-20");
+    await waitFor(() => expect(calls).toBe(2));
+    await act(async () => refuse(new Error("rejected")));
+    await waitFor(() =>
+      expect(toast.error.mock.calls.map((call) => call[0])).toContain(
+        "Chưa lưu được ngày của ERP-151",
+      ),
+    );
+  }, 20_000);
+
   it("keeps the new position and offers Thử lại when the write fails", async () => {
     const { container } = renderCalendar(erpOwnerAccess(), {
       updateCard: async () => {
@@ -418,5 +469,19 @@ describe("BoardCalendarView on the ERP board", () => {
       "false",
     );
     expect(screen.queryByRole("button", { name: /Đặt hạn cho/ })).toBeNull();
+  });
+
+  it("says so when the saved date field is gone, and falls back to Bắt đầu → Hạn", async () => {
+    renderCalendar(erpOwnerAccess(), { savedDateField: "field-deleted" });
+    await ready();
+    expect(
+      await screen.findByText(/Trường ngày mà Lịch này đã chọn không còn/),
+    ).toBeTruthy();
+  });
+
+  it("shows no notice while the saved date field is due or absent", async () => {
+    renderCalendar(erpOwnerAccess(), { savedDateField: "due" });
+    await ready();
+    expect(screen.queryByText(/không còn/)).toBeNull();
   });
 });

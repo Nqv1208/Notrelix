@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import {
 import {
   Ban,
   Copy,
+  Link2,
   MessageSquareText,
   MessagesSquare,
   MoreHorizontal,
@@ -33,6 +35,7 @@ import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
 import { useChatMentions } from "./chat-mention-context";
 import { useChatHighlight } from "./chat-highlight-context";
+import { useChatMessageLink } from "./chat-link-context";
 import { MessageAttachments } from "./chat-attachments";
 import { MessageLinkPreviews } from "./chat-link-previews";
 import { ReactionChips } from "./chat-reactions";
@@ -42,7 +45,7 @@ import {
   type MessageMenuItem,
 } from "./chat-message-actions";
 import { isKeyboardFocus, useRowActivity } from "./chat-row-activity";
-import { fillCopy, pluralCopy } from "./use-chat-copy";
+import { fillCopy, pluralCopy, systemTextOf } from "./use-chat-copy";
 
 export interface MessageAuthor {
   readonly name: string;
@@ -156,18 +159,18 @@ export function formatFullTime(iso: string, locale: string, timeZone?: string) {
   return formatter("full", locale, timeZone).format(new Date(iso));
 }
 
-/**
- * The corner radii of a bubble in its group (Messenger): 18 px all round, with the corners toward the
- * author's edge reduced to 6 px where the bubble touches the one above or below it.
- */
+/** Bubble corners: 14 px all round; only the last bubble of a group gets the 6 px tail on the author's side. */
 export function bubbleShape(
   isOwn: boolean,
-  continued: boolean,
+  _continued: boolean,
   groupEnd: boolean,
 ): string {
-  const top = continued ? (isOwn ? "rounded-se-sm" : "rounded-ss-sm") : null;
-  const bottom = groupEnd ? null : isOwn ? "rounded-ee-sm" : "rounded-es-sm";
-  return cn("rounded-2xl", top, bottom);
+  const tail = groupEnd
+    ? isOwn
+      ? "rounded-ee-[6px]"
+      : "rounded-es-[6px]"
+    : null;
+  return cn("rounded-[14px]", tail);
 }
 
 /** The width a side action bar needs beside the bubble; with less room it sits above the bubble. */
@@ -178,10 +181,11 @@ const LONG_PRESS_MS = 450;
 const LONG_PRESS_SLOP_PX = 10;
 
 /** The avatar column of someone else's messages; rows without the avatar keep the gutter so the bubbles line up. */
-const GUTTER = "w-7 shrink-0";
+const GUTTER =
+  "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[34px]";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
-export function ChatMessageRow({
+function ChatMessageRowBase({
   message,
   author,
   continued,
@@ -252,7 +256,9 @@ export function ChatMessageRow({
         <p className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1.5 rounded-full bg-muted px-3 py-1 text-center text-xs text-muted-foreground">
           <span className="sr-only">{copy.list.systemLabel}: </span>
           <span className="font-medium">{author.name}</span>
-          <span className="wrap-anywhere">{message.content}</span>
+          <span className="wrap-anywhere">
+            {systemTextOf(copy, message.content)}
+          </span>
           <time
             dateTime={message.createdAt}
             className="whitespace-nowrap tabular-nums"
@@ -264,6 +270,7 @@ export function ChatMessageRow({
     );
   }
 
+  const messageLink = useChatMessageLink()?.(message) ?? null;
   const live = !message.deleted;
   const reacted = reactions
     .filter((entry) => entry.reactedByMe)
@@ -277,6 +284,7 @@ export function ChatMessageRow({
         isOwn,
         pinned,
         content,
+        messageLink,
         onEdit,
         onDelete,
         onModerate,
@@ -412,12 +420,12 @@ export function ChatMessageRow({
     : null;
   const nameLine =
     !continued && !isOwn && showName ? (
-      <p className="mb-0.5 flex max-w-full items-baseline gap-2 ps-3 text-xs font-medium text-muted-foreground">
+      <p className="mb-0.5 flex max-w-full items-baseline gap-2 text-xs leading-[1.45] font-semibold text-muted-foreground">
         <span className="truncate">{author.name}</span>
         <time
           dateTime={message.createdAt}
           title={fullTime}
-          className="shrink-0 font-normal tabular-nums"
+          className="shrink-0 text-micro font-medium tabular-nums"
         >
           {time}
         </time>
@@ -459,14 +467,15 @@ export function ChatMessageRow({
     bubble = (
       <div
         className={cn(
-          "min-w-0 max-w-full px-3 py-2 text-sm leading-relaxed",
+          "min-w-0 max-w-full px-3 py-2 text-sm leading-[1.45]",
           shape,
+          "transition-colors duration-fast ease-out motion-reduce:transition-none",
           isOwn
-            ? "bg-primary text-primary-foreground"
+            ? "bg-primary text-primary-foreground hover:bg-[color-mix(in_oklab,var(--primary),var(--foreground)_8%)] active:bg-[color-mix(in_oklab,var(--primary),var(--foreground)_14%)]"
             : mentionsMe
               ? // A message that mentions the viewer: the warning tint (AA 5.4:1 light, 9.2:1 dark) plus "For you" for readers.
                 "bg-warning-subtle text-warning-subtle-foreground"
-              : "bg-sidebar-accent text-sidebar-accent-foreground",
+              : "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-[color-mix(in_oklab,var(--sidebar-accent),var(--foreground)_6%)] active:bg-[color-mix(in_oklab,var(--sidebar-accent),var(--foreground)_10%)]",
           highlighted &&
             "ring-2 ring-ring ring-offset-2 ring-offset-background",
         )}
@@ -533,11 +542,11 @@ export function ChatMessageRow({
       ref={rowRef}
       tabIndex={-1}
       className={cn(
-        "relative flex w-full items-end gap-2 px-3 outline-none md:px-4",
+        "group/row relative flex w-full items-end gap-2 px-3.5 outline-none md:px-6 xl:px-5",
         isOwn ? "flex-row-reverse" : "flex-row",
         continued ? "mt-0.5" : "mt-3",
         fresh &&
-          "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150",
+          "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-[160ms]",
       )}
       data-message-id={message.id}
       data-own={isOwn ? "true" : "false"}
@@ -676,7 +685,7 @@ export function ChatMessageRow({
         {meta.length > 0 ? (
           <p
             className={cn(
-              "mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground",
+              "mt-0.5 flex items-center gap-1.5 text-xs leading-[1.45] text-muted-foreground",
               isOwn ? "pe-1" : "ps-1",
             )}
             data-testid="chat-message-meta"
@@ -721,6 +730,7 @@ export function buildMenuItems({
   isOwn,
   pinned,
   content,
+  messageLink,
   onEdit,
   onDelete,
   onModerate,
@@ -732,6 +742,7 @@ export function buildMenuItems({
   readonly isOwn: boolean;
   readonly pinned: boolean;
   readonly content: string;
+  readonly messageLink: string | null;
   readonly onEdit?: (message: ChatMessage) => void;
   readonly onDelete?: (message: ChatMessage) => void;
   readonly onModerate?: (message: ChatMessage) => void;
@@ -770,6 +781,15 @@ export function buildMenuItems({
       icon: Copy,
       onSelect: () =>
         void navigator.clipboard.writeText(content).catch(() => undefined),
+    });
+  }
+  if (messageLink !== null && canCopy()) {
+    items.push({
+      key: "copyLink",
+      label: copy.toolbar.copyLink,
+      icon: Link2,
+      onSelect: () =>
+        void navigator.clipboard.writeText(messageLink).catch(() => undefined),
     });
   }
   if (isOwn && onDelete) {
@@ -840,21 +860,22 @@ function QuoteBlock({
       : (quote.text ?? "");
   const body = (
     <>
-      <span className="truncate font-semibold text-foreground">
+      <b className="block truncate font-bold">
         {fillCopy(copy.quote.quoteOf, { name: quote.name })}
-      </span>
-      <span className="truncate text-muted-foreground">{text}</span>
+      </b>
+      <span className="line-clamp-2">{text}</span>
     </>
   );
-  // An opaque block of the theme's own surfaces, so its text keeps the proven AA pairs on either bubble.
+  // Chat-Var-Quote: a 3 px bar, 2 8 padding and a 12.5 px text at 0.9 opacity on the bubble's own colours.
   const shell = cn(
-    "-mx-1 mb-1.5 flex min-w-0 max-w-full flex-col rounded-xl border-s-2 border-primary px-2.5 py-1.5 text-start text-xs whitespace-normal",
-    isOwn ? "bg-muted" : "bg-background",
+    "mb-1.5 block min-w-0 max-w-full border-s-[3px] px-2 py-0.5 text-start text-(length:--type-scale-12p5) leading-[1.45] whitespace-normal opacity-90",
+    isOwn ? "border-primary-foreground/70" : "border-primary",
   );
   return onOpen ? (
     <button
       type="button"
       onClick={onOpen}
+      data-testid="chat-quote"
       className={cn(
         shell,
         "w-full hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
@@ -863,7 +884,9 @@ function QuoteBlock({
       {body}
     </button>
   ) : (
-    <div className={shell}>{body}</div>
+    <div className={shell} data-testid="chat-quote">
+      {body}
+    </div>
   );
 }
 
@@ -940,6 +963,39 @@ export interface ChatPendingRowProps {
   readonly groupEnd?: boolean;
 }
 
+const shallowEqual = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
+  const x = a as Record<string, unknown>;
+  const y = b as Record<string, unknown>;
+  const keys = Object.keys(x);
+  return (
+    keys.length === Object.keys(y).length &&
+    keys.every((key) => Object.is(x[key], y[key]))
+  );
+};
+
+/** Props that arrive as fresh objects each render (author, quote, thread) compare by content, the rest by identity. */
+function rowPropsEqual(
+  prev: ChatMessageRowProps,
+  next: ChatMessageRowProps,
+): boolean {
+  const a = prev as unknown as Record<string, unknown>;
+  const b = next as unknown as Record<string, unknown>;
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of keys) {
+    const same =
+      key === "author" || key === "quote" || key === "thread"
+        ? shallowEqual(a[key], b[key])
+        : Object.is(a[key], b[key]);
+    if (!same) return false;
+  }
+  return true;
+}
+
+/** A row re-renders only when its own message or view changed, not when the list around it does. */
+export const ChatMessageRow = memo(ChatMessageRowBase, rowPropsEqual);
+
 /** A send the user made that the server has not stored: an own bubble with "Sending", or "Not sent" with Resend and Discard. */
 export function ChatPendingRow({
   pending,
@@ -956,9 +1012,9 @@ export function ChatPendingRow({
   return (
     <div
       className={cn(
-        "flex w-full flex-row-reverse px-3 md:px-4",
+        "flex w-full flex-row-reverse px-3.5 md:px-6 xl:px-5",
         continued ? "mt-0.5" : "mt-3",
-        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150",
+        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-[160ms]",
       )}
       data-testid="chat-pending-message"
       data-status={pending.status}

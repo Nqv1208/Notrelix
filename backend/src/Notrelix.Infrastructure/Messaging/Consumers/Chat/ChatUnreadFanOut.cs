@@ -1,6 +1,5 @@
 using Notrelix.Application.Events.Chat;
 using Notrelix.Application.Features.Chat.Abstractions;
-using Notrelix.Application.Features.Chat.Mentions.Services;
 using Notrelix.Application.Features.Chat.Realtime;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
@@ -9,14 +8,13 @@ namespace Notrelix.Infrastructure.Messaging.Consumers.Chat;
 
 /// <summary>
 /// The per-user stream of a new message (UC-CHT-C09): every active member of the space except the author, who is not muted,
-/// gets their new unread and mention count for the space. Cost per message: one query for the recipients (bounded by
-/// <see cref="ChatRealtime.MaxUnreadRecipients"/>) and one grouped count for the unread and one for the mentions of all of them, then one realtime publish per
-/// recipient in chunks. Nothing is queried per recipient.
+/// gets the new read state of the space: the unread number (sequence difference), the stored mention count and a preview of the
+/// message. Cost per message: one query for the recipients (bounded by <see cref="ChatRealtime.MaxUnreadRecipients"/>, with their
+/// stored boundary and mention count), then one batched realtime publish for all recipients. Nothing is counted: the mention count
+/// was raised by the send itself, in one UPDATE, before this runs. A muted, removed or left member gets no frame and no preview.
 /// </summary>
 public sealed class ChatUnreadFanOut
 {
-    private const int PublishChunk = 64;
-
     private readonly IChatDbContext _db;
     private readonly IRealtimePublisher _publisher;
     private readonly ILogger<ChatUnreadFanOut> _logger;
@@ -37,7 +35,7 @@ public sealed class ChatUnreadFanOut
             .Where(m => m.SpaceId == message.SpaceId && m.LeftAt == null && m.UserId != message.AuthorId)
             .OrderBy(m => m.UserId)
             .Take(ChatRealtime.MaxUnreadRecipients + 1)
-            .Select(m => new { m.UserId, m.ReadSequence, m.NotificationLevel, m.MutedUntil })
+            .Select(m => new { m.UserId, m.ReadSequence, m.MentionCount, m.NotificationLevel, m.MutedUntil })
             .ToListAsync(cancellationToken);
 
         if (recipients.Count > ChatRealtime.MaxUnreadRecipients)
@@ -55,27 +53,15 @@ public sealed class ChatUnreadFanOut
         if (audience.Count == 0)
             return;
 
-        var userIds = audience.Select(r => r.UserId).ToHashSet();
-        var unread = await (
-            from m in _db.ChatMemberships.AsNoTracking()
-            from msg in _db.ChatMessages.AsNoTracking()
-            where m.SpaceId == message.SpaceId && m.LeftAt == null && m.UserId != message.AuthorId
-                  && msg.SpaceId == m.SpaceId && msg.Sequence > m.ReadSequence
-                  && msg.AuthorId != m.UserId && msg.Kind == MessageKind.User && msg.DeletedAt == null
-            group msg by m.UserId into g
-            select new { UserId = g.Key, Count = g.Count() }).ToListAsync(cancellationToken);
-        var counts = unread.Where(u => userIds.Contains(u.UserId)).ToDictionary(u => u.UserId, u => u.Count);
-
-        var mentionCounts = await MentionCounts.ForSpaceAsync(_db, message.SpaceId, userIds, cancellationToken);
-
+        // A reply inside a thread is not the newest message of the conversation list, so it carries no preview.
+        var preview = message.ThreadRootId is not null ? null : new ChatRealtime.UnreadPreview(
+            message.Sequence, message.AuthorId, message.Kind,
+            message.Kind == MessageKindWire.UserKind ? ChatRealtime.PreviewText(message.Content) : null, message.OccurredAt);
         var frames = audience.Select(r => ChatRealtime.Unread(
             accountId, workspaceId, r.UserId, message.SpaceId,
-            counts.GetValueOrDefault(r.UserId), mentionCounts.GetValueOrDefault(r.UserId),
-            message.CorrelationId, message.EventId, now)).ToList();
+            (int)Math.Min(Math.Max(message.Sequence - r.ReadSequence, 0), int.MaxValue), r.MentionCount,
+            message.CorrelationId, message.EventId, now, message.Sequence, preview)).ToList();
 
-        foreach (var chunk in frames.Chunk(PublishChunk))
-        {
-            await Task.WhenAll(chunk.Select(frame => _publisher.PublishAsync(frame, cancellationToken)));
-        }
+        await _publisher.PublishManyAsync(frames, cancellationToken);
     }
 }

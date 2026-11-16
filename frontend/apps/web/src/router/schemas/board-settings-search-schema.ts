@@ -34,6 +34,10 @@ export const boardSettingsSearchSchema = z.object({
   log: z.boolean().optional(),
   /** The run open in the log's sheet. */
   run: z.string().optional(),
+  /** The form open in its builder (section "forms"). */
+  form: z.string().optional(),
+  /** The builder's preview dialog is open. */
+  preview: z.boolean().optional(),
 });
 
 export type BoardSettingsSearch = z.infer<typeof boardSettingsSearchSchema>;

@@ -289,24 +289,23 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(0,
-            "the mentioned person turned the mention in-app preference off in this workspace");
+            "the mentioned person turned the mention in-app preference off (one matrix for every workspace)");
         (await probe.Set<NotificationRecipientRecord>().IgnoreQueryFilters()
             .CountAsync(r => r.RecipientUserId == graph.MentionedUserId)).Should().Be(0);
     }
 
     [Fact]
-    public async Task MentionCreated_AnotherUsersPreferenceOrAnotherWorkspace_DoesNotSuppressTheNotification()
+    public async Task MentionCreated_AnotherUsersPreference_DoesNotSuppressTheNotification()
     {
         var graph = await SeedMentionStackAsync();
         await SeedPreferenceAsync(graph, graph.AuthorId, inApp: false);
-        await SeedPreferenceAsync(graph, graph.MentionedUserId, inApp: false, workspaceId: Guid.NewGuid());
 
         var outboxEventId = await RunMentionChainAsync(graph);
 
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.Set<NotificationItemRecord>().IgnoreQueryFilters()
             .CountAsync(n => n.SourceEventId == outboxEventId)).Should().Be(1,
-            "a preference is the mentioned person's own and per workspace");
+            "a preference is the mentioned person's own");
     }
 
     [Fact]
@@ -316,7 +315,7 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
         await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
             seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-                graph.AccountId, graph.WorkspaceId, graph.MentionedUserId,
+                graph.MentionedUserId,
                 [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.Email, false)],
                 DateTimeOffset.UtcNow)!);
             await seed.SaveChangesAsync();
@@ -362,11 +361,11 @@ public sealed class MentionCreatedNotificationRuntimeChainIntegrationTests : IAs
             "the mentioned person muted the thread");
     }
 
-    private async Task SeedPreferenceAsync(MentionGraph graph, Guid userId, bool inApp, Guid? workspaceId = null)
+    private async Task SeedPreferenceAsync(MentionGraph graph, Guid userId, bool inApp)
     {
         await using var seed = _db.CreateOwnerContext(SystemTenant());
         seed.NotificationPreferenceSets.Add(NotificationPreferenceSet.Create(
-            graph.AccountId, workspaceId ?? graph.WorkspaceId, userId,
+            userId,
             [new NotificationPreferenceChange(NotificationTypes.Mention, NotificationChannels.InApp, inApp)],
             DateTimeOffset.UtcNow)!);
         await seed.SaveChangesAsync();

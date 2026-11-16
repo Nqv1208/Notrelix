@@ -104,11 +104,11 @@ Do not treat the oldest ADR text as permanently overriding later accepted archit
 
 Notrelix uses three independent ADR namespaces.
 
-| Scope | Namespace | Directory | Owner |
-|---|---|---|---|
-| System/repository | `SYS-ADR-*` | `docs/decisions/` | architecture |
-| Backend | `ADR-*` | `backend/docs/decisions/` | backend-architecture |
-| Frontend | `FE-ADR-*` | `frontend/docs/decisions/` | frontend-architecture |
+| Scope             | Namespace   | Directory                  | Owner                 |
+| ----------------- | ----------- | -------------------------- | --------------------- |
+| System/repository | `SYS-ADR-*` | `docs/decisions/`          | architecture          |
+| Backend           | `ADR-*`     | `backend/docs/decisions/`  | backend-architecture  |
+| Frontend          | `FE-ADR-*`  | `frontend/docs/decisions/` | frontend-architecture |
 
 Examples:
 
@@ -553,7 +553,7 @@ Current system registry contains:
 
 ```text
 SYS-ADR-001 Chat is a twelfth bounded context, separate from Collaboration
-SYS-ADR-002 Chat rich media, voice messages and calls (Proposed)
+SYS-ADR-002 Chat rich media, voice messages and calls (Accepted 2026-11-16)
 ```
 
 ---

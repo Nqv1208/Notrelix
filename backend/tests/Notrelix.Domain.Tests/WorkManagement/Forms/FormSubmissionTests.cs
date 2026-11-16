@@ -205,6 +205,20 @@ public class FormSubmissionTests
         submission.ProcessedAt.Should().Be(processedAt);
     }
 
+    [Fact]
+    public void Reopen_WithClearItem_ForgetsTheItemOfAProcessedResponse_AndRepeatingIsANoOp()
+    {
+        var submission = CreateSubmission();
+        submission.MarkProcessed(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        submission.Reopen(clearItem: true);
+        submission.Reopen(clearItem: true);
+
+        submission.Status.Should().Be(FormSubmissionStatus.Accepted);
+        submission.CreatedItemId.Should().BeNull();
+        submission.ProcessedAt.Should().BeNull();
+    }
+
     private static FormSubmission CreateSubmission()
     {
         return FormSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, null, "{}", null, null, DateTimeOffset.UtcNow);

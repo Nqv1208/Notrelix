@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { BellOff, BellRing, Check, Loader2, X } from "lucide-react";
+import { Archive, Check, Loader2 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMentionPayload, ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
+import { ChatPanelHeader } from "./chat-panel-header";
+import { ThreadMoreMenu } from "./chat-thread-menu";
+import { chatFailureOf } from "../../core/api/chat-failure";
 import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
 import {
   RowActivityProvider,
@@ -23,6 +26,8 @@ export interface ChatThreadPanelProps {
   readonly locale: string;
   readonly timeZone?: string;
   readonly pinnedIds: ReadonlySet<string>;
+  /** The channel as the header names it, such as "# erp-rollout". */
+  readonly spaceLabel: string;
   /** The caller, the names and the channels a reply can mention; without it @ and # are plain text. */
   readonly mentionBase?: Pick<
     ChatComposerMentions,
@@ -55,6 +60,7 @@ export function ChatThreadPanel({
   locale,
   timeZone,
   pinnedIds,
+  spaceLabel,
   mentionBase,
   onClose,
   onReact,
@@ -99,27 +105,33 @@ export function ChatThreadPanel({
         onSuccess: () => {
           setDraft("");
         },
-        onError: () => setNotice(copy.thread.sendFailed),
+        onError: (error) =>
+          // A 429 says to wait; the draft stays either way.
+          setNotice(
+            chatFailureOf(error).kind === "rate-limited"
+              ? copy.feedback.rateLimited
+              : copy.thread.sendFailed,
+          ),
       },
     );
   }
 
   function toggleFollow() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: !summary.following,
-      muted: false,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: !summary.following, muted: false },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   function toggleMute() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: true,
-      muted: !summary.muted,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: true, muted: !summary.muted },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   return (
@@ -128,51 +140,39 @@ export function ChatThreadPanel({
       className="flex min-h-0 flex-1 flex-col"
       data-testid="chat-thread-panel"
     >
-      <header className="flex items-center gap-2 border-b border-border px-4 py-2.5">
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
-          {copy.thread.title}
-        </h2>
+      <ChatPanelHeader
+        title={copy.thread.title}
+        subtitle={spaceLabel}
+        subtitleAlways
+        closeLabel={copy.thread.close}
+        onClose={onClose}
+      >
         {summary ? (
-          <Button
-            type="button"
-            size="sm"
-            variant={summary.following ? "secondary" : "outline"}
-            aria-pressed={summary.following}
-            onClick={toggleFollow}
-            disabled={follower.isPending}
-          >
-            {summary.following ? copy.thread.following : copy.thread.follow}
-          </Button>
-        ) : null}
-        {summary?.following ? (
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            aria-pressed={summary.muted}
-            aria-label={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            title={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            onClick={toggleMute}
-            disabled={follower.isPending}
-          >
-            {summary.muted ? (
-              <BellOff aria-hidden="true" />
-            ) : (
-              <BellRing aria-hidden="true" />
+          <span
+            className={cn(
+              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold",
+              summary.following
+                ? "bg-primary/10 text-link"
+                : "bg-muted text-muted-foreground",
             )}
-          </Button>
+            data-testid="chat-thread-follow-state"
+          >
+            {summary.following
+              ? copy.thread.following
+              : copy.thread.notFollowing}
+          </span>
         ) : null}
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          aria-label={copy.thread.close}
-          title={copy.thread.close}
-          onClick={onClose}
-        >
-          <X aria-hidden="true" />
-        </Button>
-      </header>
+        {summary ? (
+          <ThreadMoreMenu
+            copy={copy}
+            following={summary.following}
+            muted={summary.muted}
+            busy={follower.isPending}
+            onToggleFollow={toggleFollow}
+            onToggleMute={toggleMute}
+          />
+        ) : null}
+      </ChatPanelHeader>
 
       {summary?.following ? (
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-1.5 text-xs text-muted-foreground">
@@ -234,12 +234,12 @@ export function ChatThreadPanel({
           role="log"
           aria-label={copy.thread.panelLabel}
           aria-live="off"
-          className="min-h-0 flex-1 overflow-y-auto py-2"
+          className="min-h-0 flex-1 overflow-y-auto pt-1 pb-2"
           data-testid="chat-thread-replies"
         >
           <RowActivityProvider value={activity}>
             {root ? (
-              <div className="border-b border-border pb-2">
+              <div>
                 <ChatMessageRow
                   message={root}
                   author={{ name: authorName(root.authorId) }}
@@ -257,6 +257,23 @@ export function ChatThreadPanel({
                   onTogglePin={onTogglePin}
                   attachmentsReadOnly={attachmentsReadOnly}
                 />
+              </div>
+            ) : null}
+            {root && replies.length > 0 ? (
+              <div
+                role="separator"
+                data-testid="chat-thread-separator"
+                className="my-1.5 flex h-6 items-center gap-3 px-6 before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"
+              >
+                <span className="text-xs leading-[1.45] font-semibold whitespace-nowrap text-muted-foreground">
+                  {pluralCopy(
+                    {
+                      one: copy.thread.replies_one,
+                      other: copy.thread.replies_other,
+                    },
+                    Math.max(summary?.replyCount ?? 0, replies.length),
+                  )}
+                </span>
               </div>
             ) : null}
             {replies.length === 0 && !thread.isFetching ? (
@@ -312,6 +329,16 @@ export function ChatThreadPanel({
         </div>
       )}
 
+      {summary?.archived ? (
+        <p
+          role="status"
+          data-testid="chat-thread-archived"
+          className="mx-0 flex items-start gap-2 bg-primary/10 px-4 py-2.5 text-xs leading-[1.45] font-semibold text-link"
+        >
+          <Archive className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          {copy.thread.archivedBanner}
+        </p>
+      ) : null}
       {notice ? (
         <p role="alert" className="mx-3 mb-1 text-xs text-destructive">
           {notice}
@@ -326,7 +353,11 @@ export function ChatThreadPanel({
         value={draft}
         disabledReason={null}
         copy={copy}
-        labelOverride={copy.thread.composerLabel}
+        labelOverride={
+          summary?.archived
+            ? copy.thread.reopenLabel
+            : copy.thread.composerLabel
+        }
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}

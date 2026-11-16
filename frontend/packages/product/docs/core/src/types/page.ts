@@ -54,6 +54,8 @@ export interface Page {
    * and when the caller cannot see that Space (GOV-029).
    */
   spaceId?: ID | null;
+  /** Whether the caller may edit the page, as the server decides it for a write; absent when it did not say. */
+  canEdit?: boolean;
   /** People the page names (on it, editors, commenters) with their names (gap `CTR-GAP-DOCS-PAGE-EXT`). */
   people?: { id: ID; name: string }[];
 }

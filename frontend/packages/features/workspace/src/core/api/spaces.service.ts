@@ -20,6 +20,18 @@ import { rememberMarkTone } from "../model/navigation";
 
 type SpaceTreePage = OperationResponse<"Workspaces.Spaces.GetSpaceTree", 200>;
 type SpaceTreeNodeDto = NonNullable<SpaceTreePage["items"]>[number];
+type DeletedSpaceDto = NonNullable<
+  OperationResponse<"Workspaces.Spaces.GetDeletedSpaces", 200>
+>[number];
+
+/** A deleted Space inside its restore window (ISO instants). */
+export interface DeletedSpace {
+  readonly id: string;
+  readonly name: string;
+  readonly parentSpaceId: string | null;
+  readonly deletedAt: string;
+  readonly restorableUntil: string;
+}
 type SpaceDetailDto = OperationResponse<"Workspaces.Spaces.GetSpace", 200>;
 type SpaceMembersPage = OperationResponse<
   "Workspaces.Spaces.GetSpaceMembers",
@@ -62,6 +74,7 @@ export interface SpacesEndpoints {
     spaceArchive: (workspaceId: string, spaceId: string) => string;
     spaceUnarchive: (workspaceId: string, spaceId: string) => string;
     spaceRestore: (workspaceId: string, spaceId: string) => string;
+    spacesDeleted: (workspaceId: string) => string;
     spaceMove: (workspaceId: string, spaceId: string) => string;
     spaceMembers: (workspaceId: string, spaceId: string) => string;
     spaceMember: (
@@ -121,6 +134,12 @@ export function parseSpaceMembers(items: unknown): SpaceMemberEntry[] {
   return entries;
 }
 
+/** The fields the single-Space read owns; the tree keeps position and my access. */
+export type SpaceDetail = Pick<
+  SpaceNode,
+  "name" | "description" | "type" | "visibility" | "isArchived" | "version"
+>;
+
 export interface CreateSpaceInput {
   readonly name: string;
   readonly type: SpaceType;
@@ -179,6 +198,23 @@ export function createSpacesService(
         cursor = page?.nextCursor ?? null;
       } while (cursor);
       return nodes;
+    },
+
+    /** The live record of one Space; an outsider and a missing id both answer NotFound (thrown). */
+    async get(workspaceId: string, spaceId: string): Promise<SpaceDetail> {
+      const raw = await api.get<SpaceDetailDto>(e.space(workspaceId, spaceId));
+      const type = parseSpaceType(raw?.spaceType);
+      const visibility = parseSpaceVisibility(raw?.visibility);
+      if (!raw?.id || !type || !visibility)
+        throw new Error("The Space record is incomplete.");
+      return {
+        name: raw.name ?? "",
+        description: raw.description ?? null,
+        type,
+        visibility,
+        isArchived: raw.isArchived === true,
+        version: typeof raw.version === "number" ? raw.version : 0,
+      };
     },
 
     /**
@@ -312,9 +348,32 @@ export function createSpacesService(
       await api.post<void>(e.spaceUnarchive(workspaceId, spaceId), body);
     },
 
-    /** Soft-deletes a Space. The producer takes no expected version; it refuses a Space with content. */
-    async remove(workspaceId: string, spaceId: string): Promise<void> {
-      await api.delete<void>(e.space(workspaceId, spaceId));
+    /**
+     * Soft-deletes a Space; the producer checks `expectedVersion` (sent in the query string) and refuses a
+     * Space with content. A deleted Space can be restored for 30 days.
+     */
+    async remove(
+      workspaceId: string,
+      spaceId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${e.space(workspaceId, spaceId)}?expectedVersion=${encodeURIComponent(String(expectedVersion))}`,
+      );
+    },
+
+    /** The deleted Spaces that can still be restored, newest first (workspace Owner or Admin). */
+    async listDeleted(workspaceId: string): Promise<DeletedSpace[]> {
+      const rows = await api.get<DeletedSpaceDto[]>(
+        e.spacesDeleted(workspaceId),
+      );
+      return (rows ?? []).map((row) => ({
+        id: row.id ?? "",
+        name: row.name ?? "",
+        parentSpaceId: row.parentSpaceId ?? null,
+        deletedAt: row.deletedAt ?? "",
+        restorableUntil: row.restorableUntil ?? "",
+      }));
     },
 
     /** Restores a deleted Space under a live parent. The producer takes no expected version. */

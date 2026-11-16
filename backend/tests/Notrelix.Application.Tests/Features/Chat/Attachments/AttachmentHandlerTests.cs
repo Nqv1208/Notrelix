@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Attachments.Commands.DeleteMessageAttachment;
 using Notrelix.Application.Features.Chat.Attachments.Commands.UploadMessageAttachment;
 using Notrelix.Application.Features.Chat.Attachments.Queries.GetMessageAttachmentContent;
+using Notrelix.Application.Features.Chat.Attachments.Queries.GetMessageAttachmentUrl;
 using Notrelix.Application.Features.Chat.Attachments.Queries.ListMessageAttachments;
 using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
@@ -392,6 +393,35 @@ public class AttachmentHandlerTests
     }
 
     [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_read_the_files_of_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _otherMember], _owner, Now);
+        group.AddMember(_guest, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+        var file = _files.Seed(before.Id);
+        var transfers = new Mock<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachmentTransfers>();
+        transfers.Setup(t => t.SupportsPresignedUrls).Returns(true);
+        AsUser(_guest);
+
+        var list = () => new ListMessageAttachmentsQueryHandler(_db.Object, _context.Object, _members.Object, _files)
+            .Handle(new ListMessageAttachmentsQuery(_workspaceId, before.Id), CancellationToken.None);
+        var content = () => new GetMessageAttachmentContentQueryHandler(_db.Object, _context.Object, _members.Object, _files)
+            .Handle(new GetMessageAttachmentContentQuery(_workspaceId, before.Id, file.Id), CancellationToken.None);
+        var url = () => new GetMessageAttachmentUrlQueryHandler(_db.Object, _context.Object, _members.Object, transfers.Object)
+            .Handle(new GetMessageAttachmentUrlQuery(_workspaceId, before.Id, file.Id), CancellationToken.None);
+
+        await list.Should().ThrowAsync<AppNotFoundException>();
+        await content.Should().ThrowAsync<AppNotFoundException>();
+        await url.Should().ThrowAsync<AppNotFoundException>();
+        transfers.Verify(t => t.CreateDownloadUrlAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        AsUser(_otherMember);
+        (await new ListMessageAttachmentsQueryHandler(_db.Object, _context.Object, _members.Object, _files)
+            .Handle(new ListMessageAttachmentsQuery(_workspaceId, before.Id), CancellationToken.None)).Data.Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task Only_a_reader_of_the_space_downloads_a_file()
     {
         var space = Channel(SpaceKind.ChannelPrivate);
@@ -589,7 +619,7 @@ public class AttachmentHandlerTests
         _files.Seed(message.Id);
         _files.Seed(kept.Id);
 
-        var result = await new DeleteMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _files)
+        var result = await new DeleteMessageCommandHandler(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, _files, Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>())
             .Handle(new DeleteMessageCommand(_workspaceId, message.Id, message.Version), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();

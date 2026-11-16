@@ -149,3 +149,37 @@ describe("slash menu matching", () => {
     expect(matchSlashItems(docsCopy, "zzzz")).toEqual([]);
   });
 });
+
+describe("read-only editor (canEdit false)", () => {
+  function ReadOnlyHarness({ editable }: { editable: boolean }) {
+    const { editor } = useDocRichEditor({
+      pageId: "p",
+      ready: true,
+      initial: DRAFTS,
+      editable,
+      placeholder: "p",
+      emptyPlaceholder: "e",
+      label: "doc",
+      context: { ...context, readOnly: !editable },
+      onDrafts,
+    });
+    if (!editor) return null;
+    return (
+      <DocEditorSurface editor={editor} copy={docsCopy} mentionTasks={[]} />
+    );
+  }
+
+  it("is not editable and is announced read-only, and edits again when canEdit turns true", async () => {
+    const view = renderPureUi(<ReadOnlyHarness editable={false} />);
+    const box = await screen.findByRole("textbox", { name: "doc" });
+    expect(box.getAttribute("contenteditable")).toBe("false");
+    expect(box.getAttribute("aria-readonly")).toBe("true");
+
+    await act(async () => {
+      view.rerender(<ReadOnlyHarness editable />);
+    });
+    const live = screen.getByRole("textbox", { name: "doc" });
+    expect(live.getAttribute("contenteditable")).toBe("true");
+    expect(live.getAttribute("aria-readonly")).toBeNull();
+  });
+});

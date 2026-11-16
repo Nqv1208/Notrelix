@@ -36,49 +36,50 @@ export interface ChatMessageAttachmentChangedPayload {
 
 export interface ChatMessageCreatedPayload {
   "authorId": string;
-  "content": string | null;
+  "clientMessageId"?: string;
+  "content"?: string | null;
   "contentOmitted": boolean;
-  "createdAt": string | null;
+  "createdAt"?: string | null;
   "deleted": boolean;
-  "editedAt": string | null;
+  "editedAt"?: string | null;
   "id": string;
   "kind": "user" | "system";
-  "replyToId": string | null;
+  "replyToId"?: string | null;
   "sequence": number;
-  "threadRootId": string | null;
-  "threadSequence": number | null;
+  "threadRootId"?: string | null;
+  "threadSequence"?: number | null;
   "version": number;
 }
 
 export interface ChatMessageDeletedPayload {
   "authorId": string;
-  "content": string | null;
+  "content"?: string | null;
   "contentOmitted": boolean;
-  "createdAt": string | null;
+  "createdAt"?: string | null;
   "deleted": boolean;
-  "editedAt": string | null;
+  "editedAt"?: string | null;
   "id": string;
   "kind": "user" | "system";
-  "replyToId": string | null;
+  "replyToId"?: string | null;
   "sequence": number;
-  "threadRootId": string | null;
-  "threadSequence": number | null;
+  "threadRootId"?: string | null;
+  "threadSequence"?: number | null;
   "version": number;
 }
 
 export interface ChatMessageUpdatedPayload {
   "authorId": string;
-  "content": string | null;
+  "content"?: string | null;
   "contentOmitted": boolean;
-  "createdAt": string | null;
+  "createdAt"?: string | null;
   "deleted": boolean;
-  "editedAt": string | null;
+  "editedAt"?: string | null;
   "id": string;
   "kind": "user" | "system";
-  "replyToId": string | null;
+  "replyToId"?: string | null;
   "sequence": number;
-  "threadRootId": string | null;
-  "threadSequence": number | null;
+  "threadRootId"?: string | null;
+  "threadSequence"?: number | null;
   "version": number;
 }
 
@@ -95,7 +96,15 @@ export interface ChatSpaceChangedPayload {
 }
 
 export interface ChatUnreadChangedPayload {
+  "lastSequence"?: number;
   "mentions": number;
+  "preview"?: {
+    "authorId": string;
+    "createdAt": string;
+    "kind": string;
+    "sequence": number;
+    "text"?: string;
+  };
   "spaceId": string;
   "unread": number;
 }
@@ -114,6 +123,7 @@ export interface RealtimePresenceServerFrame {
 }
 
 export interface RealtimeTypingClientFrame {
+  "state"?: "start" | "stop";
   "subscriptionId": string;
   "type": "typing";
 }

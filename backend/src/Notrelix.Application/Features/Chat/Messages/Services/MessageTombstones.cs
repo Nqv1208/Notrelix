@@ -11,8 +11,11 @@ namespace Notrelix.Application.Features.Chat.Messages.Services;
 public static class MessageTombstones
 {
     public static async Task ClearAttachedAsync(
-        IChatDbContext db, IChatMessageAttachments attachments, Message message, Guid actorId, DateTimeOffset now, CancellationToken ct)
+        IChatDbContext db, IChatMessageAttachments attachments, IChatReadStateStore readStates, Message message, Guid actorId, DateTimeOffset now, CancellationToken ct)
     {
+        // The mentions come off the members' mention counts while the rows still exist (the delete is saved after this).
+        await readStates.RemoveMentionsAsync(message.WorkspaceId, [message.Id], ct);
+
         var pins = await db.ChatPins.Where(p => p.MessageId == message.Id).ToListAsync(ct);
         foreach (var pin in pins)
         {

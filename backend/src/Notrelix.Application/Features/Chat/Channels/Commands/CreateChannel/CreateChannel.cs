@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Audit.Services;
 using Notrelix.Application.Features.Chat.Channels.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
 using Notrelix.Domain.Chat.Spaces;
@@ -27,7 +28,8 @@ public class CreateChannelCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
-    ChatAuditFacts audit) : IRequestHandler<CreateChannelCommand, Result<ChannelDto>>
+    ChatAuditFacts audit,
+    ChatSystemMessages systemMessages) : IRequestHandler<CreateChannelCommand, Result<ChannelDto>>
 {
     public async Task<Result<ChannelDto>> Handle(CreateChannelCommand request, CancellationToken cancellationToken)
     {
@@ -46,6 +48,7 @@ public class CreateChannelCommandHandler(
             accountId, request.WorkspaceId, kind, name, request.Topic, request.GroupId, position, userId, clock.UtcNow);
 
         db.ChatSpaces.Add(space);
+        systemMessages.AnnounceCreated(space, userId);
         await audit.ChannelCreatedAsync(space, cancellationToken);
         return Result<ChannelDto>.Success(ChannelDto.From(space, space.GetActiveMembership(userId), caller.Role));
     }

@@ -6,6 +6,7 @@ import {
   type ChatViewerRole,
 } from "@notrelix/features-chat/web";
 import type { ChatEphemeralPort } from "@notrelix/features-chat";
+import { useIsMobile } from "@notrelix/ui-web";
 import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
@@ -33,6 +34,12 @@ export function ChatPage() {
     rawConversationId && SAFE_ID.test(rawConversationId)
       ? rawConversationId
       : undefined;
+  // `?m=` is the sequence of the message a link points at (UC-CHT-B10); anything that is not a positive whole number is no link.
+  const rawLinked = new URLSearchParams(window.location.search).get("m");
+  const linkedSequence =
+    rawLinked !== null && /^[1-9][0-9]{0,15}$/.test(rawLinked)
+      ? Number(rawLinked)
+      : null;
   const navigate = useNavigate();
   const { api: runtimeClient, realtime: realtimeClient } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
@@ -58,7 +65,8 @@ export function ChatPage() {
           { workspaceId, channelId: spaceId },
           listener,
         ),
-      sendTyping: (spaceId) => realtimeClient.sendTyping(spaceId),
+      sendTyping: (spaceId, stopped) =>
+        realtimeClient.sendTyping(spaceId, stopped),
       sendPresence: (state) => realtimeClient.sendPresence(state),
     }),
     [realtimeClient, workspaceId],
@@ -66,15 +74,25 @@ export function ChatPage() {
   const channels = hooks.useChannels(workspaceId);
   const firstChannelId = channels.data?.[0]?.id ?? null;
 
+  const isMobile = useIsMobile();
+
   // A bare /chat opens the first channel; the list is the caller's own, so the first one is theirs.
+  // On a phone the bare route is the channel list (a root screen), so nothing is opened for the caller.
   useEffect(() => {
-    if (channelId || conversationId || !firstChannelId) return;
+    if (channelId || conversationId || !firstChannelId || isMobile) return;
     void navigate({
       to: "/workspaces/$workspaceId/chat/$channelId",
       params: { workspaceId, channelId: firstChannelId },
       replace: true,
     });
-  }, [channelId, conversationId, firstChannelId, navigate, workspaceId]);
+  }, [
+    channelId,
+    conversationId,
+    firstChannelId,
+    isMobile,
+    navigate,
+    workspaceId,
+  ]);
 
   const people = useMemo(() => {
     const map = new Map<string, string>();
@@ -106,6 +124,12 @@ export function ChatPage() {
           })
         }
         people={people}
+        linkedSequence={linkedSequence}
+        buildMessageLink={({ spaceId, conversation, sequence }) =>
+          `${window.location.origin}/workspaces/${workspaceId}/chat/${
+            conversation ? "dm/" : ""
+          }${spaceId}?m=${sequence}`
+        }
         connection={connection}
         ephemeral={ephemeral}
         onOpenChannel={(id) =>

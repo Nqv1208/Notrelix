@@ -385,8 +385,26 @@ export function InboxRead({
           className={OUTLINE_CLASS}
         >
           <Check aria-hidden="true" className="size-4" strokeWidth={1.8} />
-          {item.done ? copy.read.reopen : copy.read.done}
+          {item.snoozed
+            ? copy.read.unsnooze
+            : item.done
+              ? copy.read.reopen
+              : copy.read.done}
         </button>
+        {!item.unread &&
+        !item.done &&
+        !item.snoozed &&
+        actions?.onMarkUnread ? (
+          <button
+            data-f="mark-unread"
+            type="button"
+            aria-disabled={busy ? true : undefined}
+            onClick={busy ? undefined : () => actions.onMarkUnread?.(item)}
+            className={OUTLINE_CLASS}
+          >
+            {copy.read.markUnread}
+          </button>
+        ) : null}
         <SnoozeMenu
           copy={copy}
           open={snoozeOpen}

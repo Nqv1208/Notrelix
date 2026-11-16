@@ -103,15 +103,13 @@ export function TeamsPage() {
           description: values.description,
         });
         if (typeof teamId !== "string" || teamId === "") return;
-        let version = 1;
         const add = async (userId: string, role: "Lead" | "Member") => {
           await mutations.addMember.mutateAsync({
             teamId,
             userId,
             role,
-            expectedVersion: version,
+            expectedVersion: await mutations.readVersion(teamId),
           });
-          version += 1;
         };
         if (viewer.userId !== values.leadId) {
           await add(values.leadId, "Lead");
@@ -119,9 +117,8 @@ export function TeamsPage() {
             await mutations.removeMember.mutateAsync({
               teamId,
               userId: viewer.userId,
-              expectedVersion: version,
+              expectedVersion: await mutations.readVersion(teamId),
             });
-            version += 1;
           }
         }
         for (const userId of values.memberIds) {

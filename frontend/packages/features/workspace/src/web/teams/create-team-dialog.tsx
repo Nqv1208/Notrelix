@@ -58,7 +58,7 @@ export interface CreateTeamDialogProps {
 }
 
 const INPUT =
-  "box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-body leading-[1.45] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-state-selected dark:bg-card";
+  "box-border h-9 w-full rounded-[8px] border border-line-strong bg-popover px-2.5 text-nav leading-[1.45] font-normal text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-state-selected dark:bg-card";
 
 /**
  * Names a new Team (Final-Teams `tao-moi`): name, optional description, the
@@ -311,7 +311,7 @@ export function CreateTeamDialog({
                       setMemberIds((current) => current.slice(0, -1));
                     }
                   }}
-                  className="h-[26px] min-w-[120px] flex-1 border-0 bg-transparent text-body text-foreground outline-none placeholder:text-meta-foreground"
+                  className="h-[26px] min-w-[120px] flex-1 border-0 bg-transparent text-nav font-normal text-foreground outline-none placeholder:text-meta-foreground"
                 />
                 {suggestions.length > 0 ? (
                   <ul
@@ -361,7 +361,10 @@ export function CreateTeamDialog({
               </span>
             </div>
             <div className="flex items-start gap-2.5 rounded-[8px] border border-line bg-background px-3 py-2.5 text-crumb leading-normal text-muted-foreground">
-              <Glyph name="infoCircle" className="mt-0.5 size-3.5" />
+              <Glyph
+                name="infoCircle"
+                className="mt-0.5 size-3.5 text-meta-foreground"
+              />
               <span>{d.info}</span>
             </div>
             {error ? (
@@ -448,7 +451,7 @@ export function ArchiveTeamDialog({
           </button>
         </div>
         <div className="flex flex-col gap-3.5 px-5 pt-3.5 pb-4">
-          <DialogDescription className="m-0 text-body leading-[1.55] text-foreground">
+          <DialogDescription className="m-0 text-nav leading-[1.55] font-normal text-foreground">
             {loss && loss.lose.length > 0
               ? formatCopy(a.lose, {
                   count: loss.lose.length,
@@ -467,7 +470,7 @@ export function ArchiveTeamDialog({
                   />
                   {person.name}
                   <small className="text-xs text-meta-foreground">
-                    · {formatCopy(a.lostLine, { where })}
+                    {`· ${formatCopy(a.lostLine, { where })}`}
                   </small>
                 </li>
               ))}
@@ -479,10 +482,9 @@ export function ArchiveTeamDialog({
                   />
                   {person.name}
                   <small className="text-xs text-meta-foreground">
-                    ·{" "}
-                    {formatCopy(a.keptLine, {
+                    {`· ${formatCopy(a.keptLine, {
                       role: copy.page.spaceRoles[person.role],
-                    })}
+                    })}`}
                   </small>
                 </li>
               ))}
@@ -502,7 +504,7 @@ export function ArchiveTeamDialog({
             disabled={pending}
             onClick={onConfirm}
             className={cn(
-              "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-danger-text bg-danger-text px-3 text-compact font-semibold whitespace-nowrap text-background",
+              "inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-danger-text bg-danger-text px-3 text-compact font-semibold whitespace-nowrap text-white dark:text-background",
               FOCUS,
             )}
           >

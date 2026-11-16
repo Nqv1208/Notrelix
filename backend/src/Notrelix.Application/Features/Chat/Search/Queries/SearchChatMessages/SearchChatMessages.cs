@@ -72,6 +72,10 @@ public class SearchChatMessagesQueryHandler(
             && visible.Select(s => s.Id).Contains(m.SpaceId)
             && Regex.IsMatch(m.Content, pattern));
 
+        // A group conversation reads from the caller's join point only (UC-CHT-E03).
+        query = query.Where(m => !db.ChatMemberships.Any(mb =>
+            mb.SpaceId == m.SpaceId && mb.UserId == userId && mb.LeftAt == null && m.CreatedAt < mb.JoinedAt
+            && db.ChatSpaces.Any(s => s.Id == m.SpaceId && s.Kind == SpaceKind.Group)));
         if (request.SpaceId is { } spaceId) query = query.Where(m => m.SpaceId == spaceId);
         if (request.AuthorId is { } authorId) query = query.Where(m => m.AuthorId == authorId);
         if (request.From is { } rangeFrom) query = query.Where(m => m.CreatedAt >= rangeFrom);

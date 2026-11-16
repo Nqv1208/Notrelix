@@ -74,6 +74,7 @@ describe("ChatThreadPanel", () => {
         copy={en}
         locale="en"
         timeZone="UTC"
+        spaceLabel="# general"
         pinnedIds={pinnedIds}
         onClose={onClose}
         onReact={vi.fn()}
@@ -104,13 +105,19 @@ describe("ChatThreadPanel", () => {
       ).checked,
     ).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Follow" }));
+    expect(screen.getByTestId("chat-thread-follow-state").textContent).toBe(
+      "Not following",
+    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thread options" }), {
+      key: "Enter",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Follow thread" }),
+    );
     await waitFor(() =>
-      expect(
-        screen
-          .getByRole("button", { name: "Following" })
-          .getAttribute("aria-pressed"),
-      ).toBe("true"),
+      expect(screen.getByTestId("chat-thread-follow-state").textContent).toBe(
+        "Following",
+      ),
     );
     fireEvent.click(screen.getByRole("button", { name: "Close thread" }));
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -138,6 +145,7 @@ describe("ChatThreadPanel", () => {
         copy={en}
         locale="en"
         timeZone="UTC"
+        spaceLabel="# general"
         pinnedIds={new Set()}
         onClose={vi.fn()}
         onReact={vi.fn()}
@@ -155,6 +163,94 @@ describe("ChatThreadPanel", () => {
       "The reply did not send. Your text is kept.",
     );
     expect((box as HTMLTextAreaElement).value).toBe("keep me");
+  });
+
+  it("keeps the caller's text and says to wait when the reply is rate limited", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const failing = {
+      ...hooks,
+      useReplyInThread: () => ({
+        mutate: (
+          _input: unknown,
+          options?: { onError?: (error: unknown) => void },
+        ) => options?.onError?.({ status: 429 }),
+        isPending: false,
+      }),
+    } as unknown as typeof hooks;
+    render(
+      <ChatThreadPanel
+        hooks={failing}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+        onReact={vi.fn()}
+        onTogglePin={vi.fn()}
+      />,
+      { wrapper },
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("chat-thread-replies")).toBeTruthy(),
+    );
+    const box = screen.getByRole("textbox", { name: "Reply in thread" });
+    fireEvent.change(box, { target: { value: "keep me too" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      en.feedback.rateLimited,
+    );
+    expect((box as HTMLTextAreaElement).value).toBe("keep me too");
+  });
+});
+
+describe("an archived thread", () => {
+  it("says it was archived and offers a reply that reopens it", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const archivedHooks = {
+      ...hooks,
+      useThreadReplies: (workspaceId: string, rootId: string) => {
+        const query = hooks.useThreadReplies(workspaceId, rootId);
+        return {
+          ...query,
+          data: query.data && {
+            ...query.data,
+            pages: query.data.pages.map((page) => ({
+              ...page,
+              thread: { ...page.thread, archived: true },
+            })),
+          },
+        };
+      },
+    } as unknown as typeof hooks;
+    render(
+      <ChatThreadPanel
+        hooks={archivedHooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    expect(
+      (await screen.findByTestId("chat-thread-archived")).textContent,
+    ).toBe(en.thread.archivedBanner);
+    expect(
+      screen.getByRole("textbox", { name: en.thread.reopenLabel }),
+    ).toBeTruthy();
   });
 });
 

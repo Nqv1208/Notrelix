@@ -227,6 +227,34 @@ public class SpaceTests
     }
 
     [Fact]
+    public void Restore_AfterTheThirtyDayWindow_IsRefused_AndInsideItIsAccepted()
+    {
+        var deletedAt = new DateTimeOffset(2026, 11, 1, 9, 0, 0, TimeSpan.Zero);
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), deletedAt);
+        space.Delete(Guid.NewGuid(), deletedAt, SpaceContentFact.Empty);
+
+        space.RestorableUntil.Should().Be(deletedAt + TimeSpan.FromDays(30));
+        var late = () => space.Restore(Guid.NewGuid(), deletedAt.AddDays(30).AddSeconds(1), SpacePlacement.Root(space.Position, []));
+        late.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Space_RestoreWindowExpired);
+        space.IsDeleted.Should().BeTrue();
+
+        space.Restore(Guid.NewGuid(), deletedAt.AddDays(30), SpacePlacement.Root(space.Position, []));
+        space.IsDeleted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Delete_Twice_IsANoOp_ThatDoesNotBumpTheVersion()
+    {
+        var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
+        var version = space.Version;
+
+        space.Delete(Guid.NewGuid(), DateTimeOffset.UtcNow, SpaceContentFact.Empty);
+
+        space.Version.Should().Be(version);
+    }
+
+    [Fact]
     public void Rename_OnDeletedSpace_ShouldThrow()
     {
         var space = Space.Create(Guid.NewGuid(), Guid.NewGuid(), "Marketing", SpaceVisibility.Workspace, Guid.NewGuid(), DateTimeOffset.UtcNow);

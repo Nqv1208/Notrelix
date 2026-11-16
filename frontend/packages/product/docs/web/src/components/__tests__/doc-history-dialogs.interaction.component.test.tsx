@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 
-import { docsCopy } from "../../verification/docs-ui-fixtures";
+import { VERSIONS, docsCopy } from "../../verification/docs-ui-fixtures";
 import {
   DocImportDialogSurface,
   DocRestoreVersionDialogSurface,
@@ -15,6 +15,7 @@ const idle = {
   saveFailed: false,
   restoring: false,
   restoreFailed: null,
+  conflictCount: 2,
 } as const;
 
 describe("docs history dialogs", () => {
@@ -49,7 +50,7 @@ describe("docs history dialogs", () => {
     const view = renderPureUi(
       <DocRestoreVersionDialogSurface
         copy={docsCopy}
-        stamp="10/10 15:42"
+        version={VERSIONS[2]!}
         action={idle}
         callbacks={{ onRestoreVersion }}
       />,
@@ -65,14 +66,37 @@ describe("docs history dialogs", () => {
     renderPureUi(
       <DocRestoreVersionDialogSurface
         copy={docsCopy}
-        stamp="10/10 15:42"
+        version={VERSIONS[2]!}
         action={{ ...idle, restoreFailed: "conflict" }}
         callbacks={{ onRestoreVersion }}
       />,
     );
-    expect(screen.getByRole("alert").textContent).toBe(
-      docsCopy.versions.restoreDialog.conflict,
+    expect(screen.getByRole("alert").textContent).toContain(
+      docsCopy.versions.restoreDialog.conflictTitle,
     );
+    expect(
+      screen.queryByRole("button", {
+        name: docsCopy.versions.restoreDialog.confirm,
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: docsCopy.versions.restoreDialog.review,
+      }),
+    ).toBeTruthy();
+  });
+
+  it("tells a viewer who can restore and keeps Restore off", () => {
+    renderPureUi(
+      <DocRestoreVersionDialogSurface
+        copy={docsCopy}
+        version={VERSIONS[2]!}
+        action={{ ...idle, canRestore: false }}
+      />,
+    );
+    expect(
+      screen.getByText(docsCopy.versions.restoreDialog.denied),
+    ).toBeTruthy();
     expect(
       screen
         .getByRole("button", { name: docsCopy.versions.restoreDialog.confirm })

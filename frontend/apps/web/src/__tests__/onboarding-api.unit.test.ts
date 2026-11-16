@@ -66,7 +66,7 @@ function stub(overrides: Record<string, unknown> = {}) {
       { id: "b3", title: "Chiến dịch", spaceId: "s2", isArchived: false },
     ],
     "/auth/me": { id: "u1", name: "Lý Thu Trang" },
-    [`/workspaces/${WS}/notification-preferences`]: {
+    ["/profile/notification-preferences"]: {
       version: 4,
       rows: [{ type: "digest", inApp: true, email: true }],
     },
@@ -132,7 +132,7 @@ describe("the first visit of an invited person", () => {
 
   it("reads the digest email as off from the member's own matrix", async () => {
     const join = await stub({
-      [`/workspaces/${WS}/notification-preferences`]: {
+      ["/profile/notification-preferences"]: {
         version: 5,
         rows: [{ type: "digest", inApp: true, email: false }],
       },
@@ -142,7 +142,7 @@ describe("the first visit of an invited person", () => {
 
   it("still opens when the notification matrix cannot be read", async () => {
     const join = await stub({
-      [`/workspaces/${WS}/notification-preferences`]: new Error("down"),
+      ["/profile/notification-preferences"]: new Error("down"),
     }).api.getJoin(WS);
     expect(join.profile.notifyEmail).toBe("digest");
   });
@@ -154,7 +154,7 @@ describe("the first visit of an invited person", () => {
       { method: "PATCH", url: "/profile", body: { name: "Trang" } },
       {
         method: "PATCH",
-        url: `/workspaces/${WS}/notification-preferences`,
+        url: "/profile/notification-preferences",
         body: {
           expectedVersion: 4,
           rows: [

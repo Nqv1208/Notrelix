@@ -132,8 +132,13 @@ export function createUseDocEditor(
           throw new PageVersionConflict(current);
         }
       },
-      onSuccess: () => {
+      onSuccess: (updated) => {
         setFailed(false);
+        // The next rename quotes this version, not the one a refetch has yet to replace.
+        queryClient.setQueryData(
+          docsQueryKeys.detail(workspaceId, pageId),
+          updated,
+        );
         refreshPage();
       },
     });
@@ -171,10 +176,9 @@ export function createUseDocEditor(
     const updateBlock = useCallback(
       (blockId: string, payload: UpdateBlockPayload) => {
         const attempt = () =>
-          update.mutate(
-            { blockId, payload },
-            { onError: () => setFailed(true) },
-          );
+          void update
+            .mutateAsync({ blockId, payload })
+            .catch(() => setFailed(true));
         run(attempt);
         attempt();
       },
@@ -213,7 +217,7 @@ export function createUseDocEditor(
     const deleteBlock = useCallback(
       (blockId: string) => {
         const attempt = () =>
-          remove.mutate(blockId, { onError: () => setFailed(true) });
+          void remove.mutateAsync(blockId).catch(() => setFailed(true));
         run(attempt);
         attempt();
       },
@@ -222,17 +226,13 @@ export function createUseDocEditor(
     const updateTitle = useCallback(
       (title: string) => {
         const attempt = () =>
-          rename.mutate(
-            { title },
-            {
-              onError: (error) => {
-                if (error instanceof PageVersionConflict) {
-                  setTitleConflict(true);
-                  refreshPage();
-                } else setFailed(true);
-              },
-            },
-          );
+          // mutateAsync: a rename that overlaps another keeps its own outcome.
+          void rename.mutateAsync({ title }).catch((error: unknown) => {
+            if (error instanceof PageVersionConflict) {
+              setTitleConflict(true);
+              refreshPage();
+            } else setFailed(true);
+          });
         run(attempt);
         attempt();
       },
