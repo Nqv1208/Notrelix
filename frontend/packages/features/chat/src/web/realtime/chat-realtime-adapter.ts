@@ -24,6 +24,7 @@ import type {
 } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import {
+  readOncePerWindow,
   setConversationUnread,
   touchConversation,
 } from "../query/conversation-cache";
@@ -351,11 +352,14 @@ export function createChatRealtimeAdapter(
         frame.unread,
       );
     } else if (outcome.kind === "unknown-space") {
-      // A channel the summary does not list yet: revalidate the list and the summary.
-      await context.invalidateQueries([
-        [...key],
-        [...chatQueryKeys.channels(workspaceId)],
-      ]);
+      // A channel the summary does not list yet: revalidate the list and the summary, once per window (a space the
+      // summary never lists would otherwise cost two reads per frame).
+      readOncePerWindow(queryClient, `unread:${workspaceId}`, () => {
+        void context.invalidateQueries([
+          [...key],
+          [...chatQueryKeys.channels(workspaceId)],
+        ]);
+      });
     }
   }
 
