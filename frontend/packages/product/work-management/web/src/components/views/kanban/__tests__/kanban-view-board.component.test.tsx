@@ -1088,4 +1088,23 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu giới hạn" }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
   }, 20_000);
+
+  it("tells the person when a quick-edit date change was not saved", async () => {
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    cards.updateCard.mockRejectedValue(
+      Object.assign(new Error("refused"), { status: 400 }),
+    );
+    const card = document
+      .querySelector(`[data-card-id="${erpItemId("ERP-149")}"]`)!
+      .closest("article") as HTMLElement;
+    fireEvent.click(within(card).getByRole("button", { name: "Sửa nhanh" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa ngày" }));
+    fireEvent.change(screen.getByLabelText("Ngày hạn"), {
+      target: { value: "2026-12-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu ngày" }));
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
 });
