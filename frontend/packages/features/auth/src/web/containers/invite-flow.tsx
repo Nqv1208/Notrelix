@@ -39,10 +39,16 @@ export function InviteFlow({
   service,
   navigation,
   token,
+  signedInEmail = null,
+  onSwitchAccount,
 }: {
   service: AuthFlowService;
   navigation: AuthFlowNavigation;
   token: string;
+  /** The email of the account signed in now, if any; a different one than the invited email is named above the form. */
+  signedInEmail?: string | null;
+  /** Ends the session and comes back to this invitation. */
+  onSwitchAccount?: () => void;
 }) {
   const copy = useAuthCopy();
   const queryClient = useQueryClient();
@@ -147,10 +153,21 @@ export function InviteFlow({
       fieldErrors,
     };
 
+  const sameEmail = (a: string, b: string) =>
+    a.trim().toLowerCase() === b.trim().toLowerCase();
+  const signedInAs =
+    view.kind === "invite" &&
+    signedInEmail &&
+    !sameEmail(signedInEmail, view.invite.email)
+      ? signedInEmail
+      : null;
+
   return (
     <AuthInviteSurface
       copy={copy}
       view={view}
+      signedInAs={signedInAs}
+      onSwitchAccount={onSwitchAccount}
       pending={
         accept.isPending ? "accept" : decline.isPending ? "decline" : null
       }

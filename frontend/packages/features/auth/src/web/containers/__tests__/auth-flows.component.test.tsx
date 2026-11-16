@@ -253,6 +253,51 @@ function fillAndAccept() {
 }
 
 describe("invite flow", () => {
+  it("tells a person signed in as another account whom the invitation is for, and offers to switch", async () => {
+    const onSwitchAccount = vi.fn();
+    renderPureUi(
+      <Providers>
+        <InviteFlow
+          service={asService({
+            getInvite: vi.fn(async () => ({
+              ...preview,
+              hasAccount: true,
+            })),
+          })}
+          navigation={navigation()}
+          token="tok"
+          signedInEmail="khac@congty.vn"
+          onSwitchAccount={onSwitchAccount}
+        />
+      </Providers>,
+    );
+    expect(
+      await screen.findByText(
+        "Bạn đang đăng nhập là khac@congty.vn; lời mời dành cho tuan@doitac.vn.",
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Đổi tài khoản" }));
+    expect(onSwitchAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no banner when the signed-in account is the invited one, whatever the case", async () => {
+    renderPureUi(
+      <Providers>
+        <InviteFlow
+          service={asService({
+            getInvite: vi.fn(async () => ({ ...preview, hasAccount: true })),
+          })}
+          navigation={navigation()}
+          token="tok"
+          signedInEmail="Tuan@DoiTac.vn"
+          onSwitchAccount={vi.fn()}
+        />
+      </Providers>,
+    );
+    await screen.findByLabelText(copy.invite.emailLabel);
+    expect(screen.queryByRole("button", { name: "Đổi tài khoản" })).toBeNull();
+  });
+
   it("names the workspace and the role when the invitation is to the workspace, not a board", async () => {
     const service = {
       getInvite: vi.fn(async () => ({
