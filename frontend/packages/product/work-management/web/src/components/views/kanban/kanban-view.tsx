@@ -700,21 +700,20 @@ export function KanbanView({
       optionId,
       retry: () => writeLaneValue(cardId, optionId, onSuccess),
     });
-    if (isStatusGrouping) {
-      kanban.updateStatus.mutate(
-        { cardId, statusOptionId: optionId },
-        { onSuccess },
-      );
-      return;
-    }
-    if (!kanban.groupByField) return;
-    kanban.updateFieldValue.mutate(
-      {
-        cardId,
-        fieldDefinitionId: kanban.groupByField.id,
-        value: optionId,
-      },
-      { onSuccess },
+    // mutateAsync: a per-call onSuccess is dropped when another write on the same hook starts first.
+    const write = isStatusGrouping
+      ? kanban.updateStatus.mutateAsync({ cardId, statusOptionId: optionId })
+      : kanban.groupByField
+        ? kanban.updateFieldValue.mutateAsync({
+            cardId,
+            fieldDefinitionId: kanban.groupByField.id,
+            value: optionId,
+          })
+        : undefined;
+    // The mutation's own onError reports and rolls back; only the success is ours.
+    write?.then(
+      () => onSuccess?.(),
+      () => undefined,
     );
   };
 
@@ -2018,13 +2017,12 @@ function KanbanSelectedItemReady({
           onDeleteUpdate: (updateId, expectedVersion) =>
             deleteUpdate.mutate({ updateId, expectedVersion }),
           onSetUpdateResolved: (updateId, resolved) =>
-            setUpdateResolved.mutate(
-              { updateId, resolved },
-              {
-                onError: (error) =>
-                  toast.error(threadRefusalMessage(error, linksCopy.thread)),
-              },
-            ),
+            // mutateAsync: a per-call onError is dropped when another resolve on the same hook starts first.
+            setUpdateResolved
+              .mutateAsync({ updateId, resolved })
+              .catch((error) =>
+                toast.error(threadRefusalMessage(error, linksCopy.thread)),
+              ),
           onSelectTab: () => undefined,
           onCopyLink,
           onMoveToGroup,

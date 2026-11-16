@@ -39,11 +39,13 @@ import { unsentDescriptionOf } from "../../../card-popup/sections/description-se
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
 import { ARCHIVE_UNDO_MS } from "../../table/use-archive-undo-window";
 
-const toast = vi.hoisted(() => ({
-  success: vi.fn(),
-  error: vi.fn(),
-  warning: vi.fn(),
-}));
+const toast = vi.hoisted(() =>
+  Object.assign(vi.fn(), {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+  }),
+);
 vi.mock("sonner", () => ({ toast }));
 
 beforeAll(() => {
@@ -54,6 +56,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  toast.mockClear();
   toast.success.mockClear();
   toast.error.mockClear();
   vi.useRealTimers();
@@ -88,11 +91,27 @@ function fakeServices(
     noGroups?: boolean;
     /** The archive write; absent: the fake server archives the item. */
     archiveCard?: () => Promise<void>;
+    /** The comment threads the item shows, and the answer to a resolve write. */
+    updates?: unknown[];
+    /** Item numbers taken off the board (so a lane can be empty). */
+    hideCards?: string[];
+    setCardUpdateResolved?: (updateId: string) => Promise<void> | undefined;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
   let board = erpBoardScenario();
   if (overrides.noGroups) board = { ...board, groups: [] };
+  if (overrides.hideCards)
+    board = {
+      ...board,
+      groups: board.groups.map((group) => ({
+        ...group,
+        cards: group.cards.filter(
+          (card) =>
+            !overrides.hideCards!.some((n) => card.id === `item-erp-${n}`),
+        ),
+      })),
+    };
   const createGroup = vi.fn(async () => undefined);
   const itemExtras = {
     getLinks: vi.fn(async () => [
@@ -189,7 +208,17 @@ function fakeServices(
     cards,
     groups: { createGroup },
     itemExtras,
-    comments: { getCardUpdates: vi.fn(async () => []) },
+    comments: {
+      getCardUpdates: vi.fn(async () => overrides.updates ?? []),
+      getCardUpdatesPage: vi.fn(async () => ({
+        items: overrides.updates ?? [],
+        nextCursor: null,
+      })),
+      setCardUpdateResolved: vi.fn(
+        async (updateId: string) =>
+          overrides.setCardUpdateResolved?.(updateId) ?? undefined,
+      ),
+    },
     itemCapabilities: itemCapabilitiesStub(),
   } as unknown as WorkManagementServices;
   return { services, cards, createGroup, itemExtras };
@@ -696,6 +725,81 @@ describe("KanbanView on the ERP board", () => {
         hidden: true,
       }),
     ).toBeTruthy();
+  }, 20_000);
+
+  it("says where a card went even after another lane move has started", async () => {
+    let finishFirst!: () => void;
+    const first = new Promise<void>((resolve) => (finishFirst = resolve));
+    renderKanban(
+      erpOwnerAccess(),
+      {},
+      {
+        // Lanes Đang làm and Hoàn thành are empty, so a card moved into one is a value change, not a place.
+        hideCards: ["142", "144", "146", "131", "129", "136", "133", "135"],
+        updateStatus: (cardId) =>
+          cardId === erpItemId("ERP-149") ? first : undefined,
+      },
+    );
+    await ready();
+    const moveRight = (id: string) =>
+      fireEvent.keyDown(document.querySelector(`[data-card-id="${id}"]`)!, {
+        key: "ArrowRight",
+        altKey: true,
+      });
+    moveRight(erpItemId("ERP-149"));
+    moveRight(erpItemId("ERP-138"));
+    await waitFor(() => expect(laneCount("Hoàn thành")).toBe("1"));
+
+    finishFirst();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        expect.stringContaining("Viết tài liệu quy trình nhập hoá đơn đầu vào"),
+        expect.anything(),
+      ),
+    );
+  }, 20_000);
+
+  it("reports a refused resolve even after another resolve has started", async () => {
+    let refuseFirst!: (error: Error) => void;
+    const first = new Promise<void>(
+      (_resolve, reject) => (refuseFirst = reject),
+    );
+    const thread = (id: string) => ({
+      id,
+      cardId: erpItemId("ERP-149"),
+      author: {
+        id: "cm-u-1",
+        userId: "u-1",
+        name: "Ada",
+        initials: "A",
+        color: "",
+      },
+      body: `Bình luận ${id}`,
+      mentionUserIds: [],
+      attachmentIds: [],
+      createdAt: "2026-11-01T09:00:00Z",
+      version: 1,
+      reactions: [],
+      resolved: false,
+    });
+    renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-149") },
+      {
+        updates: [thread("c-1"), thread("c-2")],
+        setCardUpdateResolved: (id) => (id === "c-1" ? first : undefined),
+      },
+    );
+    const buttons = await screen.findAllByRole(
+      "button",
+      { name: "Giải quyết" },
+      { timeout: 8000 },
+    );
+    fireEvent.click(buttons[0]!);
+    fireEvent.click(buttons[1]!);
+
+    refuseFirst(Object.assign(new Error("forbidden"), { status: 403 }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
   }, 20_000);
 
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
