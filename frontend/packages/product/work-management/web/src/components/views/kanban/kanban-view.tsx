@@ -757,8 +757,8 @@ export function KanbanView({
         optionId: drop.optionId,
         retry: () => handleDrop(drop),
       });
-      kanban.dropItemInLane.mutate(
-        {
+      kanban.dropItemInLane
+        .mutateAsync({
           cardId: drop.cardId,
           lane: {
             fieldDefinitionId: kanban.groupByField.id,
@@ -770,9 +770,9 @@ export function KanbanView({
             previousSiblingId: drop.previousSiblingId,
             nextSiblingId: drop.nextSiblingId,
           },
-        },
-        { onSuccess: announceLaneMove(drop.cardId, drop.optionId) },
-      );
+        })
+        // The mutation reports a failure itself; a per-call onSuccess would be dropped by a later drop.
+        .then(announceLaneMove(drop.cardId, drop.optionId), () => undefined);
       return;
     }
     noteOrigin(drop.cardId);

@@ -759,6 +759,36 @@ describe("KanbanView on the ERP board", () => {
     );
   }, 20_000);
 
+  it("says where a card went when its drop is placed among others, even after another drop has started", async () => {
+    let finishFirst!: () => void;
+    const first = new Promise<void>((resolve) => (finishFirst = resolve));
+    renderKanban(
+      erpOwnerAccess(),
+      {},
+      {
+        updateStatus: (cardId) =>
+          cardId === erpItemId("ERP-149") ? first : undefined,
+      },
+    );
+    await ready();
+    const moveRight = (id: string) =>
+      fireEvent.keyDown(document.querySelector(`[data-card-id="${id}"]`)!, {
+        key: "ArrowRight",
+        altKey: true,
+      });
+    moveRight(erpItemId("ERP-149"));
+    moveRight(erpItemId("ERP-147"));
+    await waitFor(() => expect(laneCount("Đang làm")).toBe("5"));
+
+    finishFirst();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        expect.stringContaining("Viết tài liệu quy trình nhập hoá đơn đầu vào"),
+        expect.anything(),
+      ),
+    );
+  }, 20_000);
+
   it("reports a refused resolve even after another resolve has started", async () => {
     let refuseFirst!: (error: Error) => void;
     const first = new Promise<void>(
