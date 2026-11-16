@@ -103,6 +103,7 @@ public sealed class DocumentsNonMemberNotFoundTests : IAsyncLifetime
         yield return ("trash a page", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/archive", null);
         yield return ("restore a page", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/restore", null);
         yield return ("delete a page", HttpMethod.Delete, i => $"/api/v1/pages/{i.Page}", null);
+        yield return ("duplicate a page", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/pages/{i.Page}/duplicate", i => "{}");
         yield return ("breadcrumb", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/breadcrumb", null);
         yield return ("page history", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/history", null);
         yield return ("backlinks", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/backlinks", null);

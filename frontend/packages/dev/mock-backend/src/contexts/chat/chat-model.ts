@@ -275,6 +275,7 @@ export const CHAT_SYSTEM_TEXT = {
   unarchived: "unarchived the channel",
   renamed: (name: string) => `renamed the channel to ${name}`,
   pinned: "pinned a message",
+  unpinned: "unpinned a message",
   groupMemberAdded: "added a member to the group",
   groupMemberLeft: "left the group",
 } as const;

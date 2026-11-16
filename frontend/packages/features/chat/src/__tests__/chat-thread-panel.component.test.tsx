@@ -105,13 +105,19 @@ describe("ChatThreadPanel", () => {
       ).checked,
     ).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Follow" }));
+    expect(screen.getByTestId("chat-thread-follow-state").textContent).toBe(
+      "Not following",
+    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thread options" }), {
+      key: "Enter",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Follow thread" }),
+    );
     await waitFor(() =>
-      expect(
-        screen
-          .getByRole("button", { name: "Following" })
-          .getAttribute("aria-pressed"),
-      ).toBe("true"),
+      expect(screen.getByTestId("chat-thread-follow-state").textContent).toBe(
+        "Following",
+      ),
     );
     fireEvent.click(screen.getByRole("button", { name: "Close thread" }));
     expect(onClose).toHaveBeenCalledTimes(1);

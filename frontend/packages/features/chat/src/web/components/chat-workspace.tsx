@@ -67,6 +67,7 @@ import { cn } from "@notrelix/ui-web";
 import { ReplyChip } from "./chat-quote";
 import { ChatThreadPanel } from "./chat-thread-panel";
 import { PinnedBar, PinsPanel } from "./chat-pins";
+import { PinLimitBanner, UnpinDialog } from "./chat-pin-ui";
 import { FollowedThreadsPanel } from "./chat-followed-threads";
 import { MentionsPanel } from "./chat-mentions-panel";
 import { ChatMentionProvider } from "./chat-mention-context";
@@ -452,6 +453,9 @@ export function ChatWorkspace({
   const [atBottom, setAtBottom] = useState(true);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ChatMessage | null>(null);
+  const [confirmUnpin, setConfirmUnpin] = useState<ChatMessage | null>(null);
+  const [unpinFailed, setUnpinFailed] = useState(false);
+  const [pinLimit, setPinLimit] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -714,19 +718,50 @@ export function ChatWorkspace({
   }
 
   function handleTogglePin(message: ChatMessage, pinned: boolean) {
+    // Unpinning is announced to everyone, so it asks first (Chat-Pins boards).
+    if (!pinned) {
+      setUnpinFailed(false);
+      setConfirmUnpin(message);
+      return;
+    }
     pinner.mutate(
       { messageId: message.id, pinned },
       {
         onError: (error) =>
-          setNotice(
-            !pinned
-              ? copy.pins.unpinFailed
-              : chatFailureOf(error).code === "limit-reached"
-                ? copy.pins.limit
-                : copy.pins.failed,
-          ),
+          chatFailureOf(error).code === "limit-reached"
+            ? setPinLimit(ch)
+            : setNotice(copy.pins.failed),
       },
     );
+  }
+
+  function handleUnpinConfirm() {
+    if (!confirmUnpin) return;
+    pinner.mutate(
+      { messageId: confirmUnpin.id, pinned: false },
+      {
+        onSuccess: () => {
+          setConfirmUnpin(null);
+          setPinLimit(null);
+        },
+        onError: () => setUnpinFailed(true),
+      },
+    );
+  }
+
+  /** "Open message" of a pin: lands on the message like a search hit, and a phone leaves the Pins page. */
+  function handleOpenPinned(message: ChatMessage) {
+    setHighlightId(message.id);
+    setJump({
+      spaceId: message.spaceId,
+      messageId: message.id,
+      sequence: message.sequence,
+      threadRootId: message.alsoSentToChannel
+        ? null
+        : (message.threadRootId ?? null),
+      applied: false,
+    });
+    if (isMobile) setPanel(null);
   }
 
   function handleOpenThread(message: ChatMessage) {
@@ -1615,6 +1650,12 @@ export function ChatWorkspace({
                       })}
                     </ChatStatusBanner>
                   ) : null}
+                  {pinLimit === ch ? (
+                    <PinLimitBanner
+                      copy={copy}
+                      onView={() => setPanel({ kind: "pins" })}
+                    />
+                  ) : null}
                   <PinnedBar
                     copy={copy}
                     count={pinCount}
@@ -1972,6 +2013,7 @@ export function ChatWorkspace({
                   canUnpin={() => true}
                   unpinBusy={pinner.isPending}
                   onUnpin={(message) => handleTogglePin(message, false)}
+                  onOpenMessage={handleOpenPinned}
                 />
               ) : null}
               {panel.kind === "mentions" ? (
@@ -2210,6 +2252,17 @@ export function ChatWorkspace({
               if (!open) setModerateTarget(null);
             }}
             onSubmit={handleModerate}
+          />
+          <UnpinDialog
+            open={confirmUnpin !== null}
+            copy={copy}
+            actorName={authorName(viewerId)}
+            busy={pinner.isPending}
+            failed={unpinFailed}
+            onOpenChange={(open) => {
+              if (!open) setConfirmUnpin(null);
+            }}
+            onConfirm={handleUnpinConfirm}
           />
           <ConfirmDialog
             open={confirmDelete !== null}

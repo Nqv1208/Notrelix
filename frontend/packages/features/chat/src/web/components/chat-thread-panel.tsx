@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, BellOff, BellRing, Check, Loader2 } from "lucide-react";
+import { Archive, Check, Loader2 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMentionPayload, ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
@@ -7,6 +7,7 @@ import type { ChatCopy } from "./chat.copy";
 import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
 import { ChatPanelHeader } from "./chat-panel-header";
+import { ThreadMoreMenu } from "./chat-thread-menu";
 import { chatFailureOf } from "../../core/api/chat-failure";
 import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
 import {
@@ -117,20 +118,20 @@ export function ChatThreadPanel({
 
   function toggleFollow() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: !summary.following,
-      muted: false,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: !summary.following, muted: false },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   function toggleMute() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: true,
-      muted: !summary.muted,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: true, muted: !summary.muted },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   return (
@@ -147,39 +148,29 @@ export function ChatThreadPanel({
         onClose={onClose}
       >
         {summary ? (
-          <button
-            type="button"
-            aria-pressed={summary.following}
-            onClick={toggleFollow}
-            disabled={follower.isPending}
+          <span
             className={cn(
-              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none disabled:opacity-60",
+              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold",
               summary.following
                 ? "bg-primary/10 text-link"
                 : "bg-muted text-muted-foreground",
             )}
+            data-testid="chat-thread-follow-state"
           >
-            {summary.following ? copy.thread.following : copy.thread.follow}
-          </button>
+            {summary.following
+              ? copy.thread.following
+              : copy.thread.notFollowing}
+          </span>
         ) : null}
-        {summary?.following ? (
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            className="text-muted-foreground"
-            aria-pressed={summary.muted}
-            aria-label={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            title={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            onClick={toggleMute}
-            disabled={follower.isPending}
-          >
-            {summary.muted ? (
-              <BellOff aria-hidden="true" />
-            ) : (
-              <BellRing aria-hidden="true" />
-            )}
-          </Button>
+        {summary ? (
+          <ThreadMoreMenu
+            copy={copy}
+            following={summary.following}
+            muted={summary.muted}
+            busy={follower.isPending}
+            onToggleFollow={toggleFollow}
+            onToggleMute={toggleMute}
+          />
         ) : null}
       </ChatPanelHeader>
 

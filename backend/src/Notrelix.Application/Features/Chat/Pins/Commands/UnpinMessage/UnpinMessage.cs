@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Permissions;
@@ -13,7 +14,7 @@ namespace Notrelix.Application.Features.Chat.Pins.Commands.UnpinMessage;
 
 /// <summary>
 /// Removes the pin of a message (UC-CHT-F07). Only an active member of the space unpins, under the pin action. The request is
-/// idempotent: a message that is not pinned, or a pin already gone, is a success (204) that changes nothing. A message the
+/// idempotent: a message that is not pinned, or a pin already gone, is a success (204) that changes nothing. A pin that is removed is announced in the channel. A message the
 /// caller cannot see is the same NotFound as a missing one. An archived channel is refused (409).
 /// </summary>
 public record UnpinMessageCommand(Guid WorkspaceId, Guid MessageId)
@@ -28,6 +29,7 @@ public class UnpinMessageCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     ISpaceSequenceAllocator sequences,
+    ChatSystemMessages systemMessages,
     IDateTimeProvider clock) : IRequestHandler<UnpinMessageCommand, Result>
 {
     public async Task<Result> Handle(UnpinMessageCommand request, CancellationToken cancellationToken)
@@ -67,6 +69,7 @@ public class UnpinMessageCommandHandler(
 
         pin.Remove(userId, clock.UtcNow);
         db.ChatPins.Remove(pin);
+        await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MessageUnpinned, cancellationToken);
         return Result.Success();
     }
 }

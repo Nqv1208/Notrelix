@@ -46,6 +46,12 @@ export interface CreatePageFromTemplatePayload {
   idempotencyKey?: string;
 }
 
+/** A duplicated page; `droppedBlockCount` blocks (images, files, videos) were not copied. */
+export interface DuplicatedPage {
+  pageId: ID;
+  droppedBlockCount: number;
+}
+
 /** A page made from a template; `droppedBlockCount` blocks (images, files, videos) were not copied. */
 export interface PageFromTemplate {
   pageId: ID;

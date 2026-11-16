@@ -184,6 +184,12 @@ export type PageTemplateDtoApi = {
   createdAt: string;
 };
 
+/** `Documents.Pages.DuplicatePage`. */
+export type DuplicatedPageDtoApi = {
+  pageId: string;
+  droppedBlockCount: number;
+};
+
 /** `Documents.Templates.CreatePageFromTemplate`. */
 export type PageFromTemplateDtoApi = {
   pageId: string;
