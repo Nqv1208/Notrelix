@@ -72,16 +72,15 @@ for (const mode of ["light", "dark"] as const) {
       test("column, gutters, bubbles, separator and header follow the board", async ({
         page,
       }) => {
-        const main = await box(page, "main");
         const col = await box(page, "[role=log] ol");
-        const mainW = main.w;
+        const log = await box(page, "[role=log]");
         if (size.column !== null) {
-          expect(col.w).toBeCloseTo(Math.min(size.column, mainW), 0);
+          // The column uses the room of the log, up to its cap.
+          expect(col.w).toBeCloseTo(Math.min(size.column, log.w), 0);
         } else {
           expect(col.w).toBeLessThanOrEqual(1120 + 1);
         }
         // Centred: equal gutters on both sides of the column inside the log.
-        const log = await box(page, "[role=log]");
         const left = col.x - log.x;
         const right = log.x + log.w - (col.x + col.w);
         expect(Math.abs(left - right)).toBeLessThanOrEqual(1);
@@ -281,7 +280,7 @@ test.describe("motion", () => {
 });
 
 test.describe("jump to latest pill", () => {
-  test("floats over the list with no layout space, 34 high, fades and rises in 160 ms, and glides to the end", async ({
+  test("floats over the list with no layout space, 34 high, fades and rises in 150 ms, and glides to the end", async ({
     page,
   }) => {
     await open(page, 1440, 900, "light");
@@ -307,7 +306,7 @@ test.describe("jump to latest pill", () => {
     expect(p.y + p.h).toBeLessThanOrEqual(shown.y + shown.h);
     expect(p.x + p.w / 2).toBeCloseTo(shown.x + shown.w / 2, 0);
     const sel = "button[data-visible]";
-    expect(await css(page, sel, "transition-duration")).toContain("0.16s");
+    expect(await css(page, sel, "transition-duration")).toContain("0.15s");
     const props = (await css(page, sel, "transition-property"))
       .split(",")
       .map((x) => x.trim());

@@ -50,10 +50,17 @@ async function reveal(page: Page, text: string) {
     name: /^(Jump to latest|Xem tin mới nhất)$/,
   });
   const log = page.getByRole("log");
-  if (!(await log.getByText(text).isVisible()) && (await jump.isVisible())) {
-    await jump.click();
-  }
-  await expect(log.getByText(text)).toBeVisible();
+  // The control may show a moment after the message arrives, and the glide takes a moment: try until the text is in view.
+  await expect
+    .poll(
+      async () => {
+        if (await log.getByText(text).isVisible()) return true;
+        if (await jump.isVisible()) await jump.click();
+        return false;
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true);
 }
 
 async function openChannel(page: Page, channelId: string) {

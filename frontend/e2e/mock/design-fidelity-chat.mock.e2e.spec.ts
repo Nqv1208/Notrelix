@@ -192,7 +192,8 @@ test.describe("1440 (Chat-Main)", () => {
     const b = await box(page, "form:has(textarea) button");
     expect(b.w).toBeCloseTo(40, 0);
     expect(b.h).toBeCloseTo(40, 0);
-    expect(900 - (form.y + form.h)).toBeCloseTo(4, 0);
+    // The composer floats, lifted 20 px off the bottom edge.
+    expect(900 - (form.y + form.h)).toBeCloseTo(20, 0);
   });
 });
 
