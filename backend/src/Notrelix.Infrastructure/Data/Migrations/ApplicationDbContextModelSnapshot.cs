@@ -2543,6 +2543,174 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_feature_usages", "billing");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.Call", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("answered_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("EmptySince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("empty_since");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("end_reason");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<Guid>("InitiatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("initiator_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("region");
+
+                    b.Property<string>("RoomKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("room_key");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<string>("SpaceKind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("space_kind");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("state");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_calls");
+
+                    b.HasIndex("RoomKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_calls_room_key");
+
+                    b.HasIndex("SpaceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_calls_space_live")
+                        .HasFilter("state IN ('ringing','active')");
+
+                    b.HasIndex("StartedAt")
+                        .HasDatabaseName("ix_calls_live_started_at")
+                        .HasFilter("state IN ('ringing','active')");
+
+                    b.HasIndex("SpaceId", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_calls_space_started_at");
+
+                    b.ToTable("calls", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.CallParticipant", b =>
+                {
+                    b.Property<Guid>("CallId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("call_id");
+
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("person_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<bool>("AudioOn")
+                        .HasColumnType("boolean")
+                        .HasColumnName("audio_on");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<DateTimeOffset?>("LeftAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("left_at");
+
+                    b.Property<bool>("SharingScreen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sharing_screen");
+
+                    b.Property<bool>("VideoOn")
+                        .HasColumnType("boolean")
+                        .HasColumnName("video_on");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("CallId", "PersonId")
+                        .HasName("pk_call_participants");
+
+                    b.HasIndex("PersonId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_call_participants_person_live")
+                        .HasFilter("left_at IS NULL");
+
+                    b.ToTable("call_participants", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Exports.ChatExportJob", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2687,6 +2855,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("author_id");
 
+                    b.Property<Guid?>("CallId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("call_id");
+
                     b.Property<string>("ClientMessageId")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
@@ -2771,6 +2943,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Content"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Content"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("SpaceId", "CallId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_space_call")
+                        .HasFilter("call_id IS NOT NULL");
 
                     b.HasIndex("SpaceId", "Sequence")
                         .IsUnique()
@@ -13400,6 +13577,26 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_usage_metric_history_usage_metrics_metric_id");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.Call", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_calls_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.CallParticipant", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Calls.Call", null)
+                        .WithMany("Participants")
+                        .HasForeignKey("CallId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_call_participants_calls_call_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Message", b =>
                 {
                     b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
@@ -15397,6 +15594,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Billing.Usage.UsageMetric", b =>
                 {
                     b.Navigation("History");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.Call", b =>
+                {
+                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>

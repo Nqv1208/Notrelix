@@ -1,3 +1,10 @@
+using Notrelix.Application.Features.Chat.Calls.Commands.AnswerCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.DeclineCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.CancelCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.EndCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.JoinCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.LeaveCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.UpdateCallMediaState;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
@@ -221,6 +228,7 @@ public sealed class ExpectedVersionTargetMap
     private const string ChatChannelGroupKind = "chat.channel-group";
     private const string ChatMessageKind = "chat.message";
     private const string ChatRetentionKind = "chat.retention";
+    private const string ChatCallKind = "chat.call";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string LabelKind = "work-management.label";
@@ -374,6 +382,15 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ArchiveChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(DeleteChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(UpdateChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
+
+        // Chat — call commands quote the call version the client read (SPEC-CHAT-MEDIA-CALLS section 6)
+        [typeof(AnswerCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(DeclineCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(CancelCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(EndCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(JoinCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(LeaveCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(UpdateCallMediaStateCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
 
         // Chat — message edit and delete quote the message version the client read (UC-CHT-B04, B05)
         [typeof(EditMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),

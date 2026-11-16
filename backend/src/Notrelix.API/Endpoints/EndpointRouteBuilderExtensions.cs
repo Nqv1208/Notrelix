@@ -13,6 +13,7 @@ using Notrelix.API.Endpoints.Chat.Pins;
 using Notrelix.API.Endpoints.Chat.Search;
 using Notrelix.API.Endpoints.Chat.Attachments;
 using Notrelix.API.Endpoints.Chat.Mentions;
+using Notrelix.API.Endpoints.Chat.Calls;
 using Notrelix.API.Endpoints.Chat.Reactions;
 using Notrelix.API.Endpoints.Chat.ReadState;
 using Notrelix.API.Endpoints.Admin;
@@ -183,6 +184,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapThreadRoutes();
         app.MapPinRoutes();
         app.MapReactionRoutes();
+        app.MapCallRoutes();
         app.MapChatAttachmentRoutes();
         app.MapChannelPermissionRoutes();
         app.MapChatRetentionRoutes();

@@ -111,6 +111,14 @@ Billing_Usage_SoftLimitCannotExceedHard|Billing|Billing_Usage_SoftLimitCannotExc
 Billing_Usage_StartMustBeBeforeEnd|Billing|Billing_Usage_StartMustBeBeforeEnd
 Billing_Usage_ValueCannotBeNegative|Billing|Billing_Usage_ValueCannotBeNegative
 broadcast-confirmation-required|Chat|BroadcastConfirmationRequired
+call-already-active|Chat|CallAlreadyActive
+call-busy|Chat|CallBusy
+call-ended|Chat|CallEnded
+call-full|Chat|CallFull
+call-media-not-allowed|Chat|CallMediaNotAllowed
+call-not-participant|Chat|CallNotParticipant
+call-state-invalid|Chat|CallStateInvalid
+chat.calls.unavailable|Chat|CallsUnavailable
 channel-archived|Chat|ChannelArchived
 export-invalid|Chat|ExportInvalid
 export-too-large|Chat|ExportTooLarge

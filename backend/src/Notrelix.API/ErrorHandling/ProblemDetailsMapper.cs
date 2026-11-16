@@ -126,6 +126,41 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallEnded } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallEnded,
+                "Call ended",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallStateInvalid } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallStateInvalid,
+                "Call state invalid",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallFull } ex => (
+                StatusCodes.Status422UnprocessableEntity,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallFull,
+                "Call full",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallNotParticipant } ex => (
+                StatusCodes.Status403Forbidden,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallNotParticipant,
+                "Not in the call",
+                ex.Message,
+                null
+            ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallsUnavailable } ex => (
+                StatusCodes.Status503ServiceUnavailable,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallsUnavailable,
+                "Calls unavailable",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached } ex => (
                 StatusCodes.Status422UnprocessableEntity,
                 Notrelix.Domain.Chat.Rules.ChatRuleCodes.LimitReached,

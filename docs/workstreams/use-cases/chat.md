@@ -153,14 +153,14 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-I06 | Send a sticker or GIF | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I07 | Copy a message link and mark unread from here | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I08 | Create a task from a message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
-| UC-CHT-J01 | Start a one-to-one voice call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
-| UC-CHT-J02 | Start a one-to-one video call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
-| UC-CHT-J03 | Answer or decline an incoming call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
-| UC-CHT-J04 | Missed call, busy and call log | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
-| UC-CHT-J05 | Control audio, camera and devices in a call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J01 | Start a one-to-one voice call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
+| UC-CHT-J02 | Start a one-to-one video call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
+| UC-CHT-J03 | Answer or decline an incoming call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
+| UC-CHT-J04 | Missed call, busy and call log | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
+| UC-CHT-J05 | Control audio, camera and devices in a call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
 | UC-CHT-J06 | Share a screen | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 6; documented in SYS-ADR-002, not built. |
-| UC-CHT-J07 | Start and join a group call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 6; documented in SYS-ADR-002, not built. |
-| UC-CHT-J08 | Reconnect and recover a call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; documented in SYS-ADR-002, not built. |
+| UC-CHT-J07 | Start and join a group call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 6; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
+| UC-CHT-J08 | Reconnect and recover a call | J | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 5; backend built (Phase 5a, fake media gateway), no UI and no real media server yet. |
 
 ## 3. Use cases
 
@@ -1342,8 +1342,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 5 — not built.
+- Evidence: BE built in Phase 5a (Start call, token for the starter, 503 when the media plane is down; tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ### UC-CHT-J02 Start a one-to-one video call
 
@@ -1357,8 +1357,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 5 — not built.
+- Evidence: BE built in Phase 5a (Start with kind video; tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ### UC-CHT-J03 Answer or decline an incoming call
 
@@ -1372,8 +1372,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 5 — not built.
+- Evidence: BE built in Phase 5a (Answer (token) and decline (direct call ends as declined); tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ### UC-CHT-J04 Missed call, busy and call log
 
@@ -1387,8 +1387,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 5 — not built.
+- Evidence: BE built in Phase 5a (Ring timeout 45 s ends as Missed, Busy stored as Ended(Busy), call history endpoint, one call message per call; tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ### UC-CHT-J05 Control audio, camera and devices in a call
 
@@ -1402,8 +1402,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 5 — not built.
+- Evidence: BE built in Phase 5a (Media state endpoint (microphone, camera; no camera in a voice call); tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ### UC-CHT-J06 Share a screen
 
@@ -1432,8 +1432,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 6 — not built.
+- Evidence: BE built in Phase 5a (Join, leave and the 25 voice and 12 video caps; empty calls end after 60 s; tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 6 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ### UC-CHT-J08 Reconnect and recover a call
 
@@ -1447,8 +1447,8 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - UI states: loading, empty, success, validation error, permission denied, read-only, pending, offline, optimistic temporary id.
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
-- Evidence: BE planned (SYS-ADR-002) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
-- State: DEFINED, Phase 5 — not built.
+- Evidence: BE built in Phase 5a (A repeat answer or join returns a fresh join token; the empty-call sweep; tests: `backend/tests/Notrelix.Domain.Tests/Chat/Calls/CallTests.cs`, `backend/tests/Notrelix.Integration.Tests/Chat/ChatCallPipelineIntegrationTests.cs`) · FE planned · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), boards Chat-Media and Chat-Call · Tests planned, see the test matrix of docs/workstreams/teams/chat.md · Real e2e none yet
+- State: DEFINED, Phase 5 — the backend is built on a fake media gateway; the state does not move until the UI connects to it (IMPLEMENTING) and a real run passes (INTEGRATING).
 
 ## 4. Product decisions applied
 

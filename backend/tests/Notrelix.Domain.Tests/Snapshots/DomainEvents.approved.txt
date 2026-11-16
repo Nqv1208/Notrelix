@@ -263,6 +263,16 @@ billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Us
 billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|HardLimit|System.Decimal|True
 billing.workspace-feature-usage-limits-reconfigured|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageLimitsReconfiguredDomainEvent|Workspace|SoftLimit|System.Decimal|True
 billing.workspace-feature-usage-reset|1|Notrelix.Domain.Billing.Usage.Events.WorkspaceFeatureUsageResetDomainEvent|Workspace|Feature|Notrelix.Domain.Billing.Plans.FeatureCode|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|ActorId|System.Guid|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|CallId|System.Guid|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|EndReason|Notrelix.Domain.Chat.Calls.CallEndReason|True
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|InitiatorId|System.Guid|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|Kind|Notrelix.Domain.Chat.Calls.CallKind|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|ParticipantIds|System.Collections.Generic.IReadOnlyList<System.Guid>|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|RingsMembers|System.Boolean|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|SpaceId|System.Guid|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|State|Notrelix.Domain.Chat.Calls.CallState|False
+chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|Version|System.Int64|False
 chat.link-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelLinkChangedDomainEvent|Workspace|ActorId|System.Guid|False
 chat.link-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelLinkChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|ActorId|System.Guid|False

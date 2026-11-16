@@ -102,6 +102,7 @@ public static class PersistenceRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IDirectConversationLock, Notrelix.Infrastructure.Data.Chat.ChatDirectConversationLock>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore, Notrelix.Infrastructure.Data.Chat.ChatReadStateStore>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatThreadReadStore, Notrelix.Infrastructure.Data.Chat.ChatThreadReadStore>();
+        services.AddSingleton<Notrelix.Application.Features.Chat.Calls.IChatCallMediaGateway, Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>();
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

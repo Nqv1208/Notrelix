@@ -80,4 +80,16 @@ public static class ChatLimits
 
     /// <summary>The longest duration a client may hint for a voice message, in milliseconds. Clamped, never trusted for policy (UC-CHT-I04).</summary>
     public const int VoiceDurationHintMaxMs = 300_000;
+
+    /// <summary>The most people in a voice call (owner decision 2026-11-16, SPEC-CHAT-MEDIA-CALLS invariant 4).</summary>
+    public const int CallMaxParticipantsVoice = 25;
+
+    /// <summary>The most people in a video call (owner decision 2026-11-16, SPEC-CHAT-MEDIA-CALLS invariant 4).</summary>
+    public const int CallMaxParticipantsVideo = 12;
+
+    /// <summary>A direct call has exactly two participants.</summary>
+    public const int CallMaxParticipantsDirect = 2;
+
+    /// <summary>The most calls one history page holds.</summary>
+    public const int CallPageMax = 100;
 }

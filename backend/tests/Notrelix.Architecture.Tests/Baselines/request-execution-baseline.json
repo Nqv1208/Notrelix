@@ -850,6 +850,256 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.AnswerCall.AnswerCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.AnswerCall.AnswerCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.CancelCall.CancelCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.CancelCall.CancelCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.DeclineCall.DeclineCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.DeclineCall.DeclineCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.EndCall.EndCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.EndCall.EndCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.JoinCall.JoinCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.JoinCall.JoinCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.LeaveCall.LeaveCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.LeaveCall.LeaveCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.StartCall.StartCallCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.StartCall.StartCallCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.UpdateCallMediaState.UpdateCallMediaStateCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.UpdateCallMediaState.UpdateCallMediaStateCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Queries.GetActiveCall.GetActiveCallQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Queries.GetActiveCall.GetActiveCallQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Queries.ListCalls.ListCallsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Queries.ListCalls.ListCallsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.ChannelGroups.Commands.CreateChannelGroup.CreateChannelGroupCommand",
     "kind": "Command",
     "principalMarkers": [

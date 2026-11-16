@@ -897,6 +897,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatCallRealtimeConsumer",
+                EventName = "chat.call.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a call state change to the realtime gateway (chat.call.v1 on the channel stream of the space and, while a conversation call rings, on the stream of each invited person)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatNotificationIntentConsumer",
                 EventName = "chat.message.created",
                 EventVersion = 1,

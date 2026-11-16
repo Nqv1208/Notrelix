@@ -21,6 +21,18 @@ export interface BoardItemUpdatedPayload {
   "value"?: string;
 }
 
+export interface ChatCallChangedPayload {
+  "callId": string;
+  "endReason"?: string | null;
+  "initiatorId": string;
+  "kind": string;
+  "participants": ReadonlyArray<string>;
+  "participantsOmitted": boolean;
+  "spaceId": string;
+  "state": string;
+  "version": number;
+}
+
 export interface ChatMessageAttachmentChangedPayload {
   "attachmentId": string;
   "change": string;
@@ -139,6 +151,7 @@ export type GeneratedRealtimeMessage =
   | { eventType: "board.item.created"; payload: BoardItemCreatedPayload }
   | { eventType: "board.item.moved"; payload: BoardItemMovedPayload }
   | { eventType: "board.item.updated"; payload: BoardItemUpdatedPayload }
+  | { eventType: "chat.call.changed"; payload: ChatCallChangedPayload }
   | { eventType: "chat.message.attachment.changed"; payload: ChatMessageAttachmentChangedPayload }
   | { eventType: "chat.message.created"; payload: ChatMessageCreatedPayload }
   | { eventType: "chat.message.deleted"; payload: ChatMessageDeletedPayload }
