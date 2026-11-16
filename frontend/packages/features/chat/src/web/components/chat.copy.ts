@@ -413,6 +413,27 @@ export const en = {
     cancel: "Cancel",
     failed: "The channel could not be archived.",
   },
+  membership: {
+    leave: "Leave channel",
+    leaveTitle: "Leave this channel?",
+    leaveBodyPublic: "You can join again from Browse channels.",
+    leaveBodyPrivate:
+      "You will not see this channel again unless a manager adds you.",
+    leaveConfirm: "Leave",
+    remove: "Remove {{name}}",
+    removeTitle: "Remove {{name}} from this channel?",
+    removeBody: "They lose access to the channel at once.",
+    removeConfirm: "Remove",
+    delete: "Delete channel",
+    deleteTitle: "Delete this channel?",
+    deleteBody:
+      "The channel and its messages are removed for everyone. Type the channel name to confirm.",
+    deleteLabel: "Channel name",
+    deleteConfirm: "Delete channel",
+    cancel: "Cancel",
+    lastManager:
+      "You are the last manager of this channel, so you cannot leave it yet.",
+  },
   feedback: {
     stale: "Something changed. The latest version is shown.",
     network: "No connection. Try again when you are back online.",
@@ -435,6 +456,7 @@ export const en = {
     moreActions: "More actions",
     replyInThread: "Reply in thread",
     copyText: "Copy text",
+    copyLink: "Copy link",
     copied: "Copied to clipboard",
     sheetLabel: "Message actions",
   },
@@ -1232,6 +1254,27 @@ export const vi: ChatCopy = {
     cancel: "Hủy",
     failed: "Không lưu trữ được kênh.",
   },
+  membership: {
+    leave: "Rời kênh",
+    leaveTitle: "Rời kênh này?",
+    leaveBodyPublic: "Bạn có thể tham gia lại từ mục Duyệt kênh.",
+    leaveBodyPrivate:
+      "Bạn sẽ không thấy kênh này nữa trừ khi người quản lý thêm bạn lại.",
+    leaveConfirm: "Rời kênh",
+    remove: "Xóa {{name}}",
+    removeTitle: "Xóa {{name}} khỏi kênh này?",
+    removeBody: "Người này mất quyền truy cập kênh ngay lập tức.",
+    removeConfirm: "Xóa",
+    delete: "Xóa kênh",
+    deleteTitle: "Xóa kênh này?",
+    deleteBody:
+      "Kênh và mọi tin nhắn trong kênh sẽ bị xóa với tất cả mọi người. Nhập tên kênh để xác nhận.",
+    deleteLabel: "Tên kênh",
+    deleteConfirm: "Xóa kênh",
+    cancel: "Hủy",
+    lastManager:
+      "Bạn là người quản lý cuối cùng của kênh này nên chưa thể rời kênh.",
+  },
   feedback: {
     stale: "Có thay đổi. Đang hiện bản mới nhất.",
     network: "Mất kết nối. Thử lại khi có mạng.",
@@ -1254,6 +1297,7 @@ export const vi: ChatCopy = {
     moreActions: "Thao tác khác",
     replyInThread: "Trả lời trong luồng",
     copyText: "Sao chép nội dung",
+    copyLink: "Sao chép liên kết",
     copied: "Đã sao chép",
     sheetLabel: "Thao tác với tin nhắn",
   },

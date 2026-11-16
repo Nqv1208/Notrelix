@@ -16,6 +16,7 @@ import type { ChatConversation } from "../core/types/chat";
 import { buildChatRows, type PendingMessage } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
 import { en } from "../web/components/chat.copy";
+import { ChatMessageLinkProvider } from "../web/components/chat-link-context";
 
 const ME = "user-me";
 const OTHER = "user-other";
@@ -483,6 +484,55 @@ describe("Messenger action bar", () => {
         await screen.findByRole("menuitem", { name: "Copy text" }),
       );
       expect(writeText).toHaveBeenCalledWith("text 1");
+    } finally {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+
+  it("offers Copy link only with a link builder, and copies the address it builds (UC-CHT-B10)", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const row = (
+      <ChatMessageRow
+        message={message(7)}
+        author={{ name: "Minh Quân" }}
+        continued={false}
+        isOwn={false}
+        locale="en"
+        timeZone={TZ}
+        copy={en}
+      />
+    );
+    try {
+      const bare = render(row);
+      fireEvent.keyDown(screen.getByRole("button", { name: "More actions" }), {
+        key: "Enter",
+      });
+      await screen.findByRole("menuitem", { name: "Copy text" });
+      expect(screen.queryByRole("menuitem", { name: "Copy link" })).toBeNull();
+      bare.unmount();
+
+      render(
+        <ChatMessageLinkProvider
+          value={(entry) =>
+            entry.threadRootId
+              ? null
+              : `https://x.test/chat/s?m=${entry.sequence}`
+          }
+        >
+          {row}
+        </ChatMessageLinkProvider>,
+      );
+      fireEvent.keyDown(screen.getByRole("button", { name: "More actions" }), {
+        key: "Enter",
+      });
+      fireEvent.click(
+        await screen.findByRole("menuitem", { name: "Copy link" }),
+      );
+      expect(writeText).toHaveBeenCalledWith("https://x.test/chat/s?m=7");
     } finally {
       Reflect.deleteProperty(navigator, "clipboard");
     }

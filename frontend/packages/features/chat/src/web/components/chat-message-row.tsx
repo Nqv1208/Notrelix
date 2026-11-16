@@ -11,6 +11,7 @@ import {
 import {
   Ban,
   Copy,
+  Link2,
   MessageSquareText,
   MessagesSquare,
   MoreHorizontal,
@@ -34,6 +35,7 @@ import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
 import { useChatMentions } from "./chat-mention-context";
 import { useChatHighlight } from "./chat-highlight-context";
+import { useChatMessageLink } from "./chat-link-context";
 import { MessageAttachments } from "./chat-attachments";
 import { MessageLinkPreviews } from "./chat-link-previews";
 import { ReactionChips } from "./chat-reactions";
@@ -268,6 +270,7 @@ function ChatMessageRowBase({
     );
   }
 
+  const messageLink = useChatMessageLink()?.(message) ?? null;
   const live = !message.deleted;
   const reacted = reactions
     .filter((entry) => entry.reactedByMe)
@@ -281,6 +284,7 @@ function ChatMessageRowBase({
         isOwn,
         pinned,
         content,
+        messageLink,
         onEdit,
         onDelete,
         onModerate,
@@ -726,6 +730,7 @@ export function buildMenuItems({
   isOwn,
   pinned,
   content,
+  messageLink,
   onEdit,
   onDelete,
   onModerate,
@@ -737,6 +742,7 @@ export function buildMenuItems({
   readonly isOwn: boolean;
   readonly pinned: boolean;
   readonly content: string;
+  readonly messageLink: string | null;
   readonly onEdit?: (message: ChatMessage) => void;
   readonly onDelete?: (message: ChatMessage) => void;
   readonly onModerate?: (message: ChatMessage) => void;
@@ -775,6 +781,15 @@ export function buildMenuItems({
       icon: Copy,
       onSelect: () =>
         void navigator.clipboard.writeText(content).catch(() => undefined),
+    });
+  }
+  if (messageLink !== null && canCopy()) {
+    items.push({
+      key: "copyLink",
+      label: copy.toolbar.copyLink,
+      icon: Link2,
+      onSelect: () =>
+        void navigator.clipboard.writeText(messageLink).catch(() => undefined),
     });
   }
   if (isOwn && onDelete) {
