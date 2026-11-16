@@ -11,6 +11,7 @@
  *                                               and activating ends every other session (`otherSessionsEnded`)
  *   POST /auth/security/step-up/*               proof of presence; throttled with 429
  *   POST /auth/change-password                  current + new password; the proof only with two-factor on
+ *   POST /auth/set-password                     a first password for a provider-only person; needs a ChangePassword proof
  *   POST /auth/mfa/disable, /auth/mfa/recovery-codes/regenerate   need a single-use proof
  */
 import { defineMockOperation } from "../../operations/types";
@@ -625,6 +626,69 @@ export const accountSecurityOperations = [
       });
       // The mock keeps one fixed password for sign-in; only the session ends.
       store.logoutCurrentUser();
+      return { status: 200 };
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { newPassword?: string; stepUpToken?: string }
+  >({
+    id: "account.auth.setFirstPassword",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.SetFirstPassword",
+    },
+    method: "POST",
+    route: "/auth/set-password",
+    async handle({ body, store }) {
+      const security = securityOf(store);
+      const next = body?.newPassword ?? "";
+      if (next.length < PASSWORD_MIN_LENGTH)
+        return {
+          status: 400,
+          body: {
+            type: "https://notrelix.dev/problems/validation.failed",
+            title: "Validation failed",
+            status: 400,
+            detail: "One or more validation errors occurred.",
+            errorCode: "validation.failed",
+            errors: {
+              NewPassword: [
+                `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+              ],
+            },
+          },
+        };
+      // A person who has a password changes it instead.
+      if (security.signInProvider === null)
+        return identityProblem(
+          409,
+          "identity.auth.password-already-set",
+          "A password is already set. Change it instead.",
+        );
+      const token = body?.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "ChangePassword");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      const now = store.getClock().isoNow();
+      security.passwordChangedAt = now;
+      // The person has a password now: the sign-in provider no longer stands alone.
+      security.signInProvider = null;
+      // This device stays signed in; every other one ends.
+      for (const session of security.sessions)
+        if (session.status === "Active" && !session.isCurrent) {
+          session.status = "Revoked";
+          session.revokedAt = now;
+        }
+      security.activity.unshift({
+        id: `activity-${security.activity.length + 1}`,
+        type: "PasswordChanged",
+        occurredAt: now,
+        ipAddress: null,
+        userAgent: null,
+      });
       return { status: 200 };
     },
   }),

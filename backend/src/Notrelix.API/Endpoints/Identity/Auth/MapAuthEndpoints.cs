@@ -31,6 +31,7 @@ public static class MapAuthEndpoints
 
         authGroup.MapLogout();
         authGroup.MapChangePassword();
+        authGroup.MapSetFirstPassword();
         authGroup.MapGetCurrentUser();
         authGroup.MapGetBootstrap();
         authGroup.MapStartOAuthLink();

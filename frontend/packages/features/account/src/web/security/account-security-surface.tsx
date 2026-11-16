@@ -29,6 +29,7 @@ import {
 import {
   AccountPasswordChangedPanel,
   AccountPasswordPanel,
+  AccountSetPasswordPanel,
   type AccountPasswordError,
   type AccountPasswordSubmission,
 } from "./account-password-panel";
@@ -75,7 +76,13 @@ export type AccountSecurityFlow =
       readonly kind: "stepUp";
       /** What the proof is for: two-factor on or off, fresh backup codes, or ending every other device. */
       readonly purpose:
-        "enroll" | "disable" | "renew" | "others" | "link" | "unlink";
+        | "enroll"
+        | "disable"
+        | "renew"
+        | "others"
+        | "link"
+        | "unlink"
+        | "setPassword";
       /** `link` and `unlink`: the provider the proof is for. */
       readonly provider?: string;
       readonly factor: "code" | "password" | "provider";
@@ -95,6 +102,12 @@ export type AccountSecurityFlow =
       /** Changing the password; `needsCode` while two-factor is on. */
       readonly kind: "password";
       readonly needsCode: boolean;
+      readonly error: AccountPasswordError | null;
+      readonly wait?: number;
+    }
+  /** Choosing a first password, the proof of presence already in hand. */
+  | {
+      readonly kind: "setPassword";
       readonly error: AccountPasswordError | null;
       readonly wait?: number;
     }
@@ -138,6 +151,9 @@ export interface AccountSecuritySurfaceProps {
   readonly onSetTwoFactor: (enabled: boolean) => void;
   /** Opens the change of password; absent = the account cannot change it here. */
   readonly onChangePassword?: () => void;
+  /** Starts setting a first password (the proof comes first); absent = the page cannot do it. */
+  readonly onSetPassword?: () => void;
+  readonly onSubmitFirstPassword?: (next: string) => void;
   readonly onSubmitNewPassword?: (
     submission: AccountPasswordSubmission,
   ) => void;
@@ -291,6 +307,7 @@ function FlowPanel({
   flow: Exclude<
     AccountSecurityFlow,
     | { kind: "password" }
+    | { kind: "setPassword" }
     | { kind: "passwordChanged" }
     | { kind: "twoFactorOff" }
     | { kind: "signOutThis" }
@@ -390,7 +407,9 @@ function FlowPanel({
               ? fillCopy(t.linkTitle, { provider: flow.provider ?? "" })
               : flow.purpose === "unlink"
                 ? fillCopy(t.unlinkTitle, { provider: flow.provider ?? "" })
-                : t.renewTitle;
+                : flow.purpose === "setPassword"
+                  ? t.setPasswordTitle
+                  : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -602,6 +621,8 @@ function SecurityBody({
   notice,
   flow,
   onChangePassword,
+  onSetPassword,
+  onSubmitFirstPassword,
   onSubmitNewPassword,
   onPasswordChangedContinue,
   onSetTwoFactor,
@@ -631,6 +652,9 @@ function SecurityBody({
   };
   const others = data.sessions.filter((session) => !session.isCurrent);
   const current = data.sessions.find((session) => session.isCurrent);
+  // Signs in with a provider only: there is no password to change, one can be set.
+  const noPassword =
+    data.hasPassword === false && (data.linkedProviders ?? []).length > 0;
   return (
     <>
       <Block
@@ -653,7 +677,9 @@ function SecurityBody({
               ? fillCopy(copy.password.ssoTitle, {
                   provider: data.ssoProvider,
                 })
-              : copy.password.localTitle
+              : noPassword
+                ? copy.password.noneTitle
+                : copy.password.localTitle
           }
           text={
             data.ssoProvider
@@ -661,7 +687,12 @@ function SecurityBody({
                   email: data.email,
                   provider: data.ssoProvider,
                 })
-              : copy.password.localText
+              : noPassword
+                ? fillCopy(copy.password.noneText, {
+                    providers: (data.linkedProviders ?? []).join(" / "),
+                    email: data.email,
+                  })
+                : copy.password.localText
           }
           control={
             data.ssoProvider ? (
@@ -677,6 +708,15 @@ function SecurityBody({
                 {copy.password.ssoLink}
                 <span className="sr-only">{copy.password.ssoLinkOpens}</span>
               </a>
+            ) : noPassword && onSetPassword ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onSetPassword}
+                className={cn(BTN_SM, FOCUS)}
+              >
+                {copy.password.set}
+              </button>
             ) : onChangePassword ? (
               <button
                 type="button"
@@ -837,7 +877,17 @@ function SecurityBody({
         ) : null}
       </Block>
 
-      {flow?.kind === "password" ? (
+      {flow?.kind === "setPassword" ? (
+        <AccountSetPasswordPanel
+          copy={copy}
+          email={data.email}
+          error={flow.error}
+          wait={flow.wait}
+          busy={busy}
+          onSubmit={onSubmitFirstPassword}
+          onClose={onCloseFlow}
+        />
+      ) : flow?.kind === "password" ? (
         <AccountPasswordPanel
           copy={copy}
           needsCode={flow.needsCode}
