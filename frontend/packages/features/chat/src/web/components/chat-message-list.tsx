@@ -57,6 +57,7 @@ import {
 import { ChatTypingBubble } from "./chat-typing-indicator";
 import { useChatHighlight } from "./chat-highlight-context";
 import { animateScrollTo, prefersReducedMotion } from "./animate-scroll";
+import { guardResizeObserverLoop } from "./resize-observer-loop-guard";
 
 /** Within this many pixels of the bottom the list counts as at the bottom. */
 const BOTTOM_SLACK_PX = 48;
@@ -375,6 +376,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
   useLayoutEffect(() => {
     latest.current = props;
   });
+  useLayoutEffect(() => guardResizeObserverLoop(), []);
   const rowHandlers = useMemo(
     () => ({
       onEdit: (m: ChatMessage) => latest.current.onEdit?.(m),

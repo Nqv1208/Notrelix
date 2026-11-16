@@ -65,7 +65,7 @@ test.fixme("(b) a new message while at the bottom follows smoothly, never snaps"
   expectSmoothFollow("b-incoming", await stopTrace(page));
 });
 
-test.fixme("(c) an own send goes from pending to confirmed without a snap", async ({
+test("(c) an own send goes from pending to confirmed without a snap", async ({
   page,
 }) => {
   await atNewest(page);
@@ -108,21 +108,24 @@ test("(e) an image loading in a row above the reader moves nothing", async ({
   await page.waitForTimeout(600);
   const id = await pick(page);
   const above = await pick(page, "above");
-  await startTrace(page, id);
+  // The app reserves the box from the stored size: it is in the row before the file arrives, so loading changes no height.
   await page.evaluate((rowId) => {
     const row = document.querySelector(`[data-message-id="${rowId}"]`)!;
     const img = document.createElement("img");
-    // The app reserves the box from the stored size, so the row does not grow when the file arrives.
+    img.id = "motion-probe-image";
     img.width = 240;
     img.height = 180;
     img.style.display = "block";
     row.appendChild(img);
+  }, above);
+  await page.waitForTimeout(600);
+  await startTrace(page, id);
+  await page.evaluate(() => {
     const svg =
       "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='180'><rect width='240' height='180' fill='%23888'/></svg>";
-    setTimeout(() => {
-      img.src = `data:image/svg+xml;utf8,${svg}`;
-    }, 300);
-  }, above);
+    (document.getElementById("motion-probe-image") as HTMLImageElement).src =
+      `data:image/svg+xml;utf8,${svg}`;
+  });
   await page.waitForTimeout(1200);
   const drift = maxDrift(await stopTrace(page));
   report("e-image-growth", drift);
