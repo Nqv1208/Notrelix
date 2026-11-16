@@ -1,3 +1,4 @@
+import { runSessionReset } from "@notrelix/query";
 import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -277,5 +278,69 @@ describe("attachment actions", () => {
       ).toEqual([]),
     );
     expect(await s.service.listAttachments(WORKSPACE, message.id)).toEqual([]);
+  });
+});
+
+describe("files of an unconfirmed send and the session", () => {
+  it("are dropped on sign-out, so a retry by the next account sends no file", async () => {
+    const store = new MockStore({ ...defaultConfig });
+    let down = true;
+    const client = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: (input, init) => {
+        const url = new URL(
+          String(input instanceof Request ? input.url : input),
+        );
+        if (
+          down &&
+          init?.method === "POST" &&
+          url.pathname.endsWith("/messages")
+        ) {
+          return Promise.reject(new TypeError("offline"));
+        }
+        return createMockFetch(store)(input, init);
+      },
+    });
+    const deps = { api: client.api, endpoints: client.endpoints };
+    const hooks = createChatHooks(deps);
+    const service = createChatService(deps.api, deps.endpoints);
+    const viewer = store.getCurrentUser().id;
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const general = await generalId(service);
+    const { result } = renderHook(
+      () => ({
+        list: hooks.useMessages(WORKSPACE, general, { kind: "latest" }),
+        send: hooks.useSendMessage(WORKSPACE, general, viewer),
+        pending: hooks.usePendingSends(WORKSPACE, general),
+      }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+
+    act(() => {
+      result.current.send.send("held", null, undefined, [file("secret.txt")]);
+    });
+    await waitFor(() => expect(result.current.pending.data).toHaveLength(1));
+    runSessionReset();
+    down = false;
+    act(() => result.current.send.retry(result.current.pending.data[0]!));
+    await waitFor(() => {
+      expect(
+        sentMessage(flattenPages(result.current.list.data), "held"),
+      ).toBeDefined();
+    });
+    const message = sentMessage(
+      flattenPages(result.current.list.data),
+      "held",
+    )!;
+    expect(await service.listAttachments(WORKSPACE, message.id)).toEqual([]);
   });
 });

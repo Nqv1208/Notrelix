@@ -551,7 +551,7 @@ export const vi: WorkspaceTeamsCopy = {
   list: {
     title: "Nhóm",
     description:
-      "Các nhóm người mà Không gian và chia sẻ có thể nhắm tới cùng lúc.",
+      "Các nhóm người mà phòng ban và chia sẻ có thể nhắm tới cùng lúc.",
     new: "Nhóm mới",
     filterLabel: "Hiển thị nhóm",
     filter: { active: "Đang hoạt động", archived: "Đã lưu trữ" },
@@ -562,7 +562,7 @@ export const vi: WorkspaceTeamsCopy = {
     empty: {
       title: "Chưa có nhóm nào",
       description:
-        "Nhóm gom mọi người lại để bạn thêm họ vào một Không gian chỉ bằng một bước.",
+        "Nhóm gom mọi người lại để bạn thêm họ vào một phòng ban chỉ bằng một bước.",
       archivedTitle: "Không có nhóm nào đã lưu trữ",
       archivedDescription: "Những nhóm bạn lưu trữ sẽ nằm ở đây.",
     },

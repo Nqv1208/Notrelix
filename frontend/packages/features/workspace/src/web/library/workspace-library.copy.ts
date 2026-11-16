@@ -110,9 +110,9 @@ export const vi: WorkspaceLibraryCopy = {
     doc: "Tài liệu",
   },
   spaces: {
-    label: "Không gian",
-    all: "Mọi Không gian",
-    none: "Không thuộc Không gian",
+    label: "Phòng ban",
+    all: "Mọi phòng ban",
+    none: "Không thuộc phòng ban",
   },
   columns: {
     select: "Chọn",
@@ -135,7 +135,7 @@ export const vi: WorkspaceLibraryCopy = {
     select: "Chọn {{name}}",
     pin: "Ghim {{name}}",
     unpin: "Bỏ ghim {{name}}",
-    move: "Chuyển {{name}} vào một Không gian",
+    move: "Chuyển {{name}} vào một phòng ban",
     pinning: "Đang cập nhật ghim cho {{name}}…",
     rootLocation: "Không gian làm việc",
     unknownUpdated: "Chưa có thông tin",

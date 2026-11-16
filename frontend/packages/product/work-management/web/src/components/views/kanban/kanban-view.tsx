@@ -700,21 +700,20 @@ export function KanbanView({
       optionId,
       retry: () => writeLaneValue(cardId, optionId, onSuccess),
     });
-    if (isStatusGrouping) {
-      kanban.updateStatus.mutate(
-        { cardId, statusOptionId: optionId },
-        { onSuccess },
-      );
-      return;
-    }
-    if (!kanban.groupByField) return;
-    kanban.updateFieldValue.mutate(
-      {
-        cardId,
-        fieldDefinitionId: kanban.groupByField.id,
-        value: optionId,
-      },
-      { onSuccess },
+    // mutateAsync: a per-call onSuccess is dropped when another write on the same hook starts first.
+    const write = isStatusGrouping
+      ? kanban.updateStatus.mutateAsync({ cardId, statusOptionId: optionId })
+      : kanban.groupByField
+        ? kanban.updateFieldValue.mutateAsync({
+            cardId,
+            fieldDefinitionId: kanban.groupByField.id,
+            value: optionId,
+          })
+        : undefined;
+    // The mutation's own onError reports and rolls back; only the success is ours.
+    write?.then(
+      () => onSuccess?.(),
+      () => undefined,
     );
   };
 
@@ -758,8 +757,8 @@ export function KanbanView({
         optionId: drop.optionId,
         retry: () => handleDrop(drop),
       });
-      kanban.dropItemInLane.mutate(
-        {
+      kanban.dropItemInLane
+        .mutateAsync({
           cardId: drop.cardId,
           lane: {
             fieldDefinitionId: kanban.groupByField.id,
@@ -771,9 +770,9 @@ export function KanbanView({
             previousSiblingId: drop.previousSiblingId,
             nextSiblingId: drop.nextSiblingId,
           },
-        },
-        { onSuccess: announceLaneMove(drop.cardId, drop.optionId) },
-      );
+        })
+        // The mutation reports a failure itself; a per-call onSuccess would be dropped by a later drop.
+        .then(announceLaneMove(drop.cardId, drop.optionId), () => undefined);
       return;
     }
     noteOrigin(drop.cardId);
@@ -1000,7 +999,16 @@ export function KanbanView({
     const next = { ...kanbanSettings.wipLimits };
     if (limit === null) delete next[lane.optionId];
     else next[lane.optionId] = limit;
-    updateViewConfig({ wipLimits: next });
+    updateViewConfig(
+      { wipLimits: next },
+      {
+        onError: () =>
+          toast.error(
+            fillCopy(laneCopyRef.current.saveFailed, { title: lane.name }),
+            { id: `kanban-wip-${lane.optionId}` },
+          ),
+      },
+    );
   };
 
   const handleSheetFieldValue = (payload: UpdateFieldValueInput) => {
@@ -1166,21 +1174,19 @@ export function KanbanView({
             : undefined,
         onSetDue: (card, day) => {
           noteOrigin(card.id);
-          updateCardDetails.mutate(
-            {
+          void updateCardDetails
+            .mutateAsync({
               cardId: card.id,
               patch: { dueDate: day === null ? null : `${day}T00:00:00.000Z` },
-            },
-            {
-              onError: () =>
-                toast.error(
-                  fillCopy(laneCopyRef.current.saveFailed, {
-                    title: card.title,
-                  }),
-                  { id: `kanban-write-${card.id}` },
-                ),
-            },
-          );
+            })
+            .catch(() =>
+              toast.error(
+                fillCopy(laneCopyRef.current.saveFailed, {
+                  title: card.title,
+                }),
+                { id: `kanban-write-${card.id}` },
+              ),
+            );
         },
         quickEdit: {
           labels: boardLabels.data ?? [],
@@ -1189,18 +1195,16 @@ export function KanbanView({
           ),
           onRename: (card, title) => {
             noteOrigin(card.id);
-            updateCardDetails.mutate(
-              { cardId: card.id, patch: { title } },
-              {
-                onError: () =>
-                  toast.error(
-                    fillCopy(laneCopyRef.current.saveFailed, {
-                      title: card.title,
-                    }),
-                    { id: `kanban-write-${card.id}` },
-                  ),
-              },
-            );
+            void updateCardDetails
+              .mutateAsync({ cardId: card.id, patch: { title } })
+              .catch(() =>
+                toast.error(
+                  fillCopy(laneCopyRef.current.saveFailed, {
+                    title: card.title,
+                  }),
+                  { id: `kanban-write-${card.id}` },
+                ),
+              );
           },
           onToggleLabel: (card, labelId, on) =>
             toggleCardLabel.mutate({ cardId: card.id, labelId, on }),
@@ -1220,13 +1224,24 @@ export function KanbanView({
           },
           onSetDates: (card, dates) => {
             noteOrigin(card.id);
-            updateCardDetails.mutate({
-              cardId: card.id,
-              patch: {
-                startDate: dates.start ? `${dates.start}T00:00:00.000Z` : null,
-                dueDate: dates.due ? `${dates.due}T00:00:00.000Z` : null,
-              },
-            });
+            void updateCardDetails
+              .mutateAsync({
+                cardId: card.id,
+                patch: {
+                  startDate: dates.start
+                    ? `${dates.start}T00:00:00.000Z`
+                    : null,
+                  dueDate: dates.due ? `${dates.due}T00:00:00.000Z` : null,
+                },
+              })
+              .catch(() =>
+                toast.error(
+                  fillCopy(laneCopyRef.current.saveFailed, {
+                    title: card.title,
+                  }),
+                  { id: `kanban-write-${card.id}` },
+                ),
+              );
           },
           onOpen: (cardId) => handleOpenDetail(cardId),
         },
@@ -1980,11 +1995,15 @@ function KanbanSelectedItemReady({
           onRefreshUpdates: () => {
             void updates.refetch();
           },
+          // The promise settles even when the sheet closed meanwhile; per-call mutate callbacks would be dropped.
           onCreateUpdate: (input, options) =>
-            createUpdate.mutate(input, {
-              onSuccess: options?.onSuccess,
-              onSettled: options?.onSettled,
-            }),
+            void createUpdate.mutateAsync(input).then(
+              () => {
+                options?.onSuccess?.();
+                options?.onSettled?.();
+              },
+              () => options?.onSettled?.(),
+            ),
           onToggleReaction: (commentId, emoji, on) =>
             toggleReaction.mutate({ commentId, emoji, on }),
           onUpdateUpdate: (updateId, body, expectedVersion) =>
@@ -1992,13 +2011,12 @@ function KanbanSelectedItemReady({
           onDeleteUpdate: (updateId, expectedVersion) =>
             deleteUpdate.mutate({ updateId, expectedVersion }),
           onSetUpdateResolved: (updateId, resolved) =>
-            setUpdateResolved.mutate(
-              { updateId, resolved },
-              {
-                onError: (error) =>
-                  toast.error(threadRefusalMessage(error, linksCopy.thread)),
-              },
-            ),
+            // mutateAsync: a per-call onError is dropped when another resolve on the same hook starts first.
+            setUpdateResolved
+              .mutateAsync({ updateId, resolved })
+              .catch((error) =>
+                toast.error(threadRefusalMessage(error, linksCopy.thread)),
+              ),
           onSelectTab: () => undefined,
           onCopyLink,
           onMoveToGroup,

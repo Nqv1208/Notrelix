@@ -468,6 +468,8 @@ export interface DocPageCallbacks {
   readonly onAccessLostCopy?: () => void;
   /** Leaves the page after the right to edit was lost; omitted offers no button. */
   readonly onLeavePage?: () => void;
+  /** Reads the page again after a load failed. */
+  readonly onRetryLoad?: () => void;
   readonly onTitleCommit?: (title: string) => void;
   readonly onBlockCommit?: (blockId: string, text: string) => void;
   readonly onBlockTrigger?: (

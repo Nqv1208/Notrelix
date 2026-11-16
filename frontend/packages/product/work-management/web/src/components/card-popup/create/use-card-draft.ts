@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/work-management-state";
 import { useCallback, useMemo, useState } from "react";
 import {
   useBoardLabels,
@@ -91,6 +92,7 @@ function emptyDraft(defaults: CardDraftDefaults): CardDraft {
 
 /** A draft kept by "Giữ nháp và đóng": the next create popup of the same board opens on it, once. */
 const keptDrafts = new Map<string, CardDraft>();
+onSessionReset(() => keptDrafts.clear());
 export const keepDraft = (boardId: string, draft: CardDraft) =>
   keptDrafts.set(boardId, draft);
 function takeKeptDraft(boardId: string): CardDraft | undefined {

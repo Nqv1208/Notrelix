@@ -1,4 +1,5 @@
-import { useState, type KeyboardEvent } from "react";
+import { onSessionReset } from "@notrelix/work-management-state";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { AtSign, Send } from "lucide-react";
 import { Button, Textarea } from "@notrelix/ui-web";
 import type { CardMember } from "@notrelix/work-management-core";
@@ -8,8 +9,12 @@ import { itemPageCopy } from "../item-page/item-page.copy";
 import type { ItemSheetCopy } from "./item-sheet.copy";
 import type { TaskDetailCallbacks } from "./task-detail-types";
 
+/** A repeat inside this window is a retry of the same click; later it is a new comment. */
+const REPEAT_WINDOW_MS = 2 * 60_000;
+
 /** Unsent comment text by card, kept past the composer so a card that vanishes under it does not take the text along. */
 const unsentComments = new Map<string, string>();
+onSessionReset(() => unsentComments.clear());
 
 /** What the person had typed on a card and not sent ("" when nothing). */
 export function unsentCommentOf(cardId: string): string {
@@ -41,16 +46,34 @@ export function useCommentDraft({
     });
   const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // The key of a post sent and not answered: a retry of the same text within the window repeats it.
+  const sent = useRef<{ signature: string; key: string; at: number } | null>(
+    null,
+  );
   const canSubmit = body.trim().length > 0 && !disabled && !isSubmitting;
 
   function submit() {
     const nextBody = body.trim();
     if (!nextBody || disabled || isSubmitting) return;
     setIsSubmitting(true);
+    const signature = JSON.stringify([nextBody, mentionUserIds]);
+    const kept = sent.current;
+    const key =
+      kept?.signature === signature && Date.now() - kept.at < REPEAT_WINDOW_MS
+        ? kept.key
+        : crypto.randomUUID();
+    sent.current = { signature, key, at: Date.now() };
     onCreateUpdate(
-      { cardId, body: nextBody, mentionUserIds, attachmentIds: [] },
+      {
+        cardId,
+        body: nextBody,
+        mentionUserIds,
+        attachmentIds: [],
+        idempotencyKey: key,
+      },
       {
         onSuccess: () => {
+          sent.current = null;
           setBody("");
           setMentionUserIds([]);
         },

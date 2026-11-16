@@ -16,13 +16,18 @@ import {
 } from "../components/auth-sign-in-surface";
 import type { AuthFlowNavigation } from "./flow-navigation";
 
+/** A refusal's wait. A new object per refusal, so a second refusal with the same wait restarts the count. */
+type Lock = { readonly seconds: number } | null;
+const lockOf = (seconds: number | null): Lock =>
+  seconds && seconds > 0 ? { seconds } : null;
+
 /** Seconds the lock card counts down from a refusal that carries `retryAfterSeconds`. */
-function useCountdown(seconds: number | null): number {
+function useCountdown(lock: Lock): number {
   const [deadline, setDeadline] = useState<number | null>(null);
   const [left, setLeft] = useState(0);
   useEffect(() => {
-    setDeadline(seconds && seconds > 0 ? Date.now() + seconds * 1000 : null);
-  }, [seconds]);
+    setDeadline(lock ? Date.now() + lock.seconds * 1000 : null);
+  }, [lock]);
   useEffect(() => {
     if (deadline === null) {
       setLeft(0);
@@ -144,8 +149,8 @@ export function SignInFlow({
         },
   );
   const [typedEmail, setTypedEmail] = useState(initialEmail);
-  const [lockSeconds, setLockSeconds] = useState<number | null>(null);
-  const lockedSeconds = useCountdown(lockSeconds);
+  const [lock, setLock] = useState<Lock>(null);
+  const lockedSeconds = useCountdown(lock);
 
   const signedIn = useMemo(
     () => (session: SessionResult) => {
@@ -188,7 +193,7 @@ export function SignInFlow({
     mutationFn: (input: { email: string; password: string }) =>
       service.login(input),
     onSuccess: (result, input) => {
-      setLockSeconds(null);
+      setLock(null);
       if (result.kind === "mfa")
         setPhase({
           kind: "otp",
@@ -214,7 +219,7 @@ export function SignInFlow({
         return;
       }
       const throttled = isThrottled(failure);
-      setLockSeconds(throttled ? failure.retryAfterSeconds : null);
+      setLock(throttled ? lockOf(failure.retryAfterSeconds) : null);
       setPhase({
         kind: "password",
         email: input.email,
@@ -232,7 +237,7 @@ export function SignInFlow({
     },
     onError: (error) => {
       const failure = readFlowError(error);
-      setLockSeconds(isThrottled(failure) ? failure.retryAfterSeconds : null);
+      setLock(isThrottled(failure) ? lockOf(failure.retryAfterSeconds) : null);
       setPhase((current) =>
         current.kind === "otp"
           ? {
@@ -294,7 +299,7 @@ export function SignInFlow({
         : phase;
 
   const backToEmail = () => {
-    setLockSeconds(null);
+    setLock(null);
     setPhase({ kind: "email", error: null });
   };
 

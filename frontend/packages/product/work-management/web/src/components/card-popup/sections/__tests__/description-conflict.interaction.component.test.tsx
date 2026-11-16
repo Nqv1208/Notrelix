@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
 import { fireEvent, renderPureUi, screen, waitFor } from "@notrelix/testing";
 import { en } from "../../card-popup.copy";
@@ -6,7 +6,10 @@ import {
   CardPopupProvider,
   type CardPopupModel,
 } from "../../card-popup-context";
-import { DescriptionSection } from "../description-section";
+import {
+  DescriptionSection,
+  discardUnsentDescription,
+} from "../description-section";
 
 const lostRace = (by: string | null) =>
   Object.assign(new Error("stale"), {
@@ -49,6 +52,9 @@ async function typeAndSave(text: string) {
 }
 
 describe("description save that lost the race", () => {
+  // The kept draft outlives the editor by design; each test starts without one.
+  afterEach(() => discardUnsentDescription("item-1"));
+
   it("names who saved first, keeps my text in the editor and sends nothing more", async () => {
     const onUpdateItem = vi.fn().mockRejectedValue(lostRace("Ada Lovelace"));
     show(onUpdateItem);

@@ -56,6 +56,8 @@ export const en = {
     "last-owner":
       "The only owner. Transfer ownership before changing this role.",
     "owner-by-transfer": "Only an owner can change another owner.",
+    "admin-by-owner": "Only an owner can change an admin.",
+    "owner-only": "Only an owner can change roles.",
     self: "You can't change your own membership here.",
     "not-admin": "Only admins and owners can change this.",
     suspended: "Reactivate this member to change the role.",
@@ -214,6 +216,8 @@ export const vi: WorkspaceMembersCopy = {
       "Chủ sở hữu duy nhất. Hãy chuyển quyền sở hữu trước khi đổi vai trò này.",
     "owner-by-transfer":
       "Chỉ chủ sở hữu mới đổi được vai trò của chủ sở hữu khác.",
+    "admin-by-owner": "Chỉ chủ sở hữu mới thay đổi được quản trị viên.",
+    "owner-only": "Chỉ chủ sở hữu đổi được vai trò.",
     self: "Bạn không thể tự thay đổi tư cách thành viên của mình ở đây.",
     "not-admin": "Chỉ quản trị viên và chủ sở hữu mới thay đổi được mục này.",
     suspended: "Hãy kích hoạt lại thành viên này để đổi vai trò.",

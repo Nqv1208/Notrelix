@@ -287,6 +287,9 @@ export const en = {
     notFound: "This item is gone or you can no longer see it.",
     failed: "Could not upload. Check the network and try again.",
     downloadFailed: "Could not download {{name}}. Try again.",
+    uploadedAfterClose: "Uploaded {{name}} to “{{title}}”.",
+    uploadFailedAfterClose:
+      "Could not upload {{name}} to “{{title}}”. Open the card and add it again.",
     retry: "Retry",
     skip: "Skip",
     cancel: "Cancel the upload of {{name}}",
@@ -686,6 +689,9 @@ export const vi: ItemPageCopy = {
     notFound: "Việc này đã mất hoặc bạn không còn xem được.",
     failed: "Không tải được. Kiểm tra mạng rồi thử lại.",
     downloadFailed: "Không tải được {{name}}. Thử lại nhé.",
+    uploadedAfterClose: "Đã tải {{name}} lên “{{title}}”.",
+    uploadFailedAfterClose:
+      "Không tải được {{name}} lên “{{title}}”. Mở thẻ và thêm lại nhé.",
     retry: "Thử lại",
     skip: "Bỏ qua",
     cancel: "Huỷ tải {{name}}",
