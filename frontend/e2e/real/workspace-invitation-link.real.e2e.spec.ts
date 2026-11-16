@@ -61,6 +61,7 @@ test("a person with no account opens the link from the e-mail, sees the invitati
   const withoutTrace = (data: unknown) => ({
     ...(data as Record<string, unknown>),
     traceId: undefined,
+    correlationId: undefined,
   });
   expect(withoutTrace(unknown.data)).toEqual(withoutTrace(malformed.data));
 

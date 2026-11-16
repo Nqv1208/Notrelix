@@ -45,14 +45,30 @@ services:
     networks:
       - backend-network
 
+  # Real-run mail sink: a message the backend sends is read back through its HTTP API. It shares the
+  # backend's network so the backend reaches it on localhost, the only cleartext host SMTP accepts.
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    container_name: notrelix-fe-real-e2e-mailpit
+    restart: "no"
+    network_mode: "service:backend"
+
   backend:
     image: mcr.microsoft.com/dotnet/sdk:9.0.317
     container_name: notrelix-fe-real-e2e-backend
     restart: "no"
     ports:
       - "0.0.0.0:58000:8000"
+      # The mail sink's HTTP API (the sink shares this container's network, see `mailpit` below).
+      - "127.0.0.1:58025:8025"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # Mail goes over SMTP to the sink on this container's own loopback, where cleartext is allowed.
+      Smtp__Enabled: "true"
+      Smtp__Host: localhost
+      Smtp__Port: "1025"
+      Smtp__EnableSsl: "false"
+      Smtp__FromEmail: no-reply@notrelix.test
       ASPNETCORE_URLS: http://+:8000
       ConnectionStrings__NotrelixDb: Host=postgres;Port=5432;Database=notrelix_real_e2e;Username=notrelix_app;Password=${REAL_E2E_APP_DB_PASSWORD:-real-e2e-app-password}
       ConnectionStrings__NotrelixWorkerDb: Host=postgres;Port=5432;Database=notrelix_real_e2e;Username=notrelix_worker;Password=${REAL_E2E_WORKER_DB_PASSWORD:-real-e2e-worker-password}

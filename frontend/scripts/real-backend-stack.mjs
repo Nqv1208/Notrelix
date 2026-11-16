@@ -24,6 +24,8 @@ export const realBackend = {
   project: "notrelix-fe-real-e2e",
   apiUrl: "http://127.0.0.1:58000/api/v1",
   healthUrl: "http://127.0.0.1:58000/health/live",
+  // The mail sink shares the backend's network, so its API is published on the backend's ports.
+  mailUrl: "http://127.0.0.1:58025/api/v1/info",
   webPort,
   appUrl: `http://127.0.0.1:${webPort}`,
   operatorPort,
@@ -171,6 +173,7 @@ export async function up() {
     "rabbitmq",
     "oidc-mock",
     "backend",
+    "mailpit",
   ]);
 }
 
@@ -183,6 +186,7 @@ export async function logs() {
     "rabbitmq",
     "oidc-mock",
     "backend",
+    "mailpit",
   ]);
 }
 
