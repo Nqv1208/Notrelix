@@ -21,6 +21,12 @@ export const endpoints = {
     stepUpClaimProvider: "/auth/security/step-up/claim-provider",
     oauthStepUpStart: (provider: string) =>
       `/auth/oauth/${encodeURIComponent(provider)}/step-up/start`,
+    // Linking leaves for the provider (a browser navigation that carries a spent step-up proof);
+    // unlinking is a plain write.
+    oauthLinkStart: (provider: string) =>
+      `/auth/oauth/${encodeURIComponent(provider)}/link/start`,
+    oauthUnlink: (provider: string) =>
+      `/auth/oauth/${encodeURIComponent(provider)}/unlink`,
     sessions: "/auth/sessions",
     sessionRevoke: (sessionId: string) =>
       `/auth/sessions/${encodeURIComponent(sessionId)}/revoke`,

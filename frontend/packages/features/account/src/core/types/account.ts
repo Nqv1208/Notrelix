@@ -74,7 +74,9 @@ export type AccountActivityType =
   | "MfaEnabled"
   | "MfaDisabled"
   | "SessionRevoked"
-  | "OtherSessionsRevoked";
+  | "OtherSessionsRevoked"
+  | "ProviderLinked"
+  | "ProviderUnlinked";
 
 export interface AccountActivityEntry {
   readonly id: string;
@@ -111,7 +113,9 @@ export type StepUpPurpose =
   | "RegenerateRecoveryCodes"
   | "ChangePassword"
   | "RevokeOtherSessions"
-  | "EnrollMfa";
+  | "EnrollMfa"
+  | "LinkOAuth"
+  | "UnlinkOAuth";
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;

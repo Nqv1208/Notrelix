@@ -56,6 +56,8 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         return new StepUpHarness(service, passwordHasher, Guid.CreateVersion7());
     }
 
+    private readonly Mock<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder> _activity = new();
+
     private UnlinkOAuthCommandHandler CreateHandler(
         ApplicationDbContext context, Guid currentUserId, StepUpHarness stepUp)
     {
@@ -68,7 +70,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
 
         return new UnlinkOAuthCommandHandler(
             context, currentUser.Object, stepUp.Service, dateTimeProvider.Object,
-            NullLogger<UnlinkOAuthCommandHandler>.Instance);
+            NullLogger<UnlinkOAuthCommandHandler>.Instance, _activity.Object);
     }
 
     private static async Task<string> IssuePasswordProof(StepUpHarness stepUp, Guid userId, string password)
@@ -89,6 +91,68 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
     }
 
     private const string TestPassword = "Password123!";
+
+    [Fact]
+    public async Task Handle_WithoutAStepUpProof_ShouldRefuseAndKeepTheLink()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("nostepup@example.com", "No Step Up", "hashed", now, hasPasswordCredential: true);
+        user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-ns",
+            EmptySnapshot(OAuthProvider.Google), null, user.Id, now);
+        Guid userId;
+        await using (var seedContext = _db.CreateOwnerContext())
+        {
+            seedContext.Users.Add(user);
+            await seedContext.SaveChangesAsync();
+            userId = user.Id;
+        }
+
+        await using var context = _db.CreateOwnerContext();
+        var handler = CreateHandler(context, userId, CreateStepUp(context, now));
+
+        var result = await handler.Handle(new UnlinkOAuthCommand
+        {
+            Provider = OAuthProvider.Google,
+            StepUpToken = ""
+        }, CancellationToken.None);
+        await context.SaveChangesAsync();
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().Contain(e => e.Code == "identity.security.step-up-required");
+        (await context.OAuthAccounts.AnyAsync(a => a.UserId == userId && a.Provider == OAuthProvider.Google)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_WithAProofAlreadySpent_ShouldRefuseTheSecondUnlink()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("spent@example.com", "Spent Proof", "hashed", now, hasPasswordCredential: true);
+        user.LinkOAuthAccount(OAuthProvider.Google, "google-sub-sp",
+            EmptySnapshot(OAuthProvider.Google), null, user.Id, now);
+        user.LinkOAuthAccount(OAuthProvider.Microsoft, "ms-sub-sp",
+            EmptySnapshot(OAuthProvider.Microsoft), null, user.Id, now);
+        Guid userId;
+        await using (var seedContext = _db.CreateOwnerContext())
+        {
+            seedContext.Users.Add(user);
+            await seedContext.SaveChangesAsync();
+            userId = user.Id;
+        }
+
+        await using var context = _db.CreateOwnerContext();
+        var stepUp = CreateStepUp(context, now);
+        var token = await IssuePasswordProof(stepUp, userId, TestPassword);
+        var handler = CreateHandler(context, userId, stepUp);
+
+        var first = await handler.Handle(new UnlinkOAuthCommand { Provider = OAuthProvider.Google, StepUpToken = token }, CancellationToken.None);
+        await context.SaveChangesAsync();
+        var second = await handler.Handle(new UnlinkOAuthCommand { Provider = OAuthProvider.Microsoft, StepUpToken = token }, CancellationToken.None);
+        await context.SaveChangesAsync();
+
+        first.Succeeded.Should().BeTrue();
+        second.Succeeded.Should().BeFalse();
+        (await context.OAuthAccounts.AnyAsync(a => a.UserId == userId && a.Provider == OAuthProvider.Microsoft)).Should().BeTrue();
+    }
 
     [Fact]
     public async Task Handle_WhenPasswordAndLinkedProvider_ShouldUnlink()
@@ -123,6 +187,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
         var linked = await context.OAuthAccounts
             .FirstOrDefaultAsync(a => a.UserId == userId && a.Provider == OAuthProvider.Google);
         linked.Should().BeNull();
+        _activity.Verify(x => x.Record(userId, Notrelix.Domain.Identity.Security.SecurityActivityType.ProviderUnlinked, It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Once);
     }
 
     [Fact]

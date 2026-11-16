@@ -52,6 +52,10 @@ export const en = {
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
     othersTitle: "Confirm to sign out of all other devices",
+    linkTitle: "Confirm to connect {{provider}}",
+    unlinkTitle: "Confirm to disconnect {{provider}}",
+    unlinkText:
+      "You will no longer be able to sign in with {{provider}}. Your other ways to sign in stay.",
     enrollProofTitle: "Confirm to turn on two-factor authentication",
     enrollProofText:
       "Once it is on, you are signed out of every other device. This one stays signed in.",
@@ -136,6 +140,8 @@ export const en = {
       MfaDisabled: "Two-factor authentication turned off",
       SessionRevoked: "A device was signed out",
       OtherSessionsRevoked: "Other devices were signed out",
+      ProviderLinked: "A sign-in account was connected",
+      ProviderUnlinked: "A sign-in account was disconnected",
     },
   },
   sessions: {
@@ -150,6 +156,24 @@ export const en = {
     signOutThisLabel: "Sign out {{device}} (this device)",
     signedOut: "Signed out.",
     gone: "That device was already signed out.",
+  },
+  providers: {
+    title: "Connected accounts",
+    connected: "Connected",
+    connect: "Connect",
+    disconnect: "Disconnect",
+    connectedText: "You can sign in to Notrelix with this account.",
+    notConnectedText: "Not connected. Connect it to sign in with one click.",
+    lastMethod:
+      "This is your only way to sign in. Set a password or connect another account first.",
+    linked: "{{provider}} is connected.",
+    already: "{{provider}} was already connected.",
+    collision:
+      "That {{provider}} account is already used with another Notrelix account. Use a different {{provider}} account.",
+    failed: "We could not connect {{provider}}. Try again.",
+    unlinked: "{{provider}} is disconnected.",
+    unlinkRefused:
+      "{{provider}} is your only way to sign in, so it cannot be disconnected.",
   },
   others: {
     title: "Sign out of all other devices",
@@ -222,6 +246,10 @@ export const vi: AccountSecurityCopy = {
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
     othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
+    linkTitle: "Xác nhận để kết nối {{provider}}",
+    unlinkTitle: "Xác nhận để ngắt kết nối {{provider}}",
+    unlinkText:
+      "Bạn sẽ không còn đăng nhập được bằng {{provider}}. Các cách đăng nhập khác vẫn dùng được.",
     enrollProofTitle: "Xác nhận để bật xác thực hai yếu tố",
     enrollProofText:
       "Khi bật xong, bạn sẽ bị đăng xuất khỏi mọi thiết bị khác. Thiết bị này vẫn giữ đăng nhập.",
@@ -303,6 +331,8 @@ export const vi: AccountSecurityCopy = {
       MfaDisabled: "Tắt xác thực hai lớp",
       SessionRevoked: "Một thiết bị đã bị đăng xuất",
       OtherSessionsRevoked: "Các thiết bị khác đã bị đăng xuất",
+      ProviderLinked: "Đã kết nối một tài khoản đăng nhập",
+      ProviderUnlinked: "Đã ngắt kết nối một tài khoản đăng nhập",
     },
   },
   sessions: {
@@ -317,6 +347,24 @@ export const vi: AccountSecurityCopy = {
     signOutThisLabel: "Đăng xuất {{device}} (thiết bị này)",
     signedOut: "Đã đăng xuất.",
     gone: "Thiết bị đó đã được đăng xuất từ trước.",
+  },
+  providers: {
+    title: "Tài khoản đã kết nối",
+    connected: "Đã kết nối",
+    connect: "Kết nối",
+    disconnect: "Ngắt kết nối",
+    connectedText: "Bạn có thể đăng nhập Notrelix bằng tài khoản này.",
+    notConnectedText: "Chưa kết nối. Kết nối để đăng nhập chỉ với một lần bấm.",
+    lastMethod:
+      "Đây là cách đăng nhập duy nhất của bạn. Hãy đặt mật khẩu hoặc kết nối tài khoản khác trước.",
+    linked: "Đã kết nối {{provider}}.",
+    already: "{{provider}} đã được kết nối từ trước.",
+    collision:
+      "Tài khoản {{provider}} đó đang dùng cho một tài khoản Notrelix khác. Hãy dùng tài khoản {{provider}} khác.",
+    failed: "Không kết nối được {{provider}}. Hãy thử lại.",
+    unlinked: "Đã ngắt kết nối {{provider}}.",
+    unlinkRefused:
+      "{{provider}} là cách đăng nhập duy nhất của bạn nên không thể ngắt kết nối.",
   },
   others: {
     title: "Đăng xuất mọi thiết bị khác",

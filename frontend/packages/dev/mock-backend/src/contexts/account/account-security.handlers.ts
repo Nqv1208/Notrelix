@@ -31,6 +31,8 @@ const PURPOSES = [
   "ChangePassword",
   "RevokeOtherSessions",
   "EnrollMfa",
+  "LinkOAuth",
+  "UnlinkOAuth",
 ];
 
 function securityOf(store: MockStore): SecurityDetails {
@@ -134,9 +136,7 @@ export const accountSecurityOperations = [
         activeSessionCount: security.sessions.filter(
           (s) => s.status === "Active",
         ).length,
-        linkedProviders: security.signInProvider
-          ? [security.signInProvider]
-          : [],
+        linkedProviders: security.linkedProviders,
       });
     },
   }),
@@ -388,6 +388,89 @@ export const accountSecurityOperations = [
           : []),
       ];
       return ok({ redirectTo: providerLanding(returnUrl, false) });
+    },
+  }),
+
+  defineMockOperation<{ provider: string }, never, unknown>({
+    id: "account.security.oauthLinkStart",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.OAuth.LinkStart",
+    },
+    method: "GET",
+    route: "/auth/oauth/:provider/link/start",
+    async handle({ params, query, store }) {
+      // The real call spends the proof, redirects to the provider and comes back through the link
+      // callback; the mock plays the round trip and says where the redirect lands.
+      const security = securityOf(store);
+      const returnUrl = query.returnUrl?.startsWith("/")
+        ? query.returnUrl
+        : "/";
+      const token = query.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "LinkOAuth");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      const provider =
+        params.provider.charAt(0).toUpperCase() +
+        params.provider.slice(1).toLowerCase();
+      const already = security.linkedProviders.includes(provider);
+      if (!already) {
+        security.linkedProviders.push(provider);
+        security.activity.unshift({
+          id: `activity-${security.activity.length + 1}`,
+          type: "ProviderLinked",
+          occurredAt: store.getClock().isoNow(),
+          ipAddress: null,
+          userAgent: null,
+        });
+      }
+      const sep = returnUrl.includes("?") ? "&" : "?";
+      return ok({
+        redirectTo: `${returnUrl}${sep}link=${already ? "already" : "linked"}&provider=${provider}`,
+      });
+    },
+  }),
+
+  defineMockOperation<{ provider: string }, { stepUpToken?: string }>({
+    id: "account.security.oauthUnlink",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.OAuth.Unlink",
+    },
+    method: "POST",
+    route: "/auth/oauth/:provider/unlink",
+    async handle({ params, body, store }) {
+      const security = securityOf(store);
+      const token = body?.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "UnlinkOAuth");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      const at = security.linkedProviders.findIndex(
+        (name) => name.toLowerCase() === params.provider.toLowerCase(),
+      );
+      // Not linked: nothing changes.
+      if (at < 0) return ok({});
+      // The last way to sign in cannot go.
+      if (
+        security.signInProvider !== null &&
+        security.linkedProviders.length <= 1
+      )
+        return identityProblem(
+          409,
+          "identity.auth.last-primary-auth-method",
+          "Cannot unlink the last authentication method.",
+        );
+      security.linkedProviders.splice(at, 1);
+      security.activity.unshift({
+        id: `activity-${security.activity.length + 1}`,
+        type: "ProviderUnlinked",
+        occurredAt: store.getClock().isoNow(),
+        ipAddress: null,
+        userAgent: null,
+      });
+      return ok({});
     },
   }),
 

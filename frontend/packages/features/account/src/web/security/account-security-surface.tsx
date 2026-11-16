@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   KeyRound,
   Laptop,
+  Link2,
   Lock,
   Smartphone,
   Tablet,
@@ -73,7 +74,10 @@ export type AccountSecurityFlow =
   | {
       readonly kind: "stepUp";
       /** What the proof is for: two-factor on or off, fresh backup codes, or ending every other device. */
-      readonly purpose: "enroll" | "disable" | "renew" | "others";
+      readonly purpose:
+        "enroll" | "disable" | "renew" | "others" | "link" | "unlink";
+      /** `link` and `unlink`: the provider the proof is for. */
+      readonly provider?: string;
       readonly factor: "code" | "password" | "provider";
       /** `provider`: the linked providers the person can confirm with (the producer names them). */
       readonly providers?: readonly string[];
@@ -102,6 +106,10 @@ export type AccountSecurityFlow =
   | { readonly kind: "signOutThis" };
 
 export interface AccountSecurityData {
+  /** The person has a password to sign in with (absent = yes). */
+  readonly hasPassword?: boolean;
+  /** The providers the person signed in with ("Google", "Microsoft"); absent = none. */
+  readonly linkedProviders?: readonly string[];
   /** The single sign-on provider that owns the password; `null` = none. */
   readonly ssoProvider: string | null;
   readonly email: string;
@@ -140,6 +148,12 @@ export interface AccountSecuritySurfaceProps {
   readonly onSubmitPassword?: (password: string) => void;
   /** Leaves for the provider to confirm there (the step's `factor` is `provider`). */
   readonly onStartProviderStepUp?: (provider: string) => void;
+  /** Why a connect or disconnect did not happen (a sentence, too long for the toast); `null` = none. */
+  readonly providerProblem?: string | null;
+  /** Starts connecting a provider (the proof comes first); absent = the page cannot link here. */
+  readonly onLinkProvider?: (provider: string) => void;
+  /** Starts disconnecting a provider (the proof comes first). */
+  readonly onUnlinkProvider?: (provider: string) => void;
   readonly onCloseFlow?: () => void;
   /** Signs this device out after the confirmation. */
   readonly onConfirmSignOutThis?: () => void;
@@ -194,6 +208,9 @@ function Icon({ icon: Glyph }: { icon: LucideIcon }) {
     </span>
   );
 }
+
+/** The sign-in providers a person can connect. */
+const PROVIDERS = ["Google", "Microsoft"] as const;
 
 function Block({
   titleId,
@@ -251,9 +268,11 @@ function Row({
         </small>
       </span>
       {/* Narrow screens: the action drops under the text column, 48 px in (the icon and its gap). */}
-      <div className="contents max-sm:ml-12 max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-2">
-        {control}
-      </div>
+      {control ? (
+        <div className="contents max-sm:ml-12 max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-2">
+          {control}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -367,7 +386,11 @@ function FlowPanel({
           ? t.disableTitle
           : flow.purpose === "others"
             ? t.othersTitle
-            : t.renewTitle;
+            : flow.purpose === "link"
+              ? fillCopy(t.linkTitle, { provider: flow.provider ?? "" })
+              : flow.purpose === "unlink"
+                ? fillCopy(t.unlinkTitle, { provider: flow.provider ?? "" })
+                : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -400,6 +423,9 @@ function FlowPanel({
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
           {flow.purpose === "disable" ? `${t.disableText} ` : null}
           {flow.purpose === "enroll" ? `${t.enrollProofText} ` : null}
+          {flow.purpose === "unlink"
+            ? `${fillCopy(t.unlinkText, { provider: flow.provider ?? "" })} `
+            : null}
           {usesProvider
             ? providers.length > 0
               ? t.providerText
@@ -459,7 +485,8 @@ function FlowPanel({
             type="submit"
             disabled={busy || !value || flow.error === "wait"}
             className={cn(
-              flow.kind === "stepUp" && flow.purpose === "disable"
+              flow.kind === "stepUp" &&
+                (flow.purpose === "disable" || flow.purpose === "unlink")
                 ? BTN_DANGER
                 : BTN_PRIMARY,
               FOCUS,
@@ -581,6 +608,9 @@ function SecurityBody({
   onSubmitCode,
   onSubmitPassword,
   onStartProviderStepUp,
+  onLinkProvider,
+  onUnlinkProvider,
+  providerProblem,
   onCloseFlow,
   onConfirmSignOutThis,
   onLoadMoreActivity,
@@ -594,6 +624,7 @@ function SecurityBody({
     password: React.useId(),
     twoFactor: React.useId(),
     sessions: React.useId(),
+    providers: React.useId(),
     others: React.useId(),
     othersText: React.useId(),
     activity: React.useId(),
@@ -663,6 +694,82 @@ function SecurityBody({
           }
         />
       </Block>
+
+      {onLinkProvider || (data.linkedProviders ?? []).length > 0 ? (
+        <Block
+          titleId={ids.providers}
+          title={copy.providers.title}
+          aside={null}
+        >
+          {PROVIDERS.map((provider) => {
+            const linked = (data.linkedProviders ?? []).some(
+              (name) => name.toLowerCase() === provider.toLowerCase(),
+            );
+            // The last way to sign in cannot go: the producer refuses it, and the page says so first.
+            const last =
+              linked &&
+              !(data.hasPassword ?? true) &&
+              (data.linkedProviders ?? []).length <= 1;
+            return (
+              <Row
+                key={provider}
+                icon={Link2}
+                title={
+                  <>
+                    {provider}
+                    {linked ? (
+                      <>
+                        {" "}
+                        <Tag tone="ok">{copy.providers.connected}</Tag>
+                      </>
+                    ) : null}
+                  </>
+                }
+                text={
+                  last
+                    ? copy.providers.lastMethod
+                    : linked
+                      ? copy.providers.connectedText
+                      : copy.providers.notConnectedText
+                }
+                control={
+                  linked ? (
+                    last ? null : (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label={`${copy.providers.disconnect} ${provider}`}
+                        onClick={() => onUnlinkProvider?.(provider)}
+                        className={cn(LINK_BUTTON_DANGER, FOCUS)}
+                      >
+                        {copy.providers.disconnect}
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      aria-label={`${copy.providers.connect} ${provider}`}
+                      onClick={() => onLinkProvider?.(provider)}
+                      className={cn(BTN_SM, FOCUS)}
+                    >
+                      {copy.providers.connect}
+                    </button>
+                  )
+                }
+              />
+            );
+          })}
+          {providerProblem ? (
+            <p
+              role="alert"
+              className="m-0 border-t border-line px-4 py-[11px] text-crumb text-danger-text"
+            >
+              {providerProblem}
+            </p>
+          ) : null}
+        </Block>
+      ) : null}
 
       <Block
         titleId={ids.twoFactor}

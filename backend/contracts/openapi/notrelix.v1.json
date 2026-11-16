@@ -13591,7 +13591,7 @@
           "Identity.Auth"
         ],
         "summary": "Complete OAuth link callback",
-        "description": "Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user.",
+        "description": "Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user. The browser returns to the internal path given at start with link=linked|already|collision|failed and the provider appended.",
         "operationId": "Identity.Auth.OAuth.LinkCallback",
         "parameters": [
           {
@@ -47174,7 +47174,9 @@
           "MfaEnabled",
           "MfaDisabled",
           "SessionRevoked",
-          "OtherSessionsRevoked"
+          "OtherSessionsRevoked",
+          "ProviderLinked",
+          "ProviderUnlinked"
         ],
         "type": "string"
       },

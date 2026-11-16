@@ -2985,7 +2985,7 @@ export interface paths {
         };
         /**
          * Complete OAuth link callback
-         * @description Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user.
+         * @description Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user. The browser returns to the internal path given at start with link=linked|already|collision|failed and the provider appended.
          */
         get: operations["Identity.Auth.OAuth.LinkCallback"];
         put?: never;
@@ -12224,7 +12224,7 @@ export interface components {
         /** @enum {string} */
         "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
         /** @enum {string} */
-        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
+        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked" | "ProviderLinked" | "ProviderUnlinked";
         /**
          * Format: int32
          * @enum {integer}

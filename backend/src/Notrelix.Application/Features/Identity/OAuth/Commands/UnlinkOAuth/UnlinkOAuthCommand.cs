@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.UnlinkOAuth;
 
@@ -27,19 +28,22 @@ public sealed class UnlinkOAuthCommandHandler
     private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<UnlinkOAuthCommandHandler> _logger;
+    private readonly ISecurityActivityRecorder _activity;
 
     public UnlinkOAuthCommandHandler(
         IIdentityDbContext identityContext,
         ICurrentRequestContext currentUser,
         ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
-        ILogger<UnlinkOAuthCommandHandler> logger)
+        ILogger<UnlinkOAuthCommandHandler> logger,
+        ISecurityActivityRecorder activity)
     {
         _identityContext = identityContext;
         _currentUser = currentUser;
         _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
+        _activity = activity;
     }
 
     public async Task<Result> Handle(UnlinkOAuthCommand request, CancellationToken cancellationToken)
@@ -92,6 +96,7 @@ public sealed class UnlinkOAuthCommandHandler
         if (accountToUnlink is not null)
         {
             _identityContext.OAuthAccounts.Remove(accountToUnlink);
+            _activity.Record(user.Id, SecurityActivityType.ProviderUnlinked, _dateTimeProvider.UtcNow, _currentUser.SessionId);
         }
 
         _logger.LogInformation("OAuth provider {Provider} unlinked from user {UserId}", request.Provider, user.Id);

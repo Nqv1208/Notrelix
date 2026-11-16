@@ -44,7 +44,9 @@ type Step =
     }
   | {
       kind: "stepUp";
-      purpose: "enroll" | "disable" | "renew" | "others";
+      purpose: StepPurpose;
+      /** `link` and `unlink`: the provider the proof is for. */
+      provider?: string;
       factor: "code" | "password" | "provider";
       /** `provider`: the linked providers the person can confirm with. */
       providers?: readonly string[];
@@ -56,17 +58,22 @@ type Step =
   | { kind: "twoFactorOff" }
   | { kind: "signOutThis" };
 
-const PURPOSE: Record<
-  "enroll" | "disable" | "renew" | "others",
-  StepUpPurpose
-> = {
+type StepPurpose =
+  "enroll" | "disable" | "renew" | "others" | "link" | "unlink";
+
+const PURPOSE: Record<StepPurpose, StepUpPurpose> = {
   enroll: "EnrollMfa",
   disable: "DisableMfa",
   renew: "RegenerateRecoveryCodes",
   others: "RevokeOtherSessions",
+  link: "LinkOAuth",
+  unlink: "UnlinkOAuth",
 };
 
-type StepPurpose = "enroll" | "disable" | "renew" | "others";
+const LINK_RESULTS = ["linked", "already", "collision", "failed"] as const;
+
+const named = (text: string, provider: string) =>
+  text.replaceAll("{{provider}}", provider);
 
 const isStepPurpose = (value: unknown): value is StepPurpose =>
   typeof value === "string" && value in PURPOSE;
@@ -77,6 +84,10 @@ export function AccountSecurityPage() {
   const search = useSearch({ strict: false }) as {
     stepUp?: unknown;
     stepUpResult?: unknown;
+    /** The provider a link or unlink step is for (back from the provider's confirmation). */
+    provider?: unknown;
+    /** How a link ended, said by the backend when the browser comes back. */
+    link?: unknown;
   };
   const copy = useAccountSecurityCopy();
   const navigate = useNavigate();
@@ -84,6 +95,7 @@ export function AccountSecurityPage() {
   const workspaceName = useRouteWorkspaceName();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
+  const [providerProblem, setProviderProblem] = useState<string | null>(null);
   const [notice, showNotice] = useToast();
   const [step, setStep] = useState<Step | null>(null);
   const [stepError, setStepError] = useState<{
@@ -131,6 +143,8 @@ export function AccountSecurityPage() {
             data: {
               // The producer has no "managed by a company" fact for the password.
               ssoProvider: null,
+              hasPassword: summary.data.hasPassword,
+              linkedProviders: summary.data.linkedProviders,
               email: profile?.email ?? "",
               workspaceName,
               twoFactorEnabled: summary.data.twoFactorEnabled,
@@ -227,8 +241,9 @@ export function AccountSecurityPage() {
 
   // Turning two-factor on or off asks for proof first.
   const beginStepUp = useCallback(
-    async (purpose: "enroll" | "disable" | "renew" | "others") => {
+    async (purpose: StepPurpose, provider?: string) => {
       setActionError(false);
+      setProviderProblem(null);
       setStepError(null);
       setBusy(true);
       try {
@@ -238,6 +253,7 @@ export function AccountSecurityPage() {
         setStep({
           kind: "stepUp",
           purpose,
+          provider,
           factor:
             requirement.factor === "mfa"
               ? "code"
@@ -302,6 +318,47 @@ export function AccountSecurityPage() {
           await service.disableTwoFactor(token);
           // The producer ended every session, this one too: nothing more can be read here.
           setStep({ kind: "twoFactorOff" });
+        } else if (current.purpose === "link" && current.provider) {
+          // The proof is spent by the link start: the browser leaves for the provider, and the
+          // backend brings it back to this page with how it ended.
+          const path = service.providerLinkPath(
+            current.provider,
+            token,
+            `/workspaces/${workspaceId}/account/security`,
+          );
+          if (!env.mockApi) {
+            window.location.assign(`${env.apiUrl}${path}`);
+            return;
+          }
+          const answer = await runtimeClient.api.get<{ redirectTo?: string }>(
+            path,
+            { skipAuthRefresh: true, skipGlobalErrorToast: true },
+          );
+          const landing = new URL(
+            answer.redirectTo ?? "/",
+            window.location.origin,
+          );
+          setStep(null);
+          await navigate({
+            to: landing.pathname,
+            search: Object.fromEntries(landing.searchParams),
+            replace: true,
+          } as unknown as Parameters<typeof navigate>[0]);
+        } else if (current.purpose === "unlink" && current.provider) {
+          try {
+            await service.unlinkProvider(current.provider, token);
+            setStep(null);
+            await invalidate();
+            showNotice(named(copy.providers.unlinked, current.provider));
+          } catch (error) {
+            // Refused (409): it is the last way to sign in; the proof is spent, so ask again next time.
+            if ((error as { status?: number }).status !== 409) throw error;
+            setStep(null);
+            await invalidate();
+            setProviderProblem(
+              named(copy.providers.unlinkRefused, current.provider),
+            );
+          }
         } else if (current.purpose === "others") {
           const count = await service.revokeOtherSessions(token);
           setStep(null);
@@ -331,7 +388,7 @@ export function AccountSecurityPage() {
           (error as { code?: string }).code ===
           "identity.security.step-up-invalid"
         ) {
-          await beginStepUp(current.purpose);
+          await beginStepUp(current.purpose, current.provider);
           setStepError({ error: "expired" });
         } else fail(error, !proved);
       } finally {
@@ -343,10 +400,16 @@ export function AccountSecurityPage() {
       copy.others.doneCount_one,
       copy.others.doneCount_other,
       copy.others.nobody,
+      copy.providers.unlinkRefused,
+      copy.providers.unlinked,
       copy.twoFactor.renewed,
+      env,
       invalidate,
+      navigate,
+      runtimeClient.api,
       service,
       showNotice,
+      workspaceId,
     ],
   );
 
@@ -427,7 +490,7 @@ export function AccountSecurityPage() {
       const path = service.providerStepUpPath(
         provider,
         PURPOSE[step.purpose],
-        `/workspaces/${workspaceId}/account/security?stepUp=${step.purpose}`,
+        `/workspaces/${workspaceId}/account/security?stepUp=${step.purpose}${step.provider ? `&provider=${encodeURIComponent(step.provider)}` : ""}`,
       );
       if (!env.mockApi) {
         window.location.assign(`${env.apiUrl}${path}`);
@@ -473,6 +536,8 @@ export function AccountSecurityPage() {
     const current: Extract<Step, { kind: "stepUp" }> = {
       kind: "stepUp",
       purpose: resumePurpose,
+      provider:
+        typeof search.provider === "string" ? search.provider : undefined,
       factor: "provider",
       providers: summary.data.linkedProviders,
       challengeToken: null,
@@ -499,9 +564,34 @@ export function AccountSecurityPage() {
     finishStepUp,
     navigate,
     resumePurpose,
+    search.provider,
     search.stepUpResult,
     service,
     summary.data,
+  ]);
+
+  // Back from the provider's link: say how it ended, then strip the marker so a reload says nothing.
+  const linkResult = LINK_RESULTS.find((result) => result === search.link);
+  useEffect(() => {
+    if (!linkResult) return;
+    const provider = typeof search.provider === "string" ? search.provider : "";
+    void navigate({
+      to: ".",
+      search: {},
+      replace: true,
+    } as Parameters<typeof navigate>[0]);
+    // A refusal is a sentence too long for the toast: it stays in the block until the next try.
+    if (linkResult === "linked" || linkResult === "already")
+      showNotice(named(copy.providers[linkResult], provider));
+    else setProviderProblem(named(copy.providers[linkResult], provider));
+    if (linkResult === "linked") void invalidate();
+  }, [
+    copy.providers,
+    invalidate,
+    linkResult,
+    navigate,
+    search.provider,
+    showNotice,
   ]);
 
   const startPasswordChange = useCallback(() => {
@@ -592,6 +682,7 @@ export function AccountSecurityPage() {
       : {
           kind: "stepUp",
           purpose: step.purpose,
+          provider: step.provider,
           factor: step.factor,
           providers: step.providers,
           error,
@@ -627,6 +718,9 @@ export function AccountSecurityPage() {
       onSubmitCode={(code) => void submitCode(code)}
       onSubmitPassword={(password) => void submitPassword(password)}
       onStartProviderStepUp={startProviderStepUp}
+      providerProblem={providerProblem}
+      onLinkProvider={(provider) => void beginStepUp("link", provider)}
+      onUnlinkProvider={(provider) => void beginStepUp("unlink", provider)}
       onCloseFlow={() => {
         setStep(null);
         setStepError(null);
