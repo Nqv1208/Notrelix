@@ -137,6 +137,9 @@ export function InviteFlow({
   let view: AuthInviteView;
   if (override) view = override;
   else if (preview.isPending) return <p role="status">{copy.loading}</p>;
+  else if (preview.isError && readFlowError(preview.error).status !== 404)
+    // A server or network failure says nothing about the link: offer a retry, not "not found".
+    view = { kind: "unreachable" };
   else if (preview.isError || !preview.data)
     view = { kind: "gone", reason: "missing", orgName: null };
   else if (preview.data.state !== "valid")
@@ -173,6 +176,7 @@ export function InviteFlow({
       }
       onAccept={(input) => accept.mutate(input)}
       onDecline={() => decline.mutate()}
+      onRetry={() => void preview.refetch()}
       onSignIn={() =>
         navigation.navigate({
           to: "/sign-in",

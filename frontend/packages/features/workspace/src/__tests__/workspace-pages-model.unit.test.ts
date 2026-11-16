@@ -130,9 +130,11 @@ describe("Member capabilities and the last-owner invariant (WSP-008)", () => {
     expect(
       memberCapabilities(member("u-owner", "owner"), admin, 2).roleBlockedBy,
     ).toBe("owner-by-transfer");
-    expect(
-      memberCapabilities(member("u-m", "member"), admin, 1).assignableRoles,
-    ).toEqual(["admin", "member", "guest"]);
+    // Changing a role is Owner-only (ChangeMemberRole): an admin reads the role as text with the reason.
+    const adminOnMember = memberCapabilities(member("u-m", "member"), admin, 1);
+    expect(adminOnMember.assignableRoles).toEqual([]);
+    expect(adminOnMember.roleBlockedBy).toBe("owner-only");
+    expect(adminOnMember.canRemove).toBe(true);
     expect(
       memberCapabilities(
         member("u-m", "member"),

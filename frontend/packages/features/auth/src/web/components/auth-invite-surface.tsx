@@ -6,6 +6,7 @@ import {
   Lock,
   ShieldCheck,
   UserRound,
+  WifiOff,
 } from "lucide-react";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import { PASSWORD_MIN_LENGTH } from "../../core/schemas/password-policy";
@@ -59,7 +60,9 @@ export type AuthInviteView =
       readonly reason: "expired" | "used" | "missing";
       readonly orgName: string | null;
     }
-  | { readonly kind: "declined"; readonly inviterName: string };
+  | { readonly kind: "declined"; readonly inviterName: string }
+  /** The preview could not be read (server or network error): not the same as a missing invitation. */
+  | { readonly kind: "unreachable" };
 
 export interface AuthInviteSurfaceProps {
   readonly copy: AuthCopy;
@@ -72,6 +75,7 @@ export interface AuthInviteSurfaceProps {
   /** The account the person is signed in as, when it is not the invited one. */
   readonly signedInAs?: string | null;
   readonly onSwitchAccount?: () => void;
+  readonly onRetry?: () => void;
 }
 
 export function AuthInviteSurface(props: AuthInviteSurfaceProps) {
@@ -103,6 +107,7 @@ export function AuthInviteSurface(props: AuthInviteSurfaceProps) {
       </>
     );
   if (view.kind === "declined") return <DeclinedPage {...props} view={view} />;
+  if (view.kind === "unreachable") return <UnreachablePage {...props} />;
   return <GonePage {...props} view={view} />;
 }
 
@@ -406,6 +411,35 @@ function InviteForm({
           {t.signInToAccept}
         </button>
       </p>
+    </>
+  );
+}
+
+function UnreachablePage({ copy, onRetry }: AuthInviteSurfaceProps) {
+  const t = copy.invite;
+  // The same screen as the gone pages: icon, title, a plain body and one button.
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="grid size-13 place-items-center rounded-[14px] bg-state-hover text-danger-text"
+      >
+        <WifiOff className="size-6" />
+      </span>
+      <AuthHeading title={t.unreachableTitle} />
+      <p
+        role="alert"
+        className="m-0 text-item-prose leading-normal text-foreground"
+      >
+        {t.unreachable}
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className={cn(BUTTON_CLASS.outline, "text-brand-subtle-foreground")}
+      >
+        {t.retry}
+      </button>
     </>
   );
 }

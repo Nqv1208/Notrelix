@@ -34,6 +34,7 @@ import { kanbanCardCatalog } from "../kanban-card.catalog";
 import { kanbanLaneCatalog } from "../kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
+import { unsentCommentOf } from "../../../card-detail/update-composer";
 import { unsentDescriptionOf } from "../../../card-popup/sections/description-section";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
 import { ARCHIVE_UNDO_MS } from "../../table/use-archive-undo-window";
@@ -1064,6 +1065,38 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     expect(cards.bulkUpdate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Đóng thông báo" }));
     await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("clears the sent comment text even when the sheet was closed before the post answered", async () => {
+    const { services } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-149"),
+    });
+    let answer!: () => void;
+    const createCardUpdate = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    (services.comments as unknown as Record<string, unknown>).createCardUpdate =
+      createCardUpdate;
+    const dialog = await screen.findByRole("dialog", {
+      name: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
+    });
+    const opener = await within(dialog).findAllByRole("button", {
+      name: "Viết bình luận…",
+    });
+    fireEvent.click(opener[0] as HTMLElement);
+    const box = await within(dialog).findByRole("textbox", {
+      name: /bình luận/i,
+    });
+    fireEvent.change(box, { target: { value: "Đã kiểm tra xong" } });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    await waitFor(() => expect(createCardUpdate).toHaveBeenCalledTimes(1));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(async () => answer());
+    expect(unsentCommentOf(erpItemId("ERP-149"))).toBe("");
   }, 20_000);
 
   it("tells the person when a lane's item limit could not be saved", async () => {

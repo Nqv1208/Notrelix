@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/work-management-state";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
@@ -189,6 +190,7 @@ function HelpTable() {
 
 /** Unsaved description text by card, kept past the editor so closing the sheet does not take it along. */
 const unsentDescriptions = new Map<string, string>();
+onSessionReset(() => unsentDescriptions.clear());
 
 /** What the person had typed in a card's description and not saved ("" when nothing). */
 export function unsentDescriptionOf(cardId: string): string {

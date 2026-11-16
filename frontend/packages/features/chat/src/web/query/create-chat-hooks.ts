@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/query";
 import {
   type InfiniteData,
   type QueryClient,
@@ -112,10 +113,12 @@ function readPending(
 /** The read request waits this long, so a run of new messages sends one boundary. */
 const READ_DEBOUNCE_MS = 1000;
 
+/** The files of each unconfirmed send; they go to the message once the server stored it. Owned by the module, not a component, so a retry after the channel was left still has them. */
+const pendingFiles = new Map<string, readonly File[]>();
+onSessionReset(() => pendingFiles.clear());
+
 export function createChatHooks(deps: ChatHookDeps) {
   const service = createChatService(deps.api, deps.endpoints);
-  /** The files of each unconfirmed send; they go to the message once the server stored it. Owned by the factory, not a component, so a retry after the channel was left still has them. */
-  const pendingFiles = new Map<string, readonly File[]>();
 
   // ─── Queries ───────────────────────────────────────────────────────────────
 

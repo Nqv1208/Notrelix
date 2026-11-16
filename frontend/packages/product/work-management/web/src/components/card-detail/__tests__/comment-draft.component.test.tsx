@@ -1,3 +1,4 @@
+import { runSessionReset } from "@notrelix/work-management-state";
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@notrelix/testing";
 import { unsentCommentOf, useCommentDraft } from "../update-composer";
@@ -59,5 +60,18 @@ describe("useCommentDraft", () => {
     }
     expect(keys[0]).toBeTruthy();
     expect(keys[1]).not.toBe(keys[0]);
+  });
+});
+
+describe("unsent comment text and the session", () => {
+  it("is gone after sign-out, so the next account opening the card sees nothing", () => {
+    const draft = renderHook(() =>
+      useCommentDraft({ cardId: "reset-1", onCreateUpdate: vi.fn() }),
+    );
+    act(() => draft.result.current.changeBody("Của người trước"));
+    draft.unmount();
+    expect(unsentCommentOf("reset-1")).toBe("Của người trước");
+    runSessionReset();
+    expect(unsentCommentOf("reset-1")).toBe("");
   });
 });

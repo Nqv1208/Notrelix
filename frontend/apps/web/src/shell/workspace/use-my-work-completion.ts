@@ -20,27 +20,27 @@ export function useMyWorkCompletion(workspaceId: string) {
   const onComplete = useCallback(
     (item: MyWorkItem) => {
       setCompletingIds((ids) => new Set(ids).add(item.id));
-      complete.mutate(
-        { item, attemptKey: nextAttemptKey() },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.completed, { name: item.name }),
-            ),
-          onError: (error) =>
-            toastFailure(
-              formatCopy(copy.toasts.completeFailed, { name: item.name }),
-              error,
-              copy.toasts.completeFailedHint,
-            ),
-          onSettled: () =>
-            setCompletingIds((ids) => {
-              const next = new Set(ids);
-              next.delete(item.id);
-              return next;
-            }),
-        },
-      );
+      // mutateAsync, not mutate with callbacks: those fire only for the latest call, so a second item would
+      // leave this one marked as completing and its outcome unreported.
+      complete
+        .mutateAsync({ item, attemptKey: nextAttemptKey() })
+        .then(() =>
+          toast.success(formatCopy(copy.toasts.completed, { name: item.name })),
+        )
+        .catch((error: unknown) =>
+          toastFailure(
+            formatCopy(copy.toasts.completeFailed, { name: item.name }),
+            error,
+            copy.toasts.completeFailedHint,
+          ),
+        )
+        .finally(() =>
+          setCompletingIds((ids) => {
+            const next = new Set(ids);
+            next.delete(item.id);
+            return next;
+          }),
+        );
     },
     [complete, copy, nextAttemptKey],
   );

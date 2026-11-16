@@ -1,6 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { authQueryKeys } from "@notrelix/features-auth";
-import { resetCacheForAccountTransition } from "@notrelix/query";
+import {
+  resetCacheForAccountTransition,
+  runSessionReset,
+} from "@notrelix/query";
 import type { RealtimeTransport } from "@notrelix/realtime";
 import type {
   SessionEventBus,
@@ -26,7 +29,10 @@ export function clearApplicationCache(
     if (query !== profile) cache.remove(query);
   }
   queryClient.getMutationCache().clear();
-  if (sessionEnded) profile?.reset();
+  if (sessionEnded) {
+    profile?.reset();
+    runSessionReset();
+  }
 }
 
 export interface ApplicationLifecycleDependencies {

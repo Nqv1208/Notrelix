@@ -5,6 +5,7 @@ import {
   safeReturnPath,
   useAuth,
 } from "@notrelix/features-auth";
+import { runSessionReset } from "@notrelix/query";
 import { useAppRuntime } from "@notrelix/runtime-web";
 
 /**
@@ -32,6 +33,7 @@ export function useInviteAccount() {
           } as Parameters<typeof navigate>[0]);
         },
         getSearchParams: () => new URLSearchParams(window.location.search),
+        onSignedOut: runSessionReset,
       }),
     [api, navigate],
   );

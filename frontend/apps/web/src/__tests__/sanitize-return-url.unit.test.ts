@@ -27,6 +27,16 @@ describe("sanitizeInternalReturnUrl", () => {
     expect(sanitizeInternalReturnUrl("/a\nb")).toBe("/");
   });
 
+  it("keeps the place of a person whose session ended on a page with a link in its query", () => {
+    const path = "/workspaces/w1/boards/b1?source=https://example.com/a";
+    expect(sanitizeInternalReturnUrl(path)).toBe(path);
+  });
+
+  it("rejects percent-encoded variants of a protocol-relative path", () => {
+    expect(sanitizeInternalReturnUrl("/%2Fevil.com")).toBe("/");
+    expect(sanitizeInternalReturnUrl("/%5Cevil.com")).toBe("/");
+  });
+
   it("rejects invalid inputs", () => {
     expect(sanitizeInternalReturnUrl("")).toBe("/");
     expect(sanitizeInternalReturnUrl("javascript:alert(1)")).toBe("/");
