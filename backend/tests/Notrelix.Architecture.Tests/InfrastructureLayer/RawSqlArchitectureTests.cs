@@ -77,6 +77,9 @@ public class RawSqlArchitectureTests
         // Deleted workspace purge: DELETE ... WHERE workspace_id for each table the catalog lists, the
         // identifier quoted by format('%I'), under the system context; the claim is FOR UPDATE SKIP LOCKED.
         "src/Notrelix.Infrastructure/BackgroundJobs/DeletedWorkspacePurge.cs",
+        // Deleted Space purge: DELETE of the Space, its members and closure rows by id under the
+        // system context, all parameters; the claim is FOR UPDATE SKIP LOCKED.
+        "src/Notrelix.Infrastructure/BackgroundJobs/DeletedSpacePurge.cs",
         // Deleted board purge: DELETE ... WHERE for each table the catalog plan lists, the identifiers quoted by
         // format('%I') and the board id a parameter, under the system context; the claim is FOR UPDATE SKIP LOCKED.
         "src/Notrelix.Infrastructure/BackgroundJobs/DeletedBoardPurge.cs",

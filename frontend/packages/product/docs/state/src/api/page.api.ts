@@ -1,4 +1,5 @@
 import type {
+  DuplicatedPage,
   Page,
   CreatePagePayload,
   MovePagePayload,
@@ -6,7 +7,12 @@ import type {
   UpdatePagePayload,
   PageDetail,
 } from "@notrelix/docs-core";
-import type { PageDtoApi, BreadcrumbDtoApi, TrashPageDtoApi } from "../dto";
+import type {
+  PageDtoApi,
+  BreadcrumbDtoApi,
+  DuplicatedPageDtoApi,
+  TrashPageDtoApi,
+} from "../dto";
 import { mapPage, mapBreadcrumb } from "../model/page.mapper";
 import { readAllCursorPages } from "./read-all-pages";
 
@@ -65,6 +71,7 @@ export interface PageApiEndpoints {
   pages: {
     list: (workspaceId: string) => string;
     detail: (pageId: string) => string;
+    duplicate: (workspaceId: string, pageId: string) => string;
     breadcrumb: (pageId: string) => string;
     blocks: (pageId: string) => string;
     comments: (pageId: string) => string;
@@ -180,6 +187,26 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
         expectedVersion: payload.expectedVersion,
       });
       return this.getDetail(pageId);
+    },
+
+    /**
+     * `Documents.Pages.DuplicatePage`: one page, not its subpages, in one
+     * server command; one key per call so a retry of the call returns the same copy.
+     */
+    async duplicate(
+      workspaceId: string,
+      pageId: string,
+      title?: string,
+    ): Promise<DuplicatedPage> {
+      const dto = await api.post<DuplicatedPageDtoApi>(
+        endpoints.pages.duplicate(workspaceId, pageId),
+        title ? { title } : {},
+        {
+          skipGlobalErrorToast: true,
+          idempotencyKey: globalThis.crypto.randomUUID(),
+        },
+      );
+      return { pageId: dto.pageId, droppedBlockCount: dto.droppedBlockCount };
     },
 
     /** `Documents.Pages.ArchivePage`: moves the page to the trash. */

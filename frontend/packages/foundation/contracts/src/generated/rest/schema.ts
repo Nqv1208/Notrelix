@@ -2055,6 +2055,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/pages/{pageId}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicate a page without its subpages */
+        post: operations["Documents.Pages.DuplicatePage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}": {
         parameters: {
             query?: never;
@@ -8333,6 +8350,9 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.DuplicatePageRequest": {
+            title?: string | null;
+        };
         "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
             /** Format: uuid */
             parentId?: string | null;
@@ -10038,6 +10058,12 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string | null;
+        };
+        "Notrelix.Application.Features.Documents.DTOs.DuplicatedPageDto": {
+            /** Format: uuid */
+            pageId?: string;
+            /** Format: int32 */
+            droppedBlockCount?: number;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto": {
             /** Format: uuid */
@@ -18323,6 +18349,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfPageDto"];
                 };
+            };
+        };
+    };
+    "Documents.Pages.DuplicatePage": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.DuplicatePageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.DuplicatedPageDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

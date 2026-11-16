@@ -52,6 +52,7 @@ export type {
   UpdatePageTemplatePayload,
   PageTemplateVersionPayload,
   CreatePageFromTemplatePayload,
+  DuplicatedPage,
   PageFromTemplate,
 } from "./types";
 

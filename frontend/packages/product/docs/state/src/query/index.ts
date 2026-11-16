@@ -22,6 +22,7 @@ export { createUsePageTemplates } from "./hooks/use-page-templates";
 export { createUseCreatePageTemplate } from "./hooks/use-create-page-template";
 export { createUseManagePageTemplates } from "./hooks/use-manage-page-templates";
 export { createUseCreatePageFromTemplate } from "./hooks/use-create-page-from-template";
+export { createUseDuplicatePage } from "./hooks/use-duplicate-page";
 export { createUseImportPage } from "./hooks/use-import-page";
 
 export { createUsePagePermissions } from "./hooks/use-page-permissions";

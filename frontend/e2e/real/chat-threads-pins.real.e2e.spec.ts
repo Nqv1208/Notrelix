@@ -15,7 +15,7 @@ import {
 } from "./support/real-session";
 
 test.use({ viewport: { width: 1440, height: 900 } });
-test.setTimeout(300_000);
+test.setTimeout(900_000);
 
 interface Message {
   version: number;
@@ -205,18 +205,17 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   await ownerRoot.getByTestId("chat-thread-chip").click();
   const ownerPanel = page.getByTestId("chat-thread-panel");
   await expect(ownerPanel).toBeVisible();
-  const followBtn = ownerPanel.getByRole("button", {
-    name: /^(Follow|Following)$/,
-  });
-  if ((await followBtn.textContent()) === "Following") await followBtn.click();
-  await expect(
-    ownerPanel.getByRole("button", { name: "Follow", exact: true }),
-  ).toBeVisible();
-  await ownerPanel.getByRole("button", { name: "Follow", exact: true }).click();
-  await expect(
-    ownerPanel.getByRole("button", { name: "Following" }),
-  ).toBeVisible();
-  await ownerPanel.getByRole("button", { name: "Mute" }).click();
+  const followState = ownerPanel.getByTestId("chat-thread-follow-state");
+  const threadMenu = async (item: string) => {
+    await ownerPanel.getByRole("button", { name: "Thread options" }).click();
+    await page.getByRole("menuitem", { name: item, exact: true }).click();
+  };
+  if ((await followState.textContent()) === "Following")
+    await threadMenu("Unfollow thread");
+  await expect(followState).toHaveText("Not following");
+  await threadMenu("Follow thread");
+  await expect(followState).toHaveText("Following");
+  await threadMenu("Mute");
   await expect(ownerPanel.getByText("Muted", { exact: true })).toBeVisible();
   let mine = await apiRead<{ items: { root: Message; thread: Summary }[] }>(
     page,
@@ -224,7 +223,7 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
   );
   const entry = mine.items.find((i) => i.root.id === root.id)!;
   expect(entry.thread.muted).toBe(true);
-  await ownerPanel.getByRole("button", { name: "Unmute" }).click();
+  await threadMenu("Unmute");
 
   const more = await apiWrite<Message>(
     member.page,
@@ -295,10 +294,22 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
       (v) => v.impact === "serious" || v.impact === "critical",
     ),
   ).toEqual([]);
-  await pinsPanel
-    .getByRole("button", { name: new RegExp(`Unpin message: ${pinText}`) })
-    .click();
+  // Unpin asks first; Cancel changes nothing, Unpin removes the pin and is announced to the channel.
+  const pinMenu = async () => {
+    await pinsPanel
+      .getByRole("button", { name: new RegExp(`^More: ${pinText}`) })
+      .click();
+    await page.getByRole("menuitem", { name: "Unpin", exact: true }).click();
+  };
+  await pinMenu();
+  const confirm = page.getByRole("dialog", { name: "Unpin this message?" });
+  await expect(confirm).toContainText("unpinned a message");
+  await confirm.getByRole("button", { name: "Cancel" }).click();
+  await expect(pinsPanel.getByText(pinText)).toBeVisible();
+  await pinMenu();
+  await confirm.getByRole("button", { name: "Unpin", exact: true }).click();
   await expect(pinsPanel.getByText(pinText)).toHaveCount(0);
+  await expect(log(page).getByText("unpinned a message")).toBeVisible();
   const again2 = await apiWrite(
     page,
     "PUT",
@@ -319,6 +330,62 @@ test("threads, quotes, follow and mute, the followed list and pins work for memb
     `${chat}/spaces/${channelId}/pins?limit=50`,
   );
   expect(left.items.map((p) => p.message.id)).not.toContain(pinned.id);
+
+  // The limit: with 50 pins the 51st is refused (422, nothing stored) and the channel shows the banner.
+  const inChannel = async () =>
+    (
+      await apiRead<{ items: { message: Message }[] }>(
+        page,
+        `${chat}/spaces/${channelId}/pins?limit=100`,
+      )
+    ).items.length;
+  const held = await inChannel();
+  // The send rate limit answers 429 on a fast run of 50: wait it out and go on, never skip a pin.
+  const paced = async <T>(
+    write: () => Promise<{ status: number; data?: T }>,
+  ) => {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const r = await write();
+      if (r.status !== 429) return r;
+      await page.waitForTimeout(2_000);
+    }
+    throw new Error("still rate limited after two minutes");
+  };
+  for (let i = held; i < 50; i++) {
+    const filler = await paced(() =>
+      apiWrite<Message>(page, "POST", `${chat}/spaces/${channelId}/messages`, {
+        content: `filler ${i} ${unique}`,
+        clientMessageId: crypto.randomUUID(),
+      }),
+    );
+    expect(filler.status).toBeLessThan(300);
+    const pinnedFiller = await paced(() =>
+      apiWrite(page, "PUT", `${chat}/messages/${filler.data!.id}/pin`),
+    );
+    expect(pinnedFiller.status).toBeLessThan(300);
+  }
+  expect(await inChannel()).toBe(50);
+  const extra = (
+    await paced(() =>
+      apiWrite<Message>(page, "POST", `${chat}/spaces/${channelId}/messages`, {
+        content: `one too many ${unique}`,
+        clientMessageId: crypto.randomUUID(),
+      }),
+    )
+  ).data!;
+  const refused = await apiWrite(
+    page,
+    "PUT",
+    `${chat}/messages/${extra.id}/pin`,
+  );
+  expect(refused.status).toBe(422);
+  expect(await inChannel()).toBe(50);
+  await page.reload();
+  await pick(row(page, `one too many ${unique}`), "Pin message");
+  await expect(page.getByTestId("chat-pin-limit-banner")).toContainText(
+    "reached its pin limit",
+  );
+  expect(await inChannel()).toBe(50);
 
   // Everyone outside the private channel (a workspace admin who is not in it, a guest who was not added) gets
   // the identical NotFound on each read and write that takes a message, thread or space id.

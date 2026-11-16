@@ -199,8 +199,17 @@ describe("MFB-CHAT-S2.3: Chat mock handlers (pins)", () => {
         }),
       );
 
+      const announced = () =>
+        store.chat
+          .messagesOf(GENERAL)
+          .filter(
+            (m) => m.kind === "system" && m.content === "unpinned a message",
+          ).length;
+      expect(announced()).toBe(1);
+
       const again = await chat(store, "DELETE", `/messages/${target!.id}/pin`);
       expect(again.status).toBe(204);
+      expect(announced()).toBe(1);
       expect((await pinsOf(store)).body.items).toEqual([]);
     });
 

@@ -43,7 +43,7 @@ import {
   type MessageMenuItem,
 } from "./chat-message-actions";
 import { isKeyboardFocus, useRowActivity } from "./chat-row-activity";
-import { fillCopy, pluralCopy } from "./use-chat-copy";
+import { fillCopy, pluralCopy, systemTextOf } from "./use-chat-copy";
 
 export interface MessageAuthor {
   readonly name: string;
@@ -255,7 +255,7 @@ function ChatMessageRowBase({
           <span className="sr-only">{copy.list.systemLabel}: </span>
           <span className="font-medium">{author.name}</span>
           <span className="wrap-anywhere">
-            {copy.list.systemText[message.content ?? ""] ?? message.content}
+            {systemTextOf(copy, message.content)}
           </span>
           <time
             dateTime={message.createdAt}

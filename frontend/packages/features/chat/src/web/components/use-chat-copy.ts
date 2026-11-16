@@ -28,3 +28,16 @@ export function pluralCopy(
     ...values,
   });
 }
+
+const RENAMED_PREFIX = "renamed the channel to ";
+
+/** A system message as the viewer reads it: the stored English line through the copy files, the rename keeping its name. */
+export function systemTextOf(copy: ChatCopy, stored: string | null): string {
+  const text = stored ?? "";
+  if (text.startsWith(RENAMED_PREFIX)) {
+    return fillCopy(copy.list.systemRenamed, {
+      name: text.slice(RENAMED_PREFIX.length),
+    });
+  }
+  return copy.list.systemText[text] ?? text;
+}

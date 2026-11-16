@@ -379,6 +379,35 @@ export const versionsOperations = [
   }),
 
   defineMockOperation<
+    { workspaceId: string; pageId: string },
+    { title?: string | null },
+    Json
+  >({
+    id: "docs.pages.duplicate",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.DuplicatePage",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/pages/:pageId/duplicate",
+    async handle({ params, body, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page || page.workspaceId !== params.workspaceId || page.trashedAt) {
+        return notFound("Page not found");
+      }
+      if ((body?.title?.trim().length ?? 0) > 200) {
+        return problem(
+          400,
+          "validation.failed",
+          "A title is at most 200 characters.",
+        );
+      }
+      const copy = store.docsHistory.duplicatePage(page.id, body?.title);
+      return created<Json>(copy!);
+    },
+  }),
+
+  defineMockOperation<
     { workspaceId: string; templateId: string },
     {
       title?: string | null;

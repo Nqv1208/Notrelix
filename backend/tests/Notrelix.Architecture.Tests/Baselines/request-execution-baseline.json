@@ -3275,6 +3275,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.DuplicatePage.DuplicatePageCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": true,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Documents.Pages.Commands.DuplicatePage.DuplicatePageCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Documents.Pages.Commands.MovePage.MovePageCommand",
     "kind": "Command",
     "principalMarkers": [

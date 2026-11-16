@@ -175,7 +175,9 @@ export const vi = {
     makeCopyDone: "Đã tạo bản sao.",
     makeCopyDropped:
       "Đã tạo bản sao. {{count}} khối ảnh, tệp hoặc video chưa được sao chép.",
-    makeCopyFailed: "Chưa tạo được bản sao.",
+    makeCopyPending: "Đang tạo bản sao…",
+    makeCopyFailed: "Chưa tạo được bản sao. Hãy thử lại.",
+    makeCopyForbidden: "Bạn chưa có quyền tạo bản sao ở vị trí này.",
     templates: "Mẫu trang…",
     importPage: "Nhập từ Markdown hoặc Word…",
   },
@@ -1020,7 +1022,9 @@ export const en: DocPageCopy = {
     makeCopyDone: "Copy created.",
     makeCopyDropped:
       "Copy created. {{count}} image, file or video blocks were not copied.",
-    makeCopyFailed: "The copy could not be created.",
+    makeCopyPending: "Making a copy…",
+    makeCopyFailed: "The copy could not be created. Try again.",
+    makeCopyForbidden: "You cannot make a copy in this place.",
     templates: "Page templates…",
     importPage: "Import from Markdown or Word…",
   },

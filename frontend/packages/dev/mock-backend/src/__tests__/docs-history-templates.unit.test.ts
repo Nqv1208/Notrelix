@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createNotrelixClient, endpoints } from "@notrelix/contracts";
 import {
   createBlockApi,
+  createPageApi,
   createTemplateApi,
   createVersionApi,
 } from "../../../../product/docs/state/src/index";
@@ -24,6 +25,7 @@ function setup() {
     versions: createVersionApi(api, docs),
     templates: createTemplateApi(api, docs),
     blocks: createBlockApi(api, docs),
+    pages: createPageApi(api, docs),
   };
 }
 
@@ -329,5 +331,51 @@ describe("Documents.Templates on the mock backend", () => {
     await expect(
       templates.remove(WORKSPACE, { templateId: drop.id, expectedVersion: 2 }),
     ).rejects.toMatchObject({ kind: "not_found" });
+  });
+});
+
+describe("Documents.Pages.DuplicatePage on the mock backend", () => {
+  it("copies the page beside the original, not its subpages, leaving media out", async () => {
+    const { store, pages } = setup();
+    const source = store.createPage(WORKSPACE, { title: "Plan" });
+    const child = store.createPage(WORKSPACE, {
+      title: "Child",
+      parentId: source.id,
+    });
+    const kept = store.createBlock(source.id, {
+      type: "paragraph",
+      properties: JSON.stringify({ text: "kept" }),
+      position: 1000,
+    });
+    store.createBlock(source.id, {
+      type: "image",
+      properties: "{}",
+      position: 2000,
+    });
+
+    const copy = await pages.duplicate(WORKSPACE, source.id);
+
+    expect(copy.droppedBlockCount).toBe(1);
+    expect(store.getPage(copy.pageId)?.title).toBe("Copy of Plan");
+    expect(store.getPage(copy.pageId)?.parentId).toBeUndefined();
+    const blocks = store.getPageBlocks(copy.pageId);
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    expect(blocks[0]!.id).not.toBe(kept.id);
+    expect(
+      store.getPages(WORKSPACE).filter((p) => p.parentId === copy.pageId),
+    ).toEqual([]);
+    expect(store.getPage(child.id)?.parentId).toBe(source.id);
+  });
+
+  it("takes the title the client sends and refuses a page that is not there", async () => {
+    const { store, pages } = setup();
+    const source = store.createPage(WORKSPACE, { title: "Plan" });
+
+    const copy = await pages.duplicate(WORKSPACE, source.id, "Plan (bản sao)");
+
+    expect(store.getPage(copy.pageId)?.title).toBe("Plan (bản sao)");
+    await expect(pages.duplicate(WORKSPACE, "nope")).rejects.toMatchObject({
+      kind: "not_found",
+    });
   });
 });

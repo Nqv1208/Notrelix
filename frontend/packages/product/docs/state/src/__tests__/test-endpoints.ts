@@ -5,6 +5,8 @@ export const testEndpoints: PageApiEndpoints = {
   pages: {
     list: (workspaceId) => `/workspaces/${workspaceId}/pages`,
     detail: (pageId) => `/pages/${pageId}`,
+    duplicate: (workspaceId, pageId) =>
+      `/workspaces/${workspaceId}/pages/${pageId}/duplicate`,
     breadcrumb: (pageId) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId) => `/pages/${pageId}/blocks`,
     comments: (pageId) => `/pages/${pageId}/comments`,
