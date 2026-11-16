@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<Notrelix.Application.Features.Chat.Calls.ChatCallOptions>,
             Notrelix.Application.Features.Chat.Calls.ChatCallOptionsValidator>();
         services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallEnding>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallRevocation>();
         services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallSweeper>();
 
         // Chat rate limits (UC-CHT-H08): per person and per space, on the shared limiter store.

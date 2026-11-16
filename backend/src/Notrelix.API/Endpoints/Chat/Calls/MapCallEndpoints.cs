@@ -10,6 +10,7 @@ using Notrelix.Application.Features.Chat.Calls.Commands.StartCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.UpdateCallMediaState;
 using Notrelix.Application.Features.Chat.Calls.DTOs;
 using Notrelix.Application.Features.Chat.Calls.Queries.GetActiveCall;
+using Notrelix.Application.Features.Chat.Calls.Queries.GetCallJoinToken;
 using Notrelix.Application.Features.Chat.Calls.Queries.ListCalls;
 
 namespace Notrelix.API.Endpoints.Chat.Calls;
@@ -33,7 +34,7 @@ public static class MapCallEndpoints
             .WithIdempotencyKey()
             .WithName("Chat.Calls.Start")
             .WithSummary("Start a voice or video call in a space")
-            .WithDescription("Returns the call and the starter's short-lived join token with 201. kind is voice or video. Idempotency-Key is required: a retry returns the stored answer. A person who is not an active member of the space, or a direct call to someone who blocked the caller or was blocked by them, is 404. A Guest or a member the channel keeps from posting is 403. The space already has a ringing or active call: 409 call-already-active. The caller is already in another call: 409 call-busy. When the other person of a direct call is in a call, the call is stored as ended with reason busy, no ring is sent and joinToken is null. An archived channel is 409 channel-archived. The media plane cannot be reached, or calls are off: 503 chat.calls.unavailable and nothing is stored.")
+            .WithDescription("Returns the call and the starter's short-lived join token with 201. The stored idempotent answer holds no token: a retry with the same key returns the call with a freshly minted token, or is refused when the caller is no longer in the call. kind is voice or video. Idempotency-Key is required: a retry returns the stored answer. A person who is not an active member of the space, or a direct call to someone who blocked the caller or was blocked by them, is 404. A Guest or a member the channel keeps from posting is 403. The space already has a ringing or active call: 409 call-already-active. The caller is already in another call: 409 call-busy. When the other person of a direct call is in a call, the call is stored as ended with reason busy, no ring is sent and joinToken is null. An archived channel is 409 channel-archived. The media plane cannot be reached, or calls are off: 503 chat.calls.unavailable and nothing is stored.")
             .Produces<CallJoinDto>(StatusCodes.Status201Created)
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status503ServiceUnavailable);
 
@@ -106,8 +107,14 @@ public static class MapCallEndpoints
 
     private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender)
     {
-        var result = await sender.Send(new StartCallCommand(workspaceId, spaceId, body.Kind));
-        return result.ToCreatedResult();
+        var started = await sender.Send(new StartCallCommand(workspaceId, spaceId, body.Kind));
+        if (!started.Succeeded)
+            return started.ToApiResult();
+
+        // The start is stored for idempotent replay and carries no media token; the starter's token is minted fresh here, for a first
+        // start and for every replay, after the caller's access to the call is checked again.
+        var joined = await sender.Send(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id));
+        return joined.ToCreatedResult();
     }
 
     private static async Task<IResult> GetActiveAsync(Guid workspaceId, Guid spaceId, ISender sender)

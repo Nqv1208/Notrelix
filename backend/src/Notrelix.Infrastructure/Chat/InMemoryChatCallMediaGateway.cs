@@ -24,13 +24,22 @@ public sealed class InMemoryChatCallMediaGateway(IOptions<ChatCallOptions> optio
         if (!_rooms.ContainsKey(roomKey))
             throw new CallMediaUnavailableException("The room does not exist.");
 
-        var token = $"fake.{roomKey}.{personId:N}.{(canPublishVideo ? "av" : "a")}";
+        var token = $"fake.{roomKey}.{personId:N}.{(canPublishVideo ? "av" : "a")}.{Guid.NewGuid():N}"; // the last part makes every token unique, as a JWT id does
         return Task.FromResult(new CallJoinToken(options.Value.SfuUrl, token, DateTimeOffset.UtcNow + ttl));
     }
 
     public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken)
     {
         _rooms.TryRemove(roomKey, out _);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The (room, person) pairs removed so far, for tests.</summary>
+    public ConcurrentQueue<(string RoomKey, Guid PersonId)> RemovedParticipants { get; } = new();
+
+    public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken)
+    {
+        RemovedParticipants.Enqueue((roomKey, personId));
         return Task.CompletedTask;
     }
 

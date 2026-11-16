@@ -9,7 +9,9 @@ using Notrelix.Application.Features.Chat.Calls.Commands.EndCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.JoinCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.LeaveCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.StartCall;
+using Notrelix.Application.Features.Chat.Calls.DTOs;
 using Notrelix.Application.Features.Chat.Calls.Queries.GetActiveCall;
+using Notrelix.Application.Features.Chat.Calls.Queries.GetCallJoinToken;
 using Notrelix.Application.Features.Chat.Calls.Queries.ListCalls;
 using Notrelix.Application.Features.Chat.Calls.Services;
 using Notrelix.Application.Features.Chat.Messages.Services;
@@ -45,7 +47,7 @@ public sealed class ChatCallPipelineIntegrationTests
     private static readonly DateTimeOffset T0 = new(2026, 11, 16, 9, 0, 0, TimeSpan.Zero);
 
     private readonly OrgTreeTestHost _host;
-    private readonly IChatCallMediaGateway _gateway = new InMemoryChatCallMediaGateway(Options.Create(new ChatCallOptions()));
+    private readonly InMemoryChatCallMediaGateway _gateway = new(Options.Create(new ChatCallOptions()));
 
     public ChatCallPipelineIntegrationTests(PostgresTestContainer db) => _host = new OrgTreeTestHost(db) { Now = T0 };
 
@@ -60,7 +62,10 @@ public sealed class ChatCallPipelineIntegrationTests
             services.AddScoped<ChatSystemMessages>();
             services.AddScoped<ChatCallEnding>();
             services.AddScoped<ChatCallSweeper>();
+            services.AddScoped<ChatCallRevocation>();
             services.AddScoped<ChatCallSweepRunner>();
+            services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.ChatAuditFacts>();
+            services.AddScoped<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
         });
 
     private async Task<Space> SeedChannelAsync(
@@ -94,6 +99,13 @@ public sealed class ChatCallPipelineIntegrationTests
     {
         var result = (Result<T>)(await OrgTreeTestHost.SendIdempotentAsync(provider, request, key))!;
         return result.Data!;
+    }
+
+    /// <summary>Starts a call the way the transport does and returns the call with the starter's token.</summary>
+    private static async Task<CallJoinDto> StartAsync(ServiceProvider provider, StartCallCommand command, string? key = null)
+    {
+        var started = await SendAsync(provider, command, key);
+        return await SendAsync(provider, new GetCallJoinTokenQuery(command.WorkspaceId, started.Id));
     }
 
     private static async Task<Exception> RefusalAsync<T>(ServiceProvider provider, IRequest<Result<T>> request)
@@ -145,7 +157,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member]);
 
         using var asOwner = ProviderFor(stack, stack.OwnerId, options: new ChatCallOptions { Region = "ap-test-1" });
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "video"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "video"));
 
         started.Call.State.Should().Be("ringing");
         started.Call.Kind.Should().Be("video");
@@ -197,7 +209,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var direct = await SeedDirectAsync(stack, stack.OwnerId, member);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
         using var asMember = ProviderFor(stack, member);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
 
         var stale = await RefusalAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, ExpectedVersion: 99));
         stale.Should().BeOfType<PreconditionFailedException>("a version the client did not read is 412");
@@ -222,8 +234,8 @@ public sealed class ChatCallPipelineIntegrationTests
         using var asOwner = ProviderFor(stack, stack.OwnerId);
         var key = $"call-start-{Guid.NewGuid():N}";
 
-        var first = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
-        var replay = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
+        var first = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
+        var replay = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
 
         replay.Call.Id.Should().Be(first.Call.Id);
         (await _host.ReadAsync(c => c.ChatCalls.CountAsync(x => x.SpaceId == channel.Id))).Should().Be(1);
@@ -241,9 +253,9 @@ public sealed class ChatCallPipelineIntegrationTests
 
         using var asBob = ProviderFor(stack, bob);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
-        await SendAsync(asBob, new StartCallCommand(stack.WorkspaceId, bobCarol.Id, "voice"));
+        await StartAsync(asBob, new StartCallCommand(stack.WorkspaceId, bobCarol.Id, "voice"));
 
-        var busy = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, ownerBob.Id, "voice"));
+        var busy = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, ownerBob.Id, "voice"));
         busy.Call.State.Should().Be("ended");
         busy.Call.EndReason.Should().Be("busy");
         busy.JoinToken.Should().BeNull("a busy call never rings and holds no token");
@@ -261,7 +273,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var members = await AddMembersAsync(stack, ChatLimits.CallMaxParticipantsVoice);
         var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, members);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
 
         for (var i = 0; i < ChatLimits.CallMaxParticipantsVoice - 1; i++)
         {
@@ -283,7 +295,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var members = await AddMembersAsync(stack, ChatLimits.CallMaxParticipantsVideo);
         var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, members);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "video"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "video"));
 
         for (var i = 0; i < ChatLimits.CallMaxParticipantsVideo - 1; i++)
         {
@@ -333,7 +345,7 @@ public sealed class ChatCallPipelineIntegrationTests
         {
             using var provider = ProviderFor(stack, user);
             await gate.Task;
-            var error = await Record.ExceptionAsync(() => SendAsync(provider, new StartCallCommand(stack.WorkspaceId, spaceId, "voice")));
+            var error = await Record.ExceptionAsync(() => StartAsync(provider, new StartCallCommand(stack.WorkspaceId, spaceId, "voice")));
             return (user, error);
         })).ToList();
 
@@ -349,7 +361,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
         var direct = await SeedDirectAsync(stack, stack.OwnerId, member);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
 
         _host.Now = T0.AddSeconds(30);
         await RunSweepAsync(stack);
@@ -375,7 +387,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member]);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
         using var asMember = ProviderFor(stack, member);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
         await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
 
         await SendAsync(asMember, new LeaveCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
@@ -402,7 +414,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member]);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
         using var asMember = ProviderFor(stack, member);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
         await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
         await SendAsync(asMember, new LeaveCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
         await SendAsync(asOwner, new LeaveCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
@@ -422,7 +434,7 @@ public sealed class ChatCallPipelineIntegrationTests
         var direct = await SeedDirectAsync(stack, stack.OwnerId, member);
         using var asOwner = ProviderFor(stack, stack.OwnerId);
         using var asMember = ProviderFor(stack, member);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
         await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1));
 
         _host.Now = T0.AddSeconds(125);
@@ -482,7 +494,7 @@ public sealed class ChatCallPipelineIntegrationTests
         using var asOwner = ProviderFor(stack, stack.OwnerId);
         using var asMember = ProviderFor(stack, member);
         using var asOutsider = ProviderFor(stack, outsider);
-        var started = await SendAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
 
         (await SendAsync(asMember, new GetActiveCallQuery(stack.WorkspaceId, channel.Id)))!.Id.Should().Be(started.Call.Id);
         (await RefusalAsync(asOutsider, new GetActiveCallQuery(stack.WorkspaceId, channel.Id))).Should().BeOfType<Notrelix.Application.Common.Exceptions.NotFoundException>();
@@ -494,6 +506,201 @@ public sealed class ChatCallPipelineIntegrationTests
         history.Items.Should().ContainSingle(c => c.Id == started.Call.Id && c.EndReason == "cancelled");
     }
 
+    [Fact]
+    public async Task AGuestAndAReadOnlyMemberAreRefusedOnAnswerAndJoin_AndGetNoTokenNorSeat()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var readOnly = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "ReadOnly");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
+        var channel = await SeedChannelAsync(
+            stack, stack.OwnerId, SpaceKind.ChannelPrivate, [member, readOnly, guest],
+            new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny));
+        // The owner is a workspace admin, so the override leaves them free to post; the plain member joins as the live caller.
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+
+        using var asGuest = ProviderFor(stack, guest);
+        using var asReadOnly = ProviderFor(stack, readOnly);
+        (await RefusalAsync(asGuest, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1)))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>("a Guest never takes part in a call");
+        (await RefusalAsync(asReadOnly, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1)))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>("the channel keeps this member from posting");
+
+        // Make the call Active through the owner's own seat (a group call), then try to join.
+        await _host.WithSystemContextAsync(async seed =>
+        {
+            var call = await seed.ChatCalls.Include(c => c.Participants).SingleAsync(c => c.Id == started.Call.Id);
+            call.Join(stack.OwnerId, T0);
+            call.Answer(Guid.NewGuid(), T0);
+        });
+        var version = await VersionAsync(started.Call.Id);
+        (await RefusalAsync(asGuest, new JoinCallCommand(stack.WorkspaceId, started.Call.Id, version)))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        (await RefusalAsync(asReadOnly, new JoinCallCommand(stack.WorkspaceId, started.Call.Id, version)))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+
+        var stored = await LoadAsync(started.Call.Id);
+        stored.Participants.Should().NotContain(p => p.PersonId == guest || p.PersonId == readOnly);
+    }
+
+    [Fact]
+    public async Task AnArchivedSpaceRefusesAnswerAndJoin()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var other = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Other");
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [other]);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        using var asOther = ProviderFor(stack, other);
+        var viaChannel = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        await _host.WithSystemContextAsync(async seed =>
+        {
+            var space = await seed.ChatSpaces.SingleAsync(s => s.Id == channel.Id);
+            space.SetArchived(true, stack.OwnerId, T0);
+        });
+
+        var joinRefused = await RefusalAsync(asOther, new JoinCallCommand(stack.WorkspaceId, viaChannel.Call.Id, 1));
+        CodeOf(joinRefused).Should().Be(ChatRuleCodes.ChannelArchived);
+        var answerRefused = await RefusalAsync(asOther, new AnswerCallCommand(stack.WorkspaceId, viaChannel.Call.Id, 1));
+        CodeOf(answerRefused).Should().Be(ChatRuleCodes.ChannelArchived);
+        (await LoadAsync(viaChannel.Call.Id)).Participants.Should().NotContain(p => p.PersonId == other);
+    }
+
+    [Fact]
+    public async Task ABlockBetweenTwoPeopleRefusesAnswerOfTheirDirectCall()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var direct = await SeedDirectAsync(stack, stack.OwnerId, member);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        using var asMember = ProviderFor(stack, member);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
+        await _host.WithSystemContextAsync(seed =>
+        {
+            seed.ChatBlocks.Add(PersonBlock.Create(stack.AccountId, stack.WorkspaceId, stack.OwnerId, member, T0));
+            return Task.CompletedTask;
+        });
+
+        (await RefusalAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1)))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.NotFoundException>("a blocked pair does not call each other");
+        (await LoadAsync(started.Call.Id)).State.Should().Be(CallState.Ringing);
+    }
+
+    [Fact]
+    public async Task ARemovedChannelMemberIsReleasedFromTheirLiveCallAtOnce()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var other = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Other");
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member, other]);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        using var asMember = ProviderFor(stack, member);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1));
+        var before = await VersionAsync(started.Call.Id);
+
+        await OrgTreeTestHost.SendAsync(asOwner, new Notrelix.Application.Features.Chat.Members.Commands.RemoveChannelMember.RemoveChannelMemberCommand(stack.WorkspaceId, channel.Id, member));
+
+        var after = await LoadAsync(started.Call.Id);
+        after.Participants.Single(p => p.PersonId == member).IsJoined.Should().BeFalse("revoking access ends the participation");
+        after.Version.Should().BeGreaterThan(before);
+        after.State.Should().Be(CallState.Active, "the owner is still in the call");
+        _gateway.RemovedParticipants.Should().Contain(r => r.PersonId == member, "the media room drops the person at once");
+    }
+
+    [Fact]
+    public async Task ARemovedMemberOfADirectCallEndsTheCallAndWritesOneMessage()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var direct = await SeedDirectAsync(stack, stack.OwnerId, member);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        using var asMember = ProviderFor(stack, member);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, direct.Id, "voice"));
+        await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1));
+
+        using (var scope = asOwner.CreateScope())
+        {
+            var exit = scope.ServiceProvider.GetRequiredService<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
+            await exit.EndMembershipsAsync(stack.WorkspaceId, member, T0.AddSeconds(5), CancellationToken.None);
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().SaveChangesAsync();
+        }
+
+        var after = await LoadAsync(started.Call.Id);
+        after.State.Should().Be(CallState.Ended);
+        after.Participants.Should().OnlyContain(p => !p.IsJoined);
+        (await CallMessagesAsync(direct.Id, started.Call.Id)).Should().Be(1);
+        _gateway.RemovedParticipants.Should().Contain(r => r.PersonId == member);
+    }
+
+    [Fact]
+    public async Task TheSweepReleasesAParticipantWhoseAccessEndedAndEndsTheEmptyCall()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member]);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        using var asMember = ProviderFor(stack, member);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1));
+        await SendAsync(asOwner, new LeaveCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
+        // The member's access ended without a hook running (a missed event): the membership row is closed directly.
+        await _host.WithSystemContextAsync(async seed =>
+        {
+            var space = await Notrelix.Application.Features.Chat.Channels.Services.ChannelAccess.LoadLiveAsync(seed, stack.WorkspaceId, channel.Id, CancellationToken.None);
+            space.RemoveMember(member, T0);
+        });
+
+        _host.Now = T0.AddSeconds(5);
+        await RunSweepAsync(stack);
+
+        var after = await LoadAsync(started.Call.Id);
+        after.Participants.Single(p => p.PersonId == member).IsJoined.Should().BeFalse();
+        (await VersionAsync(started.Call.Id)).Should().BeGreaterThan(3);
+        after.State.Should().Be(CallState.Ended, "nobody with access is left in the call");
+        _gateway.RemovedParticipants.Should().Contain(r => r.PersonId == member);
+    }
+
+    [Fact]
+    public async Task ARetriedStartStoresNoTokenAndMintsAFreshOneEachTime()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member]);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        var key = $"call-token-{Guid.NewGuid():N}";
+
+        var first = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
+        var replay = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
+
+        first.JoinToken.Should().NotBeNull();
+        replay.JoinToken.Should().NotBeNull();
+        replay.JoinToken!.Token.Should().NotBe(first.JoinToken!.Token, "a replay mints a fresh token");
+        var stored = await _host.ReadAsync(c => c.IdempotencyRecords.Where(r => r.Operation == "chat.calls.start-call.v1").Select(r => r.ResultJson).ToListAsync());
+        stored.Should().NotBeEmpty();
+        stored.Should().OnlyContain(json => json != null && !json.Contains(first.JoinToken.Token) && !json.Contains("joinToken", StringComparison.OrdinalIgnoreCase),
+            "the idempotency store never keeps a media token");
+    }
+
+    [Fact]
+    public async Task AReplayByACallerWhoLeftTheCallGetsNoToken()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member]);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        using var asMember = ProviderFor(stack, member);
+        var key = $"call-left-{Guid.NewGuid():N}";
+        var first = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key);
+        await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, first.Call.Id, 1));
+        await SendAsync(asOwner, new LeaveCallCommand(stack.WorkspaceId, first.Call.Id, await VersionAsync(first.Call.Id)));
+
+        var replay = await Record.ExceptionAsync(() => StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"), key));
+        replay.Should().NotBeNull();
+
+        CodeOf(replay!).Should().Be(ChatRuleCodes.CallNotParticipant, "a caller who is no longer in the call gets no token");
+    }
+
     private sealed class UnreachableGateway : IChatCallMediaGateway
     {
         public Task<CallRoom> CreateRoomAsync(string roomKey, string region, int maxParticipants, CancellationToken cancellationToken) =>
@@ -503,6 +710,9 @@ public sealed class ChatCallPipelineIntegrationTests
             throw new CallMediaUnavailableException("The media plane is down.");
 
         public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken) =>
+            throw new CallMediaUnavailableException("The media plane is down.");
+
+        public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken) =>
             throw new CallMediaUnavailableException("The media plane is down.");
 
         public Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken) =>

@@ -1075,6 +1075,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Queries.GetCallJoinToken.GetCallJoinTokenQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Queries.GetCallJoinToken.GetCallJoinTokenQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Calls.Queries.ListCalls.ListCallsQuery",
     "kind": "Query",
     "principalMarkers": [

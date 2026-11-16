@@ -1,8 +1,10 @@
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Calls.DTOs;
 using Notrelix.Application.Features.Chat.Channels.Services;
+using Notrelix.Application.Features.Chat.Permissions.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Calls;
+using Notrelix.Domain.Chat.Permissions;
 using Notrelix.Domain.Chat.Rules;
 using Microsoft.Extensions.Options;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -43,6 +45,33 @@ public static class ChatCallAccess
             ?? throw new NotFoundException(nameof(Call), callId);
         var (space, caller) = await MemberSpaceAsync(db, members, workspaceId, call.SpaceId, userId, ct);
         return (call, space, caller);
+    }
+
+    /// <summary>
+    /// The gate every way into a call passes before a person is seated or given a media token (start, answer, join, token refresh), so the
+    /// paths cannot drift apart: an archived space is read-only (409), a Guest never takes part, a member the channel keeps from posting is
+    /// refused (403), and in a direct call a block in either direction is NotFound, as for a direct conversation. Returns the other person
+    /// of a direct call (null in any other space).
+    /// </summary>
+    public static async Task<Guid?> RequireMayTakePartAsync(
+        IChatDbContext db, Space space, WorkspaceMemberFact caller, Guid userId, CancellationToken ct)
+    {
+        if (space.IsArchived)
+            throw new ConflictException("The channel is archived and read-only.", ChatRuleCodes.ChannelArchived);
+        if (ChannelAccess.IsGuest(caller))
+            throw new ForbiddenException("A Guest does not take part in calls.");
+        await ChannelPermissionChecks.RequireAsync(db, space, caller, userId, ChannelAction.Post, ct);
+
+        if (space.Kind != Domain.Chat.Spaces.SpaceKind.Direct)
+            return null;
+
+        var counterpart = space.Memberships.Where(m => m.IsActive && m.UserId != userId).Select(m => (Guid?)m.UserId).SingleOrDefault();
+        if (counterpart is null || await db.ChatBlocks.AsNoTracking().AnyAsync(
+                b => b.WorkspaceId == space.WorkspaceId
+                    && ((b.BlockerId == userId && b.BlockedId == counterpart) || (b.BlockerId == counterpart && b.BlockedId == userId)),
+                ct))
+            throw new NotFoundException(nameof(Space), space.Id);
+        return counterpart;
     }
 
     /// <summary>Whether the person holds a live participation in a call other than <paramref name="exceptCallId"/> (invariant 2).</summary>

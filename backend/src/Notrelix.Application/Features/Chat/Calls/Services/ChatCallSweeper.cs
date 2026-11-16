@@ -9,7 +9,7 @@ namespace Notrelix.Application.Features.Chat.Calls.Services;
 /// each in its own transaction; a call that changed in between (answered, someone joined) is skipped, so a pass never ends a live call.
 /// Each ending writes the one call message, like the commands do.
 /// </summary>
-public sealed class ChatCallSweeper(IChatDbContext db, ChatCallEnding ending)
+public sealed class ChatCallSweeper(IChatDbContext db, ChatCallEnding ending, ChatCallRevocation revocation)
 {
     /// <summary>The ids of the calls that are due at <paramref name="now"/>.</summary>
     public Task<List<Guid>> ListDueAsync(DateTimeOffset now, TimeSpan ring, TimeSpan emptyGrace, CancellationToken cancellationToken)
@@ -23,6 +23,28 @@ public sealed class ChatCallSweeper(IChatDbContext db, ChatCallEnding ending)
             .Select(c => c.Id)
             .Take(500)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// The people still seated in a live call whose membership of its space has ended, which a missed event left behind. They are released
+    /// before the timers run, so a call they alone kept open can end as empty.
+    /// </summary>
+    public async Task<List<(Guid CallId, Guid PersonId)>> ListRevokedAsync(CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from p in db.ChatCallParticipants.AsNoTracking()
+            join c in db.ChatCalls.AsNoTracking() on p.CallId equals c.Id
+            where p.LeftAt == null && c.State != CallState.Ended
+                && !db.ChatMemberships.Any(m => m.SpaceId == c.SpaceId && m.UserId == p.PersonId && m.LeftAt == null)
+            select new { c.Id, p.PersonId }).Take(500).ToListAsync(cancellationToken);
+        return rows.Select(r => (r.Id, r.PersonId)).ToList();
+    }
+
+    /// <summary>Releases one such person; false when they are no longer seated. The caller saves in the same transaction.</summary>
+    public async Task<bool> ApplyRevokedAsync(Guid callId, Guid personId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var call = await db.ChatCalls.Include(c => c.Participants).FirstOrDefaultAsync(c => c.Id == callId, cancellationToken);
+        return call is not null && await revocation.ReleaseAsync(call, personId, now, cancellationToken);
     }
 
     /// <summary>Ends one due call; false when it is no longer due. The caller saves in the same transaction.</summary>

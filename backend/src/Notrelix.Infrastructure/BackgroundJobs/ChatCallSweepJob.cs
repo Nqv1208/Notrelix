@@ -49,11 +49,27 @@ internal sealed class ChatCallSweepRunner(
     private static readonly SystemOperationReason Reason =
         new("Chat", "End calls that rang out or stayed empty: Missed after the ring time, Completed after the empty grace period");
 
-    /// <returns>The number of calls ended in this pass.</returns>
+    /// <returns>The number of calls ended and people released in this pass.</returns>
     public async Task<int> RunOnceAsync(CancellationToken cancellationToken)
     {
         var ring = TimeSpan.FromSeconds(calls.Value.RingSeconds);
         var empty = TimeSpan.FromSeconds(calls.Value.EmptyCallSeconds);
+
+        List<(Guid CallId, Guid PersonId)> revoked;
+        using (new SystemContextScope(tenant, logger, "chat-calls-sweep.revoked", Reason))
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            await rls.ApplyAsync(cancellationToken);
+            revoked = await sweeper.ListRevokedAsync(cancellationToken);
+            await transaction.RollbackAsync(cancellationToken);
+        }
+
+        var released = 0;
+        foreach (var (callId, personId) in revoked)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (await EndOneAsync(callId, (c, ct) => sweeper.ApplyRevokedAsync(callId, personId, clock.UtcNow, ct), cancellationToken)) released++;
+        }
 
         List<Guid> due;
         using (new SystemContextScope(tenant, logger, "chat-calls-sweep.list", Reason))
@@ -68,15 +84,15 @@ internal sealed class ChatCallSweepRunner(
         foreach (var callId in due)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (await EndOneAsync(callId, ring, empty, cancellationToken)) ended++;
+            if (await EndOneAsync(callId, (c, ct) => sweeper.ApplyAsync(c, clock.UtcNow, ring, empty, ct), cancellationToken)) ended++;
         }
 
-        if (ended > 0)
-            logger.LogInformation("Chat call sweep ended {Count} calls", ended);
-        return ended;
+        if (ended + released > 0)
+            logger.LogInformation("Chat call sweep ended {Count} calls and released {Released} people who lost access", ended, released);
+        return ended + released;
     }
 
-    private async Task<bool> EndOneAsync(Guid callId, TimeSpan ring, TimeSpan empty, CancellationToken cancellationToken)
+    private async Task<bool> EndOneAsync(Guid callId, Func<Guid, CancellationToken, Task<bool>> apply, CancellationToken cancellationToken)
     {
         try
         {
@@ -88,7 +104,7 @@ internal sealed class ChatCallSweepRunner(
             var claimed = await context.Database
                 .SqlQuery<bool>($"SELECT pg_try_advisory_xact_lock({lockKey}) AS \"Value\"")
                 .SingleAsync(cancellationToken);
-            if (!claimed || !await sweeper.ApplyAsync(callId, clock.UtcNow, ring, empty, cancellationToken))
+            if (!claimed || !await apply(callId, cancellationToken))
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return false;
