@@ -7,7 +7,10 @@ import type {
 } from "@notrelix/work-management-core";
 import { wmQueryKeys } from "../queries/keys";
 import { runFieldValueCommand } from "../mutations/use-update-field-value";
-import { runUpdateCardCommand } from "../mutations/use-update-card";
+import {
+  applyCardPatch,
+  runUpdateCardCommand,
+} from "../mutations/use-update-card";
 
 const PRIORITY = "field-priority-x";
 const priorityField: FieldDefinition = {
@@ -310,5 +313,22 @@ describe("sheet edits reach the item detail the sheet reads", () => {
         sentWith(updateCard, 0).idempotencyKey,
       );
     });
+  });
+});
+
+describe("applyCardPatch", () => {
+  it("clears the due date and priority in the field values too, not only on the card", () => {
+    const card = {
+      ...baseCard,
+      dueDate: "2026-12-01T00:00:00.000Z",
+      fieldValues: {
+        "b-1-field-due-date": "2026-12-01T00:00:00.000Z",
+        "b-1-field-priority": "high",
+      },
+    } as never as Parameters<typeof applyCardPatch>[0];
+    const next = applyCardPatch(card, { dueDate: null, priority: null });
+    expect(next.dueDate).toBeUndefined();
+    expect(next.fieldValues["b-1-field-due-date"]).toBeNull();
+    expect(next.fieldValues["b-1-field-priority"]).toBeNull();
   });
 });

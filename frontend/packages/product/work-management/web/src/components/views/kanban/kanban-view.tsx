@@ -1220,13 +1220,26 @@ export function KanbanView({
           },
           onSetDates: (card, dates) => {
             noteOrigin(card.id);
-            updateCardDetails.mutate({
-              cardId: card.id,
-              patch: {
-                startDate: dates.start ? `${dates.start}T00:00:00.000Z` : null,
-                dueDate: dates.due ? `${dates.due}T00:00:00.000Z` : null,
+            updateCardDetails.mutate(
+              {
+                cardId: card.id,
+                patch: {
+                  startDate: dates.start
+                    ? `${dates.start}T00:00:00.000Z`
+                    : null,
+                  dueDate: dates.due ? `${dates.due}T00:00:00.000Z` : null,
+                },
               },
-            });
+              {
+                onError: () =>
+                  toast.error(
+                    fillCopy(laneCopyRef.current.saveFailed, {
+                      title: card.title,
+                    }),
+                    { id: `kanban-write-${card.id}` },
+                  ),
+              },
+            );
           },
           onOpen: (cardId) => handleOpenDetail(cardId),
         },
