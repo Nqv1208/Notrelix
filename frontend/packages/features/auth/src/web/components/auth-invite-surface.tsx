@@ -6,6 +6,7 @@ import {
   Lock,
   ShieldCheck,
   UserRound,
+  WifiOff,
 } from "lucide-react";
 import { cn, useIsMobile } from "@notrelix/ui-web";
 import { PASSWORD_MIN_LENGTH } from "../../core/schemas/password-policy";
@@ -387,20 +388,29 @@ function InviteForm({
 }
 
 function UnreachablePage({ copy, onRetry }: AuthInviteSurfaceProps) {
+  const t = copy.invite;
+  // The same screen as the gone pages: icon, title, a plain body and one button.
   return (
     <>
+      <span
+        aria-hidden="true"
+        className="grid size-13 place-items-center rounded-[14px] bg-state-hover text-danger-text"
+      >
+        <WifiOff className="size-6" />
+      </span>
+      <AuthHeading title={t.unreachableTitle} />
       <p
         role="alert"
-        className="m-0 text-item-prose leading-normal text-danger-text"
+        className="m-0 text-item-prose leading-normal text-foreground"
       >
-        {copy.invite.unreachable}
+        {t.unreachable}
       </p>
       <button
         type="button"
         onClick={onRetry}
         className={cn(BUTTON_CLASS.outline, "text-brand-subtle-foreground")}
       >
-        {copy.invite.retry}
+        {t.retry}
       </button>
     </>
   );

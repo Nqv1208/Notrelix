@@ -259,6 +259,7 @@ export const en = {
     passwordShort: "Use at least {{count}} characters.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    unreachableTitle: "Couldn't open the invitation",
     retry: "Try again",
     mobile: {
       accept: "Accept",
@@ -535,6 +536,7 @@ export const vi: AuthCopy = {
     nameRequired: "Nhập họ và tên của bạn.",
     passwordShort: "Dùng ít nhất {{count}} ký tự.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    unreachableTitle: "Chưa mở được lời mời",
     retry: "Thử lại",
     mobile: {
       accept: "Chấp nhận",
