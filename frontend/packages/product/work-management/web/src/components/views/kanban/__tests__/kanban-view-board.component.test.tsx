@@ -1057,6 +1057,37 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     expect(cards.archiveCard).not.toHaveBeenCalled();
   }, 20_000);
 
+  it("clears the pick when a bar change is kept, even if an archive went out before it answered", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    pick(ERP_151);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+    let keep!: () => void;
+    cards.bulkUpdate.mockImplementationOnce(
+      () =>
+        new Promise<number>((resolve) => {
+          keep = () => resolve(1);
+        }),
+    );
+    pick(ERP_149);
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
+    fireEvent.change(await screen.findByLabelText("Hạn"), {
+      target: { value: "2026-12-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+    // The undo window of the first archive ends while the change is still out.
+    await act(async () => {
+      vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
+    });
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    await act(async () => keep());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Hạn" })).toBeNull(),
+    );
+  }, 20_000);
+
   it("sends the archive at once when the notice is closed", async () => {
     const { cards } = renderKanban(erpOwnerAccess());
     await ready();
@@ -1139,6 +1170,37 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Lưu ngày" }));
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("still tells the person a quick-edit date was not saved when another card was edited before the first answered", async () => {
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    let refuse!: (error: Error) => void;
+    cards.updateCard.mockImplementationOnce(
+      () =>
+        new Promise<undefined>((_resolve, reject) => {
+          refuse = reject;
+        }),
+    );
+    const editDate = async (key: string, day: string) => {
+      const card = document
+        .querySelector(`[data-card-id="${erpItemId(key)}"]`)!
+        .closest("article") as HTMLElement;
+      fireEvent.click(within(card).getByRole("button", { name: "Sửa nhanh" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Sửa ngày" }));
+      fireEvent.change(screen.getByLabelText("Ngày hạn"), {
+        target: { value: day },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Lưu ngày" }));
+    };
+    await editDate("ERP-149", "2026-12-01");
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await editDate("ERP-147", "2026-12-02");
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(2));
+    await act(async () =>
+      refuse(Object.assign(new Error("refused"), { status: 400 })),
+    );
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
   }, 20_000);
 
