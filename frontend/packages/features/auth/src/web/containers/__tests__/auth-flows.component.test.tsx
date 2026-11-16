@@ -201,6 +201,47 @@ describe("sign-in flow: second step after a provider sign-in", () => {
     );
   });
 
+  it("shows the lock again when a second refused password carries the same wait", async () => {
+    const service = {
+      identify: vi.fn(async () => ({ method: "password" as const })),
+      login: vi.fn(async () => {
+        throw {
+          status: 429,
+          details: { errorCode: "rate_limit.exceeded", retryAfter: 1 },
+        };
+      }),
+    };
+    renderPureUi(
+      <Providers>
+        <SignInFlow service={asService(service)} navigation={navigation()} />
+      </Providers>,
+    );
+    fireEvent.change(screen.getByLabelText(copy.email.label), {
+      target: { value: "a@b.vn" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.email.continue }));
+    const password = await screen.findByLabelText(copy.password.label);
+    const attempt = () => {
+      fireEvent.change(password, { target: { value: "mat-khau-sai" } });
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.password.signIn }),
+      );
+    };
+    attempt();
+    await waitFor(() =>
+      expect(screen.getByText(/Thử lại sau \d+ giây/)).toBeTruthy(),
+    );
+    await waitFor(
+      () => expect(screen.queryByText(/Thử lại sau \d+ giây/)).toBeNull(),
+      { timeout: 3000 },
+    );
+    attempt();
+    await waitFor(() => expect(service.login).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.getByText(/Thử lại sau \d+ giây/)).toBeTruthy(),
+    );
+  }, 10_000);
+
   it("an error on /sign-in wins over the second step", () => {
     const nav = navigation();
     renderPureUi(
