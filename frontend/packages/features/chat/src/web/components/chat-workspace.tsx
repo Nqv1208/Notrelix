@@ -1748,11 +1748,12 @@ export function ChatWorkspace({
               <aside
                 className={cn(
                   "flex min-h-0 w-full flex-col border-border bg-background md:w-[340px] md:border-s md:shrink-0 xl:w-[360px]",
-                  // Between a tablet and a laptop the room would be left about 180 px wide beside the shell, the list and
-                  // the details, so a conversation's details slide over the room instead of squeezing it.
+                  // On a tablet (below 1024) the room would be left about 180 px wide beside the shell and the details, so a
+                  // conversation's details slide over it as a sheet. From 1024 up they sit beside the room, which shrinks to
+                  // what is left: messages are never drawn under the panel.
                   conversation !== null &&
                     panel.kind === "details" &&
-                    "md:max-xl:absolute md:max-xl:inset-y-0 md:max-xl:end-0 md:max-xl:z-20 md:max-xl:shadow-lg",
+                    "md:max-lg:absolute md:max-lg:inset-y-0 md:max-lg:end-0 md:max-lg:z-20 md:max-lg:shadow-lg",
                   // On a tablet the followed list takes the whole column, as a page (Chat-Followed-T).
                   panel.kind === "following" &&
                     "md:max-xl:w-auto md:max-xl:flex-1 md:max-xl:border-s-0",
