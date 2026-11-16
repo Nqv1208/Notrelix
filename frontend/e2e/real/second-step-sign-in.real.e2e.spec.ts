@@ -86,7 +86,7 @@ test("the second step: a right code signs in, wrong codes are refused until the 
     "That code is not right",
   );
   await typeDigits(first.page, totpCode(secret, Date.now() + 30_000));
-  await expect(first.page).toHaveURL(/\/workspaces\/[^/]+/, {
+  await expect(first.page).toHaveURL(/\/(workspaces\/[^/]+|home)/, {
     timeout: 20_000,
   });
   expect((await first.page.request.get(`${apiUrl}/auth/me`)).status()).toBe(
@@ -127,7 +127,7 @@ test("the second step: a right code signs in, wrong codes are refused until the 
     .click();
   await third.page.getByLabel("Backup code").fill(usable);
   await third.page.getByRole("button", { name: "Verify", exact: true }).click();
-  await expect(third.page).toHaveURL(/\/workspaces\/[^/]+/, {
+  await expect(third.page).toHaveURL(/\/(workspaces\/[^/]+|home)/, {
     timeout: 20_000,
   });
   await third.context.close();

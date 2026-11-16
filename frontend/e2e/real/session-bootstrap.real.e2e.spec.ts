@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { expect, request, test } from "@playwright/test";
-import { apiRead, apiWrite, realUsers, signIn } from "./support/real-session";
+import {
+  apiRead,
+  apiWrite,
+  findWorkspace,
+  realUsers,
+  signIn,
+} from "./support/real-session";
 
 const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
 
@@ -94,7 +100,8 @@ test("the device row signs another device out at once; another person's or an un
   browser,
 }, testInfo) => {
   await signIn(page, realUsers.workspaceAdmin);
-  const workspaceId = /\/workspaces\/([^/]+)/.exec(page.url())![1];
+  // The landing page depends on the default workspace; the seeded workspace does not.
+  const workspaceId = (await findWorkspace(page, "Workspace 3")).id;
 
   const otherContext = await browser.newContext({
     baseURL: testInfo.project.use.baseURL,
@@ -173,6 +180,14 @@ test("an unsafe request without the CSRF token is refused and changes nothing, a
   page,
 }) => {
   await signIn(page, realUsers.admin);
+  // Not a reload: the page's client must keep the token it was given at sign-in.
+  if (/\/home/.test(page.url())) {
+    await page
+      .getByRole("link", { name: /Workspace 3/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/workspaces\/[^/]+/);
+  }
 
   // Rejections: no header and a wrong header both answer 403 and the session stays valid.
   const csrfHeaders: Record<string, string>[] = [
