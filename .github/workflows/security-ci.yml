@@ -35,7 +35,7 @@ jobs:
           dotnet list package --vulnerable --include-transitive > vulnerable-report.txt
           python3 ../scripts/ci/check-dotnet-vulnerabilities.py --report vulnerable-report.txt --output vulnerable-summary.json
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: {name: backend-vulnerability-report, path: backend/vulnerable-report.txt, if-no-files-found: ignore, retention-days: 14}
       - if: inputs.plan_sha256 != ''
         uses: ./.github/actions/emit-evidence
@@ -60,7 +60,7 @@ jobs:
           pnpm audit --json > pnpm-audit.json || true
           node scripts/ci/check-pnpm-audit.mjs --input pnpm-audit.json --output pnpm-audit-summary.json
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: {name: frontend-vulnerability-report, path: frontend/pnpm-audit.json, if-no-files-found: ignore, retention-days: 14}
       - if: inputs.plan_sha256 != ''
         uses: ./.github/actions/emit-evidence
