@@ -34,6 +34,12 @@ export function ChatPage() {
     rawConversationId && SAFE_ID.test(rawConversationId)
       ? rawConversationId
       : undefined;
+  // `?m=` is the sequence of the message a link points at (UC-CHT-B10); anything that is not a positive whole number is no link.
+  const rawLinked = new URLSearchParams(window.location.search).get("m");
+  const linkedSequence =
+    rawLinked !== null && /^[1-9][0-9]{0,15}$/.test(rawLinked)
+      ? Number(rawLinked)
+      : null;
   const navigate = useNavigate();
   const { api: runtimeClient, realtime: realtimeClient } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
@@ -118,6 +124,12 @@ export function ChatPage() {
           })
         }
         people={people}
+        linkedSequence={linkedSequence}
+        buildMessageLink={({ spaceId, conversation, sequence }) =>
+          `${window.location.origin}/workspaces/${workspaceId}/chat/${
+            conversation ? "dm/" : ""
+          }${spaceId}?m=${sequence}`
+        }
         connection={connection}
         ephemeral={ephemeral}
         onOpenChannel={(id) =>

@@ -148,8 +148,13 @@ describe("ChatWorkspace linked resource (UC-CHT-H10)", () => {
     await openGeneral(s, "member");
 
     await screen.findByRole("link", { name: /Open the linked Board/ });
+    // The settings menu a member sees holds Leave and nothing that changes the channel (UC-CHT-A07).
+    fireEvent.keyDown(
+      await screen.findByRole("button", { name: "Channel settings" }),
+      { key: "Enter" },
+    );
     expect(
-      screen.queryByRole("button", { name: "Channel settings" }),
-    ).toBeNull();
+      (await screen.findAllByRole("menuitem")).map((item) => item.textContent),
+    ).toEqual(["Leave channel"]);
   });
 });
