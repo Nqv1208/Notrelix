@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/query";
 import {
   type InfiniteData,
   type QueryClient,
@@ -116,6 +117,7 @@ export function createChatHooks(deps: ChatHookDeps) {
   const service = createChatService(deps.api, deps.endpoints);
   /** The files of each unconfirmed send; they go to the message once the server stored it. Owned by the factory, not a component, so a retry after the channel was left still has them. */
   const pendingFiles = new Map<string, readonly File[]>();
+  onSessionReset(() => pendingFiles.clear());
 
   // ─── Queries ───────────────────────────────────────────────────────────────
 

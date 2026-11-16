@@ -27,6 +27,7 @@ export {
   assertNotrelixQueryKey,
   assertAccountId,
 } from "./query-key-scope";
+export { onSessionReset, runSessionReset } from "./session-reset";
 export {
   AccountScopeProvider,
   useAccountId,

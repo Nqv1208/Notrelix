@@ -9,9 +9,11 @@ import type { NavigationDeps } from "./use-login";
 interface UseLogoutDeps extends NavigationDeps {
   api: AuthApiClient;
   endpoints: AuthEndpoints;
+  /** Runs once the session ended, to drop user content kept outside the query cache. */
+  onSignedOut?: () => void;
 }
 
-export function createUseLogout({ api, endpoints, navigate }: UseLogoutDeps) {
+export function createUseLogout({ api, endpoints, navigate, onSignedOut }: UseLogoutDeps) {
   const authService = createAuthService(api, endpoints);
 
   return function useLogout() {
@@ -29,6 +31,7 @@ export function createUseLogout({ api, endpoints, navigate }: UseLogoutDeps) {
       },
       onSuccess: () => {
         queryClient.clear();
+        onSignedOut?.();
         navigate({ to: "/sign-in", replace: true });
       },
     });

@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/query";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { AtSign, Send } from "lucide-react";
 import { Button, Textarea } from "@notrelix/ui-web";
@@ -13,6 +14,7 @@ const REPEAT_WINDOW_MS = 2 * 60_000;
 
 /** Unsent comment text by card, kept past the composer so a card that vanishes under it does not take the text along. */
 const unsentComments = new Map<string, string>();
+onSessionReset(() => unsentComments.clear());
 
 /** What the person had typed on a card and not sent ("" when nothing). */
 export function unsentCommentOf(cardId: string): string {
