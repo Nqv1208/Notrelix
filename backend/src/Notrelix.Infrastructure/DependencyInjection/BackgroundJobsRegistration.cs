@@ -80,6 +80,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DeletedWorkspacePurger>();
         AddWorker<DeletedWorkspacePurgeService>();
 
+        // Workspaces: purge the Spaces (departments) deleted more than 30 days ago (restore is over by then).
+        services.AddOptions<DeletedSpacePurgeOptions>()
+            .Bind(configuration.GetSection(DeletedSpacePurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedSpacePurgeOptions>, DeletedSpacePurgeOptionsValidator>();
+        services.AddScoped<DeletedSpacePurger>();
+        AddWorker<DeletedSpacePurgeService>();
+
         // Work Management: purge the boards deleted more than 30 days ago (restore is over by then). Off by default.
         services.AddOptions<DeletedBoardPurgeOptions>()
             .Bind(configuration.GetSection(DeletedBoardPurgeOptions.SectionName))
