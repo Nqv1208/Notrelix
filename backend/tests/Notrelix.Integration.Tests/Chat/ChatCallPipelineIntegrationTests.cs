@@ -142,9 +142,9 @@ public sealed class ChatCallPipelineIntegrationTests
         return ids;
     }
 
-    private async Task RunSweepAsync(OrgStack stack)
+    private async Task RunSweepAsync(OrgStack stack, IChatCallMediaGateway? gateway = null)
     {
-        using var provider = ProviderFor(stack, stack.OwnerId);
+        using var provider = ProviderFor(stack, stack.OwnerId, gateway);
         using var scope = provider.CreateScope();
         await scope.ServiceProvider.GetRequiredService<ChatCallSweepRunner>().RunOnceAsync(CancellationToken.None);
     }
@@ -698,6 +698,71 @@ public sealed class ChatCallPipelineIntegrationTests
         CodeOf(replay!).Should().Be(ChatRuleCodes.CallNotParticipant, "a caller who is no longer in the call gets no token");
     }
 
+    [Fact]
+    public async Task TheSweepKicksAPersonTheMediaRoomStillHoldsAfterTheirAccessEnded_AndRetriesAFailedKick()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        var other = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Other");
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, [member, other]);
+        var room = new LeakyGateway { FailedKicksLeft = 1 };
+        using var asOwner = ProviderFor(stack, stack.OwnerId, gateway: room);
+        using var asMember = ProviderFor(stack, member, gateway: room);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+        await SendAsync(asMember, new AnswerCallCommand(stack.WorkspaceId, started.Call.Id, 1));
+        // The kick fact is queued for a consumer that is not running here, so the room keeps the revoked person: the leak the sweep closes.
+        await OrgTreeTestHost.SendAsync(asOwner, new Notrelix.Application.Features.Chat.Members.Commands.RemoveChannelMember.RemoveChannelMemberCommand(stack.WorkspaceId, channel.Id, member));
+        room.Connected.Should().Contain(member, "every kick failed, so the media room still holds the revoked person");
+
+        await RunSweepAsync(stack, room);
+        room.Connected.Should().Contain(member, "the first kick of the sweep fails and is only logged");
+
+        await RunSweepAsync(stack, room);
+        room.Connected.Should().NotContain(member, "the next pass retries and the room is clean");
+        room.Connected.Should().Contain(stack.OwnerId, "a person with an open participation is never kicked");
+    }
+
+    /// <summary>A media room that keeps whoever was given a token until a kick succeeds; the first kicks can be made to fail.</summary>
+    private sealed class LeakyGateway : IChatCallMediaGateway
+    {
+        private readonly object _gate = new();
+        private readonly HashSet<(string Room, Guid Person)> _connected = [];
+        public int FailedKicksLeft;
+
+        public IReadOnlyCollection<Guid> Connected
+        {
+            get { lock (_gate) return _connected.Select(c => c.Person).ToList(); }
+        }
+
+        public Task<CallRoom> CreateRoomAsync(string roomKey, string region, int maxParticipants, CancellationToken cancellationToken) =>
+            Task.FromResult(new CallRoom(roomKey, region));
+
+        public Task<CallJoinToken> IssueTokenAsync(string roomKey, Guid personId, bool canPublishVideo, TimeSpan ttl, CancellationToken cancellationToken)
+        {
+            lock (_gate) _connected.Add((roomKey, personId));
+            return Task.FromResult(new CallJoinToken("wss://leaky.invalid", $"leaky.{Guid.NewGuid():N}", DateTimeOffset.UtcNow + ttl));
+        }
+
+        public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Decrement(ref FailedKicksLeft) >= 0)
+                throw new CallMediaUnavailableException("The media plane refuses the kick.");
+            lock (_gate) _connected.Remove((roomKey, personId));
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken)
+        {
+            lock (_gate) return Task.FromResult<IReadOnlyList<Guid>>(_connected.Where(c => c.Room == roomKey).Select(c => c.Person).ToList());
+        }
+
+        public Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<string>>([]);
+
+        public CallMediaWebhookEvent? VerifyWebhook(string rawBody, string? authorization) => null;
+    }
+
     private sealed class UnreachableGateway : IChatCallMediaGateway
     {
         public Task<CallRoom> CreateRoomAsync(string roomKey, string region, int maxParticipants, CancellationToken cancellationToken) =>
@@ -710,6 +775,9 @@ public sealed class ChatCallPipelineIntegrationTests
             throw new CallMediaUnavailableException("The media plane is down.");
 
         public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken) =>
+            throw new CallMediaUnavailableException("The media plane is down.");
+
+        public Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken) =>
             throw new CallMediaUnavailableException("The media plane is down.");
 
         public Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken) =>

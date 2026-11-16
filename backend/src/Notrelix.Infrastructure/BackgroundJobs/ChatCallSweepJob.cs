@@ -19,6 +19,9 @@ public sealed class ChatCallSweepOptions
 
     /// <summary>Time between passes. Default 5 seconds, so a ring ends within a few seconds of the 45 second limit.</summary>
     public TimeSpan Interval { get; init; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>Time between media room reconciliations (people the room holds without an open participation are removed). Default 30 seconds.</summary>
+    public TimeSpan ReconcileInterval { get; init; } = TimeSpan.FromSeconds(30);
 }
 
 public sealed class ChatCallSweepOptionsValidator : IValidateOptions<ChatCallSweepOptions>
@@ -26,10 +29,15 @@ public sealed class ChatCallSweepOptionsValidator : IValidateOptions<ChatCallSwe
     public static readonly TimeSpan MinInterval = TimeSpan.FromMilliseconds(500);
     public static readonly TimeSpan MaxInterval = TimeSpan.FromMinutes(5);
 
-    public ValidateOptionsResult Validate(string? name, ChatCallSweepOptions options) =>
-        options.Interval < MinInterval || options.Interval > MaxInterval
-            ? ValidateOptionsResult.Fail($"{ChatCallSweepOptions.SectionName}:Interval must be between {MinInterval} and {MaxInterval}.")
-            : ValidateOptionsResult.Success;
+    public ValidateOptionsResult Validate(string? name, ChatCallSweepOptions options)
+    {
+        var failures = new List<string>();
+        if (options.Interval < MinInterval || options.Interval > MaxInterval)
+            failures.Add($"{ChatCallSweepOptions.SectionName}:Interval must be between {MinInterval} and {MaxInterval}.");
+        if (options.ReconcileInterval < MinInterval || options.ReconcileInterval > MaxInterval)
+            failures.Add($"{ChatCallSweepOptions.SectionName}:ReconcileInterval must be between {MinInterval} and {MaxInterval}.");
+        return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
 }
 
 /// <summary>
@@ -50,7 +58,7 @@ internal sealed class ChatCallSweepRunner(
         new("Chat", "End calls that rang out or stayed empty: Missed after the ring time, Completed after the empty grace period");
 
     /// <returns>The number of calls ended and people released in this pass.</returns>
-    public async Task<int> RunOnceAsync(CancellationToken cancellationToken)
+    public async Task<int> RunOnceAsync(CancellationToken cancellationToken, bool reconcileRooms = true)
     {
         var ring = TimeSpan.FromSeconds(calls.Value.RingSeconds);
         var empty = TimeSpan.FromSeconds(calls.Value.EmptyCallSeconds);
@@ -85,6 +93,17 @@ internal sealed class ChatCallSweepRunner(
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (await EndOneAsync(callId, (c, ct) => sweeper.ApplyAsync(c, clock.UtcNow, ring, empty, ct), cancellationToken)) ended++;
+        }
+
+        if (reconcileRooms)
+        {
+            using var system = new SystemContextScope(tenant, logger, "chat-calls-sweep.reconcile", Reason);
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            await rls.ApplyAsync(cancellationToken);
+            var kicked = await sweeper.ReconcileRoomsAsync(cancellationToken);
+            await transaction.RollbackAsync(cancellationToken);
+            if (kicked > 0)
+                logger.LogWarning("Chat call sweep removed {Count} people from media rooms that no longer had access", kicked);
         }
 
         if (ended + released > 0)
@@ -147,13 +166,16 @@ internal sealed class ChatCallSweepService(
             return;
         }
 
+        var lastReconcile = DateTimeOffset.MinValue;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 await using var scope = scopeFactory.CreateWorkerAsyncScope();
                 var runner = scope.ServiceProvider.GetRequiredService<ChatCallSweepRunner>();
-                await runner.RunOnceAsync(stoppingToken);
+                var reconcile = DateTimeOffset.UtcNow - lastReconcile >= options.Value.ReconcileInterval;
+                await runner.RunOnceAsync(stoppingToken, reconcile);
+                if (reconcile) lastReconcile = DateTimeOffset.UtcNow;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

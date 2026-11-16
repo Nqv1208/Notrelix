@@ -11,6 +11,7 @@ namespace Notrelix.Infrastructure.Chat;
 public sealed class InMemoryChatCallMediaGateway(IOptions<ChatCallOptions> options) : IChatCallMediaGateway
 {
     private readonly ConcurrentDictionary<string, string> _rooms = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<(string RoomKey, Guid PersonId), byte> _connected = new();
 
     public Task<CallRoom> CreateRoomAsync(string roomKey, string region, int maxParticipants, CancellationToken cancellationToken)
     {
@@ -24,6 +25,7 @@ public sealed class InMemoryChatCallMediaGateway(IOptions<ChatCallOptions> optio
         if (!_rooms.ContainsKey(roomKey))
             throw new CallMediaUnavailableException("The room does not exist.");
 
+        _connected[(roomKey, personId)] = 0; // a token is a connection in this stand-in
         var token = $"fake.{roomKey}.{personId:N}.{(canPublishVideo ? "av" : "a")}.{Guid.NewGuid():N}"; // the last part makes every token unique, as a JWT id does
         return Task.FromResult(new CallJoinToken(options.Value.SfuUrl, token, DateTimeOffset.UtcNow + ttl));
     }
@@ -31,6 +33,7 @@ public sealed class InMemoryChatCallMediaGateway(IOptions<ChatCallOptions> optio
     public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken)
     {
         _rooms.TryRemove(roomKey, out _);
+        foreach (var key in _connected.Keys.Where(k => k.RoomKey == roomKey)) _connected.TryRemove(key, out _);
         return Task.CompletedTask;
     }
 
@@ -40,8 +43,12 @@ public sealed class InMemoryChatCallMediaGateway(IOptions<ChatCallOptions> optio
     public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken)
     {
         RemovedParticipants.Enqueue((roomKey, personId));
+        _connected.TryRemove((roomKey, personId), out _);
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Guid>>(_connected.Keys.Where(k => k.RoomKey == roomKey).Select(k => k.PersonId).ToList());
 
     public Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<string>>(_rooms.Keys.ToList());

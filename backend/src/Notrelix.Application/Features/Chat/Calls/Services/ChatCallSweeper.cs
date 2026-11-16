@@ -9,7 +9,12 @@ namespace Notrelix.Application.Features.Chat.Calls.Services;
 /// each in its own transaction; a call that changed in between (answered, someone joined) is skipped, so a pass never ends a live call.
 /// Each ending writes the one call message, like the commands do.
 /// </summary>
-public sealed class ChatCallSweeper(IChatDbContext db, ChatCallEnding ending, ChatCallRevocation revocation)
+public sealed class ChatCallSweeper(
+    IChatDbContext db,
+    ChatCallEnding ending,
+    ChatCallRevocation revocation,
+    IChatCallMediaGateway media,
+    ILogger<ChatCallSweeper> logger)
 {
     /// <summary>The ids of the calls that are due at <paramref name="now"/>.</summary>
     public Task<List<Guid>> ListDueAsync(DateTimeOffset now, TimeSpan ring, TimeSpan emptyGrace, CancellationToken cancellationToken)
@@ -45,6 +50,45 @@ public sealed class ChatCallSweeper(IChatDbContext db, ChatCallEnding ending, Ch
     {
         var call = await db.ChatCalls.Include(c => c.Participants).FirstOrDefaultAsync(c => c.Id == callId, cancellationToken);
         return call is not null && await revocation.ReleaseAsync(call, personId, now, cancellationToken);
+    }
+
+    /// <summary>
+    /// The safety net under the retried kick: for every live call, anyone the media room lists who has no open participation (left, or no
+    /// row at all) is removed from the room. It reads the database and writes only to the media plane, and it does not depend on the token
+    /// life. A failing room is logged and tried again on the next pass.
+    /// </summary>
+    /// <returns>The number of people removed from a room.</returns>
+    public async Task<int> ReconcileRoomsAsync(CancellationToken cancellationToken)
+    {
+        var live = await db.ChatCalls.AsNoTracking().Include(c => c.Participants)
+            .Where(c => c.State != CallState.Ended).Take(500).ToListAsync(cancellationToken);
+
+        var removed = 0;
+        foreach (var call in live)
+        {
+            try
+            {
+                var open = call.Participants.Where(p => p.IsJoined).Select(p => p.PersonId).ToHashSet();
+                foreach (var person in (await media.ListParticipantsAsync(call.RoomKey, cancellationToken)).Where(p => !open.Contains(p)))
+                {
+                    try
+                    {
+                        await media.RemoveParticipantAsync(call.RoomKey, person, cancellationToken);
+                        removed++;
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        logger.LogWarning(ex, "Reconciliation could not remove a person from the media room of call {CallId}; it is tried again next pass", call.Id);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Reconciliation could not list the media room of call {CallId}; it is tried again next pass", call.Id);
+            }
+        }
+
+        return removed;
     }
 
     /// <summary>Ends one due call; false when it is no longer due. The caller saves in the same transaction.</summary>

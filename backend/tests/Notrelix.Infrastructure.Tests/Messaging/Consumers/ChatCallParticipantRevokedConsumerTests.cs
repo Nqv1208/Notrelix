@@ -29,6 +29,7 @@ public sealed class ChatCallParticipantRevokedConsumerTests
         public Task<CallRoom> CreateRoomAsync(string roomKey, string region, int maxParticipants, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<CallJoinToken> IssueTokenAsync(string roomKey, Guid personId, bool canPublishVideo, TimeSpan ttl, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public CallMediaWebhookEvent? VerifyWebhook(string rawBody, string? authorization) => null;
     }

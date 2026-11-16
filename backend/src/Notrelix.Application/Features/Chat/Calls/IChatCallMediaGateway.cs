@@ -29,6 +29,9 @@ public interface IChatCallMediaGateway
     /// <summary>Removes one person from a live room at once: their access ended, so their media connection must not outlive it.</summary>
     Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken);
 
+    /// <summary>The people currently connected to a room, for the reconciliation that drops anyone without an open participation.</summary>
+    Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken);
 
     /// <summary>Verifies the signature over the raw body before anything is parsed; null when the signature is wrong.</summary>

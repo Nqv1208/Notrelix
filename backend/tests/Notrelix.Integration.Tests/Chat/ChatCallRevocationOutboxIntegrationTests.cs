@@ -1,6 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.EventMappers.Chat;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Calls;
@@ -88,6 +86,8 @@ public sealed class ChatCallRevocationOutboxIntegrationTests : IAsyncLifetime
             RemoveAttempts++;
             throw new CallMediaUnavailableException("down");
         }
+
+        public Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken) => throw new CallMediaUnavailableException("down");
 
         public Task<IReadOnlyList<string>> ListRoomsAsync(CancellationToken cancellationToken) => throw new CallMediaUnavailableException("down");
 
