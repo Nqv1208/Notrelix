@@ -85,7 +85,7 @@ export function FollowedThreadsPanel({
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              "-mb-px h-11 border-b-2 px-3 text-[13.5px] font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
+              "-mb-px h-11 border-b-2 px-3 text-(length:--type-scale-13p5) font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
               tab === key
                 ? "border-primary text-link"
                 : "border-transparent text-muted-foreground",
@@ -159,7 +159,7 @@ export function FollowedThreadsPanel({
                 <Avatar className="size-9" aria-hidden="true">
                   <AvatarFallback
                     className={cn(
-                      "text-[13px] font-[650]",
+                      "text-(length:--type-scale-13) font-[650]",
                       avatarToneOf(entry.root.authorId),
                     )}
                   >
@@ -184,7 +184,7 @@ export function FollowedThreadsPanel({
                       ? copy.list.deleted
                       : entry.root.content}
                   </span>
-                  <span className="text-[12.5px] leading-[20.3px] text-muted-foreground tabular-nums">
+                  <span className="text-(length:--type-scale-12p5) leading-[20.3px] text-muted-foreground tabular-nums">
                     {archived
                       ? tab === "archived"
                         ? copy.thread.archivedReopenMeta
@@ -220,7 +220,7 @@ export function FollowedThreadsPanel({
                   <span className="flex shrink-0 flex-col items-end gap-1">
                     <span
                       data-testid="chat-followed-unread"
-                      className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[11.5px] font-bold text-primary-foreground tabular-nums"
+                      className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-(length:--type-scale-11p5) font-bold text-primary-foreground tabular-nums"
                       aria-hidden="true"
                     >
                       {unread}

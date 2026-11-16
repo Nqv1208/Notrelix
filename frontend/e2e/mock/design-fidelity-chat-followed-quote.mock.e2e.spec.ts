@@ -2,14 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 /**
  * The followed-threads list and the quote reply against the Chat canvas boards `Chat-Followed-M`/`-T` and
- * `Chat-Var-Quote` (rendered with render.py, light and dark), at 1440, 1024 and 390, tolerance 1 px.
+ * `Chat-Var-Quote` (rendered with render.py, light and dark), at 1440, 1180, 1024 and 390, tolerance 1 px.
  * Board facts: a 56 high header with a 16/700 (17/650 on a phone) title and a 12 px count line, a tab row of 44 high
  * tabs (13.5/600, a 2 px underline on the open one), rows of 12 16 padding with a 36 avatar and three 20.3 high lines
  * (12 px channel, 14 px text, 12.5 px replies and time), a 20 px unread count, a 56 square empty badge with an 18/650
  * title; the quote strip in the composer (3 px bar, 8 14 padding, 12.5 px, a 28 px cancel) and the quote block of a
  * sent reply (3 px bar, 2 8 padding, 12.5 px at 0.9 opacity, 6 px below). Chat-Followed-T draws the list as the page
- * of the conversation column; the app keeps the one side-panel place of the thread and the pins, so the panel follows
- * the M board's row geometry at every width. The archived tab and its Reopen button need an archived thread, which the
+ * of the conversation column, so from 768 to 1279 it fills the column beside the channel list; at 1440 it stays the side
+ * panel, and the row geometry is the M board's at every width. The archived tab and its Reopen button need an archived thread, which the
  * mock world does not hold: the component test covers them. Every frame was also reviewed by eye.
  */
 const persona = process.env.VITE_MOCK_PERSONA ?? "owner";
@@ -70,7 +70,7 @@ async function replyInThread(page: Page) {
 
 async function openFollowed(page: Page) {
   // On a phone the open thread is a page: its back arrow returns to the conversation and its toolbar.
-  const back = page.locator("[data-testid=chat-panel-header] button").first();
+  const back = page.getByRole("button", { name: "Đóng luồng trả lời" }); // the close control: a back arrow on a phone
   if (page.viewportSize()!.width < 768 && (await back.isVisible())) {
     await back.click();
   }
@@ -82,6 +82,7 @@ async function openFollowed(page: Page) {
 
 const SIZES = [
   { width: 1440, height: 900, title: "16px", weight: "700" },
+  { width: 1180, height: 820, title: "16px", weight: "700" },
   { width: 1024, height: 768, title: "16px", weight: "700" },
   { width: 390, height: 844, title: "17px", weight: "650" },
 ] as const;
@@ -94,6 +95,13 @@ for (const mode of ["light", "dark"] as const) {
       }) => {
         await open(page, size.width, size.height, mode);
         await openFollowed(page);
+        // Chat-Followed-T: from 768 to 1279 the list is the page of the column (the room is gone, the channel list stays).
+        if (size.width >= 768 && size.width < 1280) {
+          const side = await box(page, "[data-testid=chat-side-panel]");
+          expect(side.x + side.w).toBeCloseTo(size.width, 0);
+          expect(side.w).toBeGreaterThan(500);
+          await expect(page.locator("[data-bubble]").first()).toBeHidden();
+        }
         expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
         expect(await css(page, `${HEADER} h2`, "font-size")).toBe(size.title);
         expect(await css(page, `${HEADER} h2`, "font-weight")).toBe(

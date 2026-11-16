@@ -19,7 +19,7 @@ export interface ReplyChipProps {
 export function ReplyChip({ copy, name, text, onCancel }: ReplyChipProps) {
   return (
     <div
-      className="flex min-w-0 items-center gap-2.5 rounded-t-[26px] border-b border-border bg-background px-3.5 py-2 text-[12.5px] leading-[1.45]"
+      className="flex min-w-0 items-center gap-2.5 rounded-t-[26px] border-b border-border bg-background px-3.5 py-2 text-(length:--type-scale-12p5) leading-[1.45]"
       data-testid="chat-reply-chip"
     >
       <span

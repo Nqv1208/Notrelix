@@ -81,6 +81,7 @@ async function openThread(page: Page) {
 
 const SIZES = [
   { width: 1440, height: 900, panel: 360, header: 56 },
+  { width: 1180, height: 820, panel: 340, header: 56 },
   { width: 1024, height: 768, panel: 340, header: 56 },
   { width: 390, height: 844, panel: 390, header: 56 },
 ] as const;

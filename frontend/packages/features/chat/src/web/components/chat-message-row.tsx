@@ -853,7 +853,7 @@ function QuoteBlock({
   );
   // Chat-Var-Quote: a 3 px bar, 2 8 padding and a 12.5 px text at 0.9 opacity on the bubble's own colours.
   const shell = cn(
-    "mb-1.5 block min-w-0 max-w-full border-s-[3px] px-2 py-0.5 text-start text-[12.5px] leading-[1.45] whitespace-normal opacity-90",
+    "mb-1.5 block min-w-0 max-w-full border-s-[3px] px-2 py-0.5 text-start text-(length:--type-scale-12p5) leading-[1.45] whitespace-normal opacity-90",
     isOwn ? "border-primary-foreground/70" : "border-primary",
   );
   return onOpen ? (
