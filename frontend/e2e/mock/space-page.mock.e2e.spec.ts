@@ -209,6 +209,48 @@ test.describe("Department page (owner)", () => {
     await expect(move).toBeFocused();
   });
 
+  for (const theme of ["light", "dark"] as const) {
+    for (const width of [1440, 1024, 390]) {
+      test(`the Move picker is axe clean, never offers the Space's own subtree and does not scroll sideways at ${width}px, ${theme}`, async ({
+        page,
+      }) => {
+        await page.addInitScript((mode) => {
+          try {
+            window.localStorage.setItem("notrelix-theme-mode", mode);
+          } catch {
+            // Private mode: the default theme applies.
+          }
+        }, theme);
+        await page.setViewportSize({
+          width,
+          height: width === 390 ? 844 : 900,
+        });
+        await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
+        await page.getByRole("button", { name: "Chuyển", exact: true }).click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible();
+        // Its own subtree (Platform) is listed but disabled, with the reason.
+        await expect(
+          dialog.getByRole("radio", { name: /^Platform/ }),
+        ).toBeDisabled();
+        await expect(
+          dialog.getByText("Không thể chuyển vào chính nó").first(),
+        ).toBeVisible();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        ).toBe(true);
+        expect(serious(await new AxeBuilder({ page }).analyze())).toEqual([]);
+        if (process.env.MOVE_SHOTS_DIR) {
+          await page.screenshot({
+            path: `${process.env.MOVE_SHOTS_DIR}/move-${width}-${theme}.png`,
+          });
+        }
+      });
+    }
+  }
+
   test("Archive is blocked while the department has content, with the reason", async ({
     page,
   }) => {

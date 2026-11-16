@@ -143,6 +143,50 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Move_RefusesMembersAndOutsiders_ParentsThatAreArchivedOrDeleted_AndStaleNeighbours_ChangingNothing()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var it = await CreateAsync(owner, stack, "IT");
+        var archived = await CreateAsync(owner, stack, "Archived");
+        var gone = await CreateAsync(owner, stack, "Gone");
+        var a = await CreateAsync(owner, stack, "A", it);
+        var b = await CreateAsync(owner, stack, "B", it);
+        await OrgTreeTestHost.SendAsync(owner, new ArchiveSpaceCommand(stack.WorkspaceId, archived, await VersionAsync(archived)));
+        await OrgTreeTestHost.SendAsync(owner, new DeleteSpaceCommand(stack.WorkspaceId, gone, await VersionAsync(gone)));
+        var version = await VersionAsync(it);
+
+        var memberId = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        using var member = _host.CreateProvider(stack.AccountId, memberId);
+        var byMember = () => OrgTreeTestHost.SendAsync(member, new MoveSpaceCommand(stack.WorkspaceId, it, null, null, null, version));
+        await byMember.Should().ThrowAsync<AppForbidden>();
+
+        var other = await _host.SeedWorkspaceAsync();
+        using var outsider = _host.CreateProvider(other.AccountId, other.OwnerId);
+        var byOutsider = () => OrgTreeTestHost.SendAsync(outsider, new MoveSpaceCommand(stack.WorkspaceId, it, null, null, null, version));
+        await byOutsider.Should().ThrowAsync<AppNotFound>();
+
+        var underArchived = () => OrgTreeTestHost.SendAsync(owner, new MoveSpaceCommand(stack.WorkspaceId, it, archived, null, null, version));
+        (await underArchived.Should().ThrowAsync<DomainBusinessRuleException>()).Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Space_ParentNotActive);
+
+        var underDeleted = () => OrgTreeTestHost.SendAsync(owner, new MoveSpaceCommand(stack.WorkspaceId, it, gone, null, null, version));
+        await underDeleted.Should().ThrowAsync<AppNotFound>();
+
+        var bVersion = await VersionAsync(b);
+        var staleNeighbour = () => OrgTreeTestHost.SendAsync(owner, new MoveSpaceCommand(stack.WorkspaceId, b, it, b, a, bVersion));
+        await staleNeighbour.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ConflictException>();
+
+        (await SpaceAsync(it)).ParentSpaceId.Should().BeNull();
+        (await SpaceAsync(it)).Version.Should().Be(version);
+        (await SpaceAsync(b)).Version.Should().Be(bVersion);
+
+        // Reorder: A goes after B under the same parent.
+        await OrgTreeTestHost.SendAsync(owner, new MoveSpaceCommand(stack.WorkspaceId, a, it, b, null, await VersionAsync(a)));
+        var tree = await OrgTreeTestHost.QueryAsync(owner, new GetSpaceTreeQuery(stack.WorkspaceId));
+        tree.Items.Where(n => n.ParentSpaceId == it).OrderBy(n => n.Position, StringComparer.Ordinal).Select(n => n.Id).Should().Equal(b, a);
+    }
+
+    [Fact]
     public async Task ChangingTheType_KeepsVisibility_IsANoOpForTheSameType_AndRefusesMembersAndOutsiders()
     {
         var stack = await _host.SeedWorkspaceAsync();

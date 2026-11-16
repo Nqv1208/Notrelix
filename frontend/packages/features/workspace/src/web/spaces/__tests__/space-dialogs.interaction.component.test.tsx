@@ -230,6 +230,19 @@ describe("MoveToSpaceDialog", () => {
     expect(props.onSubmit).toHaveBeenCalledWith(null);
   });
 
+  it("FUI[workspace.move-to-space:space-conflict] a refused Space move keeps the dialog open with the message and lets the member retry; pending holds the submit", () => {
+    const props = renderMove(moveSpaceScenario(), {
+      error: copy.toasts.conflict,
+    });
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(copy.toasts.conflict)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("radio", { name: /^Security/ }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: copy.move.submit }),
+    );
+    expect(props.onSubmit).toHaveBeenCalledWith("sp-it-security");
+  });
+
   it("FUI[workspace.move-to-space:pending] holds the submit while the move is on its way", () => {
     renderMove(moveBoardScenario(), { pending: true });
     const dialog = screen.getByRole("dialog");
