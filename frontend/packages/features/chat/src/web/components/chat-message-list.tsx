@@ -57,6 +57,7 @@ import {
 import { ChatTypingBubble } from "./chat-typing-indicator";
 import { useChatHighlight } from "./chat-highlight-context";
 import { animateScrollTo, prefersReducedMotion } from "./animate-scroll";
+import { FALLBACK_COLUMN_PX, estimateRowHeight } from "./chat-row-estimate";
 import { guardResizeObserverLoop } from "./resize-observer-loop-guard";
 
 /** Within this many pixels of the bottom the list counts as at the bottom. */
@@ -517,6 +518,30 @@ export function ChatMessageList(props: ChatMessageListProps) {
     range: { startIndex: 0, endIndex: 0 },
   });
   const cancelGlide = useRef<() => void>(() => undefined);
+
+  // Every row has a height before it is drawn: the one measured the last time (kept by row key), else an estimate from
+  // its kind and text. The library takes the estimates for a list it has not measured yet, so a wheel turn through rows
+  // above the reader meets sizes that are nearly right, not one flat guess.
+  const measuredHeights = useRef(new Map<string, number>());
+  const columnPx = wrapRef.current?.offsetWidth || FALLBACK_COLUMN_PX;
+  const heightEstimates = useMemo(
+    () =>
+      entries.map(
+        (entry) =>
+          measuredHeights.current.get(entry.key) ??
+          estimateRowHeight(entry, columnPx),
+      ),
+    [entries, columnPx],
+  );
+  function rememberHeights() {
+    const el = scrollRef.current;
+    if (!el) return;
+    for (const li of el.querySelectorAll<HTMLElement>("li[data-known-size]")) {
+      const entry = entries[Number(li.dataset.itemIndex) - firstItemIndex];
+      const size = Number(li.dataset.knownSize);
+      if (entry && size > 0) measuredHeights.current.set(entry.key, size);
+    }
+  }
 
   // Without a layout (a hidden panel, a test DOM) every row renders in normal flow.
   // A browser starts in the virtual list (the room around it has its height from the first frame); a test DOM starts plain.
@@ -1009,15 +1034,16 @@ export function ChatMessageList(props: ChatMessageListProps) {
               alignToBottom
               atBottomThreshold={BOTTOM_SLACK_PX}
               increaseViewportBy={VIEWPORT_EXTRA_PX}
-              defaultItemHeight={60}
               // A row measured taller or shorter than the estimate is corrected in the same frame it is painted, not one
               // frame later (a frame of the old offset is a visible jump of the rows below it).
               skipAnimationFrameInResizeObserver
               // New rows are followed by the effect above (only when the reader is at the end right now).
               followOutput={false}
               atBottomStateChange={handleAtBottom}
+              heightEstimates={heightEstimates}
               rangeChanged={(range) => {
                 memo.current.range = range;
+                rememberHeights();
               }}
               startReached={() => {
                 if (props.hasOlder && !props.isLoadingOlder)
