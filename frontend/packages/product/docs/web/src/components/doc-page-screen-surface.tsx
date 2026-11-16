@@ -90,7 +90,7 @@ export interface DocVersionsState {
 }
 
 export interface DocPageScreenSurfaceProps {
-  readonly status?: "ready" | "loading" | "notFound";
+  readonly status?: "ready" | "loading" | "notFound" | "loadFailed";
   readonly copy: DocPageCopy;
   readonly header: DocHeaderView;
   readonly saveState: DocSaveState;
@@ -191,6 +191,22 @@ export function DocPageScreenSurface(props: DocPageScreenSurfaceProps) {
         <Skeleton className="h-6 w-2/3" />
         <Skeleton className="h-6 w-1/2" />
         <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
+
+  if (status === "loadFailed") {
+    return (
+      <div className="grid h-full min-h-0 flex-1 place-items-center bg-doc-page p-8">
+        <NotFoundState
+          title={copy.loadFailedTitle}
+          description={copy.loadFailed}
+          action={
+            <Button variant="outline" onClick={props.callbacks?.onRetryLoad}>
+              {copy.loadRetry}
+            </Button>
+          }
+        />
       </div>
     );
   }
