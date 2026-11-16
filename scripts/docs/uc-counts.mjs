@@ -35,7 +35,8 @@ export function parseRows(text) {
   const rows = [];
   let stateAt = -1;
   for (const line of text.split("\n")) {
-    if (!line.startsWith("|")) { stateAt = -1; continue; } // a table ends at its first non-table line
+    // The header applies until the next header or heading: a blank line can split one catalog table in two.
+    if (!line.startsWith("|")) { if (line.startsWith("#")) stateAt = -1; continue; }
     const c = cells(line);
     if (c[0] === "ID" || c[0] === "UC ID") stateAt = c.indexOf("State");
     else if (c[0].startsWith("UC-") && stateAt >= 0) {
@@ -75,6 +76,11 @@ function selfTest() {
   const wide = "| UC-WM-C01 | t | C | Editor | yes | yes | complete | none | HARDENING | Notes: a | b | Evidence |";
   const rows = parseRows(["| ID | Defect |", "| UC-X-1 | no state header |", hdr, normal, wide].join("\n"));
   assert.deepEqual(rows, [{ id: "UC-ACC-A01", state: "DONE" }, { id: "UC-WM-C01", state: "HARDENING" }]);
+  // The same table compact, prettier-padded, and split by a blank line must count alike.
+  const padded = [hdr.replace(/ \| /g, "     | "), "| ---------- | ---- |", normal.replace(/ \| /g, "   | "), "", wide].join("\n");
+  assert.deepEqual(parseRows(padded), rows);
+  assert.deepEqual(parseRows([hdr, normal, "", wide].join("\n")), rows);
+  assert.deepEqual(parseRows([hdr, normal, "## Retired", "| ID | Defect |", "| UC-X-1 | x |"].join("\n")), [rows[0]]);
   const files = Object.fromEntries(CONTEXTS.map(([, f]) => [f, []]));
   files["accounts.md"] = [rows[0], rows[0]];
   const notes = [];
