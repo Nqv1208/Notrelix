@@ -11,6 +11,7 @@ import { useMatches, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { createUsePageList } from "@notrelix/docs-state";
+import { runSessionReset } from "@notrelix/query";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
 import { createChatHooks } from "@notrelix/features-chat/web";
 import { InboxBell } from "@notrelix/features-notifications";
@@ -117,6 +118,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         navigate: (options) =>
           navigate({ to: options.to, replace: options.replace }),
         getSearchParams: () => new URLSearchParams(window.location.search),
+        onSignedOut: runSessionReset,
       }),
     };
   }, [runtimeClient, featureDeps, navigate]);
