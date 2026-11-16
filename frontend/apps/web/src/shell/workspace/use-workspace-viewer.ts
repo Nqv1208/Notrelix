@@ -51,7 +51,10 @@ export function useWorkspaceViewer(workspaceId: string) {
       ),
     enabled: role !== null,
     retry: false,
+    // Backup only: fresh for the poll period, so a focus refetches only stale data, never while hidden.
+    staleTime: 60_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
   const removed = useMemo(

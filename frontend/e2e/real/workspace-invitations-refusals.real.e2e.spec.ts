@@ -37,7 +37,9 @@ async function pendingOf(page: Page): Promise<readonly Pending[]> {
 }
 
 async function openInvites(page: Page) {
-  await page.goto("/");
+  // "/" now opens Home, which has no shell rail: the rail and its invitations entry live in a workspace.
+  const [own] = await apiRead<readonly { id: string }[]>(page, "/workspaces");
+  await page.goto(`/workspaces/${own!.id}`);
   await page
     .getByRole("button", { name: /open the Notrelix system rail/ })
     .click();
