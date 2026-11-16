@@ -339,7 +339,7 @@ export function ChatWorkspace({
   const timeline = useChannelTimeline({
     hooks,
     workspaceId: ws,
-      channelId,
+    channelId,
     linkedSequence,
     unreadSettled: unread.isFetched || unread.isError,
     firstUnreadSequence: unreadRow?.firstUnreadSequence ?? null,
