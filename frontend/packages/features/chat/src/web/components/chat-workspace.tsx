@@ -1,5 +1,12 @@
 import { toast } from "sonner";
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -26,7 +33,6 @@ import {
   Pin,
   Plus,
   WifiOff,
-  X,
 } from "lucide-react";
 import {
   chatFailureOf,
@@ -70,6 +76,7 @@ import { PinnedBar, PinsPanel } from "./chat-pins";
 import { PinLimitBanner, UnpinDialog } from "./chat-pin-ui";
 import { FollowedThreadsPanel } from "./chat-followed-threads";
 import { MentionsPanel } from "./chat-mentions-panel";
+import { ChatPanelTabs, panelTabId } from "./chat-panel-tabs";
 import { ChatMentionProvider } from "./chat-mention-context";
 import type { QuoteView } from "./chat-message-row";
 import {
@@ -517,6 +524,7 @@ export function ChatWorkspace({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [panel, setPanel] = useState<SidePanel | null>(null);
+  const sidePanelId = useId();
   const requestedFor = useRef<string | null>(null);
   const nonce = useRef(0);
 
@@ -1985,218 +1993,156 @@ export function ChatWorkspace({
                 aria-label={copy.panel.label}
                 data-testid="chat-side-panel"
               >
+                <ChatPanelTabs
+                  active={panel.kind}
+                  details={
+                    conversation
+                      ? conversation.kind === "group"
+                        ? "group"
+                        : "direct"
+                      : null
+                  }
+                  mentionBadge={
+                    (unread.data?.totalMentions ?? 0) > 0
+                      ? unreadBadge(unread.data?.totalMentions ?? 0)
+                      : null
+                  }
+                  panelId={sidePanelId}
+                  // The thread, the pins and the followed list draw their own header and close control at every width.
+                  hidden={
+                    panel.kind === "thread" ||
+                    panel.kind === "pins" ||
+                    panel.kind === "following"
+                  }
+                  copy={copy}
+                  onSelect={(kind) => setPanel({ kind })}
+                  onClose={() => setPanel(null)}
+                />
                 <div
-                  role="tablist"
-                  aria-label={copy.panel.label}
-                  className={cn(
-                    "flex items-center gap-1 border-b border-border px-2 py-1",
-                    // The thread and the pins draw their own header and close control at every width (Chat-Thread-*, Chat-Pins-*).
-                    (panel.kind === "thread" ||
-                      panel.kind === "pins" ||
-                      panel.kind === "following") &&
-                      "hidden",
-                  )}
+                  role="tabpanel"
+                  id={sidePanelId}
+                  aria-labelledby={
+                    panel.kind === "thread"
+                      ? undefined
+                      : panelTabId(sidePanelId, panel.kind)
+                  }
+                  aria-label={
+                    panel.kind === "thread" ? copy.panel.label : undefined
+                  }
+                  className="contents"
                 >
-                  {conversation ? (
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={panel.kind === "details"}
-                      onClick={() => setPanel({ kind: "details" })}
-                      className={cn(
-                        "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                        panel.kind === "details"
-                          ? "bg-muted"
-                          : "text-muted-foreground hover:bg-muted",
-                      )}
-                    >
-                      {conversation.kind === "group"
-                        ? copy.dm.details.groupTitle
-                        : copy.dm.details.dmTitle}
-                    </button>
+                  {panel.kind === "details" && conversation ? (
+                    <ChatConversationDetails
+                      conversation={conversation}
+                      viewerId={viewerId}
+                      nameOf={nameOf}
+                      copy={copy}
+                      locale={locale}
+                      blocked={counterpartBlocked}
+                      presenceOf={ephemeral ? presenceOf : undefined}
+                      busy={visibility.isPending || leaver.isPending}
+                      onBlock={() =>
+                        counterpartId &&
+                        setBlockTarget({ userId: counterpartId, blocked: true })
+                      }
+                      onUnblock={() =>
+                        counterpartId &&
+                        setBlockTarget({
+                          userId: counterpartId,
+                          blocked: false,
+                        })
+                      }
+                      onAddPeople={() => {
+                        setAddPeopleError(null);
+                        setAddPeopleOpen(true);
+                      }}
+                      onLeave={() => setLeaveOpen(true)}
+                      onHide={() => handleVisibility(true)}
+                    />
                   ) : null}
                   {panel.kind === "thread" ? (
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected
-                      className="rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium"
-                    >
-                      {copy.thread.title}
-                    </button>
+                    <ChatThreadPanel
+                      key={panel.rootId}
+                      hooks={hooks}
+                      workspaceId={ws}
+                      rootId={panel.rootId}
+                      viewerId={viewerId}
+                      authorName={authorName}
+                      copy={copy}
+                      locale={locale}
+                      timeZone={timeZone}
+                      pinnedIds={pinnedIds}
+                      spaceLabel={panelSpaceLabel}
+                      mentionBase={{
+                        selfId: viewerId,
+                        people,
+                        channels: mentionChannels,
+                      }}
+                      onClose={() => setPanel(null)}
+                      onReact={grants.react ? handleReact : undefined}
+                      onTogglePin={grants.pin ? handleTogglePin : undefined}
+                      attachmentsReadOnly={channel?.isArchived === true}
+                    />
                   ) : null}
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={panel.kind === "pins"}
-                    onClick={() => setPanel({ kind: "pins" })}
-                    className={cn(
-                      "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                      panel.kind === "pins"
-                        ? "bg-muted"
-                        : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    {copy.pins.tab}
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={panel.kind === "following"}
-                    onClick={() => setPanel({ kind: "following" })}
-                    className={cn(
-                      "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                      panel.kind === "following"
-                        ? "bg-muted"
-                        : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    {copy.thread.followedTab}
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={panel.kind === "mentions"}
-                    onClick={() => setPanel({ kind: "mentions" })}
-                    className={cn(
-                      "rounded-md px-2.5 py-1.5 text-sm font-medium",
-                      panel.kind === "mentions"
-                        ? "bg-muted"
-                        : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    {copy.mentions.tab}
-                    {(unread.data?.totalMentions ?? 0) > 0 ? (
-                      <span
-                        aria-hidden="true"
-                        className="ms-1.5 rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground tabular-nums"
-                      >
-                        {unreadBadge(unread.data?.totalMentions ?? 0)}
-                      </span>
-                    ) : null}
-                  </button>
-                  {panel.kind === "thread" || panel.kind === "pins" ? null : (
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      className="ms-auto"
-                      aria-label={copy.pins.close}
-                      title={copy.pins.close}
-                      onClick={() => setPanel(null)}
-                    >
-                      <X aria-hidden="true" />
-                    </Button>
-                  )}
+                  {panel.kind === "pins" ? (
+                    <PinsPanel
+                      hooks={hooks}
+                      workspaceId={ws}
+                      channelId={ch}
+                      copy={copy}
+                      locale={locale}
+                      timeZone={timeZone}
+                      authorName={authorName}
+                      spaceLabel={panelSpaceLabel}
+                      onClose={() => setPanel(null)}
+                      canUnpin={() => true}
+                      unpinBusy={pinner.isPending}
+                      onUnpin={(message) => handleTogglePin(message, false)}
+                      onOpenMessage={handleOpenPinned}
+                    />
+                  ) : null}
+                  {panel.kind === "mentions" ? (
+                    <MentionsPanel
+                      rows={unread.data?.spaces ?? []}
+                      copy={copy}
+                      nameOf={(row) =>
+                        conversationsQuery.data?.some(
+                          (entry) => entry.id === row.spaceId,
+                        )
+                          ? conversationTitle(
+                              conversationsQuery.data.find(
+                                (entry) => entry.id === row.spaceId,
+                              )!,
+                              viewerId,
+                              nameOf,
+                            )
+                          : channelNameOf(row.spaceId) || row.name
+                      }
+                      onOpen={(spaceId) => {
+                        const isConversation = conversationsQuery.data?.some(
+                          (entry) => entry.id === spaceId,
+                        );
+                        if (isConversation) onOpenConversation?.(spaceId);
+                        else onOpenChannel(spaceId);
+                      }}
+                    />
+                  ) : null}
+                  {panel.kind === "following" ? (
+                    <FollowedThreadsPanel
+                      hooks={hooks}
+                      workspaceId={ws}
+                      copy={copy}
+                      authorName={authorName}
+                      channelName={channelNameOf}
+                      locale={locale}
+                      timeZone={timeZone}
+                      onClose={() => setPanel(null)}
+                      onOpenThread={(rootId) =>
+                        setPanel({ kind: "thread", rootId })
+                      }
+                    />
+                  ) : null}
                 </div>
-                {panel.kind === "details" && conversation ? (
-                  <ChatConversationDetails
-                    conversation={conversation}
-                    viewerId={viewerId}
-                    nameOf={nameOf}
-                    copy={copy}
-                    locale={locale}
-                    blocked={counterpartBlocked}
-                    presenceOf={ephemeral ? presenceOf : undefined}
-                    busy={visibility.isPending || leaver.isPending}
-                    onBlock={() =>
-                      counterpartId &&
-                      setBlockTarget({ userId: counterpartId, blocked: true })
-                    }
-                    onUnblock={() =>
-                      counterpartId &&
-                      setBlockTarget({ userId: counterpartId, blocked: false })
-                    }
-                    onAddPeople={() => {
-                      setAddPeopleError(null);
-                      setAddPeopleOpen(true);
-                    }}
-                    onLeave={() => setLeaveOpen(true)}
-                    onHide={() => handleVisibility(true)}
-                  />
-                ) : null}
-                {panel.kind === "thread" ? (
-                  <ChatThreadPanel
-                    key={panel.rootId}
-                    hooks={hooks}
-                    workspaceId={ws}
-                    rootId={panel.rootId}
-                    viewerId={viewerId}
-                    authorName={authorName}
-                    copy={copy}
-                    locale={locale}
-                    timeZone={timeZone}
-                    pinnedIds={pinnedIds}
-                    spaceLabel={panelSpaceLabel}
-                    mentionBase={{
-                      selfId: viewerId,
-                      people,
-                      channels: mentionChannels,
-                    }}
-                    onClose={() => setPanel(null)}
-                    onReact={grants.react ? handleReact : undefined}
-                    onTogglePin={grants.pin ? handleTogglePin : undefined}
-                    attachmentsReadOnly={channel?.isArchived === true}
-                  />
-                ) : null}
-                {panel.kind === "pins" ? (
-                  <PinsPanel
-                    hooks={hooks}
-                    workspaceId={ws}
-                    channelId={ch}
-                    copy={copy}
-                    locale={locale}
-                    timeZone={timeZone}
-                    authorName={authorName}
-                    spaceLabel={panelSpaceLabel}
-                    onClose={() => setPanel(null)}
-                    canUnpin={() => true}
-                    unpinBusy={pinner.isPending}
-                    onUnpin={(message) => handleTogglePin(message, false)}
-                    onOpenMessage={handleOpenPinned}
-                  />
-                ) : null}
-                {panel.kind === "mentions" ? (
-                  <MentionsPanel
-                    rows={unread.data?.spaces ?? []}
-                    copy={copy}
-                    nameOf={(row) =>
-                      conversationsQuery.data?.some(
-                        (entry) => entry.id === row.spaceId,
-                      )
-                        ? conversationTitle(
-                            conversationsQuery.data.find(
-                              (entry) => entry.id === row.spaceId,
-                            )!,
-                            viewerId,
-                            nameOf,
-                          )
-                        : channelNameOf(row.spaceId) || row.name
-                    }
-                    onOpen={(spaceId) => {
-                      const isConversation = conversationsQuery.data?.some(
-                        (entry) => entry.id === spaceId,
-                      );
-                      if (isConversation) onOpenConversation?.(spaceId);
-                      else onOpenChannel(spaceId);
-                    }}
-                  />
-                ) : null}
-                {panel.kind === "following" ? (
-                  <FollowedThreadsPanel
-                    hooks={hooks}
-                    workspaceId={ws}
-                    copy={copy}
-                    authorName={authorName}
-                    channelName={channelNameOf}
-                    locale={locale}
-                    timeZone={timeZone}
-                    onClose={() => setPanel(null)}
-                    onOpenThread={(rootId) =>
-                      setPanel({ kind: "thread", rootId })
-                    }
-                  />
-                ) : null}
               </aside>
             ) : null}
 
