@@ -40,6 +40,9 @@ public class Message : AggregateRoot, IWorkspaceScoped
     /// <summary>A thread reply the author also sent to the channel's main flow ("also send to channel"). Always false outside a thread.</summary>
     public bool AlsoSentToChannel { get; private set; }
 
+    /// <summary>The call a call system message reports; null for every other message. One message per (space, call) (SPEC-CHAT-MEDIA-CALLS invariant 6).</summary>
+    public Guid? CallId { get; private set; }
+
     public DateTimeOffset? EditedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
@@ -113,6 +116,26 @@ public class Message : AggregateRoot, IWorkspaceScoped
         string content,
         DateTimeOffset createdAt)
         => Create(accountId, workspaceId, spaceId, sequence, actorId, MessageKind.System, content, createdAt);
+
+    /// <summary>
+    /// The system message a call writes when it ends (SPEC-CHAT-MEDIA-CALLS invariant 6), attributed to the person whose change ended it.
+    /// It is a system message today (clients render it as one); a unique index on (space, call) keeps a retry from writing two.
+    /// </summary>
+    public static Message CreateCallMessage(
+        Guid accountId,
+        Guid workspaceId,
+        Guid spaceId,
+        long sequence,
+        Guid actorId,
+        Guid callId,
+        string content,
+        DateTimeOffset createdAt)
+    {
+        Guard.NotEmpty(callId);
+        var message = CreateSystemMessage(accountId, workspaceId, spaceId, sequence, actorId, content, createdAt);
+        message.CallId = callId;
+        return message;
+    }
 
     private static Message Create(
         Guid accountId,

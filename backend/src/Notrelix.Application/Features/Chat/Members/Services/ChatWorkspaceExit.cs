@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Calls.Services;
 
 namespace Notrelix.Application.Features.Chat.Members.Services;
 
@@ -10,7 +11,7 @@ namespace Notrelix.Application.Features.Chat.Members.Services;
 /// Idempotent: a membership that already ended is not changed and gets no signal. Each space whose membership ended gets one
 /// access-changed signal, so the realtime gateway closes that person's live subscription to it.
 /// </summary>
-public sealed class ChatWorkspaceExit(IChatDbContext db, IAccessChangeSignal access)
+public sealed class ChatWorkspaceExit(IChatDbContext db, IAccessChangeSignal access, ChatCallRevocation? calls = null)
 {
     /// <returns>The number of space memberships that ended.</returns>
     public async Task<int> EndMembershipsAsync(Guid workspaceId, Guid userId, DateTimeOffset leftAt, CancellationToken cancellationToken)
@@ -28,6 +29,13 @@ public sealed class ChatWorkspaceExit(IChatDbContext db, IAccessChangeSignal acc
             access.ChannelPerson(workspaceId, membership.SpaceId, userId);
             touchedSpaces.Add(membership.SpaceId);
             ended++;
+        }
+
+        foreach (var spaceId in touchedSpaces)
+        {
+            // A live call of the space loses the person with their access (instant revocation).
+            if (calls is not null)
+                await calls.ReleaseAsync(workspaceId, spaceId, userId, leftAt, cancellationToken);
         }
 
         foreach (var spaceId in touchedSpaces)

@@ -2,7 +2,7 @@
   "asyncapi": "2.6.0",
   "info": {
     "title": "Notrelix Realtime Protocol Specification",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "description": "Realtime gateway protocol, schema version 1 (protocol v1.1). Event frames are notify-only, except the chat channel stream (payloadContract chat.message.v1) and the per-user stream (payloadContract chat.unread.v1), which carry a compact payload. The chat channel stream also carries chat.space.changed (payloadContract chat.space.v1: the change and the message id), a small pin frame that readers apply or answer by refetching the pins. The chat channel stream also carries chat.reaction.changed (payloadContract chat.reaction.v1: the message, the palette kind, the change added or removed and the person; no counts), a compact frame that readers apply or answer by refetching the message reactions. The chat channel stream also carries chat.message.attachment.changed (payloadContract chat.attachment.v1: the message, the change added or removed, the file id and, for an added file, its metadata and authorized download route; never bytes), a compact frame that readers apply by file id or answer by refetching the message files (detailsOmitted true). A null field of a chat payload is left out of the frame (a reader treats an absent field as null), and a chat message payload is at most 1300 bytes so the whole event frame stays under 2048 bytes; a longer text is dropped (contentOmitted true) and the reader fetches the message by sequence. A payload that does not fit the 4096-byte frame limit is dropped and the frame carries payloadOmitted true; the client refetches over REST. Two ephemeral frames travel on the channel scope and are never stored: the client frames typing (at most one per 3 seconds per subscription; the gateway drops faster ones and ignores a subscription it does not hold or a space it no longer authorizes) and presence (state online, idle or offline, a heartbeat about every 30 seconds), and the server frames typing (expiresInMs 5000) and presence (ttlMs; a state with no heartbeat for that long counts as offline) sent to the other subscribers of the space, never to the sender. They count in the 4096-byte and 20-frames-per-second limits, carry no resource data and never grant access. Board frames stay hand-written in the client and are not produced by the gateway contract yet."
   },
   "channels": {
@@ -30,6 +30,7 @@
             { "$ref": "#/components/messages/ChatMessageDeleted" },
             { "$ref": "#/components/messages/ChatSpaceChanged" },
             { "$ref": "#/components/messages/ChatReactionChanged" },
+            { "$ref": "#/components/messages/ChatCallChanged" },
             { "$ref": "#/components/messages/ChatMessageAttachmentChanged" }
           ]
         }
@@ -182,6 +183,26 @@
             "actorId": { "type": "string", "format": "uuid" }
           },
           "required": ["messageId", "kind", "change", "actorId"]
+        }
+      },
+      "ChatCallChanged": {
+        "name": "chat.call.changed",
+        "title": "A call of the channel changed (ringing, active, someone joined or left, media state, ended). The same payload reaches the per-person user stream of each invited person while a conversation call rings. No join token and no room name.",
+        "x-payloadContract": "chat.call.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "callId": { "type": "string", "format": "uuid" },
+            "spaceId": { "type": "string", "format": "uuid" },
+            "state": { "type": "string" },
+            "kind": { "type": "string" },
+            "initiatorId": { "type": "string", "format": "uuid" },
+            "endReason": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+            "participants": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+            "participantsOmitted": { "type": "boolean" },
+            "version": { "type": "integer", "format": "int64" }
+          },
+          "required": ["callId", "spaceId", "state", "kind", "initiatorId", "participants", "participantsOmitted", "version"]
         }
       },
       "ChatMessageAttachmentChanged": {

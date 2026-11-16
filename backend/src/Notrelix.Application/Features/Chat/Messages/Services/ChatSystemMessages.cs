@@ -50,4 +50,15 @@ public sealed class ChatSystemMessages(
         db.ChatMessages.Add(message);
         return sequence;
     }
+
+    /// <summary>
+    /// Stores the one system message a call writes when it ends (SPEC-CHAT-MEDIA-CALLS invariant 6). The unique index on (space, call)
+    /// refuses a second one, so a retry cannot write two.
+    /// </summary>
+    public async Task AnnounceCallAsync(Space space, Guid actorId, Guid callId, string content, CancellationToken cancellationToken)
+    {
+        var sequence = await sequences.NextAsync(space.Id, cancellationToken);
+        db.ChatMessages.Add(Message.CreateCallMessage(
+            space.AccountId, space.WorkspaceId, space.Id, sequence, actorId, callId, content, clock.UtcNow));
+    }
 }

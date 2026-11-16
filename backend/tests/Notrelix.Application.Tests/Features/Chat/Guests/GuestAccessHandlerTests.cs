@@ -377,6 +377,7 @@ public class GuestAccessHandlerTests
     [InlineData(PermissionAction.ChatMessageModerate)]
     [InlineData(PermissionAction.ChatMentionBroadcast)]
     [InlineData(PermissionAction.ChatMessagePin)]
+    [InlineData(PermissionAction.ChatCallStart)]
     public void A_guest_holds_none_of_the_management_actions(PermissionAction action)
     {
         WorkspaceRoleBaseline.Decide("Guest", action).Should().Be(BaselineDecision.Deny);

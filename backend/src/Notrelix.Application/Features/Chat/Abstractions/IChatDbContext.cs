@@ -20,4 +20,6 @@ public interface IChatDbContext
     DbSet<Notrelix.Domain.Chat.Permissions.ChannelPermissionOverride> ChatPermissionOverrides { get; }
     DbSet<Notrelix.Domain.Chat.Retention.RetentionPolicy> ChatRetentionPolicies { get; }
     DbSet<Notrelix.Domain.Chat.Exports.ChatExportJob> ChatExportJobs { get; }
+    DbSet<Notrelix.Domain.Chat.Calls.Call> ChatCalls { get; }
+    DbSet<Notrelix.Domain.Chat.Calls.CallParticipant> ChatCallParticipants { get; }
 }

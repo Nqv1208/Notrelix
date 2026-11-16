@@ -125,6 +125,13 @@ public static class BackgroundJobsRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Retention.Services.ChatRetentionApplier>();
         services.AddScoped<ChatRetentionRunner>();
         AddWorker<ChatRetentionService>();
+        // Chat calls: end calls that rang out or stayed empty (Chat.Calls.Sweep).
+        services.AddOptions<ChatCallSweepOptions>()
+            .Bind(configuration.GetSection(ChatCallSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ChatCallSweepOptions>, ChatCallSweepOptionsValidator>();
+        services.AddScoped<ChatCallSweepRunner>();
+        AddWorker<ChatCallSweepService>();
         services.AddScoped<Notrelix.Application.Features.Chat.Exports.ChatExportBuilder>();
         services.AddScoped<ChatExportRunner>();
         AddWorker<ChatExportService>();
