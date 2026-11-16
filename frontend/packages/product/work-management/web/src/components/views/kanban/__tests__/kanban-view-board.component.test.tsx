@@ -34,6 +34,7 @@ import { kanbanCardCatalog } from "../kanban-card.catalog";
 import { kanbanLaneCatalog } from "../kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
+import { unsentDescriptionOf } from "../../../card-popup/sections/description-section";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
 import { ARCHIVE_UNDO_MS } from "../../table/use-archive-undo-window";
 
@@ -1082,5 +1083,54 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu ngày" }));
     await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("keeps an unsaved description for the card and shows it in the editor when the card is opened again", async () => {
+    renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-149") });
+    const name = "Viết tài liệu quy trình nhập hoá đơn đầu vào";
+    const dialog = await screen.findByRole("dialog", { name });
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Thêm mô tả…" }),
+    );
+    const box = await within(dialog).findByRole("textbox", {
+      name: "Mô tả, dạng Markdown",
+    });
+    fireEvent.change(box, { target: { value: "Bản nháp chưa lưu" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(
+      document.querySelector(`[data-card-id="${erpItemId("ERP-149")}"]`)!,
+    );
+    const again = await screen.findByRole("dialog", { name });
+    const restored = await within(again).findByRole("textbox", {
+      name: "Mô tả, dạng Markdown",
+    });
+    expect((restored as HTMLTextAreaElement).value).toBe("Bản nháp chưa lưu");
+  }, 20_000);
+
+  it("drops the kept description draft once it is saved", async () => {
+    const { cards } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-151"),
+    });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán",
+    });
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Thêm mô tả…" }),
+    );
+    fireEvent.change(
+      await within(dialog).findByRole("textbox", {
+        name: "Mô tả, dạng Markdown",
+      }),
+      { target: { value: "Đã lưu rồi" } },
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(
+        within(dialog).queryByRole("textbox", { name: "Mô tả, dạng Markdown" }),
+      ).toBeNull(),
+    );
+    expect(unsentDescriptionOf(erpItemId("ERP-151"))).toBe("");
   }, 20_000);
 });
