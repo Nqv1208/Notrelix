@@ -252,6 +252,89 @@ export function RenameChannelDialog({
   );
 }
 
+export interface DeleteChannelDialogProps {
+  readonly open: boolean;
+  readonly busy: boolean;
+  readonly channelName: string;
+  readonly error: string | null;
+  readonly copy: ChatCopy;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onConfirm: () => void;
+}
+
+/** Delete a channel (UC-CHT-A08): the manager types the channel name before the button works. */
+export function DeleteChannelDialog({
+  open,
+  busy,
+  channelName,
+  error,
+  copy,
+  onOpenChange,
+  onConfirm,
+}: DeleteChannelDialogProps) {
+  const [typed, setTyped] = useState("");
+  const matches = typed.trim() === channelName;
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!matches || busy) return;
+    onConfirm();
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setTyped("");
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{copy.membership.deleteTitle}</DialogTitle>
+            <DialogDescription>{copy.membership.deleteBody}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="chat-delete-name">
+              {copy.membership.deleteLabel}
+            </Label>
+            <Input
+              id="chat-delete-name"
+              value={typed}
+              placeholder={channelName}
+              autoComplete="off"
+              onChange={(event) => setTyped(event.target.value)}
+              autoFocus
+            />
+          </div>
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
+              {copy.membership.cancel}
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={!matches || busy}
+            >
+              {copy.membership.deleteConfirm}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export interface ConfirmDialogProps {
   readonly open: boolean;
   readonly title: string;

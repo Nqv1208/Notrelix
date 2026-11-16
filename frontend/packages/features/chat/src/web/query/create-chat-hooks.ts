@@ -924,6 +924,54 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  /**
+   * Leave the channel (the caller's own id) or remove another member (UC-CHT-A07). The channel, its messages and its
+   * mention offers of the person who loses access are dropped from this client when it is the caller.
+   */
+  function useRemoveMember(
+    workspaceId: string,
+    channelId: string,
+    viewerId: string,
+  ) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (userId: string) =>
+        service.removeMember(workspaceId, channelId, userId),
+      onSuccess: (_result, userId) => {
+        if (userId === viewerId) {
+          queryClient.removeQueries({
+            queryKey: chatQueryKeys.messages(workspaceId, channelId),
+          });
+        }
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.mentionables(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
+      },
+    });
+  }
+
+  /** Delete the channel (soft delete with a recovery window); the expected version travels with the call. */
+  function useDeleteChannel(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (expectedVersion: number) =>
+        service.deleteChannel(workspaceId, channelId, expectedVersion),
+      onSuccess: () => {
+        queryClient.removeQueries({
+          queryKey: chatQueryKeys.messages(workspaceId, channelId),
+        });
+        queryClient.removeQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
+      },
+    });
+  }
+
   // ─── Threads ───────────────────────────────────────────────────────────────
 
   /**
@@ -1473,6 +1521,8 @@ export function createChatHooks(deps: ChatHookDeps) {
     useArchiveChannel,
     useJoinChannel,
     useAddMembers,
+    useRemoveMember,
+    useDeleteChannel,
     useThreadReplies,
     useThreadCounts,
     useReplyInThread,
