@@ -103,7 +103,7 @@ public class PinHandlerTests
 
     private PinMessageCommandHandler PinHandler() =>
         new(_db.Object, _context.Object, _members.Object, _sequences.Object, new ChatSystemMessages(_db.Object, _sequences.Object, _clock.Object), _clock.Object, new InMemoryChatMessageAttachments());
-    private UnpinMessageCommandHandler UnpinHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object);
+    private UnpinMessageCommandHandler UnpinHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, new ChatSystemMessages(_db.Object, _sequences.Object, _clock.Object), _clock.Object);
     private ListPinsQueryHandler ListPinsHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private ListMessagesQueryHandler ListMessagesHandler() => new(_db.Object, _context.Object, _members.Object, new InMemoryChatMessageAttachments());
     private DeleteMessageCommandHandler DeleteHandler() => new(_db.Object, _context.Object, _members.Object, _sequences.Object, _clock.Object, new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore>());
@@ -254,6 +254,7 @@ public class PinHandlerTests
 
         result.Succeeded.Should().BeTrue();
         _pins.Should().BeEmpty();
+        SystemMessageCount(space).Should().Be(2, "the pin and the unpin are each announced");
     }
 
     [Fact]
@@ -266,6 +267,7 @@ public class PinHandlerTests
 
         result.Succeeded.Should().BeTrue();
         _pins.Should().BeEmpty();
+        SystemMessageCount(space).Should().Be(0, "a no-op announces nothing");
     }
 
     // ---- List pins (UC-CHT-F07) -----------------------------------------------------------------
