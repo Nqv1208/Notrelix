@@ -241,6 +241,12 @@ test.describe("Department page (owner)", () => {
             () => document.documentElement.scrollWidth <= window.innerWidth,
           ),
         ).toBe(true);
+        // The destination list never scrolls sideways either.
+        expect(
+          await dialog
+            .getByRole("radiogroup")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
         expect(serious(await new AxeBuilder({ page }).analyze())).toEqual([]);
         if (process.env.MOVE_SHOTS_DIR) {
           await page.screenshot({

@@ -555,7 +555,7 @@ function PickerOption({
       htmlFor={id}
       style={{ paddingInlineStart: `${level * INDENT + 8}px` }}
       className={cn(
-        "flex h-9 items-center gap-2 rounded-md pr-2 max-md:h-touch",
+        "flex h-9 min-w-0 items-center gap-2 rounded-md pr-2 max-md:h-touch",
         disabled
           ? "cursor-not-allowed text-muted-foreground"
           : "cursor-pointer hover:bg-state-hover",
@@ -579,7 +579,11 @@ function PickerOption({
         />
       ) : null}
       {disabledReason ? (
-        <Badge variant="outline" className="shrink-0 font-normal">
+        <Badge
+          variant="outline"
+          title={disabledReason}
+          className="min-w-0 max-w-[55%] max-md:max-w-[36%] justify-start truncate font-normal"
+        >
           {disabledReason}
         </Badge>
       ) : null}
