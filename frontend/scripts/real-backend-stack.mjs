@@ -159,6 +159,7 @@ export async function up() {
     "redis",
     "rabbitmq",
     "backend",
+    "mailpit",
   ]);
 }
 
@@ -170,6 +171,7 @@ export async function logs() {
     "redis",
     "rabbitmq",
     "backend",
+    "mailpit",
   ]);
 }
 

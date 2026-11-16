@@ -51,7 +51,7 @@ async function signInThroughThePage(
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
-const SIGNED_IN = /\/(workspaces\/[^/]+|onboarding)/;
+const SIGNED_IN = /\/(workspaces\/[^/]+|onboarding|home)/;
 
 test("a new person registers, sees the neutral step, confirms the email and signs in; registering the same address again changes nothing and says the same", async ({
   page,
