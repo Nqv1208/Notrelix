@@ -486,6 +486,9 @@ importers:
       '@notrelix/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint-config
+      '@notrelix/testing':
+        specifier: workspace:*
+        version: link:../../tooling/testing
       '@tanstack/react-router-devtools':
         specifier: 'catalog:'
         version: 1.167.0(@tanstack/react-router@1.170.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/router-core@1.171.15)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
