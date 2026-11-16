@@ -121,7 +121,21 @@ test("a message while the reader is scrolled up does not move the list; the jump
   await log.evaluate((el) => {
     el.scrollTop = Math.max(0, el.scrollTop - 400);
   });
-  const before = await log.evaluate((el) => el.scrollTop);
+  // The reader's place is the first message in view and where it sits (rows above may still be measured, which moves the
+  // scroll offset by a few pixels without moving what the reader sees).
+  const place = () =>
+    log.evaluate((el) => {
+      const top = el.getBoundingClientRect().top;
+      const row = Array.from(
+        el.querySelectorAll<HTMLElement>("[data-message-id]"),
+      ).find((r) => r.getBoundingClientRect().top >= top);
+      return {
+        id: row?.dataset.messageId ?? null,
+        offset: row ? row.getBoundingClientRect().top - top : 0,
+      };
+    });
+  await page.waitForTimeout(300);
+  const before = await place();
 
   const text = `Below ${Date.now()}`;
   await inject(page, GENERAL, text);
@@ -130,9 +144,9 @@ test("a message while the reader is scrolled up does not move the list; the jump
     page.getByRole("button", { name: /^(Jump to latest|Xem tin mới nhất)$/ }),
   ).toHaveAttribute("data-count", "1");
 
-  expect(await log.evaluate((el) => el.scrollTop)).toBeLessThanOrEqual(
-    before + 1,
-  );
+  const after = await place();
+  expect(after.id).toBe(before.id);
+  expect(Math.abs(after.offset - before.offset)).toBeLessThanOrEqual(1);
   const jump = page.getByRole("button", {
     name: /^(Jump to latest|Xem tin mới nhất)$/,
   });
