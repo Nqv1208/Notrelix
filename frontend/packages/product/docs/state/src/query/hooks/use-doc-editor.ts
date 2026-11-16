@@ -132,8 +132,13 @@ export function createUseDocEditor(
           throw new PageVersionConflict(current);
         }
       },
-      onSuccess: () => {
+      onSuccess: (updated) => {
         setFailed(false);
+        // The next rename quotes this version, not the one a refetch has yet to replace.
+        queryClient.setQueryData(
+          docsQueryKeys.detail(workspaceId, pageId),
+          updated,
+        );
         refreshPage();
       },
     });

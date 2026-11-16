@@ -252,8 +252,18 @@ export class DocBlockSaver {
    * Structure changes wait until nothing is pending. Answers whether
    * everything was merged.
    */
-  mergeStored(stored: readonly BlockDraft[]): boolean {
+  mergeStored(read: readonly BlockDraft[]): boolean {
     if (this.disposed) return true;
+    // A refetch that started before a save landed holds older blocks: keep ours.
+    const mine = new Map(this.snapshot.map((draft) => [draft.id, draft]));
+    const stored = read.map((draft) => {
+      const have = mine.get(draft.id);
+      return have?.version !== undefined &&
+        draft.version !== undefined &&
+        draft.version < have.version
+        ? have
+        : draft;
+    });
     const pendingIds = this.pendingIds();
     const document = this.latest ?? this.snapshot;
     const same =
