@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   surface: null as null | {
     onChangeRole: (userId: string, role: string) => void;
     onRemove: (userId: string) => void;
+    onAddMember: (input: { userId: string; role: string }) => void;
     pendingUserIds: ReadonlySet<string>;
   },
 }));
@@ -167,5 +168,36 @@ describe("Team page: writes on two members at once", () => {
     await flush();
     expect([...(h.surface?.pendingUserIds ?? [])]).toEqual([]);
     expect(h.toasts.filter((t) => t.startsWith("ok:"))).toHaveLength(2);
+  });
+
+  it("shows the failure toast and frees the row when a role change is refused", async () => {
+    mount(
+      async () => {
+        throw { status: 403, kind: "forbidden" };
+      },
+      async () => undefined,
+    );
+    await flush();
+    act(() => h.surface?.onChangeRole("u1", "Lead"));
+    await flush();
+    expect(h.toasts.filter((t) => t.startsWith("err:"))).toHaveLength(1);
+    expect(h.toasts.filter((t) => t.startsWith("ok:"))).toHaveLength(0);
+    expect([...(h.surface?.pendingUserIds ?? [])]).toEqual([]);
+  });
+
+  it("shows the failure toast when an add is refused", async () => {
+    mount(
+      async () => undefined,
+      async () => undefined,
+    );
+    (h.api as { post: ReturnType<typeof vi.fn> }).post.mockRejectedValue({
+      status: 409,
+      kind: "conflict",
+    });
+    await flush();
+    act(() => h.surface?.onAddMember({ userId: "u3", role: "Member" }));
+    await flush();
+    expect(h.toasts.filter((t) => t.startsWith("err:"))).toHaveLength(1);
+    expect(h.toasts.filter((t) => t.startsWith("ok:"))).toHaveLength(0);
   });
 });
