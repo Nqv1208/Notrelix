@@ -2002,11 +2002,15 @@ function KanbanSelectedItemReady({
           onRefreshUpdates: () => {
             void updates.refetch();
           },
+          // The promise settles even when the sheet closed meanwhile; per-call mutate callbacks would be dropped.
           onCreateUpdate: (input, options) =>
-            createUpdate.mutate(input, {
-              onSuccess: options?.onSuccess,
-              onSettled: options?.onSettled,
-            }),
+            void createUpdate.mutateAsync(input).then(
+              () => {
+                options?.onSuccess?.();
+                options?.onSettled?.();
+              },
+              () => options?.onSettled?.(),
+            ),
           onToggleReaction: (commentId, emoji, on) =>
             toggleReaction.mutate({ commentId, emoji, on }),
           onUpdateUpdate: (updateId, body, expectedVersion) =>
