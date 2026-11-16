@@ -1175,21 +1175,19 @@ export function KanbanView({
             : undefined,
         onSetDue: (card, day) => {
           noteOrigin(card.id);
-          updateCardDetails.mutate(
-            {
+          void updateCardDetails
+            .mutateAsync({
               cardId: card.id,
               patch: { dueDate: day === null ? null : `${day}T00:00:00.000Z` },
-            },
-            {
-              onError: () =>
-                toast.error(
-                  fillCopy(laneCopyRef.current.saveFailed, {
-                    title: card.title,
-                  }),
-                  { id: `kanban-write-${card.id}` },
-                ),
-            },
-          );
+            })
+            .catch(() =>
+              toast.error(
+                fillCopy(laneCopyRef.current.saveFailed, {
+                  title: card.title,
+                }),
+                { id: `kanban-write-${card.id}` },
+              ),
+            );
         },
         quickEdit: {
           labels: boardLabels.data ?? [],
@@ -1198,18 +1196,16 @@ export function KanbanView({
           ),
           onRename: (card, title) => {
             noteOrigin(card.id);
-            updateCardDetails.mutate(
-              { cardId: card.id, patch: { title } },
-              {
-                onError: () =>
-                  toast.error(
-                    fillCopy(laneCopyRef.current.saveFailed, {
-                      title: card.title,
-                    }),
-                    { id: `kanban-write-${card.id}` },
-                  ),
-              },
-            );
+            void updateCardDetails
+              .mutateAsync({ cardId: card.id, patch: { title } })
+              .catch(() =>
+                toast.error(
+                  fillCopy(laneCopyRef.current.saveFailed, {
+                    title: card.title,
+                  }),
+                  { id: `kanban-write-${card.id}` },
+                ),
+              );
           },
           onToggleLabel: (card, labelId, on) =>
             toggleCardLabel.mutate({ cardId: card.id, labelId, on }),
@@ -1229,8 +1225,8 @@ export function KanbanView({
           },
           onSetDates: (card, dates) => {
             noteOrigin(card.id);
-            updateCardDetails.mutate(
-              {
+            void updateCardDetails
+              .mutateAsync({
                 cardId: card.id,
                 patch: {
                   startDate: dates.start
@@ -1238,17 +1234,15 @@ export function KanbanView({
                     : null,
                   dueDate: dates.due ? `${dates.due}T00:00:00.000Z` : null,
                 },
-              },
-              {
-                onError: () =>
-                  toast.error(
-                    fillCopy(laneCopyRef.current.saveFailed, {
-                      title: card.title,
-                    }),
-                    { id: `kanban-write-${card.id}` },
-                  ),
-              },
-            );
+              })
+              .catch(() =>
+                toast.error(
+                  fillCopy(laneCopyRef.current.saveFailed, {
+                    title: card.title,
+                  }),
+                  { id: `kanban-write-${card.id}` },
+                ),
+              );
           },
           onOpen: (cardId) => handleOpenDetail(cardId),
         },
