@@ -10,8 +10,8 @@ export function scrollDuration(distance: number): number {
   );
 }
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
+function easeOutCubic(t: number, power = 3): number {
+  return 1 - Math.pow(1 - t, power);
 }
 
 export function prefersReducedMotion(): boolean {
@@ -28,24 +28,32 @@ export function prefersReducedMotion(): boolean {
 export function animateScrollTo(
   el: HTMLElement,
   top: number | (() => number),
-  options: { readonly reducedMotion?: boolean } = {},
+  options: {
+    readonly reducedMotion?: boolean;
+    readonly durationMs?: number;
+    /** A gentler ease-out (quadratic) for a short follow, so a dropped frame never carries most of the trip. */
+    readonly gentle?: boolean;
+  } = {},
 ): () => void {
   const target = () => (typeof top === "function" ? top() : top);
   const from = el.scrollTop;
   const distance = target() - from;
   if (
     (options.reducedMotion ?? prefersReducedMotion()) ||
-    Math.abs(distance) <= 1
+    (Math.abs(distance) <= 1 && options.durationMs === undefined)
   ) {
     el.scrollTop = target();
     return () => undefined;
   }
-  const duration = scrollDuration(distance);
+  const duration = options.durationMs ?? scrollDuration(distance);
   const start = performance.now();
   let frame = 0;
   const step = (now: number) => {
     const t = Math.min(1, (now - start) / duration);
-    el.scrollTop = from + (target() - from) * easeOutCubic(t);
+    const next =
+      from + (target() - from) * easeOutCubic(t, options.gentle ? 2 : 3);
+    // A glide down only ever goes forward: the end can dip for a frame while rows measure, and the list is not pulled back.
+    el.scrollTop = distance > 0 ? Math.max(el.scrollTop, next) : next;
     if (t < 1) frame = requestAnimationFrame(step);
   };
   frame = requestAnimationFrame(step);

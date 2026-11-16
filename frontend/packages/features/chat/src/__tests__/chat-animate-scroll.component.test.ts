@@ -56,4 +56,23 @@ describe("animateScrollTo", () => {
     vi.advanceTimersByTime(1000);
     expect(el.scrollTop).toBe(at);
   });
+
+  it("follows a moving end over its own duration and never goes back when the end dips", () => {
+    const el = document.createElement("div");
+    let end = 60;
+    animateScrollTo(el, () => end, {
+      reducedMotion: false,
+      durationMs: 180,
+      gentle: true,
+    });
+    vi.advanceTimersByTime(64);
+    const mid = el.scrollTop;
+    expect(mid).toBeGreaterThan(0);
+    end = 0;
+    vi.advanceTimersByTime(32);
+    expect(el.scrollTop).toBeGreaterThanOrEqual(mid);
+    end = 60;
+    vi.advanceTimersByTime(200);
+    expect(el.scrollTop).toBe(60);
+  });
 });
