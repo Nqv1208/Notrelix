@@ -1098,6 +1098,30 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     expect(unsentCommentOf(erpItemId("ERP-149"))).toBe("");
   }, 20_000);
 
+  it("tells the person when a lane's item limit could not be saved", async () => {
+    // The fake server has no saved-view write: the save is refused.
+    renderKanban(erpOwnerAccess());
+    await ready();
+    fireEvent.keyDown(
+      within(lane("Đang làm")).getByRole("button", {
+        name: "Tuỳ chọn cột Đang làm",
+        hidden: true,
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Đặt giới hạn số việc" }),
+    );
+    fireEvent.change(
+      await screen.findByRole("textbox", {
+        name: "Giới hạn số việc của Đang làm",
+      }),
+      { target: { value: "5" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Lưu giới hạn" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
   it("tells the person when a quick-edit date change was not saved", async () => {
     const { cards } = renderKanban(erpOwnerAccess());
     await ready();
