@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { apiRead, realUsers, signIn } from "./support/real-session";
+import { createOwnedWorkspace } from "./support/real-workspace";
 import { totpCode } from "./support/totp";
 
 interface Summary {
@@ -11,7 +12,8 @@ test("turning two-factor on asks for the password first, and turning it off asks
 }) => {
   const user = realUsers.workspaceGuest;
   await signIn(page, user);
-  const workspaceId = /\/workspaces\/([^/]+)/.exec(page.url())![1];
+  // The landing page depends on which specs ran before; a workspace of its own does not.
+  const workspaceId = (await createOwnedWorkspace(page, "Security")).id;
   await page.goto(`/workspaces/${workspaceId}/account/security`);
 
   expect(

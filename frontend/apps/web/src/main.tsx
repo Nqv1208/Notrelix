@@ -55,6 +55,13 @@ async function init(): Promise<void> {
         : mockBackend.defaultConfig;
 
     const store = new mockBackend.MockStore(resolvedConfig);
+    // Mock world only: a test that measures the pre-login pages starts signed out through this key.
+    try {
+      if (window.localStorage.getItem("notrelix-mock-signed-out") === "1")
+        store.logoutCurrentUser();
+    } catch {
+      // Private mode: the world starts signed in.
+    }
     const fetchImpl = mockBackend.createMockFetch(store);
 
     runtimeFactories = {

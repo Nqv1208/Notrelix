@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { signInAtProvider } from "./support/oidc-provider";
 import { apiRead, apiWrite, realUsers, signIn } from "./support/real-session";
+import { createOwnedWorkspace } from "./support/real-workspace";
 
 interface Summary {
   readonly hasPasswordCredential: boolean;
@@ -43,15 +44,8 @@ test("a person with only a provider is offered the provider, not a password; the
 }) => {
   const subject = `real-e2e-${randomUUID()}`;
   await signIn(page, user);
-  // Without a default workspace the person lands on the home page; open the first workspace.
-  if (!/\/workspaces\//.test(page.url())) {
-    await page
-      .getByRole("link", { name: /^Open / })
-      .first()
-      .click();
-    await page.waitForURL(/\/workspaces\//);
-  }
-  const workspaceId = /\/workspaces\/([^/]+)/.exec(page.url())![1];
+  // The landing page depends on which specs ran before; a workspace of its own does not.
+  const workspaceId = (await createOwnedWorkspace(page, "Provider")).id;
   sql(
     `update identity.users set has_password_credential = false where email = '${user.email}'; insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser}, 'Google', '${subject}', '{}')`,
   );

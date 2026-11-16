@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { startSignedOut } from "../support/sign-in-form";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
@@ -65,6 +66,7 @@ for (const view of VIEWS) {
       page,
     }, testInfo) => {
       await page.setViewportSize({ width: view.width, height: view.height });
+      await startSignedOut(page);
       await page.addInitScript(
         ({ key, theme }) => {
           try {
@@ -126,6 +128,7 @@ for (const view of VIEWS) {
       // Six measured steps with axe each, the first one on a cold dev server.
       test.setTimeout(90_000);
       await page.setViewportSize({ width: view.width, height: view.height });
+      await startSignedOut(page);
       await page.addInitScript(
         ({ key, theme }) => {
           try {
@@ -196,6 +199,7 @@ for (const view of VIEWS) {
       page,
     }, testInfo) => {
       await page.setViewportSize({ width: view.width, height: view.height });
+      await startSignedOut(page);
       await page.addInitScript(
         ({ key, theme }) => {
           try {

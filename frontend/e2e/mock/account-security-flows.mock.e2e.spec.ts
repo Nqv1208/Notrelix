@@ -314,9 +314,12 @@ for (const view of VIEWS) {
         },
         { key: THEME_KEY, mode: dark ? "dark" : "light" },
       );
-      await page.goto("/sign-in");
+      // A live session forwards a plain /sign-in; a refusal code keeps the form.
+      await page.goto("/sign-in?error=identity.oauth.failed");
       await page.getByRole("button", { name: "Tiếp tục với Google" }).click();
-      await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+      await expect(page).toHaveURL(
+        /\/(home|workspaces\/mock-workspace-primary)/,
+      );
       const goTo = (path: string) =>
         page.evaluate((target) => {
           history.pushState({}, "", target);
