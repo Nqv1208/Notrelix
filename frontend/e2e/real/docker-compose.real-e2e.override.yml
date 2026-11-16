@@ -104,6 +104,7 @@ services:
       OAuth__Providers__Google__ClientSecret: real-e2e-google-secret
       OAuth__Providers__Google__AuthorizationEndpoint: http://127.0.0.1:${REAL_E2E_OIDC_PORT:-58090}/google/authorize
       OAuth__Providers__Google__TokenEndpoint: http://oidc-mock:8080/google/token
+      OAuth__Providers__Google__JwksUri: http://oidc-mock:8080/google/jwks
       OAuth__Providers__Google__Issuer: http://oidc-mock:8080/google
       OAuth__Providers__Google__RedirectUri: http://127.0.0.1:58000/api/v1/auth/oauth/google/callback
       OAuth__FrontendFailureUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/sign-in
