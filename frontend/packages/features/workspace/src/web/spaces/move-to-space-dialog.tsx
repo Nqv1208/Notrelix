@@ -582,9 +582,9 @@ function PickerOption({
         <Badge
           variant="outline"
           title={disabledReason}
-          className="min-w-0 max-w-[55%] max-md:max-w-[36%] justify-start truncate font-normal"
+          className="min-w-0 max-w-[55%] justify-start font-normal max-md:max-w-[36%]"
         >
-          {disabledReason}
+          <span className="min-w-0 truncate">{disabledReason}</span>
         </Badge>
       ) : null}
       {disabledReason || path ? (

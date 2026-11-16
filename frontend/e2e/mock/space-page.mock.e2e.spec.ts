@@ -247,6 +247,16 @@ test.describe("Department page (owner)", () => {
             .getByRole("radiogroup")
             .evaluate((el) => el.scrollWidth <= el.clientWidth),
         ).toBe(true);
+        // Every visible reason pill sits fully inside the list: truncated, never clipped.
+        const listBox = (await dialog.getByRole("radiogroup").boundingBox())!;
+        const pills = dialog.getByRole("radiogroup").locator("[title]");
+        expect(await pills.count()).toBeGreaterThan(0);
+        for (const box of await pills.evaluateAll((els) =>
+          els.map((el) => el.getBoundingClientRect().toJSON()),
+        )) {
+          expect(box.right).toBeLessThanOrEqual(listBox.x + listBox.width);
+          expect(box.left).toBeGreaterThanOrEqual(listBox.x);
+        }
         expect(serious(await new AxeBuilder({ page }).analyze())).toEqual([]);
         if (process.env.MOVE_SHOTS_DIR) {
           await page.screenshot({
