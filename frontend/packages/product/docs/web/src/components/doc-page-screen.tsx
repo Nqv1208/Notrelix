@@ -119,6 +119,12 @@ const REPEATING: ReadonlySet<BlockType> = new Set([
   "todo",
 ]);
 
+/** The page is not there for this viewer (404) or not theirs to read (403), as opposed to a failed read. */
+function isGone(error: unknown): boolean {
+  const { status } = (error ?? {}) as { status?: unknown };
+  return status === 404 || status === 403;
+}
+
 /** Why a template write was refused, as its row words it. */
 function templateWriteFailure(
   error: unknown,
@@ -931,6 +937,16 @@ export function createDocPageScreen({
       return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
     }
     // Blocks that failed to read are not an empty page: typing there would write beside the stored blocks.
+    if (!page && pageQuery.isError && !isGone(pageQuery.error)) {
+      return (
+        <DocPageScreenSurface
+          status="loadFailed"
+          copy={copy}
+          callbacks={{ onRetryLoad: () => void pageQuery.refetch() }}
+          {...EMPTY}
+        />
+      );
+    }
     if (!page || (blocksQuery.isError && !blocksQuery.data)) {
       return (
         <DocPageScreenSurface
@@ -1089,6 +1105,16 @@ export function createDocPageScreen({
             },
           );
         },
+      });
+    // An action that reads the stored page waits for the save; if it fails the action does not run.
+    const afterSaved = (action: () => void) =>
+      void saver.flush().then((stored) => {
+        if (stored) action();
+        else
+          host.notify?.(copy.header.saveBlocked, {
+            label: copy.header.retry,
+            run: () => afterSaved(action),
+          });
       });
     const liveCallbacks: DocPageCallbacks = {
       onRetryBlocks: blocksQuery.retryRest,
@@ -1284,7 +1310,7 @@ export function createDocPageScreen({
           }
         : undefined,
       onSaveVersion: (name) => {
-        void saver.flush().then(() =>
+        afterSaved(() =>
           createVersion.mutate(name, {
             onSuccess: () => {
               setOverlay(NONE);
@@ -1639,35 +1665,32 @@ export function createDocPageScreen({
             if (duplicatePage.isPending) return;
             host.notify?.(copy.fileMenu.makeCopyPending);
             // The server copies the saved blocks: write the open edits first.
-            void saver
-              .flush()
-              .then(() =>
-                duplicatePage.mutate(
-                  {
-                    pageId,
-                    title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
+            afterSaved(() =>
+              duplicatePage.mutate(
+                {
+                  pageId,
+                  title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
+                },
+                {
+                  onSuccess: (copied) => {
+                    host.notify?.(
+                      copied.droppedBlockCount > 0
+                        ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
+                            count: copied.droppedBlockCount,
+                          })
+                        : copy.fileMenu.makeCopyDone,
+                    );
+                    host.openPage?.(copied.pageId);
                   },
-                  {
-                    onSuccess: (copied) => {
-                      host.notify?.(
-                        copied.droppedBlockCount > 0
-                          ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
-                              count: copied.droppedBlockCount,
-                            })
-                          : copy.fileMenu.makeCopyDone,
-                      );
-                      host.openPage?.(copied.pageId);
-                    },
-                    onError: (error) =>
-                      host.notify?.(
-                        (error as { status?: unknown }).status === 403
-                          ? copy.fileMenu.makeCopyForbidden
-                          : copy.fileMenu.makeCopyFailed,
-                      ),
-                  },
-                ),
-              )
-              .catch(() => host.notify?.(copy.fileMenu.makeCopyFailed));
+                  onError: (error) =>
+                    host.notify?.(
+                      (error as { status?: unknown }).status === 403
+                        ? copy.fileMenu.makeCopyForbidden
+                        : copy.fileMenu.makeCopyFailed,
+                    ),
+                },
+              ),
+            );
           }
         : undefined,
       onCommentStart: () => {
@@ -1716,14 +1739,12 @@ export function createDocPageScreen({
           return;
         }
         // The block the comment names must be stored before the producer can check it.
-        void saver
-          .flush()
-          .then(() =>
-            createComment.mutate(
-              { pageId, body, anchor },
-              { onSuccess: () => setPendingAnchor(null) },
-            ),
-          );
+        afterSaved(() =>
+          createComment.mutate(
+            { pageId, body, anchor },
+            { onSuccess: () => setPendingAnchor(null) },
+          ),
+        );
       },
     };
 
