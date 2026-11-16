@@ -250,31 +250,32 @@ export function MembersPage() {
       role: CreateWorkspaceInvitationInput["role"],
     ) => {
       pendingInvitations.add(invitation.id);
-      changeInvitationRole.mutate(
-        {
+      // mutateAsync, not mutate with callbacks: those only fire for the latest call, so a second row's
+      // write would leave this row busy and its outcome unreported.
+      changeInvitationRole
+        .mutateAsync({
           invitationId: invitation.id,
           role,
           expectedVersion: invitation.version,
-        },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.invitationRoleChanged, {
-                email: invitation.email,
-                role: copy.roles[role],
-              }),
-            ),
-          onError: (error) =>
-            toastFailure(
-              formatCopy(copy.toasts.invitationRoleFailed, {
-                email: invitation.email,
-              }),
-              error,
-              hint,
-            ),
-          onSettled: () => pendingInvitations.remove(invitation.id),
-        },
-      );
+        })
+        .then(() =>
+          toast.success(
+            formatCopy(copy.toasts.invitationRoleChanged, {
+              email: invitation.email,
+              role: copy.roles[role],
+            }),
+          ),
+        )
+        .catch((error: unknown) =>
+          toastFailure(
+            formatCopy(copy.toasts.invitationRoleFailed, {
+              email: invitation.email,
+            }),
+            error,
+            hint,
+          ),
+        )
+        .finally(() => pendingInvitations.remove(invitation.id));
     },
     [changeInvitationRole, copy, hint, pendingInvitations],
   );
@@ -282,19 +283,21 @@ export function MembersPage() {
   const onResend = useCallback(
     (invitation: WorkspaceInvitation) => {
       pendingInvitations.add(invitation.id);
-      resendInvitation.mutate(invitation.id, {
-        onSuccess: () =>
+      resendInvitation
+        .mutateAsync(invitation.id)
+        .then(() =>
           toast.success(
             formatCopy(copy.toasts.resent, { email: invitation.email }),
           ),
-        onError: (error) =>
+        )
+        .catch((error: unknown) =>
           toastFailure(
             formatCopy(copy.toasts.resendFailed, { email: invitation.email }),
             error,
             hint,
           ),
-        onSettled: () => pendingInvitations.remove(invitation.id),
-      });
+        )
+        .finally(() => pendingInvitations.remove(invitation.id));
     },
     [copy, hint, pendingInvitations, resendInvitation],
   );
@@ -302,19 +305,21 @@ export function MembersPage() {
   const onRevoke = useCallback(
     (invitation: WorkspaceInvitation) => {
       pendingInvitations.add(invitation.id);
-      revokeInvitation.mutate(invitation.id, {
-        onSuccess: () =>
+      revokeInvitation
+        .mutateAsync(invitation.id)
+        .then(() =>
           toast.success(
             formatCopy(copy.toasts.revoked, { email: invitation.email }),
           ),
-        onError: (error) =>
+        )
+        .catch((error: unknown) =>
           toastFailure(
             formatCopy(copy.toasts.revokeFailed, { email: invitation.email }),
             error,
             hint,
           ),
-        onSettled: () => pendingInvitations.remove(invitation.id),
-      });
+        )
+        .finally(() => pendingInvitations.remove(invitation.id));
     },
     [copy, hint, pendingInvitations, revokeInvitation],
   );
