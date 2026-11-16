@@ -24,6 +24,7 @@ using Notrelix.Integration.Tests.Containers;
 using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 using PreconditionFailed = Notrelix.Application.Common.Exceptions.PreconditionFailedException;
 using AppNotFound = Notrelix.Application.Common.Exceptions.NotFoundException;
+using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 
 namespace Notrelix.Integration.Tests.Workspaces.OrgTree;
 
@@ -139,6 +140,35 @@ public sealed class SpaceHierarchyIntegrationTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<PreconditionFailed>();
         (await SpaceAsync(it)).ParentSpaceId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ChangingTheType_KeepsVisibility_IsANoOpForTheSameType_AndRefusesMembersAndOutsiders()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var it = await CreateAsync(owner, stack, "IT", type: "Folder");
+        var before = await SpaceAsync(it);
+
+        await OrgTreeTestHost.SendAsync(owner, new ChangeSpaceTypeCommand(stack.WorkspaceId, it, "Department", before.Version));
+        var changed = await SpaceAsync(it);
+        changed.SpaceType.Should().Be(SpaceType.Department);
+        changed.Visibility.Should().Be(before.Visibility, "the type never changes visibility");
+        changed.Version.Should().BeGreaterThan(before.Version);
+
+        await OrgTreeTestHost.SendAsync(owner, new ChangeSpaceTypeCommand(stack.WorkspaceId, it, "Department", changed.Version));
+        (await SpaceAsync(it)).Version.Should().Be(changed.Version, "the same type is a no-op");
+
+        var memberId = await _host.AddMemberAsync(stack, WorkspaceRole.Member);
+        using var member = _host.CreateProvider(stack.AccountId, memberId);
+        var byMember = () => OrgTreeTestHost.SendAsync(member, new ChangeSpaceTypeCommand(stack.WorkspaceId, it, "Portfolio", changed.Version));
+        await byMember.Should().ThrowAsync<AppForbidden>();
+
+        var other = await _host.SeedWorkspaceAsync();
+        using var outsider = _host.CreateProvider(other.AccountId, other.OwnerId);
+        var byOutsider = () => OrgTreeTestHost.SendAsync(outsider, new ChangeSpaceTypeCommand(stack.WorkspaceId, it, "Portfolio", changed.Version));
+        await byOutsider.Should().ThrowAsync<AppNotFound>();
+        (await SpaceAsync(it)).SpaceType.Should().Be(SpaceType.Department);
     }
 
     [Fact]

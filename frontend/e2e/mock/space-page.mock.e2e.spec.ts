@@ -181,6 +181,21 @@ test.describe("Department page (owner)", () => {
     await expect(radios.nth(0)).toBeFocused();
   });
 
+  test("the type is chosen from the settings and visibility stays", async ({
+    page,
+  }) => {
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
+    const type = page.getByRole("combobox", { name: "Loại" });
+    await type.click();
+    await page.getByRole("option", { name: "Danh mục dự án" }).click();
+    await expect(page.getByText("Đã lưu cài đặt")).toBeVisible();
+    await expect(type).toHaveText("Danh mục dự án");
+    await expect(page.getByRole("radio").nth(0)).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   test("Move opens the picker and Escape returns focus to the button", async ({
     page,
   }) => {
