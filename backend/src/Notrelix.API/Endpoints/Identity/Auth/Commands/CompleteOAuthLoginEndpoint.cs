@@ -49,8 +49,11 @@ public static class CompleteOAuthLoginEndpoint
             storedState = await stateStore.PeekAsync(state, CancellationToken.None);
             if (storedState is not null && storedState.Flow != OAuthFlowKind.Login)
             {
+                // The provider has one return address (this one). The flow's own callback reads the session
+                // cookie and finishes it; a web page would drop the code.
+                var segment = storedState.Flow == OAuthFlowKind.StepUp ? "step-up" : "link";
                 return Results.Redirect(BuildFlowHandoffUrl(
-                    redirectOptions.Value.FrontendSuccessUrl, code, state, error, error_description));
+                    $"/api/v1/auth/oauth/{Uri.EscapeDataString(provider)}/{segment}/callback", code, state, error, error_description));
             }
         }
 

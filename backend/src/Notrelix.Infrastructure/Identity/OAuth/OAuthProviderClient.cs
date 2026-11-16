@@ -84,6 +84,7 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
 
         var formFields = new List<KeyValuePair<string, string>>
         {
+            new("grant_type", "authorization_code"),
             new("client_id", config.ClientId),
             new("client_secret", config.ClientSecret),
             new("code", request.Code),

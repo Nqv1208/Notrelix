@@ -18,6 +18,8 @@ const webPort = process.env.REAL_E2E_WEB_PORT ?? "5173";
 // The operator console is its own host on its own origin (its origin is in the backend's CORS list).
 const operatorPort = process.env.REAL_E2E_OPERATOR_PORT ?? "5180";
 
+const oidcPort = process.env.REAL_E2E_OIDC_PORT ?? "58090";
+
 export const realBackend = {
   project: "notrelix-fe-real-e2e",
   apiUrl: "http://127.0.0.1:58000/api/v1",
@@ -27,7 +29,15 @@ export const realBackend = {
   operatorPort,
   operatorUrl: `http://127.0.0.1:${operatorPort}`,
   operatorApiUrl: "http://127.0.0.1:58000/operator/v1",
-  ports: [55432, 56379, 55672, 58000, Number(webPort), Number(operatorPort)],
+  ports: [
+    55432,
+    56379,
+    55672,
+    58000,
+    Number(oidcPort),
+    Number(webPort),
+    Number(operatorPort),
+  ],
 };
 
 const composeEnv = {
@@ -43,6 +53,7 @@ const composeEnv = {
   POSTGRES_PORT: "55432",
   REDIS_PORT: "56379",
   BACKEND_PORT: "58000",
+  REAL_E2E_OIDC_PORT: oidcPort,
   FRONTEND_PORT: webPort,
   REAL_E2E_WEB_PORT: webPort,
   FRONTEND_WEB_PORT: webPort,
@@ -158,6 +169,7 @@ export async function up() {
     "postgres",
     "redis",
     "rabbitmq",
+    "oidc-mock",
     "backend",
   ]);
 }
@@ -169,6 +181,7 @@ export async function logs() {
     "postgres",
     "redis",
     "rabbitmq",
+    "oidc-mock",
     "backend",
   ]);
 }
