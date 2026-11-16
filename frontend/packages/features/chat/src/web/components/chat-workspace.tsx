@@ -40,9 +40,7 @@ import {
 } from "../../core/api/chat-failure";
 import { chatQueryKeys } from "../../query/keys";
 import {
-  buildChatRows,
   checkMessageContent,
-  unconfirmedPending,
   type PendingMessage,
 } from "../../core/model/chat-model";
 import { messageActionGrants } from "../../core/model/message-display-model";
@@ -63,7 +61,6 @@ import {
   type ChatMentionPayload,
   type ChatConversation,
   type ChatStartConversationInput,
-  type ChatHistoryAnchor,
   type ChatSearchHit,
   type ChatMessage,
   type ChatPermissionEntry,
@@ -79,24 +76,17 @@ import { MentionsPanel } from "./chat-mentions-panel";
 import { ChatPanelTabs, panelTabId } from "./chat-panel-tabs";
 import { ChatMentionProvider } from "./chat-mention-context";
 import type { QuoteView } from "./chat-message-row";
-import {
-  createChatHooks,
-  flattenPages,
-  type ChatHookDeps,
-} from "../query/create-chat-hooks";
+import { createChatHooks, type ChatHookDeps } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
 import {
   ChatComposer,
   type ChatComposerMentions,
   type ChatComposerProps,
 } from "./chat-composer";
-import {
-  ChatMessageList,
-  type ChatListStatus,
-  type ChatScrollRequest,
-} from "./chat-message-list";
+import { ChatMessageList, type ChatListStatus } from "./chat-message-list";
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
+import { useChannelTimeline } from "./use-channel-timeline";
 import { ChatMessageLinkProvider } from "./chat-link-context";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
@@ -180,24 +170,6 @@ export interface ChatWorkspaceProps {
    */
   readonly ephemeral?: ChatEphemeralPort;
   readonly timeZone?: string;
-}
-
-const LATEST: ChatHistoryAnchor = { kind: "latest" };
-
-interface ChannelLock {
-  readonly channelId: string;
-  readonly anchor: ChatHistoryAnchor;
-  /** The first unread sequence when the channel opened (the "New" divider). */
-  readonly firstUnread: number | null;
-}
-
-/** A search hit being opened: the space to open, the message to land on and, for a thread reply, the thread to show. */
-interface SearchJump {
-  readonly spaceId: string;
-  readonly messageId: string;
-  readonly sequence: number;
-  readonly threadRootId: string | null;
-  readonly applied: boolean;
 }
 
 /** The right-hand panel: one thread, the channel's pins, or the threads the caller follows. */
@@ -326,8 +298,6 @@ export function ChatWorkspace({
   const [linkError, setLinkError] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [jump, setJump] = useState<SearchJump | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // ─── Server state ─────────────────────────────────────────────────────────
   const channels = hooks.useChannels(ws);
@@ -366,57 +336,18 @@ export function ChatWorkspace({
       null)
     : null;
 
-  // The history opens once per visit: at the first unread message when there is
-  // one (D03), otherwise at the newest. The choice does not move while the reader
-  // is in the channel, even when the unread summary refreshes.
-  const lockRef = useRef<ChannelLock | null>(null);
-  const linkTarget = useRef<{
-    readonly channelId: string;
-    readonly sequence: number;
-    applied?: boolean;
-  } | null>(null);
-  /** Cancels the send's deferred jump to the newest window (frames, then a task). */
-  const jumpWorkRef = useRef<(() => void) | null>(null);
-  useEffect(() => () => jumpWorkRef.current?.(), []);
-  if (
-    channelId &&
-    lockRef.current?.channelId !== channelId &&
-    (unread.isFetched || unread.isError)
-  ) {
-    const first = unreadRow?.firstUnreadSequence ?? null;
-    // An address with ?m= opens around that message instead of the first unread one (UC-CHT-B10), once per visit.
-    linkTarget.current =
-      linkedSequence !== null ? { channelId, sequence: linkedSequence } : null;
-    const linked = linkedSequence;
-    lockRef.current = {
+  const timeline = useChannelTimeline({
+    hooks,
+    workspaceId: ws,
       channelId,
-      anchor:
-        linked !== null
-          ? { kind: "around", sequence: linked }
-          : first !== null
-            ? { kind: "around", sequence: first }
-            : LATEST,
-      firstUnread: linked !== null ? null : first,
-    };
-  }
-  const lock =
-    channelId && lockRef.current?.channelId === channelId
-      ? lockRef.current
-      : null;
-  const anchor = lock?.anchor ?? LATEST;
-
-  const messages = hooks.useMessages(ws, ch, anchor);
-  const flat = useMemo(() => flattenPages(messages.data), [messages.data]);
-  const pendingQuery = hooks.usePendingSends(ws, ch);
-  const pendingAll = pendingQuery.data ?? [];
-  const pendingHere = useMemo(
-    () =>
-      unconfirmedPending(
-        pendingAll.filter((entry) => entry.spaceId === ch),
-        flat,
-      ),
-    [pendingAll, flat, ch],
-  );
+    linkedSequence,
+    unreadSettled: unread.isFetched || unread.isError,
+    firstUnreadSequence: unreadRow?.firstUnreadSequence ?? null,
+    timeZone,
+    // The panel state is declared below; the hook only calls this from an effect, after the first render.
+    onShowThread: (rootId) => setPanel({ kind: "thread", rootId }),
+  });
+  const { messages, flat, pendingAll, pendingHere, rows, hasNewer } = timeline;
   // Sends the server answered with 429: held as they are, retried when the wait is over (UC-CHT-H08).
   const limitedEntries = useMemo(
     () =>
@@ -425,19 +356,6 @@ export function ChatWorkspace({
       ),
     [pendingHere],
   );
-  // The divider stays where the visit found it, even as messages arrive.
-  const firstUnread = lock ? lock.firstUnread : null;
-  const rows = useMemo(
-    () =>
-      buildChatRows({
-        messages: flat,
-        pending: pendingHere,
-        firstUnread,
-        timeZone,
-      }),
-    [flat, pendingHere, firstUnread, timeZone],
-  );
-
   // ─── Writes ───────────────────────────────────────────────────────────────
   const sender = hooks.useSendMessage(ws, ch, viewerId);
   const channelAdder = hooks.useAddMembers(ws, ch);
@@ -447,7 +365,6 @@ export function ChatWorkspace({
   const permissionsWriter = hooks.useSetChannelPermissions(ws, ch);
   const linker = hooks.useLinkChannel(ws, ch);
   const unlinker = hooks.useUnlinkChannel(ws, ch);
-  const reader = hooks.useMarkRead(ws);
   const allReader = hooks.useMarkAllRead(ws);
   const levelWriter = hooks.useSetNotificationLevel(ws);
   const starter = hooks.useStartConversation(ws);
@@ -487,10 +404,6 @@ export function ChatWorkspace({
   // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
   // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
   const drafts = useRef<Record<string, string>>({});
-  const [scrollRequest, setScrollRequest] = useState<ChatScrollRequest | null>(
-    null,
-  );
-  const [atBottom, setAtBottom] = useState(true);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ChatMessage | null>(null);
   const [confirmUnpin, setConfirmUnpin] = useState<ChatMessage | null>(null);
@@ -525,110 +438,6 @@ export function ChatWorkspace({
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [panel, setPanel] = useState<SidePanel | null>(null);
   const sidePanelId = useId();
-  const requestedFor = useRef<string | null>(null);
-  const nonce = useRef(0);
-
-  function request(target: "divider" | "bottom") {
-    nonce.current += 1;
-    setScrollRequest({ nonce: nonce.current, target });
-  }
-
-  // Open the channel at its divider (or the newest) once its history has loaded.
-  useEffect(() => {
-    // A window kept on screen while the next one loads (placeholder) is not the history to open on.
-    if (
-      !channelId ||
-      !messages.isSuccess ||
-      messages.isPlaceholderData ||
-      !lock
-    )
-      return;
-    const key = `${channelId}|${JSON.stringify(anchor)}`;
-    if (requestedFor.current === key) return;
-    requestedFor.current = key;
-    nonce.current += 1;
-    setScrollRequest({
-      nonce: nonce.current,
-      target: lock.firstUnread !== null ? "divider" : "bottom",
-    });
-    setAtBottom(true);
-  }, [channelId, messages.isSuccess, messages.isPlaceholderData, lock, anchor]);
-
-  // Read state: the boundary moves to the newest message only when it is
-  // loaded and on screen (the reader is at the bottom and the page is visible).
-  const newest = flat[flat.length - 1];
-  const hasNewer = messages.hasNextPage === true;
-  useEffect(() => {
-    if (!channelId || !newest || hasNewer || !atBottom) return;
-    if (
-      typeof document !== "undefined" &&
-      document.visibilityState === "hidden"
-    )
-      return;
-    reader.markRead(channelId, newest.sequence);
-    // reader is stable per hook call; the sequence and the position are the inputs.
-  }, [channelId, newest?.sequence, hasNewer, atBottom]);
-
-  // The reader is looking at this channel's newest message: its unread frames add nothing (the read boundary moves
-  // with the message above), so neither sidebar flashes a badge for a message that is read as it arrives.
-  const hasNewest = newest !== undefined;
-  useEffect(() => {
-    if (!channelId || !hasNewest || hasNewer || !atBottom) return;
-    const viewingKey = chatQueryKeys.viewing(ws);
-    const publish = () =>
-      queryClient.setQueryData<string | null>(
-        viewingKey,
-        document.visibilityState === "hidden" ? null : channelId,
-      );
-    publish();
-    document.addEventListener("visibilitychange", publish);
-    return () => {
-      document.removeEventListener("visibilitychange", publish);
-      queryClient.setQueryData<string | null>(viewingKey, null);
-    };
-  }, [channelId, hasNewest, hasNewer, atBottom, ws, queryClient]);
-
-  function jumpToLatest() {
-    if (channelId) {
-      lockRef.current = { channelId, anchor: LATEST, firstUnread: null };
-      requestedFor.current = null;
-    }
-    request("bottom");
-  }
-
-  // A search hit (UC-CHT-H07): once its space is open, show the message. A message already loaded is only highlighted; otherwise the
-  // history reopens around its sequence. A thread reply opens its thread. The highlight fades from state after a few seconds.
-  useEffect(() => {
-    if (!jump || jump.applied || !lock || channelId !== jump.spaceId) return;
-    if (!flat.some((entry) => entry.id === jump.messageId)) {
-      const target: ChatHistoryAnchor = {
-        kind: "around",
-        sequence: jump.sequence,
-      };
-      lockRef.current = {
-        channelId: jump.spaceId,
-        anchor: target,
-        firstUnread: null,
-      };
-      requestedFor.current = `${jump.spaceId}|${JSON.stringify(target)}`;
-    }
-    if (jump.threadRootId !== null) {
-      setPanel({ kind: "thread", rootId: jump.threadRootId });
-    }
-    setJump({ ...jump, applied: true });
-  }, [jump, lock, flat, channelId]);
-
-  // The message a link points at (UC-CHT-B10): highlighted once, when its window has loaded. A sequence that is not in the
-  // window (a missing message, or one the caller may not read) highlights nothing and shows no detail about it.
-  useEffect(() => {
-    const target = linkTarget.current;
-    if (!target || target.applied || target.channelId !== channelId) return;
-    if (messages.isPlaceholderData || !messages.isSuccess) return;
-    target.applied = true;
-    const hit = flat.find((entry) => entry.sequence === target.sequence);
-    if (hit) setHighlightId(hit.id);
-  }, [channelId, flat, messages.isSuccess, messages.isPlaceholderData]);
-
   const messageLink = useMemo(
     () =>
       buildMessageLink
@@ -644,20 +453,12 @@ export function ChatWorkspace({
     [buildMessageLink, conversationId],
   );
 
-  useEffect(() => {
-    if (highlightId === null) return;
-    const timer = setTimeout(() => setHighlightId(null), 6000);
-    return () => clearTimeout(timer);
-  }, [highlightId]);
-
   function openSearchHit(hit: ChatSearchHit) {
-    setHighlightId(hit.messageId);
-    setJump({
+    timeline.openMessage({
       spaceId: hit.spaceId,
       messageId: hit.messageId,
       sequence: hit.sequence,
       threadRootId: hit.alsoSentToChannel ? null : hit.threadRootId,
-      applied: false,
     });
     setListOpen(false);
     if (hit.spaceId === channelId) return;
@@ -754,31 +555,7 @@ export function ChatWorkspace({
     if (!channelId) return;
     sender.send(content, replyTo?.id ?? null, payload, files);
     setReplyTo(null);
-    request("bottom");
-    // From an older window the bubble paints at the end of the window on screen; the newest window loads after
-    // that frame, so the keypress does not wait for a cold render of a whole page of rows.
-    if (hasNewer) {
-      const sentIn = channelId;
-      // The bubble's frame is produced first: the work starts a task after the second frame callback.
-      jumpWorkRef.current?.();
-      let frame2 = 0;
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const frame1 = requestAnimationFrame(() => {
-        frame2 = requestAnimationFrame(() => {
-          timer = setTimeout(() => {
-            jumpWorkRef.current = null;
-            if (lockRef.current?.channelId !== sentIn) return;
-            jumpToLatest();
-          }, 0);
-        });
-      });
-      // Unmount cancels whichever step is still waiting, so nothing runs after the page is gone.
-      jumpWorkRef.current = () => {
-        cancelAnimationFrame(frame1);
-        cancelAnimationFrame(frame2);
-        clearTimeout(timer);
-      };
-    }
+    timeline.afterSend();
   }
 
   function handleReact(message: ChatMessage, emoji: string, add: boolean) {
@@ -822,15 +599,13 @@ export function ChatWorkspace({
 
   /** "Open message" of a pin: lands on the message like a search hit, and a phone leaves the Pins page. */
   function handleOpenPinned(message: ChatMessage) {
-    setHighlightId(message.id);
-    setJump({
+    timeline.openMessage({
       spaceId: message.spaceId,
       messageId: message.id,
       sequence: message.sequence,
       threadRootId: message.alsoSentToChannel
         ? null
         : (message.threadRootId ?? null),
-      applied: false,
     });
     if (isMobile) setPanel(null);
   }
@@ -1529,7 +1304,7 @@ export function ChatWorkspace({
   return (
     <ChatMentionProvider value={mentionContext}>
       <ChatMessageLinkProvider value={messageLink}>
-        <ChatHighlightProvider value={highlightId}>
+        <ChatHighlightProvider value={timeline.highlightId}>
           <div className="relative flex h-full min-h-0 w-full">
             {listOnly ? (
               <div className="flex min-h-0 w-full flex-col bg-sidebar">
@@ -1830,7 +1605,7 @@ export function ChatWorkspace({
                       isLoadingOlder={messages.isFetchingPreviousPage}
                       hasNewer={hasNewer}
                       isLoadingNewer={messages.isFetchingNextPage}
-                      scrollRequest={scrollRequest}
+                      scrollRequest={timeline.scrollRequest}
                       editing={
                         editing
                           ? {
@@ -1856,8 +1631,8 @@ export function ChatWorkspace({
                         if (!messages.isFetchingNextPage)
                           void messages.fetchNextPage();
                       }}
-                      onAtBottomChange={setAtBottom}
-                      onJumpLatest={jumpToLatest}
+                      onAtBottomChange={timeline.setAtBottom}
+                      onJumpLatest={timeline.jumpToLatest}
                       onEdit={grants.editOwn ? handleEditStart : undefined}
                       onEditDraftChange={(value) =>
                         setEditing((current) =>
