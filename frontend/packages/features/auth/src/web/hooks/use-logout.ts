@@ -13,7 +13,12 @@ interface UseLogoutDeps extends NavigationDeps {
   onSignedOut?: () => void;
 }
 
-export function createUseLogout({ api, endpoints, navigate, onSignedOut }: UseLogoutDeps) {
+export function createUseLogout({
+  api,
+  endpoints,
+  navigate,
+  onSignedOut,
+}: UseLogoutDeps) {
   const authService = createAuthService(api, endpoints);
 
   return function useLogout() {

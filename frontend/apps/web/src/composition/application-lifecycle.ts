@@ -1,6 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { authQueryKeys } from "@notrelix/features-auth";
-import { resetCacheForAccountTransition, runSessionReset } from "@notrelix/query";
+import {
+  resetCacheForAccountTransition,
+  runSessionReset,
+} from "@notrelix/query";
 import type { RealtimeTransport } from "@notrelix/realtime";
 import type {
   SessionEventBus,
