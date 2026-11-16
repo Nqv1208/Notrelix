@@ -149,7 +149,14 @@ test.describe("1440 (Chat-Main)", () => {
     const nd = await box(page, "[data-unread-divider]");
     expect(nd.h).toBeCloseTo(24, 0);
     expect(nd.x + nd.w / 2).toBeCloseTo(col.x + col.w / 2, 0);
-    const ds = await box(page, "[role=log] li[data-testid=chat-day-separator]");
+    // Only the rows near the view are in the page: the date label that opens the window is drawn once the list is at its top.
+    await page.getByRole("log").evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    const ds = await box(
+      page,
+      "[role=log] li[data-testid=chat-day-separator] > div",
+    );
     expect(ds.h).toBeCloseTo(24, 0);
   });
 
@@ -210,6 +217,9 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     ).toBeVisible();
     expect((await box(page, "main header")).h).toBeCloseTo(56, 0);
     expect(await css(page, "main header h1", "font-size")).toBe("17px");
+    // The divider is measured where the room opened: reacting scrolls the list away from it, and only rows near the view are drawn.
+    const nd = await box(page, "[data-unread-divider]");
+    expect(nd.h).toBeCloseTo(24, 0);
     await react(page);
     const row = "[data-message-id]:has([data-testid=chat-reactions])";
     const bub = await box(page, `${row} [data-bubble]`);
@@ -225,8 +235,6 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     await expect(
       page.getByRole("button", { name: /^(Send|Gửi)$/ }),
     ).toHaveCount(0);
-    const nd = await box(page, "[data-unread-divider]");
-    expect(nd.h).toBeCloseTo(24, 0);
   });
 });
 

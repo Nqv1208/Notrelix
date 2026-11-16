@@ -41,6 +41,16 @@ async function open(
   await page.waitForTimeout(600);
 }
 
+/** The room opens at the first unread message; these checks act on the newest ones, so they go there first. */
+async function toNewest(page: Page) {
+  const jump = page.getByRole("button", {
+    name: /^(Jump to latest|Xem tin mới nhất)$/,
+  });
+  if (await jump.isVisible()) await jump.click();
+  await expect(jump).toBeHidden();
+  await page.waitForTimeout(300);
+}
+
 async function box(page: Page, selector: string) {
   const b = await page.locator(selector).first().boundingBox();
   if (!b) throw new Error(`no box for ${selector}`);
@@ -100,9 +110,13 @@ for (const mode of ["light", "dark"] as const) {
           expect(r.top).toBe(r.start ? "12px" : "2px");
         }
 
+        // Only the rows near the view are in the page: the date label that opens the window is drawn once the list is at its top.
+        await page.getByRole("log").evaluate((el) => {
+          el.scrollTop = 0;
+        });
         const sep = await box(
           page,
-          "[role=log] li[data-testid=chat-day-separator]",
+          "[role=log] li[data-testid=chat-day-separator] > div",
         );
         expect(sep.h).toBeCloseTo(24, 0);
 
@@ -216,6 +230,8 @@ test.describe("motion", () => {
   test("the action bar fades in on hover and a sent message enters with a rise", async ({
     page,
   }) => {
+    await toNewest(page);
+    await page.mouse.move(5, 5);
     const row = page.locator("[data-own=false]").last();
     await row.scrollIntoViewIfNeeded();
     const bar = row.locator("[role=toolbar]").first();
@@ -224,7 +240,8 @@ test.describe("motion", () => {
     await expect(bar).toHaveCSS("opacity", "1");
     await page.mouse.move(5, 5);
     await expect(bar).toHaveCSS("opacity", "0");
-    // A sent message enters with a 160 ms fade and a small rise: the first frame of its row carries the animation.
+    // A sent message enters with a base-duration (180 ms) fade and a small rise: the first frame of its list item carries the
+    // animation (the whole item slides, so the rows next to it do not jump).
     await page.evaluate(() => {
       const seen: string[] = [];
       (window as unknown as { __enter: string[] }).__enter = seen;
@@ -232,9 +249,10 @@ test.describe("motion", () => {
         for (const r of records)
           for (const n of Array.from(r.addedNodes))
             if (n instanceof HTMLElement) {
-              const el = n.matches("[data-own=true]")
-                ? n
-                : n.querySelector("[data-own=true]");
+              const el =
+                n.matches("li") && n.querySelector("[data-own=true]")
+                  ? n
+                  : null;
               if (el instanceof HTMLElement)
                 seen.push(
                   `${getComputedStyle(el).animationName}|${getComputedStyle(el).animationDuration}`,
@@ -253,7 +271,7 @@ test.describe("motion", () => {
     const seen = await page.evaluate(
       () => (window as unknown as { __enter: string[] }).__enter,
     );
-    expect(seen.some((v) => /enter/.test(v) && v.endsWith("|0.16s"))).toBe(
+    expect(seen.some((v) => /enter/.test(v) && v.endsWith("|0.18s"))).toBe(
       true,
     );
   });

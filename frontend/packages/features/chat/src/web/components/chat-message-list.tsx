@@ -426,48 +426,96 @@ export function ChatMessageList(props: ChatMessageListProps) {
     [rows, hasTyping],
   );
 
-  // Older rows added above move the first row's number down by as many, so the library keeps the reader's place.
+  // A new window (another channel, or a jump to a message far from the loaded ones) replaces the rows: the list is
+  // built again and opens where it was asked to (a message being looked for, the first unread message, or the newest).
+  // Older rows added above only move the first row's number down by as many, so the library keeps the reader's place.
+  const highlightId = useChatHighlight();
   const numbering = useRef<{
     anchorKey: string | null;
     anchorIndex: number;
     first: number;
-  }>({ anchorKey: null, anchorIndex: -1, first: START_INDEX });
+    epoch: number;
+    /** False for the first frame of a window: a request that arrives then rebuilds the list at its target instead of gliding. */
+    settled: boolean;
+    openAt: { index: number | "LAST"; align: "center" | "end" };
+    opened: boolean;
+  }>({
+    anchorKey: null,
+    anchorIndex: -1,
+    first: START_INDEX,
+    epoch: 0,
+    settled: false,
+    openAt: { index: "LAST", align: "end" },
+    opened: false,
+  });
+  const honoredRequest = useRef<number | null>(null);
   {
     const state = numbering.current;
     const anchorAt =
       state.anchorKey === null
         ? -1
         : rows.findIndex((row) => row.key === state.anchorKey);
-    if (state.anchorKey !== null && anchorAt < 0) {
-      state.first = START_INDEX; // another window: start over
+    const replaced = state.anchorKey !== null && anchorAt < 0;
+    if (replaced) {
+      state.first = START_INDEX;
+      state.epoch += 1;
+      state.opened = false;
+      state.settled = false;
     } else if (anchorAt > state.anchorIndex) {
       state.first -= anchorAt - state.anchorIndex;
     }
     const anchor = rows.findIndex((row) => row.kind === "message");
     state.anchorKey = anchor < 0 ? null : rows[anchor]!.key;
     state.anchorIndex = anchor;
+    // The request for the first unread message came just after the window: the list is built again at it.
+    const lateDivider =
+      state.opened &&
+      !state.settled &&
+      scrollRequest?.target === "divider" &&
+      honoredRequest.current !== scrollRequest.nonce &&
+      rows.some((row) => row.kind === "unread");
+    if (lateDivider) {
+      state.epoch += 1;
+      state.opened = false;
+    }
+    if (!state.opened && status === "ready" && anchor >= 0) {
+      state.opened = true;
+      const wanted =
+        highlightId !== null
+          ? rows.findIndex(
+              (row) => row.kind === "message" && row.message.id === highlightId,
+            )
+          : -1;
+      const divider =
+        scrollRequest?.target === "divider"
+          ? rows.findIndex((row) => row.kind === "unread")
+          : -1;
+      if (wanted >= 0) state.openAt = { index: wanted, align: "center" };
+      else if (divider >= 0) {
+        state.openAt = { index: divider, align: "center" };
+        honoredRequest.current = scrollRequest!.nonce;
+      } else state.openAt = { index: "LAST", align: "end" };
+    }
   }
   const firstItemIndex = numbering.current.first;
 
   // The list state the scroll code reads without re-rendering.
   const memo = useRef<{
     atBottom: boolean;
-    /** Set by a request for the newest messages: rows that grow or arrive keep the list at the end until the reader scrolls. */
-    follow: boolean;
     request: number | null;
     range: ListRange;
-    settled: boolean;
   }>({
     atBottom: true,
-    follow: false,
     request: null,
     range: { startIndex: 0, endIndex: 0 },
-    settled: false,
   });
   const cancelGlide = useRef<() => void>(() => undefined);
 
   // Without a layout (a hidden panel, a test DOM) every row renders in normal flow.
-  const [virtualOn, setVirtualOn] = useState(false);
+  // A browser starts in the virtual list (the room around it has its height from the first frame); a test DOM starts plain.
+  const [virtualOn, setVirtualOn] = useState(
+    () => typeof ResizeObserver !== "undefined",
+  );
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
@@ -493,7 +541,6 @@ export function ChatMessageList(props: ChatMessageListProps) {
   const glideToBottom = (instant = false) => {
     const el = scrollRef.current;
     if (!el) return;
-    memo.current.follow = true;
     const end = () => el.scrollHeight - el.clientHeight;
     if (!instant && end() - el.scrollTop > el.clientHeight * 2) {
       el.scrollTop = end() - el.clientHeight;
@@ -555,7 +602,6 @@ export function ChatMessageList(props: ChatMessageListProps) {
   jumpRef.current = scrollToMessage;
 
   // A search hit points at a message: the row scrolls itself once mounted, so the list first brings it into the window.
-  const highlightId = useChatHighlight();
   const highlighted = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (highlightId === null) {
@@ -572,7 +618,11 @@ export function ChatMessageList(props: ChatMessageListProps) {
     const el = scrollRef.current;
     if (!scrollRequest || status !== "ready") return;
     if (memo.current.request === scrollRequest.nonce) return;
-    const instant = !memo.current.settled;
+    if (honoredRequest.current === scrollRequest.nonce) {
+      memo.current.request = scrollRequest.nonce;
+      return;
+    }
+    const instant = !numbering.current.settled;
     if (scrollRequest.target === "divider") {
       const index = rows.findIndex((row) => row.kind === "unread");
       if (index >= 0) {
@@ -580,7 +630,6 @@ export function ChatMessageList(props: ChatMessageListProps) {
           memo.current.request = scrollRequest.nonce;
           // Not the bottom: a pinned list would scroll on, past the divider, as the rows measure.
           memo.current.atBottom = false;
-          memo.current.follow = false;
           glideToIndex(index, instant);
           return;
         }
@@ -597,21 +646,19 @@ export function ChatMessageList(props: ChatMessageListProps) {
     if (virtualOn) glideToBottom(instant);
     else {
       el.scrollTop = el.scrollHeight;
-      memo.current.follow = true;
     }
     memo.current.atBottom = true;
   }, [scrollRequest, rows, virtualOn, status]);
   useLayoutEffect(() => {
     if (status !== "ready") return;
     const id = requestAnimationFrame(() => {
-      memo.current.settled = true;
+      numbering.current.settled = true;
     });
     return () => cancelAnimationFrame(id);
-  }, [status]);
+  }, [status, numbering.current.epoch]);
 
   /** The reader takes the scroll over: the list stops following the newest messages and any glide ends. */
   function releaseFollow() {
-    memo.current.follow = false;
     cancelGlide.current();
   }
 
@@ -918,7 +965,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         <RowActivityProvider value={activity}>
           {virtualOn ? (
             <Virtuoso<ListEntry, ListContext>
-              key={space}
+              key={`${space}:${numbering.current.epoch}`}
               ref={virtuoso}
               style={{ height: "100%" }}
               data={entries as ListEntry[]}
@@ -927,13 +974,15 @@ export function ChatMessageList(props: ChatMessageListProps) {
               computeItemKey={(_, entry) => entry.key}
               itemContent={(_, entry) => renderEntry(entry)}
               firstItemIndex={firstItemIndex}
-              initialTopMostItemIndex={{ index: "LAST", align: "end" }}
+              initialTopMostItemIndex={numbering.current.openAt}
               alignToBottom
               atBottomThreshold={BOTTOM_SLACK_PX}
               increaseViewportBy={VIEWPORT_EXTRA_PX}
               defaultItemHeight={60}
+              // Follows a new row only when the reader is at the end right now (the live position, not the last state
+              // the library reported): a reader who just scrolled up keeps their place.
               followOutput={(bottom) =>
-                bottom || memo.current.follow
+                bottom && (!scrollRef.current || isAtBottom(scrollRef.current))
                   ? prefersReducedMotion()
                     ? "auto"
                     : "smooth"
@@ -952,7 +1001,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
                   props.onNewerNeeded();
               }}
               scrollerRef={(node) => {
-                scrollRef.current = node instanceof HTMLElement ? node : null;
+                // The library clears this on unmount, after the plain list may have taken its place: only a node is kept.
+                if (node instanceof HTMLElement) scrollRef.current = node;
               }}
             />
           ) : (
@@ -1010,7 +1060,6 @@ export function ChatMessageList(props: ChatMessageListProps) {
           props.onJumpLatest();
           const el = scrollRef.current;
           if (!el) return;
-          memo.current.follow = true;
           glideToBottom();
           el.focus({ preventScroll: true });
         }}
