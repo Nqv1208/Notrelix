@@ -2,8 +2,13 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { signInAtProvider } from "./support/oidc-provider";
-import { apiRead, apiWrite, realUsers, signIn } from "./support/real-session";
-import { createOwnedWorkspace } from "./support/real-workspace";
+import {
+  apiRead,
+  apiWrite,
+  findWorkspace,
+  realUsers,
+  signIn,
+} from "./support/real-session";
 
 interface Summary {
   readonly hasPasswordCredential: boolean;
@@ -44,8 +49,8 @@ test("a person with only a provider is offered the provider, not a password; the
 }) => {
   const subject = `real-e2e-${randomUUID()}`;
   await signIn(page, user);
-  // The landing page depends on which specs ran before; a workspace of its own does not.
-  const workspaceId = (await createOwnedWorkspace(page, "Provider")).id;
+  // The landing page depends on which specs ran before; the seeded workspace does not (a Guest may not create one).
+  const workspaceId = (await findWorkspace(page, "Workspace 3")).id;
   sql(
     `update identity.users set has_password_credential = false where email = '${user.email}'; insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser}, 'Google', '${subject}', '{}')`,
   );
