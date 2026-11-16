@@ -680,6 +680,9 @@ export const en = {
   },
   panel: {
     label: "Channel panels",
+    // Short names for the tab strip; the title of each tab carries the full name.
+    tabGroup: "Details",
+    tabFollowing: "Following",
   },
   mentions: {
     listLabel: "Mention suggestions",
@@ -1518,6 +1521,8 @@ export const vi: ChatCopy = {
   },
   panel: {
     label: "Bảng của kênh",
+    tabGroup: "Thông tin",
+    tabFollowing: "Theo dõi",
   },
   mentions: {
     listLabel: "Gợi ý nhắc đến",
