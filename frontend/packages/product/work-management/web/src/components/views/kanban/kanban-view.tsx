@@ -1000,7 +1000,16 @@ export function KanbanView({
     const next = { ...kanbanSettings.wipLimits };
     if (limit === null) delete next[lane.optionId];
     else next[lane.optionId] = limit;
-    updateViewConfig({ wipLimits: next });
+    updateViewConfig(
+      { wipLimits: next },
+      {
+        onError: () =>
+          toast.error(
+            fillCopy(laneCopyRef.current.saveFailed, { title: lane.name }),
+            { id: `kanban-wip-${lane.optionId}` },
+          ),
+      },
+    );
   };
 
   const handleSheetFieldValue = (payload: UpdateFieldValueInput) => {
