@@ -1,4 +1,4 @@
-import { Reply, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@notrelix/ui-web";
 import type { ChatCopy } from "./chat.copy";
 import { fillCopy } from "./use-chat-copy";
@@ -19,23 +19,24 @@ export interface ReplyChipProps {
 export function ReplyChip({ copy, name, text, onCancel }: ReplyChipProps) {
   return (
     <div
-      className="mx-2 mt-2 flex min-w-0 items-center gap-2 rounded-2xl border-s-2 border-primary bg-muted py-1.5 ps-3 pe-1 text-xs"
+      className="flex min-w-0 items-center gap-2.5 rounded-t-[26px] border-b border-border bg-background px-3.5 py-2 text-[12.5px] leading-[1.45]"
       data-testid="chat-reply-chip"
     >
-      <Reply
-        className="size-3.5 shrink-0 text-muted-foreground"
+      <span
+        className="w-[3px] self-stretch rounded-sm bg-primary"
         aria-hidden="true"
       />
-      <span className="min-w-0 flex-1 truncate">
-        <span className="font-semibold">
+      <span className="min-w-0 flex-1 text-muted-foreground">
+        <b className="block truncate font-bold text-foreground">
           {fillCopy(copy.quote.replyTo, { name })}
-        </span>
-        <span className="text-muted-foreground"> · {text}</span>
+        </b>
+        <span className="block truncate">{text}</span>
       </span>
       <Button
         type="button"
         size="icon-xs"
         variant="ghost"
+        className="size-7"
         aria-label={copy.quote.cancel}
         title={copy.quote.cancel}
         onClick={onCancel}

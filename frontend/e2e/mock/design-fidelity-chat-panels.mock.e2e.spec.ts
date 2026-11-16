@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * The thread and pins side panels against the Chat canvas boards `Chat-Thread-T`/`-M` and `Chat-Pins`/`-T`/`-M`
  * (rendered with render.py, light and dark), at 1440, 1024 and 390, tolerance 1 px. Board facts: a 340 (360 from
- * 1280) wide panel with an 88 high header from 768 px, a 56 high page header with a back arrow on a phone, a 24 high
+ * 1280) wide panel with a 56 high header (the canvas set 56 at every width), a 56 high page header with a back arrow on a phone, a 24 high
  * lined reply separator, a 52 high pill reply composer, pin rows with 12 16 padding. Every frame was also reviewed by
  * eye: at 1024 the open panel left the conversation 160 px wide (one word per line, a vertical composer), so the
  * channel column is hidden below 1280 while a panel is open and the conversation keeps at least 360 px.
@@ -80,8 +80,8 @@ async function openThread(page: Page) {
 }
 
 const SIZES = [
-  { width: 1440, height: 900, panel: 360, header: 88 },
-  { width: 1024, height: 768, panel: 340, header: 88 },
+  { width: 1440, height: 900, panel: 360, header: 56 },
+  { width: 1024, height: 768, panel: 340, header: 56 },
   { width: 390, height: 844, panel: 390, header: 56 },
 ] as const;
 

@@ -1810,7 +1810,9 @@ export function ChatWorkspace({
                 className={cn(
                   "flex items-center gap-1 border-b border-border px-2 py-1",
                   // The thread and the pins draw their own header and close control at every width (Chat-Thread-*, Chat-Pins-*).
-                  (panel.kind === "thread" || panel.kind === "pins") &&
+                  (panel.kind === "thread" ||
+                    panel.kind === "pins" ||
+                    panel.kind === "following") &&
                     "hidden",
                 )}
               >
@@ -2007,6 +2009,7 @@ export function ChatWorkspace({
                   channelName={channelNameOf}
                   locale={locale}
                   timeZone={timeZone}
+                  onClose={() => setPanel(null)}
                   onOpenThread={(rootId) =>
                     setPanel({ kind: "thread", rootId })
                   }
