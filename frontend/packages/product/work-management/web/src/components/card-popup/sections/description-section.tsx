@@ -187,6 +187,19 @@ function HelpTable() {
   );
 }
 
+/** Unsaved description text by card, kept past the editor so closing the sheet does not take it along. */
+const unsentDescriptions = new Map<string, string>();
+
+/** What the person had typed in a card's description and not saved ("" when nothing). */
+export function unsentDescriptionOf(cardId: string): string {
+  return unsentDescriptions.get(cardId) ?? "";
+}
+
+/** Forgets a card's unsaved description (an explicit cancel, or a clean slate in a test). */
+export function discardUnsentDescription(cardId: string): void {
+  unsentDescriptions.delete(cardId);
+}
+
 function Editor({
   initial,
   onClose,
@@ -196,7 +209,14 @@ function Editor({
 }) {
   const { card, copy, callbacks, saves, track } = useCardPopup();
   const t = copy.sections.description;
-  const [draft, setDraft] = useState(initial);
+  const [draft, setDraftState] = useState(
+    () => unsentDescriptions.get(card.id) ?? initial,
+  );
+  const setDraft = (next: string) => {
+    setDraftState(next);
+    if (next === initial) unsentDescriptions.delete(card.id);
+    else unsentDescriptions.set(card.id, next);
+  };
   const [help, setHelp] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
   const save = saves.description;
@@ -230,13 +250,17 @@ function Editor({
   };
   const submit = () => {
     if (tooLong || saving) return;
-    if (draft.trim() === initial.trim()) return onClose();
+    if (draft.trim() === initial.trim()) {
+      unsentDescriptions.delete(card.id);
+      return onClose();
+    }
     submitted.current = true;
     clashed.current = false;
     setClash(null);
     track("description", async () => {
       try {
         await callbacks.onUpdateItem?.(card.id, { descriptionMd: draft });
+        unsentDescriptions.delete(card.id);
       } catch (error) {
         if (!isVersionConflict(error)) throw error;
         // The card is read again with their text; mine stays in the editor.
@@ -456,7 +480,13 @@ function Editor({
           ) : null}
           {saving ? t.saving : t.save}
         </PanelBtn>
-        <PanelBtn variant="ghost" onClick={onClose}>
+        <PanelBtn
+          variant="ghost"
+          onClick={() => {
+            unsentDescriptions.delete(card.id);
+            onClose();
+          }}
+        >
           {t.cancel}
         </PanelBtn>
         {tooLong ? (
@@ -538,7 +568,11 @@ export function DescriptionSection() {
   const { card, copy, mode } = useCardPopup();
   const t = copy.sections.description;
   const canEdit = useCanEdit();
-  const [editing, setEditing] = useState(false);
+  // A card with an unsaved description opens on its editor.
+  const [editing, setEditing] = useState(() => unsentDescriptions.has(card.id));
+  useEffect(() => {
+    setEditing(unsentDescriptions.has(card.id));
+  }, [card.id]);
   const text = card.descriptionMd?.trim() ?? "";
   const close = () => setEditing(false);
 

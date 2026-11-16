@@ -7,6 +7,8 @@ export const createCardUpdateSchema = z.object({
   attachmentIds: z.array(z.string().min(1)).default([]),
   /** Answers this comment; a reply to a reply lands on the top-level comment. */
   parentCommentId: z.string().min(1).optional(),
+  /** One per comment draft until it is sent: a retry of an unanswered post must not post twice. */
+  idempotencyKey: z.string().min(1).optional(),
 });
 
 export type CreateCardUpdateInput = z.infer<typeof createCardUpdateSchema>;
