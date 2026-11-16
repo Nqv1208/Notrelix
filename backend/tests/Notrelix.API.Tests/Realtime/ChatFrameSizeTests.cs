@@ -62,6 +62,12 @@ public sealed class ChatFrameSizeTests(ITestOutputHelper output)
                 Guid.NewGuid(), Account, Workspace, Space, Guid.NewGuid(), "thumbs_up", "added", Guid.NewGuid(), Author, null, Now), Now)),
             ["pin"] = Measure("pin", ChatRealtime.ForSpaceChanged(new ChatSpaceChangedIntegrationEvent(
                 Guid.NewGuid(), Account, Workspace, Space, Guid.NewGuid(), "pinned", Guid.NewGuid(), Author, null, Now), Now)),
+            ["call with 25 participants"] = Measure("call with 25 participants", ChatRealtime.ForCallChanged(new ChatCallChangedIntegrationEvent(
+                Guid.NewGuid(), Account, Workspace, Space, Guid.NewGuid(), Author, "active", "voice", null, false, 1234567,
+                Enumerable.Range(0, 25).Select(_ => Guid.NewGuid()).ToList(), Guid.NewGuid(), Author, null, Now), Now)),
+            ["call ring"] = Measure("call ring", ChatRealtime.CallRing(new ChatCallChangedIntegrationEvent(
+                Guid.NewGuid(), Account, Workspace, Space, Guid.NewGuid(), Author, "ringing", "video", null, true, 1,
+                [Author], Guid.NewGuid(), Author, null, Now), Guid.NewGuid(), Now)),
             ["unread with preview"] = Measure("unread with preview", ChatRealtime.Unread(
                 Account, Workspace, Author, Space, 42, 3, Guid.NewGuid(), Guid.NewGuid(), Now, 1234567,
                 new ChatRealtime.UnreadPreview(1234567, Author, "user", ChatRealtime.PreviewText(new string('x', 400)), Now))),

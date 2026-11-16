@@ -104,6 +104,7 @@ public static class PermissionCatalog
         [PermissionAction.ChatMentionBroadcast] = "chat",
         [PermissionAction.ChatMessagePin] = "chat",
         [PermissionAction.ChatMessageReact] = "chat",
+        [PermissionAction.ChatCallStart] = "chat",
         [PermissionAction.ChatSearch] = "chat",
     };
 

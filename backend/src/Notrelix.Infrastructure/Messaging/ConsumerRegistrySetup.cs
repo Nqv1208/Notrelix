@@ -897,6 +897,26 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatCallRealtimeConsumer",
+                EventName = "chat.call.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a call state change to the realtime gateway (chat.call.v1 on the channel stream of the space and, while a conversation call rings, on the stream of each invited person)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatCallParticipantRevokedConsumer",
+                EventName = "chat.call.participant-revoked",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-call-participant-revoked-v1",
+                BoundedContext = "Chat",
+                Description = "Drops a person released from a call because their access ended from the media room through the media gateway; retried until it succeeds",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatNotificationIntentConsumer",
                 EventName = "chat.message.created",
                 EventVersion = 1,

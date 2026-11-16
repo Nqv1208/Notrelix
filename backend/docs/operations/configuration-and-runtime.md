@@ -348,6 +348,15 @@ the attachment object reaper removes its row and its object on its next pass (th
 orphan sweep in each pass). A bucket that serves browsers must allow `PUT` and `GET` from the web origin with the
 `Content-Type` and `Content-Length` headers (CORS).
 
+`Chat:Calls` (Application, `ChatCallOptions`, validated on start by `ChatCallOptionsValidator`) holds the call settings:
+`Enabled` (default `true`; false answers 503 `chat.calls.unavailable` on every call operation), `SfuUrl`, `TokenTtlSeconds` (60, at most 600),
+`RingSeconds` (45), `EmptyCallSeconds` (60), `Region` (`ap-southeast-1`, copied to `chat.calls.region` by the server; a client never
+supplies it) and `LogRetentionMonths` (12, not applied yet). `Chat:CallSweep` (Infrastructure, `ChatCallSweepOptions`) configures the
+job `Chat.Calls.Sweep` (`ChatCallSweepService`, a hosted service; `Enabled`, `Interval` default 5 seconds; `ReconcileInterval` default 30 seconds removes people a media room holds without an open participation): a call still Ringing after
+`RingSeconds` ends as Missed, and an Active call with nobody in it for `EmptyCallSeconds` ends as Completed, each in its own
+transaction under the system context with the RLS worker scope and a transaction advisory lock on the call, writing the one call
+message. Phase 5a registers only the in-memory media gateway (`InMemoryChatCallMediaGateway`) behind `IChatCallMediaGateway`.
+
 `Chat:Retention` (Infrastructure, `ChatRetentionOptions`, validated on start by `ChatRetentionOptionsValidator`)
 configures the Chat retention job `Chat.Retention.Apply` (`ChatRetentionService`, a hosted service; UC-CHT-H05). Each
 pass lists the Workspaces that have a retention window, and for

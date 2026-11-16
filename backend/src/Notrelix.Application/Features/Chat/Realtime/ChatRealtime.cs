@@ -26,12 +26,14 @@ public static class ChatRealtime
     public const string SpaceChangedEvent = "chat.space.changed";
     public const string ReactionChangedEvent = "chat.reaction.changed";
     public const string AttachmentChangedEvent = "chat.message.attachment.changed";
+    public const string CallChangedEvent = "chat.call.changed";
 
     public const string MessagePayloadContract = "chat.message.v1";
     public const string UnreadPayloadContract = "chat.unread.v1";
     public const string SpaceChangedPayloadContract = "chat.space.v1";
     public const string ReactionPayloadContract = "chat.reaction.v1";
     public const string AttachmentPayloadContract = "chat.attachment.v1";
+    public const string CallPayloadContract = "chat.call.v1";
 
     /// <summary>
     /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is about 650 bytes,
@@ -199,6 +201,57 @@ public static class ChatRealtime
         DateTimeOffset? CreatedAt,
         string? DownloadPath,
         bool DetailsOmitted);
+
+    /// <summary>
+    /// A call changed (SPEC-CHAT-MEDIA-CALLS section 7): the compact state of the call on the channel stream of its space. A roster too
+    /// large for the frame sends ids only up to the limit and sets ParticipantsOmitted, so a reader refetches the call over REST. The
+    /// frame carries no join token and no room name. Contract <see cref="CallPayloadContract"/>.
+    /// </summary>
+    public static RealtimeResourceChangedV1 ForCallChanged(ChatCallChangedIntegrationEvent e, DateTimeOffset now)
+        => Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
+            e.OccurredAt, CallChangedEvent, Serialize(CallFrameOf(e)), now, CallPayloadContract);
+
+    /// <summary>The same call payload on the per-person stream of one invited person, so a person with no channel open still rings.</summary>
+    public static RealtimeResourceChangedV1 CallRing(ChatCallChangedIntegrationEvent e, Guid userId, DateTimeOffset now)
+    {
+        var scope = new RealtimeScope(RealtimeScopeKind.User, userId);
+        return new RealtimeResourceChangedV1(
+            Guid.CreateVersion7(),
+            e.AccountId,
+            e.WorkspaceId,
+            e.ActorUserId,
+            e.CorrelationId != Guid.Empty ? e.CorrelationId : Guid.NewGuid(),
+            e.CausationId ?? e.EventId,
+            e.OccurredAt,
+            UserTopicNamespace,
+            UserResourceKind,
+            userId,
+            scope.StreamKey,
+            RealtimeStreamClock.Next(now),
+            CallChangedEvent,
+            CallPayloadContract,
+            Serialize(CallFrameOf(e)));
+    }
+
+    /// <summary>The most roster ids one call frame carries; 25 people at 36 characters stay far below the 4096 byte gateway limit.</summary>
+    public const int CallFrameMaxParticipants = 25;
+
+    private static CallFrame CallFrameOf(ChatCallChangedIntegrationEvent e) => new(
+        e.CallId, e.SpaceId, e.State, e.Kind, e.InitiatorId, e.EndReason,
+        e.ParticipantIds.Take(CallFrameMaxParticipants).ToList(),
+        e.ParticipantIds.Count > CallFrameMaxParticipants, e.Version);
+
+    /// <summary>The call payload (contract <see cref="CallPayloadContract"/>): <c>{ callId, state, kind, initiatorId, participants[], version }</c>.</summary>
+    public sealed record CallFrame(
+        Guid CallId,
+        Guid SpaceId,
+        string State,
+        string Kind,
+        Guid InitiatorId,
+        string? EndReason,
+        IReadOnlyList<Guid> Participants,
+        bool ParticipantsOmitted,
+        long Version);
 
     /// <summary>One space's unread counts for one person, for the per-user stream (the badge refresh).</summary>
     public static RealtimeResourceChangedV1 Unread(

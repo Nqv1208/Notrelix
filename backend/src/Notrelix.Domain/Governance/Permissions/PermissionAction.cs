@@ -56,4 +56,5 @@ public enum PermissionAction
     ChatMessagePin,
     ChatMessageReact,
     ChatSearch,
+    ChatCallStart,
 }
