@@ -234,8 +234,11 @@ test.describe("Department page (owner)", () => {
           dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
         ).toBeDisabled();
         await expect(
-          dialog.getByText("Không thể chuyển vào chính nó").first(),
-        ).toBeVisible();
+          dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
+        ).toHaveAccessibleDescription(/Không thể chuyển vào chính nó/);
+        await expect(
+          dialog.locator("[title='Không thể chuyển vào chính nó']").first(),
+        ).toHaveText("Bên trong");
         expect(
           await page.evaluate(
             () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -257,6 +260,15 @@ test.describe("Department page (owner)", () => {
           expect(box.right).toBeLessThanOrEqual(listBox.x + listBox.width);
           expect(box.left).toBeGreaterThanOrEqual(listBox.x);
         }
+        // The short reason fits whole: no pill text is truncated.
+        expect(
+          await pills.evaluateAll((els) =>
+            els.every((el) => {
+              const text = el.firstElementChild as HTMLElement;
+              return text.scrollWidth <= text.clientWidth;
+            }),
+          ),
+        ).toBe(true);
         expect(serious(await new AxeBuilder({ page }).analyze())).toEqual([]);
         if (process.env.MOVE_SHOTS_DIR) {
           await page.screenshot({
