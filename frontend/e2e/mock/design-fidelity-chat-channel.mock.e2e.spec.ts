@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * The Chat channel view against the owner canvas `Chat-Main` (1440), `Chat-Main-T` (1024) and `Chat-Main-M` (390),
@@ -39,16 +40,6 @@ async function open(
   await page.goto(CHANNEL);
   await expect(page.locator("[data-bubble]").first()).toBeVisible();
   await page.waitForTimeout(600);
-}
-
-/** The room opens at the first unread message; these checks act on the newest ones, so they go there first. */
-async function toNewest(page: Page) {
-  const jump = page.getByRole("button", {
-    name: /^(Jump to latest|Xem tin mới nhất)$/,
-  });
-  if (await jump.isVisible()) await jump.click();
-  await expect(jump).toBeHidden();
-  await page.waitForTimeout(300);
 }
 
 async function box(page: Page, selector: string) {

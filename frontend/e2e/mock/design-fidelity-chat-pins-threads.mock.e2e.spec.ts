@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 import { vi as copy } from "../../packages/features/chat/src/web/components/chat.copy";
 
 /**
@@ -51,6 +52,7 @@ async function open(
   await page.goto(CHANNEL);
   await expect(page.getByRole("log")).toBeVisible({ timeout: 20_000 });
   await page.waitForTimeout(400);
+  await toNewest(page);
 }
 
 /** Opens the More menu of the nth message from the end (the other person's messages) and picks an entry. */

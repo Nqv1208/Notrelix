@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * The thread and pins side panels against the Chat canvas boards `Chat-Thread-T`/`-M` and `Chat-Pins`/`-T`/`-M`
@@ -40,6 +41,7 @@ async function open(
   await page.goto(CHANNEL);
   await expect(page.locator("[data-bubble]").first()).toBeVisible();
   await page.waitForTimeout(600);
+  await toNewest(page);
 }
 
 async function box(page: Page, selector: string) {

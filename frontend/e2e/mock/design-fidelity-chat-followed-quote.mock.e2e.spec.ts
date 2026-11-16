@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * The followed-threads list and the quote reply against the Chat canvas boards `Chat-Followed-M`/`-T` and
@@ -43,16 +44,6 @@ async function open(
   await expect(page.locator("[data-bubble]").first()).toBeVisible();
   await page.waitForTimeout(600);
   await toNewest(page);
-}
-
-/** The room opens at the first unread message; these checks act on the newest ones, so they go there first. */
-async function toNewest(page: Page) {
-  const jump = page.getByRole("button", {
-    name: /^(Jump to latest|Xem tin mới nhất)$/,
-  });
-  if (await jump.isVisible()) await jump.click();
-  await expect(jump).toBeHidden();
-  await page.waitForTimeout(300);
 }
 
 async function box(page: Page, selector: string) {
