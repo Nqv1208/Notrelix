@@ -77,7 +77,12 @@ export function countOwners(members: readonly WorkspaceMember[]): number {
 }
 
 export type MemberActionBlock =
-  "not-admin" | "self" | "last-owner" | "owner-by-transfer" | "suspended";
+  | "not-admin"
+  | "self"
+  | "last-owner"
+  | "owner-by-transfer"
+  | "admin-by-owner"
+  | "suspended";
 
 export interface MemberCapabilities {
   /** Roles the viewer may pick for this member (empty = read-only). */
@@ -121,6 +126,9 @@ export function memberCapabilities(
     return blocked("self");
   // Only an owner may change another owner; admins manage non-owners.
   if (isOwner && viewer.role !== "owner") return blocked("owner-by-transfer");
+  // The producer lets only an Owner remove, suspend or activate an Admin (actor-versus-target guard).
+  if (member.role === "admin" && viewer.role !== "owner")
+    return blocked("admin-by-owner");
 
   const suspended = member.membership === "suspended";
   return {

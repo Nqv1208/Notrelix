@@ -98,6 +98,8 @@ export function SpaceTrashSurface({
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {rows.data.map((row) => {
             const busy = pendingId === row.id;
+            // One restore at a time: the host keeps one pending row and one failure.
+            const locked = pendingId !== null;
             const failure = failed?.id === row.id ? failed : null;
             return (
               <li
@@ -120,11 +122,11 @@ export function SpaceTrashSurface({
                 </span>
                 <button
                   type="button"
-                  aria-disabled={busy ? true : undefined}
+                  aria-disabled={locked ? true : undefined}
                   aria-describedby={
                     failure ? `${headingId}-${row.id}-error` : undefined
                   }
-                  onClick={busy ? undefined : () => onRestore(row.id)}
+                  onClick={locked ? undefined : () => onRestore(row.id)}
                   className={cn(BUTTON)}
                 >
                   {busy ? t.restoring : t.restore}

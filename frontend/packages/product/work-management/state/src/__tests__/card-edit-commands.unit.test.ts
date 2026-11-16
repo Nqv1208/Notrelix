@@ -284,6 +284,23 @@ describe("sheet edits reach the item detail the sheet reads", () => {
       );
     });
 
+    it("does not replay an unanswered edit minutes later: the same edit then is a new submission", async () => {
+      const { queryClient } = seeded();
+      const updateCard = vi
+        .fn()
+        .mockRejectedValueOnce({ status: 502 })
+        .mockResolvedValue(undefined);
+      const now = vi.spyOn(Date, "now");
+      now.mockReturnValue(1_000_000);
+      await expect(edit(queryClient, updateCard)).rejects.toBeDefined();
+      now.mockReturnValue(1_000_000 + 10 * 60_000);
+      await edit(queryClient, updateCard);
+      now.mockRestore();
+      expect(sentWith(updateCard, 1).idempotencyKey).not.toBe(
+        sentWith(updateCard, 0).idempotencyKey,
+      );
+    });
+
     it("starts a new submission after an answer, or for a different change", async () => {
       const { queryClient } = seeded();
       const updateCard = vi
