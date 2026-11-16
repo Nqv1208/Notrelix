@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * Chat at 1440 x 900 and 390 x 844 against the owner canvas boards `Chat-Main` (1440), `Chat-List-M` and
@@ -58,6 +59,7 @@ async function css(page: Page, selector: string, prop: string) {
 }
 
 async function react(page: Page) {
+  await toNewest(page);
   const row = page.locator("[data-own=false]").last();
   await row.scrollIntoViewIfNeeded();
   await row.hover();
@@ -145,7 +147,7 @@ test.describe("1440 (Chat-Main)", () => {
       Math.abs(parseFloat(await css(page, bubble, "line-height")) - 14 * 1.45),
     ).toBeLessThan(1);
     const col = await box(page, "[role=log] ol");
-    expect(col.w).toBeLessThanOrEqual(760);
+    expect(col.w).toBeLessThanOrEqual(1120);
     const nd = await box(page, "[data-unread-divider]");
     expect(nd.h).toBeCloseTo(24, 0);
     expect(nd.x + nd.w / 2).toBeCloseTo(col.x + col.w / 2, 0);
@@ -153,6 +155,9 @@ test.describe("1440 (Chat-Main)", () => {
     await page.getByRole("log").evaluate((el) => {
       el.scrollTop = 0;
     });
+    await expect(
+      page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
+    ).toBeVisible();
     const ds = await box(
       page,
       "[role=log] li[data-testid=chat-day-separator] > div",
@@ -245,6 +250,7 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
  * preview pane, which the app does not have: only the field, chips and result rows are compared, on the phone.
  */
 async function pinThree(page: Page) {
+  await toNewest(page);
   for (let i = 0; i < 3; i++) {
     const row = page.locator("[data-own=false]").nth(-1 - i * 2);
     await row.scrollIntoViewIfNeeded();
@@ -258,6 +264,7 @@ async function pinThree(page: Page) {
 }
 
 async function openThread(page: Page) {
+  await toNewest(page);
   const row = page.locator("[data-own=false]").last();
   await row.scrollIntoViewIfNeeded();
   await row.hover();

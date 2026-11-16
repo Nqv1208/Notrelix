@@ -71,6 +71,8 @@ const HEADER_PX = 36;
 const ENTER_MS = 600;
 /** The height of the strip below the last row. */
 const FOOTER_PX = 24;
+/** The fade above the composer reaches this far above it. */
+const FADE_PX = 40;
 
 /** The typing bubble is the last entry of the list, after the rows. */
 const TYPING_ENTRY = { kind: "typing", key: "typing" } as const;
@@ -85,6 +87,7 @@ interface ListContext {
   readonly loadingOlder: boolean;
   readonly loadingNewer: boolean;
   readonly loadingText: string;
+  readonly footerPx: number;
   readonly isFresh: (key: string) => boolean;
 }
 
@@ -199,7 +202,7 @@ const Header: Components<ListEntry, ListContext>["Header"] = ({ context }) => (
 );
 const Footer: Components<ListEntry, ListContext>["Footer"] = ({ context }) => (
   <Strip
-    height={FOOTER_PX}
+    height={context?.footerPx ?? FOOTER_PX}
     text={context?.loadingNewer ? context.loadingText : null}
   />
 );
@@ -316,12 +319,14 @@ export interface ChatMessageListProps {
   readonly attachmentsReadOnly?: boolean;
   /** Names above groups of other people's messages: on in channels and groups, off in a 1-1 conversation. */
   readonly showNames?: boolean;
+  /** The height of the composer floating over the bottom of the list: rows end above it, with a fade under the pill. */
+  readonly bottomInset?: number;
   /** The people typing now (not the caller): a typing bubble closes the list. */
   readonly typingIds?: readonly string[];
 }
 
-/** The width of the conversation column: a comfortable measure on wide screens, fluid below it. */
-export const CHAT_COLUMN = "mx-auto w-full max-w-[760px] 2xl:max-w-[1040px]";
+/** The width of the conversation column: it uses the room, up to a wide cap; the composer shares its edges. */
+export const CHAT_COLUMN = "mx-auto w-full max-w-[1120px]";
 
 export function dayLabel(
   dayKey: string,
@@ -725,6 +730,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       loadingOlder: props.isLoadingOlder,
       loadingNewer: props.isLoadingNewer,
       loadingText: copy.list.loadingOlder,
+      footerPx: FOOTER_PX + (props.bottomInset ?? 0),
       isFresh,
     }),
     [
@@ -734,6 +740,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       entries.length,
       firstItemIndex,
       copy.list.loadingOlder,
+      props.bottomInset,
       isFresh,
     ],
   );
@@ -1031,17 +1038,26 @@ export function ChatMessageList(props: ChatMessageListProps) {
                 ))}
               </ol>
               <Strip
-                height={FOOTER_PX}
+                height={FOOTER_PX + (props.bottomInset ?? 0)}
                 text={props.isLoadingNewer ? copy.list.loadingOlder : null}
               />
             </div>
           )}
         </RowActivityProvider>
       </div>
+      {props.bottomInset ? (
+        <div
+          aria-hidden="true"
+          data-testid="chat-list-fade"
+          className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/85 to-transparent"
+          style={{ height: props.bottomInset + FADE_PX }}
+        />
+      ) : null}
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>
       <JumpLatest
+        inset={props.bottomInset ?? 0}
         visible={!atBottom || props.hasNewer}
         label={copy.list.jumpLatest}
         count={unseenCount}
@@ -1160,12 +1176,15 @@ function BackToList({
  * list. It fades and rises 8 px in 160 ms; hidden it is inert.
  */
 function JumpLatest({
+  inset,
   visible,
   label,
   count,
   countLabel,
   onClick,
 }: {
+  /** The height of the composer the pill floats above. */
+  readonly inset: number;
   readonly visible: boolean;
   readonly label: string;
   readonly count: number;
@@ -1174,7 +1193,8 @@ function JumpLatest({
 }) {
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-4"
+      className="pointer-events-none absolute inset-x-0 flex justify-center px-4"
+      style={{ bottom: inset + 12 }}
       data-testid="chat-jump-latest-layer"
     >
       <Button
@@ -1188,7 +1208,7 @@ function JumpLatest({
         data-visible={visible ? "true" : "false"}
         data-count={count > 0 ? count : undefined}
         className={cn(
-          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,visibility,background-color] duration-[160ms] ease-out hover:bg-muted active:scale-95 active:bg-muted motion-reduce:transition-none",
+          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,visibility,background-color] duration-150 ease-out hover:scale-105 hover:bg-muted active:scale-95 active:bg-muted motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
           visible
             ? "pointer-events-auto visible translate-y-0 opacity-100"
             : "invisible translate-y-2 opacity-0",

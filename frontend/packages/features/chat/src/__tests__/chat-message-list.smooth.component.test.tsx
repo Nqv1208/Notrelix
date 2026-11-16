@@ -236,3 +236,30 @@ describe("ChatMessageList: the jump to the newest", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("ChatMessageList: under a floating composer", () => {
+  it("leaves room equal to the composer under the last row, with a fade and the pill above it", () => {
+    render(<ChatMessageList {...props([message(1)])} bottomInset={96} />);
+    const log = screen.getByRole("log");
+    // The strip under the rows is the composer's height plus the list's own end padding.
+    expect(log.querySelector('[style*="height: 120px"]')).not.toBeNull();
+    const fade = screen.getByTestId("chat-list-fade");
+    expect(fade.className).toContain("from-background");
+    expect(fade.className).toContain("pointer-events-none");
+    expect(fade.style.height).toBe("136px");
+    expect(screen.getByTestId("chat-jump-latest-layer").style.bottom).toBe(
+      "108px",
+    );
+  });
+
+  it("scales the jump pill up a little on hover, with ease-out, and not under reduced motion", () => {
+    render(<ChatMessageList {...props([message(1)])} />);
+    const pill = screen
+      .getByTestId("chat-jump-latest-layer")
+      .querySelector("button")!;
+    expect(pill.className).toContain("hover:scale-105");
+    expect(pill.className).toContain("duration-150");
+    expect(pill.className).toContain("ease-out");
+    expect(pill.className).toContain("motion-reduce:hover:scale-100");
+  });
+});

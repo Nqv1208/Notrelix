@@ -55,8 +55,9 @@ async function css(page: Page, selector: string, prop: string) {
 }
 
 const SIZES = [
-  { width: 2000, height: 1000, column: 1040, content: 1000, phone: false },
-  { width: 1440, height: 900, column: 760, content: 720, phone: false },
+  // The owner widened the column (and the composer with it): both use the room up to 1120 / 1080.
+  { width: 2000, height: 1000, column: 1120, content: 1080, phone: false },
+  { width: 1440, height: 900, column: 1120, content: 1080, phone: false },
   { width: 1024, height: 768, column: null, content: null, phone: false },
   { width: 390, height: 844, column: null, content: null, phone: true },
 ] as const;
@@ -77,7 +78,7 @@ for (const mode of ["light", "dark"] as const) {
         if (size.column !== null) {
           expect(col.w).toBeCloseTo(Math.min(size.column, mainW), 0);
         } else {
-          expect(col.w).toBeLessThanOrEqual(760 + 1);
+          expect(col.w).toBeLessThanOrEqual(1120 + 1);
         }
         // Centred: equal gutters on both sides of the column inside the log.
         const log = await box(page, "[role=log]");
@@ -105,6 +106,9 @@ for (const mode of ["light", "dark"] as const) {
         await page.getByRole("log").evaluate((el) => {
           el.scrollTop = 0;
         });
+        await expect(
+          page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
+        ).toBeVisible();
         const sep = await box(
           page,
           "[role=log] li[data-testid=chat-day-separator] > div",

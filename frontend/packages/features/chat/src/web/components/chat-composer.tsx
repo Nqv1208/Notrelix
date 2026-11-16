@@ -123,6 +123,8 @@ export interface ChatComposerProps {
   readonly attachments?: ChatComposerAttachments;
   /** Above the text: the reply chip of a quote reply. */
   readonly leading?: ReactNode;
+  /** The composer floats over the bottom of the list (no band of its own): the list leaves room and fades under it. */
+  readonly floating?: boolean;
   /** In the footer before Send: the thread composer's "also send to channel". */
   readonly footerExtra?: ReactNode;
   /** The accessible name and placeholder; the channel composer names the channel by default. */
@@ -148,6 +150,7 @@ export function ChatComposer({
   onChange,
   onSend,
   leading,
+  floating = false,
   footerExtra,
   labelOverride,
   busy = false,
@@ -502,8 +505,19 @@ export function ChatComposer({
   }
 
   return (
-    <div className="shrink-0 bg-background px-2.5 pb-2.5 md:px-5 md:pb-4 xl:pb-1">
-      <div className="relative mx-auto w-full max-w-[720px] 2xl:max-w-[1000px]">
+    <div
+      className={
+        floating
+          ? "pointer-events-auto px-3.5 pb-3 md:px-6 md:pb-5 xl:px-5"
+          : "shrink-0 bg-background px-2.5 pb-2.5 md:px-5 md:pb-4 xl:pb-1"
+      }
+    >
+      <div
+        className={cn(
+          "relative mx-auto w-full",
+          floating ? "max-w-[1080px]" : "max-w-[720px] 2xl:max-w-[1000px]",
+        )}
+      >
         {trigger ? (
           <MentionPopover
             id={listId}
