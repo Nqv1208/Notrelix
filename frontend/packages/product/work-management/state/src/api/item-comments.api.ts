@@ -52,6 +52,7 @@ export function createCommentApi(client: NotrelixClient) {
       const id = await api.post<any>(
         endpoints.boardItems.comments(input.cardId),
         body,
+        input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {},
       );
       return {
         id,
