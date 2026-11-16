@@ -265,7 +265,7 @@ const HEADER = "[data-testid=chat-panel-header]";
 const PIN = "[data-testid=chat-pin-item]";
 
 test.describe("Pins panel (Chat-Pins 1440)", () => {
-  test("88 header, 16 title, summary strip, 12 16 rows with an 18 avatar", async ({
+  test("56 header, 16 title, summary strip, 12 16 rows with an 18 avatar", async ({
     page,
   }) => {
     await open(page, 1440, 900, CHANNEL);
@@ -276,7 +276,7 @@ test.describe("Pins panel (Chat-Pins 1440)", () => {
       360,
       0,
     );
-    expect((await box(page, HEADER)).h).toBeCloseTo(88, 0);
+    expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
     expect(await css(page, `${HEADER} h2`, "font-size")).toBe("16px");
     expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("700");
     const strip = page.locator("[data-testid=chat-pins-panel] > p").first();

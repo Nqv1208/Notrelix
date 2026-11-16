@@ -845,21 +845,22 @@ function QuoteBlock({
       : (quote.text ?? "");
   const body = (
     <>
-      <span className="truncate font-semibold text-foreground">
+      <b className="block truncate font-bold">
         {fillCopy(copy.quote.quoteOf, { name: quote.name })}
-      </span>
-      <span className="truncate text-muted-foreground">{text}</span>
+      </b>
+      <span className="line-clamp-2">{text}</span>
     </>
   );
-  // An opaque block of the theme's own surfaces, so its text keeps the proven AA pairs on either bubble.
+  // Chat-Var-Quote: a 3 px bar, 2 8 padding and a 12.5 px text at 0.9 opacity on the bubble's own colours.
   const shell = cn(
-    "-mx-1 mb-1.5 flex min-w-0 max-w-full flex-col rounded-xl border-s-2 border-primary px-2.5 py-1.5 text-start text-xs whitespace-normal",
-    isOwn ? "bg-muted" : "bg-background",
+    "mb-1.5 block min-w-0 max-w-full border-s-[3px] px-2 py-0.5 text-start text-(length:--type-scale-12p5) leading-[1.45] whitespace-normal opacity-90",
+    isOwn ? "border-primary-foreground/70" : "border-primary",
   );
   return onOpen ? (
     <button
       type="button"
       onClick={onOpen}
+      data-testid="chat-quote"
       className={cn(
         shell,
         "w-full hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
@@ -868,7 +869,9 @@ function QuoteBlock({
       {body}
     </button>
   ) : (
-    <div className={shell}>{body}</div>
+    <div className={shell} data-testid="chat-quote">
+      {body}
+    </div>
   );
 }
 

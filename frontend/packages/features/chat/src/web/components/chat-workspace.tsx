@@ -1428,8 +1428,12 @@ export function ChatWorkspace({
             <aside
               className={cn(
                 "flex w-64 shrink-0 flex-col border-e border-border bg-sidebar xl:w-72",
-                // Below 1280 the open side panel needs the room: the channel column would shrink to a sliver.
-                channelId && (channel || conversation) && panel !== null
+                // Below 1280 the open side panel needs the room: the channel column would shrink to a sliver. The followed
+                // list is a page on a tablet (Chat-Followed-T), so the channel column stays beside it.
+                channelId &&
+                  (channel || conversation) &&
+                  panel !== null &&
+                  panel.kind !== "following"
                   ? "max-xl:hidden"
                   : null,
               )}
@@ -1443,6 +1447,7 @@ export function ChatWorkspace({
               className={cn(
                 "flex min-h-0 min-w-0 flex-1 flex-col",
                 isMobile && panel !== null && "hidden",
+                panel?.kind === "following" && "md:max-xl:hidden",
               )}
               aria-label={copy.page.title}
             >
@@ -1841,6 +1846,9 @@ export function ChatWorkspace({
                 conversation !== null &&
                   panel.kind === "details" &&
                   "md:max-xl:absolute md:max-xl:inset-y-0 md:max-xl:end-0 md:max-xl:z-20 md:max-xl:shadow-lg",
+                // On a tablet the followed list takes the whole column, as a page (Chat-Followed-T).
+                panel.kind === "following" &&
+                  "md:max-xl:w-auto md:max-xl:flex-1 md:max-xl:border-s-0",
               )}
               aria-label={copy.panel.label}
               data-testid="chat-side-panel"
@@ -1851,7 +1859,9 @@ export function ChatWorkspace({
                 className={cn(
                   "flex items-center gap-1 border-b border-border px-2 py-1",
                   // The thread and the pins draw their own header and close control at every width (Chat-Thread-*, Chat-Pins-*).
-                  (panel.kind === "thread" || panel.kind === "pins") &&
+                  (panel.kind === "thread" ||
+                    panel.kind === "pins" ||
+                    panel.kind === "following") &&
                     "hidden",
                 )}
               >
@@ -2049,6 +2059,7 @@ export function ChatWorkspace({
                   channelName={channelNameOf}
                   locale={locale}
                   timeZone={timeZone}
+                  onClose={() => setPanel(null)}
                   onOpenThread={(rootId) =>
                     setPanel({ kind: "thread", rootId })
                   }
