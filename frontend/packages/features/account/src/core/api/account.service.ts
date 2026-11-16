@@ -73,6 +73,7 @@ export interface AccountEndpoints {
     mfaDisable: string;
     mfaRecoveryCodes: string;
     changePassword: string;
+    setPassword: string;
   };
   users: {
     updateProfile: string;
@@ -697,6 +698,14 @@ export function createAccountService(
       stepUpToken?: string;
     }): Promise<void> {
       await api.post<void>(endpoints.auth.changePassword, input, QUIET);
+    },
+
+    /** A first password for a person who signs in with a provider; the proof is a `ChangePassword` one. */
+    async setFirstPassword(input: {
+      newPassword: string;
+      stepUpToken: string;
+    }): Promise<void> {
+      await api.post<void>(endpoints.auth.setPassword, input, QUIET);
     },
 
     async disableTwoFactor(stepUpToken: string): Promise<void> {

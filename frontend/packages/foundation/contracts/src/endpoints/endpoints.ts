@@ -10,6 +10,7 @@ export const endpoints = {
     profile: "/auth/me",
     bootstrap: "/auth/bootstrap",
     changePassword: "/auth/change-password",
+    setPassword: "/auth/set-password",
     // Identity.Security.* / Identity.Sessions.* / Identity.Mfa.*
     securitySummary: "/auth/security/summary",
     securityActivity: "/auth/security/activity",

@@ -22,6 +22,10 @@ export const en = {
     localText: "You sign in to Notrelix with this email and a password.",
     change: "Change password",
     unavailable: "Changing your password isn't available here yet.",
+    noneTitle: "No password yet",
+    noneText:
+      "You sign in with {{providers}}. Set a password to also sign in with {{email}}.",
+    set: "Set a password",
   },
   twoFactor: {
     title: "Two-factor authentication",
@@ -54,6 +58,7 @@ export const en = {
     othersTitle: "Confirm to sign out of all other devices",
     linkTitle: "Confirm to connect {{provider}}",
     unlinkTitle: "Confirm to disconnect {{provider}}",
+    setPasswordTitle: "Confirm to set a password",
     unlinkText:
       "You will no longer be able to sign in with {{provider}}. Your other ways to sign in stay.",
     enrollProofTitle: "Confirm to turn on two-factor authentication",
@@ -127,6 +132,16 @@ export const en = {
     doneText:
       "You were signed out of every device, including this one. Sign in again with your new password.",
     signInAgain: "Sign in",
+  },
+  firstPassword: {
+    title: "Set a password",
+    text: "Choose a password to sign in with {{email}}. Your other devices are signed out; this one stays signed in.",
+    hint: "At least {{count}} characters.",
+    rejected:
+      "We couldn't use that password. Use at least {{count}} characters.",
+    submit: "Set password",
+    done: "Password set. You can now sign in with your email and password.",
+    already: "A password is already set. Use Change password instead.",
   },
   activity: {
     title: "Recent security activity",
@@ -217,6 +232,10 @@ export const vi: AccountSecurityCopy = {
     localText: "Bạn đăng nhập Notrelix bằng email này và một mật khẩu.",
     change: "Đổi mật khẩu",
     unavailable: "Hiện chưa thể đổi mật khẩu tại đây.",
+    noneTitle: "Chưa có mật khẩu",
+    noneText:
+      "Bạn đăng nhập bằng {{providers}}. Hãy đặt mật khẩu để đăng nhập cả bằng {{email}}.",
+    set: "Đặt mật khẩu",
   },
   twoFactor: {
     title: "Xác thực hai yếu tố",
@@ -248,6 +267,7 @@ export const vi: AccountSecurityCopy = {
     othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
     linkTitle: "Xác nhận để kết nối {{provider}}",
     unlinkTitle: "Xác nhận để ngắt kết nối {{provider}}",
+    setPasswordTitle: "Xác nhận để đặt mật khẩu",
     unlinkText:
       "Bạn sẽ không còn đăng nhập được bằng {{provider}}. Các cách đăng nhập khác vẫn dùng được.",
     enrollProofTitle: "Xác nhận để bật xác thực hai yếu tố",
@@ -318,6 +338,15 @@ export const vi: AccountSecurityCopy = {
     doneText:
       "Bạn đã bị đăng xuất khỏi mọi thiết bị, kể cả thiết bị này. Hãy đăng nhập lại bằng mật khẩu mới.",
     signInAgain: "Đăng nhập",
+  },
+  firstPassword: {
+    title: "Đặt mật khẩu",
+    text: "Hãy chọn mật khẩu để đăng nhập bằng {{email}}. Các thiết bị khác sẽ bị đăng xuất; thiết bị này vẫn đăng nhập.",
+    hint: "Ít nhất {{count}} ký tự.",
+    rejected: "Chưa dùng được mật khẩu này. Hãy dùng ít nhất {{count}} ký tự.",
+    submit: "Đặt mật khẩu",
+    done: "Đã đặt mật khẩu. Từ giờ bạn có thể đăng nhập bằng email và mật khẩu.",
+    already: "Đã có mật khẩu. Hãy dùng Đổi mật khẩu.",
   },
   activity: {
     title: "Hoạt động bảo mật gần đây",

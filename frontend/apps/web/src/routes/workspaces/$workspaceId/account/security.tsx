@@ -54,12 +54,14 @@ type Step =
     }
   | { kind: "codes"; codes: readonly string[]; othersEnded?: number }
   | { kind: "password" }
+  /** A first password; `proof` is the single-use `ChangePassword` proof already bought. */
+  | { kind: "setPassword"; proof: string }
   | { kind: "passwordChanged" }
   | { kind: "twoFactorOff" }
   | { kind: "signOutThis" };
 
 type StepPurpose =
-  "enroll" | "disable" | "renew" | "others" | "link" | "unlink";
+  "enroll" | "disable" | "renew" | "others" | "link" | "unlink" | "setPassword";
 
 const PURPOSE: Record<StepPurpose, StepUpPurpose> = {
   enroll: "EnrollMfa",
@@ -68,6 +70,7 @@ const PURPOSE: Record<StepPurpose, StepUpPurpose> = {
   others: "RevokeOtherSessions",
   link: "LinkOAuth",
   unlink: "UnlinkOAuth",
+  setPassword: "ChangePassword",
 };
 
 const LINK_RESULTS = ["linked", "already", "collision", "failed"] as const;
@@ -344,6 +347,11 @@ export function AccountSecurityPage() {
             search: Object.fromEntries(landing.searchParams),
             replace: true,
           } as unknown as Parameters<typeof navigate>[0]);
+        } else if (current.purpose === "setPassword") {
+          // The proof is kept for the form that follows; the password is not asked before the proof,
+          // because the provider round trip would lose it.
+          setPasswordError(null);
+          setStep({ kind: "setPassword", proof: token });
         } else if (current.purpose === "unlink" && current.provider) {
           try {
             await service.unlinkProvider(current.provider, token);
@@ -654,8 +662,62 @@ export function AccountSecurityPage() {
     [service, summary.data?.twoFactorEnabled],
   );
 
+  const submitFirstPassword = useCallback(
+    async (next: string) => {
+      if (step?.kind !== "setPassword") return;
+      setBusy(true);
+      setPasswordError(null);
+      try {
+        await service.setFirstPassword({
+          newPassword: next,
+          stepUpToken: step.proof,
+        });
+        setStep(null);
+        await invalidate();
+        showNotice(copy.firstPassword.done);
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === "identity.security.step-up-invalid") {
+          // The proof is gone (too old): ask again for the same step.
+          await beginStepUp("setPassword");
+          setStepError({ error: "expired" });
+        } else if (code === "identity.auth.password-already-set") {
+          setStep(null);
+          await invalidate();
+          setProviderProblem(copy.firstPassword.already);
+        } else {
+          const failure = passwordChangeFailureOf(error, "change");
+          setPasswordError(
+            failure.kind === "wait"
+              ? { error: "wait", wait: failure.seconds }
+              : {
+                  error: failure.kind === "rejected" ? "rejected" : "failed",
+                },
+          );
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [
+      beginStepUp,
+      copy.firstPassword.already,
+      copy.firstPassword.done,
+      invalidate,
+      service,
+      showNotice,
+      step,
+    ],
+  );
+
   const flow = useMemo<AccountSecurityFlow | null>(() => {
     if (!step) return null;
+    if (step.kind === "setPassword")
+      return {
+        kind: "setPassword",
+        error: passwordError?.error ?? null,
+        wait: passwordError?.wait,
+      };
     if (
       step.kind === "codes" ||
       step.kind === "passwordChanged" ||
@@ -712,6 +774,8 @@ export function AccountSecurityPage() {
       notice={notice}
       flow={flow}
       onChangePassword={startPasswordChange}
+      onSetPassword={() => void beginStepUp("setPassword")}
+      onSubmitFirstPassword={(next) => void submitFirstPassword(next)}
       onSubmitNewPassword={(submission) => void submitNewPassword(submission)}
       onPasswordChangedContinue={() => void signOutThisDevice()}
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}
