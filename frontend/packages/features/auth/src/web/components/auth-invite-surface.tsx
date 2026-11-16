@@ -59,7 +59,9 @@ export type AuthInviteView =
       readonly reason: "expired" | "used" | "missing";
       readonly orgName: string | null;
     }
-  | { readonly kind: "declined"; readonly inviterName: string };
+  | { readonly kind: "declined"; readonly inviterName: string }
+  /** The preview could not be read (server or network error): not the same as a missing invitation. */
+  | { readonly kind: "unreachable" };
 
 export interface AuthInviteSurfaceProps {
   readonly copy: AuthCopy;
@@ -69,12 +71,14 @@ export interface AuthInviteSurfaceProps {
   readonly onDecline: () => void;
   readonly onSignIn: () => void;
   readonly onToSignIn: () => void;
+  readonly onRetry?: () => void;
 }
 
 export function AuthInviteSurface(props: AuthInviteSurfaceProps) {
   const { view } = props;
   if (view.kind === "invite") return <InviteForm {...props} view={view} />;
   if (view.kind === "declined") return <DeclinedPage {...props} view={view} />;
+  if (view.kind === "unreachable") return <UnreachablePage {...props} />;
   return <GonePage {...props} view={view} />;
 }
 
@@ -378,6 +382,26 @@ function InviteForm({
           {t.signInToAccept}
         </button>
       </p>
+    </>
+  );
+}
+
+function UnreachablePage({ copy, onRetry }: AuthInviteSurfaceProps) {
+  return (
+    <>
+      <p
+        role="alert"
+        className="m-0 text-item-prose leading-normal text-danger-text"
+      >
+        {copy.invite.unreachable}
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className={cn(BUTTON_CLASS.outline, "text-brand-subtle-foreground")}
+      >
+        {copy.invite.retry}
+      </button>
     </>
   );
 }

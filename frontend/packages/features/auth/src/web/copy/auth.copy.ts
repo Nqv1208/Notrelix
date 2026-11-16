@@ -259,6 +259,7 @@ export const en = {
     passwordShort: "Use at least {{count}} characters.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    retry: "Try again",
     mobile: {
       accept: "Accept",
       yourAccess: "Your access",
@@ -534,6 +535,7 @@ export const vi: AuthCopy = {
     nameRequired: "Nhập họ và tên của bạn.",
     passwordShort: "Dùng ít nhất {{count}} ký tự.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    retry: "Thử lại",
     mobile: {
       accept: "Chấp nhận",
       yourAccess: "Quyền của bạn",
