@@ -229,9 +229,9 @@ test.describe("Department page (owner)", () => {
         await page.getByRole("button", { name: "Chuyển", exact: true }).click();
         const dialog = page.getByRole("dialog");
         await expect(dialog).toBeVisible();
-        // Its own subtree (Platform) is listed but disabled, with the reason.
+        // Its own subtree (Nhóm Hạ tầng) is listed but disabled, with the reason.
         await expect(
-          dialog.getByRole("radio", { name: /^Platform/ }),
+          dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
         ).toBeDisabled();
         await expect(
           dialog.getByText("Không thể chuyển vào chính nó").first(),
