@@ -72,12 +72,40 @@ export interface AuthInviteSurfaceProps {
   readonly onDecline: () => void;
   readonly onSignIn: () => void;
   readonly onToSignIn: () => void;
+  /** The account the person is signed in as, when it is not the invited one. */
+  readonly signedInAs?: string | null;
+  readonly onSwitchAccount?: () => void;
   readonly onRetry?: () => void;
 }
 
 export function AuthInviteSurface(props: AuthInviteSurfaceProps) {
   const { view } = props;
-  if (view.kind === "invite") return <InviteForm {...props} view={view} />;
+  if (view.kind === "invite")
+    return (
+      <>
+        {props.signedInAs && props.onSwitchAccount ? (
+          <div
+            role="status"
+            className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border border-border bg-warning-subtle px-3.5 py-2.5 text-body text-warning-subtle-foreground"
+          >
+            <span>
+              {fillAuthCopy(props.copy.invite.mismatch, {
+                current: props.signedInAs,
+                invited: view.invite.email,
+              })}
+            </span>
+            <button
+              type="button"
+              className={LINK_BUTTON_CLASS}
+              onClick={props.onSwitchAccount}
+            >
+              {props.copy.invite.switchAccount}
+            </button>
+          </div>
+        ) : null}
+        <InviteForm {...props} view={view} />
+      </>
+    );
   if (view.kind === "declined") return <DeclinedPage {...props} view={view} />;
   if (view.kind === "unreachable") return <UnreachablePage {...props} />;
   return <GonePage {...props} view={view} />;

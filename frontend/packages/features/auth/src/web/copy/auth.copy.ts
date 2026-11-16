@@ -242,6 +242,9 @@ export const en = {
     seeBody: "This board only. You do not see the other departments or boards.",
     emailLabel: "Invited email",
     emailHint: "The invitation is tied to this email and cannot be changed.",
+    mismatch:
+      "You are signed in as {{current}}; the invitation is for {{invited}}.",
+    switchAccount: "Switch account",
     nameLabel: "Full name",
     passwordLabel: "Create a password",
     passwordHint: "At least {{count}} characters.",
@@ -520,6 +523,9 @@ export const vi: AuthCopy = {
     seeBody: "Chỉ board này. Bạn không thấy các phòng ban hay board khác.",
     emailLabel: "Email được mời",
     emailHint: "Lời mời gắn với email này, không đổi được.",
+    mismatch:
+      "Bạn đang đăng nhập là {{current}}; lời mời dành cho {{invited}}.",
+    switchAccount: "Đổi tài khoản",
     nameLabel: "Họ và tên",
     passwordLabel: "Tạo mật khẩu",
     passwordHint: "Ít nhất {{count}} ký tự.",
