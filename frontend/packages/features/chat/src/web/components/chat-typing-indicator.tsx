@@ -42,13 +42,13 @@ export function ChatTypingIndicator({
 /** The dots' stagger: each starts a little later, so the three pulse in a wave. */
 const DOT_DELAYS = [
   "[animation-delay:0ms]",
-  "[animation-delay:160ms]",
-  "[animation-delay:320ms]",
+  "[animation-delay:150ms]",
+  "[animation-delay:300ms]",
 ];
 
 /**
  * The typing bubble at the end of the list (Messenger): the first typer's avatar and a bubble of three dots
- * that pulse (still under reduced motion). Decorative: the live region above the composer says who is typing.
+ * that rise and fade in a soft wave (still under reduced motion). Decorative: the live region above the composer says who is typing.
  */
 export function ChatTypingBubble({
   ids,
@@ -82,7 +82,7 @@ export function ChatTypingBubble({
           <span
             key={delay}
             className={cn(
-              "size-1.5 rounded-full bg-muted-foreground motion-safe:animate-bounce motion-reduce:opacity-70",
+              "chat-typing-wave size-1.5 rounded-full bg-muted-foreground motion-reduce:animate-none motion-reduce:opacity-70",
               delay,
             )}
           />
