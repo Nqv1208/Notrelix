@@ -209,6 +209,76 @@ test.describe("Department page (owner)", () => {
     await expect(move).toBeFocused();
   });
 
+  for (const theme of ["light", "dark"] as const) {
+    for (const width of [1440, 1024, 390]) {
+      test(`the Move picker is axe clean, never offers the Space's own subtree and does not scroll sideways at ${width}px, ${theme}`, async ({
+        page,
+      }) => {
+        await page.addInitScript((mode) => {
+          try {
+            window.localStorage.setItem("notrelix-theme-mode", mode);
+          } catch {
+            // Private mode: the default theme applies.
+          }
+        }, theme);
+        await page.setViewportSize({
+          width,
+          height: width === 390 ? 844 : 900,
+        });
+        await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
+        await page.getByRole("button", { name: "Chuyển", exact: true }).click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible();
+        // Its own subtree (Nhóm Hạ tầng) is listed but disabled, with the reason.
+        await expect(
+          dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
+        ).toBeDisabled();
+        await expect(
+          dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
+        ).toHaveAccessibleDescription(/Không thể chuyển vào chính nó/);
+        await expect(
+          dialog.locator("[title='Không thể chuyển vào chính nó']").first(),
+        ).toHaveText("Bên trong");
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        ).toBe(true);
+        // The destination list never scrolls sideways either.
+        expect(
+          await dialog
+            .getByRole("radiogroup")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+        // Every visible reason pill sits fully inside the list: truncated, never clipped.
+        const listBox = (await dialog.getByRole("radiogroup").boundingBox())!;
+        const pills = dialog.getByRole("radiogroup").locator("[title]");
+        expect(await pills.count()).toBeGreaterThan(0);
+        for (const box of await pills.evaluateAll((els) =>
+          els.map((el) => el.getBoundingClientRect().toJSON()),
+        )) {
+          expect(box.right).toBeLessThanOrEqual(listBox.x + listBox.width);
+          expect(box.left).toBeGreaterThanOrEqual(listBox.x);
+        }
+        // The short reason fits whole: no pill text is truncated.
+        expect(
+          await pills.evaluateAll((els) =>
+            els.every((el) => {
+              const text = el.firstElementChild as HTMLElement;
+              return text.scrollWidth <= text.clientWidth;
+            }),
+          ),
+        ).toBe(true);
+        expect(serious(await new AxeBuilder({ page }).analyze())).toEqual([]);
+        if (process.env.MOVE_SHOTS_DIR) {
+          await page.screenshot({
+            path: `${process.env.MOVE_SHOTS_DIR}/move-${width}-${theme}.png`,
+          });
+        }
+      });
+    }
+  }
+
   test("Archive is blocked while the department has content, with the reason", async ({
     page,
   }) => {
