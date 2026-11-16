@@ -60,6 +60,11 @@ describe("invite link: a failed preview read", () => {
       open(getInvite);
       const alert = await screen.findByRole("alert");
       expect(alert.textContent).toContain(copy.invite.unreachable);
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Chưa mở được lời mời" }),
+      ).toBeTruthy();
+      // The body reads in the normal text colour; red is only on the icon.
+      expect(alert.className).not.toContain("danger");
       expect(screen.queryByText(copy.gone.missingTitle)).toBeNull();
       fireEvent.click(screen.getByRole("button", { name: copy.invite.retry }));
       expect(await screen.findByLabelText(copy.invite.nameLabel)).toBeTruthy();
