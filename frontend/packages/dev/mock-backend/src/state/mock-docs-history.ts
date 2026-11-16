@@ -307,6 +307,8 @@ export class MockDocsHistoryState {
         createdBy: null,
         createdAt: this.store.now(),
         blocks: copyBlocks(this.store.getPageBlocks(pageId)),
+        version: 2,
+        archived: false,
       },
       { parentId: page.parentId, spaceId: page.spaceId ?? null },
     );
