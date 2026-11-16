@@ -84,6 +84,7 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
 
         var formFields = new List<KeyValuePair<string, string>>
         {
+            new("grant_type", "authorization_code"),
             new("client_id", config.ClientId),
             new("client_secret", config.ClientSecret),
             new("code", request.Code),
@@ -125,8 +126,12 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             if (string.IsNullOrWhiteSpace(idToken))
                 throw new OidcIdTokenException("id token missing");
 
+            var signingKeys = await OidcJwksCache.GetKeysAsync(
+                _httpClient, config.JwksUri, idToken, _clock.UtcNow, ct);
+
             using var claims = OidcIdTokenValidator.Validate(
                 idToken,
+                signingKeys,
                 OidcIdTokenValidator.IssuersOf(provider, config),
                 config.ClientId,
                 request.Nonce,

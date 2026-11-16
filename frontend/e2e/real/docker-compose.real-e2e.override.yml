@@ -31,6 +31,20 @@ services:
     ports: !override
       - "127.0.0.1:55672:5672"
 
+  # Test double for the external sign-in provider. It issues properly signed ID tokens; the backend
+  # checks them as it would Google's. The browser reaches it on the published port, the backend on
+  # the service name (the issuer is the address the token request used).
+  oidc-mock:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    container_name: notrelix-fe-real-e2e-oidc-mock
+    restart: "no"
+    ports:
+      - "127.0.0.1:${REAL_E2E_OIDC_PORT:-58090}:8080"
+    environment:
+      JSON_CONFIG: '{"interactiveLogin":true}'
+    networks:
+      - backend-network
+
   # Real-run mail sink: a message the backend sends is read back through its HTTP API. It shares the
   # backend's network so the backend reaches it on localhost, the only cleartext host SMTP accepts.
   mailpit:
@@ -84,6 +98,15 @@ services:
       Frontend__AppBaseUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}
       # The browser comes back to this web app after a provider sign-in, a refusal included.
       OAuth__FrontendSuccessUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/auth/callback
+      # Google runs against the test double; Microsoft stays off (no sign-up through it).
+      OAuth__Providers__Google__Enabled: "true"
+      OAuth__Providers__Google__ClientId: real-e2e-google-client
+      OAuth__Providers__Google__ClientSecret: real-e2e-google-secret
+      OAuth__Providers__Google__AuthorizationEndpoint: http://127.0.0.1:${REAL_E2E_OIDC_PORT:-58090}/google/authorize
+      OAuth__Providers__Google__TokenEndpoint: http://oidc-mock:8080/google/token
+      OAuth__Providers__Google__JwksUri: http://oidc-mock:8080/google/jwks
+      OAuth__Providers__Google__Issuer: http://oidc-mock:8080/google
+      OAuth__Providers__Google__RedirectUri: http://127.0.0.1:58000/api/v1/auth/oauth/google/callback
       OAuth__FrontendFailureUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/sign-in
       OAuth__FrontendMfaUrl: http://127.0.0.1:${REAL_E2E_WEB_PORT:-5173}/sign-in?step=mfa
     command:

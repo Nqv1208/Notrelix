@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { signInAtProvider } from "./support/oidc-provider";
 import { apiRead, apiWrite, realUsers, signIn } from "./support/real-session";
 
 interface Summary {
@@ -9,7 +10,7 @@ interface Summary {
   readonly mfa: { readonly isEnabled: boolean };
 }
 
-/** No provider runs on a developer machine: the development database stands in for a sign-up with Google. */
+/** The linked Google account is seeded straight into the development database; the provider test double signs the person in again. */
 function sql(statement: string) {
   execFileSync("docker", [
     "exec",
@@ -37,13 +38,22 @@ test.afterEach(() => {
   );
 });
 
-test("a person with only a provider is offered the provider, not a password, and a refusal brings them back with a message", async ({
+test("a person with only a provider is offered the provider, not a password; the wrong provider person is refused with a message, the right one is confirmed and the proof is spent once", async ({
   page,
 }) => {
+  const subject = `real-e2e-${randomUUID()}`;
   await signIn(page, user);
+  // Without a default workspace the person lands on the home page; open the first workspace.
+  if (!/\/workspaces\//.test(page.url())) {
+    await page
+      .getByRole("link", { name: /^Open / })
+      .first()
+      .click();
+    await page.waitForURL(/\/workspaces\//);
+  }
   const workspaceId = /\/workspaces\/([^/]+)/.exec(page.url())![1];
   sql(
-    `update identity.users set has_password_credential = false where email = '${user.email}'; insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser}, 'Google', 'real-e2e-${randomUUID()}', '{}')`,
+    `update identity.users set has_password_credential = false where email = '${user.email}'; insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser}, 'Google', '${subject}', '{}')`,
   );
   const security = `/workspaces/${workspaceId}/account/security`;
   await page.goto(security);
@@ -73,26 +83,46 @@ test("a person with only a provider is offered the provider, not a password, and
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   await expect(prompt.getByRole("textbox")).toHaveCount(0);
 
-  // The browser leaves for the backend; no provider is set up here, so it is sent straight back to
-  // this page (not to a JSON body), the marker is read once and the page says what happened.
+  // Someone else at the provider: the subject differs from the linked one, so there is no proof.
   await prompt.getByRole("button", { name: "Confirm with Google" }).click();
+  await signInAtProvider(page, `someone-else-${randomUUID()}`, {
+    email: "other@example.test",
+    email_verified: true,
+  });
   await expect(page).toHaveURL(new RegExp(`${security}$`));
   await expect(page.getByRole("alert")).toContainText(
     "We could not confirm you with Google",
   );
-  await expect(
-    page.getByRole("button", { name: "Confirm with Google" }),
-  ).toBeVisible();
 
-  // Nothing was left to claim: the proof cookie only exists after a real provider login.
-  const claim = await apiWrite(
+  // The linked person at the provider: the proof is handed over once and the action goes on.
+  await page
+    .getByRole("button", { name: "Turn on two-factor authentication" })
+    .click();
+  await page
+    .getByRole("region", {
+      name: "Confirm to turn on two-factor authentication",
+    })
+    .getByRole("button", { name: "Confirm with Google" })
+    .click();
+  await signInAtProvider(page, subject, {
+    email: user.email,
+    email_verified: true,
+  });
+  await expect(page).toHaveURL(new RegExp(`${security}`));
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(
+    page.getByRole("region", {
+      name: "Confirm to turn on two-factor authentication",
+    }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("textbox").first()).toBeVisible();
+
+  // A proof is single use: whatever the page did with it, a second claim finds nothing.
+  const second = await apiWrite(
     page,
     "POST",
     "/auth/security/step-up/claim-provider",
     {},
   );
-  expect(claim.status).toBe(400);
-  expect(
-    (await apiRead<Summary>(page, "/auth/security/summary")).mfa.isEnabled,
-  ).toBe(false);
+  expect(second.status).toBe(400);
 });
