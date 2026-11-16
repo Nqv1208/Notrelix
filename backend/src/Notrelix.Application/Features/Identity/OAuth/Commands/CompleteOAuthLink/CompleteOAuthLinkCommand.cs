@@ -3,6 +3,8 @@ using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Security;
 
 namespace Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLink;
 
@@ -35,6 +37,13 @@ public sealed class CompleteOAuthLinkCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CompleteOAuthLinkCommandHandler> _logger;
     private readonly IOAuthIdentityProbe? _identityProbe;
+    private readonly ISecurityActivityRecorder _activity;
+
+    /// <summary>The identity belongs to another person: the answer names no one.</summary>
+    public static readonly ApplicationError LinkCollision = new(
+        "identity.oauth.link-collision",
+        "This provider identity is already linked to another account.",
+        ApplicationErrorType.Conflict);
 
     public CompleteOAuthLinkCommandHandler(
         IOAuthStateStore stateStore,
@@ -44,8 +53,10 @@ public sealed class CompleteOAuthLinkCommandHandler
         ICurrentRequestContext currentUser,
         IDateTimeProvider dateTimeProvider,
         ILogger<CompleteOAuthLinkCommandHandler> logger,
+        ISecurityActivityRecorder activity,
         IOAuthIdentityProbe? identityProbe = null)
     {
+        _activity = activity;
         _identityProbe = identityProbe;
         _stateStore = stateStore;
         _providerClient = providerClient;
@@ -143,8 +154,7 @@ public sealed class CompleteOAuthLinkCommandHandler
             _logger.LogWarning(
                 "OAuth link rejected: provider subject {Subject} already linked to another user {OtherUser}",
                 profile.Subject, existingAccount.UserId);
-            return Result<OAuthLinkResult>.Failure(
-                "This provider identity is already linked to another account.");
+            return Result<OAuthLinkResult>.Failure(LinkCollision);
         }
 
         // Another account's link is not visible to this user's own-row access: ask the boolean probe.
@@ -152,14 +162,14 @@ public sealed class CompleteOAuthLinkCommandHandler
             && await _identityProbe.IsLinkedAsync(profile.Provider.ToString(), profile.Subject, cancellationToken))
         {
             _logger.LogWarning("OAuth link rejected: provider subject {Subject} already linked to another user", profile.Subject);
-            return Result<OAuthLinkResult>.Failure(
-                "This provider identity is already linked to another account.");
+            return Result<OAuthLinkResult>.Failure(LinkCollision);
         }
 
         user.LinkOAuthAccount(profile.Provider, profile.Subject,
             OAuthProfileSnapshot.Create(profile.Provider, 1, profile.RawProfile), null, user.Id, now);
         var oauthAccount = user.OAuthAccounts.Last();
         _identityContext.OAuthAccounts.Add(oauthAccount);
+        _activity.Record(user.Id, SecurityActivityType.ProviderLinked, now, _currentUser.SessionId);
 
         _logger.LogInformation("OAuth provider {Provider} linked to user {UserId}", profile.Provider, user.Id);
         return Result<OAuthLinkResult>.Success(

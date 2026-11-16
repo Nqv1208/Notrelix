@@ -63,6 +63,8 @@ export interface AccountEndpoints {
     stepUpCompletePassword: string;
     stepUpClaimProvider: string;
     oauthStepUpStart: (provider: string) => string;
+    oauthLinkStart: (provider: string) => string;
+    oauthUnlink: (provider: string) => string;
     sessions: string;
     sessionRevoke: (sessionId: string) => string;
     sessionsRevokeOthers: string;
@@ -619,6 +621,28 @@ export function createAccountService(
       returnUrl: string,
     ): string {
       return `${endpoints.auth.oauthStepUpStart(provider)}?purpose=${encodeURIComponent(purpose)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+    },
+
+    /**
+     * Where the browser goes to link a provider (a path under the API base): the backend spends the
+     * proof, sends the person to the provider, and returns to `returnUrl` (an internal path) with
+     * `link=linked|already|collision|failed&provider=...` added.
+     */
+    providerLinkPath(
+      provider: string,
+      stepUpToken: string,
+      returnUrl: string,
+    ): string {
+      return `${endpoints.auth.oauthLinkStart(provider)}?stepUpToken=${encodeURIComponent(stepUpToken)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+    },
+
+    /** Removes a linked provider; the proof is spent. Refused (409) when it is the last way to sign in. */
+    async unlinkProvider(provider: string, stepUpToken: string): Promise<void> {
+      await api.post(
+        endpoints.auth.oauthUnlink(provider),
+        { stepUpToken },
+        QUIET,
+      );
     },
 
     /** Reads, once, the proof(s) the provider re-authentication left; enrollment gets a second for its activation. */

@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthLink;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.OAuth;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.SharedKernel;
@@ -15,6 +17,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
 {
     private readonly PostgresTestContainer _db;
     private DatabaseReset _reset = null!;
+    private readonly Mock<ISecurityActivityRecorder> _activity = new();
 
     public CompleteOAuthLinkCommandHandlerTests(PostgresTestContainer db)
     {
@@ -74,7 +77,8 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
             context,
             currentUser.Object,
             dateTimeProvider.Object,
-            NullLogger<CompleteOAuthLinkCommandHandler>.Instance);
+            NullLogger<CompleteOAuthLinkCommandHandler>.Instance,
+            _activity.Object);
     }
 
     private static CompleteOAuthLinkCommand Command(string? error = null) => new()
@@ -270,6 +274,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
             .FirstOrDefaultAsync(a => a.UserId == user.Id && a.Provider == OAuthProvider.Google);
         linked.Should().NotBeNull();
         linked!.ProviderId.Should().Be("google-sub-free");
+        _activity.Verify(x => x.Record(user.Id, SecurityActivityType.ProviderLinked, It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Once);
     }
 
     [Fact]
@@ -338,5 +343,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
         var currentLinked = await context.OAuthAccounts
             .FirstOrDefaultAsync(a => a.UserId == currentUser.Id && a.Provider == OAuthProvider.Google);
         currentLinked.Should().BeNull();
+        result.TypedErrors.Should().Contain(e => e.Code == "identity.oauth.link-collision");
+        _activity.Verify(x => x.Record(It.IsAny<Guid>(), It.IsAny<SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
     }
 }

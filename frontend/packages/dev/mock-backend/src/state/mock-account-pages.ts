@@ -68,6 +68,8 @@ export interface SecurityDetails {
   proofs: Map<string, string>;
   /** The provider a person with no password signs in with (`null` = has a password). */
   signInProvider: string | null;
+  /** Every provider linked to the account ("Google", "Microsoft"). */
+  linkedProviders: string[];
   /** The proof(s) a provider re-authentication left in the (mock) httpOnly cookie, until claimed. */
   providerProofs: string[] | null;
 }
@@ -174,6 +176,7 @@ const defaultSecurity = (offsetMinutes: (m: number) => string) => {
     pendingEnrollment: null,
     proofs: new Map<string, string>(),
     signInProvider: null,
+    linkedProviders: [],
     providerProofs: null,
   } satisfies SecurityDetails;
 };
@@ -272,6 +275,7 @@ export class MockAccountPages {
   ): void {
     const security = this.securityOf(userId, offsetMinutes);
     security.signInProvider = provider;
+    security.linkedProviders = [provider];
     security.twoFactorEnabled = false;
     security.recoveryCodesLeft = 0;
   }
