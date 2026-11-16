@@ -69,9 +69,13 @@ export function applyCardPatch<T extends Card>(
       [`${card.boardId}-field-title`]:
         patch.title ?? card.fieldValues[`${card.boardId}-field-title`],
       [`${card.boardId}-field-due-date`]:
-        patch.dueDate ?? card.fieldValues[`${card.boardId}-field-due-date`],
+        patch.dueDate === undefined
+          ? card.fieldValues[`${card.boardId}-field-due-date`]
+          : patch.dueDate,
       [`${card.boardId}-field-priority`]:
-        patch.priority ?? card.fieldValues[`${card.boardId}-field-priority`],
+        patch.priority === undefined
+          ? card.fieldValues[`${card.boardId}-field-priority`]
+          : patch.priority,
     },
     updatedAt: new Date().toISOString(),
   };
