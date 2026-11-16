@@ -195,6 +195,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.OAuth.LinkStart",
+    operationId: "Identity.Auth.OAuth.LinkStart",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.OAuth.Unlink",
+    operationId: "Identity.Auth.OAuth.Unlink",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Auth.OAuth.StepUpStart",
     operationId: "Identity.Auth.OAuth.StepUpStart",
     mutation: false,
