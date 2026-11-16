@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@notrelix/testing";
+import { render, screen, waitFor } from "@notrelix/testing";
+import { VirtuosoMockContext } from "react-virtuoso";
 import { ChatMessageList } from "../web/components/chat-message-list";
 import { buildChatRows } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
@@ -89,9 +90,18 @@ describe("ChatMessageList: a long history", () => {
     vi.restoreAllMocks();
   });
 
-  it("keeps a few dozen rows in the page and tells assistive technology the full size", () => {
-    render(<ChatMessageList {...listProps(500)} />);
+  it("keeps a few dozen rows in the page and tells assistive technology the full size", async () => {
+    render(
+      <VirtuosoMockContext.Provider
+        value={{ viewportHeight: 600, itemHeight: 50 }}
+      >
+        <ChatMessageList {...listProps(500)} />
+      </VirtuosoMockContext.Provider>,
+    );
     const log = screen.getByRole("log");
+    await waitFor(() =>
+      expect(log.querySelectorAll("li").length).toBeGreaterThan(0),
+    );
     const items = log.querySelectorAll("li");
     expect(items.length).toBeGreaterThan(0);
     expect(items.length).toBeLessThan(80);

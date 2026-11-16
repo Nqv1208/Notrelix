@@ -240,7 +240,7 @@ export function buildChatRows(input: {
     const member = memberOf(message);
     rows.push({
       kind: "message",
-      key: `m-${message.id}`,
+      key: `m-${message.clientMessageId ?? message.id}`,
       message,
       continued: continuesGroup(previous, member),
       groupEnd: true,
@@ -257,7 +257,7 @@ export function buildChatRows(input: {
     };
     rows.push({
       kind: "pending",
-      key: `p-${entry.clientMessageId}`,
+      key: `m-${entry.clientMessageId}`,
       clientMessageId: entry.clientMessageId,
       pending: entry,
       continued: continuesGroup(previous, member),
