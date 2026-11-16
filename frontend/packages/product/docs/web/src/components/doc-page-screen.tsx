@@ -280,6 +280,7 @@ export function createDocPageScreen({
     const blocksQuery = usePageBlocks(workspaceId, pageId) as {
       data: Block[] | undefined;
       isLoading: boolean;
+      isError: boolean;
       retryRest?: () => void;
     };
     const breadcrumbQuery = usePageBreadcrumb(workspaceId, pageId);
@@ -929,7 +930,8 @@ export function createDocPageScreen({
     if (pageQuery.isLoading || blocksQuery.isLoading) {
       return <DocPageScreenSurface status="loading" copy={copy} {...EMPTY} />;
     }
-    if (!page) {
+    // Blocks that failed to read are not an empty page: typing there would write beside the stored blocks.
+    if (!page || (blocksQuery.isError && !blocksQuery.data)) {
       return (
         <DocPageScreenSurface
           status="notFound"
