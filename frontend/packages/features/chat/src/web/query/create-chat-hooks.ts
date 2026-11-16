@@ -114,6 +114,8 @@ const READ_DEBOUNCE_MS = 1000;
 
 export function createChatHooks(deps: ChatHookDeps) {
   const service = createChatService(deps.api, deps.endpoints);
+  /** The files of each unconfirmed send; they go to the message once the server stored it. Owned by the factory, not a component, so a retry after the channel was left still has them. */
+  const pendingFiles = new Map<string, readonly File[]>();
 
   // ─── Queries ───────────────────────────────────────────────────────────────
 
@@ -270,8 +272,6 @@ export function createChatHooks(deps: ChatHookDeps) {
     const queryClient = useQueryClient();
     const pendingKey = chatQueryKeys.pending(workspaceId, channelId);
     const messagesKey = chatQueryKeys.messages(workspaceId, channelId);
-    /** The files of each unconfirmed send; they go to the message once the server stored it. */
-    const filesRef = useRef(new Map<string, readonly File[]>());
 
     const mutation = useMutation({
       mutationFn: (input: {
@@ -306,6 +306,8 @@ export function createChatHooks(deps: ChatHookDeps) {
           failure: null,
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
+          replyToId: input.replyToId,
+          voiceMessage: input.voiceMessage,
         };
         queryClient.setQueryData<PendingMessage[]>(
           pendingKey,
@@ -355,9 +357,9 @@ export function createChatHooks(deps: ChatHookDeps) {
               ),
         );
         // The message is stored (and shown): its files go to it now, even if one of them fails later.
-        const files = filesRef.current.get(input.clientMessageId);
+        const files = pendingFiles.get(input.clientMessageId);
         if (files) {
-          filesRef.current.delete(input.clientMessageId);
+          pendingFiles.delete(input.clientMessageId);
           enqueueUploads({ queryClient, service, workspaceId }, message, files);
         }
         // A conversation's list row shows its newest message: it moves in the cache, the list is not read again.
@@ -397,7 +399,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     ): string {
       const clientMessageId = newClientMessageId();
       if (files && files.length > 0) {
-        filesRef.current.set(clientMessageId, files);
+        pendingFiles.set(clientMessageId, files);
       }
       mutation.mutate({
         clientMessageId,
@@ -415,14 +417,16 @@ export function createChatHooks(deps: ChatHookDeps) {
       mutation.mutate({
         clientMessageId: entry.clientMessageId,
         content: entry.content,
+        replyToId: entry.replyToId,
         mentions: entry.mentions,
         confirmBroadcast: entry.confirmBroadcast,
+        voiceMessage: entry.voiceMessage,
       });
     }
 
     /** Drops a pending entry the user no longer wants to send. */
     function discard(clientMessageId: string): void {
-      filesRef.current.delete(clientMessageId);
+      pendingFiles.delete(clientMessageId);
       queryClient.setQueryData<PendingMessage[]>(
         pendingKey,
         readPending(queryClient, pendingKey).filter(
