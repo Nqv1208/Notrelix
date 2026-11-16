@@ -287,6 +287,8 @@ export function createDocPageScreen({
       data: Block[] | undefined;
       isLoading: boolean;
       isError: boolean;
+      error?: unknown;
+      refetch: () => unknown;
       retryRest?: () => void;
     };
     const breadcrumbQuery = usePageBreadcrumb(workspaceId, pageId);
@@ -947,6 +949,22 @@ export function createDocPageScreen({
         />
       );
     }
+    // Blocks that failed to read (not 404/403) can be read again; the page is not an empty one to type in.
+    if (
+      page &&
+      blocksQuery.isError &&
+      !blocksQuery.data &&
+      !isGone(blocksQuery.error)
+    ) {
+      return (
+        <DocPageScreenSurface
+          status="loadFailed"
+          copy={copy}
+          callbacks={{ onRetryLoad: () => void blocksQuery.refetch() }}
+          {...EMPTY}
+        />
+      );
+    }
     if (!page || (blocksQuery.isError && !blocksQuery.data)) {
       return (
         <DocPageScreenSurface
@@ -1139,11 +1157,9 @@ export function createDocPageScreen({
         host.canEdit && host.canConvertTodo !== false
           ? (blockId) =>
               // The line is converted by its stored id: save it first.
-              void saver
-                .flush()
-                .then(() =>
-                  setOverlay({ kind: "convertTask", blockId, boardId: null }),
-                )
+              afterSaved(() =>
+                setOverlay({ kind: "convertTask", blockId, boardId: null }),
+              )
           : undefined,
       onConvertBoard: (boardId) =>
         setOverlay((current) =>
@@ -1330,7 +1346,7 @@ export function createDocPageScreen({
           (entry) => entry.id === selectedVersionId,
         )?.stamp;
         restoreSeen.current = blocks;
-        void saver.flush().then(() =>
+        afterSaved(() =>
           restoreVersion.mutate(selectedVersionId, {
             onSuccess: () => {
               setOverlay(NONE);
@@ -1349,7 +1365,7 @@ export function createDocPageScreen({
           }
         : undefined,
       onSaveTemplate: (name, description) => {
-        void saver.flush().then(() =>
+        afterSaved(() =>
           createTemplate.mutate(
             { pageId, name, description: description || undefined },
             {

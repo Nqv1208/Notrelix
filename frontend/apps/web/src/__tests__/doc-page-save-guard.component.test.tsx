@@ -11,6 +11,7 @@ type Captured = {
     status?: string;
     callbacks?: Record<string, (...args: unknown[]) => unknown>;
     accessLost?: { text: string };
+    overlay?: { kind: string };
   };
   rich?: {
     initial: { id: string; content: { runs: unknown[] } }[];
@@ -95,18 +96,26 @@ const endpoints = {
     list: (p: string) => `/pages/${p}/attachments`,
     files: (p: string) => `/pages/${p}/attachments/files`,
   },
+  pageTemplates: { list: (w: string) => `/workspaces/${w}/page-templates` },
   blocks: { batch: (p: string) => `/pages/${p}/blocks/batch` },
 } as never;
 
 type Host = ReturnType<Parameters<typeof createDocPageScreen>[0]["useHost"]>;
 
-function setup(options: { pageError?: { status?: number } } = {}) {
+function setup(
+  options: {
+    pageError?: { status?: number };
+    blocksError?: { status?: number };
+  } = {},
+) {
   const writes = { batchFail: null as number | null, posts: [] as string[] };
   const notify = vi.fn();
   const api = {
     get: vi.fn(async (url: string) => {
       if (url === "/pages/p1" && options.pageError)
         throw Object.assign(new Error("page"), options.pageError);
+      if (url.endsWith("/blocks") && options.blocksError)
+        throw Object.assign(new Error("blocks"), options.blocksError);
       if (url.endsWith("/blocks"))
         return {
           items: [
@@ -187,7 +196,7 @@ function setup(options: { pageError?: { status?: number } } = {}) {
       );
     });
   const unmount = () => act(async () => root.unmount());
-  return { api, writes, notify, render, unmount, mount };
+  return { api, writes, notify, render, unmount, mount, options };
 }
 
 async function until(assertion: () => void) {
@@ -288,6 +297,60 @@ describe("actions that read the stored page wait for the save", () => {
     await page.unmount();
   });
 
+  it("does not save a template that misses the unsaved edit", async () => {
+    const page = setup();
+    await openWithUnsavedEdit(page, 500);
+    await act(async () => {
+      captured.surface?.callbacks?.onSaveTemplate?.("Mẫu", "");
+    });
+    await until(() =>
+      expect(page.notify.mock.calls.map((c) => c[0])).toContain(
+        copy.header.saveBlocked,
+      ),
+    );
+
+    expect(writesTo(page, "/page-templates")).toBe(0);
+    await page.unmount();
+  });
+
+  it("does not open the convert-to-task dialog on a line that is not stored", async () => {
+    const page = setup();
+    await openWithUnsavedEdit(page, 500);
+    await act(async () => {
+      captured.surface?.callbacks?.onTodoConvert?.("b1");
+    });
+    await until(() =>
+      expect(page.notify.mock.calls.map((c) => c[0])).toContain(
+        copy.header.saveBlocked,
+      ),
+    );
+
+    expect(captured.surface?.overlay?.kind).not.toBe("convertTask");
+    await page.unmount();
+  });
+
+  it("does not restore a version over an edit that is not stored", async () => {
+    const page = setup();
+    await openWithUnsavedEdit(page, 500);
+    await act(async () => {
+      captured.surface?.callbacks?.onOpenVersions?.();
+    });
+    await act(async () => {
+      captured.surface?.callbacks?.onSelectVersion?.("v1");
+    });
+    await act(async () => {
+      captured.surface?.callbacks?.onRestoreVersion?.();
+    });
+    await until(() =>
+      expect(page.notify.mock.calls.map((c) => c[0])).toContain(
+        copy.header.saveBlocked,
+      ),
+    );
+
+    expect(writesTo(page, "/restore")).toBe(0);
+    await page.unmount();
+  });
+
   it("still writes the pending edit when the page is left, and hands over text when access is lost", async () => {
     const left = setup();
     await openWithUnsavedEdit(left, 500);
@@ -328,6 +391,30 @@ describe("a page detail that cannot be read", () => {
     await page.render();
     await until(() => expect(captured.surface?.status).not.toBe("loading"));
     expect(captured.surface).toMatchObject({ status: "notFound" });
+    await page.unmount();
+  });
+});
+
+describe("blocks that cannot be read", () => {
+  it("shows a load error whose retry reads the blocks again", async () => {
+    const page = setup({ blocksError: { status: 500 } });
+    await page.render();
+    await until(() => expect(captured.surface?.status).toBe("loadFailed"));
+    page.options.blocksError = undefined;
+    const reads = page.api.get.mock.calls.length;
+    await act(async () => {
+      captured.surface?.callbacks?.onRetryLoad?.();
+    });
+    await until(() => expect(captured.rich?.initial.length).toBe(1));
+
+    expect(page.api.get.mock.calls.length).toBeGreaterThan(reads);
+    await page.unmount();
+  });
+
+  it.each([404, 403])("keeps the not-found screen on a %i", async (status) => {
+    const page = setup({ blocksError: { status } });
+    await page.render();
+    await until(() => expect(captured.surface?.status).toBe("notFound"));
     await page.unmount();
   });
 });
