@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Collections.Concurrent;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Notrelix.Infrastructure.Identity.OAuth;
 

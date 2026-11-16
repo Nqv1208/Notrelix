@@ -1,7 +1,5 @@
 using System.Buffers.Text;
-using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json;
-using Microsoft.IdentityModel.Tokens;
 using Notrelix.Domain.Identity.OAuth;
 
 namespace Notrelix.Infrastructure.Identity.OAuth;
