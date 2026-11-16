@@ -244,6 +244,29 @@ export class MockDocsHistoryState {
     return { pageId: page.id, droppedBlockCount: dropped.size };
   }
 
+  /** One page, not its subpages, beside the original: a template made and used in one step. */
+  duplicatePage(
+    pageId: string,
+    title?: string | null,
+  ): { pageId: string; droppedBlockCount: number } | null {
+    const page = this.store.getPage(pageId);
+    if (!page) return null;
+    return this.createPageFromTemplate(
+      {
+        id: "",
+        workspaceId: page.workspaceId,
+        name: "",
+        description: null,
+        title: title?.trim() ? title.trim() : `Copy of ${page.title}`,
+        icon: page.icon ?? "",
+        createdBy: null,
+        createdAt: this.store.now(),
+        blocks: copyBlocks(this.store.getPageBlocks(pageId)),
+      },
+      { parentId: page.parentId, spaceId: page.spaceId ?? null },
+    );
+  }
+
   // ─── Seed ─────────────────────────────────────────────────────────────────
 
   /**

@@ -36,5 +36,6 @@ export type {
   PageTemplate,
   CreatePageTemplatePayload,
   CreatePageFromTemplatePayload,
+  DuplicatedPage,
   PageFromTemplate,
 } from "./version";

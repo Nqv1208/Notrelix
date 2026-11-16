@@ -22,6 +22,7 @@ import {
   createUseCreateVersion,
   createUseRestoreVersion,
   createUseCreatePageTemplate,
+  createUseDuplicatePage,
   createUseImportPage,
   createUsePage,
   createUsePageBlocks,
@@ -107,9 +108,6 @@ interface CreateDocPageScreenDeps {
 }
 
 const NONE: DocOverlay = { kind: "none" };
-
-/** Blocks that point at a page's own attachments: a copy leaves them behind (this client has no video block yet). */
-const ATTACHMENT_BLOCKS: ReadonlySet<BlockType> = new Set(["image", "file"]);
 
 /** Types whose Enter makes another block of the same kind. */
 const REPEATING: ReadonlySet<BlockType> = new Set([
@@ -247,6 +245,7 @@ export function createDocPageScreen({
   const useRestoreVersion = createUseRestoreVersion(api, endpoints);
   const useCreatePageTemplate = createUseCreatePageTemplate(api, endpoints);
   const useImportPage = createUseImportPage(api, endpoints);
+  const useDuplicatePage = createUseDuplicatePage(api, endpoints);
   const usePageList = createUsePageList(api, endpoints);
   const useArchivePage = createUseArchivePage(api, endpoints);
   const useMovePage = createUseMovePage(api, endpoints);
@@ -288,6 +287,7 @@ export function createDocPageScreen({
     const restoreVersion = useRestoreVersion(workspaceId, pageId);
     const createTemplate = useCreatePageTemplate(workspaceId);
     const importPage = useImportPage(workspaceId);
+    const duplicatePage = useDuplicatePage(workspaceId);
     const [importing, setImporting] = useState<DocImportView>(IDLE_IMPORT);
 
     const page = pageQuery.data ?? null;
@@ -1568,37 +1568,38 @@ export function createDocPageScreen({
       onDuplicatePage: host.canEdit
         ? () => {
             setOverlay(NONE);
-            // Images and files belong to this page's attachments: they stay behind.
-            const drafts = richEditor.currentDrafts() ?? [];
-            const copied = drafts
-              .filter((draft) => !ATTACHMENT_BLOCKS.has(draft.type))
-              .map((draft) => ({
-                type: draft.type,
-                content: draft.content,
-                properties: draft.properties,
-              }));
-            const dropped = drafts.length - copied.length;
-            importPage.mutate(
-              {
-                title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
-                blocks: copied,
-                parentId: page.parentId,
-                spaceId: page.spaceId ?? null,
-              },
-              {
-                onSuccess: (createdId) => {
-                  host.notify?.(
-                    dropped > 0
-                      ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
-                          count: dropped,
-                        })
-                      : copy.fileMenu.makeCopyDone,
-                  );
-                  host.openPage?.(createdId);
-                },
-                onError: () => host.notify?.(copy.fileMenu.makeCopyFailed),
-              },
-            );
+            if (duplicatePage.isPending) return;
+            host.notify?.(copy.fileMenu.makeCopyPending);
+            // The server copies the saved blocks: write the open edits first.
+            void saver
+              .flush()
+              .then(() =>
+                duplicatePage.mutate(
+                  {
+                    pageId,
+                    title: fillDocCopy(copy.fileMenu.copyTitle, { title }),
+                  },
+                  {
+                    onSuccess: (copied) => {
+                      host.notify?.(
+                        copied.droppedBlockCount > 0
+                          ? fillDocCopy(copy.fileMenu.makeCopyDropped, {
+                              count: copied.droppedBlockCount,
+                            })
+                          : copy.fileMenu.makeCopyDone,
+                      );
+                      host.openPage?.(copied.pageId);
+                    },
+                    onError: (error) =>
+                      host.notify?.(
+                        (error as { status?: unknown }).status === 403
+                          ? copy.fileMenu.makeCopyForbidden
+                          : copy.fileMenu.makeCopyFailed,
+                      ),
+                  },
+                ),
+              )
+              .catch(() => host.notify?.(copy.fileMenu.makeCopyFailed));
           }
         : undefined,
       onCommentStart: () => {

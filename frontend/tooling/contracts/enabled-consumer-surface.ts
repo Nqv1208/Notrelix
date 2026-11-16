@@ -1968,6 +1968,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Documents",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createUseDuplicatePage",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/query/hooks/use-duplicate-page.ts",
+    capability: "Documents.Pages.DuplicatePage",
+    operationId: "Documents.Pages.DuplicatePage",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createUseMovePageToSpace",
     consumerFile:
       "frontend/packages/product/docs/state/src/query/hooks/use-move-page-to-space.ts",
