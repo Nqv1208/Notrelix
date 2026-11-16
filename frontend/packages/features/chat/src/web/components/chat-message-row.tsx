@@ -1018,7 +1018,7 @@ export function ChatPendingRow({
       <div className="flex min-w-0 max-w-[min(75%,36rem)] flex-col items-end">
         <p
           className={cn(
-            "min-w-0 max-w-full whitespace-pre-wrap break-words wrap-anywhere bg-primary px-3 py-2 text-sm leading-relaxed text-primary-foreground",
+            "min-w-0 max-w-full whitespace-pre-wrap break-words wrap-anywhere bg-primary px-3 py-2 text-sm leading-[1.45] text-primary-foreground",
             bubbleShape(true, continued, groupEnd),
             failed &&
               "ring-2 ring-destructive ring-offset-2 ring-offset-background",
@@ -1032,7 +1032,7 @@ export function ChatPendingRow({
         </p>
         <p
           className={cn(
-            "mt-0.5 pe-1 text-xs font-medium",
+            "mt-0.5 flex items-center gap-1.5 pe-1 text-xs font-medium leading-[1.45]",
             failed ? "text-destructive" : "text-muted-foreground",
           )}
           role={failed ? "status" : undefined}

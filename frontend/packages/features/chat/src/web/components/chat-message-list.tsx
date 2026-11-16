@@ -555,6 +555,28 @@ export function ChatMessageList(props: ChatMessageListProps) {
     glide(end, instant);
   };
 
+  // A new row at the end while the reader is there: follow it over the row's own 180 ms slide-in. The library's own
+  // follow (and its "size increased" catch-up) jumps the whole row in one frame, so it is off (followOutput={false}).
+  const lastKey = entries.length > 0 ? entries[entries.length - 1]!.key : "";
+  const lastSeen = useRef({ space: "", key: "" });
+  useLayoutEffect(() => {
+    const prev = lastSeen.current;
+    lastSeen.current = { space, key: lastKey };
+    const el = scrollRef.current;
+    // Layout effects run before the list measures the new row: the end is still where the reader was.
+    if (!virtualOn || !el || prev.key === "" || prev.space !== space) return;
+    if (prev.key === lastKey || !isAtBottom(el)) return;
+    cancelGlide.current();
+    // The end follows the row while it is measured: the target is read every frame for the whole 180 ms.
+    // Never backwards: the list's height dips for a frame while it swaps the row's estimate for its measure.
+    let end = el.scrollTop;
+    cancelGlide.current = animateScrollTo(
+      el,
+      () => (end = Math.max(end, el.scrollHeight - el.clientHeight)),
+      { durationMs: 180, gentle: true, reducedMotion: prefersReducedMotion() },
+    );
+  }, [lastKey, space, virtualOn]);
+
   /** Brings an entry to the middle of the view; false when it is not in the list. */
   const glideToIndex = (
     index: number,
@@ -991,15 +1013,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
               // A row measured taller or shorter than the estimate is corrected in the same frame it is painted, not one
               // frame later (a frame of the old offset is a visible jump of the rows below it).
               skipAnimationFrameInResizeObserver
-              // Follows a new row only when the reader is at the end right now (the live position, not the last state
-              // the library reported): a reader who just scrolled up keeps their place.
-              followOutput={(bottom) =>
-                bottom && (!scrollRef.current || isAtBottom(scrollRef.current))
-                  ? prefersReducedMotion()
-                    ? "auto"
-                    : "smooth"
-                  : false
-              }
+              // New rows are followed by the effect above (only when the reader is at the end right now).
+              followOutput={false}
               atBottomStateChange={handleAtBottom}
               rangeChanged={(range) => {
                 memo.current.range = range;

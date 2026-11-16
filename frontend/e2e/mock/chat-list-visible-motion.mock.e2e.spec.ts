@@ -55,7 +55,7 @@ test("(a) an older page loading at the top moves nothing the reader sees", async
   expect(drift).toBeLessThanOrEqual(TOLERANCE_PX);
 });
 
-test.fixme("(b) a new message while at the bottom follows smoothly, never snaps", async ({
+test("(b) a new message while at the bottom follows smoothly, never snaps", async ({
   page,
 }) => {
   await atNewest(page);
@@ -73,7 +73,7 @@ test.fixme("(b) a new message while at the bottom follows smoothly, never snaps"
   expectSmoothFollow("b-incoming", await stopTrace(page));
 });
 
-test.fixme("(c) an own send goes from pending to confirmed without a snap", async ({
+test("(c) an own send goes from pending to confirmed without a snap", async ({
   page,
 }) => {
   await atNewest(page);
