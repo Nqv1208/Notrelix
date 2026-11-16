@@ -61,7 +61,6 @@
   "devDependencies": {
     "@notrelix/dev-mock-backend": "workspace:*",
     "@notrelix/eslint-config": "workspace:*",
-    "@notrelix/testing": "workspace:*",
     "@tanstack/react-router-devtools": "catalog:",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

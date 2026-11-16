@@ -1,4 +1,4 @@
-import { onSessionReset } from "@notrelix/query";
+import { onSessionReset } from "@notrelix/work-management-state";
 import { useCallback, useMemo, useState } from "react";
 import {
   useBoardLabels,

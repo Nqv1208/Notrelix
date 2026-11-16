@@ -1,4 +1,4 @@
-import { onSessionReset } from "@notrelix/query";
+import { onSessionReset } from "@notrelix/work-management-state";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { AtSign, Send } from "lucide-react";
 import { Button, Textarea } from "@notrelix/ui-web";

@@ -1,4 +1,4 @@
-import { runSessionReset } from "@notrelix/query";
+import { runSessionReset } from "@notrelix/work-management-state";
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@notrelix/testing";
 import { unsentCommentOf, useCommentDraft } from "../update-composer";

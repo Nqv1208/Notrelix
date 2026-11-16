@@ -6,6 +6,8 @@
  */
 
 // API clients
+// Product web code reaches the session reset through its state package.
+export { onSessionReset, runSessionReset } from "@notrelix/query";
 export * from "./api/board.api";
 export * from "./api/board-api-mappers";
 export * from "./api/board-access.api";

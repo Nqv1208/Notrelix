@@ -1,4 +1,4 @@
-import { onSessionReset } from "@notrelix/query";
+import { onSessionReset } from "@notrelix/work-management-state";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
