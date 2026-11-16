@@ -137,7 +137,9 @@ public record PageTemplateDto(
     string Icon,
     int BlockCount,
     Guid? CreatedBy,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    long Version,
+    bool CanManage
 );
 
 /// <summary>A page created from a template; <c>DroppedBlockCount</c> counts the image, file and video blocks that were not copied.</summary>

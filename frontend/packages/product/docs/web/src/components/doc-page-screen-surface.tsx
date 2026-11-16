@@ -44,6 +44,7 @@ import type {
   DocHistoryActionView,
   DocImportView,
   DocTemplateActionView,
+  DocTemplatesView,
 } from "./doc-page-models";
 import {
   DocBoardPickerDialogSurface,
@@ -60,6 +61,7 @@ import {
   DocSaveVersionDialogSurface,
 } from "./doc-history-dialogs-surface";
 import { DocShareDialogSurface } from "./doc-share-dialog-surface";
+import { DocTemplatesDialogSurface } from "./doc-templates-dialog-surface";
 import { DocSidePanelSurface } from "./doc-side-panel-surface";
 import {
   DEFAULT_TOOLBAR_CURRENT,
@@ -125,6 +127,8 @@ export interface DocPageScreenSurfaceProps {
   readonly history?: DocHistoryActionView;
   /** The "Save as template" dialog's write state. */
   readonly templateAction?: DocTemplateActionView;
+  /** The templates dialog's list and write state. */
+  readonly templates?: DocTemplatesView;
   /** The import dialog's state. */
   readonly importState?: DocImportView;
   readonly share?: DocShareView;
@@ -242,6 +246,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     versions,
     history,
     templateAction,
+    templates,
     importState,
     share,
     trash,
@@ -298,6 +303,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     (overlay.kind === "saveVersion" && history !== undefined) ||
     (overlay.kind === "restoreVersion" && history !== undefined) ||
     (overlay.kind === "saveTemplate" && templateAction !== undefined) ||
+    (overlay.kind === "templates" && templates !== undefined) ||
     (overlay.kind === "importPage" && importState !== undefined) ||
     (overlay.kind === "pagePicker" && pickerPages !== undefined) ||
     (overlay.kind === "boardPicker" && pickerBoards !== undefined) ||
@@ -495,6 +501,13 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
         <DocSaveTemplateDialogSurface
           copy={copy}
           action={templateAction}
+          callbacks={callbacks}
+        />
+      ) : null}
+      {overlay.kind === "templates" && templates ? (
+        <DocTemplatesDialogSurface
+          copy={copy}
+          view={templates}
           callbacks={callbacks}
         />
       ) : null}

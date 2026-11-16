@@ -3,6 +3,8 @@ import type {
   CreatePageTemplatePayload,
   PageFromTemplate,
   PageTemplate,
+  PageTemplateVersionPayload,
+  UpdatePageTemplatePayload,
 } from "@notrelix/docs-core";
 import type { PageFromTemplateDtoApi, PageTemplateDtoApi } from "../dto";
 import { mapPageFromTemplate, mapTemplate } from "../model/version.mapper";
@@ -38,6 +40,47 @@ export function createTemplateApi(
           },
           { skipGlobalErrorToast: true },
         ),
+      );
+    },
+
+    /** Renames a template or changes its description; a stale version is refused (412). */
+    async update(
+      workspaceId: string,
+      payload: UpdatePageTemplatePayload,
+    ): Promise<PageTemplate> {
+      return mapTemplate(
+        await api.patch<PageTemplateDtoApi>(
+          endpoints.pageTemplates.detail(workspaceId, payload.templateId),
+          {
+            name: payload.name,
+            description: payload.description ?? null,
+            expectedVersion: payload.expectedVersion,
+          },
+          { skipGlobalErrorToast: true },
+        ),
+      );
+    },
+
+    /** Archives a template: it leaves the gallery; pages made from it are unchanged. */
+    async archive(
+      workspaceId: string,
+      payload: PageTemplateVersionPayload,
+    ): Promise<void> {
+      await api.post<void>(
+        endpoints.pageTemplates.archive(workspaceId, payload.templateId),
+        { expectedVersion: payload.expectedVersion },
+        { skipGlobalErrorToast: true },
+      );
+    },
+
+    /** Deletes a template for good; pages made from it stay. */
+    async remove(
+      workspaceId: string,
+      payload: PageTemplateVersionPayload,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${endpoints.pageTemplates.detail(workspaceId, payload.templateId)}?expectedVersion=${payload.expectedVersion}`,
+        { skipGlobalErrorToast: true },
       );
     },
 

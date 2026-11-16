@@ -30,6 +30,8 @@ export type {
   PageVersion,
   PageTemplate,
   CreatePageTemplatePayload,
+  UpdatePageTemplatePayload,
+  PageTemplateVersionPayload,
   CreatePageFromTemplatePayload,
   DuplicatedPage,
   PageFromTemplate,
