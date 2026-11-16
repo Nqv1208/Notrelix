@@ -986,6 +986,9 @@ export function ChatMessageList(props: ChatMessageListProps) {
               atBottomThreshold={BOTTOM_SLACK_PX}
               increaseViewportBy={VIEWPORT_EXTRA_PX}
               defaultItemHeight={60}
+              // A row measured taller or shorter than the estimate is corrected in the same frame it is painted, not one
+              // frame later (a frame of the old offset is a visible jump of the rows below it).
+              skipAnimationFrameInResizeObserver
               // Follows a new row only when the reader is at the end right now (the live position, not the last state
               // the library reported): a reader who just scrolled up keeps their place.
               followOutput={(bottom) =>
