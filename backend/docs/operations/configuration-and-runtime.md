@@ -349,7 +349,7 @@ orphan sweep in each pass). A bucket that serves browsers must allow `PUT` and `
 `Content-Type` and `Content-Length` headers (CORS).
 
 `Chat:Calls` (Application, `ChatCallOptions`, validated on start by `ChatCallOptionsValidator`) holds the call settings:
-`Enabled` (default `true`; false answers 503 `chat.calls.unavailable` on every call operation), `SfuUrl`, `TokenTtlSeconds` (60),
+`Enabled` (default `true`; false answers 503 `chat.calls.unavailable` on every call operation), `SfuUrl`, `TokenTtlSeconds` (60, at most 600),
 `RingSeconds` (45), `EmptyCallSeconds` (60), `Region` (`ap-southeast-1`, copied to `chat.calls.region` by the server; a client never
 supplies it) and `LogRetentionMonths` (12, not applied yet). `Chat:CallSweep` (Infrastructure, `ChatCallSweepOptions`) configures the
 job `Chat.Calls.Sweep` (`ChatCallSweepService`, a hosted service; `Enabled`, `Interval` default 5 seconds): a call still Ringing after

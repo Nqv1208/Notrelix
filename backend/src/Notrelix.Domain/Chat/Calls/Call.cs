@@ -218,6 +218,27 @@ public sealed class Call : AggregateRoot, IWorkspaceScoped
         return true;
     }
 
+    /// <summary>
+    /// The person's access to the space ended while they were in the call: they are released as a cancel (starter of a ringing call), a leave
+    /// (a direct call ends) or, when that leaves nobody in an active call, an end. One fact asks the media room to drop them. False when
+    /// they were not in the call.
+    /// </summary>
+    public bool Revoke(Guid personId, DateTimeOffset at)
+    {
+        if (IsEnded || !IsJoined(personId)) return false;
+
+        if (State == CallState.Ringing)
+            Cancel(personId, at); // only the starter is in a ringing call
+        else
+        {
+            Leave(personId, at);
+            if (!IsEnded && JoinedCount == 0) EndEmpty(at);
+        }
+
+        RaiseDomainEvent(new CallParticipantRevokedDomainEvent(AccountId, WorkspaceId, SpaceId, Id, personId, RoomKey, at));
+        return true;
+    }
+
     /// <summary>The sweep ends an Active call that has had nobody in it for the grace period.</summary>
     public void EndEmpty(DateTimeOffset at)
     {

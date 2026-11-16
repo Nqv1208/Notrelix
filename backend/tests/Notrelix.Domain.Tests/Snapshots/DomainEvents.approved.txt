@@ -273,6 +273,10 @@ chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Wor
 chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|State|Notrelix.Domain.Chat.Calls.CallState|False
 chat.call-changed|1|Notrelix.Domain.Chat.Calls.Events.CallChangedDomainEvent|Workspace|Version|System.Int64|False
+chat.call-participant-revoked|1|Notrelix.Domain.Chat.Calls.Events.CallParticipantRevokedDomainEvent|Workspace|CallId|System.Guid|False
+chat.call-participant-revoked|1|Notrelix.Domain.Chat.Calls.Events.CallParticipantRevokedDomainEvent|Workspace|PersonId|System.Guid|False
+chat.call-participant-revoked|1|Notrelix.Domain.Chat.Calls.Events.CallParticipantRevokedDomainEvent|Workspace|RoomKey|System.String|False
+chat.call-participant-revoked|1|Notrelix.Domain.Chat.Calls.Events.CallParticipantRevokedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.link-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelLinkChangedDomainEvent|Workspace|ActorId|System.Guid|False
 chat.link-changed|1|Notrelix.Domain.Chat.Spaces.Events.ChannelLinkChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|ActorId|System.Guid|False

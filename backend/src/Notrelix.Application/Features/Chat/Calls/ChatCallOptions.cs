@@ -42,8 +42,8 @@ public sealed class ChatCallOptionsValidator : IValidateOptions<ChatCallOptions>
             failures.Add($"{section}:Region is required (at most 32 characters).");
         if (string.IsNullOrWhiteSpace(options.SfuUrl))
             failures.Add($"{section}:SfuUrl is required.");
-        if (options.TokenTtlSeconds is < 10 or > 3600)
-            failures.Add($"{section}:TokenTtlSeconds must be between 10 and 3600.");
+        if (options.TokenTtlSeconds is < 10 or > 600)
+            failures.Add($"{section}:TokenTtlSeconds must be between 10 and 600 (a missed kick must self-heal within ten minutes).");
         if (options.RingSeconds is < 5 or > 300)
             failures.Add($"{section}:RingSeconds must be between 5 and 300.");
         if (options.EmptyCallSeconds is < 5 or > 3600)

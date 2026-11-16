@@ -29,3 +29,20 @@ public sealed class ChatCallEventMapper : IntegrationEventMapperBase<CallChanged
         );
     }
 }
+
+/// <summary>Maps the revocation fact to the chat.call.participant-revoked integration event (outbox, same transaction as the release).</summary>
+public sealed class ChatCallParticipantRevokedEventMapper : IntegrationEventMapperBase<CallParticipantRevokedDomainEvent, ChatCallParticipantRevokedIntegrationEvent>
+{
+    public override ChatCallParticipantRevokedIntegrationEvent? Map(CallParticipantRevokedDomainEvent domainEvent) => new(
+        EventId: Guid.CreateVersion7(),
+        AccountId: domainEvent.AccountId,
+        WorkspaceId: domainEvent.WorkspaceId,
+        SpaceId: domainEvent.SpaceId,
+        CallId: domainEvent.CallId,
+        PersonId: domainEvent.PersonId,
+        RoomKey: domainEvent.RoomKey,
+        CorrelationId: domainEvent.EventId,
+        ActorUserId: domainEvent.PersonId,
+        CausationId: null,
+        OccurredAt: domainEvent.OccurredAt);
+}

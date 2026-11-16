@@ -907,6 +907,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatCallParticipantRevokedConsumer",
+                EventName = "chat.call.participant-revoked",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-call-participant-revoked-v1",
+                BoundedContext = "Chat",
+                Description = "Drops a person released from a call because their access ended from the media room through the media gateway; retried until it succeeds",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatNotificationIntentConsumer",
                 EventName = "chat.message.created",
                 EventVersion = 1,
