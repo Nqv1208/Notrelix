@@ -82,6 +82,7 @@ export type MemberActionBlock =
   | "last-owner"
   | "owner-by-transfer"
   | "admin-by-owner"
+  | "owner-only"
   | "suspended";
 
 export interface MemberCapabilities {
@@ -131,14 +132,17 @@ export function memberCapabilities(
     return blocked("admin-by-owner");
 
   const suspended = member.membership === "suspended";
+  // Changing a role is Owner-only (`ChangeMemberRole`): an Admin reads the role as text.
+  const ownerOnly = viewer.role !== "owner";
   return {
     // The producer rejects role changes of suspended members.
-    assignableRoles: suspended
-      ? []
-      : isOwner
-        ? ["owner", ...ASSIGNABLE_ROLES]
-        : [...ASSIGNABLE_ROLES],
-    roleBlockedBy: suspended ? "suspended" : null,
+    assignableRoles:
+      suspended || ownerOnly
+        ? []
+        : isOwner
+          ? ["owner", ...ASSIGNABLE_ROLES]
+          : [...ASSIGNABLE_ROLES],
+    roleBlockedBy: ownerOnly ? "owner-only" : suspended ? "suspended" : null,
     canRemove: true,
     removeBlockedBy: null,
     // Driven by the producer's status: an active member can be suspended, a
