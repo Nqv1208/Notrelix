@@ -30,7 +30,11 @@ interface UnknownOutcome {
   readonly signature: string;
   readonly idempotencyKey: string;
   readonly expectedVersion: number;
+  readonly at: number;
 }
+
+/** A repeat is a retry of a click, not a later action: after this the server's replay (a day) must not answer it. */
+const REPEAT_WINDOW_MS = 2 * 60_000;
 
 const unknownByClient = new WeakMap<QueryClient, Map<string, UnknownOutcome>>();
 
@@ -104,7 +108,7 @@ export function runUpdateCardCommand(
   const kept = unknown.get(cardId);
   // The write is based on the item version the member last read.
   const expectedVersion =
-    kept?.signature === signature
+    kept?.signature === signature && Date.now() - kept.at < REPEAT_WINDOW_MS
       ? kept.expectedVersion
       : (
           findBoardCard(
@@ -133,7 +137,7 @@ export function runUpdateCardCommand(
     applyDetail: (detail) => applyCardPatch(detail, patch),
     send: (context) => {
       const idempotencyKey =
-        kept?.signature === signature
+        kept?.signature === signature && Date.now() - kept.at < REPEAT_WINDOW_MS
           ? kept.idempotencyKey
           : context.idempotencyKey;
       return cards
@@ -152,6 +156,7 @@ export function runUpdateCardCommand(
                 signature,
                 idempotencyKey,
                 expectedVersion,
+                at: Date.now(),
               });
             else unknown.delete(cardId);
             throw error;
