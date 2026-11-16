@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@notrelix/testing";
+import { fireEvent, render, screen, waitFor, within } from "@notrelix/testing";
 import {
   ChatMessageList,
   type ChatMessageListProps,
@@ -467,7 +467,7 @@ describe("ChatMessageList jump to latest", () => {
     ).toBe("2 new messages");
   });
 
-  it("glides to the newest message and hands focus to the log; far away it lands one screen above first", () => {
+  it("glides to the newest message and hands focus to the log; far away it lands one screen above first", async () => {
     const onJumpLatest = vi.fn();
     render(
       <ChatMessageList {...props({ messages: [message(1)], onJumpLatest })} />,
@@ -476,10 +476,8 @@ describe("ChatMessageList jump to latest", () => {
     fireEvent.click(screen.getByRole("button", { name: en.list.jumpLatest }));
     expect(onJumpLatest).toHaveBeenCalledTimes(1);
     expect(log.scrollTop).toBe(4000);
-    expect(scrollTo).toHaveBeenCalledWith({
-      top: 5000,
-      behavior: expect.stringMatching(/smooth|auto/),
-    });
+    await waitFor(() => expect(log.scrollTop).toBe(4500));
+    expect(scrollTo).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(log);
   });
 });

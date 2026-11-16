@@ -84,8 +84,6 @@ export interface ChatMessageRowProps {
   readonly showName?: boolean;
   /** The caller's newest stored message: "Sent" shows under it. */
   readonly showSent?: boolean;
-  /** Fades the message in (a message that arrived while the list was open). */
-  readonly fresh?: boolean;
   readonly isOwn: boolean;
   readonly locale: string;
   readonly timeZone?: string;
@@ -192,7 +190,6 @@ function ChatMessageRowBase({
   groupEnd = true,
   showName = true,
   showSent = false,
-  fresh = false,
   isOwn,
   locale,
   timeZone,
@@ -545,8 +542,6 @@ function ChatMessageRowBase({
         "group/row relative flex w-full items-end gap-2 px-3.5 outline-none md:px-6 xl:px-5",
         isOwn ? "flex-row-reverse" : "flex-row",
         continued ? "mt-0.5" : "mt-3",
-        fresh &&
-          "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-[160ms]",
       )}
       data-message-id={message.id}
       data-own={isOwn ? "true" : "false"}

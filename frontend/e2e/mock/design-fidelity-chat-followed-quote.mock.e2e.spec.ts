@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * The followed-threads list and the quote reply against the Chat canvas boards `Chat-Followed-M`/`-T` and
@@ -42,6 +43,7 @@ async function open(
   await page.goto(CHANNEL);
   await expect(page.locator("[data-bubble]").first()).toBeVisible();
   await page.waitForTimeout(600);
+  await toNewest(page);
 }
 
 async function box(page: Page, selector: string) {

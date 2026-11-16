@@ -694,3 +694,20 @@
     margin-bottom: 0;
   }
 }
+
+/* The typing dots: each rises 3px and fades from 0.4 to 1 in a 1.2s ease-in-out loop; the delays (0, 150, 300ms) make the wave. Nothing takes layout space, so the bubble never changes size. Reduced motion drops the animation (opacity only). */
+.chat-typing-wave {
+  animation: chat-typing-wave 1.2s ease-in-out infinite;
+}
+@keyframes chat-typing-wave {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}

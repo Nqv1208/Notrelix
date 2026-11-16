@@ -24,15 +24,47 @@ function isKnownChannel(
   return channels?.some((channel) => channel.id === spaceId) ?? false;
 }
 
+/** A list is asked about unknown spaces at most this often: a busy stream must not turn into a request per frame. */
+const UNKNOWN_READ_WINDOW_MS = 10_000;
+const reads = new WeakMap<
+  QueryClient,
+  Map<string, { at: number; timer: ReturnType<typeof setTimeout> | null }>
+>();
+
+/** Runs `read` now, then at most once per window: frames inside the window share one read at the window's end. */
+export function readOncePerWindow(
+  queryClient: QueryClient,
+  scope: string,
+  read: () => void,
+): void {
+  let byScope = reads.get(queryClient);
+  if (!byScope) {
+    byScope = new Map();
+    reads.set(queryClient, byScope);
+  }
+  const state = byScope.get(scope) ?? { at: -Infinity, timer: null };
+  byScope.set(scope, state);
+  const run = () => {
+    state.at = Date.now();
+    state.timer = null;
+    read();
+  };
+  const wait = state.at + UNKNOWN_READ_WINDOW_MS - Date.now();
+  if (wait <= 0) run();
+  else if (state.timer === null) state.timer = setTimeout(run, wait);
+}
+
 function readUnknown(
   queryClient: QueryClient,
   workspaceId: string,
   spaceId: string,
 ): void {
   if (isKnownChannel(queryClient, workspaceId, spaceId)) return;
-  void queryClient.invalidateQueries({
-    queryKey: chatQueryKeys.conversations(workspaceId),
-    refetchType: "active",
+  readOncePerWindow(queryClient, `conversations:${workspaceId}`, () => {
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.conversations(workspaceId),
+      refetchType: "active",
+    });
   });
 }
 

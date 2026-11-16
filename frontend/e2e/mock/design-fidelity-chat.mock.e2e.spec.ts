@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * Chat at 1440 x 900 and 390 x 844 against the owner canvas boards `Chat-Main` (1440), `Chat-List-M` and
@@ -58,6 +59,7 @@ async function css(page: Page, selector: string, prop: string) {
 }
 
 async function react(page: Page) {
+  await toNewest(page);
   const row = page.locator("[data-own=false]").last();
   await row.scrollIntoViewIfNeeded();
   await row.hover();
@@ -145,11 +147,21 @@ test.describe("1440 (Chat-Main)", () => {
       Math.abs(parseFloat(await css(page, bubble, "line-height")) - 14 * 1.45),
     ).toBeLessThan(1);
     const col = await box(page, "[role=log] ol");
-    expect(col.w).toBeLessThanOrEqual(760);
+    expect(col.w).toBeLessThanOrEqual(1120);
     const nd = await box(page, "[data-unread-divider]");
     expect(nd.h).toBeCloseTo(24, 0);
     expect(nd.x + nd.w / 2).toBeCloseTo(col.x + col.w / 2, 0);
-    const ds = await box(page, "[role=log] li[data-testid=chat-day-separator]");
+    // Only the rows near the view are in the page: the date label that opens the window is drawn once the list is at its top.
+    await page.getByRole("log").evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await expect(
+      page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
+    ).toBeVisible();
+    const ds = await box(
+      page,
+      "[role=log] li[data-testid=chat-day-separator] > div",
+    );
     expect(ds.h).toBeCloseTo(24, 0);
   });
 
@@ -180,7 +192,8 @@ test.describe("1440 (Chat-Main)", () => {
     const b = await box(page, "form:has(textarea) button");
     expect(b.w).toBeCloseTo(40, 0);
     expect(b.h).toBeCloseTo(40, 0);
-    expect(900 - (form.y + form.h)).toBeCloseTo(4, 0);
+    // The composer floats, lifted 20 px off the bottom edge.
+    expect(900 - (form.y + form.h)).toBeCloseTo(20, 0);
   });
 });
 
@@ -210,6 +223,9 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     ).toBeVisible();
     expect((await box(page, "main header")).h).toBeCloseTo(56, 0);
     expect(await css(page, "main header h1", "font-size")).toBe("17px");
+    // The divider is measured where the room opened: reacting scrolls the list away from it, and only rows near the view are drawn.
+    const nd = await box(page, "[data-unread-divider]");
+    expect(nd.h).toBeCloseTo(24, 0);
     await react(page);
     const row = "[data-message-id]:has([data-testid=chat-reactions])";
     const bub = await box(page, `${row} [data-bubble]`);
@@ -225,8 +241,6 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     await expect(
       page.getByRole("button", { name: /^(Send|Gửi)$/ }),
     ).toHaveCount(0);
-    const nd = await box(page, "[data-unread-divider]");
-    expect(nd.h).toBeCloseTo(24, 0);
   });
 });
 
@@ -237,6 +251,7 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
  * preview pane, which the app does not have: only the field, chips and result rows are compared, on the phone.
  */
 async function pinThree(page: Page) {
+  await toNewest(page);
   for (let i = 0; i < 3; i++) {
     const row = page.locator("[data-own=false]").nth(-1 - i * 2);
     await row.scrollIntoViewIfNeeded();
@@ -250,6 +265,7 @@ async function pinThree(page: Page) {
 }
 
 async function openThread(page: Page) {
+  await toNewest(page);
   const row = page.locator("[data-own=false]").last();
   await row.scrollIntoViewIfNeeded();
   await row.hover();

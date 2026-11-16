@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import {
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -218,6 +219,27 @@ function failureText(kind: ChatFailureKind, copy: ChatCopy): string {
  * composer) and the channel dialogs. It owns the server state through the
  * query hooks and only shows what the cache holds.
  */
+/** The height of an element, kept current with a ResizeObserver (a multi-line composer grows it). */
+function useElementHeight(): [(element: HTMLElement | null) => void, number] {
+  const [height, setHeight] = useState(0);
+  const observer = useRef<ResizeObserver | null>(null);
+  const ref = useCallback((element: HTMLElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!element) {
+      setHeight(0);
+      return;
+    }
+    const read = () =>
+      setHeight(Math.ceil(element.getBoundingClientRect().height));
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    observer.current = new ResizeObserver(read);
+    observer.current.observe(element);
+  }, []);
+  return [ref, height];
+}
+
 /**
  * The channel composer with its draft. The text lives here, not in the workspace, so a keystroke re-renders the
  * composer only and not the message list. Drafts are kept per channel while the page is open (UC-CHT-B07).
@@ -404,6 +426,7 @@ export function ChatWorkspace({
   // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
   // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
   const drafts = useRef<Record<string, string>>({});
+  const [dockRef, dockHeight] = useElementHeight();
   const [editing, setEditing] = useState<EditState | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ChatMessage | null>(null);
   const [confirmUnpin, setConfirmUnpin] = useState<ChatMessage | null>(null);
@@ -1341,7 +1364,7 @@ export function ChatWorkspace({
             {listOnly ? null : (
               <section
                 className={cn(
-                  "flex min-h-0 min-w-0 flex-1 flex-col",
+                  "relative flex min-h-0 min-w-0 flex-1 flex-col",
                   isMobile && panel !== null && "hidden",
                   panel?.kind === "following" && "md:max-xl:hidden",
                 )}
@@ -1673,6 +1696,7 @@ export function ChatWorkspace({
                       onOpenThread={handleOpenThread}
                       onTogglePin={grants.pin ? handleTogglePin : undefined}
                       attachmentsReadOnly={channel?.isArchived === true}
+                      bottomInset={dockHeight}
                       showNames={conversation?.kind !== "direct"}
                       typingIds={
                         ephemeral
@@ -1685,68 +1709,77 @@ export function ChatWorkspace({
                           ?.scrollIntoView({ block: "center" })
                       }
                     />
-                    {ephemeral ? (
-                      <ChatTypingIndicator
-                        names={typingIds
-                          .filter((id) => id !== viewerId)
-                          .map((id) => authorName(id))}
+                    <div
+                      ref={dockRef}
+                      className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col"
+                      data-testid="chat-composer-dock"
+                    >
+                      {ephemeral ? (
+                        <ChatTypingIndicator
+                          names={typingIds
+                            .filter((id) => id !== viewerId)
+                            .map((id) => authorName(id))}
+                          copy={copy}
+                        />
+                      ) : null}
+                      {limitedEntries.length > 0 ? (
+                        <ChatRateLimitNotice
+                          key={
+                            limitedEntries[limitedEntries.length - 1]!
+                              .clientMessageId
+                          }
+                          seconds={
+                            limitedEntries[limitedEntries.length - 1]!
+                              .retryAfterSeconds ?? 1
+                          }
+                          limit={
+                            limitedEntries[limitedEntries.length - 1]!.limit ??
+                            "rate-limited"
+                          }
+                          copy={copy}
+                          onRetry={() => {
+                            for (const entry of limitedEntries)
+                              sender.retry(entry);
+                          }}
+                        />
+                      ) : null}
+                      <ChatDraftComposer
+                        floating
+                        key={ch}
+                        draftKey={ch}
+                        drafts={drafts}
+                        channelName={spaceName}
+                        labelOverride={
+                          conversation
+                            ? fillCopy(copy.dm.view.composer, {
+                                name: spaceName,
+                              })
+                            : undefined
+                        }
+                        disabledReason={composerDisabledReason}
                         copy={copy}
+                        onTyping={ephemeral ? typingSignal.start : undefined}
+                        onTypingStop={ephemeral ? typingSignal.stop : undefined}
+                        onSend={handleSend}
+                        mentions={composerMentions}
+                        attachments={{ draftKey: ch }}
+                        slowModeSeconds={channel?.slowModeSeconds ?? 0}
+                        leading={
+                          replyTo ? (
+                            <ReplyChip
+                              copy={copy}
+                              name={authorName(replyTo.authorId)}
+                              text={
+                                replyTo.deleted
+                                  ? copy.list.deleted
+                                  : (replyTo.content ?? "")
+                              }
+                              onCancel={() => setReplyTo(null)}
+                            />
+                          ) : null
+                        }
                       />
-                    ) : null}
-                    {limitedEntries.length > 0 ? (
-                      <ChatRateLimitNotice
-                        key={
-                          limitedEntries[limitedEntries.length - 1]!
-                            .clientMessageId
-                        }
-                        seconds={
-                          limitedEntries[limitedEntries.length - 1]!
-                            .retryAfterSeconds ?? 1
-                        }
-                        limit={
-                          limitedEntries[limitedEntries.length - 1]!.limit ??
-                          "rate-limited"
-                        }
-                        copy={copy}
-                        onRetry={() => {
-                          for (const entry of limitedEntries)
-                            sender.retry(entry);
-                        }}
-                      />
-                    ) : null}
-                    <ChatDraftComposer
-                      key={ch}
-                      draftKey={ch}
-                      drafts={drafts}
-                      channelName={spaceName}
-                      labelOverride={
-                        conversation
-                          ? fillCopy(copy.dm.view.composer, { name: spaceName })
-                          : undefined
-                      }
-                      disabledReason={composerDisabledReason}
-                      copy={copy}
-                      onTyping={ephemeral ? typingSignal.start : undefined}
-                      onTypingStop={ephemeral ? typingSignal.stop : undefined}
-                      onSend={handleSend}
-                      mentions={composerMentions}
-                      attachments={{ draftKey: ch }}
-                      slowModeSeconds={channel?.slowModeSeconds ?? 0}
-                      leading={
-                        replyTo ? (
-                          <ReplyChip
-                            copy={copy}
-                            name={authorName(replyTo.authorId)}
-                            text={
-                              replyTo.deleted
-                                ? copy.list.deleted
-                                : (replyTo.content ?? "")
-                            }
-                            onCancel={() => setReplyTo(null)}
-                          />
-                        ) : null
-                      }
-                    />
+                    </div>
                   </>
                 )}
               </section>
@@ -1756,11 +1789,12 @@ export function ChatWorkspace({
               <aside
                 className={cn(
                   "flex min-h-0 w-full flex-col border-border bg-background md:w-[340px] md:border-s md:shrink-0 xl:w-[360px]",
-                  // Between a tablet and a laptop the room would be left about 180 px wide beside the shell, the list and
-                  // the details, so a conversation's details slide over the room instead of squeezing it.
+                  // On a tablet (below 1024) the room would be left about 180 px wide beside the shell and the details, so a
+                  // conversation's details slide over it as a sheet. From 1024 up they sit beside the room, which shrinks to
+                  // what is left: messages are never drawn under the panel.
                   conversation !== null &&
                     panel.kind === "details" &&
-                    "md:max-xl:absolute md:max-xl:inset-y-0 md:max-xl:end-0 md:max-xl:z-20 md:max-xl:shadow-lg",
+                    "md:max-lg:absolute md:max-lg:inset-y-0 md:max-lg:end-0 md:max-lg:z-20 md:max-lg:shadow-lg",
                   // On a tablet the followed list takes the whole column, as a page (Chat-Followed-T).
                   panel.kind === "following" &&
                     "md:max-xl:w-auto md:max-xl:flex-1 md:max-xl:border-s-0",

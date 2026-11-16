@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { QueryClient } from "@tanstack/react-query";
+import { describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import {
   setConversationUnread,
   touchConversation,
@@ -96,5 +96,30 @@ describe("conversation cache", () => {
     expect(state()).toBe(false);
     touchConversation(queryClient, WS, "new-conversation", preview(1));
     expect(state()).toBe(true);
+  });
+
+  it("many frames of a space in neither list ask the server once, not once per frame", async () => {
+    vi.useFakeTimers();
+    try {
+      const queryClient = new QueryClient();
+      const fetchList = vi.fn(async () => [conversation("a")]);
+      const watch = new QueryObserver(queryClient, {
+        queryKey: KEY,
+        queryFn: fetchList,
+        staleTime: Infinity,
+      });
+      const unsubscribe = watch.subscribe(() => undefined);
+      await vi.advanceTimersByTimeAsync(0);
+      fetchList.mockClear();
+      for (let sequence = 1; sequence <= 20; sequence += 1) {
+        touchConversation(queryClient, WS, "unknown", preview(sequence));
+        setConversationUnread(queryClient, WS, "unknown", sequence);
+        await vi.advanceTimersByTimeAsync(50);
+      }
+      expect(fetchList.mock.calls.length).toBeLessThanOrEqual(1);
+      unsubscribe();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

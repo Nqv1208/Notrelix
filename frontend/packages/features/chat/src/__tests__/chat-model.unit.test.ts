@@ -154,6 +154,39 @@ describe("firstUnreadSequence", () => {
 describe("buildChatRows", () => {
   const timeZone = "UTC";
 
+  it("keeps one row key from the pending send to the stored message", () => {
+    const pending: PendingMessage = {
+      clientMessageId: "client-1",
+      spaceId: "space-1",
+      content: "hi",
+      authorId: ME,
+      createdAt: "2026-11-10T09:00:00.000Z",
+      status: "sending",
+      failure: null,
+    };
+    const sending = buildChatRows({
+      messages: [],
+      pending: [pending],
+      firstUnread: null,
+      timeZone,
+    }).find((row) => row.kind === "pending");
+    const stored = buildChatRows({
+      messages: [
+        message({
+          sequence: 1,
+          authorId: ME,
+          clientMessageId: "client-1",
+          createdAt: "2026-11-10T09:00:00.000Z",
+        }),
+      ],
+      pending: [],
+      firstUnread: null,
+      timeZone,
+    }).find((row) => row.kind === "message");
+    expect(sending?.key).toBeDefined();
+    expect(stored?.key).toBe(sending?.key);
+  });
+
   it("places a day separator before each new day and the divider before the first unread", () => {
     const messages = [
       message({ sequence: 1, createdAt: "2026-11-10T09:00:00.000Z" }),

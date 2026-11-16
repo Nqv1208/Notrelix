@@ -1,14 +1,20 @@
 import {
+  forwardRef,
   useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
+  type ComponentPropsWithoutRef,
   type KeyboardEvent,
   type Ref,
 } from "react";
-import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
+import {
+  Virtuoso,
+  type Components,
+  type ListRange,
+  type VirtuosoHandle,
+} from "react-virtuoso";
 import {
   ArrowDown,
   ChevronLeft,
@@ -50,33 +56,177 @@ import {
 } from "./chat-row-activity";
 import { ChatTypingBubble } from "./chat-typing-indicator";
 import { useChatHighlight } from "./chat-highlight-context";
+import { animateScrollTo, prefersReducedMotion } from "./animate-scroll";
+import { guardResizeObserverLoop } from "./resize-observer-loop-guard";
 
 /** Within this many pixels of the bottom the list counts as at the bottom. */
 const BOTTOM_SLACK_PX = 48;
-/** Within this many pixels of the top the next older page is requested. */
-const TOP_TRIGGER_PX = 160;
 const NO_REACTIONS: readonly never[] = [];
-/** The overscan of the virtual list: rows rendered above and below the visible ones. */
-const OVERSCAN_ROWS = 20;
-/** The list's own bottom padding (the former `pb-2`). */
-const LIST_PADDING_END_PX = 8;
+/** Rows are drawn this far above and below the viewport, so a fast scroll meets rows already measured. */
+const VIEWPORT_EXTRA_PX = { top: 600, bottom: 400 } as const;
+/** The first row's number: it only counts down, one per older row added above, so the reader keeps their place. */
+const START_INDEX = 1_000_000;
+/** The height of the strip above the first row: the older-page placeholder shows in it, so loading moves nothing. */
+const HEADER_PX = 36;
+/** How long a row keeps its entrance class: the base motion duration with room to spare. */
+const ENTER_MS = 600;
+/** The height of the strip below the last row. */
+const FOOTER_PX = 24;
+/** The fade above the composer reaches this far above it. */
+const FADE_PX = 40;
 
-/** What the virtual list adds to a row's `li`: its slot, its measurement and its place in the set. */
-interface LiExtra {
-  readonly ref?: Ref<HTMLLIElement>;
-  readonly style?: CSSProperties;
-  readonly "data-index"?: number;
-  readonly "aria-posinset"?: number;
-  readonly "aria-setsize"?: number;
+/** The typing bubble is the last entry of the list, after the rows. */
+const TYPING_ENTRY = { kind: "typing", key: "typing" } as const;
+type ListEntry = ChatRow | typeof TYPING_ENTRY;
+
+/** What the Virtuoso parts (scroller, list, items, header, footer) read: they are module-level so they keep one identity. */
+interface ListContext {
+  readonly label: string;
+  readonly busy: boolean;
+  readonly count: number;
+  readonly firstItemIndex: number;
+  readonly loadingOlder: boolean;
+  readonly loadingNewer: boolean;
+  readonly loadingText: string;
+  readonly footerPx: number;
+  readonly isFresh: (key: string) => boolean;
 }
 
-/** A row's slot is its box plus the margins of the `li` itself (the flex column adds them between rows). */
-function measureSlot(element: Element): number {
-  const style = getComputedStyle(element);
+/** A new row slides up 8 px and fades in over the base duration; reduced motion shows it at once. */
+const ROW_ENTER =
+  "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-[var(--motion-duration-base)] motion-safe:[animation-timing-function:var(--motion-ease-out)]";
+
+/** The `li` of an entry: its id, its box (a flow root, so the margins of what is inside count in its height) and its entrance. */
+function itemShell(entry: ListEntry, fresh: boolean) {
+  const base = "flow-root";
+  const enter = fresh ? ROW_ENTER : "";
+  if (entry.kind === "day")
+    return {
+      className: cn(base, "py-1.5"),
+      "data-testid": "chat-day-separator",
+    };
+  if (entry.kind === "time")
+    return {
+      className: cn(base, "pt-3"),
+      "data-testid": "chat-time-separator",
+    };
+  if (entry.kind === "unread") return { className: cn(base, "py-0") };
+  if (entry.kind === "typing")
+    return { className: cn(base), "aria-hidden": true as const };
+  if (entry.kind === "pending") return { className: cn(base, enter) };
+  return {
+    id: `message-${entry.message.id}`,
+    className: cn(base, entry.message.kind === "system" && "py-2", enter),
+  };
+}
+
+const Scroller: Components<ListEntry, ListContext>["Scroller"] = forwardRef<
+  HTMLDivElement,
+  ComponentPropsWithoutRef<"div"> & { context?: ListContext }
+>(function Scroller({ context, children, className: _c, ...props }, ref) {
   return (
-    element.getBoundingClientRect().height +
-    (parseFloat(style.marginTop) || 0) +
-    (parseFloat(style.marginBottom) || 0)
+    <div
+      ref={ref}
+      {...props}
+      role="log"
+      aria-live="off"
+      aria-label={context?.label}
+      aria-busy={context?.busy}
+      tabIndex={0}
+      data-testid="chat-message-list"
+      className="overscroll-contain outline-none focus:outline-none focus-visible:outline-none"
+    >
+      {children}
+    </div>
+  );
+});
+
+const List: Components<ListEntry, ListContext>["List"] = forwardRef<
+  HTMLDivElement,
+  ComponentPropsWithoutRef<"div"> & { context?: ListContext }
+>(function List({ context: _context, children, ...props }, ref) {
+  return (
+    // The library types its list as a div; an `ol` takes the same ref and props.
+    <ol
+      ref={ref as unknown as Ref<HTMLOListElement>}
+      {...(props as ComponentPropsWithoutRef<"ol">)}
+      className={CHAT_COLUMN}
+    >
+      {children}
+    </ol>
+  );
+});
+
+const Item: Components<ListEntry, ListContext>["Item"] = ({
+  item,
+  context,
+  children,
+  ...props
+}) => {
+  const absolute = Number(
+    (props as Record<string, unknown>)["data-item-index"] ?? 0,
+  );
+  return (
+    <li
+      {...props}
+      {...itemShell(item, context.isFresh(item.key))}
+      aria-posinset={absolute - context.firstItemIndex + 1}
+      aria-setsize={context.count}
+    >
+      {children}
+    </li>
+  );
+};
+
+/** A strip of fixed height: the "loading" line comes and goes inside it, so the rows below never move. */
+function Strip({
+  height,
+  text,
+}: {
+  readonly height: number;
+  readonly text: string | null;
+}) {
+  return (
+    <div
+      className="flex items-center justify-center text-xs text-muted-foreground"
+      style={{ height }}
+    >
+      {text === null ? null : <p>{text}</p>}
+    </div>
+  );
+}
+const Header: Components<ListEntry, ListContext>["Header"] = ({ context }) => (
+  <Strip
+    height={HEADER_PX}
+    text={context?.loadingOlder ? context.loadingText : null}
+  />
+);
+const Footer: Components<ListEntry, ListContext>["Footer"] = ({ context }) => (
+  <Strip
+    height={context?.footerPx ?? FOOTER_PX}
+    text={context?.loadingNewer ? context.loadingText : null}
+  />
+);
+const LIST_COMPONENTS: Components<ListEntry, ListContext> = {
+  Scroller,
+  List,
+  Item,
+  Header,
+  Footer,
+};
+
+function isAtBottom(el: HTMLElement): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < BOTTOM_SLACK_PX;
+}
+
+/** Where the scroller must be for `node` to sit in the middle of the view. */
+function centeredTop(scroller: HTMLElement, node: HTMLElement): number {
+  const offset =
+    node.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+  return (
+    scroller.scrollTop +
+    offset -
+    (scroller.clientHeight - node.offsetHeight) / 2
   );
 }
 
@@ -97,28 +247,6 @@ function quietObserverLoopNotice() {
     },
     true,
   );
-}
-
-/** The measured slots, current for the rows of this render. */
-function measurementsOf(instance: {
-  getTotalSize: () => number;
-  measurementsCache: readonly { readonly start: number }[];
-}) {
-  instance.getTotalSize();
-  return instance.measurementsCache;
-}
-function startOf(
-  instance: Parameters<typeof measurementsOf>[0],
-  index: number,
-): number | undefined {
-  return measurementsOf(instance)[index]?.start;
-}
-
-function estimateRowSize(row: ChatRow | undefined): number {
-  if (!row) return 56;
-  if (row.kind === "day" || row.kind === "unread") return 36;
-  if (row.kind === "time") return 30;
-  return row.kind === "message" && row.continued ? 34 : 60;
 }
 
 export type ChatListStatus = "loading" | "ready" | "error" | "no-access";
@@ -192,12 +320,14 @@ export interface ChatMessageListProps {
   readonly attachmentsReadOnly?: boolean;
   /** Names above groups of other people's messages: on in channels and groups, off in a 1-1 conversation. */
   readonly showNames?: boolean;
+  /** The height of the composer floating over the bottom of the list: rows end above it, with a fade under the pill. */
+  readonly bottomInset?: number;
   /** The people typing now (not the caller): a typing bubble closes the list. */
   readonly typingIds?: readonly string[];
 }
 
-/** The width of the conversation column: a comfortable measure on wide screens, fluid below it. */
-export const CHAT_COLUMN = "mx-auto w-full max-w-[760px] 2xl:max-w-[1040px]";
+/** The width of the conversation column: it uses the room, up to a wide cap; the composer shares its edges. */
+export const CHAT_COLUMN = "mx-auto w-full max-w-[1120px]";
 
 export function dayLabel(
   dayKey: string,
@@ -232,7 +362,9 @@ export function ChatMessageList(props: ChatMessageListProps) {
     scrollRequest,
     editing,
   } = props;
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const virtuoso = useRef<VirtuosoHandle | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   // The newest sequence the reader had in view the last time they were at the bottom: what lies beyond it is new to them.
   const seenSequence = useRef(0);
@@ -244,6 +376,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
   useLayoutEffect(() => {
     latest.current = props;
   });
+  useLayoutEffect(() => guardResizeObserverLoop(), []);
   const rowHandlers = useMemo(
     () => ({
       onEdit: (m: ChatMessage) => latest.current.onEdit?.(m),
@@ -295,132 +428,169 @@ export function ChatMessageList(props: ChatMessageListProps) {
   }
   quietObserverLoopNotice();
   const hasTyping = typingIds.length > 0;
-  const count = rows.length + (hasTyping ? 1 : 0);
-  const listRef = useRef<HTMLOListElement | null>(null);
-  const memo = useRef<{
-    firstKey: string | null;
-    firstIndex: number;
-    firstStart: number;
-    lastKey: string | null;
-    height: number;
-    total: number;
-    atBottom: boolean;
-    /** Set by a request for the newest messages: rows that grow or arrive keep the list at the end until the reader scrolls. */
-    follow: boolean;
-    request: number | null;
-  }>({
-    firstKey: null,
-    firstIndex: -1,
-    firstStart: 0,
-    lastKey: null,
-    height: 0,
-    total: 0,
-    atBottom: true,
-    follow: false,
-    request: null,
-  });
-  const getItemKey = useCallback(
-    (index: number) => rows[index]?.key ?? "typing",
-    [rows],
+  const entries = useMemo<readonly ListEntry[]>(
+    () => (hasTyping ? [...rows, TYPING_ENTRY] : rows),
+    [rows, hasTyping],
   );
-  const estimateSize = useCallback(
-    (index: number) => estimateRowSize(rows[index]),
-    [rows],
-  );
-  // Only the rows near the viewport are in the DOM: a channel with thousands of messages costs the same as one with fifty.
-  const virtualizer = useVirtualizer<HTMLDivElement, HTMLLIElement>({
-    count,
-    getScrollElement: () => scrollRef.current,
-    estimateSize,
-    getItemKey,
-    overscan: OVERSCAN_ROWS,
-    // The page also keeps the date label that opens the window and the newest row: a message that arrives while
-    // the reader is higher up is in the document at once (the announcement and the jump to the latest rely on it).
-    rangeExtractor: (range) => {
-      const shown = defaultRangeExtractor(range);
-      const extra: number[] = [];
-      if (rows[0]?.kind === "day" && shown[0] !== 0) extra.push(0);
-      const kept = [...extra, ...shown];
-      if (range.count > 0 && kept[kept.length - 1] !== range.count - 1) {
-        kept.push(range.count - 1);
-      }
-      return kept;
-    },
-    paddingEnd: LIST_PADDING_END_PX,
-    scrollMargin: listRef.current?.offsetTop ?? 12,
-    measureElement: measureSlot,
-    initialRect: { width: 760, height: 800 },
-    onChange: (instance) => {
-      const el = scrollRef.current;
-      const state = memo.current;
-      if (state.firstIndex >= 0) {
-        state.firstStart =
-          startOf(instance, state.firstIndex) ?? state.firstStart;
-      }
-      // A row that grew (an image loaded) keeps a reader at the bottom at the bottom.
-      const total = instance.getTotalSize();
-      if (el && total !== state.total) {
-        state.total = total;
-        // A frame later: scrolling inside the resize callback makes the browser report a resize loop.
-        if (state.atBottom || state.follow) {
-          requestAnimationFrame(() => {
-            if (memo.current.atBottom || memo.current.follow)
-              el.scrollTop = el.scrollHeight;
-          });
-        }
-      }
-    },
-  });
-  // Without a layout (a hidden panel, a test DOM) every row renders in normal flow.
-  const virtualOn = (virtualizer.scrollRect?.height ?? 0) > 0;
 
-  // Keeps the reading position. Older messages added above the view move the
-  // reader's place down by the height they added; a new message follows the
-  // reader only when they were already at the bottom.
+  // A new window (another channel, or a jump to a message far from the loaded ones) replaces the rows: the list is
+  // built again and opens where it was asked to (a message being looked for, the first unread message, or the newest).
+  // Older rows added above only move the first row's number down by as many, so the library keeps the reader's place.
+  const highlightId = useChatHighlight();
+  const numbering = useRef<{
+    anchorKey: string | null;
+    anchorIndex: number;
+    first: number;
+    epoch: number;
+    /** False for the first frame of a window: a request that arrives then rebuilds the list at its target instead of gliding. */
+    settled: boolean;
+    openAt: { index: number | "LAST"; align: "center" | "end" };
+    opened: boolean;
+  }>({
+    anchorKey: null,
+    anchorIndex: -1,
+    first: START_INDEX,
+    epoch: 0,
+    settled: false,
+    openAt: { index: "LAST", align: "end" },
+    opened: false,
+  });
+  const honoredRequest = useRef<number | null>(null);
+  {
+    const state = numbering.current;
+    const anchorAt =
+      state.anchorKey === null
+        ? -1
+        : rows.findIndex((row) => row.key === state.anchorKey);
+    const replaced = state.anchorKey !== null && anchorAt < 0;
+    if (replaced) {
+      state.first = START_INDEX;
+      state.epoch += 1;
+      state.opened = false;
+      state.settled = false;
+    } else if (anchorAt > state.anchorIndex) {
+      state.first -= anchorAt - state.anchorIndex;
+    }
+    const anchor = rows.findIndex((row) => row.kind === "message");
+    state.anchorKey = anchor < 0 ? null : rows[anchor]!.key;
+    state.anchorIndex = anchor;
+    // The request for the first unread message came just after the window: the list is built again at it.
+    const lateDivider =
+      state.opened &&
+      !state.settled &&
+      scrollRequest?.target === "divider" &&
+      honoredRequest.current !== scrollRequest.nonce &&
+      rows.some((row) => row.kind === "unread");
+    if (lateDivider) {
+      state.epoch += 1;
+      state.opened = false;
+    }
+    if (!state.opened && status === "ready" && anchor >= 0) {
+      state.opened = true;
+      const wanted =
+        highlightId !== null
+          ? rows.findIndex(
+              (row) => row.kind === "message" && row.message.id === highlightId,
+            )
+          : -1;
+      const divider =
+        scrollRequest?.target === "divider"
+          ? rows.findIndex((row) => row.kind === "unread")
+          : -1;
+      if (wanted >= 0) state.openAt = { index: wanted, align: "center" };
+      else if (divider >= 0) {
+        state.openAt = { index: divider, align: "center" };
+        honoredRequest.current = scrollRequest!.nonce;
+      } else state.openAt = { index: "LAST", align: "end" };
+    }
+  }
+  const firstItemIndex = numbering.current.first;
+
+  // The list state the scroll code reads without re-rendering.
+  const memo = useRef<{
+    atBottom: boolean;
+    request: number | null;
+    range: ListRange;
+  }>({
+    atBottom: true,
+    request: null,
+    range: { startIndex: 0, endIndex: 0 },
+  });
+  const cancelGlide = useRef<() => void>(() => undefined);
+
+  // Without a layout (a hidden panel, a test DOM) every row renders in normal flow.
+  // A browser starts in the virtual list (the room around it has its height from the first frame); a test DOM starts plain.
+  const [virtualOn, setVirtualOn] = useState(
+    () => typeof ResizeObserver !== "undefined",
+  );
   useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const measure = () => setVirtualOn(wrap.offsetHeight > 0);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  });
+
+  /** Glides the scroller to `top` (or jumps under reduced motion); a new glide replaces the running one. */
+  const glide = (top: number | (() => number), instant = false) => {
+    const el = scrollRef.current;
+    cancelGlide.current();
+    if (!el) return;
+    cancelGlide.current = animateScrollTo(el, top, {
+      reducedMotion: instant ? true : undefined,
+    });
+  };
+
+  /** Brings the newest row to the end of the view. Far away: land one screen above the end first, then glide the last screen. */
+  const glideToBottom = (instant = false) => {
     const el = scrollRef.current;
     if (!el) return;
-    const firstIndex = rows.findIndex((row) => row.kind === "message");
-    const firstKey = rows[firstIndex]?.key ?? null;
-    const prev = memo.current;
-    const prependedAt =
-      prev.firstKey !== null && firstKey !== null && firstKey !== prev.firstKey
-        ? rows.findIndex((row) => row.key === prev.firstKey)
-        : -1;
-    const measurements = virtualOn ? measurementsOf(virtualizer) : [];
-    if (prependedAt > 0) {
-      if (virtualOn) {
-        el.scrollTop +=
-          (measurements[prependedAt]?.start ?? 0) - prev.firstStart;
-      } else {
-        el.scrollTop += el.scrollHeight - prev.height;
-      }
-    } else if (prev.atBottom || prev.follow) {
-      if (virtualOn) {
-        if (
-          count > 0 &&
-          (virtualizer.getTotalSize() !== prev.total ||
-            rows[rows.length - 1]?.key !== prev.lastKey)
-        ) {
-          el.scrollTop = el.scrollHeight;
-        }
-      } else if (el.scrollHeight !== prev.height) {
-        el.scrollTop = el.scrollHeight;
-      }
+    const end = () => el.scrollHeight - el.clientHeight;
+    if (!instant && end() - el.scrollTop > el.clientHeight * 2) {
+      el.scrollTop = end() - el.clientHeight;
     }
-    const keyIndex = firstKey === null ? -1 : firstIndex;
-    memo.current = {
-      firstKey,
-      firstIndex: keyIndex,
-      firstStart: measurements[keyIndex]?.start ?? 0,
-      lastKey: rows[rows.length - 1]?.key ?? null,
-      height: el.scrollHeight,
-      total: virtualOn ? virtualizer.getTotalSize() : 0,
-      atBottom: isAtBottom(el),
-      follow: memo.current.follow,
-      request: memo.current.request,
-    };
-  }, [rows, hasTyping, virtualOn]);
+    glide(end, instant);
+  };
+
+  /** Brings an entry to the middle of the view; false when it is not in the list. */
+  const glideToIndex = (
+    index: number,
+    instant = false,
+    retried = false,
+  ): boolean => {
+    const el = scrollRef.current;
+    if (!el || index < 0 || index >= entries.length) return false;
+    const node = el.querySelector<HTMLElement>(
+      `[data-item-index="${firstItemIndex + index}"]`,
+    );
+    if (node) {
+      let top = centeredTop(el, node);
+      glide(() => {
+        const live = el.querySelector<HTMLElement>(
+          `[data-item-index="${firstItemIndex + index}"]`,
+        );
+        if (live) top = centeredTop(el, live);
+        return top;
+      }, instant);
+      return true;
+    }
+    if (retried) return true;
+    // Not drawn yet: land one screen short of it, then glide the last screen.
+    const below = index > memo.current.range.endIndex;
+    virtuoso.current?.scrollToIndex({
+      index,
+      align: "center",
+      behavior: "auto",
+      offset: instant ? 0 : (below ? -1 : 1) * el.clientHeight,
+    });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => glideToIndex(index, instant, true)),
+    );
+    return true;
+  };
 
   /** Brings a loaded message into view, centred; false when it is not in the window. */
   const scrollToMessage = (messageId: string): boolean => {
@@ -428,10 +598,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       (row) => row.kind === "message" && row.message.id === messageId,
     );
     if (index < 0) return false;
-    if (virtualOn) {
-      virtualizer.scrollToIndex(index, { align: "center" });
-      return true;
-    }
+    if (virtualOn) return glideToIndex(index);
     const target = scrollRef.current?.querySelector<HTMLElement>(
       `#message-${CSS.escape(messageId)}`,
     );
@@ -442,7 +609,6 @@ export function ChatMessageList(props: ChatMessageListProps) {
   jumpRef.current = scrollToMessage;
 
   // A search hit points at a message: the row scrolls itself once mounted, so the list first brings it into the window.
-  const highlightId = useChatHighlight();
   const highlighted = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (highlightId === null) {
@@ -453,53 +619,71 @@ export function ChatMessageList(props: ChatMessageListProps) {
     if (jumpRef.current(highlightId)) highlighted.current = highlightId;
   }, [highlightId, rows, virtualOn]);
 
-  // An explicit request: open at the first unread message, or go to the newest.
+  // An explicit request: open at the first unread message, or go to the newest. The first one after the list
+  // opened lands at once; later ones glide.
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (!el || !scrollRequest) return;
+    if (!scrollRequest || status !== "ready") return;
     if (memo.current.request === scrollRequest.nonce) return;
-    memo.current.request = scrollRequest.nonce;
+    if (honoredRequest.current === scrollRequest.nonce) {
+      memo.current.request = scrollRequest.nonce;
+      return;
+    }
+    const instant = !numbering.current.settled;
     if (scrollRequest.target === "divider") {
-      if (virtualOn) {
-        const index = rows.findIndex((row) => row.kind === "unread");
-        if (index >= 0) {
+      const index = rows.findIndex((row) => row.kind === "unread");
+      if (index >= 0) {
+        if (virtualOn) {
+          memo.current.request = scrollRequest.nonce;
           // Not the bottom: a pinned list would scroll on, past the divider, as the rows measure.
           memo.current.atBottom = false;
-          memo.current.follow = false;
-          virtualizer.scrollToIndex(index, { align: "center" });
+          glideToIndex(index, instant);
           return;
         }
-      } else {
-        const divider = el.querySelector<HTMLElement>("[data-unread-divider]");
+        const divider = el?.querySelector<HTMLElement>("[data-unread-divider]");
         if (divider) {
+          memo.current.request = scrollRequest.nonce;
           divider.scrollIntoView({ block: "center" });
           return;
         }
       }
     }
-    // The end is the scroll height; rows that measure larger move it and the follow flag carries the list along.
-    el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    memo.current.request = scrollRequest.nonce;
+    if (virtualOn) glideToBottom(instant);
+    else {
+      el.scrollTop = el.scrollHeight;
+    }
     memo.current.atBottom = true;
-    memo.current.follow = true;
-  }, [scrollRequest, rows, virtualOn]);
+  }, [scrollRequest, rows, virtualOn, status]);
+  useLayoutEffect(() => {
+    if (status !== "ready") return;
+    const id = requestAnimationFrame(() => {
+      numbering.current.settled = true;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [status, numbering.current.epoch]);
 
-  /** The reader takes the scroll over: the list stops following the newest messages. */
+  /** The reader takes the scroll over: the list stops following the newest messages and any glide ends. */
   function releaseFollow() {
-    memo.current.follow = false;
+    cancelGlide.current();
   }
 
+  function handleAtBottom(bottom: boolean) {
+    memo.current.atBottom = bottom;
+    setAtBottom(bottom);
+    props.onAtBottomChange(bottom);
+  }
+
+  // The plain list (no layout) tells the same story from its own scroll events.
   function handleScroll() {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el || virtualOn) return;
     const bottom = isAtBottom(el);
     memo.current.atBottom = bottom;
     setAtBottom(bottom);
     props.onAtBottomChange(bottom);
-    if (
-      el.scrollTop < TOP_TRIGGER_PX &&
-      props.hasOlder &&
-      !props.isLoadingOlder
-    ) {
+    if (el.scrollTop < 160 && props.hasOlder && !props.isLoadingOlder) {
       props.onOlderNeeded();
     }
     if (bottom && props.hasNewer && !props.isLoadingNewer) {
@@ -513,6 +697,54 @@ export function ChatMessageList(props: ChatMessageListProps) {
       name: props.authorName(row.authorId),
       text: row.text ?? "",
     }),
+  );
+  // A row slides in when it mounts, and keeps the entrance class while that plays; a row that comes back into the
+  // window later (scrolled away and back) does not play it again.
+  const enteredAt = useRef(new Map<string, number>());
+  const isFresh = useCallback(
+    (key: string) => {
+      const row = rows.find((r) => r.key === key);
+      if (!row) return false;
+      const isNew =
+        row.kind === "pending" ||
+        (row.kind === "message" &&
+          baseline.current !== null &&
+          baseline.current.space === row.message.spaceId &&
+          row.message.sequence > baseline.current.sequence &&
+          row.message.authorId !== latest.current.viewerId);
+      if (!isNew) return false;
+      const now = Date.now();
+      const first = enteredAt.current.get(key);
+      if (first === undefined) {
+        enteredAt.current.set(key, now);
+        return true;
+      }
+      return now - first < ENTER_MS;
+    },
+    [rows],
+  );
+  const listContext = useMemo<ListContext>(
+    () => ({
+      label,
+      busy: props.isLoadingOlder || props.isLoadingNewer,
+      count: entries.length,
+      firstItemIndex,
+      loadingOlder: props.isLoadingOlder,
+      loadingNewer: props.isLoadingNewer,
+      loadingText: copy.list.loadingOlder,
+      footerPx: FOOTER_PX + (props.bottomInset ?? 0),
+      isFresh,
+    }),
+    [
+      label,
+      props.isLoadingOlder,
+      props.isLoadingNewer,
+      entries.length,
+      firstItemIndex,
+      copy.list.loadingOlder,
+      props.bottomInset,
+      isFresh,
+    ],
   );
 
   if (status === "loading") {
@@ -618,145 +850,108 @@ export function ChatMessageList(props: ChatMessageListProps) {
     );
   }
 
-  const renderRow = (row: ChatRow, index: number, extra: LiExtra) => {
+  const renderRow = (row: ChatRow) => {
     if (row.kind === "day") {
       return (
-        <li
-          {...extra}
-          key={row.key}
-          data-testid="chat-day-separator"
-          className="my-1.5 flex h-6 items-center gap-3 px-5 before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']"
-        >
+        <div className="flex h-6 items-center gap-3 px-5 before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']">
           <span className="text-xs leading-[1.45] font-semibold whitespace-nowrap text-muted-foreground">
             {dayLabel(row.dayKey, locale, copy, timeZone)}
           </span>
-        </li>
+        </div>
       );
     }
     if (row.kind === "time") {
       return (
-        <li
-          {...extra}
-          key={row.key}
-          className="mt-3 flex justify-center px-5"
-          data-testid="chat-time-separator"
-        >
+        <div className="flex justify-center px-5">
           <time
             dateTime={row.at}
             className="text-micro leading-[1.45] font-semibold whitespace-nowrap tabular-nums text-muted-foreground"
           >
             {formatClock(row.at, locale, timeZone)}
           </time>
-        </li>
+        </div>
       );
     }
     if (row.kind === "unread") {
       return (
-        <li {...extra} key={row.key}>
-          <div
-            role="separator"
-            data-unread-divider=""
-            aria-label={copy.list.newDivider}
-            className="my-1.5 flex h-6 items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive"
-          >
-            <span
-              className="h-px flex-1 bg-destructive/45"
-              aria-hidden="true"
-            />
-            <span aria-hidden="true">{copy.list.newDivider}</span>
-          </div>
-        </li>
+        <div
+          role="separator"
+          data-unread-divider=""
+          aria-label={copy.list.newDivider}
+          className="my-1.5 flex h-6 items-center gap-3 px-5 text-xs leading-[1.45] font-[650] text-destructive"
+        >
+          <span className="h-px flex-1 bg-destructive/45" aria-hidden="true" />
+          <span aria-hidden="true">{copy.list.newDivider}</span>
+        </div>
       );
     }
     if (row.kind === "pending") {
       return (
-        <li {...extra} key={row.key}>
-          <ChatPendingRow
-            pending={row.pending}
-            author={{ name: props.authorName(row.pending.authorId) }}
-            locale={locale}
-            timeZone={timeZone}
-            copy={copy}
-            continued={row.continued}
-            groupEnd={row.groupEnd}
-            onRetry={props.onRetryPending}
-            onDiscard={props.onDiscardPending}
-          />
-        </li>
+        <ChatPendingRow
+          pending={row.pending}
+          author={{ name: props.authorName(row.pending.authorId) }}
+          locale={locale}
+          timeZone={timeZone}
+          copy={copy}
+          continued={row.continued}
+          groupEnd={row.groupEnd}
+          onRetry={props.onRetryPending}
+          onDiscard={props.onDiscardPending}
+        />
       );
     }
     const isEditing = editing?.messageId === row.message.id;
     const isOwn = row.message.authorId === props.viewerId;
-    const fresh =
-      baseline.current !== null &&
-      baseline.current.space === row.message.spaceId &&
-      row.message.sequence > baseline.current.sequence &&
-      !isOwn;
-    return (
-      <li
-        {...extra}
-        key={row.key}
-        id={`message-${row.message.id}`}
-        className={cn(row.message.kind === "system" && "my-2")}
-      >
-        {isEditing ? (
-          <EditForm
-            copy={copy}
-            editing={editing}
-            continued={row.continued}
-            onChange={props.onEditDraftChange}
-            onSave={props.onEditSave}
-            onCancel={props.onEditCancel}
-          />
-        ) : (
-          <ChatMessageRow
-            message={row.message}
-            author={{ name: props.authorName(row.message.authorId) }}
-            continued={row.continued}
-            groupEnd={row.groupEnd}
-            showName={props.showNames ?? true}
-            showSent={row.key === lastOwnKey}
-            fresh={fresh}
-            isOwn={isOwn}
-            locale={locale}
-            timeZone={timeZone}
-            copy={copy}
-            onEdit={props.onEdit ? rowHandlers.onEdit : undefined}
-            onDelete={props.onDelete ? rowHandlers.onDelete : undefined}
-            onModerate={props.onModerate ? rowHandlers.onModerate : undefined}
-            quote={props.quoteOf?.(row.message) ?? null}
-            thread={threadView(props.threadCounts, row.message)}
-            pinned={props.pinnedIds?.has(row.message.id) ?? false}
-            reactions={row.message.reactions ?? NO_REACTIONS}
-            workspaceId={props.workspaceId}
-            hooks={props.hooks}
-            authorName={rowHandlers.authorName}
-            onReact={props.onReact ? rowHandlers.onReact : undefined}
-            onReply={props.onReply ? rowHandlers.onReply : undefined}
-            onOpenThread={
-              props.onOpenThread ? rowHandlers.onOpenThread : undefined
-            }
-            onTogglePin={
-              props.onTogglePin ? rowHandlers.onTogglePin : undefined
-            }
-            onOpenQuote={
-              props.onOpenQuote ? rowHandlers.onOpenQuote : undefined
-            }
-            attachmentsReadOnly={props.attachmentsReadOnly}
-          />
-        )}
-      </li>
+    return isEditing ? (
+      <EditForm
+        copy={copy}
+        editing={editing}
+        continued={row.continued}
+        onChange={props.onEditDraftChange}
+        onSave={props.onEditSave}
+        onCancel={props.onEditCancel}
+      />
+    ) : (
+      <ChatMessageRow
+        message={row.message}
+        author={{ name: props.authorName(row.message.authorId) }}
+        continued={row.continued}
+        groupEnd={row.groupEnd}
+        showName={props.showNames ?? true}
+        showSent={row.key === lastOwnKey}
+        isOwn={isOwn}
+        locale={locale}
+        timeZone={timeZone}
+        copy={copy}
+        onEdit={props.onEdit ? rowHandlers.onEdit : undefined}
+        onDelete={props.onDelete ? rowHandlers.onDelete : undefined}
+        onModerate={props.onModerate ? rowHandlers.onModerate : undefined}
+        quote={props.quoteOf?.(row.message) ?? null}
+        thread={threadView(props.threadCounts, row.message)}
+        pinned={props.pinnedIds?.has(row.message.id) ?? false}
+        reactions={row.message.reactions ?? NO_REACTIONS}
+        workspaceId={props.workspaceId}
+        hooks={props.hooks}
+        authorName={rowHandlers.authorName}
+        onReact={props.onReact ? rowHandlers.onReact : undefined}
+        onReply={props.onReply ? rowHandlers.onReply : undefined}
+        onOpenThread={props.onOpenThread ? rowHandlers.onOpenThread : undefined}
+        onTogglePin={props.onTogglePin ? rowHandlers.onTogglePin : undefined}
+        onOpenQuote={props.onOpenQuote ? rowHandlers.onOpenQuote : undefined}
+        attachmentsReadOnly={props.attachmentsReadOnly}
+      />
     );
   };
-  const renderTyping = (extra: LiExtra) => (
-    <li {...extra} key="typing" aria-hidden="true">
+  const renderEntry = (entry: ListEntry) =>
+    entry.kind === "typing" ? (
       <ChatTypingBubble
         ids={typingIds}
         authorName={props.authorName}
         copy={copy}
       />
-    </li>
-  );
+    ) : (
+      renderRow(entry)
+    );
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
@@ -769,69 +964,105 @@ export function ChatMessageList(props: ChatMessageListProps) {
         </p>
       ) : null}
       <div
-        ref={scrollRef}
-        role="log"
-        aria-live="off"
-        aria-label={label}
-        aria-busy={props.isLoadingOlder || props.isLoadingNewer}
-        tabIndex={0}
-        onScroll={handleScroll}
+        ref={wrapRef}
+        className="min-h-0 flex-1"
         onWheel={releaseFollow}
         onTouchStart={releaseFollow}
         onPointerDown={releaseFollow}
         onKeyDown={releaseFollow}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 outline-none focus:outline-none focus-visible:outline-none"
-        data-testid="chat-message-list"
       >
-        {props.isLoadingOlder ? (
-          <p className="px-4 py-2 text-center text-xs text-muted-foreground">
-            {copy.list.loadingOlder}
-          </p>
-        ) : null}
         <RowActivityProvider value={activity}>
           {virtualOn ? (
-            <ol
-              ref={listRef}
-              className={cn(CHAT_COLUMN, "relative")}
-              style={{ height: virtualizer.getTotalSize() }}
-            >
-              {virtualizer.getVirtualItems().map((item) => {
-                const extra: LiExtra = {
-                  ref: virtualizer.measureElement,
-                  "data-index": item.index,
-                  "aria-posinset": item.index + 1,
-                  "aria-setsize": count,
-                  style: {
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
-                  },
-                };
-                const row = rows[item.index];
-                return row
-                  ? renderRow(row, item.index, extra)
-                  : renderTyping(extra);
-              })}
-            </ol>
+            <Virtuoso<ListEntry, ListContext>
+              key={`${space}:${numbering.current.epoch}`}
+              ref={virtuoso}
+              style={{ height: "100%" }}
+              data={entries as ListEntry[]}
+              context={listContext}
+              components={LIST_COMPONENTS}
+              computeItemKey={(_, entry) => entry.key}
+              itemContent={(_, entry) => renderEntry(entry)}
+              firstItemIndex={firstItemIndex}
+              initialTopMostItemIndex={numbering.current.openAt}
+              alignToBottom
+              atBottomThreshold={BOTTOM_SLACK_PX}
+              increaseViewportBy={VIEWPORT_EXTRA_PX}
+              defaultItemHeight={60}
+              // A row measured taller or shorter than the estimate is corrected in the same frame it is painted, not one
+              // frame later (a frame of the old offset is a visible jump of the rows below it).
+              skipAnimationFrameInResizeObserver
+              // Follows a new row only when the reader is at the end right now (the live position, not the last state
+              // the library reported): a reader who just scrolled up keeps their place.
+              followOutput={(bottom) =>
+                bottom && (!scrollRef.current || isAtBottom(scrollRef.current))
+                  ? prefersReducedMotion()
+                    ? "auto"
+                    : "smooth"
+                  : false
+              }
+              atBottomStateChange={handleAtBottom}
+              rangeChanged={(range) => {
+                memo.current.range = range;
+              }}
+              startReached={() => {
+                if (props.hasOlder && !props.isLoadingOlder)
+                  props.onOlderNeeded();
+              }}
+              endReached={() => {
+                if (props.hasNewer && !props.isLoadingNewer)
+                  props.onNewerNeeded();
+              }}
+              scrollerRef={(node) => {
+                // The library clears this on unmount, after the plain list may have taken its place: only a node is kept.
+                if (node instanceof HTMLElement) scrollRef.current = node;
+              }}
+            />
           ) : (
-            <ol ref={listRef} className={cn(CHAT_COLUMN, "flex flex-col pb-2")}>
-              {rows.map((row, index) => renderRow(row, index, {}))}
-              {hasTyping ? renderTyping({}) : null}
-            </ol>
+            <div
+              ref={(node) => {
+                scrollRef.current = node;
+              }}
+              role="log"
+              aria-live="off"
+              aria-label={label}
+              aria-busy={props.isLoadingOlder || props.isLoadingNewer}
+              tabIndex={0}
+              onScroll={handleScroll}
+              data-testid="chat-message-list"
+              className="h-full overflow-y-auto overscroll-contain outline-none focus:outline-none focus-visible:outline-none"
+            >
+              <Strip
+                height={HEADER_PX}
+                text={props.isLoadingOlder ? copy.list.loadingOlder : null}
+              />
+              <ol className={cn(CHAT_COLUMN, "flex flex-col")}>
+                {entries.map((entry) => (
+                  <li key={entry.key} {...itemShell(entry, false)}>
+                    {renderEntry(entry)}
+                  </li>
+                ))}
+              </ol>
+              <Strip
+                height={FOOTER_PX + (props.bottomInset ?? 0)}
+                text={props.isLoadingNewer ? copy.list.loadingOlder : null}
+              />
+            </div>
           )}
         </RowActivityProvider>
-        {props.isLoadingNewer ? (
-          <p className="px-4 py-2 text-center text-xs text-muted-foreground">
-            {copy.list.loadingOlder}
-          </p>
-        ) : null}
       </div>
+      {props.bottomInset ? (
+        <div
+          aria-hidden="true"
+          data-testid="chat-list-fade"
+          className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/85 to-transparent"
+          style={{ height: props.bottomInset + FADE_PX }}
+        />
+      ) : null}
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>
       <JumpLatest
+        inset={props.bottomInset ?? 0}
         visible={!atBottom || props.hasNewer}
         label={copy.list.jumpLatest}
         count={unseenCount}
@@ -849,20 +1080,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
         onClick={() => {
           props.onJumpLatest();
           const el = scrollRef.current;
-          memo.current.follow = true;
           if (!el) return;
-          // Far away: land one screen above the end first, then glide the last screen.
-          const left = el.scrollHeight - el.scrollTop - el.clientHeight;
-          if (left > el.clientHeight * 2) {
-            el.scrollTop = el.scrollHeight - el.clientHeight * 2;
-          }
-          const calm = window.matchMedia?.(
-            "(prefers-reduced-motion: reduce)",
-          ).matches;
-          el.scrollTo({
-            top: el.scrollHeight,
-            behavior: calm ? "auto" : "smooth",
-          });
+          glideToBottom();
           el.focus({ preventScroll: true });
         }}
       />
@@ -956,22 +1175,21 @@ function BackToList({
   );
 }
 
-function isAtBottom(el: HTMLElement): boolean {
-  return el.scrollHeight - el.scrollTop - el.clientHeight < BOTTOM_SLACK_PX;
-}
-
 /**
  * The jump-to-latest control: a floating pill laid over the bottom of the message
  * list (no layout space, so the list never shifts when it shows), centred on the
  * list. It fades and rises 8 px in 160 ms; hidden it is inert.
  */
 function JumpLatest({
+  inset,
   visible,
   label,
   count,
   countLabel,
   onClick,
 }: {
+  /** The height of the composer the pill floats above. */
+  readonly inset: number;
   readonly visible: boolean;
   readonly label: string;
   readonly count: number;
@@ -980,7 +1198,8 @@ function JumpLatest({
 }) {
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-4"
+      className="pointer-events-none absolute inset-x-0 flex justify-center px-4"
+      style={{ bottom: inset + 12 }}
       data-testid="chat-jump-latest-layer"
     >
       <Button
@@ -994,7 +1213,7 @@ function JumpLatest({
         data-visible={visible ? "true" : "false"}
         data-count={count > 0 ? count : undefined}
         className={cn(
-          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,visibility,background-color] duration-[160ms] ease-out hover:bg-muted active:scale-95 active:bg-muted motion-reduce:transition-none",
+          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,visibility,background-color] duration-150 ease-out hover:scale-105 hover:bg-muted active:scale-95 active:bg-muted motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
           visible
             ? "pointer-events-auto visible translate-y-0 opacity-100"
             : "invisible translate-y-2 opacity-0",

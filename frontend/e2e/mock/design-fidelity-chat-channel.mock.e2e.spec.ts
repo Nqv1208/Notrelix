@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * The Chat channel view against the owner canvas `Chat-Main` (1440), `Chat-Main-T` (1024) and `Chat-Main-M` (390),
@@ -54,8 +55,9 @@ async function css(page: Page, selector: string, prop: string) {
 }
 
 const SIZES = [
-  { width: 2000, height: 1000, column: 1040, content: 1000, phone: false },
-  { width: 1440, height: 900, column: 760, content: 720, phone: false },
+  // The owner widened the column (and the composer with it): both use the room up to 1120 / 1080.
+  { width: 2000, height: 1000, column: 1120, content: 1080, phone: false },
+  { width: 1440, height: 900, column: 1120, content: 1080, phone: false },
   { width: 1024, height: 768, column: null, content: null, phone: false },
   { width: 390, height: 844, column: null, content: null, phone: true },
 ] as const;
@@ -70,16 +72,15 @@ for (const mode of ["light", "dark"] as const) {
       test("column, gutters, bubbles, separator and header follow the board", async ({
         page,
       }) => {
-        const main = await box(page, "main");
         const col = await box(page, "[role=log] ol");
-        const mainW = main.w;
+        const log = await box(page, "[role=log]");
         if (size.column !== null) {
-          expect(col.w).toBeCloseTo(Math.min(size.column, mainW), 0);
+          // The column uses the room of the log, up to its cap.
+          expect(col.w).toBeCloseTo(Math.min(size.column, log.w), 0);
         } else {
-          expect(col.w).toBeLessThanOrEqual(760 + 1);
+          expect(col.w).toBeLessThanOrEqual(1120 + 1);
         }
         // Centred: equal gutters on both sides of the column inside the log.
-        const log = await box(page, "[role=log]");
         const left = col.x - log.x;
         const right = log.x + log.w - (col.x + col.w);
         expect(Math.abs(left - right)).toBeLessThanOrEqual(1);
@@ -100,9 +101,16 @@ for (const mode of ["light", "dark"] as const) {
           expect(r.top).toBe(r.start ? "12px" : "2px");
         }
 
+        // Only the rows near the view are in the page: the date label that opens the window is drawn once the list is at its top.
+        await page.getByRole("log").evaluate((el) => {
+          el.scrollTop = 0;
+        });
+        await expect(
+          page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
+        ).toBeVisible();
         const sep = await box(
           page,
-          "[role=log] li[data-testid=chat-day-separator]",
+          "[role=log] li[data-testid=chat-day-separator] > div",
         );
         expect(sep.h).toBeCloseTo(24, 0);
 
@@ -216,6 +224,8 @@ test.describe("motion", () => {
   test("the action bar fades in on hover and a sent message enters with a rise", async ({
     page,
   }) => {
+    await toNewest(page);
+    await page.mouse.move(5, 5);
     const row = page.locator("[data-own=false]").last();
     await row.scrollIntoViewIfNeeded();
     const bar = row.locator("[role=toolbar]").first();
@@ -224,7 +234,8 @@ test.describe("motion", () => {
     await expect(bar).toHaveCSS("opacity", "1");
     await page.mouse.move(5, 5);
     await expect(bar).toHaveCSS("opacity", "0");
-    // A sent message enters with a 160 ms fade and a small rise: the first frame of its row carries the animation.
+    // A sent message enters with a base-duration (180 ms) fade and a small rise: the first frame of its list item carries the
+    // animation (the whole item slides, so the rows next to it do not jump).
     await page.evaluate(() => {
       const seen: string[] = [];
       (window as unknown as { __enter: string[] }).__enter = seen;
@@ -232,9 +243,10 @@ test.describe("motion", () => {
         for (const r of records)
           for (const n of Array.from(r.addedNodes))
             if (n instanceof HTMLElement) {
-              const el = n.matches("[data-own=true]")
-                ? n
-                : n.querySelector("[data-own=true]");
+              const el =
+                n.matches("li") && n.querySelector("[data-own=true]")
+                  ? n
+                  : null;
               if (el instanceof HTMLElement)
                 seen.push(
                   `${getComputedStyle(el).animationName}|${getComputedStyle(el).animationDuration}`,
@@ -253,7 +265,7 @@ test.describe("motion", () => {
     const seen = await page.evaluate(
       () => (window as unknown as { __enter: string[] }).__enter,
     );
-    expect(seen.some((v) => /enter/.test(v) && v.endsWith("|0.16s"))).toBe(
+    expect(seen.some((v) => /enter/.test(v) && v.endsWith("|0.18s"))).toBe(
       true,
     );
   });
@@ -268,7 +280,7 @@ test.describe("motion", () => {
 });
 
 test.describe("jump to latest pill", () => {
-  test("floats over the list with no layout space, 34 high, fades and rises in 160 ms, and glides to the end", async ({
+  test("floats over the list with no layout space, 34 high, fades and rises in 150 ms, and glides to the end", async ({
     page,
   }) => {
     await open(page, 1440, 900, "light");
@@ -294,7 +306,7 @@ test.describe("jump to latest pill", () => {
     expect(p.y + p.h).toBeLessThanOrEqual(shown.y + shown.h);
     expect(p.x + p.w / 2).toBeCloseTo(shown.x + shown.w / 2, 0);
     const sel = "button[data-visible]";
-    expect(await css(page, sel, "transition-duration")).toContain("0.16s");
+    expect(await css(page, sel, "transition-duration")).toContain("0.15s");
     const props = (await css(page, sel, "transition-property"))
       .split(",")
       .map((x) => x.trim());

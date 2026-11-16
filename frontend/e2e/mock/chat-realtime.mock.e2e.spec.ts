@@ -41,6 +41,28 @@ async function inject(
   expect(ok).toBe(true);
 }
 
+/**
+ * Only the rows near the view are in the page, so a message below the reader is reached through the jump control (which
+ * counts it) before it is looked for.
+ */
+async function reveal(page: Page, text: string) {
+  const jump = page.getByRole("button", {
+    name: /^(Jump to latest|Xem tin mới nhất)$/,
+  });
+  const log = page.getByRole("log");
+  // The control may show a moment after the message arrives, and the glide takes a moment: try until the text is in view.
+  await expect
+    .poll(
+      async () => {
+        if (await log.getByText(text).isVisible()) return true;
+        if (await jump.isVisible()) await jump.click();
+        return false;
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true);
+}
+
 async function openChannel(page: Page, channelId: string) {
   await page.goto(`/workspaces/${WORKSPACE}/chat/${channelId}`);
   await expect(page.getByRole("log")).toBeVisible();
@@ -54,7 +76,7 @@ test("a message from another member appears live and is announced politely", asy
   await inject(page, GENERAL, text);
 
   const log = page.getByRole("log");
-  await expect(log.getByText(text)).toBeVisible();
+  await reveal(page, text);
   await expect(page.getByRole("status").filter({ hasText: text })).toHaveCount(
     1,
   );
@@ -86,7 +108,7 @@ test("a reconnect keeps the open channel current", async ({ page }) => {
 
   const text = `After reconnect ${Date.now()}`;
   await inject(page, GENERAL, text);
-  await expect(page.getByRole("log").getByText(text)).toBeVisible();
+  await reveal(page, text);
 });
 
 test("a message while the reader is scrolled up does not move the list; the jump control brings them back", async ({
@@ -94,18 +116,37 @@ test("a message while the reader is scrolled up does not move the list; the jump
 }) => {
   await openChannel(page, GENERAL);
   const log = page.getByRole("log");
+  // The list measures its rows for a moment after it opens; a reader does not scroll within it.
+  await page.waitForTimeout(300);
   await log.evaluate((el) => {
     el.scrollTop = Math.max(0, el.scrollTop - 400);
   });
-  const before = await log.evaluate((el) => el.scrollTop);
+  // The reader's place is the first message in view and where it sits (rows above may still be measured, which moves the
+  // scroll offset by a few pixels without moving what the reader sees).
+  const place = () =>
+    log.evaluate((el) => {
+      const top = el.getBoundingClientRect().top;
+      const row = Array.from(
+        el.querySelectorAll<HTMLElement>("[data-message-id]"),
+      ).find((r) => r.getBoundingClientRect().top >= top);
+      return {
+        id: row?.dataset.messageId ?? null,
+        offset: row ? row.getBoundingClientRect().top - top : 0,
+      };
+    });
+  await page.waitForTimeout(300);
+  const before = await place();
 
   const text = `Below ${Date.now()}`;
   await inject(page, GENERAL, text);
-  await expect(log.getByText(text)).toBeAttached();
+  // The jump control counts the message that arrived below the reader.
+  await expect(
+    page.getByRole("button", { name: /^(Jump to latest|Xem tin mới nhất)$/ }),
+  ).toHaveAttribute("data-count", "1");
 
-  expect(await log.evaluate((el) => el.scrollTop)).toBeLessThanOrEqual(
-    before + 1,
-  );
+  const after = await place();
+  expect(after.id).toBe(before.id);
+  expect(Math.abs(after.offset - before.offset)).toBeLessThanOrEqual(1);
   const jump = page.getByRole("button", {
     name: /^(Jump to latest|Xem tin mới nhất)$/,
   });
@@ -132,6 +173,6 @@ test("a message over the 1300-byte frame cap arrives with its full text, never a
   await inject(page, GENERAL, text);
 
   const log = page.getByRole("log");
-  await expect(log.getByText(tail)).toBeVisible();
+  await reveal(page, tail);
   await expect(log.getByText(head)).toBeVisible();
 });
