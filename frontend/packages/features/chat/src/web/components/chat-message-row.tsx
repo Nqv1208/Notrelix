@@ -392,7 +392,7 @@ function ChatMessageRowBase({
       }
     },
     onFocus: (event: FocusEvent<HTMLDivElement>) => {
-      if (event.target === rowRef.current) return;
+      // The row itself counts too: arrowing onto a message shows its actions.
       if (isKeyboardFocus(event.target)) activate();
     },
     onBlur: (event: FocusEvent<HTMLDivElement>) => {

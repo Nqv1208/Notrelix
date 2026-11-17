@@ -78,6 +78,11 @@ const ROW_STYLE = {
 /** An older page is mounted this many rows per frame, nearest the reader first, so one page never holds a frame. */
 const MOUNT_CHUNK = 5;
 
+/** What takes a Tab stop inside a row. The list is one stop: these are reached with Enter or F2 on a row instead. */
+const TABBABLE = 'a[href],button,input,textarea,select,summary,[tabindex="0"]';
+/** The rows the arrow keys move between: stored messages and sends still in flight. */
+const NAV_ROW = "[data-message-id],[data-testid=chat-pending-message]";
+
 /** How many screens above and below the view are drawn in full. */
 const REALIZE_SCREENS = 2;
 
@@ -754,6 +759,81 @@ export function ChatMessageList(props: ChatMessageListProps) {
     props.isLoadingNewer,
   ]);
 
+  // One Tab stop for the whole list, as in a chat app: the scroller takes the focus, the arrow keys move between
+  // rows, Enter or F2 goes into a row's controls and Escape comes back to the row.
+  function lockTabStops() {
+    const ol = listRef.current;
+    if (!ol) return;
+    for (const el of ol.querySelectorAll<HTMLElement>(TABBABLE)) {
+      if (
+        el.getAttribute("tabindex") !== "-1" &&
+        !el.closest("[data-roving-skip]")
+      )
+        el.setAttribute("tabindex", "-1");
+    }
+    for (const el of ol.querySelectorAll<HTMLElement>(
+      "[data-testid=chat-pending-message]",
+    )) {
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "-1");
+    }
+  }
+  useLayoutEffect(() => {
+    lockTabStops();
+    const ol = listRef.current;
+    if (!ol || typeof MutationObserver === "undefined") return;
+    let frame = 0;
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(lockTabStops);
+    });
+    observer.observe(ol, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["tabindex"],
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [hasList, status]);
+
+  function handleListKeyDown(event: KeyboardEvent<HTMLElement>) {
+    const scroller = scrollRef.current;
+    const target = event.target as HTMLElement;
+    const row = target.closest<HTMLElement>(NAV_ROW);
+    if (event.key === "Escape" && row && target !== row) {
+      row.focus();
+      return;
+    }
+    if (target !== scroller && target !== row) return;
+    const rowsNow = Array.from(
+      listRef.current?.querySelectorAll<HTMLElement>(NAV_ROW) ?? [],
+    );
+    if (event.key === "Enter" || event.key === "F2") {
+      const control = row?.querySelector<HTMLElement>(
+        'a[href],button:not([disabled]),input,textarea,select,summary,[tabindex="-1"]:not(' +
+          NAV_ROW +
+          ")",
+      );
+      if (!control) return;
+      event.preventDefault();
+      control.focus();
+      return;
+    }
+    const at = row ? rowsNow.indexOf(row) : -1;
+    let next: number;
+    if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = rowsNow.length - 1;
+    else if (event.key === "ArrowUp")
+      next = at < 0 ? rowsNow.length - 1 : at - 1;
+    else if (event.key === "ArrowDown")
+      next = at < 0 ? rowsNow.length - 1 : at + 1;
+    else return;
+    event.preventDefault();
+    rowsNow[Math.max(0, Math.min(rowsNow.length - 1, next))]?.focus();
+  }
+
   const lastTop = useRef(0);
   function handleScroll() {
     const el = scrollRef.current;
@@ -1090,6 +1170,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
             aria-busy={props.isLoadingOlder || props.isLoadingNewer}
             tabIndex={0}
             onScroll={handleScroll}
+            onKeyDown={handleListKeyDown}
             data-testid="chat-message-list"
             style={{ overflowAnchor: "none" }}
             className="relative h-full overflow-y-auto overscroll-contain outline-none focus:outline-none focus-visible:outline-none"
@@ -1317,6 +1398,7 @@ function EditForm({
   }
   return (
     <div
+      data-roving-skip=""
       className={cn(
         "flex w-full justify-end px-3 md:px-4",
         continued ? "mt-0.5" : "mt-3",
