@@ -1,5 +1,5 @@
 import { useState, type ComponentProps } from "react";
-import { ArrowLeft, Plus, SmilePlus, Users } from "lucide-react";
+import { ArrowLeft, Plus, SmilePlus } from "lucide-react";
 import {
   Button,
   Popover,
@@ -23,15 +23,18 @@ export interface ReactionChipsProps {
   readonly hooks: ChatHooks;
   readonly authorName: (userId: string) => string;
   readonly copy: ChatCopy;
-  readonly onToggle: (emoji: string, add: boolean) => void;
-  /** The side of the bubble the pills hug: the end for the caller's own message, the start otherwise. */
+  /** The bubble corner the pill sits on: the end for the caller's own message, the start otherwise (the other side). */
   readonly align?: "start" | "end";
 }
 
+/** Distinct emoji the pill shows before it only counts. */
+const PILL_EMOJI = 3;
+
 /**
- * The reaction summary of a message: compact pills below the bubble with a small gap, never overlapping it (Messenger
- * style), one toggle per emoji (aria-pressed says whether the caller reacted; the count shows above one),
- * and a "who reacted" popover.
+ * The reaction summary of a message (Messenger style): one pill with up to three distinct emoji and the total count,
+ * laid over the bubble's bottom corner (the far corner from the author's side) and hanging 10 px below it, with a ring in
+ * the page colour so it reads as sitting on the bubble. Render it inside the bubble's positioned box. It is one button: its
+ * label lists every emoji with its count, and it opens the "who reacted" popover. It is highlighted when the caller reacted.
  */
 export function ReactionChips({
   messageId,
@@ -40,106 +43,72 @@ export function ReactionChips({
   hooks,
   authorName,
   copy,
-  onToggle,
   align = "start",
 }: ReactionChipsProps) {
+  const [open, setOpen] = useState(false);
   if (reactions.length === 0) return null;
+  const total = reactions.reduce((sum, reaction) => sum + reaction.count, 0);
+  const mine = reactions.some((reaction) => reaction.reactedByMe);
+  const summary = reactions
+    .map((reaction) =>
+      fillCopy(
+        reaction.reactedByMe ? copy.reactions.chipMine : copy.reactions.chip,
+        {
+          emoji: reaction.emoji,
+          count: reaction.count,
+        },
+      ),
+    )
+    .join("; ");
   return (
     <div
-      role="group"
-      aria-label={copy.reactions.pickerLabel}
       className={cn(
-        "relative z-0 mt-2 flex max-w-full flex-wrap items-center gap-1.5",
-        align === "end" ? "justify-end" : "justify-start",
+        "absolute top-full z-10 -mt-3",
+        align === "end" ? "start-2" : "end-2",
       )}
       data-testid="chat-reactions"
       data-align={align}
     >
-      {reactions.map((reaction) => {
-        const label = fillCopy(
-          reaction.reactedByMe ? copy.reactions.chipMine : copy.reactions.chip,
-          { emoji: reaction.emoji, count: reaction.count },
-        );
-        return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
           <button
-            key={reaction.emoji}
             type="button"
-            aria-pressed={reaction.reactedByMe}
-            aria-label={label}
-            title={
-              reaction.reactedByMe
-                ? fillCopy(copy.reactions.unpick, { emoji: reaction.emoji })
-                : fillCopy(copy.reactions.pick, { emoji: reaction.emoji })
-            }
-            onClick={() => onToggle(reaction.emoji, !reaction.reactedByMe)}
+            aria-label={`${copy.reactions.who}: ${summary}`}
+            aria-haspopup="dialog"
+            data-mine={mine ? "true" : undefined}
             className={cn(
-              "inline-flex h-[26px] items-center gap-[5px] rounded-full border px-[9px] text-crumb leading-[1.45] font-semibold tabular-nums transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
-              reaction.reactedByMe
+              "inline-flex h-[22px] items-center gap-[3px] rounded-full border px-1.5 text-crumb leading-[1.45] font-semibold whitespace-nowrap tabular-nums ring-2 ring-background transition-colors focus-visible:ring-focus-ring focus-visible:outline-none motion-reduce:transition-none",
+              mine
                 ? "border-primary bg-state-selected text-state-selected-foreground"
                 : "border-input bg-card text-muted-foreground hover:bg-muted",
             )}
           >
             <span aria-hidden="true" className="leading-none">
-              {reaction.emoji}
+              {reactions
+                .slice(0, PILL_EMOJI)
+                .map((reaction) => reaction.emoji)
+                .join("")}
             </span>
-            {reaction.count > 1 || reaction.reactedByMe ? (
-              <span>{reaction.count}</span>
-            ) : (
-              <span className="sr-only">{reaction.count}</span>
-            )}
+            <span aria-hidden="true">{total}</span>
           </button>
-        );
-      })}
-      <WhoReactedPopover
-        messageId={messageId}
-        workspaceId={workspaceId}
-        reactions={reactions}
-        hooks={hooks}
-        authorName={authorName}
-        copy={copy}
-      />
-    </div>
-  );
-}
-
-function WhoReactedPopover({
-  messageId,
-  workspaceId,
-  reactions,
-  hooks,
-  authorName,
-  copy,
-}: Omit<ReactionChipsProps, "onToggle" | "reactions"> & {
-  readonly reactions: readonly ChatReactionSummary[];
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          className="size-[22px] rounded-full text-muted-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100"
-          aria-label={copy.reactions.who}
-          title={copy.reactions.who}
+        </PopoverTrigger>
+        <PopoverContent
+          align={align === "end" ? "start" : "end"}
+          className="w-64 p-2"
         >
-          <Users aria-hidden="true" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-2">
-        {open ? (
-          <ReactorList
-            messageId={messageId}
-            workspaceId={workspaceId}
-            reactions={reactions}
-            hooks={hooks}
-            authorName={authorName}
-            copy={copy}
-          />
-        ) : null}
-      </PopoverContent>
-    </Popover>
+          {open ? (
+            <ReactorList
+              messageId={messageId}
+              workspaceId={workspaceId}
+              reactions={reactions}
+              hooks={hooks}
+              authorName={authorName}
+              copy={copy}
+            />
+          ) : null}
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -150,7 +119,7 @@ function ReactorList({
   hooks,
   authorName,
   copy,
-}: Omit<ReactionChipsProps, "onToggle" | "reactions"> & {
+}: Omit<ReactionChipsProps, "reactions"> & {
   readonly reactions: readonly ChatReactionSummary[];
 }) {
   const [kind, setKind] = useState<string | undefined>(undefined);

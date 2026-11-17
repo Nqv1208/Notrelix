@@ -12,7 +12,7 @@ import { toNewest } from "./support/chat-newest";
  * phone); group heading 11.5/650; header 64 (56 on a phone) with an 18 (17) title; bubbles 8 12 padding, 1.45 line
  * height. Where a board still contradicts the design lead's decision (one set of values at every width, ahead of
  * the canvas update) the decision wins: bubble radius 14 with a 6 px tail only on a group's last bubble; reaction
- * pills 26 high in normal flow 8 px under the bubble, the avatar on the bubble's bottom edge; date separator and
+ * pill 22 high over the bubble's bottom corner, hanging 10 px below it (Messenger), the avatar on the bubble's bottom edge; date separator and
  * "Mới" divider 24 high with a line each side; composer a 52 high rounded single-row field, 40 px buttons, mic
  * while empty and a send icon button once typed, no "Gửi" text.
  *
@@ -165,7 +165,7 @@ test.describe("1440 (Chat-Main)", () => {
     expect(ds.h).toBeCloseTo(24, 0);
   });
 
-  test("a reaction pill is 26 high, 8 px under the bubble, avatar on the bubble edge", async ({
+  test("a reaction pill is 22 high, hangs 10 px below the bubble, avatar on the bubble edge", async ({
     page,
   }) => {
     await react(page);
@@ -173,8 +173,8 @@ test.describe("1440 (Chat-Main)", () => {
     const bub = await box(page, `${row} [data-bubble]`);
     const pill = await box(page, `${row} [data-testid=chat-reactions] button`);
     const av = await box(page, `${row} [data-avatar-slot] span`);
-    expect(pill.h).toBeCloseTo(26, 0);
-    expect(pill.y - (bub.y + bub.h)).toBeCloseTo(8, 0);
+    expect(pill.h).toBeCloseTo(22, 0);
+    expect(pill.y + pill.h - (bub.y + bub.h)).toBeCloseTo(10, 0);
     expect(av.y + av.h).toBeCloseTo(bub.y + bub.h, 0);
     expect(
       await css(
@@ -214,7 +214,7 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     await expect(page.locator("nav div[aria-hidden=true]")).toBeHidden();
   });
 
-  test("a pushed room has a back arrow, 56 header, 26 pills 8 px under the bubble, the same pill composer", async ({
+  test("a pushed room has a back arrow, 56 header, a 22 pill hanging 10 px below the bubble, the same pill composer", async ({
     page,
   }) => {
     await open(page, 390, 844, CHANNEL);
@@ -230,8 +230,8 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     const row = "[data-message-id]:has([data-testid=chat-reactions])";
     const bub = await box(page, `${row} [data-bubble]`);
     const pill = await box(page, `${row} [data-testid=chat-reactions] button`);
-    expect(pill.h).toBeCloseTo(26, 0);
-    expect(pill.y - (bub.y + bub.h)).toBeCloseTo(8, 0);
+    expect(pill.h).toBeCloseTo(22, 0);
+    expect(pill.y + pill.h - (bub.y + bub.h)).toBeCloseTo(10, 0);
     const av = await box(page, `${row} [data-avatar-slot] span`);
     expect(av.x).toBeCloseTo(14, 0);
     expect(av.y + av.h).toBeCloseTo(bub.y + bub.h, 0);

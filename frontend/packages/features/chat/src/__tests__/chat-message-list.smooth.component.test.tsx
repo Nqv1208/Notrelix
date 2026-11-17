@@ -260,14 +260,16 @@ describe("ChatMessageList: under a floating composer", () => {
     );
   });
 
-  it("scales the jump pill up a little on hover, with ease-out, and not under reduced motion", () => {
+  it("lifts the jump pill 2 px on hover with a light overshoot, never scales it, and does not move under reduced motion", () => {
     render(<ChatMessageList {...props([message(1)])} />);
     const pill = screen
       .getByTestId("chat-jump-latest-layer")
       .querySelector("button")!;
-    expect(pill.className).toContain("hover:scale-105");
-    expect(pill.className).toContain("duration-150");
-    expect(pill.className).toContain("ease-out");
-    expect(pill.className).toContain("motion-reduce:hover:scale-100");
+    expect(pill.className).toContain("hover:-translate-y-0.5");
+    expect(pill.className).toContain("active:translate-y-0");
+    expect(pill.className).toContain("duration-200");
+    expect(pill.className).toContain("ease-[cubic-bezier(.34,1.56,.64,1)]");
+    expect(pill.className).not.toContain("scale-");
+    expect(pill.className).toContain("motion-reduce:hover:translate-y-0");
   });
 });

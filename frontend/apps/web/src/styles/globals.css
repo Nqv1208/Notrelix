@@ -695,18 +695,30 @@
   }
 }
 
-/* The typing dots: each rises 3px and fades from 0.4 to 1 in a 1.2s ease-in-out loop; the delays (0, 150, 300ms) make the wave. Nothing takes layout space, so the bubble never changes size. Reduced motion drops the animation (opacity only). */
+/* The typing dots: each rises 3px and fades from 0.4 to 1, then rests until the 1.2s loop ends; the delays (0, 160, 320ms) make the wave. They sit in this one rule because the unlayered animation shorthand resets animation-delay and would beat any utility class. Nothing takes layout space, so the bubble never changes size. Reduced motion: opacity only. */
 .chat-typing-wave {
   animation: chat-typing-wave 1.2s ease-in-out infinite;
 }
+.chat-typing-wave:nth-child(2) {
+  animation-delay: 160ms;
+}
+.chat-typing-wave:nth-child(3) {
+  animation-delay: 320ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-typing-wave {
+    animation: none;
+    opacity: 0.7;
+  }
+}
 @keyframes chat-typing-wave {
   0%,
-  60%,
+  50%,
   100% {
     transform: translateY(0);
     opacity: 0.4;
   }
-  30% {
+  25% {
     transform: translateY(-3px);
     opacity: 1;
   }
