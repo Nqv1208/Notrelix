@@ -11,6 +11,7 @@ public static class SessionRevocationReasons
     public const string UserRequested = "user-requested";
     public const string UserRevokedOtherSessions = "user-revoked-other-sessions";
     public const string PasswordChanged = "password-changed";
+    public const string EmailChanged = "email-changed";
     public const string PasswordReset = "password-reset";
     public const string MfaDisabled = "mfa-disabled";
     public const string MfaEnrolled = "mfa-enrolled";

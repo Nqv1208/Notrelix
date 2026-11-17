@@ -18,9 +18,11 @@ public sealed record UpdateEmailCommand(string Email, string StepUpToken = "")
       IWriteRequest,
       IGlobalRequest;
 
-public sealed record UpdateEmailResultDto(
-    bool EmailConfirmed,
-    bool SessionRefreshRequired);
+/// <summary>
+/// <paramref name="PendingEmail"/> is the address the person typed, answered the same whether or not it is
+/// taken ("check the new inbox"); it is null when the address was already the sign-in email.
+/// </summary>
+public sealed record UpdateEmailResultDto(string? PendingEmail);
 
 public sealed class UpdateEmailCommandHandler
     : IRequestHandler<UpdateEmailCommand, Result<UpdateEmailResultDto>>
@@ -31,6 +33,8 @@ public sealed class UpdateEmailCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityStepUpService _stepUpService;
     private readonly IEmailRegistrationProbe? _registrationProbe;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<UpdateEmailCommandHandler> _logger;
 
     public UpdateEmailCommandHandler(
         IIdentityDbContext identityContext,
@@ -38,8 +42,12 @@ public sealed class UpdateEmailCommandHandler
         IEmailVerificationTokenIssuer tokenIssuer,
         IDateTimeProvider dateTimeProvider,
         ISecurityStepUpService stepUpService,
+        IEmailService emailService,
+        ILogger<UpdateEmailCommandHandler> logger,
         IEmailRegistrationProbe? registrationProbe = null)
     {
+        _emailService = emailService;
+        _logger = logger;
         _stepUpService = stepUpService;
         _registrationProbe = registrationProbe;
         _identityContext = identityContext;
@@ -62,35 +70,45 @@ public sealed class UpdateEmailCommandHandler
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
+        // The address already is the sign-in email: nothing to prove, nothing to change.
+        if (normalizedEmail == user.NormalizedEmail)
+            return Result<UpdateEmailResultDto>.Success(new UpdateEmailResultDto(null));
+
         // Proof first: a session without it learns nothing, not even whether an address is taken.
-        if (normalizedEmail != user.NormalizedEmail)
-        {
-            var stepUp = await ConsumeStepUpAsync(user.Id, request.StepUpToken, cancellationToken);
-            if (!stepUp.Succeeded)
-                return Result<UpdateEmailResultDto>.Failure(stepUp.TypedErrors);
-        }
+        var stepUp = await ConsumeStepUpAsync(user.Id, request.StepUpToken, cancellationToken);
+        if (!stepUp.Succeeded)
+            return Result<UpdateEmailResultDto>.Failure(stepUp.TypedErrors);
 
         // Another person's row is not visible to this user's own-row access: the boolean probe answers for
-        // every address. The caller's own current address never blocks (it is not "in use by someone else").
-        var emailInUse = normalizedEmail != user.NormalizedEmail
-            && (_registrationProbe is not null
-                ? await _registrationProbe.IsRegisteredAsync(normalizedEmail, cancellationToken)
-                : await _identityContext.Users
-                    .AnyAsync(
-                        x => x.NormalizedEmail == normalizedEmail && x.Id != user.Id,
-                        cancellationToken));
-
-        if (emailInUse)
-            return Result<UpdateEmailResultDto>.Failure("Email is already in use.");
+        // every address.
+        var emailInUse = _registrationProbe is not null
+            ? await _registrationProbe.IsRegisteredAsync(normalizedEmail, cancellationToken)
+            : await _identityContext.Users
+                .AnyAsync(x => x.NormalizedEmail == normalizedEmail && x.Id != user.Id, cancellationToken);
 
         var now = _dateTimeProvider.UtcNow;
-        user.UpdateEmail(normalizedEmail, _requestContext.UserId, now);
-        await _tokenIssuer.IssueAsync(user, user.Id, now, cancellationToken);
+        // A taken address gets the same answer and the same notice as a free one, so the screen and the old
+        // inbox never reveal whether someone already holds it; only a free address is parked and mailed.
+        if (!emailInUse)
+        {
+            user.RequestEmailChange(normalizedEmail, user.Id, now);
+            await _tokenIssuer.IssueForPendingEmailAsync(user, normalizedEmail, user.Id, now, cancellationToken);
+        }
 
-        return Result<UpdateEmailResultDto>.Success(
-            new UpdateEmailResultDto(
-                EmailConfirmed: false,
-                SessionRefreshRequired: true));
+        try
+        {
+            await _emailService.SendAsync(
+                user.Email.Value,
+                "Sign-in email change requested — Notrelix",
+                EmailTemplateService.EmailChange(user.Name, normalizedEmail, confirmed: false),
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send the email change notice to {UserId}", user.Id);
+        }
+
+        return Result<UpdateEmailResultDto>.Success(new UpdateEmailResultDto(normalizedEmail));
     }
 
     private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken cancellationToken)

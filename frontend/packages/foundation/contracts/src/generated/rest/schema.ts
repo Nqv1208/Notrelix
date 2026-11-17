@@ -10659,8 +10659,7 @@ export interface components {
             stepUpToken?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
-            emailConfirmed?: boolean;
-            sessionRefreshRequired?: boolean;
+            pendingEmail?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommand": {
             name: string | null;

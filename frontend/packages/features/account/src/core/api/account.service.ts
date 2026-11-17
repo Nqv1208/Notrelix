@@ -77,6 +77,7 @@ export interface AccountEndpoints {
   };
   users: {
     updateProfile: string;
+    email: string;
     preferences: string;
     avatar: string;
   };
@@ -706,6 +707,22 @@ export function createAccountService(
       stepUpToken: string;
     }): Promise<void> {
       await api.post<void>(endpoints.auth.setPassword, input, QUIET);
+    },
+
+    /**
+     * Asks for a new sign-in email (`ChangeSecurityIdentity` proof). The producer answers the same for a free
+     * and a taken address; the link goes to the new inbox and the old address keeps working until it is opened.
+     */
+    async requestEmailChange(input: {
+      email: string;
+      stepUpToken: string;
+    }): Promise<{ pendingEmail: string | null }> {
+      const wire = await api.post<{ pendingEmail?: string | null }>(
+        endpoints.users.email,
+        input,
+        QUIET,
+      );
+      return { pendingEmail: wire.pendingEmail ?? null };
     },
 
     async disableTwoFactor(stepUpToken: string): Promise<void> {

@@ -87,6 +87,24 @@ public class UserTests
     }
 
     [Fact]
+    public void RequestEmailChange_KeepsTheSignInEmailUntilItIsConfirmed()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("old@example.com", "Test User", "hash123", now, hasPasswordCredential: true);
+
+        user.RequestEmailChange("New@Example.com", user.Id, now);
+
+        user.Email.Value.Should().Be("old@example.com");
+        user.PendingEmail.Should().Be("new@example.com");
+
+        user.ConfirmEmailChange(user.Id, now);
+
+        user.NormalizedEmail.Should().Be("new@example.com");
+        user.EmailConfirmed.Should().BeTrue();
+        user.PendingEmail.Should().BeNull();
+    }
+
+    [Fact]
     public void UpdatePassword_ShouldChangePasswordHash()
     {
         var now = DateTimeOffset.UtcNow;

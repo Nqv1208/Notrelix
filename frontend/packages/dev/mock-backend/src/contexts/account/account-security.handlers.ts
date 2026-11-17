@@ -34,6 +34,7 @@ const PURPOSES = [
   "EnrollMfa",
   "LinkOAuth",
   "UnlinkOAuth",
+  "ChangeSecurityIdentity",
 ];
 
 function securityOf(store: MockStore): SecurityDetails {
@@ -690,6 +691,42 @@ export const accountSecurityOperations = [
         userAgent: null,
       });
       return { status: 200 };
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { email?: string; stepUpToken?: string }
+  >({
+    id: "account.profile.requestEmailChange",
+    contract: { kind: "openapi", operationId: "Identity.Profile.UpdateEmail" },
+    method: "POST",
+    route: "/profile/email",
+    async handle({ body, store }) {
+      const security = securityOf(store);
+      const email = (body?.email ?? "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        return {
+          status: 400,
+          body: {
+            type: "https://notrelix.dev/problems/validation.failed",
+            title: "Validation failed",
+            status: 400,
+            detail: "One or more validation errors occurred.",
+            errorCode: "validation.failed",
+            errors: { Email: ["Email is not valid"] },
+          },
+        };
+      // The address already is the sign-in email: nothing to prove, nothing to change.
+      if (email === store.getCurrentUser().email.toLowerCase())
+        return ok({ pendingEmail: null });
+      const token = body?.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "ChangeSecurityIdentity");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      // Same answer for a free and a taken address; the sign-in email stays until the link is opened.
+      return ok({ pendingEmail: email });
     },
   }),
 

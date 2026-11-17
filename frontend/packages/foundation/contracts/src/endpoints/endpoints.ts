@@ -39,6 +39,8 @@ export const endpoints = {
   },
   users: {
     updateProfile: "/profile",
+    // Identity.Profile.UpdateEmail: asks for a new sign-in email; the answer is the same for every address.
+    email: "/profile/email",
     // Identity.Profile.GetPreferences / UpdatePreferences.
     preferences: "/profile/preferences",
     // Identity.Profile.UploadAvatar (PUT, multipart part `file`) / RemoveAvatar (DELETE).

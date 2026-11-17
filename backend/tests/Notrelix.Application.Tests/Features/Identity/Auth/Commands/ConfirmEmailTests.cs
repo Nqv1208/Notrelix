@@ -1,5 +1,7 @@
 using Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail;
 using Notrelix.Application.Common.Tokens;
+using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
@@ -9,7 +11,10 @@ public class ConfirmEmailTests : IdentityHandlerTestBase
     private ConfirmEmailCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
         OneTimeTokenServiceMock.Object,
-        DateTimeProviderMock.Object);
+        DateTimeProviderMock.Object,
+        JwtBlacklistMock.Object,
+        EmailServiceMock.Object,
+        NullLogger<ConfirmEmailCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_WhenValidToken_ConfirmsEmail()
@@ -122,5 +127,46 @@ public class ConfirmEmailTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().Contain(e => e.Contains("Invalid or expired"));
         user.EmailConfirmed.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_WhenLinkConfirmsAPendingChange_MakesItTheSignInEmailEndsEverySessionAndNotifiesTheOldAddress()
+    {
+        var user = CreateUser(emailConfirmed: true);
+        var oldEmail = user.Email.Value;
+        user.RequestEmailChange("new@example.com", user.Id, TestNow);
+        var token = CreateEmailVerificationToken(normalizedEmail: "new@example.com");
+        var session = CreateSession();
+        SetupUsers(user);
+        SetupSessions(session);
+        SetupEmailVerificationTokens(token);
+        OneTimeTokenServiceMock.Setup(o => o.ParseAndHash("change-token", TokenPurpose.EmailVerification))
+            .Returns(new ParsedOneTimeToken(token.TokenHash.Value, token.HashVersion));
+
+        var result = await CreateSut().Handle(new ConfirmEmailCommand("change-token"), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        user.NormalizedEmail.Should().Be("new@example.com");
+        user.EmailConfirmed.Should().BeTrue();
+        user.PendingEmail.Should().BeNull();
+        session.Status.Should().Be(SessionStatus.Revoked);
+        EmailServiceMock.Verify(e => e.SendAsync(oldEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheLinkNamesAnAddressThatIsNotPending_ChangesNothing()
+    {
+        var user = CreateUser(emailConfirmed: true);
+        user.RequestEmailChange("new@example.com", user.Id, TestNow);
+        var token = CreateEmailVerificationToken(normalizedEmail: "other@example.com");
+        SetupUsers(user);
+        SetupEmailVerificationTokens(token);
+        OneTimeTokenServiceMock.Setup(o => o.ParseAndHash("stale-token", TokenPurpose.EmailVerification))
+            .Returns(new ParsedOneTimeToken(token.TokenHash.Value, token.HashVersion));
+
+        var result = await CreateSut().Handle(new ConfirmEmailCommand("stale-token"), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        user.NormalizedEmail.Should().NotBe("new@example.com");
     }
 }

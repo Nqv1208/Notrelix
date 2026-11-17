@@ -56,12 +56,22 @@ type Step =
   | { kind: "password" }
   /** A first password; `proof` is the single-use `ChangePassword` proof already bought. */
   | { kind: "setPassword"; proof: string }
+  /** A new sign-in email; `proof` is the single-use `ChangeSecurityIdentity` proof already bought. */
+  | { kind: "changeEmail"; proof: string }
+  | { kind: "emailSent"; email: string }
   | { kind: "passwordChanged" }
   | { kind: "twoFactorOff" }
   | { kind: "signOutThis" };
 
 type StepPurpose =
-  "enroll" | "disable" | "renew" | "others" | "link" | "unlink" | "setPassword";
+  | "enroll"
+  | "disable"
+  | "renew"
+  | "others"
+  | "link"
+  | "unlink"
+  | "setPassword"
+  | "changeEmail";
 
 const PURPOSE: Record<StepPurpose, StepUpPurpose> = {
   enroll: "EnrollMfa",
@@ -71,6 +81,7 @@ const PURPOSE: Record<StepPurpose, StepUpPurpose> = {
   link: "LinkOAuth",
   unlink: "UnlinkOAuth",
   setPassword: "ChangePassword",
+  changeEmail: "ChangeSecurityIdentity",
 };
 
 const LINK_RESULTS = ["linked", "already", "collision", "failed"] as const;
@@ -352,6 +363,10 @@ export function AccountSecurityPage() {
           // because the provider round trip would lose it.
           setPasswordError(null);
           setStep({ kind: "setPassword", proof: token });
+        } else if (current.purpose === "changeEmail") {
+          // Like the first password: the address is asked after the proof, so a provider round trip loses nothing.
+          setPasswordError(null);
+          setStep({ kind: "changeEmail", proof: token });
         } else if (current.purpose === "unlink" && current.provider) {
           try {
             await service.unlinkProvider(current.provider, token);
@@ -710,8 +725,56 @@ export function AccountSecurityPage() {
     ],
   );
 
+  const submitEmail = useCallback(
+    async (email: string) => {
+      if (step?.kind !== "changeEmail") return;
+      setBusy(true);
+      setPasswordError(null);
+      try {
+        const answer = await service.requestEmailChange({
+          email,
+          stepUpToken: step.proof,
+        });
+        // The same answer for any address; null = it already is the sign-in email.
+        if (answer.pendingEmail === null) setStep(null);
+        else setStep({ kind: "emailSent", email: answer.pendingEmail });
+      } catch (error) {
+        if (
+          (error as { code?: string }).code ===
+          "identity.security.step-up-invalid"
+        ) {
+          // The proof is gone (too old): ask again for the same step.
+          await beginStepUp("changeEmail");
+          setStepError({ error: "expired" });
+        } else {
+          const seconds = waitOf(error);
+          setPasswordError(
+            seconds !== null
+              ? { error: "wait", wait: seconds }
+              : { error: "failed" },
+          );
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [beginStepUp, service, step],
+  );
+
   const flow = useMemo<AccountSecurityFlow | null>(() => {
     if (!step) return null;
+    if (step.kind === "changeEmail")
+      return {
+        kind: "changeEmail",
+        error:
+          passwordError?.error === "wait"
+            ? "wait"
+            : passwordError
+              ? "failed"
+              : null,
+        wait: passwordError?.wait,
+      };
+    if (step.kind === "emailSent") return step;
     if (step.kind === "setPassword")
       return {
         kind: "setPassword",
@@ -776,6 +839,8 @@ export function AccountSecurityPage() {
       onChangePassword={startPasswordChange}
       onSetPassword={() => void beginStepUp("setPassword")}
       onSubmitFirstPassword={(next) => void submitFirstPassword(next)}
+      onChangeEmail={() => void beginStepUp("changeEmail")}
+      onSubmitEmail={(email) => void submitEmail(email)}
       onSubmitNewPassword={(submission) => void submitNewPassword(submission)}
       onPasswordChangedContinue={() => void signOutThisDevice()}
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}

@@ -28,8 +28,24 @@ public sealed class EmailVerificationTokenIssuer : IEmailVerificationTokenIssuer
         _integrationEventCollector = integrationEventCollector;
     }
 
-    public async Task<EmailVerificationTokenIssue> IssueAsync(
+    public Task<EmailVerificationTokenIssue> IssueAsync(
         User user,
+        Guid actorUserId,
+        DateTimeOffset issuedAt,
+        CancellationToken cancellationToken)
+        => IssueToAsync(user, user.Email.Value, actorUserId, issuedAt, cancellationToken);
+
+    public Task<EmailVerificationTokenIssue> IssueForPendingEmailAsync(
+        User user,
+        string pendingNormalizedEmail,
+        Guid actorUserId,
+        DateTimeOffset issuedAt,
+        CancellationToken cancellationToken)
+        => IssueToAsync(user, pendingNormalizedEmail, actorUserId, issuedAt, cancellationToken);
+
+    private async Task<EmailVerificationTokenIssue> IssueToAsync(
+        User user,
+        string targetEmail,
         Guid actorUserId,
         DateTimeOffset issuedAt,
         CancellationToken cancellationToken)
@@ -46,7 +62,7 @@ public sealed class EmailVerificationTokenIssuer : IEmailVerificationTokenIssuer
             user.Id,
             TokenHash.Create(issued.TokenHash),
             issued.HashVersion,
-            user.Email.Value,
+            targetEmail,
             issuedAt.AddHours(1),
             issuedAt);
 
@@ -61,7 +77,7 @@ public sealed class EmailVerificationTokenIssuer : IEmailVerificationTokenIssuer
                 EventId: eventId,
                 VerificationTokenId: token.Id,
                 UserId: user.Id,
-                Email: user.Email.Value,
+                Email: targetEmail,
                 ProtectedToken: protectedToken,
                 HashVersion: issued.HashVersion,
                 ExpiresAt: token.ExpiresAt,
@@ -72,7 +88,7 @@ public sealed class EmailVerificationTokenIssuer : IEmailVerificationTokenIssuer
         return new EmailVerificationTokenIssue(
             token.Id,
             user.Id,
-            user.Email.Value,
+            targetEmail,
             protectedToken,
             issued.HashVersion,
             token.ExpiresAt);

@@ -27,6 +27,28 @@ export const en = {
       "You sign in with {{providers}}. Set a password to also sign in with {{email}}.",
     set: "Set a password",
   },
+  email: {
+    title: "Sign-in email",
+    rowText:
+      "You sign in with this address and we send security notices to it.",
+    change: "Change email",
+    proofTitle: "Confirm to change your sign-in email",
+    formTitle: "Change your sign-in email",
+    formText:
+      "We send a link to the new address. Your current email keeps working until you open it.",
+    label: "New email",
+    invalid: "Enter a valid email address.",
+    sameAsCurrent: "That is already your sign-in email.",
+    submit: "Send link",
+    cancel: "Cancel",
+    wait: "Too many attempts. Try again in {{seconds}} seconds.",
+    sentTitle: "Check the new inbox",
+    sentText:
+      "If {{email}} can be used, a link is on its way. Open it within an hour to finish. Until then you keep signing in with your current email.",
+    sentNote:
+      "When you open the link, every device is signed out and you sign in with the new address.",
+    sentDone: "Done",
+  },
   twoFactor: {
     title: "Two-factor authentication",
     enabled: "On",
@@ -236,6 +258,28 @@ export const vi: AccountSecurityCopy = {
     noneText:
       "Bạn đăng nhập bằng {{providers}}. Hãy đặt mật khẩu để đăng nhập cả bằng {{email}}.",
     set: "Đặt mật khẩu",
+  },
+  email: {
+    title: "Email đăng nhập",
+    rowText:
+      "Bạn đăng nhập bằng địa chỉ này và chúng tôi gửi thông báo bảo mật tới đây.",
+    change: "Đổi email",
+    proofTitle: "Xác nhận để đổi email đăng nhập",
+    formTitle: "Đổi email đăng nhập",
+    formText:
+      "Chúng tôi gửi một liên kết tới địa chỉ mới. Email hiện tại vẫn dùng được cho tới khi bạn mở liên kết.",
+    label: "Email mới",
+    invalid: "Hãy nhập một địa chỉ email hợp lệ.",
+    sameAsCurrent: "Đây đã là email đăng nhập của bạn.",
+    submit: "Gửi liên kết",
+    cancel: "Hủy",
+    wait: "Thử quá nhiều lần. Hãy thử lại sau {{seconds}} giây.",
+    sentTitle: "Hãy kiểm tra hộp thư mới",
+    sentText:
+      "Nếu dùng được {{email}}, một liên kết đang được gửi tới. Hãy mở trong vòng một giờ để hoàn tất. Cho tới lúc đó bạn vẫn đăng nhập bằng email hiện tại.",
+    sentNote:
+      "Khi bạn mở liên kết, mọi thiết bị sẽ bị đăng xuất và bạn đăng nhập bằng địa chỉ mới.",
+    sentDone: "Xong",
   },
   twoFactor: {
     title: "Xác thực hai yếu tố",
