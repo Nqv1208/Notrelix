@@ -70,6 +70,8 @@ for (const mode of ["light", "dark"] as const) {
       .getByRole("button", { name: copy.panel.more })
       .click();
     await expect(page.getByRole("menu")).toBeVisible();
+    // The menu zooms and fades in over 100 ms: contrast is read at rest.
+    await page.waitForTimeout(400);
     const menu = await new AxeBuilder({ page })
       .include("[role=menu]")
       .analyze();
@@ -79,33 +81,45 @@ for (const mode of ["light", "dark"] as const) {
   });
 }
 
-test("Tab walks the close cross, the quick actions and the section rows in order", async ({
+test("Tab walks the header actions left to right, then the panel: close cross, quick actions, section rows", async ({
   page,
 }) => {
   await openInfo(page);
+  const label = () =>
+    page.evaluate(
+      () =>
+        document.activeElement?.getAttribute("aria-label") ??
+        document.activeElement?.textContent?.replace(/\d+$/, "") ??
+        "",
+    );
   await page
-    .locator(PANEL)
-    .getByRole("button", { name: copy.pins.close })
+    .locator("main header")
+    .getByRole("button", { name: copy.search.open, exact: true })
     .focus();
   const seen: string[] = [];
-  for (let i = 0; i < 6; i++) {
-    seen.push(
-      await page.evaluate(
-        () =>
-          document.activeElement?.getAttribute("aria-label") ??
-          document.activeElement?.textContent?.replace(/\d+$/, "") ??
-          "",
-      ),
-    );
+  for (let i = 0; i < 60; i++) {
+    seen.push(await label());
     await page.keyboard.press("Tab");
   }
-  expect(seen.slice(0, 5)).toEqual([
+  // The header buttons come first, in the order they are drawn.
+  expect(seen.slice(0, 3)).toEqual([
+    copy.search.open,
+    copy.panel.channelInfo,
+    copy.panel.more,
+  ]);
+  // The panel follows in reading order. Members opens expanded, so its rows (each with a remove button) sit between the
+  // Members row and the Pinned row: that is the logical order, not a jump.
+  const at = (name: string) => seen.findIndex((l) => l === name);
+  const order = [
     copy.pins.close,
     copy.panel.searchShort,
     copy.panel.mute,
     copy.header.membersTitle,
     copy.pins.title,
-  ]);
+  ].map(at);
+  expect(order.every((i) => i > 2)).toBe(true);
+  expect(order).toEqual([...order].sort((x, y) => x - y));
+  expect(new Set(order).size).toBe(order.length);
 });
 
 test("Escape closes the menu first, then the panel; the info button gets the focus back", async ({
