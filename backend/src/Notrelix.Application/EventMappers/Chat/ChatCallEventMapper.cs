@@ -46,3 +46,23 @@ public sealed class ChatCallParticipantRevokedEventMapper : IntegrationEventMapp
         CausationId: null,
         OccurredAt: domainEvent.OccurredAt);
 }
+
+/// <summary>Maps the permission fact to the chat.call.participant-permission-changed integration event (outbox, same transaction as the change).</summary>
+public sealed class ChatCallParticipantPermissionChangedEventMapper
+    : IntegrationEventMapperBase<CallParticipantPermissionChangedDomainEvent, ChatCallParticipantPermissionChangedIntegrationEvent>
+{
+    public override ChatCallParticipantPermissionChangedIntegrationEvent? Map(CallParticipantPermissionChangedDomainEvent domainEvent) => new(
+        EventId: Guid.CreateVersion7(),
+        AccountId: domainEvent.AccountId,
+        WorkspaceId: domainEvent.WorkspaceId,
+        SpaceId: domainEvent.SpaceId,
+        CallId: domainEvent.CallId,
+        PersonId: domainEvent.PersonId,
+        RoomKey: domainEvent.RoomKey,
+        CanPublish: domainEvent.CanPublish,
+        CanPublishVideo: domainEvent.CanPublishVideo,
+        CorrelationId: domainEvent.EventId,
+        ActorUserId: null,
+        CausationId: null,
+        OccurredAt: domainEvent.OccurredAt);
+}

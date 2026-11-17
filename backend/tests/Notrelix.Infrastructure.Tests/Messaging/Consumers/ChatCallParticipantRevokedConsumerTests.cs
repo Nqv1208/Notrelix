@@ -18,6 +18,7 @@ public sealed class ChatCallParticipantRevokedConsumerTests
         public int Attempts;
         public List<(string RoomKey, Guid PersonId)> Removed { get; } = [];
 
+        public Task UpdateParticipantPermissionAsync(string roomKey, Guid personId, bool canPublish, bool canPublishVideo, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken)
         {
             if (Interlocked.Increment(ref Attempts) == 1)

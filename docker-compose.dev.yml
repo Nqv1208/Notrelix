@@ -133,6 +133,13 @@ services:
       Email__FromEmail: ${EMAIL_FROM:-onboarding@resend.dev}
       Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
       Smtp__Enabled: ${SMTP_ENABLED:-false}
+      # Chat calls media plane: InMemory (default) or LiveKit (start the `calls` compose profile first). The dev key pair
+      # matches the livekit service and is refused by the backend outside Development.
+      Chat__Calls__Media__Provider: ${CHAT_CALLS_MEDIA_PROVIDER:-InMemory}
+      Chat__Calls__Media__ApiUrl: ${LIVEKIT_API_URL:-http://livekit:7880}
+      Chat__Calls__Media__ApiKey: ${LIVEKIT_API_KEY:-devkey-notrelix-local}
+      Chat__Calls__Media__ApiSecret: ${LIVEKIT_API_SECRET:-dev-only-livekit-secret-never-use-outside-local-0123456789}
+      Chat__Calls__SfuUrl: ${LIVEKIT_CLIENT_URL:-ws://localhost:7880}
       Smtp__Host: ${SMTP_HOST:-}
       Smtp__Port: ${SMTP_PORT:-587}
       Smtp__Username: ${SMTP_USERNAME:-}
@@ -277,6 +284,37 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Media server for Chat voice and video calls (SYS-ADR-002). Off by default: start it with `--profile calls` and set
+  # CHAT_CALLS_MEDIA_PROVIDER=LiveKit on the backend. The key pair below is a local dev default and must never reach
+  # staging or production (the backend refuses it outside Development). Ports: 7880 signalling/API (HTTP and WebSocket),
+  # 7881 ICE over TCP, 50000-50100/udp media; none clash with the services above.
+  livekit:
+    profiles: ["calls"]
+    image: livekit/livekit-server:v1.13.0
+    container_name: notrelix-livekit-dev
+    restart: unless-stopped
+    command: ["--node-ip", "127.0.0.1"]
+    ports:
+      - "0.0.0.0:${LIVEKIT_PORT:-7880}:7880"
+      - "0.0.0.0:7881:7881"
+      - "0.0.0.0:50000-50100:50000-50100/udp"
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey-notrelix-local}: ${LIVEKIT_API_SECRET:-dev-only-livekit-secret-never-use-outside-local-0123456789}"
+      LIVEKIT_CONFIG: |
+        port: 7880
+        log_level: info
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+        webhook:
+          api_key: ${LIVEKIT_API_KEY:-devkey-notrelix-local}
+          urls:
+            - http://backend:8000/api/v1/chat/calls/media-webhook
+    networks:
+      - backend-network
+    logging: *default-logging
 
   pgadmin:
     profiles: ["tools"]

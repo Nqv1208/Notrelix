@@ -52,6 +52,8 @@ public class CsrfApplicabilityInventoryArchitectureTests : ArchitectureTestBase
             "no ambient session read or established; response is enumeration-safe generic"),
         ["CalendarEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "provider webhook callback authenticates by HMAC signature, not by ambient browser session"),
+        ["MapCallMediaWebhookEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
+            "media server webhook authenticates by a signed JWT over the raw body, not by ambient browser session"),
         ["ResetPasswordEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "one-time reset-token credential flow; no ambient cookie session consumed or established"),
         ["EmailVerificationEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",

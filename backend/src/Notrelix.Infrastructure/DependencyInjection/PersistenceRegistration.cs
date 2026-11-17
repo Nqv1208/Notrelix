@@ -102,7 +102,20 @@ public static class PersistenceRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IDirectConversationLock, Notrelix.Infrastructure.Data.Chat.ChatDirectConversationLock>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore, Notrelix.Infrastructure.Data.Chat.ChatReadStateStore>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatThreadReadStore, Notrelix.Infrastructure.Data.Chat.ChatThreadReadStore>();
-        services.AddSingleton<Notrelix.Application.Features.Chat.Calls.IChatCallMediaGateway, Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>();
+        services.AddOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>()
+            .Bind(configuration.GetSection(Notrelix.Infrastructure.Chat.ChatCallMediaOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>, Notrelix.Infrastructure.Chat.ChatCallMediaOptionsValidator>();
+        services.AddHttpClient(Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway.HttpClientName);
+        services.AddSingleton<Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>();
+        services.AddSingleton<Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway>();
+        // Chat:Calls:Media:Provider picks the adapter (InMemory is the default for tests and the mock stack).
+        services.AddSingleton<Notrelix.Application.Features.Chat.Calls.IChatCallMediaGateway>(sp =>
+            sp.GetRequiredService<IOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>>().Value.Provider == Notrelix.Infrastructure.Chat.ChatCallMediaProvider.LiveKit
+                ? sp.GetRequiredService<Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway>()
+                : sp.GetRequiredService<Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>());
+        services.AddScoped<Notrelix.Infrastructure.BackgroundJobs.ChatCallMediaWebhookRunner>();
+        services.AddSingleton<Notrelix.Application.Features.Chat.Calls.Commands.HandleCallMediaWebhook.IChatCallMediaWebhookProcessor, Notrelix.Infrastructure.BackgroundJobs.ChatCallMediaWebhookProcessor>();
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

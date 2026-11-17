@@ -950,6 +950,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.HandleCallMediaWebhook.HandleCallMediaWebhookCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Calls.Commands.HandleCallMediaWebhook.HandleCallMediaWebhookCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Calls.Commands.JoinCall.JoinCallCommand",
     "kind": "Command",
     "principalMarkers": [
