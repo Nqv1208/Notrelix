@@ -1,8 +1,6 @@
-import type { ReactNode } from "react";
 import {
   Archive,
   ArchiveRestore,
-  Bell,
   ChevronLeft,
   Hash,
   Link2,
@@ -10,51 +8,27 @@ import {
   Lock,
   LogOut,
   Pencil,
-  Search,
-  Settings,
   ShieldCheck,
   Trash2,
-  UserMinus,
-  Users,
 } from "lucide-react";
 import {
-  Avatar,
-  AvatarFallback,
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  cn,
 } from "@notrelix/ui-web";
-import type {
-  ChatChannel,
-  ChatChannelMember,
-  ChatNotificationLevel,
-} from "../../core/types/chat";
-import type { ChatPresenceState } from "../../core/model/ephemeral-model";
-import { PresenceDot, presenceText } from "./chat-presence";
+import type { ChatChannel, ChatNotificationLevel } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
 import { ChatLinkChip } from "./chat-resource-link";
-import { avatarToneOf, initialsOf } from "./chat-initials";
-import { fillCopy } from "./use-chat-copy";
+import { ChatHeaderActions, type ChatCallKind } from "./chat-header-actions";
+import type { ChatInfoSectionKey } from "./chat-info-panel";
 
 export interface ChatHeaderProps {
   readonly channel: ChatChannel;
-  readonly members: readonly ChatChannelMember[];
-  readonly viewerId: string;
   readonly canManage: boolean;
   readonly joining: boolean;
-  readonly authorName: (userId: string) => string;
-  /** The presence of a person; the member list shows a dot with it. */
-  readonly presenceOf?: (userId: string) => ChatPresenceState;
   readonly copy: ChatCopy;
   /** Shown on narrow screens: leaves the room for the channel list. */
   readonly onOpenList: () => void;
@@ -64,8 +38,6 @@ export interface ChatHeaderProps {
   readonly onLeave?: () => void;
   /** Delete the channel (a manager, an Owner or an Admin). */
   readonly onDelete?: () => void;
-  /** Remove another member (a manager); without it the member list has no Remove buttons. */
-  readonly onRemoveMember?: (userId: string) => void;
   /** Whether the caller may open the channel's permissions (a manager, an Owner or an Admin of a live channel). */
   readonly canManagePermissions?: boolean;
   readonly onPermissions?: () => void;
@@ -78,34 +50,33 @@ export interface ChatHeaderProps {
   readonly onJoin: () => void;
   /** Opens the message search (UC-CHT-H07). Without it the header has no search button. */
   readonly onSearch?: () => void;
-  /** Panel toggles (Pins, Following) drawn in the header actions so no row of their own is needed. */
-  readonly actions?: ReactNode;
+  /** The call buttons exist only when calls are enabled and a handler is given. */
+  readonly callsEnabled?: boolean;
+  readonly onStartCall?: (kind: ChatCallKind) => void;
+  readonly infoOpen: boolean;
+  readonly onToggleInfo: () => void;
+  readonly onOpenSection: (key: ChatInfoSectionKey) => void;
   readonly onSetLevel: (level: ChatNotificationLevel) => void;
 }
 
 const LEVELS: readonly ChatNotificationLevel[] = ["all", "mentions", "none"];
 
 /**
- * The header of an open channel: its name and topic, the members, the
- * notification level, and for a manager the rename and archive actions. A
+ * The header of an open channel: its name and topic, the call, search and info buttons and a "…" menu with the
+ * pinned and following panels, the notification level, and for a manager the rename and archive actions. A
  * public channel the caller is not in offers to join it. On a narrow screen a
  * back button returns to the channel list.
  */
 export function ChatHeader({
   channel,
-  members,
-  viewerId,
   canManage,
   joining,
-  authorName,
-  presenceOf,
   copy,
   onOpenList,
   onRename,
   onToggleArchive,
   onLeave,
   onDelete,
-  onRemoveMember,
   canManagePermissions = false,
   onPermissions,
   workspaceId,
@@ -113,7 +84,11 @@ export function ChatHeader({
   onUnlinkResource,
   onJoin,
   onSearch,
-  actions,
+  callsEnabled,
+  onStartCall,
+  infoOpen,
+  onToggleInfo,
+  onOpenSection,
   onSetLevel,
 }: ChatHeaderProps) {
   const isPrivate = channel.kind === "channel_private";
@@ -172,178 +147,63 @@ export function ChatHeader({
           </Button>
         ) : null}
 
-        {actions}
-
-        {onSearch ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={copy.search.open}
-            title={copy.search.open}
-            onClick={onSearch}
-          >
-            <Search aria-hidden="true" />
-          </Button>
-        ) : null}
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              aria-label={fillCopy(copy.header.membersButton, {
-                count: members.length,
-              })}
-            >
-              <Users aria-hidden="true" />
-              <span className="tabular-nums">{members.length}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            className="w-64 p-2"
-            aria-label={copy.header.membersTitle}
-          >
-            <h2 className="px-2 py-1 text-sm font-semibold">
-              {copy.header.membersTitle}
-            </h2>
-            {members.length === 0 ? (
-              <p className="px-2 py-1 text-sm text-muted-foreground">
-                {copy.header.membersEmpty}
-              </p>
-            ) : (
-              <ul className="flex flex-col">
-                {members.map((member) => {
-                  const name = authorName(member.userId);
-                  const presence =
-                    member.userId === viewerId
-                      ? undefined
-                      : presenceOf?.(member.userId);
-                  return (
-                    <li
-                      key={member.userId}
-                      className="flex items-center gap-2 px-2 py-1.5 text-sm"
+        <ChatHeaderActions
+          copy={copy}
+          callsEnabled={callsEnabled}
+          onStartCall={onStartCall}
+          onSearch={onSearch}
+          infoOpen={infoOpen}
+          onToggleInfo={onToggleInfo}
+          infoLabel={copy.panel.channelInfo}
+          onOpenSection={onOpenSection}
+          menu={
+            channel.isMember || canManage || onLeave ? (
+              <>
+                {channel.isMember ? (
+                  <>
+                    <DropdownMenuLabel>{copy.level.label}</DropdownMenuLabel>
+                    <DropdownMenuRadioGroup
+                      value={level}
+                      onValueChange={(value) =>
+                        onSetLevel(value as ChatNotificationLevel)
+                      }
                     >
-                      <span className="relative inline-flex shrink-0">
-                        <Avatar className="size-6" aria-hidden="true">
-                          <AvatarFallback
-                            className={cn(
-                              "text-xs font-semibold",
-                              avatarToneOf(member.userId),
-                            )}
-                          >
-                            {initialsOf(name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {presence ? <PresenceDot state={presence} /> : null}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">
-                        {name}
-                        {member.userId === viewerId
-                          ? ` (${copy.header.you})`
-                          : ""}
-                        {presence ? (
-                          <span className="sr-only">
-                            {`, ${presenceText(presence, copy)}`}
-                          </span>
-                        ) : null}
-                      </span>
-                      {member.role === "manager" ? (
-                        <span className="text-xs text-muted-foreground">
-                          {copy.header.manager}
-                        </span>
-                      ) : null}
-                      {onRemoveMember && member.userId !== viewerId ? (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={fillCopy(copy.membership.remove, {
-                            name,
-                          })}
-                          onClick={() => onRemoveMember(member.userId)}
-                        >
-                          <UserMinus aria-hidden="true" />
-                        </Button>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </PopoverContent>
-        </Popover>
-
-        {channel.isMember ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={copy.header.notifications}
-              >
-                <Bell aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>{copy.level.label}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={level}
-                onValueChange={(value) =>
-                  onSetLevel(value as ChatNotificationLevel)
-                }
-              >
-                {LEVELS.map((item) => (
-                  <DropdownMenuRadioItem key={item} value={item}>
-                    {copy.level[item]}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-
-        {canManage || onLeave ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={copy.header.manage}
-              >
-                <Settings aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canManage ? (
-                <DropdownMenuItem onSelect={onRename}>
-                  <Pencil aria-hidden="true" />
-                  {copy.header.rename}
-                </DropdownMenuItem>
-              ) : null}
-              {canManage && canManagePermissions && onPermissions ? (
-                <DropdownMenuItem onSelect={onPermissions}>
-                  <ShieldCheck aria-hidden="true" />
-                  {copy.header.permissions}
-                </DropdownMenuItem>
-              ) : null}
-              {canManage && onLinkResource ? (
-                <DropdownMenuItem onSelect={onLinkResource}>
-                  <Link2 aria-hidden="true" />
-                  {channel.link
-                    ? copy.header.changeLink
-                    : copy.header.linkResource}
-                </DropdownMenuItem>
-              ) : null}
-              {canManage && channel.link && onUnlinkResource ? (
-                <DropdownMenuItem onSelect={onUnlinkResource}>
-                  <Link2Off aria-hidden="true" />
-                  {copy.header.unlinkResource}
-                </DropdownMenuItem>
-              ) : null}
-              {canManage ? (
-                <>
-                  <DropdownMenuSeparator />
+                      {LEVELS.map((item) => (
+                        <DropdownMenuRadioItem key={item} value={item}>
+                          {copy.level[item]}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
+                {canManage ? (
+                  <DropdownMenuItem onSelect={onRename}>
+                    <Pencil aria-hidden="true" />
+                    {copy.header.rename}
+                  </DropdownMenuItem>
+                ) : null}
+                {canManage && canManagePermissions && onPermissions ? (
+                  <DropdownMenuItem onSelect={onPermissions}>
+                    <ShieldCheck aria-hidden="true" />
+                    {copy.header.permissions}
+                  </DropdownMenuItem>
+                ) : null}
+                {canManage && onLinkResource ? (
+                  <DropdownMenuItem onSelect={onLinkResource}>
+                    <Link2 aria-hidden="true" />
+                    {channel.link
+                      ? copy.header.changeLink
+                      : copy.header.linkResource}
+                  </DropdownMenuItem>
+                ) : null}
+                {canManage && channel.link && onUnlinkResource ? (
+                  <DropdownMenuItem onSelect={onUnlinkResource}>
+                    <Link2Off aria-hidden="true" />
+                    {copy.header.unlinkResource}
+                  </DropdownMenuItem>
+                ) : null}
+                {canManage ? (
                   <DropdownMenuItem onSelect={onToggleArchive}>
                     {channel.isArchived ? (
                       <ArchiveRestore aria-hidden="true" />
@@ -354,26 +214,26 @@ export function ChatHeader({
                       ? copy.header.unarchive
                       : copy.header.archive}
                   </DropdownMenuItem>
-                </>
-              ) : null}
-              {onLeave ? (
-                <>
-                  {canManage ? null : <DropdownMenuSeparator />}
+                ) : null}
+                {onLeave || (canManage && onDelete) ? (
+                  <DropdownMenuSeparator />
+                ) : null}
+                {onLeave ? (
                   <DropdownMenuItem variant="destructive" onSelect={onLeave}>
                     <LogOut aria-hidden="true" />
                     {copy.membership.leave}
                   </DropdownMenuItem>
-                </>
-              ) : null}
-              {canManage && onDelete ? (
-                <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-                  <Trash2 aria-hidden="true" />
-                  {copy.membership.delete}
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
+                ) : null}
+                {canManage && onDelete ? (
+                  <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                    <Trash2 aria-hidden="true" />
+                    {copy.membership.delete}
+                  </DropdownMenuItem>
+                ) : null}
+              </>
+            ) : null
+          }
+        />
       </div>
     </header>
   );

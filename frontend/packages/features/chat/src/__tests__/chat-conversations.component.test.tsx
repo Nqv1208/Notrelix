@@ -18,7 +18,10 @@ import {
   previewOf,
   type ChatConversationListView,
 } from "../web/components/chat-conversation-list";
-import { ChatConversationDetails } from "../web/components/chat-conversation-view";
+import {
+  ConversationInfoFooter,
+  ConversationMemberRows,
+} from "../web/components/chat-conversation-view";
 import { ChatWorkspace } from "../web/components/chat-workspace";
 import type { ChatConversation } from "../core/types/chat";
 import { en, vi as viCopy } from "../web/components/chat.copy";
@@ -299,7 +302,7 @@ describe("new message dialog", () => {
 
 describe("conversation details panel", () => {
   function details(
-    overrides: Partial<Parameters<typeof ChatConversationDetails>[0]> = {},
+    overrides: Partial<Parameters<typeof ConversationInfoFooter>[0]> = {},
   ) {
     const handlers = {
       onBlock: vi.fn(),
@@ -309,26 +312,31 @@ describe("conversation details panel", () => {
       onHide: vi.fn(),
     };
     render(
-      <ChatConversationDetails
-        conversation={conversation()}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={en}
-        locale="en"
-        blocked={false}
-        busy={false}
-        {...handlers}
-        {...overrides}
-      />,
+      <>
+        <ConversationMemberRows
+          conversation={overrides.conversation ?? conversation()}
+          viewerId="me"
+          nameOf={nameOf}
+          copy={en}
+        />
+        <ConversationInfoFooter
+          conversation={conversation()}
+          viewerId="me"
+          nameOf={nameOf}
+          copy={en}
+          locale="en"
+          blocked={false}
+          busy={false}
+          {...handlers}
+          {...overrides}
+        />
+      </>,
     );
     return handlers;
   }
 
   it("shows the profile of the other person with hide and block", () => {
     const handlers = details();
-    expect(
-      screen.getByRole("heading", { name: "Trần Minh Quân" }),
-    ).toBeTruthy();
     expect(screen.getByText("Conversation started")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Block person" }));
     expect(handlers.onBlock).toHaveBeenCalled();
@@ -338,7 +346,6 @@ describe("conversation details panel", () => {
 
   it("offers to unblock a blocked person", () => {
     const handlers = details({ blocked: true });
-    expect(screen.getByText("Blocked")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Unblock person" }));
     expect(handlers.onUnblock).toHaveBeenCalled();
   });
@@ -354,7 +361,7 @@ describe("conversation details panel", () => {
         ],
       }),
     });
-    expect(screen.getByText("Members, 3")).toBeTruthy();
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByText("You")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add people" }));
     expect(handlers.onAddPeople).toHaveBeenCalled();

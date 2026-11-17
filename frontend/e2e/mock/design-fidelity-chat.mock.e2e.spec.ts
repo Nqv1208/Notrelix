@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openInfoSection } from "./support/chat-info";
 import { toNewest } from "./support/chat-newest";
 
 /**
@@ -281,24 +282,19 @@ async function openThread(page: Page) {
 const HEADER = "[data-testid=chat-panel-header]";
 const PIN = "[data-testid=chat-pin-item]";
 
-test.describe("Pins panel (Chat-Pins 1440)", () => {
-  test("56 header, 16 title, summary strip, 12 16 rows with an 18 avatar", async ({
+// The pins are a section of the one info panel (Chat-Info boards): the Chat-Pins page header (56 high, 16/700 title) and
+// its summary strip no longer exist, so their assertions are removed here; the pin rows keep the Chat-Pins row numbers.
+test.describe("Pins section of the info panel (pin rows from Chat-Pins 1440)", () => {
+  test("12 16 rows with an 18 avatar inside the 360 panel", async ({
     page,
   }) => {
     await open(page, 1440, 900, CHANNEL);
     await pinThree(page);
-    await page.getByRole("button", { name: "Ghim" }).first().click();
+    await openInfoSection(page, "pins");
     await expect(page.locator(PIN)).toHaveCount(3);
     expect((await box(page, "[data-testid=chat-side-panel]")).w).toBeCloseTo(
       360,
       0,
-    );
-    expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
-    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("16px");
-    expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("700");
-    const strip = page.locator("[data-testid=chat-pins-panel] > p").first();
-    expect(await strip.evaluate((e) => getComputedStyle(e).fontSize)).toBe(
-      "13px",
     );
     expect(await css(page, PIN, "padding")).toBe("12px 16px");
     const av = await box(page, `${PIN} [data-slot=avatar]`);
@@ -312,26 +308,15 @@ test.describe("Pins panel (Chat-Pins 1440)", () => {
   });
 });
 
-test.describe("390 side panels (Chat-Pins-M, Chat-Thread-M, Chat-Search-M)", () => {
-  test("pins: a 56 page header with a back arrow, 17/650 title, 12 px line, no time in the footer", async ({
+test.describe("390 side panels (Chat-Info-M, Chat-Thread-M, Chat-Search-M)", () => {
+  test("pins section: 12 16 rows, no time in the footer (the Chat-Pins-M page header is gone with the page)", async ({
     page,
   }) => {
     await open(page, 390, 844, CHANNEL);
     await pinThree(page);
-    await page.getByRole("button", { name: "Ghim" }).first().click();
+    await openInfoSection(page, "pins");
     await expect(page.locator(PIN)).toHaveCount(3);
-    const head = await box(page, HEADER);
-    expect(head.h).toBeCloseTo(56, 0);
-    const back = await box(page, `${HEADER} button`);
-    expect(back.x).toBeCloseTo(12, 0);
-    expect(back.w).toBeCloseTo(32, 0);
-    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("17px");
-    expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("650");
-    expect(await css(page, `${HEADER} p`, "font-size")).toBe("12px");
     expect(await css(page, PIN, "padding")).toBe("12px 16px");
-    await expect(
-      page.locator("[data-testid=chat-pins-panel] > p"),
-    ).toBeHidden();
   });
 
   test("thread: a 56 page header with the follow chip, a 24 high lined reply separator, the pill composer", async ({

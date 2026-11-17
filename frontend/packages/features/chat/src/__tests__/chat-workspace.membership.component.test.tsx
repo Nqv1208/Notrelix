@@ -69,15 +69,16 @@ async function setup(isPrivate: boolean) {
 }
 
 const openSettings = async () =>
-  fireEvent.keyDown(
-    await screen.findByRole("button", { name: "Channel settings" }),
-    { key: "Enter" },
-  );
+  fireEvent.keyDown(await screen.findByRole("button", { name: "More" }), {
+    key: "Enter",
+  });
 
 describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () => {
   it("a manager removes another member from the member list and the person is gone from the channel", async () => {
     const s = await setup(true);
-    fireEvent.click(await screen.findByRole("button", { name: /^Members, / }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Channel info" }),
+    );
     fireEvent.click(
       await screen.findByRole("button", { name: "Remove Other Person" }),
     );

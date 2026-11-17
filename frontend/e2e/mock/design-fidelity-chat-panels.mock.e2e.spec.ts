@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openInfoSection } from "./support/chat-info";
 import { toNewest } from "./support/chat-newest";
 
 /**
@@ -126,16 +127,16 @@ for (const mode of ["light", "dark"] as const) {
         expect(mainForm.w).toBeGreaterThanOrEqual(300);
       });
 
-      test("pins panel: header, summary strip, rows and room for the conversation", async ({
+      // The 56 high pins page header is gone: the pins are a section of the info panel (Chat-Info boards).
+      test("pins section: rows and room for the conversation", async ({
         page,
       }) => {
         await open(page, size.width, size.height, mode);
         await pinThree(page);
-        await page.getByRole("button", { name: "Ghim" }).first().click();
+        await openInfoSection(page, "pins");
         const pin = "[data-testid=chat-pin-item]";
         await expect(page.locator(pin)).toHaveCount(3);
         expect((await box(page, PANEL)).w).toBeCloseTo(size.panel, 0);
-        expect((await box(page, HEADER)).h).toBeCloseTo(size.header, 0);
         expect(await css(page, pin, "padding")).toBe("12px 16px");
         expect((await box(page, `${pin} [data-slot=avatar]`)).w).toBeCloseTo(
           18,
