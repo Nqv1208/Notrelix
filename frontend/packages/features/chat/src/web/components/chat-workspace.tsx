@@ -1036,7 +1036,14 @@ export function ChatWorkspace({
         copy={copy}
         onReturn={() => {
           setMinimizedCallId(null);
-          onOpenChannel(heldCall.call.spaceId);
+          // A one-to-one call lives in a conversation, which has its own route.
+          if (
+            conversationsQuery.data?.some(
+              (entry) => entry.id === heldCall.call.spaceId,
+            )
+          )
+            onOpenConversation?.(heldCall.call.spaceId);
+          else onOpenChannel(heldCall.call.spaceId);
         }}
         {...callPeople}
       />
