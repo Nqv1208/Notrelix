@@ -125,6 +125,7 @@ public sealed class ChatCallMediaWebhookIntegrationTests
             tracked.Leave(person, leftAt).Should().BeTrue();
             tracked.Join(person, rejoinedAt).Should().BeTrue();
         });
+        _host.Now = rejoinedAt.AddMinutes(1); // the media server's events reach us after the rejoin
         var before = await LoadAsync(call.Id);
         before.Participants.Single(p => p.PersonId == person).IsJoined.Should().BeTrue();
 
