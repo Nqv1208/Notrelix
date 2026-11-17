@@ -743,9 +743,6 @@ importers:
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.3.0)
-      react-virtuoso:
-        specifier: 4.18.20
-        version: 4.18.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       sonner:
         specifier: 'catalog:'
         version: 1.7.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -9311,12 +9308,6 @@ packages:
 
   react-transition-group@4.4.5:
     resolution: {integrity: sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==}
-    peerDependencies:
-      react: 19.3.0
-      react-dom: 19.3.0
-
-  react-virtuoso@4.18.20:
-    resolution: {integrity: sha512-2G/Hdi/QHRtJtzSZOkAwJFdUzBmhNIQCAmw6gLGUZTGbjVL6+TOBIFJOCnpm6xgWGBfrrMiZV5rJNkQ9gEgAdQ==}
     peerDependencies:
       react: 19.3.0
       react-dom: 19.3.0
@@ -18649,11 +18640,6 @@ snapshots:
       dom-helpers: 5.2.1
       loose-envify: 1.4.0
       prop-types: 15.8.1
-      react: 19.3.0
-      react-dom: 19.3.0(react@19.3.0)
-
-  react-virtuoso@4.18.20(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
-    dependencies:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
