@@ -91,15 +91,18 @@ export function callView(call: MockCallRecord) {
   };
 }
 
-function joinView(call: MockCallRecord, personId: string, issue: boolean) {
+function joinView(
+  state: MockChatState,
+  call: MockCallRecord,
+  personId: string,
+  issue: boolean,
+) {
   const token =
     issue && isJoined(call, personId)
       ? {
           url: "mock://sfu.invalid",
           token: `mock-token-${call.id}-${personId}`,
-          expiresAt: new Date(
-            Date.parse(call.startedAt) + 60_000,
-          ).toISOString(),
+          expiresAt: state.nowDate().toISOString(),
         }
       : null;
   return { call: callView(call), joinToken: token };
@@ -389,10 +392,10 @@ export function startCall(
   if (other && inOtherLiveCall(state, other)) {
     // The other person is in a call: stored as ended busy, no ring, no token.
     finish(state, space, call, "busy", userId);
-    return { status: 201, body: joinView(call, userId, false) };
+    return { status: 201, body: joinView(state, call, userId, false) };
   }
   announceCall(state, space, call, true);
-  return { status: 201, body: joinView(call, userId, true) };
+  return { status: 201, body: joinView(state, call, userId, true) };
 }
 
 export function answerCall(
@@ -407,7 +410,7 @@ export function answerCall(
   requireVersion(call, expectedVersion);
   requireMayTakePart(store, state, space, userId);
   if (call.state === "active" && isJoined(call, userId)) {
-    return { status: 200, body: joinView(call, userId, true) };
+    return { status: 200, body: joinView(state, call, userId, true) };
   }
   requireLive(call);
   if (call.initiatorId === userId) {
@@ -436,7 +439,7 @@ export function answerCall(
   call.answeredAt ??= now;
   call.version += 1;
   announceCall(state, space, call, false);
-  return { status: 200, body: joinView(call, userId, true) };
+  return { status: 200, body: joinView(state, call, userId, true) };
 }
 
 export function declineCall(
@@ -533,7 +536,7 @@ export function joinCall(
   requireVersion(call, expectedVersion);
   requireMayTakePart(store, state, space, userId);
   if (isJoined(call, userId) && call.state === "active") {
-    return { status: 200, body: joinView(call, userId, true) };
+    return { status: 200, body: joinView(state, call, userId, true) };
   }
   requireLive(call);
   if (space.kind === "direct" || call.state !== "active") {
@@ -553,7 +556,7 @@ export function joinCall(
   seat(call, userId, state.stampWrite());
   call.version += 1;
   announceCall(state, space, call, false);
-  return { status: 200, body: joinView(call, userId, true) };
+  return { status: 200, body: joinView(state, call, userId, true) };
 }
 
 export function leaveCall(

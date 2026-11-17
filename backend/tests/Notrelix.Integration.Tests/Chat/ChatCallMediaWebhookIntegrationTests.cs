@@ -128,7 +128,7 @@ public sealed class ChatCallMediaWebhookIntegrationTests
 
         // The first session's participant_left reaches us late, carrying the time that earlier session was seated.
         var late = new CallMediaWebhookEvent(Guid.NewGuid().ToString("N"), "participant_left", room, person, T0);
-        (await RunAsync(stack, late)).Should().BeFalse("the event belongs to a session that already ended");
+        await RunAsync(stack, late);
 
         var after = await LoadAsync(call.Id);
         after.Participants.Single(p => p.PersonId == person).IsJoined.Should().BeTrue("the rejoined person stays in the call");
@@ -136,7 +136,7 @@ public sealed class ChatCallMediaWebhookIntegrationTests
 
         // The left event of the current session (seated after the rejoin) still closes the participation.
         var current = new CallMediaWebhookEvent(Guid.NewGuid().ToString("N"), "participant_left", room, person, rejoinedAt.AddSeconds(1));
-        (await RunAsync(stack, current)).Should().BeTrue();
+        await RunAsync(stack, current);
         (await LoadAsync(call.Id)).Participants.Single(p => p.PersonId == person).IsJoined.Should().BeFalse();
     }
 

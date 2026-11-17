@@ -81,7 +81,7 @@ async function pair(browser: Browser) {
   // Both read the conversation, so the channel stream carries every call frame to both pages.
   for (const { page } of [a, b]) {
     await page.goto(`${base}/chat/dm/${dm}`);
-    await expect(page.getByRole("log")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   }
   const done = async () => {
     await a.context.close();

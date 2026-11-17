@@ -37,16 +37,16 @@ async function openDm(page: Page, mode: "light" | "dark" = "light") {
     }
   }, mode);
   await page.goto(`/workspaces/${WORKSPACE}/chat`);
-  await expect(page.getByRole("log")).toBeVisible();
-  await page
+  const newMessage = page
     .getByRole("button", { name: /^(New message|Tin nhắn mới)$/ })
-    .first()
-    .click();
+    .first();
+  await expect(newMessage).toBeVisible();
+  await newMessage.click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("checkbox").nth(0).click();
   await dialog
     .getByRole("button", {
-      name: /^(Start conversation|Bắt đầu cuộc trò chuyện)$/,
+      name: /^(Start conversation|Bắt đầu trò chuyện)$/,
     })
     .click();
   await expect(page).toHaveURL(/\/chat\/dm\/[^/]+$/);
