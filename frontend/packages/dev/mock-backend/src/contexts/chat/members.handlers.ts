@@ -172,7 +172,8 @@ export const membersOperations = [
       return guarded(async () => {
         const state = store.chat;
         const caller = callerIn(store, params.workspaceId);
-        if (body?.role !== "manager" && body?.role !== "member")
+        const role = (body as { role?: unknown } | undefined)?.role;
+        if (role !== "manager" && role !== "member")
           validationProblem("role must be manager or member.");
         const space = liveChannel(state, params.workspaceId, params.channelId);
         requireVisible(state, space, caller);
@@ -180,7 +181,7 @@ export const membersOperations = [
         if (space.archivedAt !== null) archivedProblem();
         const member = state.activeMembershipOf(space.id, params.userId);
         if (!member) notFoundProblem();
-        if (member.role === "manager" && body.role === "member") {
+        if (member.role === "manager" && role === "member") {
           const managers = state
             .membershipsOfSpace(space.id)
             .filter(
@@ -188,7 +189,7 @@ export const membersOperations = [
             ).length;
           if (managers <= 1) fail422LastManager();
         }
-        member.role = body.role;
+        member.role = role;
         return { status: 204 };
       });
     },

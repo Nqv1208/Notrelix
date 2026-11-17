@@ -37,6 +37,14 @@ public class SetChannelMemberRoleCommandHandler(
             throw new NotFoundException(nameof(Domain.Chat.Spaces.Space), request.ChannelId);
 
         var role = SpaceWire.MembershipRoleFromWire(request.Role);
+        // Only an active, non-Guest Workspace member can manage a channel (CHT-004): the stricter answer where nothing says otherwise.
+        if (role == MembershipRole.Manager)
+        {
+            var target = await members.FindAsync(request.WorkspaceId, request.UserId, cancellationToken);
+            if (target is not { IsActive: true } || ChannelAccess.IsGuest(target))
+                throw new ForbiddenException("Only an active, non-Guest Workspace member can be a channel manager.");
+        }
+
         if (space.SetMemberRole(request.UserId, role))
             await audit.MemberRoleChangedAsync(space, request.UserId, request.Role, cancellationToken);
         return Result.Success();

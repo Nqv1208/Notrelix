@@ -361,6 +361,49 @@ public class ChannelHandlerTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
+    [Fact]
+    public async Task SetChannelMemberRole_AGuestCannotBeMadeAManager_AndNothingChanges()
+    {
+        var general = PublicChannel();
+        general.AddMember(_guest, MembershipRole.Member, Now);
+
+        var act = () => RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _guest, "manager"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+        general.IsActiveManager(_guest).Should().BeFalse();
+        VerifyAudit(ChatAuditFacts.MemberRoleChanged, Times.Never());
+    }
+
+    [Fact]
+    public async Task SetChannelMemberRole_AnInactiveWorkspaceMemberCannotBeMadeAManager()
+    {
+        var general = PublicChannel();
+        general.AddMember(_member, MembershipRole.Member, Now);
+        _members.Setup(m => m.FindAsync(_workspaceId, _member, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceMemberFact(_member, "Member", false));
+
+        var act = () => RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _member, "manager"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+        general.IsActiveManager(_member).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ARemainingManagerRoleHeldByAGuestGivesNoManagerRights()
+    {
+        var general = PublicChannel();
+        general.AddMember(_guest, MembershipRole.Manager, Now);
+        AsCaller(_guest);
+
+        var act = () => UpdateHandler().Handle(
+            new UpdateChannelCommand(_workspaceId, general.Id, "renamed", null, general.Version), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+        general.Name.Should().Be("general");
+    }
+
     // ── Channel permission overrides (UC-CHT-H01) ─────────────────────────────
 
     [Fact]
