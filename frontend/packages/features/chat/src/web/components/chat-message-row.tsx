@@ -179,8 +179,7 @@ const LONG_PRESS_MS = 450;
 const LONG_PRESS_SLOP_PX = 10;
 
 /** The avatar column of someone else's messages; rows without the avatar keep the gutter so the bubbles line up. */
-const GUTTER =
-  "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[34px]";
+const GUTTER = "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-3";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
 function ChatMessageRowBase({
@@ -303,6 +302,9 @@ function ChatMessageRowBase({
       : 0;
   const shape = bubbleShape(isOwn, continued, groupEnd);
   const align = isOwn ? "end" : "start";
+  const showReactions = Boolean(
+    live && hooks && workspaceId && authorName && reactions.length > 0,
+  );
 
   function activate() {
     if (!showToolbar) return;
@@ -590,6 +592,8 @@ function ChatMessageRowBase({
           className={cn(
             "flex max-w-full items-center gap-1",
             isOwn ? "flex-row-reverse" : "flex-row",
+            // The reaction pill hangs 10 px below the bubble: reserve that overhang (plus 2 for its ring), no more.
+            showReactions && "mb-3",
           )}
         >
           <div
@@ -598,6 +602,17 @@ function ChatMessageRowBase({
             title={fullTime}
           >
             {bubble}
+            {showReactions && hooks && workspaceId && authorName ? (
+              <ReactionChips
+                messageId={message.id}
+                workspaceId={workspaceId}
+                reactions={reactions}
+                hooks={hooks}
+                authorName={authorName}
+                copy={copy}
+                align={align}
+              />
+            ) : null}
             {showToolbar ? (
               <MessageActionBar
                 copy={copy}
@@ -652,18 +667,6 @@ function ChatMessageRowBase({
             readOnly={attachmentsReadOnly}
             copy={copy}
             align={align}
-          />
-        ) : null}
-        {live && hooks && workspaceId && authorName ? (
-          <ReactionChips
-            messageId={message.id}
-            workspaceId={workspaceId}
-            reactions={reactions}
-            hooks={hooks}
-            authorName={authorName}
-            copy={copy}
-            align={align}
-            onToggle={(emoji, add) => onReact?.(message, emoji, add)}
           />
         ) : null}
         {threadCount > 0 && onOpenThread ? (
