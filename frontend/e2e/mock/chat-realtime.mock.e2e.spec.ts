@@ -55,7 +55,11 @@ async function reveal(page: Page, text: string) {
     .poll(
       async () => {
         if (await log.getByText(text).isVisible()) return true;
-        if (await jump.isVisible()) await jump.click();
+        if (await jump.isVisible()) {
+          await jump.click();
+          // The glide to the end takes a moment: a second click while it runs restarts it.
+          await page.waitForTimeout(800);
+        }
         return false;
       },
       { timeout: 10_000 },
