@@ -45,16 +45,13 @@ async function person(browser: Browser, user: Parameters<typeof signIn>[1]) {
 
 const card = (page: Page) => page.getByTestId("chat-call-card");
 
-const startCall = (page: Page, spaceId: string, kind: "voice" | "video") =>
-  page.evaluate(
-    ([s, k]) =>
-      window.dispatchEvent(
-        new CustomEvent("notrelix:chat-start-call", {
-          detail: { spaceId: s, kind: k },
-        }),
-      ),
-    [spaceId, kind] as const,
-  );
+const startCall = (page: Page, _space: string, kind: "voice" | "video") =>
+  page
+    .locator("main header")
+    .getByRole("button", {
+      name: kind === "voice" ? "Voice call" : "Video call",
+    })
+    .click();
 
 async function serious(page: Page) {
   const result = await new AxeBuilder({ page })

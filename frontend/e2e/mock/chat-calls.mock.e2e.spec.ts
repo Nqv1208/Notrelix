@@ -75,17 +75,14 @@ const hook = <A extends unknown[]>(page: Page, name: keyof Hook, ...args: A) =>
     [name, args] as const,
   );
 
-/** The header's voice and video buttons call this once they land; until then the page itself fires the same event. */
-const startCall = (page: Page, space: string, kind: "voice" | "video") =>
-  page.evaluate(
-    ([s, k]) =>
-      window.dispatchEvent(
-        new CustomEvent("notrelix:chat-start-call", {
-          detail: { spaceId: s, kind: k },
-        }),
-      ),
-    [space, kind] as const,
-  );
+/** The voice or video button of the conversation header. */
+const startCall = (page: Page, _space: string, kind: "voice" | "video") =>
+  page
+    .locator("main header")
+    .getByRole("button", {
+      name: kind === "voice" ? copy.panel.voiceCall : copy.panel.videoCall,
+    })
+    .click();
 
 async function expectNoViolations(page: Page, what: string) {
   const result = await new AxeBuilder({ page })

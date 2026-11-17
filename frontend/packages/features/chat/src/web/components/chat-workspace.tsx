@@ -179,10 +179,6 @@ export interface ChatWorkspaceProps {
    */
   readonly ephemeral?: ChatEphemeralPort;
   readonly timeZone?: string;
-  /** Calls are not shipped yet: the voice and video buttons (header and info panel) exist only when this is true. */
-  readonly callsEnabled?: boolean;
-  /** Starts a call from the open conversation or channel. */
-  readonly onStartCall?: (kind: ChatCallKind) => void;
 }
 
 /** The right-hand panel: one thread, or the info panel of the channel or conversation. */
@@ -309,8 +305,6 @@ export function ChatWorkspace({
   connection = "live",
   ephemeral,
   timeZone,
-  callsEnabled = false,
-  onStartCall,
 }: ChatWorkspaceProps) {
   const copy = useChatCopy();
   const { locale } = useLocale();
@@ -326,7 +320,7 @@ export function ChatWorkspace({
   // whether it is a channel or a conversation.
   const channelId = conversationId ?? channelProp;
   const ch = channelId ?? "";
-  // Calls: the dock below renders them. The header's voice and video buttons call `calls.start(ch, kind)` once they land.
+  // Calls: the dock below renders them; the header and info panel buttons start one in the open conversation.
   const calls = useChatCalls({ deps, workspaceId });
   const offersConversations = onOpenConversation !== undefined;
   const isGuest = viewerRole === "guest";
@@ -376,6 +370,15 @@ export function ChatWorkspace({
       knownConversations.current.get(conversationId) ??
       null)
     : null;
+  // One-to-one calls only: a direct conversation, for a person who is not a Guest, until the server says calls are off.
+  const callsEnabled =
+    calls.enabled &&
+    !isGuest &&
+    conversation?.kind === "direct" &&
+    channelId !== null;
+  const onStartCall = (kind: ChatCallKind) => {
+    if (channelId) calls.start(channelId, kind);
+  };
 
   const timeline = useChannelTimeline({
     hooks,

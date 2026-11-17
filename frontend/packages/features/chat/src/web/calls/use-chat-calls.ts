@@ -510,22 +510,6 @@ export function useChatCalls({
     localEl.current = el;
   }, []);
 
-  // The extension point of the header's voice and video buttons (and of anything else that starts a call for the open space).
-  useEffect(() => {
-    const onStart = (event: Event) => {
-      const detail = (event as CustomEvent<{ spaceId?: string; kind?: string }>)
-        .detail;
-      if (
-        detail?.spaceId &&
-        (detail.kind === "voice" || detail.kind === "video")
-      )
-        start(detail.spaceId, detail.kind);
-    };
-    window.addEventListener("notrelix:chat-start-call", onStart);
-    return () =>
-      window.removeEventListener("notrelix:chat-start-call", onStart);
-  }, [start]);
-
   return {
     enabled: !disabled,
     current,
