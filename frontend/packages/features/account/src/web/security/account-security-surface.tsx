@@ -2,7 +2,6 @@ import * as React from "react";
 import {
   KeyRound,
   Laptop,
-  Link2,
   Lock,
   Smartphone,
   Tablet,
@@ -165,12 +164,6 @@ export interface AccountSecuritySurfaceProps {
   readonly onSubmitPassword?: (password: string) => void;
   /** Leaves for the provider to confirm there (the step's `factor` is `provider`). */
   readonly onStartProviderStepUp?: (provider: string) => void;
-  /** Why a connect or disconnect did not happen (a sentence, too long for the toast); `null` = none. */
-  readonly providerProblem?: string | null;
-  /** Starts connecting a provider (the proof comes first); absent = the page cannot link here. */
-  readonly onLinkProvider?: (provider: string) => void;
-  /** Starts disconnecting a provider (the proof comes first). */
-  readonly onUnlinkProvider?: (provider: string) => void;
   readonly onCloseFlow?: () => void;
   /** Signs this device out after the confirmation. */
   readonly onConfirmSignOutThis?: () => void;
@@ -225,9 +218,6 @@ function Icon({ icon: Glyph }: { icon: LucideIcon }) {
     </span>
   );
 }
-
-/** The sign-in providers a person can connect. */
-const PROVIDERS = ["Google", "Microsoft"] as const;
 
 function Block({
   titleId,
@@ -632,9 +622,6 @@ function SecurityBody({
   onSubmitCode,
   onSubmitPassword,
   onStartProviderStepUp,
-  onLinkProvider,
-  onUnlinkProvider,
-  providerProblem,
   onCloseFlow,
   onConfirmSignOutThis,
   onLoadMoreActivity,
@@ -648,7 +635,6 @@ function SecurityBody({
     password: React.useId(),
     twoFactor: React.useId(),
     sessions: React.useId(),
-    providers: React.useId(),
     others: React.useId(),
     othersText: React.useId(),
     activity: React.useId(),
@@ -737,82 +723,6 @@ function SecurityBody({
           }
         />
       </Block>
-
-      {onLinkProvider || (data.linkedProviders ?? []).length > 0 ? (
-        <Block
-          titleId={ids.providers}
-          title={copy.providers.title}
-          aside={null}
-        >
-          {PROVIDERS.map((provider) => {
-            const linked = (data.linkedProviders ?? []).some(
-              (name) => name.toLowerCase() === provider.toLowerCase(),
-            );
-            // The last way to sign in cannot go: the producer refuses it, and the page says so first.
-            const last =
-              linked &&
-              !(data.hasPassword ?? true) &&
-              (data.linkedProviders ?? []).length <= 1;
-            return (
-              <Row
-                key={provider}
-                icon={Link2}
-                title={
-                  <>
-                    {provider}
-                    {linked ? (
-                      <>
-                        {" "}
-                        <Tag tone="ok">{copy.providers.connected}</Tag>
-                      </>
-                    ) : null}
-                  </>
-                }
-                text={
-                  last
-                    ? copy.providers.lastMethod
-                    : linked
-                      ? copy.providers.connectedText
-                      : copy.providers.notConnectedText
-                }
-                control={
-                  linked ? (
-                    last ? null : (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label={`${copy.providers.disconnect} ${provider}`}
-                        onClick={() => onUnlinkProvider?.(provider)}
-                        className={cn(LINK_BUTTON_DANGER, FOCUS)}
-                      >
-                        {copy.providers.disconnect}
-                      </button>
-                    )
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-label={`${copy.providers.connect} ${provider}`}
-                      onClick={() => onLinkProvider?.(provider)}
-                      className={cn(BTN_SM, FOCUS)}
-                    >
-                      {copy.providers.connect}
-                    </button>
-                  )
-                }
-              />
-            );
-          })}
-          {providerProblem ? (
-            <p
-              role="alert"
-              className="m-0 border-t border-line px-4 py-[11px] text-crumb text-danger-text"
-            >
-              {providerProblem}
-            </p>
-          ) : null}
-        </Block>
-      ) : null}
 
       <Block
         titleId={ids.twoFactor}

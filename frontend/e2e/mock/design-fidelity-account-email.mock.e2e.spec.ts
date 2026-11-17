@@ -184,6 +184,7 @@ for (const size of SIZES)
       }) => {
         await open(page, dark);
         const cardBefore = await box(page.locator("[data-f=card]"));
+        const headBefore = await box(page.locator("[data-f=ph]"));
         await page.getByLabel("Email mới").fill("moi@example.com");
         await page
           .getByRole("button", { name: "Gửi liên kết xác nhận" })
@@ -193,10 +194,15 @@ for (const size of SIZES)
         const notice = page.locator("[data-f=ban]");
         await expect(notice).toBeVisible();
         await page.waitForTimeout(300);
+        // The step-up field took focus and may have scrolled the page: measure from the top again.
+        await page.evaluate(() => window.scrollTo(0, 0));
         const ban = await box(notice);
         const card = await box(page.locator("[data-f=card]"));
         // The notice takes the card's old place, the card follows 16 px under it.
-        expect(Math.abs(ban.y - cardBefore.y)).toBeLessThanOrEqual(1);
+        const headAfter = await box(page.locator("[data-f=ph]"));
+        expect(
+          Math.abs(ban.y - headAfter.y - (cardBefore.y - headBefore.y)),
+        ).toBeLessThanOrEqual(1);
         expect(
           Math.abs(card.y - (ban.y + ban.height) - 16),
         ).toBeLessThanOrEqual(1);

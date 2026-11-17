@@ -192,13 +192,23 @@ export const en = {
   },
   providers: {
     title: "Connected accounts",
+    pageText:
+      "Connect Google or Microsoft to sign in faster. You always need at least one way to sign in.",
+    methodsTitle: "How you sign in",
+    passwordTitle: "Password",
+    passwordSet: "Set",
+    passwordNone: "Not set",
+    lastTitle: "{{provider}} is your only way to sign in",
     connected: "Connected",
     connect: "Connect",
     disconnect: "Disconnect",
     connectedText: "You can sign in to Notrelix with this account.",
     notConnectedText: "Not connected. Connect it to sign in with one click.",
+    pageTextLast:
+      "Connect an account to sign in faster. You always need at least one way to sign in.",
+    setPassword: "Set a password",
     lastMethod:
-      "This is your only way to sign in. Set a password or connect another account first.",
+      "Set a password before you disconnect it, or you will not be able to sign in again.",
     linked: "{{provider}} is connected.",
     already: "{{provider}} was already connected.",
     collision:
@@ -301,8 +311,8 @@ export const vi: AccountSecurityCopy = {
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",
     othersTitle: "Xác nhận để đăng xuất mọi thiết bị khác",
-    linkTitle: "Xác nhận để kết nối {{provider}}",
-    unlinkTitle: "Xác nhận để ngắt kết nối {{provider}}",
+    linkTitle: "Xác nhận để liên kết {{provider}}",
+    unlinkTitle: "Xác nhận để gỡ liên kết {{provider}}",
     setPasswordTitle: "Xác nhận để đặt mật khẩu",
     unlinkText:
       "Bạn sẽ không còn đăng nhập được bằng {{provider}}. Các cách đăng nhập khác vẫn dùng được.",
@@ -396,8 +406,8 @@ export const vi: AccountSecurityCopy = {
       MfaDisabled: "Tắt xác thực hai lớp",
       SessionRevoked: "Một thiết bị đã bị đăng xuất",
       OtherSessionsRevoked: "Các thiết bị khác đã bị đăng xuất",
-      ProviderLinked: "Đã kết nối một tài khoản đăng nhập",
-      ProviderUnlinked: "Đã ngắt kết nối một tài khoản đăng nhập",
+      ProviderLinked: "Đã liên kết một tài khoản đăng nhập",
+      ProviderUnlinked: "Đã gỡ liên kết một tài khoản đăng nhập",
     },
   },
   sessions: {
@@ -414,22 +424,32 @@ export const vi: AccountSecurityCopy = {
     gone: "Thiết bị đó đã được đăng xuất từ trước.",
   },
   providers: {
-    title: "Tài khoản đã kết nối",
-    connected: "Đã kết nối",
-    connect: "Kết nối",
-    disconnect: "Ngắt kết nối",
-    connectedText: "Bạn có thể đăng nhập Notrelix bằng tài khoản này.",
-    notConnectedText: "Chưa kết nối. Kết nối để đăng nhập chỉ với một lần bấm.",
+    title: "Tài khoản liên kết",
+    pageText:
+      "Liên kết để đăng nhập nhanh bằng tài khoản Google hoặc Microsoft. Bạn luôn cần ít nhất một cách đăng nhập.",
+    methodsTitle: "Cách đăng nhập của bạn",
+    passwordTitle: "Mật khẩu",
+    passwordSet: "Đã đặt",
+    passwordNone: "Chưa đặt",
+    lastTitle: "{{provider}} là cách đăng nhập duy nhất của bạn",
+    connected: "Đã liên kết",
+    connect: "Liên kết",
+    disconnect: "Gỡ liên kết",
+    connectedText: "Dùng để đăng nhập Notrelix.",
+    notConnectedText: "Chưa liên kết",
+    pageTextLast:
+      "Liên kết để đăng nhập nhanh. Bạn luôn cần ít nhất một cách đăng nhập.",
+    setPassword: "Đặt mật khẩu",
     lastMethod:
-      "Đây là cách đăng nhập duy nhất của bạn. Hãy đặt mật khẩu hoặc kết nối tài khoản khác trước.",
-    linked: "Đã kết nối {{provider}}.",
-    already: "{{provider}} đã được kết nối từ trước.",
+      "Đặt mật khẩu trước khi gỡ liên kết, nếu không bạn sẽ không đăng nhập lại được.",
+    linked: "Đã liên kết {{provider}}.",
+    already: "{{provider}} đã được liên kết từ trước.",
     collision:
       "Tài khoản {{provider}} đó đang dùng cho một tài khoản Notrelix khác. Hãy dùng tài khoản {{provider}} khác.",
-    failed: "Không kết nối được {{provider}}. Hãy thử lại.",
-    unlinked: "Đã ngắt kết nối {{provider}}.",
+    failed: "Không liên kết được {{provider}}. Hãy thử lại.",
+    unlinked: "Đã gỡ liên kết {{provider}}.",
     unlinkRefused:
-      "{{provider}} là cách đăng nhập duy nhất của bạn nên không thể ngắt kết nối.",
+      "{{provider}} là cách đăng nhập duy nhất của bạn nên không thể gỡ liên kết.",
   },
   others: {
     title: "Đăng xuất mọi thiết bị khác",

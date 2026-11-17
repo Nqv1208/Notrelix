@@ -53,6 +53,7 @@ function Frame() {
       security: link,
       notifications: link,
       email: link,
+      providers: link,
       tokens: link,
       workspaces: link,
     };

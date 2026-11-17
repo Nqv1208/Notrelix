@@ -146,9 +146,10 @@ for (const view of VIEWS) {
       await expect(
         page.getByRole("button", { name: "Đổi mật khẩu" }),
       ).toBeVisible();
-      // With a password, the provider is no longer the only way in.
+      // With a password, the provider is no longer the only way in (the connected accounts page).
+      await goTo(page, "/workspaces/mock-workspace-primary/account/providers");
       await expect(
-        page.getByRole("button", { name: "Ngắt kết nối Google" }),
+        page.getByRole("button", { name: "Gỡ liên kết Google" }),
       ).toBeVisible();
       await frame(page, `password-done-${tag}`, view.width);
     });

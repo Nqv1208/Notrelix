@@ -93,7 +93,7 @@ test("The frame names the member and moves between the six pages", async ({
     page.getByRole("heading", { level: 1, name: "Tài khoản của bạn" }),
   ).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Cài đặt tài khoản" });
-  await expect(nav.getByRole("link")).toHaveCount(7);
+  await expect(nav.getByRole("link")).toHaveCount(8);
   await expect(nav.getByRole("link", { name: "Hồ sơ" })).toHaveAttribute(
     "aria-current",
     "page",

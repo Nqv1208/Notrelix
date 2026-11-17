@@ -10,6 +10,7 @@ export const en = {
   security: "Security",
   notifications: "Notifications",
   email: "Sign-in email",
+  providers: "Connected accounts",
   tokens: "API tokens",
   workspaces: "Your workspaces",
 };
@@ -24,6 +25,7 @@ export const vi: AccountNavCopy = {
   security: "Bảo mật",
   notifications: "Thông báo",
   email: "Email đăng nhập",
+  providers: "Tài khoản liên kết",
   tokens: "Token API",
   workspaces: "Workspace của bạn",
 };
