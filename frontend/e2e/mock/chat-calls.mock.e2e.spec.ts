@@ -84,7 +84,11 @@ const startCall = (page: Page, _space: string, kind: "voice" | "video") =>
     })
     .click();
 
+// The card fades in for 200 ms; axe and the screenshots wait for it to settle.
+const settle = (page: Page) => page.waitForTimeout(450);
+
 async function expectNoViolations(page: Page, what: string) {
+  await settle(page);
   const result = await new AxeBuilder({ page })
     .include("[data-testid=chat-call-dock]")
     .analyze();
@@ -92,6 +96,7 @@ async function expectNoViolations(page: Page, what: string) {
 }
 
 async function shot(page: Page, name: string) {
+  await settle(page);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png` });
 }
 
@@ -141,7 +146,9 @@ test("a video call shows the stage and the camera control; the other person decl
   const id = (await hook(page, "live", space)) as string;
   await hook(page, "act", id, peer, "answer");
   await expect(card(page)).toHaveAttribute("data-phase", "connected");
-  await expect(page.getByTestId("chat-call-remote-tile")).toBeVisible();
+  // The other person's camera is on (a video call starts with it), so their picture shows and no avatar tile does.
+  await expect(card(page).locator("video").first()).toBeAttached();
+  await expect(page.getByTestId("chat-call-remote-tile")).toHaveCount(0);
   await expect(
     card(page).getByRole("button", { name: copy.calls.cameraOff }),
   ).toBeVisible();
