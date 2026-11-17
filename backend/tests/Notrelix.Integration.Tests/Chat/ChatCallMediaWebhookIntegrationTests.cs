@@ -81,6 +81,9 @@ public sealed class ChatCallMediaWebhookIntegrationTests
     private Task<Call> LoadAsync(Guid callId) =>
         _host.ReadAsync(c => c.ChatCalls.AsNoTracking().Include(x => x.Participants).SingleAsync(x => x.Id == callId));
 
+    private Task<int> ClaimsAsync() =>
+        _host.ReadAsync(c => c.IdempotencyRecords.CountAsync(r => r.Operation == ChatCallMediaWebhookRunner.Operation));
+
     private Task<int> CallMessagesAsync(Call call) =>
         _host.ReadAsync(c => c.ChatMessages.CountAsync(m => m.SpaceId == call.SpaceId && m.CallId == call.Id));
 
@@ -91,6 +94,7 @@ public sealed class ChatCallMediaWebhookIntegrationTests
         var (call, room) = await SeedActiveCallAsync(stack, 2);
         var leaving = call.Participants.First(p => p.PersonId != stack.OwnerId).PersonId;
         var before = (await LoadAsync(call.Id)).Version;
+        var claimsBefore = await ClaimsAsync();
         var left = new CallMediaWebhookEvent(Guid.NewGuid().ToString("N"), "participant_left", room, leaving);
 
         (await RunAsync(stack, left)).Should().BeTrue("the first delivery is applied");
@@ -101,8 +105,7 @@ public sealed class ChatCallMediaWebhookIntegrationTests
 
         (await RunAsync(stack, left)).Should().BeFalse("the replay finds the event id already done");
         (await LoadAsync(call.Id)).Version.Should().Be(before + 1, "a replay changes nothing");
-        (await _host.ReadAsync(c => c.IdempotencyRecords.CountAsync(r => r.Operation == ChatCallMediaWebhookRunner.Operation)))
-            .Should().Be(1);
+        (await ClaimsAsync()).Should().Be(claimsBefore + 1, "the event id is claimed once, however often it is delivered");
     }
 
     [Fact]
