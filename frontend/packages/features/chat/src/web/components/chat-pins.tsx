@@ -75,7 +75,10 @@ export interface PinsPanelProps {
   readonly authorName: (userId: string) => string;
   /** The channel as the header names it, such as "# erp-rollout". */
   readonly spaceLabel: string;
-  readonly onClose: () => void;
+  /** Needed only when the panel draws its own header. */
+  readonly onClose?: () => void;
+  /** Inside a section of the info panel: no header, the section names it. */
+  readonly embedded?: boolean;
   readonly canUnpin: (pin: ChatPin) => boolean;
   /** Asks to unpin; the workspace confirms first. */
   readonly onUnpin: (message: ChatMessage) => void;
@@ -94,6 +97,7 @@ export function PinsPanel({
   authorName,
   spaceLabel,
   onClose,
+  embedded = false,
   canUnpin,
   onUnpin,
   onOpenMessage,
@@ -108,16 +112,18 @@ export function PinsPanel({
       className="flex min-h-0 flex-1 flex-col"
       data-testid="chat-pins-panel"
     >
-      <ChatPanelHeader
-        title={copy.pins.title}
-        subtitle={fillCopy(copy.pins.subtitle, {
-          space: spaceLabel,
-          count: String(items.length),
-        })}
-        closeLabel={copy.pins.close}
-        onClose={onClose}
-      />
-      {items.length > 0 ? (
+      {embedded ? null : (
+        <ChatPanelHeader
+          title={copy.pins.title}
+          subtitle={fillCopy(copy.pins.subtitle, {
+            space: spaceLabel,
+            count: String(items.length),
+          })}
+          closeLabel={copy.pins.close}
+          onClose={onClose ?? (() => undefined)}
+        />
+      )}
+      {items.length > 0 && !embedded ? (
         <p className="border-b border-border px-4 py-2.5 text-compact text-muted-foreground max-md:hidden">
           {fillCopy(copy.pins.summary, { count: String(items.length) })}
         </p>

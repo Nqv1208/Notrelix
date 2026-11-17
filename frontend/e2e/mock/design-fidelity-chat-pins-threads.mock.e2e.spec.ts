@@ -1,3 +1,4 @@
+import { openInfoSection } from "./support/chat-info";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { toNewest } from "./support/chat-newest";
 import { vi as copy } from "../../packages/features/chat/src/web/components/chat.copy";
@@ -70,11 +71,7 @@ const pinNthMessage = (page: Page, index: number) =>
   pickFromRow(page, index, copy.toolbar.pin);
 
 async function openPinsPanel(page: Page) {
-  await page
-    .locator("main header")
-    .getByRole("button", { name: new RegExp(`^${copy.pins.tab}$`) })
-    .click();
-  await expect(page.getByTestId("chat-pins-panel")).toBeVisible();
+  await openInfoSection(page, "pins");
 }
 
 /** The box of an element relative to a surface. */

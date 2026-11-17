@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { toNewest } from "./support/chat-newest";
+import { en as copy } from "../../packages/features/chat/src/web/components/chat.copy";
 
 /**
  * The Chat channel view against the owner canvas `Chat-Main` (1440), `Chat-Main-T` (1024) and `Chat-Main-M` (390),
@@ -116,18 +117,86 @@ for (const mode of ["light", "dark"] as const) {
 
         const head = await box(page, "main header");
         expect(head.h).toBeCloseTo(size.phone ? 56 : 64, 0);
-        // The Pins and Following toggles live in the header: no row of their own under it.
-        const pins = page
-          .locator("main header")
-          .getByRole("button", { name: /^Pins$/ });
-        await expect(pins).toHaveCount(1);
+        // The header actions are the Chat-Info buttons: search, info and "...", 32 square, 4 apart, 20 from the right
+        // (the same numbers at 1440 and 1024; the phone keeps the 56 high header and the same order).
+        const names = [
+          copy.search.open,
+          copy.panel.channelInfo,
+          copy.panel.more,
+        ];
+        const boxes = [];
+        for (const name of names) {
+          const b = await page
+            .locator("main header")
+            .getByRole("button", { name, exact: true })
+            .boundingBox();
+          expect(b, name).not.toBeNull();
+          boxes.push(b!);
+        }
+        for (const b of boxes) {
+          expect(b.width).toBeCloseTo(32, 0);
+          expect(b.height).toBeCloseTo(32, 0);
+          // The header's 1 px bottom border is inside its box: the button centre sits in the 63 above it.
+          expect(b.y - head.y).toBeCloseTo((head.h - 1 - 32) / 2, 0);
+        }
+        expect(boxes[1]!.x - (boxes[0]!.x + 32)).toBeCloseTo(4, 0);
+        expect(boxes[2]!.x - (boxes[1]!.x + 32)).toBeCloseTo(4, 0);
+        expect(head.x + head.w - (boxes[2]!.x + 32)).toBeCloseTo(
+          size.phone ? 12 : 20,
+          0,
+        );
+        // The old Pins and Following toggles are gone from the header; the calls stay hidden while the flag is off.
         await expect(
-          page.locator("main header").getByRole("button", {
-            name: /^Following$/,
-          }),
-        ).toHaveCount(1);
+          page.locator("main header").getByRole("button", { name: /^Pins$/ }),
+        ).toHaveCount(0);
+        await expect(
+          page
+            .locator("main header")
+            .getByRole("button", { name: copy.panel.voiceCall }),
+        ).toHaveCount(0);
         const list = await box(page, "[data-testid=chat-message-list]");
         expect(list.y - (head.y + head.h)).toBeLessThanOrEqual(1);
+      });
+
+      test("every function of the old header buttons is still reachable: pins, members, notifications", async ({
+        page,
+      }) => {
+        const header = page.locator("main header");
+        const more = header.getByRole("button", {
+          name: copy.panel.more,
+          exact: true,
+        });
+        // Pins: the "..." menu opens the info panel at the Pinned section, expanded.
+        await more.click();
+        await page.getByRole("menuitem", { name: copy.pins.title }).click();
+        await expect(page.getByTestId("chat-pins-panel")).toBeVisible();
+        await expect(
+          page.locator("[data-section=pins] h3 > button").first(),
+        ).toHaveAttribute("aria-expanded", "true");
+        // Members: the same panel lists them in its Members section (they were a header popover).
+        const members = page.locator("[data-section=members]");
+        const toggle = members.locator("h3 > button");
+        if ((await toggle.getAttribute("aria-expanded")) !== "true")
+          await toggle.click();
+        expect(await members.locator("li").count()).toBeGreaterThan(0);
+        // Notifications: the level radios sit in the "..." menu (the old bell); choosing one closes the menu (the mock does not echo the level back, so the stored value is not asserted here); the panel
+        // carries the Mute quick action. On a phone the panel is a page, so close it to reach the header again.
+        const info = page.locator("[data-testid=chat-info-panel]");
+        await expect(
+          info.getByRole("button", { name: copy.panel.mute }),
+        ).toBeVisible();
+        await info.getByRole("button", { name: copy.pins.close }).click();
+        await expect(info).toHaveCount(0);
+        await more.click();
+        await expect(page.getByText(copy.level.label)).toBeVisible();
+        await expect(page.getByRole("menuitemradio")).toHaveCount(3);
+        await expect(
+          page.getByRole("menuitemradio", { name: copy.level.all }),
+        ).toHaveAttribute("aria-checked", "true");
+        await page
+          .getByRole("menuitemradio", { name: copy.level.mentions })
+          .click();
+        await expect(page.getByRole("menu")).toHaveCount(0);
       });
 
       test("composer is a 52 pill as wide as the column content and the chat sidebar has no account footer", async ({

@@ -739,9 +739,16 @@ export const en = {
   },
   panel: {
     label: "Channel panels",
-    // Short names for the tab strip; the title of each tab carries the full name.
-    tabGroup: "Details",
-    tabFollowing: "Following",
+    channelInfo: "Channel info",
+    voiceCall: "Voice call",
+    videoCall: "Video call",
+    searchShort: "Search",
+    mute: "Mute",
+    unmute: "Unmute",
+    more: "More",
+    publicSubtitle: "{{count}} members · Public",
+    privateSubtitle: "{{count}} members · Private",
+    sectionMentions: "Mentions of me",
   },
   mentions: {
     listLabel: "Mention suggestions",
@@ -1639,8 +1646,16 @@ export const vi: ChatCopy = {
   },
   panel: {
     label: "Bảng của kênh",
-    tabGroup: "Thông tin",
-    tabFollowing: "Theo dõi",
+    channelInfo: "Thông tin kênh",
+    voiceCall: "Gọi thoại",
+    videoCall: "Gọi video",
+    searchShort: "Tìm",
+    mute: "Tắt thông báo",
+    unmute: "Bật thông báo",
+    more: "Thêm",
+    publicSubtitle: "{{count}} thành viên · Công khai",
+    privateSubtitle: "{{count}} thành viên · Riêng tư",
+    sectionMentions: "Nhắc đến tôi",
   },
   mentions: {
     listLabel: "Gợi ý nhắc đến",
