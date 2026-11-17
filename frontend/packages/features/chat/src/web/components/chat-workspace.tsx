@@ -320,6 +320,7 @@ export function ChatWorkspace({
   const [linkError, setLinkError] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchSeed, setSearchSeed] = useState("");
 
   // ─── Server state ─────────────────────────────────────────────────────────
   const channels = hooks.useChannels(ws);
@@ -533,7 +534,7 @@ export function ChatWorkspace({
   // Typing and presence: the open space plus the direct conversations in the list are listened to; the
   // stores live in memory only and expire on their own.
   const conversationIds = (conversationsQuery.data ?? [])
-    .filter((entry) => !entry.isHidden && entry.kind === "direct")
+    .filter((entry) => !entry.isHidden)
     .slice(0, 30)
     .map((entry) => entry.id);
   const ephemeralStores = useChatEphemeral(
@@ -1218,6 +1219,15 @@ export function ChatWorkspace({
         unreadOf: (entry) =>
           unreadBySpace.get(entry.id)?.count ?? entry.unreadCount,
         presenceOf: ephemeral ? presenceOf : undefined,
+        // The open conversation shows its own typing bubble; the others show it on their sidebar row.
+        typingOf: ephemeral
+          ? (id) =>
+              id === (conversationId ?? channelId)
+                ? []
+                : ephemeralStores.typing
+                    .typingIn(id)
+                    .filter((who) => who !== viewerId)
+          : undefined,
         onSelect: (id) => {
           setListOpen(false);
           onOpenConversation?.(id);
@@ -1279,7 +1289,10 @@ export function ChatWorkspace({
       onOpenSettings={
         canManageWorkspace && !isGuest ? () => setAdminOpen(true) : undefined
       }
-      onSearch={() => setSearchOpen(true)}
+      onSearch={(query) => {
+        setSearchSeed(query);
+        setSearchOpen(true);
+      }}
       onMarkAllRead={() =>
         allReader.mutate(undefined, {
           // The unread counts stay as they were and the button stays usable for a retry.
@@ -1466,7 +1479,10 @@ export function ChatWorkspace({
                         onOpenList={openList}
                         onToggleDetails={() => togglePanel({ kind: "details" })}
                         onHide={() => handleVisibility(true)}
-                        onSearch={() => setSearchOpen(true)}
+                        onSearch={() => {
+                          setSearchSeed("");
+                          setSearchOpen(true);
+                        }}
                         actions={panelToggles}
                       />
                     ) : channel ? (
@@ -1525,7 +1541,10 @@ export function ChatWorkspace({
                             : undefined
                         }
                         onJoin={() => handleJoin(ch)}
-                        onSearch={() => setSearchOpen(true)}
+                        onSearch={() => {
+                          setSearchSeed("");
+                          setSearchOpen(true);
+                        }}
                         actions={panelToggles}
                         onSetLevel={handleLevel}
                       />
@@ -2137,7 +2156,11 @@ export function ChatWorkspace({
             ) : null}
             <ChatSearchPanel
               open={searchOpen}
-              onOpenChange={setSearchOpen}
+              onOpenChange={(next) => {
+                setSearchOpen(next);
+                if (!next) setSearchSeed("");
+              }}
+              initialQuery={searchSeed}
               hooks={hooks}
               workspaceId={ws}
               copy={copy}

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { RotateCw, SquarePen, Users } from "lucide-react";
 import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
 import {
@@ -7,7 +8,8 @@ import {
 import type { ChatConversation } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
-import { pluralCopy, systemTextOf } from "./use-chat-copy";
+import { fillCopy, pluralCopy, systemTextOf } from "./use-chat-copy";
+import { ChatTypingDots } from "./chat-typing-indicator";
 import type { ChatPresenceState } from "../../core/model/ephemeral-model";
 import { PresenceDot, presenceText } from "./chat-presence";
 
@@ -26,6 +28,8 @@ export interface ChatConversationListView {
   readonly unreadOf: (conversation: ChatConversation) => number;
   /** The presence of a person (the dot of a direct conversation). Without it no dot is shown. */
   readonly presenceOf?: (userId: string) => ChatPresenceState;
+  /** The people typing in a conversation now (never the caller); the row shows it in place of the preview. */
+  readonly typingOf?: (conversationId: string) => readonly string[];
   readonly onSelect: (conversationId: string) => void;
   /** Absent for a Guest: a Guest starts no conversation (UC-CHT-H02). */
   readonly onNewMessage?: () => void;
@@ -82,13 +86,80 @@ export function previewOf(
     : last.text;
 }
 
+/** "typing" in a direct conversation; "Name is typing" or "2 people are typing" in a group. */
+export function typingPreview(
+  conversation: ChatConversation,
+  ids: readonly string[],
+  nameOf: (userId: string) => string,
+  copy: ChatCopy,
+): string {
+  const text = copy.dm.sidebar;
+  if (ids.length === 0) return "";
+  if (conversation.kind !== "group") return text.typing;
+  return ids.length === 1
+    ? fillCopy(text.typingNamed, { name: nameOf(ids[0]!) })
+    : fillCopy(text.typingMany, { count: String(ids.length) });
+}
+
+/** A row that is a button in the list and an option while the search field drives it (focus stays in the field). */
+export interface RowOption {
+  readonly id: string;
+  readonly selected: boolean;
+}
+
+export function RowShell({
+  option,
+  className,
+  label,
+  active,
+  onPick,
+  children,
+}: {
+  readonly option?: RowOption;
+  readonly className: string;
+  readonly label: string;
+  readonly active: boolean;
+  readonly onPick: () => void;
+  readonly children: ReactNode;
+}) {
+  if (option) {
+    return (
+      <div
+        role="option"
+        id={option.id}
+        aria-selected={option.selected}
+        aria-label={label}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onPick}
+        className={cn(className, option.selected && "ring-2 ring-focus-ring")}
+      >
+        {children}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      aria-current={active ? "page" : undefined}
+      aria-label={label}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** The "Tin nhắn trực tiếp" section of the sidebar: one row per conversation, newest activity first. */
 export function ChatConversationSection({
   view,
   copy,
+  hideEmptyText = false,
 }: {
   readonly view: ChatConversationListView;
   readonly copy: ChatCopy;
+  /** Another section has rows, so this one leaves out its "none yet" line. */
+  readonly hideEmptyText?: boolean;
 }) {
   const now = new Date();
   return (
@@ -129,9 +200,11 @@ export function ChatConversationSection({
           </Button>
         </div>
       ) : view.conversations.length === 0 ? (
-        <p className="px-2 text-sm text-muted-foreground">
-          {copy.dm.sidebar.empty}
-        </p>
+        hideEmptyText ? null : (
+          <p className="px-2 text-sm text-muted-foreground">
+            {copy.dm.sidebar.empty}
+          </p>
+        )
       ) : (
         <ul className="flex flex-col gap-0.5">
           {view.conversations.map((conversation) => (
@@ -161,19 +234,24 @@ export function ChatConversationSection({
   );
 }
 
-function ConversationRow({
+export function ConversationRow({
   conversation,
   view,
   copy,
   now,
+  option,
 }: {
+  readonly option?: RowOption;
   readonly conversation: ChatConversation;
   readonly view: ChatConversationListView;
   readonly copy: ChatCopy;
   readonly now: Date;
 }) {
   const title = conversationTitle(conversation, view.viewerId, view.nameOf);
-  const preview = previewOf(conversation, view.viewerId, view.nameOf, copy);
+  const typingIds = view.typingOf?.(conversation.id) ?? [];
+  const typing = typingPreview(conversation, typingIds, view.nameOf, copy);
+  const preview =
+    typing || previewOf(conversation, view.viewerId, view.nameOf, copy);
   const active = conversation.id === view.activeId;
   const count = view.unreadOf(conversation);
   const muted = conversation.notificationLevel === "none";
@@ -195,6 +273,7 @@ function ConversationRow({
   const label = [
     `${conversation.kind === "group" ? copy.dm.sidebar.groupLabel : copy.dm.sidebar.directLabel}: ${title}`,
     presence ? presenceText(presence, copy) : null,
+    typing || null,
     badge
       ? pluralCopy(
           {
@@ -209,11 +288,11 @@ function ConversationRow({
     .join(", ");
 
   return (
-    <button
-      type="button"
-      onClick={() => view.onSelect(conversation.id)}
-      aria-current={active ? "page" : undefined}
-      aria-label={label}
+    <RowShell
+      option={option}
+      active={active}
+      label={label}
+      onPick={() => view.onSelect(conversation.id)}
       className={cn(
         "flex min-h-14 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none",
         active
@@ -264,9 +343,16 @@ function ConversationRow({
                 ? "font-semibold text-foreground"
                 : "text-muted-foreground",
             )}
-            title={preview || undefined}
+            title={typing || preview || undefined}
           >
-            {preview}
+            {typing ? (
+              <span className="inline-flex items-center gap-1.5">
+                {typing}
+                <ChatTypingDots />
+              </span>
+            ) : (
+              preview
+            )}
           </span>
           {badge ? (
             <span
@@ -278,7 +364,7 @@ function ConversationRow({
           ) : null}
         </span>
       </span>
-    </button>
+    </RowShell>
   );
 }
 
