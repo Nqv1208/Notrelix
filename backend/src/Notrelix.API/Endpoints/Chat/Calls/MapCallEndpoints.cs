@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Models;
 using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Calls.Commands.AnswerCall;
@@ -105,7 +106,7 @@ public static class MapCallEndpoints
         return app;
     }
 
-    private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender, IServiceScopeFactory scopes)
+    private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender, IRequestHandler<GetCallJoinTokenQuery, Result<CallJoinDto>> tokens, CancellationToken cancellationToken)
     {
         var started = await sender.Send(new StartCallCommand(workspaceId, spaceId, body.Kind));
         if (!started.Succeeded)
@@ -113,10 +114,9 @@ public static class MapCallEndpoints
 
         // The start is stored for idempotent replay and carries no media token; the starter's token is minted fresh here, for a first
         // start and for every replay, after the caller's access to the call is checked again.
-        // A request runs one command through the pipeline (its execution context resolves once), so the token query runs in a scope of
-        // its own; the caller's identity comes from the same HTTP request.
-        await using var scope = scopes.CreateAsyncScope();
-        var joined = await scope.ServiceProvider.GetRequiredService<ISender>().Send(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id));
+        // A request runs one command through the pipeline (its execution context resolves once), so the token query's handler runs
+        // directly: it repeats the call-access checks itself, and this request already passed the pipeline's permission check.
+        var joined = await tokens.Handle(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id), cancellationToken);
         return joined.ToCreatedResult();
     }
 
