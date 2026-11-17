@@ -1,13 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import {
-  ChevronLeft,
-  EyeOff,
-  Info,
-  LogOut,
-  Ban,
-  Search,
-  UserPlus,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronLeft, EyeOff, LogOut, Ban, UserPlus } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -18,6 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenuItem,
   cn,
 } from "@notrelix/ui-web";
 import {
@@ -32,7 +25,9 @@ import type { ChatPresenceState } from "../../core/model/ephemeral-model";
 import { PresenceDot, presenceText } from "./chat-presence";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { ChatPersonPicker, type PickablePerson } from "./chat-person-picker";
-import { fillCopy, pluralCopy } from "./use-chat-copy";
+import { fillCopy } from "./use-chat-copy";
+import { ChatHeaderActions, type ChatCallKind } from "./chat-header-actions";
+import type { ChatInfoSectionKey } from "./chat-info-panel";
 
 // ─── Header ─────────────────────────────────────────────────────────────────
 
@@ -50,8 +45,27 @@ export interface ChatConversationHeaderProps {
   readonly onHide: () => void;
   /** Opens the message search (UC-CHT-H07). */
   readonly onSearch?: () => void;
-  /** Panel toggles (Pins, Following) drawn in the header actions. */
-  readonly actions?: ReactNode;
+  readonly callsEnabled?: boolean;
+  readonly onStartCall?: (kind: ChatCallKind) => void;
+  readonly onOpenSection: (key: ChatInfoSectionKey) => void;
+}
+
+/** The status line under a conversation's name: the people of a group, or the presence of a 1-1 partner. */
+export function conversationSubtitle(
+  conversation: ChatConversation,
+  copy: ChatCopy,
+  presence: ChatPresenceState | undefined,
+): string {
+  if (conversation.kind === "group") {
+    return fillCopy(copy.dm.view.groupSubtitle, {
+      count: conversation.participants.length,
+    });
+  }
+  return presence === "online"
+    ? copy.dm.view.activeNow
+    : presence === "idle"
+      ? copy.presence.idle
+      : copy.dm.view.directSubtitle;
 }
 
 /** The header of an open conversation: who it is with, the details toggle and the hide action. */
@@ -67,23 +81,16 @@ export function ChatConversationHeader({
   onToggleDetails,
   onHide,
   onSearch,
-  actions,
+  callsEnabled,
+  onStartCall,
+  onOpenSection,
 }: ChatConversationHeaderProps) {
   const title = conversationTitle(conversation, viewerId, nameOf);
   const counterpart = directCounterpart(conversation, viewerId);
   const group = conversation.kind === "group";
   const presence =
     counterpart && !group ? presenceOf?.(counterpart) : undefined;
-  // The presence line of a 1-1 conversation: "Active now" or "Away" when the presence is known.
-  const subtitle = group
-    ? fillCopy(copy.dm.view.groupSubtitle, {
-        count: conversation.participants.length,
-      })
-    : presence === "online"
-      ? copy.dm.view.activeNow
-      : presence === "idle"
-        ? copy.presence.idle
-        : copy.dm.view.directSubtitle;
+  const subtitle = conversationSubtitle(conversation, copy, presence);
   return (
     <header className="flex min-h-14 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-border bg-background px-3 py-2 md:px-4">
       <Button
@@ -118,46 +125,28 @@ export function ChatConversationHeader({
           )}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {actions}
-        {onSearch ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={copy.search.open}
-            title={copy.search.open}
-            onClick={onSearch}
-          >
-            <Search aria-hidden="true" />
-          </Button>
-        ) : null}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={copy.dm.view.hide}
-          title={copy.dm.view.hide}
-          onClick={onHide}
-        >
-          <EyeOff aria-hidden="true" />
-        </Button>
-        <Button
-          variant={detailsOpen ? "secondary" : "ghost"}
-          size="icon-sm"
-          aria-label={copy.dm.view.details}
-          title={copy.dm.view.details}
-          aria-pressed={detailsOpen}
-          onClick={onToggleDetails}
-        >
-          <Info aria-hidden="true" />
-        </Button>
-      </div>
+      <ChatHeaderActions
+        copy={copy}
+        callsEnabled={callsEnabled}
+        onStartCall={onStartCall}
+        onSearch={onSearch}
+        infoOpen={detailsOpen}
+        onToggleInfo={onToggleDetails}
+        onOpenSection={onOpenSection}
+        menu={
+          <DropdownMenuItem onSelect={onHide}>
+            <EyeOff aria-hidden="true" />
+            {copy.dm.view.hide}
+          </DropdownMenuItem>
+        }
+      />
     </header>
   );
 }
 
-// ─── Details panels ─────────────────────────────────────────────────────────
+// ─── Info panel pieces ──────────────────────────────────────────────────────
 
-export interface ChatConversationDetailsProps {
+export interface ChatConversationInfoProps {
   readonly conversation: ChatConversation;
   readonly viewerId: string;
   readonly nameOf: (userId: string) => string;
@@ -181,215 +170,114 @@ function formatDay(iso: string, locale: string): string {
     : at.toLocaleDateString(locale, { dateStyle: "medium" });
 }
 
-/** The profile of a direct conversation, or the details of a group, in the side panel. */
-export function ChatConversationDetails(props: ChatConversationDetailsProps) {
-  return props.conversation.kind === "direct" ? (
-    <DmProfile {...props} />
-  ) : (
-    <GroupDetails {...props} />
-  );
-}
-
-function DmProfile({
+/** The people of a group, one row each, for the Members section of the info panel. */
+export function ConversationMemberRows({
   conversation,
   viewerId,
   nameOf,
+  copy,
+  presenceOf,
+}: Pick<
+  ChatConversationInfoProps,
+  "conversation" | "viewerId" | "nameOf" | "copy" | "presenceOf"
+>) {
+  return (
+    <ul className="flex flex-col px-4">
+      {conversation.participants.map((participant) => {
+        const name = nameOf(participant.userId);
+        const presence =
+          participant.userId === viewerId
+            ? undefined
+            : presenceOf?.(participant.userId);
+        return (
+          <li
+            key={participant.userId}
+            className="flex min-h-11 items-center gap-3 py-1 text-sm"
+          >
+            <span className="relative inline-flex shrink-0">
+              <Avatar className="size-8" aria-hidden="true">
+                <AvatarFallback
+                  className={cn(
+                    "text-xs font-semibold",
+                    avatarToneOf(participant.userId),
+                  )}
+                >
+                  {initialsOf(name)}
+                </AvatarFallback>
+              </Avatar>
+              {presence ? <PresenceDot state={presence} /> : null}
+            </span>
+            <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+              {name}
+              {presence ? (
+                <span className="sr-only">
+                  {`, ${presenceText(presence, copy)}`}
+                </span>
+              ) : null}
+            </span>
+            {participant.userId === viewerId ? (
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {copy.dm.details.you}
+              </span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** The buttons under the sections of a conversation's info panel: add people, hide, leave or block. */
+export function ConversationInfoFooter({
+  conversation,
   copy,
   locale,
   blocked,
   busy,
   onBlock,
   onUnblock,
-  onHide,
-}: ChatConversationDetailsProps) {
-  const personId = directCounterpart(conversation, viewerId);
-  const name = personId ? nameOf(personId) : "";
-  return (
-    <div
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto"
-      role="region"
-      aria-label={copy.dm.details.dmTitle}
-    >
-      <div className="flex flex-col items-center gap-2 border-b border-border px-4 py-6 text-center">
-        <Avatar className="size-16" aria-hidden="true">
-          <AvatarFallback
-            className={cn(
-              "text-xl font-semibold",
-              avatarToneOf(personId ?? conversation.id),
-            )}
-          >
-            {initialsOf(name)}
-          </AvatarFallback>
-        </Avatar>
-        <h2 className="text-lg font-semibold text-foreground">{name}</h2>
-        {blocked ? (
-          <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {copy.dm.details.blockedBadge}
-          </span>
-        ) : null}
-      </div>
-      <dl className="flex flex-col gap-1 border-b border-border px-4 py-3 text-sm">
-        <div className="flex gap-3 py-1">
-          <dt className="w-40 shrink-0 text-muted-foreground">
-            {copy.dm.details.since}
-          </dt>
-          <dd className="min-w-0 text-foreground">
-            {formatDay(conversation.createdAt, locale)}
-          </dd>
-        </div>
-      </dl>
-      <div className="flex flex-col gap-2 px-4 py-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onHide}
-          disabled={busy}
-        >
-          <EyeOff aria-hidden="true" />
-          {copy.dm.view.hide}
-        </Button>
-        {blocked ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onUnblock}
-            disabled={busy}
-          >
-            <Ban aria-hidden="true" />
-            {copy.dm.details.unblock}
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={onBlock}
-            disabled={busy}
-          >
-            <Ban aria-hidden="true" />
-            {copy.dm.details.block}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function GroupDetails({
-  conversation,
-  viewerId,
-  nameOf,
-  copy,
-  busy,
-  presenceOf,
   onAddPeople,
   onLeave,
   onHide,
-}: ChatConversationDetailsProps) {
-  const title = conversationTitle(conversation, viewerId, nameOf);
-  const count = conversation.participants.length;
-  const full = groupRoomLeft(count) === 0;
+}: ChatConversationInfoProps) {
+  const group = conversation.kind === "group";
+  const full = groupRoomLeft(conversation.participants.length) === 0;
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto"
-      role="region"
-      aria-label={copy.dm.details.groupTitle}
-    >
-      <div className="flex flex-col items-center gap-2 border-b border-border px-4 py-6 text-center">
-        <ConversationAvatar
-          title={title}
-          id={conversation.id}
-          group
-          className="size-16"
-        />
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <p className="text-sm text-muted-foreground">
-          {pluralCopy(
-            {
-              one: copy.dm.sidebar.participants_one,
-              other: copy.dm.sidebar.participants_other,
-            },
-            count,
-          )}
+    <>
+      {group ? null : (
+        <p className="flex gap-3 text-sm">
+          <span className="w-40 shrink-0 text-muted-foreground">
+            {copy.dm.details.since}
+          </span>
+          <span className="min-w-0 text-foreground">
+            {formatDay(conversation.createdAt, locale)}
+          </span>
         </p>
-      </div>
-      <section
-        aria-labelledby="chat-group-members"
-        className="flex flex-col gap-1 border-b border-border px-4 py-3"
-      >
-        <h3
-          id="chat-group-members"
-          className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          {fillCopy(copy.dm.details.membersHeading, { count })}
-        </h3>
-        <ul className="flex flex-col">
-          {conversation.participants.map((participant) => {
-            const name = nameOf(participant.userId);
-            const presence =
-              participant.userId === viewerId
-                ? undefined
-                : presenceOf?.(participant.userId);
-            return (
-              <li
-                key={participant.userId}
-                className="flex min-h-11 items-center gap-3 py-1 text-sm"
-              >
-                <span className="relative inline-flex shrink-0">
-                  <Avatar className="size-8" aria-hidden="true">
-                    <AvatarFallback
-                      className={cn(
-                        "text-xs font-semibold",
-                        avatarToneOf(participant.userId),
-                      )}
-                    >
-                      {initialsOf(name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {presence ? <PresenceDot state={presence} /> : null}
-                </span>
-                <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                  {name}
-                  {presence ? (
-                    <span className="sr-only">
-                      {`, ${presenceText(presence, copy)}`}
-                    </span>
-                  ) : null}
-                </span>
-                {participant.userId === viewerId ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {copy.dm.details.you}
-                  </span>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-      <div className="flex flex-col gap-2 px-4 py-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onAddPeople}
-          disabled={busy || full}
-          aria-describedby={full ? "chat-group-full" : undefined}
-        >
-          <UserPlus aria-hidden="true" />
-          {copy.dm.details.addPeople}
-        </Button>
-        {full ? (
-          <p id="chat-group-full" className="text-xs text-muted-foreground">
-            {fillCopy(copy.dm.details.addFull, { max: CHAT_LIMITS.groupCap })}
-          </p>
-        ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onHide}
-          disabled={busy}
-        >
-          <EyeOff aria-hidden="true" />
-          {copy.dm.view.hide}
-        </Button>
+      )}
+      {group ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onAddPeople}
+            disabled={busy || full}
+            aria-describedby={full ? "chat-group-full" : undefined}
+          >
+            <UserPlus aria-hidden="true" />
+            {copy.dm.details.addPeople}
+          </Button>
+          {full ? (
+            <p id="chat-group-full" className="text-xs text-muted-foreground">
+              {fillCopy(copy.dm.details.addFull, { max: CHAT_LIMITS.groupCap })}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+      <Button type="button" variant="outline" onClick={onHide} disabled={busy}>
+        <EyeOff aria-hidden="true" />
+        {copy.dm.view.hide}
+      </Button>
+      {group ? (
         <Button
           type="button"
           variant="destructive"
@@ -399,8 +287,28 @@ function GroupDetails({
           <LogOut aria-hidden="true" />
           {copy.dm.details.leave}
         </Button>
-      </div>
-    </div>
+      ) : blocked ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onUnblock}
+          disabled={busy}
+        >
+          <Ban aria-hidden="true" />
+          {copy.dm.details.unblock}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={onBlock}
+          disabled={busy}
+        >
+          <Ban aria-hidden="true" />
+          {copy.dm.details.block}
+        </Button>
+      )}
+    </>
   );
 }
 

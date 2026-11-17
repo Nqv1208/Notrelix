@@ -147,11 +147,11 @@ describe("ChatHeader link entries (UC-CHT-H10)", () => {
   };
   const props = {
     channel,
-    members: [],
-    viewerId: "me",
     canManage: true,
     joining: false,
-    authorName: () => "x",
+    infoOpen: false,
+    onToggleInfo: () => undefined,
+    onOpenSection: () => undefined,
     copy: en,
     onOpenList: () => undefined,
     onRename: () => undefined,
@@ -175,7 +175,7 @@ describe("ChatHeader link entries (UC-CHT-H10)", () => {
       screen.getByRole("link", { name: /Open the linked Board Roadmap/ }),
     ).toBeTruthy();
 
-    fireEvent.keyDown(screen.getByRole("button", { name: en.header.manage }), {
+    fireEvent.keyDown(screen.getByRole("button", { name: en.panel.more }), {
       key: "Enter",
     });
     fireEvent.click(
@@ -189,7 +189,15 @@ describe("ChatHeader link entries (UC-CHT-H10)", () => {
   it("offers no link entries without the handlers (a viewer), but still shows the chip", () => {
     render(<ChatHeader {...props} canManage={false} />);
     expect(screen.getByRole("link", { name: /Roadmap/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: en.header.manage })).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: en.panel.more }), {
+      key: "Enter",
+    });
+    expect(
+      screen.queryByRole("menuitem", { name: /linked resource/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("menuitem", { name: "Remove the link" }),
+    ).toBeNull();
   });
 });
 
