@@ -134,6 +134,18 @@ public sealed class LiveKitChatCallMediaGatewayTests
     }
 
     [Fact]
+    public void TheTimeTheParticipantWasSeatedIsReadFromTheSignedBody()
+    {
+        var withMs = $$$"""{"event":"participant_left","id":"EV_2","room":{"name":"room-abc"},"participant":{"identity":"{{{Person}}}","joinedAt":100,"joinedAtMs":1763370000123}}""";
+        var withSeconds = $$$"""{"event":"participant_left","id":"EV_3","room":{"name":"room-abc"},"participant":{"identity":"{{{Person}}}","joinedAt":1763370000}}""";
+
+        Gateway().VerifyWebhook(withMs, SignWebhook(withMs))!.ParticipantJoinedAt
+            .Should().Be(DateTimeOffset.FromUnixTimeMilliseconds(1763370000123));
+        Gateway().VerifyWebhook(withSeconds, SignWebhook(withSeconds))!.ParticipantJoinedAt
+            .Should().Be(DateTimeOffset.FromUnixTimeSeconds(1763370000));
+    }
+
+    [Fact]
     public void TheBearerPrefixIsAcceptedBecauseSomeProxiesAddIt()
     {
         var body = LeftBody();

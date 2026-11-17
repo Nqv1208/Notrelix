@@ -109,6 +109,41 @@ public sealed class ChatCallMediaWebhookIntegrationTests
     }
 
     [Fact]
+    public async Task ALateLeftEventOfAnEarlierSessionDoesNotDropAPersonWhoHasRejoined_ButTheCurrentSessionsLeftDoes()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var (call, room) = await SeedActiveCallAsync(stack, 2);
+        var person = call.Participants.First(p => p.PersonId != stack.OwnerId).PersonId;
+        // Well after the row's audit stamps, so the aggregate accepts the changes in order.
+        var leftAt = T0.AddDays(1);
+        var rejoinedAt = leftAt.AddDays(1);
+
+        // The person leaves (the first session ends), then comes back: the same row, a later JoinedAt.
+        await _host.WithSystemContextAsync(async c =>
+        {
+            var tracked = await c.ChatCalls.Include(x => x.Participants).SingleAsync(x => x.Id == call.Id);
+            tracked.Leave(person, leftAt).Should().BeTrue();
+            tracked.Join(person, rejoinedAt).Should().BeTrue();
+        });
+        _host.Now = rejoinedAt.AddMinutes(1); // the media server's events reach us after the rejoin
+        var before = await LoadAsync(call.Id);
+        before.Participants.Single(p => p.PersonId == person).IsJoined.Should().BeTrue();
+
+        // The first session's participant_left reaches us late, carrying the time that earlier session was seated.
+        var late = new CallMediaWebhookEvent(Guid.NewGuid().ToString("N"), "participant_left", room, person, T0);
+        await RunAsync(stack, late);
+
+        var after = await LoadAsync(call.Id);
+        after.Participants.Single(p => p.PersonId == person).IsJoined.Should().BeTrue("the rejoined person stays in the call");
+        after.Version.Should().Be(before.Version);
+
+        // The left event of the current session (seated after the rejoin) still closes the participation.
+        var current = new CallMediaWebhookEvent(Guid.NewGuid().ToString("N"), "participant_left", room, person, rejoinedAt.AddSeconds(1));
+        await RunAsync(stack, current);
+        (await LoadAsync(call.Id)).Participants.Single(p => p.PersonId == person).IsJoined.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task ARoomFinishedEventEndsTheCallOnceWithItsOneMessage()
     {
         var stack = await _host.SeedWorkspaceAsync();

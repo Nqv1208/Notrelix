@@ -71,6 +71,15 @@ export const chatQueryKeys = {
   /** The people the caller blocked (`Chat.Blocks.List`). */
   blocks: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "blocks"),
+  /** The ringing or active call of one space (`Chat.Calls.GetActive`); a call frame refetches it. */
+  activeCall: (workspaceId: string, spaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "active-call", spaceId),
+  /** Client-only projection: the newest frame seen of one call (its state and end reason survive the 204 of GetActive). */
+  callFrame: (workspaceId: string, callId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "call-frame", callId),
+  /** Client-only projection: the calls ringing this person, set by the per-person ring frames. */
+  incomingCalls: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "incoming-calls"),
   pins: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pins", channelId),
   /** The permission overrides of one channel (the settings Permissions tab). */

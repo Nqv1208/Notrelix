@@ -4,6 +4,7 @@
  */
 
 export * from "./types/chat";
+export * from "./types/call";
 export {
   createChatService,
   type ChatApiClient,
@@ -28,6 +29,7 @@ export * from "./model/ephemeral-model";
 export * from "./model/attachment-model";
 export * from "./model/retention-model";
 export * from "./model/search-model";
+export * from "./model/call-model";
 export * from "./model/permission-model";
 export * from "./model/link-model";
 export * from "./model/emoji-data";

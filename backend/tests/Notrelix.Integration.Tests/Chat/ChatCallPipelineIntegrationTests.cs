@@ -202,6 +202,40 @@ public sealed class ChatCallPipelineIntegrationTests
     }
 
     [Fact]
+    public void TheTokenQueryAsksForTheSameActionAsStart()
+    {
+        var id = Guid.NewGuid();
+        new GetCallJoinTokenQuery(id, id).Action.Should().Be(new StartCallCommand(id, id, "voice").Action,
+            "the token is the starter's way into the room, so it must ask what starting asked");
+    }
+
+    [Fact]
+    public async Task AGuestOrAReadOnlyMemberSeatedInALiveCallGetsNoToken()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "SeatedGuest");
+        var readOnlyMember = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "SeatedReadOnly");
+        var channel = await SeedChannelAsync(
+            stack, stack.OwnerId, SpaceKind.ChannelPublic, [guest, readOnlyMember],
+            new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny));
+        var call = Call.Start(stack.AccountId, stack.WorkspaceId, channel.Id, SpaceKind.ChannelPublic, stack.OwnerId, CallKind.Voice, $"room-{Guid.NewGuid():N}", "ap-southeast-1", T0);
+        call.Join(guest, T0);
+        call.Join(readOnlyMember, T0);
+        await _host.WithSystemContextAsync(seed =>
+        {
+            seed.ChatCalls.Add(call);
+            return Task.CompletedTask;
+        });
+
+        foreach (var person in new[] { guest, readOnlyMember })
+        {
+            using var provider = ProviderFor(stack, person);
+            (await RefusalAsync(provider, new GetCallJoinTokenQuery(stack.WorkspaceId, call.Id)))
+                .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>("a person who may not take part in a call is given no token, seated or not");
+        }
+    }
+
+    [Fact]
     public async Task AStaleVersionIs412_AndTheCurrentVersionAnswers()
     {
         var stack = await _host.SeedWorkspaceAsync();

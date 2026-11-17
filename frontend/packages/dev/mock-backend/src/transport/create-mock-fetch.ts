@@ -18,6 +18,12 @@ import { MockOperationRegistry } from "../operations/operation-registry";
 import type { MockBackendConfig } from "../config/mock-config";
 import { injectIncomingMessage } from "../contexts/chat/chat-writes";
 import {
+  actAsOther,
+  liveCallOf,
+  missCall,
+  ringAsOther,
+} from "../contexts/chat/chat-calls";
+import {
   notFound,
   serverError,
   unauthorized,
@@ -145,6 +151,41 @@ export function createMockFetch(store: MockStore): typeof fetch {
     }
   ).__notrelixMockInjectChat = (spaceId, authorId, content) =>
     injectIncomingMessage(store.chat, spaceId, authorId, content) !== null;
+
+  // Dev only: a browser check plays the other person of a call (ring, answer, decline, cancel, end, ring out).
+  (
+    globalThis as {
+      __notrelixMockCall?: {
+        ring: (
+          spaceId: string,
+          personId: string,
+          kind: "voice" | "video",
+        ) => string | null;
+        act: (
+          callId: string,
+          personId: string,
+          action: "answer" | "decline" | "cancel" | "end",
+        ) => boolean;
+        miss: (callId: string) => boolean;
+        live: (spaceId: string) => string | null;
+        peer: (spaceId: string) => string | null;
+      };
+    }
+  ).__notrelixMockCall = {
+    ring: (spaceId, personId, kind) =>
+      ringAsOther(store, spaceId, personId, kind),
+    act: (callId, personId, action) =>
+      actAsOther(store, callId, personId, action),
+    miss: (callId) => missCall(store, callId),
+    live: (spaceId) => liveCallOf(store.chat, spaceId)?.id ?? null,
+    peer: (spaceId) =>
+      store.chat
+        .membershipsOfSpace(spaceId)
+        .find(
+          (row) =>
+            row.leftAt === null && row.userId !== store.getCurrentUser().id,
+        )?.userId ?? null,
+  };
 
   // Dev only: a browser check has another person save a form first (WM-FormConflict "Xem bản mới").
   (

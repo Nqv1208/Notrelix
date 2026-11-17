@@ -476,6 +476,15 @@ export const endpoints = {
     /** PUT blocks or unblocks a person for the caller. */
     blocks: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/blocks`,
+    /** POST starts a call in a space (Idempotency-Key); GET lists the space's call history. */
+    spaceCalls: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/calls`,
+    /** GET the ringing or active call of a space (204 when none). */
+    spaceActiveCall: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/calls/active`,
+    /** POST answer, decline, cancel, end, join or leave a call; PUT `participants/me` sets the caller's media state. */
+    callAction: (workspaceId: string, callId: string, action: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/calls/${encodeURIComponent(callId)}/${action}`,
   },
 
   boardGroups: {

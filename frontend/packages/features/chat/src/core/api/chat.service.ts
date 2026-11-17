@@ -44,6 +44,7 @@ import type {
   ChatAttachmentUrl,
 } from "../types/chat";
 import { voiceFactsOf } from "../model/voice-model";
+import type { ChatCall, ChatCallJoin, ChatCallKind } from "../types/call";
 
 /** The transport the host passes in: the generated client's `api` (`createNotrelixClient`). */
 export interface ChatRequestOptions {
@@ -168,6 +169,9 @@ export interface ChatEndpoints {
       conversationId: string,
     ) => string;
     blocks: (workspaceId: string) => string;
+    spaceCalls: (workspaceId: string, spaceId: string) => string;
+    spaceActiveCall: (workspaceId: string, spaceId: string) => string;
+    callAction: (workspaceId: string, callId: string, action: string) => string;
     channelGroups: (workspaceId: string) => string;
   };
 }
@@ -922,6 +926,68 @@ export function createChatService(
         userId,
         blocked,
       });
+    },
+
+    /** `Chat.Calls.Start`: the Idempotency-Key is required; the answer carries the starter's join token (null for a busy call). */
+    startCall(
+      workspaceId: string,
+      spaceId: string,
+      kind: ChatCallKind,
+      idempotencyKey: string,
+    ): Promise<ChatCallJoin> {
+      return api.post<ChatCallJoin>(
+        paths.spaceCalls(workspaceId, spaceId),
+        { kind },
+        { idempotencyKey },
+      );
+    },
+
+    /** `Chat.Calls.GetActive`: the ringing or active call of a space, or null (204). */
+    async getActiveCall(
+      workspaceId: string,
+      spaceId: string,
+    ): Promise<ChatCall | null> {
+      const call = await api.get<ChatCall | null | undefined>(
+        paths.spaceActiveCall(workspaceId, spaceId),
+      );
+      return call ?? null;
+    },
+
+    /** `Chat.Calls.Answer` and `Chat.Calls.Join`: ring becomes active; the answer carries the join token. A stale version is 412. */
+    answerCall(
+      workspaceId: string,
+      callId: string,
+      expectedVersion: number,
+    ): Promise<ChatCallJoin> {
+      return api.post<ChatCallJoin>(
+        paths.callAction(workspaceId, callId, "answer"),
+        { expectedVersion },
+      );
+    },
+
+    /** `Chat.Calls.Decline`, `Cancel`, `End` and `Leave`: each takes the version the caller read; a stale one is 412. */
+    changeCall(
+      workspaceId: string,
+      callId: string,
+      action: "decline" | "cancel" | "end" | "leave",
+      expectedVersion: number,
+    ): Promise<ChatCall> {
+      return api.post<ChatCall>(paths.callAction(workspaceId, callId, action), {
+        expectedVersion,
+      });
+    },
+
+    /** `Chat.Calls.UpdateMediaState`: the caller's microphone and camera (a voice call carries no camera). */
+    setCallMediaState(
+      workspaceId: string,
+      callId: string,
+      state: { audioOn: boolean; videoOn: boolean },
+      expectedVersion: number,
+    ): Promise<ChatCall> {
+      return api.put<ChatCall>(
+        paths.callAction(workspaceId, callId, "participants/me"),
+        { ...state, sharingScreen: false, expectedVersion },
+      );
     },
   };
 }
