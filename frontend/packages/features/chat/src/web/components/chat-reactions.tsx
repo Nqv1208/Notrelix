@@ -63,7 +63,7 @@ export function ReactionChips({
   return (
     <div
       className={cn(
-        "absolute top-full z-10 -mt-3",
+        "absolute top-full z-10 -mt-3 flex",
         align === "end" ? "start-2" : "end-2",
       )}
       data-testid="chat-reactions"

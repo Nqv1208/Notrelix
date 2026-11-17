@@ -73,15 +73,27 @@ test("the jump-to-latest control lifts 2 px on hover, never scales, and settles 
     name: /^(Jump to latest|Xem tin mới nhất)$/,
   });
   await expect(jump).toBeVisible();
-  const transform = () =>
-    jump.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform));
+  // Tailwind 4 moves with the `translate` property, so a scale would show in `scale` or in the matrix.
+  const lift = () =>
+    jump.evaluate((el) => {
+      const style = getComputedStyle(el);
+      const y =
+        style.translate === "none"
+          ? 0
+          : parseFloat(style.translate.split(" ")[1] ?? "0");
+      return {
+        y,
+        scale: style.scale,
+        matrix: new DOMMatrix(style.transform).a,
+      };
+    });
   await jump.hover();
-  await expect.poll(async () => (await transform()).m42).toBeCloseTo(-2, 0);
-  const lifted = await transform();
-  expect(lifted.a).toBeCloseTo(1, 5);
-  expect(lifted.d).toBeCloseTo(1, 5);
+  await expect.poll(async () => (await lift()).y).toBeCloseTo(-2, 0);
+  const lifted = await lift();
+  expect(lifted.scale).toBe("none");
+  expect(lifted.matrix).toBe(1);
   await page.mouse.down();
-  await expect.poll(async () => (await transform()).m42).toBeCloseTo(0, 0);
+  await expect.poll(async () => (await lift()).y).toBeCloseTo(0, 0);
   await page.mouse.up();
 });
 
@@ -120,6 +132,12 @@ for (const theme of ["light", "dark"]) {
       expect(
         rowBox.y + rowBox.height - (bubble.y + bubble.height),
       ).toBeLessThan(24);
+      // Set CHAT_UX_SHOTS to a directory to keep one shot per case for the visual review (no baseline is kept).
+      if (process.env.CHAT_UX_SHOTS) {
+        await page.screenshot({
+          path: `${process.env.CHAT_UX_SHOTS}/reaction-${width}-${theme}.png`,
+        });
+      }
       await pill.click();
       await expect(
         page.getByRole("list", { name: "Ai đã bày tỏ" }),
