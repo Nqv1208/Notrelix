@@ -97,7 +97,8 @@ test("Tab walks the header actions left to right, then the panel: close cross, q
     .getByRole("button", { name: copy.search.open, exact: true })
     .focus();
   const seen: string[] = [];
-  for (let i = 0; i < 60; i++) {
+  // The list draws every loaded row, and each row's controls come before the panel in the tab order.
+  for (let i = 0; i < 400; i++) {
     seen.push(await label());
     await page.keyboard.press("Tab");
   }
