@@ -84,7 +84,7 @@ test("a channel is created, renamed and given a topic, a private channel stays h
 
   // Rename and topic: a taken name is refused and changes nothing; a free name and a topic are saved and announced.
   const openEdit = async () => {
-    await page.getByRole("button", { name: "Channel settings" }).click();
+    await page.getByRole("button", { name: "More" }).click();
     await page.getByRole("menuitem", { name: "Rename channel" }).click();
     return page.getByRole("dialog");
   };
