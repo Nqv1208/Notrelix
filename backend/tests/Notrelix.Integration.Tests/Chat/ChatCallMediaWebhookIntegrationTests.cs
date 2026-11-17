@@ -114,13 +114,15 @@ public sealed class ChatCallMediaWebhookIntegrationTests
         var stack = await _host.SeedWorkspaceAsync();
         var (call, room) = await SeedActiveCallAsync(stack, 2);
         var person = call.Participants.First(p => p.PersonId != stack.OwnerId).PersonId;
-        var rejoinedAt = T0.AddSeconds(30);
+        // Later than the row's audit stamp (the seed saved it just now), so the aggregate accepts the changes in order.
+        var leftAt = DateTimeOffset.UtcNow.AddMinutes(1);
+        var rejoinedAt = leftAt.AddMinutes(1);
 
         // The person leaves (the first session ends), then comes back: the same row, a later JoinedAt.
         await _host.WithSystemContextAsync(async c =>
         {
             var tracked = await c.ChatCalls.Include(x => x.Participants).SingleAsync(x => x.Id == call.Id);
-            tracked.Leave(person, T0.AddSeconds(10)).Should().BeTrue();
+            tracked.Leave(person, leftAt).Should().BeTrue();
             tracked.Join(person, rejoinedAt).Should().BeTrue();
         });
         var before = await LoadAsync(call.Id);
