@@ -1228,7 +1228,7 @@ function JumpLatest({
         data-visible={visible ? "true" : "false"}
         data-count={count > 0 ? count : undefined}
         className={cn(
-          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,visibility,background-color,box-shadow] duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-0.5 hover:bg-muted hover:shadow-lg active:translate-y-0 active:bg-muted active:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0",
+          "h-[34px] max-w-full rounded-full border border-border bg-popover text-popover-foreground shadow-md transition-[opacity,transform,translate,visibility,background-color,box-shadow] duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-0.5 hover:bg-muted hover:shadow-lg active:translate-y-0 active:bg-muted active:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0",
           visible
             ? "pointer-events-auto visible translate-y-0 opacity-100"
             : "invisible translate-y-2 opacity-0",
