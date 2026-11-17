@@ -392,7 +392,7 @@ function ChatMessageRowBase({
       }
     },
     onFocus: (event: FocusEvent<HTMLDivElement>) => {
-      if (event.target === rowRef.current) return;
+      // The row itself counts too: arrowing onto a message shows its actions.
       if (isKeyboardFocus(event.target)) activate();
     },
     onBlur: (event: FocusEvent<HTMLDivElement>) => {
@@ -403,8 +403,9 @@ function ChatMessageRowBase({
     onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key !== "Escape" || heldRef.current || !active) return;
       event.stopPropagation();
-      store.release(message.id);
+      // Focus first: the row taking the focus shows its actions, and Escape must leave them hidden.
       rowRef.current?.focus({ preventScroll: true });
+      store.release(message.id);
     },
   };
 
@@ -974,7 +975,7 @@ const shallowEqual = (a: unknown, b: unknown): boolean => {
 };
 
 /** Props that arrive as fresh objects each render (author, quote, thread) compare by content, the rest by identity. */
-function rowPropsEqual(
+export function rowPropsEqual(
   prev: ChatMessageRowProps,
   next: ChatMessageRowProps,
 ): boolean {

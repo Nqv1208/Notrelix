@@ -24,6 +24,8 @@ export const CHAT_LIMITS = {
   /** The reason of a moderator delete (ChatLimits.ModerationReasonMaxLength). */
   moderationReasonMaxLength: 500,
   pageSize: 50,
+  /** Pages of messages kept loaded at once (about 500 rows): the list draws all of them. */
+  maxLoadedPages: 10,
   pageSizeMax: 100,
   /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
   mentionsPerMessageMax: 50,

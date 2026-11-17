@@ -44,9 +44,14 @@ async function open(
 }
 
 async function box(page: Page, selector: string) {
-  const b = await page.locator(selector).first().boundingBox();
+  // A row far from the view has no box until the browser finds it near: wait for it.
+  let b = null;
+  await expect
+    .poll(async () => (b = await page.locator(selector).first().boundingBox()))
+    .not.toBeNull();
   if (!b) throw new Error(`no box for ${selector}`);
-  return { x: b.x, y: b.y, w: b.width, h: b.height };
+  const r = b as { x: number; y: number; width: number; height: number };
+  return { x: r.x, y: r.y, w: r.width, h: r.height };
 }
 async function css(page: Page, selector: string, prop: string) {
   return page
@@ -108,6 +113,12 @@ for (const mode of ["light", "dark"] as const) {
         });
         await expect(
           page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
+        ).toBeVisible();
+        // A row far from the view is skipped by the browser until it is near: its content has no box until then.
+        await expect(
+          page
+            .locator("[role=log] li[data-testid=chat-day-separator] > div")
+            .first(),
         ).toBeVisible();
         const sep = await box(
           page,

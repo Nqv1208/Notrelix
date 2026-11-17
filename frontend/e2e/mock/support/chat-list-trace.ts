@@ -70,8 +70,10 @@ export async function pick(page: Page, which?: "above") {
     if (w === "above")
       return rows.filter((x) => x.r.bottom < mid && x.r.top > log.top).at(-1)!
         .id;
-    return (rows.find((x) => x.r.top <= mid && x.r.bottom >= mid) ?? rows[0]!)
-      .id;
+    // The row under the middle; between two bubbles, the one nearest to it (the whole history is in the page now).
+    const dist = (x: (typeof rows)[number]) =>
+      x.r.height === 0 ? Infinity : Math.abs((x.r.top + x.r.bottom) / 2 - mid);
+    return rows.reduce((a, b) => (dist(b) < dist(a) ? b : a)).id;
   }, which);
 }
 

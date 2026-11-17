@@ -159,6 +159,12 @@ test.describe("1440 (Chat-Main)", () => {
     await expect(
       page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
     ).toBeVisible();
+    // A row far from the view is skipped by the browser until it is near: its content has no box until then.
+    await expect(
+      page
+        .locator("[role=log] li[data-testid=chat-day-separator] > div")
+        .first(),
+    ).toBeVisible();
     const ds = await box(
       page,
       "[role=log] li[data-testid=chat-day-separator] > div",
