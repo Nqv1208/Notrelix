@@ -839,10 +839,27 @@ export function createChatHooks(deps: ChatHookDeps) {
             : summary,
         );
       },
-      onSuccess: () => {
+      onSuccess: (_result, input) => {
+        // The open channel reads its detail first, which sits outside the channels key.
+        queryClient.setQueryData<ChatChannelDetail>(
+          chatQueryKeys.channel(workspaceId, input.spaceId),
+          (detail) =>
+            detail
+              ? {
+                  ...detail,
+                  channel: {
+                    ...detail.channel,
+                    notificationLevel: input.level,
+                  },
+                }
+              : detail,
+        );
         void queryClient.invalidateQueries({ queryKey: unreadKey });
         void queryClient.invalidateQueries({
           queryKey: chatQueryKeys.channels(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, input.spaceId),
         });
       },
     });

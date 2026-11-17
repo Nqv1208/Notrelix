@@ -15,9 +15,9 @@ light_re='format|prettier|lint|i18n|mock-consumer-surface|codegen:check|OpenAPI 
 gh run view "$run" --json status,jobs -q '
   "STATUS \(.status)",
   (.jobs[] | select(.name != "CI gate") | . as $j
-    | "JOB \($j.conclusion // "running") \($j.name)",
+    | "JOB \($j.conclusion | if . == "" or . == null then "running" else . end) \($j.name)",
       ($j.steps[] | select(.name | test("^(Set up|Post |Complete job|Run actions/|Checkout)") | not)
-        | "STEP \(.conclusion // "pending") \($j.name) :: \(.name)"))' |
+        | "STEP \(.conclusion | if . == "" or . == null then "pending" else . end) \($j.name) :: \(.name)"))' |
 awk -v re="$light_re" '
   /^STATUS/ { status=$2; next }
   /^JOB/    { print; next }
