@@ -255,6 +255,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Profile.UpdateEmail",
+    operationId: "Identity.Profile.UpdateEmail",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Mfa.RegenerateRecoveryCodes",
     operationId: "Identity.Mfa.RegenerateRecoveryCodes",
     mutation: true,

@@ -6376,6 +6376,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("PendingEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("pending_email");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

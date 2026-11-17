@@ -43098,11 +43098,9 @@
       "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
         "type": "object",
         "properties": {
-          "emailConfirmed": {
-            "type": "boolean"
-          },
-          "sessionRefreshRequired": {
-            "type": "boolean"
+          "pendingEmail": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

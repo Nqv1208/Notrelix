@@ -160,6 +160,40 @@ public sealed class CredentialScopeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ConfirmEmail_OfAPendingChange_UnderTheAppRole_SwitchesTheSignInEmailAndEndsEverySessionOfThatUserOnly()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("change-cred@example.com", "Changer", _hash, now, hasPasswordCredential: true);
+        user.ConfirmEmail(null, now);
+        user.RequestEmailChange("changed-cred@example.com", user.Id, now);
+        var issued = new OneTimeTokenService().Generate(TokenPurpose.EmailVerification);
+        var token = EmailVerificationToken.Create(
+            user.Id, TokenHash.Create(issued.TokenHash), issued.HashVersion, "changed-cred@example.com", now.AddHours(1), now);
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using (var ctx = _fixture.CreateOwnerContext(system))
+        {
+            ctx.Users.Add(user);
+            ctx.EmailVerificationTokens.Add(token);
+            ctx.Sessions.Add(UserSession.Create(user.Id, RefreshTokenHash.Create("rt-" + Guid.NewGuid().ToString("N")), now.AddDays(30), now));
+            ctx.Sessions.Add(UserSession.Create(_b.User.Id, RefreshTokenHash.Create("rt-" + Guid.NewGuid().ToString("N")), now.AddDays(30), now));
+            await ctx.SaveChangesAsync();
+        }
+
+        var ok = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/email-verification/confirm", new { token = issued.RawToken }));
+        ok.IsSuccessStatusCode.Should().BeTrue(await ok.Content.ReadAsStringAsync());
+
+        (await OwnerScalarAsync("SELECT normalized_email FROM identity.users WHERE id = @u", ("u", user.Id))).Should().Be("changed-cred@example.com");
+        (await OwnerScalarAsync("SELECT coalesce(pending_email, 'none') FROM identity.users WHERE id = @u", ("u", user.Id))).Should().Be("none");
+        (await OwnerScalarAsync("SELECT email_confirmed FROM identity.users WHERE id = @u", ("u", user.Id))).Should().Be("True");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", user.Id))).Should().Be("0");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", _b.User.Id))).Should().Be("1", "another person's sessions stay");
+
+        var replay = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/email-verification/confirm", new { token = issued.RawToken }));
+        replay.IsSuccessStatusCode.Should().BeFalse("a used link changes nothing");
+    }
+
+    [Fact]
     public async Task ResendVerification_UnderTheAppRole_IssuesATokenForThatUserOnly()
     {
         var (u, _) = await SeedUnconfirmedUserWithTokenAsync("resend-cred@example.com");

@@ -4,6 +4,7 @@ import {
   Laptop,
   Link2,
   Lock,
+  Mail,
   Smartphone,
   Tablet,
   type LucideIcon,
@@ -26,6 +27,11 @@ import {
   pluralCopy,
   type AccountSection,
 } from "../shared/account-surface-model";
+import {
+  AccountEmailPanel,
+  AccountEmailSentPanel,
+  type AccountEmailError,
+} from "./account-email-panel";
 import {
   AccountPasswordChangedPanel,
   AccountPasswordPanel,
@@ -82,7 +88,8 @@ export type AccountSecurityFlow =
         | "others"
         | "link"
         | "unlink"
-        | "setPassword";
+        | "setPassword"
+        | "changeEmail";
       /** `link` and `unlink`: the provider the proof is for. */
       readonly provider?: string;
       readonly factor: "code" | "password" | "provider";
@@ -111,6 +118,14 @@ export type AccountSecurityFlow =
       readonly error: AccountPasswordError | null;
       readonly wait?: number;
     }
+  /** Choosing a new sign-in email, the proof of presence already in hand. */
+  | {
+      readonly kind: "changeEmail";
+      readonly error: AccountEmailError | null;
+      readonly wait?: number;
+    }
+  /** The link to the new address is on its way (told the same for any address). */
+  | { readonly kind: "emailSent"; readonly email: string }
   /** The password changed and every session, this one too, was ended. */
   | { readonly kind: "passwordChanged" }
   /** Two-factor is off and every session, this one too, was ended. */
@@ -154,6 +169,9 @@ export interface AccountSecuritySurfaceProps {
   /** Starts setting a first password (the proof comes first); absent = the page cannot do it. */
   readonly onSetPassword?: () => void;
   readonly onSubmitFirstPassword?: (next: string) => void;
+  /** Starts changing the sign-in email (the proof comes first); absent = the page cannot do it here. */
+  readonly onChangeEmail?: () => void;
+  readonly onSubmitEmail?: (email: string) => void;
   readonly onSubmitNewPassword?: (
     submission: AccountPasswordSubmission,
   ) => void;
@@ -308,6 +326,8 @@ function FlowPanel({
     AccountSecurityFlow,
     | { kind: "password" }
     | { kind: "setPassword" }
+    | { kind: "changeEmail" }
+    | { kind: "emailSent" }
     | { kind: "passwordChanged" }
     | { kind: "twoFactorOff" }
     | { kind: "signOutThis" }
@@ -409,7 +429,9 @@ function FlowPanel({
                 ? fillCopy(t.unlinkTitle, { provider: flow.provider ?? "" })
                 : flow.purpose === "setPassword"
                   ? t.setPasswordTitle
-                  : t.renewTitle;
+                  : flow.purpose === "changeEmail"
+                    ? copy.email.proofTitle
+                    : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -622,6 +644,8 @@ function SecurityBody({
   flow,
   onChangePassword,
   onSetPassword,
+  onChangeEmail,
+  onSubmitEmail,
   onSubmitFirstPassword,
   onSubmitNewPassword,
   onPasswordChangedContinue,
@@ -642,6 +666,7 @@ function SecurityBody({
   data: AccountSecurityData;
 }) {
   const ids = {
+    email: React.useId(),
     password: React.useId(),
     twoFactor: React.useId(),
     sessions: React.useId(),
@@ -657,6 +682,28 @@ function SecurityBody({
     data.hasPassword === false && (data.linkedProviders ?? []).length > 0;
   return (
     <>
+      {onChangeEmail ? (
+        <Block titleId={ids.email} title={copy.email.title} aside={null}>
+          <Row
+            icon={Mail}
+            title={data.email}
+            text={copy.email.rowText}
+            control={
+              data.ssoProvider ? null : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={onChangeEmail}
+                  className={cn(BTN_SM, FOCUS)}
+                >
+                  {copy.email.change}
+                </button>
+              )
+            }
+          />
+        </Block>
+      ) : null}
+
       <Block
         titleId={ids.password}
         title={copy.password.title}
@@ -877,7 +924,23 @@ function SecurityBody({
         ) : null}
       </Block>
 
-      {flow?.kind === "setPassword" ? (
+      {flow?.kind === "changeEmail" ? (
+        <AccountEmailPanel
+          copy={copy}
+          currentEmail={data.email}
+          error={flow.error}
+          wait={flow.wait}
+          busy={busy}
+          onSubmit={onSubmitEmail}
+          onClose={onCloseFlow}
+        />
+      ) : flow?.kind === "emailSent" ? (
+        <AccountEmailSentPanel
+          copy={copy}
+          email={flow.email}
+          onClose={onCloseFlow}
+        />
+      ) : flow?.kind === "setPassword" ? (
         <AccountSetPasswordPanel
           copy={copy}
           email={data.email}

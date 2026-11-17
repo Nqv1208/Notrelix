@@ -115,7 +115,8 @@ export type StepUpPurpose =
   | "RevokeOtherSessions"
   | "EnrollMfa"
   | "LinkOAuth"
-  | "UnlinkOAuth";
+  | "UnlinkOAuth"
+  | "ChangeSecurityIdentity";
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;
