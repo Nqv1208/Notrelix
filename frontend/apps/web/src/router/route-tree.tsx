@@ -54,6 +54,7 @@ import {
   accountAppearanceRoute,
   accountNotificationsRoute,
   accountTokensRoute,
+  accountEmailRoute,
   accountWorkspacesRoute,
   accountOutsideWorkspaceRoute,
 } from "./routes/account.routes";
@@ -107,6 +108,7 @@ export const routeTree = rootRoute.addChildren([
       accountAppearanceRoute,
       accountNotificationsRoute,
       accountTokensRoute,
+      accountEmailRoute,
       accountWorkspacesRoute,
     ]),
   ]),

@@ -88,9 +88,10 @@ for (const dark of [false, true]) {
       width: 319.9,
       height: 26.1,
     });
-    // The sign-in email block above the two-factor block is not on the mockup: it is 292.4 px tall
-    // plus the 16 px gap, so everything from the two-factor block down sits `shift` lower.
-    const shift = 308.42;
+    // The "Connected accounts" block above the two-factor block (Idn-Providers draws it as its own
+    // page, 184.17 px with its gap) is not on this mockup: everything from the two-factor block down
+    // sits `shift` lower.
+    const shift = 184.17;
     // Two-factor block, sessions block: 16 px apart, 916 px wide.
     await expectBox(
       page.getByRole("region", { name: "Xác thực hai yếu tố", exact: true }),
@@ -168,11 +169,11 @@ test("the link-copied toast keeps the Final-States padding and rhythm", async ({
 }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/workspaces/mock-workspace-primary/boards/mock-board-erp");
-  const card = page.locator("article").first();
-  await card.hover();
-  await card
-    .getByRole("button", { name: /tuỳ chọn|Thao tác|Thêm/i })
-    .first()
+  // The board card has no menu of its own: "Copy link" is in the actions menu of the card popup.
+  await page.locator("article button[data-card-id]").first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Thao tác trên thẻ" })
     .click();
   await page.getByRole("menuitem", { name: /Sao chép liên kết/ }).click();
   const toast = page.locator("[data-sonner-toast]").first();

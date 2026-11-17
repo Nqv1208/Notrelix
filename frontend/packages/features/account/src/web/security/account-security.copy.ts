@@ -29,18 +29,14 @@ export const en = {
   },
   email: {
     title: "Sign-in email",
-    rowText:
-      "You sign in with this address and we send security notices to it.",
-    change: "Change email",
+    pageText: "You sign in with this email and we send security notices to it.",
+    current: "Current email",
+    placeholder: "name@company.com",
     proofTitle: "Confirm to change your sign-in email",
-    formTitle: "Change your sign-in email",
-    formText:
-      "We send a link to the new address. Your current email keeps working until you open it.",
     label: "New email",
     invalid: "Enter a valid email address.",
     sameAsCurrent: "That is already your sign-in email.",
-    submit: "Send link",
-    cancel: "Cancel",
+    submit: "Send confirmation link",
     wait: "Too many attempts. Try again in {{seconds}} seconds.",
     sentTitle: "Check the new inbox",
     sentText:
@@ -261,18 +257,14 @@ export const vi: AccountSecurityCopy = {
   },
   email: {
     title: "Email đăng nhập",
-    rowText:
-      "Bạn đăng nhập bằng địa chỉ này và chúng tôi gửi thông báo bảo mật tới đây.",
-    change: "Đổi email",
+    pageText: "Email này dùng để đăng nhập và nhận thông báo bảo mật.",
+    current: "Email hiện tại",
+    placeholder: "ten@congty.vn",
     proofTitle: "Xác nhận để đổi email đăng nhập",
-    formTitle: "Đổi email đăng nhập",
-    formText:
-      "Chúng tôi gửi một liên kết tới địa chỉ mới. Email hiện tại vẫn dùng được cho tới khi bạn mở liên kết.",
     label: "Email mới",
     invalid: "Hãy nhập một địa chỉ email hợp lệ.",
     sameAsCurrent: "Đây đã là email đăng nhập của bạn.",
-    submit: "Gửi liên kết",
-    cancel: "Hủy",
+    submit: "Gửi liên kết xác nhận",
     wait: "Thử quá nhiều lần. Hãy thử lại sau {{seconds}} giây.",
     sentTitle: "Hãy kiểm tra hộp thư mới",
     sentText:
