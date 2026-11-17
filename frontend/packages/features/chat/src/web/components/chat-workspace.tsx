@@ -33,6 +33,7 @@ import {
   Lock,
   MessageSquareText,
   Phone,
+  PhoneOff,
   Plus,
   Search,
   Video,
@@ -88,8 +89,20 @@ import {
   type ChatComposerProps,
 } from "./chat-composer";
 import { ChatMessageList, type ChatListStatus } from "./chat-message-list";
-import { ChatCallDock } from "../calls/chat-call-dock";
-import { useChatCalls } from "../calls/use-chat-calls";
+import {
+  ChatCallIncoming,
+  ChatCallStage,
+  ChatCallStrip,
+} from "../calls/chat-call-surfaces";
+import { useChatCalls, type ChatCallError } from "../calls/use-chat-calls";
+
+const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
+  unavailable: "unavailable",
+  "start-failed": "startFailed",
+  "you-busy": "youBusy",
+  "already-active": "alreadyActive",
+  full: "full",
+};
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
 import { useChannelTimeline } from "./use-channel-timeline";
@@ -999,6 +1012,61 @@ export function ChatWorkspace({
   // ─── Conversations ────────────────────────────────────────────────────────
   const nameOf = (userId: string) =>
     people.get(userId) ?? copy.list.unknownAuthor;
+  // The call takes the pane of its own conversation; "back to the conversation" hides it and a bar in the pane's flow remains.
+  const [minimizedCallId, setMinimizedCallId] = useState<string | null>(null);
+  const heldCall = calls.current;
+  const callSpaceOpen =
+    heldCall !== null && channelId === heldCall.call.spaceId;
+  const stageVisible =
+    callSpaceOpen &&
+    (heldCall.call.state === "ended" || minimizedCallId !== heldCall.call.id);
+  const callPeople = {
+    viewerId,
+    nameOf,
+    peerOf: (spaceId: string) =>
+      conversationsQuery.data
+        ?.find((entry) => entry.id === spaceId)
+        ?.participants.find((p) => p.userId !== viewerId)?.userId ?? null,
+  };
+  const callStrip =
+    heldCall && !stageVisible ? (
+      <ChatCallStrip
+        controller={calls}
+        held={heldCall}
+        copy={copy}
+        onReturn={() => {
+          setMinimizedCallId(null);
+          onOpenChannel(heldCall.call.spaceId);
+        }}
+        {...callPeople}
+      />
+    ) : null;
+  const callIncoming = (
+    <ChatCallIncoming
+      controller={calls}
+      nameOf={nameOf}
+      isPhone={isMobile}
+      copy={copy}
+    />
+  );
+  const callError = calls.error ? (
+    <ChatStatusBanner
+      tone="warning"
+      icon={<PhoneOff />}
+      action={
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={calls.dismiss}
+        >
+          {copy.calls.close}
+        </Button>
+      }
+    >
+      {copy.calls[CALL_ERROR_COPY[calls.error]]}
+    </ChatStatusBanner>
+  ) : null;
   const pickable = useMemo(
     () =>
       [...people.entries()]
@@ -1387,6 +1455,9 @@ export function ChatWorkspace({
             {listOnly ? (
               <div className="flex min-h-0 w-full flex-col bg-sidebar">
                 {sidebar}
+                {callError}
+                {callStrip}
+                {callIncoming}
               </div>
             ) : isMobile ? (
               <Sheet open={listOpen} onOpenChange={setListOpen}>
@@ -1583,6 +1654,8 @@ export function ChatWorkspace({
                         onSetLevel={handleLevel}
                       />
                     ) : null}
+                    {callError}
+                    {callStrip}
                     {connection === "reconnecting" ? (
                       <ChatStatusBanner tone="warning" icon={<WifiOff />}>
                         {copy.list.reconnecting}
@@ -1835,6 +1908,17 @@ export function ChatWorkspace({
                     </div>
                   </>
                 )}
+                {heldCall ? (
+                  <ChatCallStage
+                    controller={calls}
+                    held={heldCall}
+                    visible={stageVisible}
+                    onMinimize={() => setMinimizedCallId(heldCall.call.id)}
+                    copy={copy}
+                    {...callPeople}
+                  />
+                ) : null}
+                {callIncoming}
               </section>
             )}
 
@@ -2229,18 +2313,6 @@ export function ChatWorkspace({
                 onConfirm={handleLink}
               />
             ) : null}
-            <ChatCallDock
-              controller={calls}
-              viewerId={viewerId}
-              nameOf={nameOf}
-              peerOf={(spaceId) =>
-                conversationsQuery.data
-                  ?.find((entry) => entry.id === spaceId)
-                  ?.participants.find((p) => p.userId !== viewerId)?.userId ??
-                null
-              }
-              copy={copy}
-            />
             <ChatSearchPanel
               open={searchOpen}
               onOpenChange={(next) => {

@@ -43,7 +43,7 @@ async function person(browser: Browser, user: Parameters<typeof signIn>[1]) {
   return { context, page };
 }
 
-const card = (page: Page) => page.getByTestId("chat-call-card");
+const card = (page: Page) => page.getByTestId("chat-call-stage");
 
 const startCall = (page: Page, _space: string, kind: "voice" | "video") =>
   page
@@ -55,7 +55,9 @@ const startCall = (page: Page, _space: string, kind: "voice" | "video") =>
 
 async function serious(page: Page) {
   const result = await new AxeBuilder({ page })
-    .include("[data-testid=chat-call-dock]")
+    .include(
+      "[data-testid=chat-call-stage], [data-testid=chat-call-incoming], [data-testid=chat-call-strip]",
+    )
     .withTags(["wcag2a", "wcag2aa"])
     .analyze();
   return result.violations.filter(

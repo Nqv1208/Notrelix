@@ -57,7 +57,11 @@ export {
   type ChatCurrentCall,
   type UseChatCallsOptions,
 } from "./calls/use-chat-calls";
-export { ChatCallDock } from "./calls/chat-call-dock";
+export {
+  ChatCallIncoming,
+  ChatCallStage,
+  ChatCallStrip,
+} from "./calls/chat-call-surfaces";
 export {
   connectChatCallMedia,
   type ChatCallMediaConnector,

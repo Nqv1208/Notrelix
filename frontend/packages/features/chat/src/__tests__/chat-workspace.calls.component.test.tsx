@@ -67,16 +67,17 @@ describe("ChatWorkspace: the two places a call starts", () => {
     fireEvent.click(
       await within(header).findByRole("button", { name: en.panel.voiceCall }),
     );
-    const card = await screen.findByTestId("chat-call-card");
+    const card = await screen.findByTestId("chat-call-stage");
     expect(card.getAttribute("data-phase")).toBe("outgoing-ringing");
-    expect(card.textContent).toContain(`Calling ${name}`);
+    expect(card.textContent).toContain(name);
+    expect(card.textContent).toContain(en.calls.ringingDots);
     expect(Array.from(store.chat.calls.values())[0]).toMatchObject({
       kind: "voice",
       state: "ringing",
     });
     fireEvent.click(screen.getByRole("button", { name: en.calls.cancel }));
     await waitFor(() =>
-      expect(screen.getByTestId("chat-call-card").textContent).toContain(
+      expect(screen.getByTestId("chat-call-stage").textContent).toContain(
         en.calls.endedCancelled,
       ),
     );
@@ -92,7 +93,7 @@ describe("ChatWorkspace: the two places a call starts", () => {
     fireEvent.click(
       await within(panel).findByRole("button", { name: en.panel.videoCall }),
     );
-    await screen.findByTestId("chat-call-card");
+    await screen.findByTestId("chat-call-stage");
     expect(Array.from(store.chat.calls.values())[0]).toMatchObject({
       kind: "video",
       state: "ringing",
