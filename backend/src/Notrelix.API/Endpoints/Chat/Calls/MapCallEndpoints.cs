@@ -105,7 +105,7 @@ public static class MapCallEndpoints
         return app;
     }
 
-    private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender)
+    private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender, IServiceScopeFactory scopes)
     {
         var started = await sender.Send(new StartCallCommand(workspaceId, spaceId, body.Kind));
         if (!started.Succeeded)
@@ -113,7 +113,10 @@ public static class MapCallEndpoints
 
         // The start is stored for idempotent replay and carries no media token; the starter's token is minted fresh here, for a first
         // start and for every replay, after the caller's access to the call is checked again.
-        var joined = await sender.Send(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id));
+        // A request runs one command through the pipeline (its execution context resolves once), so the token query runs in a scope of
+        // its own; the caller's identity comes from the same HTTP request.
+        await using var scope = scopes.CreateAsyncScope();
+        var joined = await scope.ServiceProvider.GetRequiredService<ISender>().Send(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id));
         return joined.ToCreatedResult();
     }
 
