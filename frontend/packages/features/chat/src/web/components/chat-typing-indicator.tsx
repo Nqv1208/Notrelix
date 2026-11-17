@@ -39,12 +39,8 @@ export function ChatTypingIndicator({
   );
 }
 
-/** The dots' stagger: each starts a little later, so the three pulse in a wave. */
-const DOT_DELAYS = [
-  "[animation-delay:0ms]",
-  "[animation-delay:150ms]",
-  "[animation-delay:300ms]",
-];
+/** The three dots; their stagger lives in the .chat-typing-wave rule (globals.css). */
+const DOTS = [0, 1, 2];
 
 /** The three wave dots, shared by the bubble and the sidebar rows. */
 export function ChatTypingDots({ className }: { readonly className?: string }) {
@@ -53,13 +49,10 @@ export function ChatTypingDots({ className }: { readonly className?: string }) {
       aria-hidden="true"
       className={cn("inline-flex items-center gap-1", className)}
     >
-      {DOT_DELAYS.map((delay) => (
+      {DOTS.map((dot) => (
         <span
-          key={delay}
-          className={cn(
-            "chat-typing-wave size-1.5 rounded-full bg-muted-foreground motion-reduce:animate-none motion-reduce:opacity-70",
-            delay,
-          )}
+          key={dot}
+          className="chat-typing-wave size-1.5 rounded-full bg-muted-foreground"
         />
       ))}
     </span>

@@ -38,8 +38,7 @@ function message(overrides: Partial<ChatMessage> = {}): ChatMessage {
 const noHooks = {} as ChatHooks;
 
 describe("ReactionChips", () => {
-  it("shows each emoji with its count, and says which one the caller reacted with", () => {
-    const onToggle = vi.fn();
+  it("is one pill with up to three distinct emoji and the total, labelled with every reaction, highlighted when mine", () => {
     render(
       <ReactionChips
         messageId="m-1"
@@ -47,21 +46,20 @@ describe("ReactionChips", () => {
         reactions={[
           { emoji: "👍", count: 4, reactedByMe: true },
           { emoji: "👀", count: 2, reactedByMe: false },
+          { emoji: "🎉", count: 1, reactedByMe: false },
+          { emoji: "🚀", count: 1, reactedByMe: false },
         ]}
         hooks={noHooks}
         authorName={() => "Someone"}
         copy={en}
-        onToggle={onToggle}
       />,
     );
-    const mine = screen.getByRole("button", { name: "👍 4, you reacted" });
-    expect(mine.getAttribute("aria-pressed")).toBe("true");
-    const other = screen.getByRole("button", { name: "👀 2" });
-    expect(other.getAttribute("aria-pressed")).toBe("false");
-    fireEvent.click(mine);
-    expect(onToggle).toHaveBeenLastCalledWith("👍", false);
-    fireEvent.click(other);
-    expect(onToggle).toHaveBeenLastCalledWith("👀", true);
+    const pill = screen.getByRole("button", {
+      name: "Who reacted: 👍 4, you reacted; 👀 2; 🎉 1; 🚀 1",
+    });
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(pill.textContent).toBe("👍👀🎉8");
+    expect(pill.getAttribute("data-mine")).toBe("true");
   });
 
   it("renders nothing without reactions", () => {
@@ -73,7 +71,6 @@ describe("ReactionChips", () => {
         hooks={noHooks}
         authorName={() => "Someone"}
         copy={en}
-        onToggle={vi.fn()}
       />,
     );
     expect(container.innerHTML).toBe("");

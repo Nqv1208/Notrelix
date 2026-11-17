@@ -280,7 +280,7 @@ test.describe("motion", () => {
 });
 
 test.describe("jump to latest pill", () => {
-  test("floats over the list with no layout space, 34 high, fades and rises in 150 ms, and glides to the end", async ({
+  test("floats over the list with no layout space, 34 high, fades and rises in 200 ms, and glides to the end", async ({
     page,
   }) => {
     await open(page, 1440, 900, "light");
@@ -306,12 +306,13 @@ test.describe("jump to latest pill", () => {
     expect(p.y + p.h).toBeLessThanOrEqual(shown.y + shown.h);
     expect(p.x + p.w / 2).toBeCloseTo(shown.x + shown.w / 2, 0);
     const sel = "button[data-visible]";
-    expect(await css(page, sel, "transition-duration")).toContain("0.15s");
+    expect(await css(page, sel, "transition-duration")).toContain("0.2s");
     const props = (await css(page, sel, "transition-property"))
       .split(",")
       .map((x) => x.trim());
     expect(props).toContain("opacity");
     expect(props).toContain("transform");
+    expect(props).toContain("translate");
     for (const l of ["width", "height", "margin", "top", "bottom"]) {
       expect(props).not.toContain(l);
     }
