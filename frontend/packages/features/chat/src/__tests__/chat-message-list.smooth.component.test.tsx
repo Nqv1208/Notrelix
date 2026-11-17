@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@notrelix/testing";
-import { VirtuosoMockContext } from "react-virtuoso";
 import {
   ChatMessageList,
   type ChatMessageListProps,
@@ -135,25 +134,13 @@ describe("ChatMessageList: a long history with layout", () => {
     vi.restoreAllMocks();
   });
 
-  const wrap = (node: React.ReactNode) => (
-    <VirtuosoMockContext.Provider
-      value={{ viewportHeight: 600, itemHeight: 50 }}
-    >
-      {node}
-    </VirtuosoMockContext.Provider>
-  );
+  const wrap = (node: React.ReactNode) => node;
   const many = (from: number, to: number) =>
     Array.from({ length: to - from + 1 }, (_, i) => message(from + i));
 
   it("slides in a new message's row, not the history", async () => {
     // A view tall enough for the whole history: the follow of a new row is a scripted scroll, which has no layout here.
-    const tall = (node: React.ReactNode) => (
-      <VirtuosoMockContext.Provider
-        value={{ viewportHeight: 4000, itemHeight: 50 }}
-      >
-        {node}
-      </VirtuosoMockContext.Provider>
-    );
+    const tall = (node: React.ReactNode) => node;
     const { rerender } = render(
       tall(<ChatMessageList {...props(many(1, 30))} />),
     );

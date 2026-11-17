@@ -26,7 +26,6 @@
     "@notrelix/ui-web": "workspace:*",
     "@tanstack/react-query": "^5.95.2",
     "lucide-react": "^0.562.0",
-    "react-virtuoso": "4.18.20",
     "sonner": "catalog:"
   },
   "devDependencies": {

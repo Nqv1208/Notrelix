@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
   await openFilledRoom(page);
 });
 
-test.fixme("(d) wheel scrolling moves the message by the wheel delta and nothing more", async ({
+test("(d) wheel scrolling moves the message by the wheel delta and nothing more", async ({
   page,
 }) => {
   await atNewest(page);

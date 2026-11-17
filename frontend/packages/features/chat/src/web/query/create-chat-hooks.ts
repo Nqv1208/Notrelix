@@ -232,6 +232,8 @@ export function createChatHooks(deps: ChatHookDeps) {
           ? { after: last.items[last.items.length - 1]!.sequence }
           : undefined,
       structuralSharing: shareMessages,
+      // The list draws every loaded row, so the loaded pages are capped; the pages at the far end are dropped.
+      maxPages: CHAT_LIMITS.maxLoadedPages,
       // A jump to the newest messages keeps the window on screen until the new one arrives, so a send made from
       // an older window shows its bubble at once instead of a skeleton.
       placeholderData: (previous, previousQuery) =>
