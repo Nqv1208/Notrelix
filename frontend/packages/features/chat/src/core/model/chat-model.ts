@@ -126,15 +126,22 @@ export type ChatRow =
       readonly groupEnd: boolean;
     };
 
+const dayFormats = new Map<string, Intl.DateTimeFormat>();
 /** The calendar day of an instant in the viewer's zone, as YYYY-MM-DD. */
 export function dayKeyOf(iso: string, timeZone?: string): string {
   const date = new Date(iso);
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    timeZone,
-  }).formatToParts(date);
+  // One formatter per zone: building one per message made every row rebuild of a long channel cost tens of ms.
+  let format = dayFormats.get(timeZone ?? "");
+  if (!format) {
+    format = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone,
+    });
+    dayFormats.set(timeZone ?? "", format);
+  }
+  const parts = format.formatToParts(date);
   const pick = (type: string) =>
     parts.find((p) => p.type === type)?.value ?? "";
   return `${pick("year")}-${pick("month")}-${pick("day")}`;

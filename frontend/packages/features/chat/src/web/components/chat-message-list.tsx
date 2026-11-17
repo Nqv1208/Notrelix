@@ -1,10 +1,12 @@
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactElement,
 } from "react";
 import {
   ArrowDown,
@@ -39,6 +41,8 @@ import {
   ChatMessageRow,
   ChatPendingRow,
   formatClock,
+  rowPropsEqual,
+  type ChatMessageRowProps,
   type QuoteView,
 } from "./chat-message-row";
 import {
@@ -71,8 +75,18 @@ const ROW_STYLE = {
   containIntrinsicSize: "auto 64px",
 } as const;
 
+/** An older page is mounted this many rows per frame, nearest the reader first, so one page never holds a frame. */
+const MOUNT_CHUNK = 5;
+
 /** How many screens above and below the view are drawn in full. */
 const REALIZE_SCREENS = 2;
+
+/** The `li` built for a stored message, with what it was built from. */
+interface KeptItem {
+  readonly props: ChatMessageRowProps;
+  readonly fresh: boolean;
+  readonly el: ReactElement;
+}
 
 /** The typing bubble is the last entry of the list, after the rows. */
 const TYPING_ENTRY = { kind: "typing", key: "typing" } as const;
@@ -336,10 +350,40 @@ export function ChatMessageList(props: ChatMessageListProps) {
   }
   quietObserverLoopNotice();
   const hasTyping = typingIds.length > 0;
-  const entries = useMemo<readonly ListEntry[]>(
+  const allEntries = useMemo<readonly ListEntry[]>(
     () => (hasTyping ? [...rows, TYPING_ENTRY] : rows),
     [rows, hasTyping],
   );
+  // Rows added above the old first message wait unmounted and join a chunk at a time (see MOUNT_CHUNK).
+  const headKey =
+    allEntries.find((e) => e.kind === "message" || e.kind === "pending")?.key ??
+    "";
+  const [paged, setPaged] = useState({ head: headKey, held: 0 });
+  if (paged.head !== headKey) {
+    const at = allEntries.findIndex((e) => e.key === paged.head);
+    setPaged({ head: headKey, held: at > 0 ? at : 0 });
+  }
+  const held = Math.min(paged.held, allEntries.length);
+  useEffect(() => {
+    if (held === 0) return;
+    const id = requestAnimationFrame(() =>
+      setPaged((p) => ({ ...p, held: Math.max(0, p.held - MOUNT_CHUNK) })),
+    );
+    return () => cancelAnimationFrame(id);
+  }, [held]);
+  const entries = useMemo(
+    () => (held > 0 ? allEntries.slice(held) : allEntries),
+    [allEntries, held],
+  );
+  // The `li` of every entry, kept while the inputs of the rows are the same objects: a chunk of an older page joining
+  // re-renders this list with the same props, and building 500 elements again each frame was the cost of that frame.
+  const built = useRef<{
+    props: ChatMessageListProps;
+    entries: readonly ListEntry[];
+    laidOut: boolean;
+    items: ReactElement[];
+    kept: Map<string, KeptItem>;
+  } | null>(null);
 
   // A new window (another channel, or a jump to a message far from the loaded ones) replaces the rows: the list is
   // built again and opens where it was asked to (a message being looked for, the first unread message, or the newest).
@@ -481,7 +525,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
   /** Brings an entry to the middle of the view; false when it is not in the list. */
   const glideToIndex = (index: number, instant = false): boolean => {
     const el = scrollRef.current;
-    const entry = entries[index];
+    const entry = allEntries[index];
     if (!el || !entry || !rowNode(entry.key)) return false;
     const top = () => centeredTop(el, rowNode(entry.key)!);
     // Far away: land one screen short of it, then glide the last screen.
@@ -579,7 +623,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
     const id = `${space}:${state.epoch}`;
     if (placed.current === id) return;
     placed.current = id;
-    const at = state.openAt.index === "LAST" ? null : entries[state.openAt.index];
+    const at =
+      state.openAt.index === "LAST" ? null : allEntries[state.openAt.index];
     const node = at ? rowNode(at.key) : null;
     el.scrollTop = node ? centeredTop(el, node) : el.scrollHeight;
     recordPlace();
@@ -686,7 +731,11 @@ export function ChatMessageList(props: ChatMessageListProps) {
   function checkEdges() {
     const el = scrollRef.current;
     if (!el) return;
-    if (el.scrollTop < el.clientHeight * 3 && props.hasOlder && !props.isLoadingOlder) {
+    if (
+      el.scrollTop < el.clientHeight * 3 &&
+      props.hasOlder &&
+      !props.isLoadingOlder
+    ) {
       props.onOlderNeeded();
     }
     if (isAtBottom(el) && props.hasNewer && !props.isLoadingNewer) {
@@ -731,9 +780,10 @@ export function ChatMessageList(props: ChatMessageListProps) {
   // A row slides in when it mounts, and keeps the entrance class while that plays; a row that comes back into the
   // window later (scrolled away and back) does not play it again.
   const enteredAt = useRef(new Map<string, number>());
+  const rowByKey = useMemo(() => new Map(rows.map((r) => [r.key, r])), [rows]);
   const isFresh = useCallback(
     (key: string) => {
-      const row = rows.find((r) => r.key === key);
+      const row = rowByKey.get(key);
       if (!row) return false;
       const isNew =
         row.kind === "pending" ||
@@ -751,7 +801,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
       }
       return now - first < ENTER_MS;
     },
-    [rows],
+    [rowByKey],
   );
   if (status === "loading") {
     return (
@@ -856,6 +906,37 @@ export function ChatMessageList(props: ChatMessageListProps) {
     );
   }
 
+  /** What a stored message's row is given: the cached `li` of a row is kept while this is equal. */
+  const messageRowProps = (
+    row: Extract<ChatRow, { kind: "message" }>,
+  ): ChatMessageRowProps => ({
+    message: row.message,
+    author: { name: props.authorName(row.message.authorId) },
+    continued: row.continued,
+    groupEnd: row.groupEnd,
+    showName: props.showNames ?? true,
+    showSent: row.key === lastOwnKey,
+    isOwn: row.message.authorId === props.viewerId,
+    locale: locale,
+    timeZone: timeZone,
+    copy: copy,
+    onEdit: props.onEdit ? rowHandlers.onEdit : undefined,
+    onDelete: props.onDelete ? rowHandlers.onDelete : undefined,
+    onModerate: props.onModerate ? rowHandlers.onModerate : undefined,
+    quote: props.quoteOf?.(row.message) ?? null,
+    thread: threadView(props.threadCounts, row.message),
+    pinned: props.pinnedIds?.has(row.message.id) ?? false,
+    reactions: row.message.reactions ?? NO_REACTIONS,
+    workspaceId: props.workspaceId,
+    hooks: props.hooks,
+    authorName: rowHandlers.authorName,
+    onReact: props.onReact ? rowHandlers.onReact : undefined,
+    onReply: props.onReply ? rowHandlers.onReply : undefined,
+    onOpenThread: props.onOpenThread ? rowHandlers.onOpenThread : undefined,
+    onTogglePin: props.onTogglePin ? rowHandlers.onTogglePin : undefined,
+    onOpenQuote: props.onOpenQuote ? rowHandlers.onOpenQuote : undefined,
+    attachmentsReadOnly: props.attachmentsReadOnly,
+  });
   const renderRow = (row: ChatRow) => {
     if (row.kind === "day") {
       return (
@@ -906,9 +987,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         />
       );
     }
-    const isEditing = editing?.messageId === row.message.id;
-    const isOwn = row.message.authorId === props.viewerId;
-    return isEditing ? (
+    return editing?.messageId === row.message.id ? (
       <EditForm
         copy={copy}
         editing={editing}
@@ -918,34 +997,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
         onCancel={props.onEditCancel}
       />
     ) : (
-      <ChatMessageRow
-        message={row.message}
-        author={{ name: props.authorName(row.message.authorId) }}
-        continued={row.continued}
-        groupEnd={row.groupEnd}
-        showName={props.showNames ?? true}
-        showSent={row.key === lastOwnKey}
-        isOwn={isOwn}
-        locale={locale}
-        timeZone={timeZone}
-        copy={copy}
-        onEdit={props.onEdit ? rowHandlers.onEdit : undefined}
-        onDelete={props.onDelete ? rowHandlers.onDelete : undefined}
-        onModerate={props.onModerate ? rowHandlers.onModerate : undefined}
-        quote={props.quoteOf?.(row.message) ?? null}
-        thread={threadView(props.threadCounts, row.message)}
-        pinned={props.pinnedIds?.has(row.message.id) ?? false}
-        reactions={row.message.reactions ?? NO_REACTIONS}
-        workspaceId={props.workspaceId}
-        hooks={props.hooks}
-        authorName={rowHandlers.authorName}
-        onReact={props.onReact ? rowHandlers.onReact : undefined}
-        onReply={props.onReply ? rowHandlers.onReply : undefined}
-        onOpenThread={props.onOpenThread ? rowHandlers.onOpenThread : undefined}
-        onTogglePin={props.onTogglePin ? rowHandlers.onTogglePin : undefined}
-        onOpenQuote={props.onOpenQuote ? rowHandlers.onOpenQuote : undefined}
-        attachmentsReadOnly={props.attachmentsReadOnly}
-      />
+      <ChatMessageRow {...messageRowProps(row)} />
     );
   };
   const renderEntry = (entry: ListEntry) =>
@@ -958,6 +1010,56 @@ export function ChatMessageList(props: ChatMessageListProps) {
     ) : (
       renderRow(entry)
     );
+
+  let items: ReactElement[];
+  const reuse = built.current;
+  if (
+    reuse &&
+    reuse.props === props &&
+    reuse.entries === allEntries &&
+    reuse.laidOut === laidOut
+  )
+    items = reuse.items;
+  else {
+    // A stored message whose row props are equal to the last build keeps its element: React skips it whole, and the
+    // render of a long channel does not create a thousand elements for the few rows that changed.
+    const kept = new Map<string, KeptItem>();
+    items = allEntries.map((entry) => {
+      const fresh = laidOut && isFresh(entry.key);
+      const asProps =
+        entry.kind === "message" && editing?.messageId !== entry.message.id
+          ? messageRowProps(entry)
+          : null;
+      const old = reuse?.kept.get(entry.key);
+      if (
+        asProps &&
+        old &&
+        old.fresh === fresh &&
+        rowPropsEqual(old.props, asProps)
+      ) {
+        kept.set(entry.key, old);
+        return old.el;
+      }
+      const el = (
+        <li
+          key={entry.key}
+          data-row-key={entry.key}
+          data-row-anchor={
+            entry.kind === "message" || entry.kind === "pending"
+              ? ""
+              : undefined
+          }
+          style={ROW_STYLE}
+          {...itemShell(entry, fresh)}
+        >
+          {asProps ? <ChatMessageRow {...asProps} /> : renderEntry(entry)}
+        </li>
+      );
+      if (asProps) kept.set(entry.key, { props: asProps, fresh, el });
+      return el;
+    });
+    built.current = { props, entries: allEntries, laidOut, items, kept };
+  }
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
@@ -998,21 +1100,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
                 text={props.isLoadingOlder ? copy.list.loadingOlder : null}
               />
               <ol ref={listRef} className={cn(CHAT_COLUMN, "flex flex-col")}>
-                {entries.map((entry) => (
-                  <li
-                    key={entry.key}
-                    data-row-key={entry.key}
-                    data-row-anchor={
-                      entry.kind === "message" || entry.kind === "pending"
-                        ? ""
-                        : undefined
-                    }
-                    style={ROW_STYLE}
-                    {...itemShell(entry, laidOut && isFresh(entry.key))}
-                  >
-                    {renderEntry(entry)}
-                  </li>
-                ))}
+                {held > 0 ? items.slice(held) : items}
               </ol>
               <Strip
                 height={FOOTER_PX + (props.bottomInset ?? 0)}

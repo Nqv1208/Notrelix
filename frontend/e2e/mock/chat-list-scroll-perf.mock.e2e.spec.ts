@@ -7,9 +7,10 @@ import {
 } from "./support/chat-list-trace";
 
 // The list draws every loaded row (up to 10 pages): scrolling through a 500-message channel must not stall a frame.
-const LONGEST_FRAME_MS = 50;
+// Frames land on 16.7 ms ticks: 3 ticks (50 ms) plus timer jitter is the allowed worst, a 4th tick (66.7) is a stall.
+const LONGEST_FRAME_MS = 55;
 
-test("scrolling through a 500-message channel never holds a frame past 50 ms", async ({
+test("scrolling through a 500-message channel never holds a frame past three ticks", async ({
   page,
 }) => {
   await page.goto(`/workspaces/${WORKSPACE}/chat/${OTHER_ROOM}`);

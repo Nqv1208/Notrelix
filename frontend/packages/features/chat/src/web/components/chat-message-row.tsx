@@ -974,7 +974,7 @@ const shallowEqual = (a: unknown, b: unknown): boolean => {
 };
 
 /** Props that arrive as fresh objects each render (author, quote, thread) compare by content, the rest by identity. */
-function rowPropsEqual(
+export function rowPropsEqual(
   prev: ChatMessageRowProps,
   next: ChatMessageRowProps,
 ): boolean {
