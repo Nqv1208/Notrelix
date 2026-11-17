@@ -67,6 +67,11 @@ export {
 } from "./security/account-security.copy";
 export { useAccountSecurityCopy } from "./security/use-account-security-copy";
 export {
+  AccountEmailSurface,
+  type AccountEmailFlow,
+  type AccountEmailSurfaceProps,
+} from "./email/account-email-surface";
+export {
   AccountSecuritySurface,
   relativeAge,
   type AccountActivityView,

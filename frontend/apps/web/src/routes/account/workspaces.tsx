@@ -52,6 +52,7 @@ function Frame() {
       appearance: link,
       security: link,
       notifications: link,
+      email: link,
       tokens: link,
       workspaces: link,
     };

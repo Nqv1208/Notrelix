@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
- * Changing the sign-in email on the security page (UC-IDN-K09), no artboard draws it: a walk of every
+ * Changing the sign-in email on its own page (UC-IDN-K09, board Idn-Email): a walk of every
  * state at 1440, 1024 and 390 px in light and dark, in Vietnamese. Per frame: the sentence shows,
  * no sideways scroll, every control a 44 px target on a phone, axe clean. The reviewer sets
  * AUTH_SHOTS_DIR to keep the images of a passing run and opens each one.
@@ -11,7 +11,7 @@ import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-d
 /** The email of the signed-in person of the default mock world. */
 const CURRENT_EMAIL = "ui-dev@notrelix.local";
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
-const security = "/workspaces/mock-workspace-primary/account/security";
+const emailPage = "/workspaces/mock-workspace-primary/account/email";
 const THEME_KEY = "notrelix-theme-mode";
 const VIEWS = [
   { name: "1440", width: 1440, height: 900 },
@@ -99,17 +99,30 @@ for (const view of VIEWS) {
     test(`a person changes the sign-in email, ${tag}`, async ({ page }) => {
       test.setTimeout(90_000);
       await prepare(page, view.width, view.height, dark);
-      await page.goto(security);
+      await page.goto(emailPage);
       await expect(
-        page.getByRole("heading", { level: 2, name: "Bảo mật" }),
+        page.getByRole("heading", { level: 2, name: "Email đăng nhập" }),
       ).toBeVisible();
-      await expect(
-        page.getByText(CURRENT_EMAIL, { exact: true }).first(),
-      ).toBeVisible();
-      await frame(page, `email-row-${tag}`, view.width);
+      const current = page.getByLabel("Email hiện tại");
+      await expect(current).toHaveValue(CURRENT_EMAIL);
+      await expect(current).toHaveAttribute("readonly", "");
+      await frame(page, `email-form-${tag}`, view.width);
 
-      // The proof comes first (a code, two-factor is on), then the address is asked.
-      await page.getByRole("button", { name: "Đổi email" }).click();
+      // A malformed address and the current one are told before anything is sent.
+      const next = page.getByLabel("Email mới");
+      const send = page.getByRole("button", { name: "Gửi liên kết xác nhận" });
+      await next.fill("khong-phai-email");
+      await send.click();
+      await expect(page.getByRole("alert")).toContainText("hợp lệ");
+      await frame(page, `email-invalid-${tag}`, view.width);
+      await next.fill(CURRENT_EMAIL);
+      await send.click();
+      await expect(page.getByRole("alert")).toContainText("đã là email");
+      await frame(page, `email-same-${tag}`, view.width);
+
+      // The proof comes next (a code, two-factor is on), then the link goes out.
+      await next.fill("moi@example.com");
+      await send.click();
       const proof = page.getByRole("region", {
         name: "Xác nhận để đổi email đăng nhập",
       });
@@ -117,32 +130,14 @@ for (const view of VIEWS) {
       await frame(page, `email-proof-${tag}`, view.width);
       await page.getByLabel("Mã", { exact: true }).fill(MOCK_AUTH.otpCode);
       await page.keyboard.press("Enter");
-      const form = page.getByRole("region", { name: "Đổi email đăng nhập" });
-      await expect(form).toBeVisible();
-      await expect(form.getByLabel("Email mới")).toBeFocused();
-      await frame(page, `email-form-${tag}`, view.width);
-
-      // A malformed address and the current one are told before anything is sent.
-      await form.getByLabel("Email mới").fill("khong-phai-email");
-      await form.getByRole("button", { name: "Gửi liên kết" }).click();
-      await expect(form.getByRole("alert")).toContainText("hợp lệ");
-      await frame(page, `email-invalid-${tag}`, view.width);
-      await form.getByLabel("Email mới").fill(CURRENT_EMAIL);
-      await form.getByRole("button", { name: "Gửi liên kết" }).click();
-      await expect(form.getByRole("alert")).toContainText("đã là email");
-      await frame(page, `email-same-${tag}`, view.width);
 
       // Any other address gets the same answer; the sign-in email shown stays the current one.
-      await form.getByLabel("Email mới").fill("moi@example.com");
-      await form.getByRole("button", { name: "Gửi liên kết" }).click();
-      const sent = page.getByRole("region", {
-        name: "Hãy kiểm tra hộp thư mới",
-      });
+      const sent = page
+        .getByRole("status")
+        .filter({ hasText: "Hãy kiểm tra hộp thư mới" });
       await expect(sent).toBeVisible();
       await expect(sent).toContainText("moi@example.com");
-      await expect(
-        page.getByText(CURRENT_EMAIL, { exact: true }).first(),
-      ).toBeVisible();
+      await expect(current).toHaveValue(CURRENT_EMAIL);
       await frame(page, `email-sent-${tag}`, view.width);
       await sent.getByRole("button", { name: "Xong" }).click();
       await expect(sent).toHaveCount(0);

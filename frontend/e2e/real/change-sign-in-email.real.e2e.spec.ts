@@ -20,7 +20,7 @@ test("a person asks for a new sign-in email, the old one keeps working until the
 }) => {
   test.setTimeout(180_000);
   const member = await freshMember(page, "k09");
-  const security = `/workspaces/${member.workspaceId}/account/security`;
+  const emailPage = `/workspaces/${member.workspaceId}/account/email`;
   const newEmail = uniqueEmail("k09new");
 
   // Somebody else already holds this address: it must answer exactly like a free one.
@@ -28,20 +28,18 @@ test("a person asks for a new sign-in email, the old one keeps working until the
   const taken = await registerPerson(other, "k09taken");
   await other.close();
 
-  await page.goto(security);
+  await page.goto(emailPage);
   const ask = async (address: string) => {
-    await page.getByRole("button", { name: "Change email" }).click();
+    await page.getByLabel("New email").fill(address);
+    await page.getByRole("button", { name: "Send confirmation link" }).click();
     const proof = page.getByRole("region", {
       name: "Confirm to change your sign-in email",
     });
     await proof.getByLabel("Current password").fill(member.password);
     await proof.getByRole("button", { name: "Confirm", exact: true }).click();
-    const form = page.getByRole("region", {
-      name: "Change your sign-in email",
-    });
-    await form.getByLabel("New email").fill(address);
-    await form.getByRole("button", { name: "Send link" }).click();
-    const sent = page.getByRole("region", { name: "Check the new inbox" });
+    const sent = page
+      .getByRole("status")
+      .filter({ hasText: "Check the new inbox" });
     await expect(sent).toContainText(address);
     return (await sent.innerText()).replace(address, "<address>");
   };

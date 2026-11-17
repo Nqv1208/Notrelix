@@ -2,6 +2,7 @@ import * as React from "react";
 import {
   Bell,
   KeyRound,
+  Mail,
   LayoutGrid,
   Palette,
   Shield,
@@ -22,6 +23,7 @@ export type AccountTab =
   | "profile"
   | "appearance"
   | "security"
+  | "email"
   | "notifications"
   | "tokens"
   | "workspaces";
@@ -54,12 +56,13 @@ const ICONS: Record<AccountTab, LucideIcon> = {
   appearance: Palette,
   security: Shield,
   notifications: Bell,
+  email: Mail,
   tokens: KeyRound,
   workspaces: LayoutGrid,
 };
 
 const GROUPS: readonly (readonly AccountTab[])[] = [
-  ["profile", "appearance", "security", "notifications", "tokens"],
+  ["profile", "appearance", "security", "email", "notifications", "tokens"],
   ["workspaces"],
 ];
 
