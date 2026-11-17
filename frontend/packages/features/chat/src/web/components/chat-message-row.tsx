@@ -403,8 +403,9 @@ function ChatMessageRowBase({
     onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key !== "Escape" || heldRef.current || !active) return;
       event.stopPropagation();
-      store.release(message.id);
+      // Focus first: the row taking the focus shows its actions, and Escape must leave them hidden.
       rowRef.current?.focus({ preventScroll: true });
+      store.release(message.id);
     },
   };
 
