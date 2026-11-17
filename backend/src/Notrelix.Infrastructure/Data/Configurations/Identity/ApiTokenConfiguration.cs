@@ -16,6 +16,7 @@ public class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
         builder.Property(x => x.UserId).HasColumnName("user_id");
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.TokenHash).HasColumnName("token_hash").IsRequired();
+        builder.Property(x => x.TokenSuffix).HasColumnName("token_suffix").HasMaxLength(8);
         builder.Property(x => x.Scopes).HasColumnName("scopes").HasConversion<Infrastructure.Data.Converters.ApiTokenScopesConverter>();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>().IsRequired().HasMaxLength(50);
         builder.Property(x => x.LastUsedAt).HasColumnName("last_used_at");

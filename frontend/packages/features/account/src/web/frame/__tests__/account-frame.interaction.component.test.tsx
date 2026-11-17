@@ -10,7 +10,7 @@ import {
 import { AccountFrame } from "../account-frame";
 
 describe("AccountFrame", () => {
-  it("FUI[account.frame:render] shows the member in the head and the five pages in the menu", () => {
+  it("FUI[account.frame:render] shows the member in the head and the six pages in the menu", () => {
     for (const locale of ["vi", "en"] as const) {
       const copy = frameCopyFixture(locale);
       const view = renderPureUi(
@@ -25,7 +25,7 @@ describe("AccountFrame", () => {
         screen.getByText("Nguyễn Thu Hà · thuha.nguyen@example.com"),
       ).toBeTruthy();
       const nav = screen.getByRole("navigation", { name: copy.label });
-      expect(nav.querySelectorAll("a")).toHaveLength(5);
+      expect(nav.querySelectorAll("a")).toHaveLength(6);
       const current = nav.querySelector("[aria-current=page]");
       expect(current?.textContent).toBe(copy.appearance);
       expect(screen.getByText("page")).toBeTruthy();

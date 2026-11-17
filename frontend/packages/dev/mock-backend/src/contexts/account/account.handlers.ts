@@ -15,6 +15,7 @@ import { ok, validationError } from "../../transport/create-response";
 import { TIME_ZONES } from "../../state/mock-account-pages";
 import { identityProblem } from "../identity/auth-flow.handlers";
 import { accountPagesOperations } from "./account-pages.handlers";
+import { accountApiTokenOperations } from "./account-api-tokens.handlers";
 import { accountSecurityOperations } from "./account-security.handlers";
 
 const LOCALES = ["vi", "en"] as const;
@@ -30,6 +31,7 @@ function normalizePhone(raw: string): string | null | "invalid" {
 export const accountOperations = [
   ...accountPagesOperations,
   ...accountSecurityOperations,
+  ...accountApiTokenOperations,
   defineMockOperation({
     id: "account.preferences.get",
     contract: {

@@ -20,6 +20,7 @@ import type {
   TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
+  AccountApiTokenPage,
 } from "../types/account";
 
 export interface AccountApiClient {
@@ -91,6 +92,8 @@ export interface AccountEndpoints {
     deletedWorkspaces: (accountId: string) => string;
   };
   workspaces: {
+    apiTokens: (workspaceId: string) => string;
+    apiToken: (workspaceId: string, tokenId: string) => string;
     detail: (workspaceId: string) => string;
     unarchive: (workspaceId: string) => string;
     restore: (workspaceId: string) => string;
@@ -331,6 +334,39 @@ export function toActivityPage(wire: ActivityPageWire): AccountActivityPage {
   return { items, nextCursor: wire.nextCursor ?? null };
 }
 
+interface ApiTokenPageWire {
+  readonly items?:
+    | readonly {
+        readonly id?: string;
+        readonly name?: string;
+        readonly status?: string;
+        readonly lastUsedAt?: string | null;
+        readonly expiresAt?: string | null;
+        readonly createdAt?: string;
+        readonly suffix?: string | null;
+      }[]
+    | null;
+  readonly nextCursor?: string | null;
+}
+
+export function toApiTokenPage(wire: ApiTokenPageWire): AccountApiTokenPage {
+  return {
+    items: (wire.items ?? []).map((item) => ({
+      id: item.id ?? "",
+      name: item.name ?? "",
+      status:
+        item.status === "Revoked" || item.status === "Expired"
+          ? (item.status.toLowerCase() as "revoked" | "expired")
+          : "active",
+      lastUsedAt: item.lastUsedAt ?? null,
+      expiresAt: item.expiresAt ?? null,
+      createdAt: item.createdAt ?? "",
+      suffix: item.suffix ?? null,
+    })),
+    nextCursor: wire.nextCursor ?? null,
+  };
+}
+
 /** The producer names the factor (`StepUpRequiredFactor`, serialized as a string). */
 const FACTORS: Readonly<Record<string, StepUpFactor>> = {
   MfaChallenge: "mfa",
@@ -528,6 +564,45 @@ export function createAccountService(
         jobTitle,
         expectedVersion,
       });
+    },
+
+    /** Metadata only, newest first; `cursor` is the previous page's `nextCursor`. */
+    async listApiTokens(
+      workspaceId: string,
+      cursor?: string | null,
+    ): Promise<AccountApiTokenPage> {
+      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+      return toApiTokenPage(
+        await api.get<ApiTokenPageWire>(
+          `${endpoints.workspaces.apiTokens(workspaceId)}${query}`,
+          QUIET,
+        ),
+      );
+    },
+
+    /** Spends an `IssueApiToken` proof. The secret is in this answer alone: hold it in memory, never store it. */
+    async issueApiToken(
+      workspaceId: string,
+      input: { name: string; expiresAt: string; stepUpToken: string },
+    ): Promise<{ id: string; secret: string; name: string }> {
+      const wire = await api.post<{
+        id?: string;
+        rawSecret?: string;
+        name?: string;
+      }>(endpoints.workspaces.apiTokens(workspaceId), input, QUIET);
+      return {
+        id: wire.id ?? "",
+        secret: wire.rawSecret ?? "",
+        name: wire.name ?? input.name,
+      };
+    },
+
+    /** Takes effect at once; revoking a revoked token is a success. */
+    async revokeApiToken(workspaceId: string, tokenId: string): Promise<void> {
+      await api.delete<void>(
+        endpoints.workspaces.apiToken(workspaceId, tokenId),
+        QUIET,
+      );
     },
 
     async getSecuritySummary(): Promise<AccountSecuritySummary> {

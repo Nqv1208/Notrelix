@@ -35,6 +35,7 @@ const PURPOSES = [
   "LinkOAuth",
   "UnlinkOAuth",
   "ChangeSecurityIdentity",
+  "IssueApiToken",
 ];
 
 function securityOf(store: MockStore): SecurityDetails {

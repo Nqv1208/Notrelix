@@ -42828,6 +42828,10 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "suffix": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

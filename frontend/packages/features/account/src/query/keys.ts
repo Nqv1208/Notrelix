@@ -12,6 +12,9 @@ export const accountQueryKeys = {
     accountQueryKey(accountId, "account", "sessions"),
   activity: (accountId: string) =>
     accountQueryKey(accountId, "account", "security-activity"),
+  /** The API tokens of one workspace (metadata only). */
+  apiTokens: (accountId: string, workspaceId: string) =>
+    accountQueryKey(accountId, "account", "api-tokens", workspaceId),
   /** The workspaces the person belongs to (account-scoped: it is their own list). */
   workspaces: (accountId: string) =>
     accountQueryKey(accountId, "account", "workspaces"),

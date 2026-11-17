@@ -47,6 +47,19 @@ export {
 } from "./appearance/account-appearance-surface";
 export type { AccountLocale } from "./shared/account-surface-model";
 
+export { accountTokensCatalog } from "./tokens/account-tokens.catalog";
+export {
+  accountTokensCopy,
+  type AccountTokensCopy,
+} from "./tokens/account-tokens.copy";
+export { useAccountTokensCopy } from "./tokens/use-account-tokens-copy";
+export {
+  AccountTokensSurface,
+  type AccountTokensIssueFlow,
+  type AccountTokensSurfaceProps,
+} from "./tokens/account-tokens-surface";
+export { createUseApiTokens } from "./query/hooks/use-api-tokens";
+
 export { accountSecurityCatalog } from "./security/account-security.catalog";
 export {
   accountSecurityCopy,

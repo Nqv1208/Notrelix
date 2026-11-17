@@ -155,6 +155,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.ApiTokens.List",
+    operationId: "Identity.ApiTokens.List",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.ApiTokens.Create",
+    operationId: "Identity.ApiTokens.Create",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.ApiTokens.Revoke",
+    operationId: "Identity.ApiTokens.Revoke",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Security.StepUpRequirement",
     operationId: "Identity.Security.StepUpRequirement",
     mutation: true,

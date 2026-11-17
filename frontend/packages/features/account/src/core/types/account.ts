@@ -116,7 +116,25 @@ export type StepUpPurpose =
   | "EnrollMfa"
   | "LinkOAuth"
   | "UnlinkOAuth"
-  | "ChangeSecurityIdentity";
+  | "ChangeSecurityIdentity"
+  | "IssueApiToken";
+
+/** One API token of a workspace; never the secret, only the last characters. */
+export interface AccountApiToken {
+  readonly id: string;
+  readonly name: string;
+  readonly status: "active" | "revoked" | "expired";
+  readonly lastUsedAt: string | null;
+  readonly expiresAt: string | null;
+  readonly createdAt: string;
+  /** `null` for a token issued before the suffix was kept. */
+  readonly suffix: string | null;
+}
+
+export interface AccountApiTokenPage {
+  readonly items: readonly AccountApiToken[];
+  readonly nextCursor: string | null;
+}
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;
