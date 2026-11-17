@@ -6,7 +6,7 @@ import {
   unreadBadge,
   type ChatSidebarProps,
 } from "../web/components/chat-sidebar";
-import type { ChatChannel } from "../core/types/chat";
+import type { ChatChannel, ChatConversation } from "../core/types/chat";
 import { en } from "../web/components/chat.copy";
 
 function channel(
@@ -153,14 +153,137 @@ describe("ChatSidebar", () => {
     expect(headings).toEqual(["Channels", "Projects", "Group 2"]);
   });
 
-  it("shows the jump-to field as plain text, not as a control", () => {
-    render(<ChatSidebar {...props()} />);
-    expect(
-      screen.queryByRole("button", { name: /Jump to or search/ }),
-    ).toBeNull();
-    expect(
-      screen.getByText("Jump to or search").closest("[aria-hidden='true']"),
-    ).not.toBeNull();
+  const people = { me: "Thu Hà", thao: "Nguyễn Thảo", quan: "Trần Quân" };
+  const nameOf = (id: string) => people[id as keyof typeof people] ?? "?";
+  function dm(id: string, other: string): ChatConversation {
+    return {
+      id,
+      kind: "direct",
+      name: null,
+      participants: [
+        { userId: "me", role: "member", joinedAt: "2026-11-01T08:00:00Z" },
+        { userId: other, role: "member", joinedAt: "2026-11-01T08:00:00Z" },
+      ],
+      isHidden: false,
+      notificationLevel: "all",
+      unreadCount: 0,
+      lastMessage: null,
+      lastActivityAt: "2026-11-10T09:00:00Z",
+      version: 1,
+      createdAt: "2026-11-01T08:00:00Z",
+    };
+  }
+  function withDms(
+    overrides: Partial<ChatSidebarProps> = {},
+    onPick = vi.fn(),
+  ) {
+    return props({
+      conversations: {
+        conversations: [dm("d-thao", "thao"), dm("d-quan", "quan")],
+        status: "ready",
+        activeId: null,
+        viewerId: "me",
+        locale: "en",
+        timeZone: "UTC",
+        nameOf,
+        unreadOf: () => 0,
+        onSelect: onPick,
+        onRetry: vi.fn(),
+      },
+      ...overrides,
+    });
+  }
+
+  it("filters channels and conversations at once, ignoring accents", () => {
+    render(<ChatSidebar {...withDms()} />);
+    const field = screen.getByRole("combobox");
+    expect(field.getAttribute("aria-keyshortcuts")).toBe("/");
+    fireEvent.change(field, { target: { value: "thao" } });
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(1);
+    expect(options[0]!.getAttribute("aria-label")).toContain("Nguyễn Thảo");
+    fireEvent.change(field, { target: { value: "lead" } });
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+  });
+
+  it("moves through matches with the arrows, opens one with Enter and clears with Escape", () => {
+    const onPick = vi.fn();
+    const onSelect = vi.fn();
+    render(<ChatSidebar {...withDms({ onSelect }, onPick)} />);
+    const field = screen.getByRole("combobox") as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "n" } });
+    // "n": channels general and leadership(no n? "leadership" has none) -> general, then Thảo and Quân.
+    const first = field.getAttribute("aria-activedescendant");
+    fireEvent.keyDown(field, { key: "ArrowDown" });
+    expect(field.getAttribute("aria-activedescendant")).not.toBe(first);
+    fireEvent.keyDown(field, { key: "ArrowUp" });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledWith("c-general");
+    expect(field.value).toBe("");
+    fireEvent.change(field, { target: { value: "quan" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledWith("d-quan");
+    fireEvent.change(field, { target: { value: "zzz" } });
+    fireEvent.keyDown(field, { key: "Escape" });
+    expect(field.value).toBe("");
+  });
+
+  it("says nothing matched and offers the message search with the text", () => {
+    const onSearch = vi.fn();
+    render(<ChatSidebar {...withDms({ onSearch })} />);
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "zzz" },
+    });
+    expect(screen.getByText("Nothing found")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /zzz/ }));
+    expect(onSearch).toHaveBeenCalledWith("zzz");
+  });
+
+  it("leaves out the empty channels line while conversations have rows", () => {
+    const { rerender } = render(<ChatSidebar {...withDms({ channels: [] })} />);
+    expect(screen.queryByText(en.page.noChannelsTitle)).toBeNull();
+    rerender(<ChatSidebar {...props({ channels: [] })} />);
+    expect(screen.getByText(en.page.noChannelsTitle)).toBeTruthy();
+  });
+
+  it("shows typing on a conversation row in place of the preview, never as the caller", () => {
+    const view = withDms().conversations!;
+    const typingOf = (id: string) =>
+      id === "d-thao" ? ["thao"] : id === "d-quan" ? ["quan", "thao"] : [];
+    render(
+      <ChatSidebar {...withDms({ conversations: { ...view, typingOf } })} />,
+    );
+    const rows = screen.getAllByRole("button", { name: /typing/ });
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.textContent).toContain("typing");
+    expect(rows[0]!.querySelectorAll(".chat-typing-wave")).toHaveLength(3);
+  });
+
+  it("names the typer in a group and counts two or more", () => {
+    const group = {
+      ...dm("g-1", "thao"),
+      kind: "group" as const,
+      name: "Nhóm",
+    };
+    const view = withDms().conversations!;
+    for (const [ids, text] of [
+      [["thao"], "Nguyễn Thảo is typing"],
+      [["thao", "quan"], "2 people are typing"],
+    ] as const) {
+      const { unmount } = render(
+        <ChatSidebar
+          {...withDms({
+            conversations: {
+              ...view,
+              conversations: [group],
+              typingOf: () => ids,
+            },
+          })}
+        />,
+      );
+      expect(screen.getByText(text)).toBeTruthy();
+      unmount();
+    }
   });
 
   it("has no account footer: the caller lives only in the app rail", () => {
