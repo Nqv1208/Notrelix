@@ -40,7 +40,8 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         string? tokenHash = null,
         ApiTokenStatus status = ApiTokenStatus.Active,
         DateTimeOffset? expiresAt = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        string? tokenSuffix = null)
     {
         var token = ApiToken.Create(
             TestAccountId,
@@ -51,7 +52,8 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
             scopes: null,
             createdBy: TestUserId,
             createdAt: createdAt ?? TestNow,
-            expiresAt: expiresAt);
+            expiresAt: expiresAt,
+            tokenSuffix: tokenSuffix);
         if (id is not null)
         {
             token.GetType().GetProperty(nameof(ApiToken.Id))!.SetValue(token, id.Value);
@@ -117,6 +119,8 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         stored.Status.Should().Be(ApiTokenStatus.Active);
         stored.WorkspaceId.Should().Be(TestWorkspaceId);
         stored.AccountId.Should().Be(TestAccountId);
+        stored.TokenSuffix.Should().Be(secretService.LastGeneratedRaw![^4..],
+            "the list tells tokens apart by the last four characters, never more of the secret");
     }
 
     [Fact]
@@ -241,9 +245,9 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
     [Fact]
     public async Task List_ReturnsMetadataOnly_OrderedByCreationDescending()
     {
-        var older = CreateToken(name: "Older token", tokenHash: "hash:older", createdAt: TestNow.AddMinutes(-30));
+        var older = CreateToken(name: "Older token", tokenHash: "hash:older", createdAt: TestNow.AddMinutes(-30), tokenSuffix: "a41f");
         older.GetType().GetProperty(nameof(ApiToken.Id))!.SetValue(older, Guid.CreateVersion7());
-        var newer = CreateToken(name: "Newer token", tokenHash: "hash:newer", createdAt: TestNow.AddMinutes(-5));
+        var newer = CreateToken(name: "Newer token", tokenHash: "hash:newer", createdAt: TestNow.AddMinutes(-5), tokenSuffix: "w9Zk");
         newer.GetType().GetProperty(nameof(ApiToken.Id))!.SetValue(newer, Guid.CreateVersion7());
         SetupApiTokens(older, newer);
 
@@ -254,6 +258,7 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         result.Data.Items.Should().HaveCount(2);
         result.Data.Items.First().Id.Should().Be(newer.Id);
         result.Data.Items.Select(t => t.Name).Should().Equal("Newer token", "Older token");
+        result.Data.Items.Select(t => t.Suffix).Should().Equal("w9Zk", "a41f");
         result.Data.Items.Should().OnlyContain(t =>
             t.Scopes == null && t.Status == "Active" && t.LastUsedAt == null
             && t.RevokedAt == null && t.ExpiresAt == null);

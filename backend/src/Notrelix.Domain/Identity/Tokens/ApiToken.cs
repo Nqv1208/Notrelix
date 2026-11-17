@@ -9,6 +9,8 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
     public Guid? UserId { get; private set; }
     public string Name { get; private set; } = null!;
     public string TokenHash { get; private set; } = null!;
+    /// <summary>The last characters of the secret, shown in lists so a person can tell tokens apart. Null for tokens issued before it was kept.</summary>
+    public string? TokenSuffix { get; private set; }
     public ApiTokenScopes? Scopes { get; private set; }
     public ApiTokenStatus Status { get; private set; } = ApiTokenStatus.Active;
     public DateTimeOffset? LastUsedAt { get; private set; }
@@ -27,7 +29,8 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
         ApiTokenScopes? scopes,
         Guid createdBy,
         DateTimeOffset createdAt,
-        DateTimeOffset? expiresAt = null)
+        DateTimeOffset? expiresAt = null,
+        string? tokenSuffix = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -41,6 +44,7 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
             UserId = userId,
             Name = name.Trim(),
             TokenHash = tokenHash,
+            TokenSuffix = tokenSuffix,
             Scopes = scopes,
             Status = ApiTokenStatus.Active,
             ExpiresAt = expiresAt

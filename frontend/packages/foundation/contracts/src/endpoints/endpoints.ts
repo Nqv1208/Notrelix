@@ -55,6 +55,10 @@ export const endpoints = {
   },
   workspaces: {
     list: "/workspaces",
+    // Identity.ApiTokens.List / Create (the issue) and Revoke.
+    apiTokens: (workspaceId: string) => `/workspaces/${workspaceId}/api-tokens`,
+    apiToken: (workspaceId: string, tokenId: string) =>
+      `/workspaces/${workspaceId}/api-tokens/${tokenId}`,
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
     invitationByToken: (token: string) =>
       `/workspaces/invitations/by-token/${token}`,

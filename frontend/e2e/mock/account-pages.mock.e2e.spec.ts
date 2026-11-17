@@ -85,7 +85,7 @@ test("Account pages stay inside a 320 px viewport in Vietnamese (WX-QUAL-001)", 
   }
 });
 
-test("The frame names the member and moves between the five pages", async ({
+test("The frame names the member and moves between the six pages", async ({
   page,
 }) => {
   await page.goto(`${account}/profile`);
@@ -93,7 +93,7 @@ test("The frame names the member and moves between the five pages", async ({
     page.getByRole("heading", { level: 1, name: "Tài khoản của bạn" }),
   ).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Cài đặt tài khoản" });
-  await expect(nav.getByRole("link")).toHaveCount(5);
+  await expect(nav.getByRole("link")).toHaveCount(6);
   await expect(nav.getByRole("link", { name: "Hồ sơ" })).toHaveAttribute(
     "aria-current",
     "page",

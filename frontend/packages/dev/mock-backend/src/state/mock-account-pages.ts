@@ -181,6 +181,46 @@ const defaultSecurity = (offsetMinutes: (m: number) => string) => {
   } satisfies SecurityDetails;
 };
 
+/** One workspace API token as `Identity.ApiTokens.List` answers it (the secret is never kept). */
+export interface MockApiToken {
+  id: string;
+  name: string;
+  status: "Active" | "Revoked" | "Expired";
+  lastUsedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+  revokedAt: string | null;
+  suffix: string;
+}
+
+/** Three tokens a workspace already holds, newest first; times are minutes from the mock clock's now. */
+const defaultApiTokens = (
+  offsetMinutes: (m: number) => string,
+): MockApiToken[] => {
+  const day = 24 * 60;
+  const token = (
+    n: number,
+    name: string,
+    suffix: string,
+    usedAgo: number | null,
+    left: number,
+  ): MockApiToken => ({
+    id: `00000000-0000-4000-8000-00000000000${n}`,
+    name,
+    status: "Active",
+    lastUsedAt: usedAgo === null ? null : offsetMinutes(-usedAgo),
+    expiresAt: offsetMinutes(left * day),
+    createdAt: offsetMinutes(-n * day),
+    revokedAt: null,
+    suffix,
+  });
+  return [
+    token(1, "CI triển khai ERP", "a41f", 120, 90),
+    token(2, "Báo cáo BI hằng tuần", "9c07", day, 30),
+    token(3, "Script dọn dẹp thẻ", "33be", null, 90),
+  ];
+};
+
 export class MockAccountPages {
   /** The persona the mockups draw: its job title is seeded. */
   static readonly SEED_USER = "mock-user-owner";
@@ -191,8 +231,10 @@ export class MockAccountPages {
   private notificationSets = new Map<string, NotificationPreferenceSet>();
   private defaultWorkspace = new Map<string, string>();
   private avatarVersions = new Map<string, number>();
+  private apiTokens = new Map<string, MockApiToken[]>();
 
   reset(): void {
+    this.apiTokens.clear();
     this.preferences.clear();
     this.memberProfiles.clear();
     this.security.clear();
@@ -227,6 +269,23 @@ export class MockAccountPages {
         version: 0,
       };
       this.memberProfiles.set(key, value);
+    }
+    return value;
+  }
+
+  /** The API tokens of one workspace, newest first. */
+  apiTokensOf(
+    workspaceId: string,
+    offsetMinutes: (m: number) => string,
+  ): MockApiToken[] {
+    let value = this.apiTokens.get(workspaceId);
+    if (!value) {
+      // The primary workspace already holds some; any other starts empty.
+      value =
+        workspaceId === "mock-workspace-primary"
+          ? defaultApiTokens(offsetMinutes)
+          : [];
+      this.apiTokens.set(workspaceId, value);
     }
     return value;
   }

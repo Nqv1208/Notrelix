@@ -32,6 +32,9 @@ public sealed class CreateApiTokenCommandHandler
 {
     public const int MaxTokenNameLength = 256;
 
+    /// <summary>How many trailing secret characters are kept for lists; the rest is only ever its digest.</summary>
+    public const int TokenSuffixLength = 4;
+
     /// <summary>Default maximum lifetime of an API token (Lead decision L7); a workspace may only shorten it (UC-GOV-H08).</summary>
     public const int MaxTokenLifetimeDays = 365;
 
@@ -130,7 +133,8 @@ public sealed class CreateApiTokenCommandHandler
             scopes: null,
             createdBy: userId,
             createdAt: now,
-            expiresAt: request.ExpiresAt);
+            expiresAt: request.ExpiresAt,
+            tokenSuffix: secret.RawToken[^TokenSuffixLength..]);
 
         _context.ApiTokens.Add(token);
         _logger.LogInformation(

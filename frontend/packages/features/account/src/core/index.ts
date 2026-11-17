@@ -8,6 +8,8 @@ export type {
   AccountActivityEntry,
   AccountActivityPage,
   AccountActivityType,
+  AccountApiToken,
+  AccountApiTokenPage,
   AccountLeaveFailure,
   AccountPhotoFailure,
   AccountWorkspaceEntry,

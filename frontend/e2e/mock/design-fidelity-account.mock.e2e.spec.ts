@@ -88,25 +88,28 @@ for (const dark of [false, true]) {
       width: 319.9,
       height: 26.1,
     });
+    // The sign-in email block above the two-factor block is not on the mockup: it is 292.4 px tall
+    // plus the 16 px gap, so everything from the two-factor block down sits `shift` lower.
+    const shift = 308.42;
     // Two-factor block, sessions block: 16 px apart, 916 px wide.
     await expectBox(
       page.getByRole("region", { name: "Xác thực hai yếu tố", exact: true }),
-      { x: 496, y: 291.5, width: 916, height: 168.2 },
+      { x: 496, y: 291.5 + shift, width: 916, height: 168.2 },
     );
     await expectBox(
       page.getByRole("region", {
         name: "Phiên đăng nhập đang hoạt động",
         exact: true,
       }),
-      { x: 496, y: 475.7, width: 916, height: 228.9 },
+      { x: 496, y: 475.7 + shift, width: 916, height: 228.9 },
     );
     await expectBox(
       page.getByRole("button", { name: "Tắt xác thực hai yếu tố" }),
-      { x: 1252.1, y: 360.2, width: 142.9, height: 18.1 },
+      { x: 1252.1, y: 360.2 + shift, width: 142.9, height: 18.1 },
     );
     await expectBox(page.getByRole("button", { name: "Tạo mã mới" }), {
       x: 1300.5,
-      y: 415.2,
+      y: 415.2 + shift,
       width: 94.5,
       height: 28,
     });
@@ -114,19 +117,19 @@ for (const dark of [false, true]) {
     const signOut = page.getByRole("button", { name: /^Đăng xuất (?!mọi)/ });
     await expectBox(signOut.nth(0), {
       x: 1308.8,
-      y: 539.8,
+      y: 539.8 + shift,
       width: 86.2,
       height: 28,
     });
     await expectBox(signOut.nth(1), {
       x: 1308.8,
-      y: 600.2,
+      y: 600.2 + shift,
       width: 86.2,
       height: 28,
     });
     await expectBox(signOut.nth(2), {
       x: 1308.8,
-      y: 660.1,
+      y: 660.1 + shift,
       width: 86.2,
       height: 28,
     });
