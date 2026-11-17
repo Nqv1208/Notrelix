@@ -39,6 +39,7 @@ export const realBackend = {
     Number(oidcPort),
     Number(webPort),
     Number(operatorPort),
+    ...(process.env.REAL_E2E_CALLS === "1" ? [7880, 7881] : []),
   ],
 };
 
@@ -158,14 +159,22 @@ export async function stopProcess(child) {
   if (child.exitCode === null) signalGroup(child, "SIGKILL");
 }
 
+// REAL_E2E_CALLS=1 also starts the LiveKit media plane (compose profile `calls`); the backend then needs
+// CHAT_CALLS_MEDIA_PROVIDER=LiveKit and LIVEKIT_CLIENT_URL=ws://127.0.0.1:7880 in the environment.
+const withCalls = process.env.REAL_E2E_CALLS === "1";
+const profiles = [
+  "--profile",
+  "messaging",
+  ...(withCalls ? ["--profile", "calls"] : []),
+];
+
 export async function down() {
-  await compose(["--profile", "messaging", "down", "-v", "--remove-orphans"]);
+  await compose([...profiles, "down", "-v", "--remove-orphans"]);
 }
 
 export async function up() {
   await compose([
-    "--profile",
-    "messaging",
+    ...profiles,
     "up",
     "-d",
     "postgres",
@@ -174,6 +183,7 @@ export async function up() {
     "oidc-mock",
     "backend",
     "mailpit",
+    ...(withCalls ? ["livekit"] : []),
   ]);
 }
 
@@ -187,6 +197,7 @@ export async function logs() {
     "oidc-mock",
     "backend",
     "mailpit",
+    ...(withCalls ? ["livekit"] : []),
   ]);
 }
 

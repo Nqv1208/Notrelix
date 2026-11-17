@@ -1,7 +1,8 @@
 /**
- * Voice and video calls of a space. The calls UI is not built, so the mock holds no call: the list is empty, there is no
- * active call (204), and every call-id operation answers the NotFound of a call that does not exist. The mock grows real
- * call state with the call UI (Phase 5c).
+ * Voice and video calls of a space (Chat.Calls.*). The mock holds real call state (`chat-calls.ts`): start with an
+ * Idempotency-Key, the ringing or active call, answer, decline, cancel, end, join, leave and the caller's media state,
+ * each guarded by the call version (a stale one is 412), with the call frames and the one call line in the timeline.
+ * Access mirrors the backend: a person outside the space gets the NotFound of a missing call.
  */
 
 import type { operations } from "@notrelix/contracts";
@@ -12,31 +13,60 @@ import {
   guarded,
   liveSpace,
   notFoundProblem,
+  parseVersion,
   requireAction,
+  requireIdempotencyKey,
+  validationProblem,
 } from "./chat-access";
+import {
+  answerCall,
+  callView,
+  cancelCall,
+  declineCall,
+  endCall,
+  joinCall,
+  leaveCall,
+  liveCallOf,
+  startCall,
+  updateCallMedia,
+  type MockCallKind,
+} from "./chat-calls";
+import { idempotentCreate } from "./chat-writes";
 
 type SpaceParams = { workspaceId: string; spaceId: string };
 type CallParams = { workspaceId: string; callId: string };
+type VersionBody = { expectedVersion?: number | null };
 
 const SPACE_ROUTE = "/workspaces/:workspaceId/chat/spaces/:spaceId/calls";
 const CALL_ROUTE = "/workspaces/:workspaceId/chat/calls/:callId";
 
-/** A call-id operation: the call never exists in the mock. */
-function missingCall(
+type CallCommand = typeof answerCall;
+
+/** A call-id operation: the caller must be in the call's space; the version is checked first, then the call's own rules. */
+function callCommand(
   id: string,
   operationId: keyof operations,
-  method: "POST" | "PUT",
   path: string,
+  run: CallCommand,
 ) {
-  return defineMockOperation<CallParams>({
+  return defineMockOperation<CallParams, VersionBody>({
     id,
     contract: { kind: "openapi", operationId },
-    method,
+    method: "POST",
     route: `${CALL_ROUTE}/${path}`,
-    async handle({ params, store }) {
+    async handle({ params, body, store }) {
       return guarded(async () => {
-        requireAction(callerIn(store, params.workspaceId), "viewWorkspace");
-        return notFoundProblem();
+        const caller = callerIn(store, params.workspaceId);
+        requireAction(caller, "viewWorkspace");
+        const expected = parseVersion(body?.expectedVersion, "expectedVersion");
+        const result = run(
+          store,
+          params.workspaceId,
+          params.callId,
+          caller.userId,
+          expected,
+        );
+        return { status: result.status, body: result.body };
       });
     },
   });
@@ -52,23 +82,48 @@ export const callsOperations = [
       return guarded(async () => {
         const caller = callerIn(store, params.workspaceId);
         requireAction(caller, "viewWorkspace");
-        liveSpace(store.chat, params.workspaceId, params.spaceId);
-        return ok({ items: [], nextCursor: null });
+        const state = store.chat;
+        liveSpace(state, params.workspaceId, params.spaceId);
+        if (!state.activeMembershipOf(params.spaceId, caller.userId)) {
+          notFoundProblem();
+        }
+        const items = Array.from(state.calls.values())
+          .filter((call) => call.spaceId === params.spaceId)
+          .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+          .map(callView);
+        return ok({ items, nextCursor: null });
       });
     },
   }),
 
-  defineMockOperation<SpaceParams>({
+  defineMockOperation<SpaceParams, { kind?: string | null }>({
     id: "chat.calls.start",
     contract: { kind: "openapi", operationId: "Chat.Calls.Start" },
     method: "POST",
     route: SPACE_ROUTE,
-    async handle({ params, store }) {
+    async handle({ params, body, request, store }) {
       return guarded(async () => {
         const caller = callerIn(store, params.workspaceId);
-        requireAction(caller, "viewWorkspace");
-        liveSpace(store.chat, params.workspaceId, params.spaceId);
-        return notFoundProblem();
+        requireAction(caller, "messagePost");
+        const key = requireIdempotencyKey(request.headers);
+        const kind = body?.kind;
+        if (kind !== "voice" && kind !== "video") {
+          validationProblem("kind is required: voice or video.");
+        }
+        return idempotentCreate(
+          store.chat,
+          `${params.workspaceId}|${caller.userId}|chat.calls.start`,
+          key,
+          { spaceId: params.spaceId, kind },
+          () =>
+            startCall(
+              store,
+              params.workspaceId,
+              params.spaceId,
+              caller.userId,
+              kind as MockCallKind,
+            ),
+        );
       });
     },
   }),
@@ -82,22 +137,61 @@ export const callsOperations = [
       return guarded(async () => {
         const caller = callerIn(store, params.workspaceId);
         requireAction(caller, "viewWorkspace");
-        liveSpace(store.chat, params.workspaceId, params.spaceId);
-        return noContent();
+        const state = store.chat;
+        liveSpace(state, params.workspaceId, params.spaceId);
+        if (!state.activeMembershipOf(params.spaceId, caller.userId)) {
+          notFoundProblem();
+        }
+        const call = liveCallOf(state, params.spaceId);
+        return call ? ok(callView(call)) : noContent();
       });
     },
   }),
 
-  missingCall("chat.calls.answer", "Chat.Calls.Answer", "POST", "answer"),
-  missingCall("chat.calls.decline", "Chat.Calls.Decline", "POST", "decline"),
-  missingCall("chat.calls.cancel", "Chat.Calls.Cancel", "POST", "cancel"),
-  missingCall("chat.calls.end", "Chat.Calls.End", "POST", "end"),
-  missingCall("chat.calls.join", "Chat.Calls.Join", "POST", "join"),
-  missingCall("chat.calls.leave", "Chat.Calls.Leave", "POST", "leave"),
-  missingCall(
-    "chat.calls.updateMediaState",
-    "Chat.Calls.UpdateMediaState",
-    "PUT",
-    "participants/me",
+  callCommand("chat.calls.answer", "Chat.Calls.Answer", "answer", answerCall),
+  callCommand(
+    "chat.calls.decline",
+    "Chat.Calls.Decline",
+    "decline",
+    declineCall,
   ),
+  callCommand("chat.calls.cancel", "Chat.Calls.Cancel", "cancel", cancelCall),
+  callCommand("chat.calls.end", "Chat.Calls.End", "end", endCall),
+  callCommand("chat.calls.join", "Chat.Calls.Join", "join", joinCall),
+  callCommand("chat.calls.leave", "Chat.Calls.Leave", "leave", leaveCall),
+
+  defineMockOperation<
+    CallParams,
+    {
+      audioOn?: boolean;
+      videoOn?: boolean;
+      sharingScreen?: boolean;
+      expectedVersion?: number | null;
+    }
+  >({
+    id: "chat.calls.updateMediaState",
+    contract: { kind: "openapi", operationId: "Chat.Calls.UpdateMediaState" },
+    method: "PUT",
+    route: `${CALL_ROUTE}/participants/me`,
+    async handle({ params, body, store }) {
+      return guarded(async () => {
+        const caller = callerIn(store, params.workspaceId);
+        requireAction(caller, "viewWorkspace");
+        const expected = parseVersion(body?.expectedVersion, "expectedVersion");
+        const result = updateCallMedia(
+          store,
+          params.workspaceId,
+          params.callId,
+          caller.userId,
+          expected,
+          {
+            audioOn: body?.audioOn ?? false,
+            videoOn: body?.videoOn ?? false,
+            sharingScreen: body?.sharingScreen ?? false,
+          },
+        );
+        return { status: result.status, body: result.body };
+      });
+    },
+  }),
 ];

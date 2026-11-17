@@ -1,5 +1,6 @@
 import { useLocale } from "@notrelix/i18n";
 import { en, vi, type ChatCopy } from "./chat.copy";
+import { parseStoredCallLine } from "../../core/model/call-model";
 
 /** Chat copy for the active locale (requires the host `I18nProvider`). */
 export function useChatCopy(): ChatCopy {
@@ -38,6 +39,23 @@ export function systemTextOf(copy: ChatCopy, stored: string | null): string {
     return fillCopy(copy.list.systemRenamed, {
       name: text.slice(RENAMED_PREFIX.length),
     });
+  }
+  const call = parseStoredCallLine(text);
+  if (call) {
+    const c = copy.calls;
+    const values = {
+      kind: call.kind === "video" ? c.lineVideo : c.lineVoice,
+      duration: call.duration ?? "",
+    };
+    const line = {
+      completed: c.lineCompleted,
+      missed: c.lineMissed,
+      declined: c.lineDeclined,
+      cancelled: c.lineCancelled,
+      busy: c.lineBusy,
+      failed: c.lineFailed,
+    }[call.outcome];
+    return fillCopy(line, values);
   }
   return copy.list.systemText[text] ?? text;
 }

@@ -85,6 +85,8 @@ import {
   type ChatComposerProps,
 } from "./chat-composer";
 import { ChatMessageList, type ChatListStatus } from "./chat-message-list";
+import { ChatCallDock } from "../calls/chat-call-dock";
+import { useChatCalls } from "../calls/use-chat-calls";
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
 import { useChannelTimeline } from "./use-channel-timeline";
@@ -310,6 +312,8 @@ export function ChatWorkspace({
   // whether it is a channel or a conversation.
   const channelId = conversationId ?? channelProp;
   const ch = channelId ?? "";
+  // Calls: the dock below renders them. The header's voice and video buttons call `calls.start(ch, kind)` once they land.
+  const calls = useChatCalls({ deps, workspaceId });
   const offersConversations = onOpenConversation !== undefined;
   const isGuest = viewerRole === "guest";
   const canBrowse = viewerRole !== null && !isGuest;
@@ -2154,6 +2158,18 @@ export function ChatWorkspace({
                 onConfirm={handleLink}
               />
             ) : null}
+            <ChatCallDock
+              controller={calls}
+              viewerId={viewerId}
+              nameOf={nameOf}
+              peerOf={(spaceId) =>
+                conversationsQuery.data
+                  ?.find((entry) => entry.id === spaceId)
+                  ?.participants.find((p) => p.userId !== viewerId)?.userId ??
+                null
+              }
+              copy={copy}
+            />
             <ChatSearchPanel
               open={searchOpen}
               onOpenChange={(next) => {

@@ -51,3 +51,15 @@ export {
   type MessageFrameOutcome,
   type UnreadFrameOutcome,
 } from "./query/chat-realtime-reducers";
+export {
+  useChatCalls,
+  type ChatCallsController,
+  type ChatCurrentCall,
+  type UseChatCallsOptions,
+} from "./calls/use-chat-calls";
+export { ChatCallDock } from "./calls/chat-call-dock";
+export {
+  connectChatCallMedia,
+  type ChatCallMediaConnector,
+  type ChatCallMediaSession,
+} from "./calls/chat-call-media";

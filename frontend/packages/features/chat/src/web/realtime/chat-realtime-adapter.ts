@@ -35,10 +35,13 @@ import {
   parseChatReactionFrame,
   parseChatSpaceFrame,
   parseChatUnreadFrame,
+  parseChatCallFrame,
+  CHAT_CALL_EVENT,
   CHAT_ATTACHMENT_EVENT,
   CHAT_REACTION_EVENT,
   CHAT_SPACE_EVENT,
   CHAT_UNREAD_EVENT,
+  type ChatCallFramePayload,
   type ChatMessageFramePayload,
 } from "../../core/realtime/chat-frames";
 import { chatQueryKeys } from "../../query/keys";
@@ -60,6 +63,7 @@ import {
 } from "../query/interaction-cache";
 import { applyStoredReply } from "../query/thread-writes";
 import { mergeAttachment } from "../../core/model/attachment-model";
+import type { ChatIncomingCall } from "../../core/model/call-model";
 
 export interface ChatRealtimeEnvelope {
   readonly eventType: string;
@@ -452,6 +456,51 @@ export function createChatRealtimeAdapter(
     });
   }
 
+  /**
+   * A call changed (chat.call.v1, channel or per-person stream). The frame is an advisory: the space's active call is read again
+   * over REST. A ring for someone else's call joins the incoming list until the call leaves `ringing`.
+   */
+  function applyCallFrame(
+    envelope: ChatRealtimeEnvelope,
+    workspaceId: string,
+  ): void {
+    const frame = envelope.payloadOmitted
+      ? null
+      : parseChatCallFrame(envelope.payload);
+    if (!frame) return;
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.activeCall(workspaceId, frame.spaceId),
+    });
+    queryClient.setQueryData(
+      chatQueryKeys.callFrame(workspaceId, frame.callId),
+      (known: ChatCallFramePayload | undefined) =>
+        known && known.version > frame.version ? known : frame,
+    );
+    const ringing = frame.state === "ringing" && frame.initiatorId !== viewerId;
+    queryClient.setQueryData<ChatIncomingCall[]>(
+      chatQueryKeys.incomingCalls(workspaceId),
+      (list = []) => {
+        const rest = list.filter((entry) => entry.callId !== frame.callId);
+        const known = list.find((entry) => entry.callId === frame.callId);
+        if (known && known.version > frame.version) return list;
+        return ringing
+          ? [
+              ...rest,
+              {
+                callId: frame.callId,
+                spaceId: frame.spaceId,
+                kind: frame.kind,
+                initiatorId: frame.initiatorId,
+                version: frame.version,
+                // The arrival time, not the server's: a skewed clock must not end a ring early.
+                receivedAt: known?.receivedAt ?? new Date().toISOString(),
+              },
+            ]
+          : rest;
+      },
+    );
+  }
+
   /** A pin of the channel changed: the pin list is read again (the header and the Pins panel follow it). */
   function applySpaceFrame(
     envelope: ChatRealtimeEnvelope,
@@ -531,6 +580,7 @@ export function createChatRealtimeAdapter(
       return (
         isChatMessageEvent(envelope.eventType) ||
         envelope.eventType === CHAT_UNREAD_EVENT ||
+        envelope.eventType === CHAT_CALL_EVENT ||
         envelope.eventType === CHAT_REACTION_EVENT ||
         envelope.eventType === CHAT_ATTACHMENT_EVENT ||
         envelope.eventType === CHAT_SPACE_EVENT
@@ -539,6 +589,10 @@ export function createChatRealtimeAdapter(
     async validateAndHandle(envelope, context): Promise<void> {
       // A frame of another workspace belongs to a previous scope (NRX-014).
       if (envelope.workspaceId !== context.workspaceId) return;
+      if (envelope.eventType === CHAT_CALL_EVENT) {
+        applyCallFrame(envelope, context.workspaceId);
+        return;
+      }
       if (
         isChatMessageEvent(envelope.eventType) ||
         envelope.eventType === CHAT_REACTION_EVENT ||

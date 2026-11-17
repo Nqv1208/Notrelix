@@ -139,7 +139,16 @@ public sealed class LiveKitChatCallMediaGateway(
 
             Guid? person = root.TryGetProperty("participant", out var p) && p.TryGetProperty("identity", out var who)
                 && Guid.TryParse(who.GetString(), out var parsed) ? parsed : null;
-            return new CallMediaWebhookEvent(id, kind, room, person);
+            // LiveKit stamps the participant with the time its session was seated (joinedAtMs, else joinedAt in seconds).
+            DateTimeOffset? seated = null;
+            if (root.TryGetProperty("participant", out var seat))
+            {
+                if (seat.TryGetProperty("joinedAtMs", out var ms) && ms.TryGetInt64(out var millis) && millis > 0)
+                    seated = DateTimeOffset.FromUnixTimeMilliseconds(millis);
+                else if (seat.TryGetProperty("joinedAt", out var sec) && sec.TryGetInt64(out var seconds) && seconds > 0)
+                    seated = DateTimeOffset.FromUnixTimeSeconds(seconds);
+            }
+            return new CallMediaWebhookEvent(id, kind, room, person, seated);
         }
         catch (JsonException)
         {

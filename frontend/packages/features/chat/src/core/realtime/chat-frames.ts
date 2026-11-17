@@ -274,3 +274,43 @@ export function parseChatUnreadFrame(
     ...(preview ? { preview } : {}),
   };
 }
+
+export const CHAT_CALL_EVENT = "chat.call.changed";
+
+/**
+ * chat.call.v1: a call of a space changed. It rides the channel stream and, while the call rings, the per-person stream of each
+ * other member. An advisory: it carries no join token and no room name, so a reader refetches the call over REST by its version.
+ */
+export interface ChatCallFramePayload {
+  readonly callId: string;
+  readonly spaceId: string;
+  readonly state: "ringing" | "active" | "ended";
+  readonly kind: "voice" | "video";
+  readonly initiatorId: string;
+  readonly endReason: string | null;
+  readonly version: number;
+}
+
+export function parseChatCallFrame(
+  payload: unknown,
+): ChatCallFramePayload | null {
+  if (!isRecord(payload)) return null;
+  const { callId, spaceId, state, kind, initiatorId, endReason, version } =
+    payload;
+  if (!isNonEmpty(callId) || !isNonEmpty(spaceId) || !isNonEmpty(initiatorId))
+    return null;
+  if (state !== "ringing" && state !== "active" && state !== "ended")
+    return null;
+  if (kind !== "voice" && kind !== "video") return null;
+  if (!isNullableString(endReason)) return null;
+  if (!isCount(version)) return null;
+  return {
+    callId,
+    spaceId,
+    state,
+    kind,
+    initiatorId,
+    endReason: endReason ?? null,
+    version,
+  };
+}

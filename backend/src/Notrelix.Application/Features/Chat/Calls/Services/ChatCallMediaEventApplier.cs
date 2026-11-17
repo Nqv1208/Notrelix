@@ -35,6 +35,9 @@ public sealed class ChatCallMediaEventApplier(
                 return false;
 
             case ParticipantLeft when mediaEvent.PersonId is { } left && !call.IsEnded && call.State == CallState.Active:
+                // A late left event of an earlier session must not drop a person who has since rejoined: their open participation
+                // was seated after that session was, so an event for an older session changes nothing.
+                if (BelongsToEarlierSession(call, left, mediaEvent)) return false;
                 changed = call.Leave(left, now);
                 break;
 
@@ -50,6 +53,11 @@ public sealed class ChatCallMediaEventApplier(
             await ending.FinishAsync(space, call, call.InitiatorId, cancellationToken);
         return true;
     }
+
+    private static bool BelongsToEarlierSession(Call call, Guid personId, CallMediaWebhookEvent mediaEvent) =>
+        mediaEvent.ParticipantJoinedAt is { } seated
+        && call.Participants.FirstOrDefault(p => p.PersonId == personId) is { IsJoined: true } open
+        && seated < open.JoinedAt;
 
     private async Task DropAsync(Call call, Guid personId, CancellationToken cancellationToken)
     {

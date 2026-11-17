@@ -9,8 +9,11 @@ public sealed record CallRoom(string RoomKey, string Region);
 /// </summary>
 public sealed record CallJoinToken(string Url, string Token, DateTimeOffset ExpiresAt);
 
-/// <summary>A signed media server event after verification (a participant joined or left, the room finished).</summary>
-public sealed record CallMediaWebhookEvent(string EventId, string Kind, string RoomKey, Guid? PersonId);
+/// <summary>
+/// A signed media server event after verification (a participant joined or left, the room finished). <paramref name="ParticipantJoinedAt"/> is
+/// when the media server seated that participant (the session the event belongs to); null when the server did not say.
+/// </summary>
+public sealed record CallMediaWebhookEvent(string EventId, string Kind, string RoomKey, Guid? PersonId, DateTimeOffset? ParticipantJoinedAt = null);
 
 /// <summary>
 /// The only way Chat talks to the media plane (SYS-ADR-002 decision 7). Self-hosted LiveKit and LiveKit Cloud are two adapters
