@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import {
   BellOff,
   CheckCheck,
@@ -7,14 +8,19 @@ import {
   RotateCw,
   Search,
   Settings,
+  X,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
-import type { ChatChannel } from "../../core/types/chat";
+import type { ChatChannel, ChatConversation } from "../../core/types/chat";
+import { conversationTitle } from "../../core/model/conversation-model";
 import type { ChatCopy } from "./chat.copy";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 import {
   ChatConversationSection,
+  ConversationRow,
+  RowShell,
   type ChatConversationListView,
+  type RowOption,
 } from "./chat-conversation-list";
 
 export interface ChannelUnread {
@@ -44,8 +50,8 @@ export interface ChatSidebarProps {
   readonly onCreate: () => void;
   /** Opens the Chat admin settings (retention and export); only an Owner or an Admin is offered it. */
   readonly onOpenSettings?: () => void;
-  /** Opens the message search (UC-CHT-H07). */
-  readonly onSearch?: () => void;
+  /** Opens the message search (UC-CHT-H07) with the text typed in the sidebar field. */
+  readonly onSearch?: (query: string) => void;
   /** Marks every space as read (UC-CHT-D07); the button shows only while something is unread. */
   readonly onMarkAllRead?: () => void;
   readonly markingAllRead?: boolean;
@@ -96,6 +102,27 @@ export function groupChannels(
   return groups;
 }
 
+/** Lower case without accents (đ included), so "thao" finds "Thảo". */
+export function foldText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase();
+}
+
+type SearchHit =
+  | { readonly kind: "channel"; readonly channel: ChatChannel }
+  | { readonly kind: "conversation"; readonly conversation: ChatConversation };
+
+function isEditable(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+  );
+}
+
 const HEADING =
   "-mx-2 pt-3.5 pr-3 pb-1 pl-2.5 text-micro leading-[1.45] font-[650] tracking-[.04em] text-muted-foreground uppercase";
 
@@ -126,6 +153,86 @@ export function ChatSidebar({
   groupNames,
 }: ChatSidebarProps) {
   const groups = groupChannels(channels);
+  const hasConversations = (conversations?.conversations.length ?? 0) > 0;
+  const [query, setQuery] = useState("");
+  const [activeRaw, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const ids = useId();
+  const listId = `${ids}-results`;
+  const optionId = (index: number) => `${ids}-option-${index}`;
+  const needle = foldText(query.trim());
+  const searching = needle !== "";
+  const hits: readonly SearchHit[] = searching
+    ? [
+        ...channels
+          .filter((channel) => foldText(channel.name).includes(needle))
+          .map((channel): SearchHit => ({ kind: "channel", channel })),
+        ...(conversations?.conversations ?? [])
+          .filter((conversation) =>
+            foldText(
+              conversationTitle(
+                conversation,
+                conversations!.viewerId,
+                conversations!.nameOf,
+              ),
+            ).includes(needle),
+          )
+          .map((conversation): SearchHit => ({
+            kind: "conversation",
+            conversation,
+          })),
+      ]
+    : [];
+  const active = Math.min(activeRaw, Math.max(hits.length - 1, 0));
+
+  function clearQuery() {
+    setQuery("");
+    setActive(0);
+    inputRef.current?.focus();
+  }
+  // A picked row opens and the field empties, so the sidebar is back to its lists.
+  const pick = (hit: SearchHit) => {
+    setQuery("");
+    setActive(0);
+    if (hit.kind === "channel") onSelect(hit.channel.id);
+    else conversations?.onSelect(hit.conversation.id);
+  };
+  function onFieldKey(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape" && query) {
+      event.preventDefault();
+      event.stopPropagation();
+      clearQuery();
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (hits.length === 0) return;
+      event.preventDefault();
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setActive((active + step + hits.length) % hits.length);
+    } else if (event.key === "Enter") {
+      const hit = hits[active];
+      if (hit) {
+        event.preventDefault();
+        pick(hit);
+      }
+    }
+  }
+  // "/" jumps to the field from anywhere outside a text box (Ctrl+K belongs to the app-wide palette).
+  useEffect(() => {
+    function onKey(event: globalThis.KeyboardEvent) {
+      if (
+        event.key !== "/" ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isEditable(event.target)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      inputRef.current?.focus();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
   const anyUnread =
     [...unreadBySpace.values()].some((u) => !u.muted && u.count > 0) ||
     (conversations?.conversations ?? []).some(
@@ -154,17 +261,6 @@ export function ChatSidebar({
               <CheckCheck aria-hidden="true" />
             </Button>
           ) : null}
-          {onSearch ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={copy.search.sidebarEntry}
-              title={copy.search.sidebarEntry}
-              onClick={onSearch}
-            >
-              <Search aria-hidden="true" />
-            </Button>
-          ) : null}
           {onOpenSettings ? (
             <Button
               variant="ghost"
@@ -190,17 +286,107 @@ export function ChatSidebar({
         </div>
       </div>
 
-      {/* A jump-to field with no handler yet: visual only, so it is not a control. */}
-      <div
-        aria-hidden="true"
-        className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-[10px] max-md:hidden border border-border bg-card px-2.5 text-compact text-muted-foreground"
-      >
-        <Search className="size-3.5 shrink-0" />
-        <span className="truncate">{copy.sidebar.jumpTo}</span>
+      <div className="relative mx-3 mb-2">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-label={copy.sidebar.jumpTo}
+          aria-expanded={hits.length > 0}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={hits.length > 0 ? optionId(active) : undefined}
+          aria-keyshortcuts="/"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={copy.sidebar.jumpTo}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setActive(0);
+          }}
+          onKeyDown={onFieldKey}
+          className="h-9 w-full rounded-[10px] border border-border bg-card ps-8 pe-8 text-compact text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-focus-ring max-md:h-11"
+        />
+        {query ? (
+          <button
+            type="button"
+            aria-label={copy.sidebar.searchClear}
+            title={copy.sidebar.searchClear}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clearQuery}
+            className="absolute end-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2">
-        {status === "loading" ? (
+        {searching ? (
+          <>
+            <div
+              id={listId}
+              role="listbox"
+              aria-label={copy.sidebar.searchResults}
+              hidden={hits.length === 0}
+              className="flex flex-col gap-px pt-1"
+            >
+              {hits.map((hit, index) => {
+                const option: RowOption = {
+                  id: optionId(index),
+                  selected: index === active,
+                };
+                return hit.kind === "channel" ? (
+                  <ChannelButton
+                    key={hit.channel.id}
+                    channel={hit.channel}
+                    active={hit.channel.id === activeChannelId}
+                    unread={unreadBySpace.get(hit.channel.id)}
+                    copy={copy}
+                    onSelect={() => pick(hit)}
+                    option={option}
+                  />
+                ) : (
+                  <ConversationRow
+                    key={hit.conversation.id}
+                    conversation={hit.conversation}
+                    view={{
+                      ...conversations!,
+                      onSelect: () => pick(hit),
+                    }}
+                    copy={copy}
+                    now={new Date()}
+                    option={option}
+                  />
+                );
+              })}
+            </div>
+            {hits.length === 0 ? (
+              <div role="status" className="space-y-2 px-2 pt-2 text-sm">
+                <p className="text-muted-foreground">
+                  {copy.sidebar.searchNoMatch}
+                </p>
+                {onSearch ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSearch(query.trim())}
+                  >
+                    <Search aria-hidden="true" />
+                    {fillCopy(copy.sidebar.searchInMessages, {
+                      query: query.trim(),
+                    })}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </>
+        ) : status === "loading" ? (
           <div role="status" className="space-y-2 px-1 pt-2">
             <span className="sr-only">{copy.sidebar.loading}</span>
             {[0, 1, 2].map((index) => (
@@ -216,9 +402,12 @@ export function ChatSidebar({
             </Button>
           </div>
         ) : channels.length === 0 ? (
-          <p className="px-2 pt-2 text-sm text-muted-foreground">
-            {guest ? copy.sidebar.guestEmpty : copy.page.noChannelsTitle}
-          </p>
+          // Another section has rows: the empty line would only take room.
+          hasConversations ? null : (
+            <p className="px-2 pt-2 text-sm text-muted-foreground">
+              {guest ? copy.sidebar.guestEmpty : copy.page.noChannelsTitle}
+            </p>
+          )
         ) : (
           groups.map((group, index) => {
             const heading =
@@ -254,11 +443,15 @@ export function ChatSidebar({
           })
         )}
 
-        {conversations ? (
-          <ChatConversationSection view={conversations} copy={copy} />
+        {conversations && !searching ? (
+          <ChatConversationSection
+            view={conversations}
+            copy={copy}
+            hideEmptyText={channels.length > 0}
+          />
         ) : null}
 
-        {browse ? (
+        {browse && !searching ? (
           <section
             aria-labelledby="chat-browse-title"
             className="flex flex-col gap-0.5"
@@ -322,7 +515,9 @@ function ChannelButton({
   unread,
   copy,
   onSelect,
+  option,
 }: {
+  readonly option?: RowOption;
   readonly channel: ChatChannel;
   readonly active: boolean;
   readonly unread: ChannelUnread | undefined;
@@ -337,11 +532,11 @@ function ChannelButton({
   // A channel shows that it is unread (bold and a dot), never how many: the count is a sequence difference, not a count of rows.
   const unreadHere = !muted && unread !== undefined && unread.count > 0;
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(channel.id)}
-      aria-current={active ? "page" : undefined}
-      aria-label={channelLabel(
+    <RowShell
+      option={option}
+      active={active}
+      onPick={() => onSelect(channel.id)}
+      label={channelLabel(
         isPrivate,
         channel.name,
         unreadHere,
@@ -385,7 +580,7 @@ function ChannelButton({
           className="size-2 shrink-0 rounded-full bg-brand-solid"
         />
       ) : null}
-    </button>
+    </RowShell>
   );
 }
 

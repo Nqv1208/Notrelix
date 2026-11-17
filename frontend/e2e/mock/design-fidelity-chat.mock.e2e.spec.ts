@@ -108,7 +108,7 @@ test.describe("1440 (Chat-Main)", () => {
     expect(await heading.evaluate((e) => getComputedStyle(e).paddingLeft)).toBe(
       "10px",
     );
-    expect(await css(page, "nav div[aria-hidden=true]", "border-radius")).toBe(
+    expect(await css(page, "nav input[role=combobox]", "border-radius")).toBe(
       "10px",
     );
   });
@@ -198,7 +198,7 @@ test.describe("1440 (Chat-Main)", () => {
 });
 
 test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
-  test("the bare route is the channel list: 56 top, 48 rows, no jump field", async ({
+  test("the bare route is the channel list: 56 top, 48 rows, a 44 high search field", async ({
     page,
   }) => {
     await open(page, 390, 844, CHAT);
@@ -211,7 +211,8 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     expect(row.h).toBeGreaterThanOrEqual(47.5);
     expect(await css(page, "li button", "border-radius")).toBe("0px");
     expect(await css(page, "li button", "padding-left")).toBe("16px");
-    await expect(page.locator("nav div[aria-hidden=true]")).toBeHidden();
+    // The search field is real now, so the list page offers it too (44 high for a thumb) instead of the old hidden decoration.
+    expect((await box(page, "nav input[role=combobox]")).h).toBeCloseTo(44, 0);
   });
 
   test("a pushed room has a back arrow, 56 header, a 22 pill hanging 10 px below the bubble, the same pill composer", async ({

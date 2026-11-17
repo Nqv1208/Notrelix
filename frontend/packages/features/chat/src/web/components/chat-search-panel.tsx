@@ -57,6 +57,8 @@ export interface ChatSearchPanelProps {
   readonly authorName: (userId: string) => string;
   /** Opens a hit: the channel or conversation, the message and, for a thread reply, its thread. */
   readonly onOpenHit: (hit: ChatSearchHit) => void;
+  /** Text to search for as the panel opens (the sidebar field's text when nothing matched there). */
+  readonly initialQuery?: string;
 }
 
 const DEBOUNCE_MS = 300;
@@ -101,6 +103,7 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
     people,
     authorName,
     onOpenHit,
+    initialQuery,
   } = props;
   const text = copy.search;
   const ids = useId();
@@ -115,6 +118,12 @@ export function ChatSearchPanel(props: ChatSearchPanelProps) {
   const [datesOpen, setDatesOpen] = useState(false);
   const [recent, setRecent] = useState<readonly string[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open || !initialQuery) return;
+    setTyped(initialQuery);
+    setDebounced(initialQuery);
+  }, [open, initialQuery]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(typed), DEBOUNCE_MS);
