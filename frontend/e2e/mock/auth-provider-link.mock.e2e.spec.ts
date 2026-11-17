@@ -3,13 +3,13 @@ import { expect, test, type Page } from "@playwright/test";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
- * Connected accounts on the security page (UC-IDN-G01, G02), no artboard draws them: a walk of every
+ * Connected accounts page (UC-IDN-G01, G02), drawn as Idn-Providers, with the 1 px fidelity in design-fidelity-account-providers: a walk of every
  * state at 1440, 1024 and 390 px in light and dark, in Vietnamese. Per frame: the sentence shows,
  * no sideways scroll, every control a 44 px target on a phone, axe clean. The reviewer sets
  * AUTH_SHOTS_DIR to keep the images of a passing run and opens each one.
  */
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
-const security = "/workspaces/mock-workspace-primary/account/security";
+const security = "/workspaces/mock-workspace-primary/account/providers";
 const THEME_KEY = "notrelix-theme-mode";
 const VIEWS = [
   { name: "1440", width: 1440, height: 900 },
@@ -100,13 +100,13 @@ for (const view of VIEWS) {
       test.setTimeout(90_000);
       await prepare(page, view.width, view.height, dark);
       await page.goto(security);
-      const google = page.getByRole("button", { name: "Kết nối Google" });
+      const google = page.getByRole("button", { name: "Liên kết Google" });
       await expect(google).toBeVisible();
       await frame(page, `link-list-${tag}`, view.width);
 
       await google.click();
       const prompt = page.getByRole("region", {
-        name: "Xác nhận để kết nối Google",
+        name: "Xác nhận để liên kết Google",
       });
       await expect(prompt).toBeVisible();
       await frame(page, `link-prompt-${tag}`, view.width);
@@ -119,24 +119,24 @@ for (const view of VIEWS) {
       await frame(page, `link-wrong-${tag}`, view.width);
       await code.fill(MOCK_AUTH.otpCode);
       await page.keyboard.press("Enter");
-      await expect(page.getByText("Đã kết nối Google.")).toBeVisible();
+      await expect(page.getByText("Đã liên kết Google.")).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Ngắt kết nối Google" }),
+        page.getByRole("button", { name: "Gỡ liên kết Google" }),
       ).toBeVisible();
       await frame(page, `link-done-${tag}`, view.width);
 
       // G02: disconnecting asks again, says what it costs, and leaves the password.
-      await page.getByRole("button", { name: "Ngắt kết nối Google" }).click();
+      await page.getByRole("button", { name: "Gỡ liên kết Google" }).click();
       await expect(
-        page.getByRole("region", { name: "Xác nhận để ngắt kết nối Google" }),
+        page.getByRole("region", { name: "Xác nhận để gỡ liên kết Google" }),
       ).toBeVisible();
       await expect(page.getByText("Bạn sẽ không còn đăng nhập")).toBeVisible();
       await frame(page, `unlink-prompt-${tag}`, view.width);
       await page.getByLabel("Mã", { exact: true }).fill(MOCK_AUTH.otpCode);
       await page.keyboard.press("Enter");
-      await expect(page.getByText("Đã ngắt kết nối Google.")).toBeVisible();
+      await expect(page.getByText("Đã gỡ liên kết Google.")).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Kết nối Google" }),
+        page.getByRole("button", { name: "Liên kết Google" }),
       ).toBeVisible();
       await frame(page, `unlink-done-${tag}`, view.width);
 
@@ -150,7 +150,7 @@ for (const view of VIEWS) {
       await frame(page, `link-collision-${tag}`, view.width);
       await goTo(page, `${security}?link=failed&provider=Microsoft`);
       await expect(
-        page.getByText("Không kết nối được Microsoft"),
+        page.getByText("Không liên kết được Microsoft"),
       ).toBeVisible();
       await page.getByRole("alert").scrollIntoViewIfNeeded();
       await expect(page.getByRole("alert")).toBeInViewport();
@@ -170,30 +170,30 @@ for (const view of VIEWS) {
       );
       await goTo(page, security);
       await expect(
-        page.getByText("Đây là cách đăng nhập duy nhất của bạn"),
+        page.getByText("là cách đăng nhập duy nhất của bạn"),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Ngắt kết nối Google" }),
-      ).toHaveCount(0);
+        page.getByRole("button", { name: "Gỡ liên kết Google" }),
+      ).toBeDisabled();
       await frame(page, `last-method-${tag}`, view.width);
 
       // The proof is the provider they signed in with; back from it the link goes on.
-      await page.getByRole("button", { name: "Kết nối Microsoft" }).click();
+      await page.getByRole("button", { name: "Liên kết Microsoft" }).click();
       await expect(
-        page.getByRole("region", { name: "Xác nhận để kết nối Microsoft" }),
+        page.getByRole("region", { name: "Xác nhận để liên kết Microsoft" }),
       ).toBeVisible();
       await frame(page, `link-provider-prompt-${tag}`, view.width);
       await page.getByRole("button", { name: "Xác nhận bằng Google" }).click();
-      await expect(page.getByText("Đã kết nối Microsoft.")).toBeVisible();
+      await expect(page.getByText("Đã liên kết Microsoft.")).toBeVisible();
 
       // Two providers: the first can go (the proof again, by the provider).
-      await page.getByRole("button", { name: "Ngắt kết nối Google" }).click();
+      await page.getByRole("button", { name: "Gỡ liên kết Google" }).click();
       await page.getByRole("button", { name: "Xác nhận bằng Google" }).click();
-      await expect(page.getByText("Đã ngắt kết nối Google.")).toBeVisible();
+      await expect(page.getByText("Đã gỡ liên kết Google.")).toBeVisible();
       // Microsoft is now the only way in: it cannot be disconnected.
       await expect(
-        page.getByRole("button", { name: "Ngắt kết nối Microsoft" }),
-      ).toHaveCount(0);
+        page.getByRole("button", { name: "Gỡ liên kết Microsoft" }),
+      ).toBeDisabled();
       await frame(page, `unlink-last-${tag}`, view.width);
     });
   }

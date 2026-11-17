@@ -88,7 +88,8 @@ async function signBackIn(page: Page) {
   for (const [index, digit] of MOCK_AUTH.otpCode.split("").entries())
     await page.getByLabel(`Số ${index + 1} trên 6`).fill(digit);
   await page.getByRole("button", { name: "Xác minh" }).click();
-  await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
+  // Sign-in lands on Home (or the workspace): either way the session is in.
+  await expect(page).toHaveURL(/\/(home|workspaces\/mock-workspace-primary)/);
   // A client-side move keeps the mock world (a reload would reset it).
   await page.evaluate((path) => {
     history.pushState({}, "", path);

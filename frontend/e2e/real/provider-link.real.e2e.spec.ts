@@ -44,7 +44,7 @@ test("connecting a provider asks for a proof, refuses an identity another person
   const free = `real-e2e-free-${randomUUID()}`;
   await signIn(page, user);
   const workspaceId = (await findWorkspace(page, "Workspace 3")).id;
-  const security = `/workspaces/${workspaceId}/account/security`;
+  const security = `/workspaces/${workspaceId}/account/providers`;
   // Another person already owns this Google identity.
   sqlValue(
     `insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser(other.email)}, 'Google', '${taken}', '{}')`,
@@ -103,7 +103,7 @@ test("disconnecting asks for a proof, a proof never issued unlinks nothing, and 
   const person = realUsers.admin;
   await signIn(page, person);
   const workspaceId = (await findWorkspace(page, "Workspace 2")).id;
-  const security = `/workspaces/${workspaceId}/account/security`;
+  const security = `/workspaces/${workspaceId}/account/providers`;
   sqlValue(
     `insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser(person.email)}, 'Google', 'real-e2e-linked-${randomUUID()}', '{}')`,
   );
@@ -141,12 +141,10 @@ test("the only way to sign in cannot be disconnected", async ({ page }) => {
   sqlValue(
     `update identity.users set has_password_credential = false where email = '${user.email}'; insert into identity.oauth_accounts (id, user_id, provider, provider_id, raw_profile) values ('${randomUUID()}', ${ofUser(user.email)}, 'Google', '${subject}', '{}')`,
   );
-  await page.goto(`/workspaces/${workspaceId}/account/security`);
-  await expect(
-    page.getByText("This is your only way to sign in"),
-  ).toBeVisible();
+  await page.goto(`/workspaces/${workspaceId}/account/providers`);
+  await expect(page.getByText("is your only way to sign in")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Disconnect Google" }),
-  ).toHaveCount(0);
+  ).toBeDisabled();
   expect((await summaryOf(page)).linkedProviders).toEqual(["Google"]);
 });

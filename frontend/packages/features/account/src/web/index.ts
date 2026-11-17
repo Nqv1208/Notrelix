@@ -67,6 +67,11 @@ export {
 } from "./security/account-security.copy";
 export { useAccountSecurityCopy } from "./security/use-account-security-copy";
 export {
+  AccountProvidersSurface,
+  type AccountProvidersFlow,
+  type AccountProvidersSurfaceProps,
+} from "./providers/account-providers-surface";
+export {
   AccountEmailSurface,
   type AccountEmailFlow,
   type AccountEmailSurfaceProps,

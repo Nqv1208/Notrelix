@@ -3,6 +3,7 @@ import {
   Bell,
   KeyRound,
   Mail,
+  Link2,
   LayoutGrid,
   Palette,
   Shield,
@@ -24,6 +25,7 @@ export type AccountTab =
   | "appearance"
   | "security"
   | "email"
+  | "providers"
   | "notifications"
   | "tokens"
   | "workspaces";
@@ -57,12 +59,21 @@ const ICONS: Record<AccountTab, LucideIcon> = {
   security: Shield,
   notifications: Bell,
   email: Mail,
+  providers: Link2,
   tokens: KeyRound,
   workspaces: LayoutGrid,
 };
 
 const GROUPS: readonly (readonly AccountTab[])[] = [
-  ["profile", "appearance", "security", "email", "notifications", "tokens"],
+  [
+    "profile",
+    "appearance",
+    "security",
+    "email",
+    "providers",
+    "notifications",
+    "tokens",
+  ],
   ["workspaces"],
 ];
 
