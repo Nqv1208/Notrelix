@@ -114,9 +114,9 @@ public sealed class ChatCallMediaWebhookIntegrationTests
         var stack = await _host.SeedWorkspaceAsync();
         var (call, room) = await SeedActiveCallAsync(stack, 2);
         var person = call.Participants.First(p => p.PersonId != stack.OwnerId).PersonId;
-        // Later than the row's audit stamp (the seed saved it just now), so the aggregate accepts the changes in order.
-        var leftAt = DateTimeOffset.UtcNow.AddMinutes(1);
-        var rejoinedAt = leftAt.AddMinutes(1);
+        // Well after the row's audit stamps, so the aggregate accepts the changes in order.
+        var leftAt = T0.AddDays(1);
+        var rejoinedAt = leftAt.AddDays(1);
 
         // The person leaves (the first session ends), then comes back: the same row, a later JoinedAt.
         await _host.WithSystemContextAsync(async c =>
