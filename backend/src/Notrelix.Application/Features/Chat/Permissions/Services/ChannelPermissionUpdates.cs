@@ -25,7 +25,8 @@ public static class ChannelPermissionUpdates
         Guid userId,
         IReadOnlyList<ChannelPermissionEntry> requested,
         DateTimeOffset now,
-        CancellationToken ct)
+        CancellationToken ct,
+        Calls.Services.ChatCallPermissionRefresh? calls = null)
     {
         var caller = await ChannelAccess.CallerAsync(members, workspaceId, userId, ct);
         var space = await ChannelAccess.LoadChannelAsync(db, workspaceId, channelId, ct);
@@ -44,7 +45,11 @@ public static class ChannelPermissionUpdates
 
         var before = space.PermissionEntries();
         if (space.SetPermissionOverrides(requested, userId, now))
+        {
             await audit.PermissionsChangedAsync(space, before, space.PermissionEntries(), ct);
+            if (calls is not null)
+                await calls.RefreshAsync(space, now, ct);
+        }
 
         return ChannelPermissionsDto.From(space);
     }

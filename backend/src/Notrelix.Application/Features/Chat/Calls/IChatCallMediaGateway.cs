@@ -14,7 +14,7 @@ public sealed record CallMediaWebhookEvent(string EventId, string Kind, string R
 
 /// <summary>
 /// The only way Chat talks to the media plane (SYS-ADR-002 decision 7). Self-hosted LiveKit and LiveKit Cloud are two adapters
-/// behind it; only a fake exists in Phase 5a. A failure throws <see cref="CallMediaUnavailableException"/>, which the handlers turn
+/// behind it; an in-memory stand-in and the LiveKit adapter implement it, chosen by <c>Chat:Calls:Media:Provider</c>. A failure throws <see cref="CallMediaUnavailableException"/>, which the handlers turn
 /// into the stable code <c>chat.calls.unavailable</c> (nothing stays Ringing).
 /// </summary>
 public interface IChatCallMediaGateway
@@ -28,6 +28,12 @@ public interface IChatCallMediaGateway
 
     /// <summary>Removes one person from a live room at once: their access ended, so their media connection must not outlive it.</summary>
     Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Applies a changed right to publish to a person who is connected now (a channel turned read-only): the media server updates the live
+    /// connection, so it does not wait for the token to expire. A person who is not in the room is a no-op.
+    /// </summary>
+    Task UpdateParticipantPermissionAsync(string roomKey, Guid personId, bool canPublish, bool canPublishVideo, CancellationToken cancellationToken);
 
     /// <summary>The people currently connected to a room, for the reconciliation that drops anyone without an open participation.</summary>
     Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken);

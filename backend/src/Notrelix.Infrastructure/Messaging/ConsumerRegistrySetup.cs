@@ -917,6 +917,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatCallParticipantPermissionChangedConsumer",
+                EventName = "chat.call.participant-permission-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-call-participant-permission-changed-v1",
+                BoundedContext = "Chat",
+                Description = "Applies a changed right to publish to a person's live media connection through the media gateway; retried until it succeeds",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatNotificationIntentConsumer",
                 EventName = "chat.message.created",
                 EventVersion = 1,

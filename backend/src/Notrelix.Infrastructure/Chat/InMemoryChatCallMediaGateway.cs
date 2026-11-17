@@ -47,6 +47,15 @@ public sealed class InMemoryChatCallMediaGateway(IOptions<ChatCallOptions> optio
         return Task.CompletedTask;
     }
 
+    /// <summary>The (room, person, canPublish) updates applied so far, for tests.</summary>
+    public ConcurrentQueue<(string RoomKey, Guid PersonId, bool CanPublish, bool CanPublishVideo)> PermissionUpdates { get; } = new();
+
+    public Task UpdateParticipantPermissionAsync(string roomKey, Guid personId, bool canPublish, bool canPublishVideo, CancellationToken cancellationToken)
+    {
+        PermissionUpdates.Enqueue((roomKey, personId, canPublish, canPublishVideo));
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<Guid>> ListParticipantsAsync(string roomKey, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Guid>>(_connected.Keys.Where(k => k.RoomKey == roomKey).Select(k => k.PersonId).ToList());
 

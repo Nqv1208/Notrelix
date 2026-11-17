@@ -2459,6 +2459,31 @@
         ]
       }
     },
+    "/api/v1/chat/calls/media-webhook": {
+      "post": {
+        "tags": [
+          "Chat.Calls"
+        ],
+        "summary": "Receives a signed media server event",
+        "description": "Called by the media server only. The Authorization header carries a JWT signed with the media server key whose sha256 claim is the digest of the raw body; anything unsigned, tampered, wrongly keyed or expired is 401 and changes nothing. The event id makes a replay a no-op. participant_left leaves the call, room_finished ends it; other events are accepted and ignored.",
+        "operationId": "Chat.Calls.MediaWebhook",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/calls": {
       "post": {
         "tags": [

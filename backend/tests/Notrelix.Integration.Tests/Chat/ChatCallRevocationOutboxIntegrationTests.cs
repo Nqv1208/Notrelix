@@ -81,6 +81,7 @@ public sealed class ChatCallRevocationOutboxIntegrationTests : IAsyncLifetime
 
         public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken) => throw new CallMediaUnavailableException("down");
 
+        public Task UpdateParticipantPermissionAsync(string roomKey, Guid personId, bool canPublish, bool canPublishVideo, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken)
         {
             RemoveAttempts++;

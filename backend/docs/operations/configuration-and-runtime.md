@@ -355,7 +355,26 @@ supplies it) and `LogRetentionMonths` (12, not applied yet). `Chat:CallSweep` (I
 job `Chat.Calls.Sweep` (`ChatCallSweepService`, a hosted service; `Enabled`, `Interval` default 5 seconds; `ReconcileInterval` default 30 seconds removes people a media room holds without an open participation): a call still Ringing after
 `RingSeconds` ends as Missed, and an Active call with nobody in it for `EmptyCallSeconds` ends as Completed, each in its own
 transaction under the system context with the RLS worker scope and a transaction advisory lock on the call, writing the one call
-message. Phase 5a registers only the in-memory media gateway (`InMemoryChatCallMediaGateway`) behind `IChatCallMediaGateway`.
+message.
+
+`Chat:Calls:Media` (Infrastructure, `ChatCallMediaOptions`, validated on start by `ChatCallMediaOptionsValidator`) picks the adapter behind
+`IChatCallMediaGateway`: `Provider` is `InMemory` (default; tests and the mock stack; signs nothing real) or `LiveKit`
+(`LiveKitChatCallMediaGateway`; self-hosted LiveKit and LiveKit Cloud are this one adapter with another address and key pair). With
+`LiveKit`: `ApiUrl` (server to server, for example `http://livekit:7880`, absolute http or https), `ApiKey`, `ApiSecret` (at least 32
+characters), `RequestTimeoutSeconds` (5; the media plane counts as unreachable after it, which the handlers answer as
+`chat.calls.unavailable`) and `RoomEmptyTimeoutSeconds` (120). `Chat:Calls:SfuUrl` stays the address browsers connect to. The local dev
+key pair (`devkey-notrelix-local` and the secret in `docker-compose.dev.yml`) is refused when the host is not Development or Testing; staging
+and production carry their own key pair and never reuse the dev one. The dev compose starts the media server only under the profile
+`calls` (`docker compose --profile calls up -d livekit`, image `livekit/livekit-server:v1.13.0`, ports 7880, 7881 and 50000-50100/udp) and
+the backend selects it with `CHAT_CALLS_MEDIA_PROVIDER=LiveKit` (`LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_API_URL`,
+`LIVEKIT_CLIENT_URL`, `LIVEKIT_PORT`; see `.env.example`).
+
+The media server reports to `POST /api/v1/chat/calls/media-webhook` (the compose profile configures the address). The route has no user
+and no CSRF token: its only authority is the JWT in the `Authorization` header, signed with the media key, whose `sha256` claim is the
+digest of the exact body. A missing, tampered, wrongly keyed or expired request is 401 and nothing is read or written. The event id is
+claimed in the shared idempotency table (system scope), so a replay is a no-op; `participant_left` leaves the call and `room_finished`
+ends it, each in one transaction under the worker login with an advisory lock on the room. The rate policy `CallMediaWebhookByIp`
+(1200 per minute per address) is wider than `WebhookIntakeByIp` because a media server posts an event for every join, leave and track.
 
 `Chat:Retention` (Infrastructure, `ChatRetentionOptions`, validated on start by `ChatRetentionOptionsValidator`)
 configures the Chat retention job `Chat.Retention.Apply` (`ChatRetentionService`, a hosted service; UC-CHT-H05). Each
