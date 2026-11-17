@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { toNewest } from "./support/chat-newest";
-import {
-  WORKSPACE,
-  OTHER_ROOM,
-  fill,
-} from "./support/chat-list-trace";
+import { WORKSPACE, OTHER_ROOM, fill } from "./support/chat-list-trace";
 
 // The list draws every loaded row (up to 10 pages): scrolling through a 500-message channel must not stall a frame.
 // Frames land on 16.7 ms ticks: 3 ticks (50 ms) plus timer jitter is the allowed worst, a 4th tick (66.7) is a stall.
@@ -49,7 +45,13 @@ test("scrolling through a 500-message channel never holds a frame past three tic
     return g.__gaps;
   });
   const worst = Math.max(...gaps);
-  console.log(`PERF slow ${gaps.map((g, i) => [i, g] as const).filter(([, g]) => g > 33).map(([i, g]) => `${i}:${g.toFixed(0)}`).join(" ")}`);
+  console.log(
+    `PERF slow ${gaps
+      .map((g, i) => [i, g] as const)
+      .filter(([, g]) => g > 33)
+      .map(([i, g]) => `${i}:${g.toFixed(0)}`)
+      .join(" ")}`,
+  );
   console.log(`PERF longest frame ${worst.toFixed(1)} ms over ${gaps.length}`);
   expect(worst).toBeLessThanOrEqual(LONGEST_FRAME_MS);
 });
