@@ -1,6 +1,5 @@
 using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Features.Chat.Calls.Commands.AnswerCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.CancelCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.DeclineCall;
