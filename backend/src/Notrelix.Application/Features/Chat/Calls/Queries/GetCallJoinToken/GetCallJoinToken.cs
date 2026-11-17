@@ -18,7 +18,8 @@ namespace Notrelix.Application.Features.Chat.Calls.Queries.GetCallJoinToken;
 public record GetCallJoinTokenQuery(Guid WorkspaceId, Guid CallId)
     : IQuery<Result<CallJoinDto>>, IReadRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
 {
-    public PermissionAction Action => PermissionAction.ChatMessagePost;
+    // The same action as Start: the token is the starter's way into the room, so it asks what starting asked.
+    public PermissionAction Action => PermissionAction.ChatCallStart;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 

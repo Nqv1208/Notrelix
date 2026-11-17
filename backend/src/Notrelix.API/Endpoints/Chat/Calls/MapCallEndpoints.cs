@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Models;
 using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
@@ -106,7 +107,7 @@ public static class MapCallEndpoints
         return app;
     }
 
-    private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender, IRequestHandler<GetCallJoinTokenQuery, Result<CallJoinDto>> tokens, CancellationToken cancellationToken)
+    private static async Task<IResult> StartAsync(Guid workspaceId, Guid spaceId, StartCallRequest body, ISender sender, IServiceScopeFactory scopes, ICurrentRequestContext caller)
     {
         var started = await sender.Send(new StartCallCommand(workspaceId, spaceId, body.Kind));
         if (!started.Succeeded)
@@ -114,9 +115,14 @@ public static class MapCallEndpoints
 
         // The start is stored for idempotent replay and carries no media token; the starter's token is minted fresh here, for a first
         // start and for every replay, after the caller's access to the call is checked again.
-        // A request runs one command through the pipeline (its execution context resolves once), so the token query's handler runs
-        // directly: it repeats the call-access checks itself, and this request already passed the pipeline's permission check.
-        var joined = await tokens.Handle(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id), cancellationToken);
+        // A request resolves its execution context once, so the token query cannot ride the same scope. It runs in a scope of its own and
+        // goes through the whole pipeline (authentication, the same permission as Start, validation, tenant scope), seeded with the
+        // caller exactly as the realtime gateway seeds its scope.
+        await using var scope = scopes.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        services.GetRequiredService<IExecutionContextAccessor>().SetUser(caller.UserId, caller.Email, caller.Name);
+        services.GetRequiredService<ICurrentTenantContext>().SetUser(caller.UserId);
+        var joined = await services.GetRequiredService<ISender>().Send(new GetCallJoinTokenQuery(workspaceId, started.Data!.Id));
         return joined.ToCreatedResult();
     }
 
