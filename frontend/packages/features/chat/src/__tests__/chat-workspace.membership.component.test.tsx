@@ -20,7 +20,7 @@ beforeAll(() => {
   Element.prototype.scrollIntoView ??= () => undefined;
 });
 
-async function setup(isPrivate: boolean) {
+async function setup(isPrivate: boolean, addOther = true) {
   const store = new MockStore({ ...defaultConfig, persona: "owner" });
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
@@ -38,7 +38,7 @@ async function setup(isPrivate: boolean) {
     { name, topic: null, isPrivate },
     crypto.randomUUID(),
   );
-  await service.addMembers(WORKSPACE, created.id, [other.userId]);
+  if (addOther) await service.addMembers(WORKSPACE, created.id, [other.userId]);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -65,7 +65,15 @@ async function setup(isPrivate: boolean) {
     { wrapper },
   );
   await screen.findByRole("combobox", { name: `Message #${name}` });
-  return { service, created, other, name, onOpenChannel, onCloseConversation };
+  return {
+    service,
+    created,
+    other,
+    viewerId,
+    name,
+    onOpenChannel,
+    onCloseConversation,
+  };
 }
 
 const openSettings = async () =>
@@ -149,5 +157,75 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
           s.onCloseConversation.mock.calls.length,
       ).toBeGreaterThan(0),
     );
+  });
+
+  it("a manager invites a Workspace member from the member list and the person joins the private channel (UC-CHT-A06)", async () => {
+    const s = await setup(true, false);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Channel info" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Invite people" }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText("Invite people to #secret-room"),
+    ).toBeTruthy();
+    const submit = within(dialog).getByRole("button", {
+      name: "Invite",
+    }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+    fireEvent.click(within(dialog).getByRole("checkbox"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Invite (1)" }));
+    await waitFor(async () =>
+      expect(
+        (await s.service.getChannel(WORKSPACE, s.created.id)).members.map(
+          (member) => member.userId,
+        ),
+      ).toContain(s.other.userId),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("the invite dialog says when everyone is already in the channel", async () => {
+    await setup(true, true);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Channel info" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Invite people" }),
+    );
+    await screen.findByText(
+      "Everyone in the Workspace is already in this channel.",
+    );
+  });
+
+  it("a manager names a successor from the member list, then the last manager may leave (UC-CHT-A07)", async () => {
+    const s = await setup(true);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Channel info" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Make Other Person a manager",
+      }),
+    );
+    await waitFor(async () =>
+      expect(
+        (await s.service.getChannel(WORKSPACE, s.created.id)).members.find(
+          (member) => member.userId === s.other.userId,
+        )?.role,
+      ).toBe("manager"),
+    );
+    await screen.findByRole("button", { name: "Make Other Person a member" });
+    await s.service.setMemberRole(
+      WORKSPACE,
+      s.created.id,
+      s.other.userId,
+      "member",
+    );
+    await expect(
+      s.service.setMemberRole(WORKSPACE, s.created.id, s.viewerId, "member"),
+    ).rejects.toBeTruthy();
   });
 });

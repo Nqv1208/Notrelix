@@ -181,3 +181,77 @@ test("a channel is created, renamed and given a topic, a private channel stays h
   );
   await memberContext.close();
 });
+
+test("a manager invites a Workspace admin into a private channel from the member list, and the admin sees the channel only after that", async ({
+  page,
+  browser,
+}) => {
+  const unique = Date.now().toString(36);
+  const privateName = `invite-${unique}`;
+  await page.addInitScript(english);
+  await signIn(page, realUsers.workspaceOwner);
+  const workspace = await findWorkspace(page, "Workspace 3");
+  const ws = `/workspaces/${workspace.id}`;
+  const channelsPath = `${ws}/chat/channels`;
+
+  const adminContext = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+  });
+  const admin = await adminContext.newPage();
+  await admin.addInitScript(english);
+  await signIn(admin, realUsers.workspaceAdmin);
+  const adminId = (await apiRead<{ userId: string }>(admin, `${ws}/members/me`))
+    .userId;
+  const roster = await apiRead<{
+    items: { userId: string; name: string }[];
+  }>(page, `${ws}/members?limit=200`);
+  const adminName = roster.items.find((m) => m.userId === adminId)!.name;
+
+  // The private channel is made through the dialog's own call; a Workspace admin outside it neither lists nor reads it.
+  const priv = (
+    await apiWrite<Channel>(page, "POST", channelsPath, {
+      name: privateName,
+      isPrivate: true,
+    })
+  ).data!;
+  const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
+  expect(
+    (await apiRead<Channel[]>(admin, channelsPath)).map((c) => c.id),
+  ).not.toContain(priv.id);
+  expect(
+    (await admin.request.get(`${apiUrl}${channelsPath}/${priv.id}`)).status(),
+  ).toBe(404);
+  expect(
+    (
+      await admin.request.get(
+        `${apiUrl}${ws}/chat/spaces/${priv.id}/messages?limit=20`,
+      )
+    ).status(),
+  ).toBe(404);
+
+  // The manager invites the admin from the Members section of the channel info.
+  await page.goto(`${ws}/chat/${priv.id}`);
+  await page.getByRole("button", { name: "Channel info" }).click();
+  await page.getByRole("button", { name: "Invite people" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByText(`Invite people to #${privateName}`),
+  ).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Invite" })).toBeDisabled();
+  expect(await serious(page)).toEqual([]);
+  await dialog.getByRole("checkbox", { name: adminName }).check();
+  await dialog.getByRole("button", { name: "Invite (1)" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 20_000 });
+
+  // The admin now lists the channel, reads it and finds it in the sidebar.
+  await expect
+    .poll(async () =>
+      (await apiRead<Channel[]>(admin, channelsPath)).map((c) => c.id),
+    )
+    .toContain(priv.id);
+  await admin.goto(`${ws}/chat/${priv.id}`);
+  await expect(
+    admin.getByRole("navigation", { name: "Channels" }).getByText(privateName),
+  ).toBeVisible({ timeout: 30_000 });
+  await adminContext.close();
+});

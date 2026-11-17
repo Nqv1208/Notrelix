@@ -160,6 +160,40 @@ export const membersOperations = [
     },
   }),
 
+  // ─── PUT /channels/:channelId/members/:userId/role ────────────────────────
+
+  defineMockOperation<ChannelParams & { userId: string }>({
+    id: "chat.members.set-role",
+    contract: { kind: "openapi", operationId: "Chat.Members.SetRole" },
+    method: "PUT",
+    route:
+      "/workspaces/:workspaceId/chat/channels/:channelId/members/:userId/role",
+    async handle({ params, body, store }) {
+      return guarded(async () => {
+        const state = store.chat;
+        const caller = callerIn(store, params.workspaceId);
+        if (body?.role !== "manager" && body?.role !== "member")
+          validationProblem("role must be manager or member.");
+        const space = liveChannel(state, params.workspaceId, params.channelId);
+        requireVisible(state, space, caller);
+        requireManager(state, space, caller);
+        if (space.archivedAt !== null) archivedProblem();
+        const member = state.activeMembershipOf(space.id, params.userId);
+        if (!member) notFoundProblem();
+        if (member.role === "manager" && body.role === "member") {
+          const managers = state
+            .membershipsOfSpace(space.id)
+            .filter(
+              (row) => row.leftAt === null && row.role === "manager",
+            ).length;
+          if (managers <= 1) fail422LastManager();
+        }
+        member.role = body.role;
+        return { status: 204 };
+      });
+    },
+  }),
+
   // ─── DELETE /channels/:channelId/members/:userId ──────────────────────────
 
   defineMockOperation<ChannelParams & { userId: string }>({

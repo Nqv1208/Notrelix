@@ -12,6 +12,7 @@ describe("chat endpoint paths", () => {
       chat.channelMembers("w", hostile),
       chat.channelJoin("w", hostile),
       chat.channelMember("w", "c", hostile),
+      chat.channelMemberRole("w", "c", hostile),
       chat.channelGroup("w", hostile),
       chat.messages("w", hostile),
       chat.message("w", hostile),

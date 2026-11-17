@@ -1825,6 +1825,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Members.Commands.SetChannelMemberRole.SetChannelMemberRoleCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Members.Commands.SetChannelMemberRole.SetChannelMemberRoleCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Mentions.Queries.CheckBroadcastAccess.CheckBroadcastAccessQuery",
     "kind": "Query",
     "principalMarkers": [

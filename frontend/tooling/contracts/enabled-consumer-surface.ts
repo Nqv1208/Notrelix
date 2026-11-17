@@ -4752,6 +4752,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Join a public channel",
     ],
     [
+      "Chat.Members.SetRole",
+      "PUT",
+      "/workspaces/{workspaceId}/chat/channels/{channelId}/members/{userId}/role",
+      true,
+      "Make a channel member a manager, or a manager a member",
+    ],
+    [
       "Chat.Members.Remove",
       "DELETE",
       "/workspaces/{workspaceId}/chat/channels/{channelId}/members/{userId}",

@@ -8,6 +8,7 @@ using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
 using Notrelix.Application.Features.Chat.Channels.Queries.ListChannels;
 using Notrelix.Application.Features.Chat.Members.Commands.JoinChannel;
 using Notrelix.Application.Features.Chat.Members.Commands.RemoveChannelMember;
+using Notrelix.Application.Features.Chat.Members.Commands.SetChannelMemberRole;
 using Notrelix.Application.Features.Chat.Messages.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Tests.Features.Collaboration;
@@ -98,6 +99,7 @@ public class ChannelHandlerTests
     private ChatSystemMessages SystemMessages() => new(_db.Object, _sequences.Object, _clock.Object);
     private JoinChannelCommandHandler JoinHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
     private RemoveChannelMemberCommandHandler RemoveHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages(), new Mock<IAccessChangeSignal>().Object, AuditFacts());
+    private SetChannelMemberRoleCommandHandler RoleHandler() => new(_db.Object, _context.Object, _members.Object, AuditFacts());
     private UpdateChannelCommandHandler UpdateHandler() => new(_db.Object, _context.Object, _members.Object, _clock.Object, SystemMessages());
     private ListChannelsQueryHandler ListHandler() => new(_db.Object, _context.Object, _members.Object, Views());
     private Notrelix.Application.Features.Chat.Links.Services.ChatResourceViews Views() => new(
@@ -293,6 +295,70 @@ public class ChannelHandlerTests
 
         await act.Should().ThrowAsync<ForbiddenException>();
         general.IsActiveMember(third).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetChannelMemberRole_AManagerNamesASuccessorAndThenTheLastManagerMayLeave()
+    {
+        var general = PublicChannel();
+        general.AddMember(_member, MembershipRole.Member, Now);
+
+        var promote = await RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _member, "manager"), CancellationToken.None);
+
+        promote.Succeeded.Should().BeTrue();
+        general.IsActiveManager(_member).Should().BeTrue();
+        VerifyAudit(ChatAuditFacts.MemberRoleChanged, Times.Once());
+        var leave = await RemoveHandler().Handle(
+            new RemoveChannelMemberCommand(_workspaceId, general.Id, _owner), CancellationToken.None);
+        leave.Succeeded.Should().BeTrue();
+        general.IsActiveMember(_owner).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetChannelMemberRole_TheLastManagerCannotBeMadeAMember_AndTheSameRoleChangesNothing()
+    {
+        var general = PublicChannel();
+        general.AddMember(_member, MembershipRole.Member, Now);
+
+        var demote = () => RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _owner, "member"), CancellationToken.None);
+        var error = await demote.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.LastManager);
+        general.IsActiveManager(_owner).Should().BeTrue();
+
+        await RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _member, "member"), CancellationToken.None);
+        VerifyAudit(ChatAuditFacts.MemberRoleChanged, Times.Never());
+    }
+
+    [Fact]
+    public async Task SetChannelMemberRole_ANonManagerIsForbidden_AndAnOutsiderOfAPrivateChannelIsNotFound()
+    {
+        var general = PublicChannel();
+        general.AddMember(_member, MembershipRole.Member, Now);
+        AsCaller(_member);
+        var asMember = () => RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _member, "manager"), CancellationToken.None);
+        await asMember.Should().ThrowAsync<ForbiddenException>();
+        general.IsActiveManager(_member).Should().BeFalse();
+
+        var secret = PrivateChannel();
+        AsCaller(_outsider);
+        var asOutsider = () => RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, secret.Id, _owner, "member"), CancellationToken.None);
+        await asOutsider.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task SetChannelMemberRole_APersonWhoIsNotInTheChannelIsNotFound()
+    {
+        var general = PublicChannel();
+
+        var act = () => RoleHandler().Handle(
+            new SetChannelMemberRoleCommand(_workspaceId, general.Id, _member, "manager"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     // ── Channel permission overrides (UC-CHT-H01) ─────────────────────────────
