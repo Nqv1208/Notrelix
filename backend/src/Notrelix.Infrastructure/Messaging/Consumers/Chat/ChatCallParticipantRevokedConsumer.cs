@@ -24,3 +24,25 @@ public sealed class ChatCallParticipantRevokedConsumerDefinition : ConsumerDefin
         IRegistrationContext context) =>
         endpointConfigurator.UseMessageRetry(r => r.Exponential(8, TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromSeconds(2)));
 }
+
+/// <remarks>
+/// Applies a changed right to publish to a person's live connection. Applying the same value twice is harmless, and a failure is not
+/// swallowed: the exception sends the message back through the endpoint's retry policy, so the update is at-least-once.
+/// </remarks>
+[OrderingNotApplicable("Each message carries the full publish right of one person and applying it is idempotent; two permission changes in the same instant are rare, and a reordered pair leaves the older value only until the next change.")]
+public sealed class ChatCallParticipantPermissionChangedConsumer(IChatCallMediaGateway media) : IConsumer<ChatCallParticipantPermissionChangedIntegrationEvent>
+{
+    public Task Consume(ConsumeContext<ChatCallParticipantPermissionChangedIntegrationEvent> context) =>
+        media.UpdateParticipantPermissionAsync(context.Message.RoomKey, context.Message.PersonId, context.Message.CanPublish, context.Message.CanPublishVideo, context.CancellationToken);
+}
+
+public sealed class ChatCallParticipantPermissionChangedConsumerDefinition : ConsumerDefinition<ChatCallParticipantPermissionChangedConsumer>
+{
+    public ChatCallParticipantPermissionChangedConsumerDefinition() => EndpointName = "notrelix-chat-call-participant-permission-changed-v1";
+
+    protected override void ConfigureConsumer(
+        IReceiveEndpointConfigurator endpointConfigurator,
+        IConsumerConfigurator<ChatCallParticipantPermissionChangedConsumer> consumerConfigurator,
+        IRegistrationContext context) =>
+        endpointConfigurator.UseMessageRetry(r => r.Exponential(8, TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromSeconds(2)));
+}

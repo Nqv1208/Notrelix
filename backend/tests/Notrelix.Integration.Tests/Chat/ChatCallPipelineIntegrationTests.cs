@@ -745,6 +745,7 @@ public sealed class ChatCallPipelineIntegrationTests
 
         public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken) => Task.CompletedTask;
 
+        public Task UpdateParticipantPermissionAsync(string roomKey, Guid personId, bool canPublish, bool canPublishVideo, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken)
         {
             if (Interlocked.Decrement(ref FailedKicksLeft) >= 0)
@@ -774,6 +775,7 @@ public sealed class ChatCallPipelineIntegrationTests
         public Task EndRoomAsync(string roomKey, CancellationToken cancellationToken) =>
             throw new CallMediaUnavailableException("The media plane is down.");
 
+        public Task UpdateParticipantPermissionAsync(string roomKey, Guid personId, bool canPublish, bool canPublishVideo, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task RemoveParticipantAsync(string roomKey, Guid personId, CancellationToken cancellationToken) =>
             throw new CallMediaUnavailableException("The media plane is down.");
 

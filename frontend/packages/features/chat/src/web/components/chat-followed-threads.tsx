@@ -16,7 +16,10 @@ export interface FollowedThreadsPanelProps {
   readonly authorName: (userId: string) => string;
   readonly channelName: (spaceId: string) => string;
   readonly onOpenThread: (rootId: string) => void;
-  readonly onClose: () => void;
+  /** Needed only when the panel draws its own header. */
+  readonly onClose?: () => void;
+  /** Inside a section of the info panel: no header, the section names it. */
+  readonly embedded?: boolean;
   readonly locale?: string;
   readonly timeZone?: string;
 }
@@ -35,6 +38,7 @@ export function FollowedThreadsPanel({
   channelName,
   onOpenThread,
   onClose,
+  embedded = false,
   locale = "vi",
   timeZone,
 }: FollowedThreadsPanelProps) {
@@ -59,19 +63,23 @@ export function FollowedThreadsPanel({
       className="flex min-h-0 flex-1 flex-col"
       data-testid="chat-followed-panel"
     >
-      <ChatPanelHeader
-        title={copy.thread.followedTitle}
-        subtitle={
-          followed.data
-            ? count(
-                tab === "archived" ? "followedArchivedCount" : "followedCount",
-              )
-            : undefined
-        }
-        subtitleAlways
-        closeLabel={copy.pins.close}
-        onClose={onClose}
-      />
+      {embedded ? null : (
+        <ChatPanelHeader
+          title={copy.thread.followedTitle}
+          subtitle={
+            followed.data
+              ? count(
+                  tab === "archived"
+                    ? "followedArchivedCount"
+                    : "followedCount",
+                )
+              : undefined
+          }
+          subtitleAlways
+          closeLabel={copy.pins.close}
+          onClose={onClose ?? (() => undefined)}
+        />
+      )}
       <div
         role="tablist"
         aria-label={copy.thread.followedTitle}

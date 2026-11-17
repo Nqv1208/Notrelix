@@ -185,6 +185,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapPinRoutes();
         app.MapReactionRoutes();
         app.MapCallRoutes();
+        app.MapCallMediaWebhookRoute();
         app.MapChatAttachmentRoutes();
         app.MapChannelPermissionRoutes();
         app.MapChatRetentionRoutes();

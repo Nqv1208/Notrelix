@@ -661,6 +661,7 @@ describe("Messenger conversation header", () => {
         onOpenList={vi.fn()}
         onToggleDetails={vi.fn()}
         onHide={vi.fn()}
+        onOpenSection={vi.fn()}
       />,
     );
   }

@@ -40,6 +40,7 @@ public static class MessagingRegistration
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatRetentionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatCallEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatCallParticipantRevokedEventMapper>();
+        services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Chat.ChatCallParticipantPermissionChangedEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.Billing.SubscriptionEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemMemberAssignedEventMapper>();
         services.AddScoped<IIntegrationEventMapper, Notrelix.Application.EventMappers.WorkManagement.BoardItemOwnersRemindedEventMapper>();

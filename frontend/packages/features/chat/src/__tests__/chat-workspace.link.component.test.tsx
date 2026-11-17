@@ -84,10 +84,9 @@ describe("ChatWorkspace linked resource (UC-CHT-H10)", () => {
     const general = await openGeneral(s, "owner");
     await screen.findByRole("combobox", { name: /Message #general/ });
 
-    fireEvent.keyDown(
-      await screen.findByRole("button", { name: "Channel settings" }),
-      { key: "Enter" },
-    );
+    fireEvent.keyDown(await screen.findByRole("button", { name: "More" }), {
+      key: "Enter",
+    });
     fireEvent.click(
       await screen.findByRole("menuitem", { name: "Link a resource" }),
     );
@@ -117,10 +116,9 @@ describe("ChatWorkspace linked resource (UC-CHT-H10)", () => {
       resourceId: BOARD,
     });
 
-    fireEvent.keyDown(
-      screen.getByRole("button", { name: "Channel settings" }),
-      { key: "Enter" },
-    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "More" }), {
+      key: "Enter",
+    });
     fireEvent.click(
       await screen.findByRole("menuitem", { name: "Remove the link" }),
     );
@@ -148,13 +146,12 @@ describe("ChatWorkspace linked resource (UC-CHT-H10)", () => {
     await openGeneral(s, "member");
 
     await screen.findByRole("link", { name: /Open the linked Board/ });
-    // The settings menu a member sees holds Leave and nothing that changes the channel (UC-CHT-A07).
-    fireEvent.keyDown(
-      await screen.findByRole("button", { name: "Channel settings" }),
-      { key: "Enter" },
-    );
+    // The "More" menu a member sees holds the two panel shortcuts and Leave, nothing that changes the channel (UC-CHT-A07).
+    fireEvent.keyDown(await screen.findByRole("button", { name: "More" }), {
+      key: "Enter",
+    });
     expect(
       (await screen.findAllByRole("menuitem")).map((item) => item.textContent),
-    ).toEqual(["Leave channel"]);
+    ).toEqual(["Pinned messages", "Following", "Leave channel"]);
   });
 });

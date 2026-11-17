@@ -1,3 +1,4 @@
+import { openInfoSection } from "./support/chat-info";
 import { expect, test, type Page } from "@playwright/test";
 import { toNewest } from "./support/chat-newest";
 
@@ -76,10 +77,8 @@ async function openFollowed(page: Page) {
   if (page.viewportSize()!.width < 768 && (await back.isVisible())) {
     await back.click();
   }
-  const tab = page.getByRole("button", { name: "Đang theo dõi" }).first();
-  // The toolbar button toggles the panel: a thread panel open is replaced by the list.
-  await tab.click();
-  await expect(page.locator(PANEL)).toBeVisible();
+  // The "…" menu deep-opens the info panel at its Following section: a thread panel open is replaced by it.
+  await openInfoSection(page, "following");
 }
 
 const SIZES = [
@@ -97,19 +96,8 @@ for (const mode of ["light", "dark"] as const) {
       }) => {
         await open(page, size.width, size.height, mode);
         await openFollowed(page);
-        // Chat-Followed-T: from 768 to 1279 the list is the page of the column (the room is gone, the channel list stays).
-        if (size.width >= 768 && size.width < 1280) {
-          const side = await box(page, "[data-testid=chat-side-panel]");
-          expect(side.x + side.w).toBeCloseTo(size.width, 0);
-          expect(side.w).toBeGreaterThan(500);
-          await expect(page.locator("[data-bubble]").first()).toBeHidden();
-        }
-        expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
-        expect(await css(page, `${HEADER} h2`, "font-size")).toBe(size.title);
-        expect(await css(page, `${HEADER} h2`, "font-weight")).toBe(
-          size.weight,
-        );
-        expect(await css(page, `${HEADER} p`, "font-size")).toBe("12px");
+        // The Chat-Followed page header (56 high) and the Chat-Followed-T full-column page are gone: the list is a section
+        // of the info panel (Chat-Info boards), so those assertions are removed; the tabs and the empty state keep their numbers.
         const tab = `${PANEL} [role=tab]`;
         expect((await box(page, tab)).h).toBeCloseTo(44, 0);
         expect(await css(page, tab, "font-size")).toBe("13.5px");

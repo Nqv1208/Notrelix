@@ -239,6 +239,29 @@ public sealed class Call : AggregateRoot, IWorkspaceScoped
         return true;
     }
 
+    /// <summary>
+    /// The media server reports the room finished (the webhook). A Ringing call never got its room used, so it ends as Failed; an Active call
+    /// ends as Completed for everyone. An ended call changes nothing (false).
+    /// </summary>
+    public bool EndFromMedia(DateTimeOffset at)
+    {
+        if (IsEnded) return false;
+        Finish(State == CallState.Ringing ? CallEndReason.Failed : CallEndReason.Completed, InitiatorId, at);
+        return true;
+    }
+
+    /// <summary>
+    /// A participant's right to publish changed while they are in the call (a channel turned read-only). One fact asks the media room to
+    /// apply it; it changes no stored call state, so the version stays. False when they are not in the call.
+    /// </summary>
+    public bool ChangePublishPermission(Guid personId, bool canPublish, DateTimeOffset at)
+    {
+        if (IsEnded || !IsJoined(personId)) return false;
+        RaiseDomainEvent(new CallParticipantPermissionChangedDomainEvent(
+            AccountId, WorkspaceId, SpaceId, Id, personId, RoomKey, canPublish, canPublish && Kind == CallKind.Video, at));
+        return true;
+    }
+
     /// <summary>The sweep ends an Active call that has had nobody in it for the grace period.</summary>
     public void EndEmpty(DateTimeOffset at)
     {

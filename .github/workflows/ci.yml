@@ -68,14 +68,19 @@ jobs:
       - uses: ./.github/actions/setup-backend
       - run: dotnet restore backend.slnx
       - run: dotnet format backend.slnx --verify-no-changes --no-restore
-      - run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
+      # A light check (format) never hides the heavy ones: build and tests still run and report, the job still fails.
+      - id: build
+        if: ${{ !cancelled() }}
+        run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
       - name: Domain, Application, Infrastructure, Architecture, Platform and API tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           set -euo pipefail
           for p in Domain Application Infrastructure Architecture Platform API; do
             dotnet test "tests/Notrelix.$p.Tests/Notrelix.$p.Tests.csproj" --no-build --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
           done
       - name: OpenAPI contract has no drift
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
           DOTNET_ENVIRONMENT: Development
           Messaging__Transport: InMemory
@@ -146,16 +151,27 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      - run: pnpm format:check
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm check:architecture
-      - run: pnpm check:i18n
-      - run: pnpm check:mock-consumer-surface
-      - run: pnpm codegen:check
-      - run: pnpm test:node
-      - run: pnpm test:web
-      - run: pnpm --filter @notrelix/app-web build
+      # Every check runs and reports even when an earlier one fails, so a light failure never hides a heavy result.
+      - if: ${{ !cancelled() }}
+        run: pnpm format:check
+      - if: ${{ !cancelled() }}
+        run: pnpm typecheck
+      - if: ${{ !cancelled() }}
+        run: pnpm lint
+      - if: ${{ !cancelled() }}
+        run: pnpm check:architecture
+      - if: ${{ !cancelled() }}
+        run: pnpm check:i18n
+      - if: ${{ !cancelled() }}
+        run: pnpm check:mock-consumer-surface
+      - if: ${{ !cancelled() }}
+        run: pnpm codegen:check
+      - if: ${{ !cancelled() }}
+        run: pnpm test:node
+      - if: ${{ !cancelled() }}
+        run: pnpm test:web
+      - if: ${{ !cancelled() }}
+        run: pnpm --filter @notrelix/app-web build
 
   dependencies:
     name: Dependency audit
