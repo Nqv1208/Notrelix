@@ -42947,6 +42947,10 @@
           "suffix": {
             "type": "string",
             "nullable": true
+          },
+          "revokedReason": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

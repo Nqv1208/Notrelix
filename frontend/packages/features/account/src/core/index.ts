@@ -10,6 +10,7 @@ export type {
   AccountActivityType,
   AccountApiToken,
   AccountApiTokenPage,
+  AccountApiTokenRevokedReason,
   AccountLeaveFailure,
   AccountPhotoFailure,
   AccountWorkspaceEntry,

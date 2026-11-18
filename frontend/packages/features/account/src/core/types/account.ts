@@ -129,7 +129,13 @@ export interface AccountApiToken {
   readonly createdAt: string;
   /** `null` for a token issued before the suffix was kept. */
   readonly suffix: string | null;
+  /** Why a revoked token stopped; `null` while it is active or when it was revoked before the reason was kept. */
+  readonly revokedReason?: AccountApiTokenRevokedReason | null;
 }
+
+/** Revoked by a person from this page, or because its issuer was removed, suspended or left the workspace. */
+export type AccountApiTokenRevokedReason =
+  "manual" | "member-removed" | "member-suspended" | "member-left";
 
 export interface AccountApiTokenPage {
   readonly items: readonly AccountApiToken[];

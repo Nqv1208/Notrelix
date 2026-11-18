@@ -18,6 +18,11 @@ export const en = {
   noExpiryHint: "Issued without an expiry. Revoke it and issue a new one.",
   expiredTag: "Expired",
   revokedTag: "Revoked",
+  revokedReason: {
+    "member-removed": "The person who made it was removed from the workspace",
+    "member-suspended": "The person who made it was suspended in the workspace",
+    "member-left": "The person who made it left the workspace",
+  },
   revoke: "Revoke",
   revokeLabel: "Revoke {{name}}",
   banner: {
@@ -104,6 +109,11 @@ export const vi: AccountTokensCopy = {
     "Token này được tạo không có hạn. Hãy thu hồi và tạo token mới.",
   expiredTag: "Đã hết hạn",
   revokedTag: "Đã thu hồi",
+  revokedReason: {
+    "member-removed": "Người tạo đã bị xoá khỏi workspace",
+    "member-suspended": "Người tạo bị tạm khoá trong workspace",
+    "member-left": "Người tạo đã rời workspace",
+  },
   revoke: "Thu hồi",
   revokeLabel: "Thu hồi {{name}}",
   banner: {

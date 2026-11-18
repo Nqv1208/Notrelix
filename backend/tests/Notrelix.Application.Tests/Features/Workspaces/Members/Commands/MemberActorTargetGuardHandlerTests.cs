@@ -29,6 +29,8 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
         return member;
     }
 
+    private readonly Mock<Notrelix.Application.Features.Identity.Public.ApiTokens.IIdentityApiTokens> ApiTokens = new();
+
     private void Arrange(WorkspaceRole actorRole, WorkspaceMember target)
     {
         SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
@@ -38,11 +40,11 @@ public class MemberActorTargetGuardHandlerTests : WorkspaceHandlerTestBase
 
     private RemoveMemberCommandHandler Remove() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object,
-        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
+        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object, ApiTokens.Object);
 
     private SuspendMemberCommandHandler Suspend() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object,
-        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object);
+        new Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object, ApiTokens.Object);
 
     private ActivateMemberCommandHandler Activate() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object,

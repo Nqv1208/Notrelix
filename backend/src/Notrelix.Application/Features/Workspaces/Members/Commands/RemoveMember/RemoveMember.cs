@@ -1,6 +1,8 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
@@ -31,6 +33,7 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
     private readonly IWorkspaceOwnerUpdateLocker _locker;
 
     private readonly IAccessChangeSignal _access;
+    private readonly IIdentityApiTokens _apiTokens;
 
     public RemoveMemberCommandHandler(
         IWorkspaceDbContext context,
@@ -38,8 +41,10 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
         IWorkspaceOwnerUpdateLocker locker,
-        IAccessChangeSignal access)
+        IAccessChangeSignal access,
+        IIdentityApiTokens apiTokens)
     {
+        _apiTokens = apiTokens;
         _access = access;
         _context = context;
         _requestContext = requestContext;
@@ -84,6 +89,10 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
             workspace.AccountId, workspace.Id, request.UserId, _dateTimeProvider.UtcNow, ct);
         await _grantProjection.ClearCustomRoleAssignmentsAsync(
             workspace.AccountId, workspace.Id, request.UserId, ct);
+
+        // The person's API tokens in this workspace end with the membership, in the same transaction.
+        await _apiTokens.RevokeForMemberAsync(
+            request.UserId, workspace.Id, _requestContext.UserId, ApiTokenRevokedReason.MemberRemoved, ct);
 
         _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();
