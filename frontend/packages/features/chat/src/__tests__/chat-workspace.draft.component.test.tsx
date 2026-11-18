@@ -11,7 +11,10 @@ import {
   mockIds,
 } from "@notrelix/dev-mock-backend";
 import { chatCatalog } from "../web/components/chat.catalog";
-import { ChatWorkspace } from "../web/components/chat-workspace";
+import {
+  ChatWorkspace,
+  type ChatDraftStore,
+} from "../web/components/chat-workspace";
 import { createChatHooks } from "../web/query/create-chat-hooks";
 
 const WORKSPACE = mockIds.workspaces.primary;
@@ -43,7 +46,7 @@ describe("ChatWorkspace draft per space (UC-CHT-B07)", () => {
         </I18nProvider>
       </QueryClientProvider>
     );
-    const tree = (channelId: string) => (
+    const tree = (channelId: string, draftStore?: ChatDraftStore) => (
       <ChatWorkspace
         deps={deps}
         workspaceId={WORKSPACE}
@@ -52,6 +55,7 @@ describe("ChatWorkspace draft per space (UC-CHT-B07)", () => {
         channelId={channelId}
         onOpenChannel={vi.fn()}
         people={new Map()}
+        draftStore={draftStore}
       />
     );
     const view = render(tree(first.id), { wrapper });
@@ -68,5 +72,25 @@ describe("ChatWorkspace draft per space (UC-CHT-B07)", () => {
     expect((await box()).value).toBe("half written");
     view.rerender(tree(second.id));
     expect((await box()).value).toBe("other draft");
+
+    // A host store keeps the draft across a reload (a fresh mount); emptying the box clears it from the store.
+    const kept = new Map<string, string>();
+    const draftStore: ChatDraftStore = {
+      read: (key) => kept.get(key) ?? null,
+      write: (key, text) => {
+        if (text === null) kept.delete(key);
+        else kept.set(key, text);
+      },
+    };
+    view.unmount();
+    const stored = render(tree(first.id, draftStore), { wrapper });
+    fireEvent.change(await box(), { target: { value: "survives reload" } });
+    expect(kept.get(first.id)).toBe("survives reload");
+    stored.unmount();
+    const reloaded = render(tree(first.id, draftStore), { wrapper });
+    expect((await box()).value).toBe("survives reload");
+    fireEvent.change(await box(), { target: { value: "" } });
+    expect(kept.has(first.id)).toBe(false);
+    reloaded.unmount();
   });
 });
