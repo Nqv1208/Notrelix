@@ -104,4 +104,47 @@ describe("renaming a page twice in a row", () => {
     });
     await act(async () => root.unmount());
   });
+
+  it("does nothing when a rename is refused after the editor closed", async () => {
+    const { api } = producer();
+    let refuse: (error: Error) => void = () => undefined;
+    (api.patch as ReturnType<typeof vi.fn>).mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          refuse = reject;
+        }),
+    );
+    const useDocEditor = createUseDocEditor(api, endpoints);
+    const seen: { editor?: ReturnType<typeof useDocEditor> } = {};
+    function Probe() {
+      seen.editor = useDocEditor("ws", "p1");
+      return null;
+    }
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const root = createRoot(document.createElement("div"));
+    await act(async () => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Probe />
+        </QueryClientProvider>,
+      );
+    });
+    act(() => seen.editor?.updateTitle("Late"));
+    await until(() => expect(api.patch).toHaveBeenCalledTimes(1));
+    await act(async () => root.unmount());
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    refuse(Object.assign(new Error("stale"), { status: 412 }));
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+    // The version conflict would refetch the page; a closed editor must not.
+    expect(invalidate).not.toHaveBeenCalled();
+  });
 });

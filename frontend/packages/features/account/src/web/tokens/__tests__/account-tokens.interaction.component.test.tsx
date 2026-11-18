@@ -114,4 +114,65 @@ describe.each(["vi", "en"] as const)("API tokens (%s)", (locale) => {
     renderPureUi(<AccountTokensSurface {...props(locale)} />);
     expect(document.body.textContent).not.toMatch(/ntk_v1\.[A-Za-z]/);
   });
+
+  const dateIn = (days: number) =>
+    new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date(NOW + days * 86_400_000));
+
+  it("offers lives of at most 365 days and says the cap", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          flow: { kind: "form", name: "", days: 90, error: null },
+        })}
+      />,
+    );
+    const options = screen
+      .getAllByRole("option")
+      .map((option) => (option as HTMLOptionElement).value);
+    expect(options).toEqual(["30", "90", "365"]);
+    expect(screen.getByText(new RegExp(copy.form.hint))).toBeTruthy();
+  });
+
+  it("names the limit when the producer refuses the life", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          flow: {
+            kind: "proof",
+            factor: "password",
+            providers: [],
+            error: "lifetime",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText(copy.proof.lifetime)).toBeTruthy();
+    expect(copy.proof.lifetime).toContain("365");
+  });
+
+  it("shows the date the new token ends in the one-time step", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          flow: {
+            kind: "reveal",
+            secret: "ntk_v1.SECRET-VALUE-0001",
+            name: "CI deploy",
+            expiresAt: new Date(NOW + 365 * 86_400_000).toISOString(),
+          },
+        })}
+      />,
+    );
+    expect(
+      screen.getByText(
+        copy.reveal.detail
+          .replace("{{name}}", "CI deploy")
+          .replace("{{date}}", dateIn(365)),
+      ),
+    ).toBeTruthy();
+  });
 });
