@@ -47433,6 +47433,9 @@
           },
           "issuedByYou": {
             "type": "boolean"
+          },
+          "canManage": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

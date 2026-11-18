@@ -4,9 +4,12 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteGuestToResource;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendResourceInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.RevokeResourceInvitation;
+using Notrelix.Application.Features.Workspaces.Invitations.Queries.ListResourceInvitations;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Invitations;
 using Notrelix.Domain.Workspaces.Members;
@@ -22,7 +25,9 @@ namespace Notrelix.Integration.Tests.Workspaces;
 /// WSP-026 through the real pipeline on PostgreSQL: the issuer of a resource
 /// invitation may resend and revoke their own while they still manage the
 /// resource; another manager cannot touch it, an issuer who lost the permission
-/// is denied, and a revoked invitation is dead.
+/// is denied, and a revoked invitation is dead. A Workspace Owner or Admin acts on
+/// anyone's invitation through the workspace resend and cancel endpoints, a plain
+/// board manager does not, and an outsider or another workspace reaches nothing.
 /// </summary>
 [Collection("Database")]
 [Trait("Category", "Integration")]
@@ -176,5 +181,140 @@ public sealed class ResourceInvitationIssuerIntegrationTests : IAsyncLifetime
 
         await revoke.Should().ThrowAsync<AppNotFound>();
         (await InvitationAsync(s.InvitationId)).Status.Should().Be(WorkspaceInvitationStatus.Pending);
+    }
+
+    // ── The pending list and the Owner/Admin path (UC-WM-A20) ───────────────
+
+    private static Task<List<ResourceInvitationDto>> ListAsync(ServiceProvider provider, Seed s) =>
+        OrgTreeTestHost.QueryAsync<List<ResourceInvitationDto>>(provider, new ListResourceInvitationsQuery(BoardKind, s.BoardId));
+
+    /// <summary>A workspace Admin who also manages this board, so the Share dialog (and its list) opens for them.</summary>
+    private async Task<Guid> AddBoardManagingAdminAsync(Seed s)
+    {
+        var admin = await _host.AddMemberAsync(s.Stack, WorkspaceRole.Admin, "Admin");
+        await _host.SeedResourcePermissionAsync(s.Stack, BoardKind, s.BoardId, PermissionSubjectType.User, admin, PermissionLevel.Manager);
+        return admin;
+    }
+
+    [Fact]
+    public async Task List_TellsEachManagerWhichRowsTheyMayResendOrRevoke()
+    {
+        var s = await SeedAsync();
+        var admin = await AddBoardManagingAdminAsync(s);
+        using var asIssuer = _host.CreateProvider(s.Stack.AccountId, s.Issuer, RegisterInvitationServices);
+        using var asOther = _host.CreateProvider(s.Stack.AccountId, s.OtherManager, RegisterInvitationServices);
+        using var asAdmin = _host.CreateProvider(s.Stack.AccountId, admin, RegisterInvitationServices);
+        using var asOwner = _host.CreateProvider(s.Stack.AccountId, s.Stack.OwnerId, RegisterInvitationServices);
+
+        var issuerRow = (await ListAsync(asIssuer, s)).Should().ContainSingle().Subject;
+        var otherRow = (await ListAsync(asOther, s)).Should().ContainSingle().Subject;
+        var adminRow = (await ListAsync(asAdmin, s)).Should().ContainSingle().Subject;
+        var ownerRow = (await ListAsync(asOwner, s)).Should().ContainSingle().Subject;
+
+        (issuerRow.IssuedByYou, issuerRow.CanManage).Should().Be((true, true));
+        (otherRow.IssuedByYou, otherRow.CanManage).Should().Be((false, false), "a plain board manager manages only their own");
+        (adminRow.IssuedByYou, adminRow.CanManage).Should().Be((false, true));
+        (ownerRow.IssuedByYou, ownerRow.CanManage).Should().Be((false, true));
+        issuerRow.Id.Should().Be(s.InvitationId);
+    }
+
+    [Fact]
+    public async Task List_IsHiddenFromAPlainMemberAnOutsiderAndAnotherWorkspace()
+    {
+        var s = await SeedAsync();
+        var plain = await _host.AddMemberAsync(s.Stack, WorkspaceRole.Member, "Plain member");
+        var outsider = await _host.AddOutsiderAsync(s.Stack);
+        var other = await _host.SeedWorkspaceAsync();
+        using var asPlain = _host.CreateProvider(s.Stack.AccountId, plain, RegisterInvitationServices);
+        using var asOutsider = _host.CreateProvider(s.Stack.AccountId, outsider, RegisterInvitationServices);
+        using var asOtherOwner = _host.CreateProvider(other.AccountId, other.OwnerId, RegisterInvitationServices);
+
+        var plainList = () => ListAsync(asPlain, s);
+        var outsiderList = () => ListAsync(asOutsider, s);
+        var crossList = () => ListAsync(asOtherOwner, s);
+
+        await plainList.Should().ThrowAsync<AppForbidden>();
+        await outsiderList.Should().ThrowAsync<AppNotFound>("a non-member of the workspace gets NotFound");
+        await crossList.Should().ThrowAsync<AppNotFound>("another workspace cannot reach this board");
+    }
+
+    [Fact]
+    public async Task List_DropsAnInvitationOnceItIsRevoked()
+    {
+        var s = await SeedAsync();
+        using var asIssuer = _host.CreateProvider(s.Stack.AccountId, s.Issuer, RegisterInvitationServices);
+        await OrgTreeTestHost.SendAsync(asIssuer, new RevokeResourceInvitationCommand(BoardKind, s.BoardId, s.InvitationId));
+
+        (await ListAsync(asIssuer, s)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Owner_ResendsAnotherPersonsInvitation_ThroughTheWorkspaceEndpoint()
+    {
+        var s = await SeedAsync();
+        var before = await InvitationAsync(s.InvitationId);
+        using var asOwner = _host.CreateProvider(s.Stack.AccountId, s.Stack.OwnerId, RegisterInvitationServices);
+
+        await OrgTreeTestHost.SendAsync(asOwner, new ResendInvitationCommand(s.Stack.WorkspaceId, s.InvitationId));
+
+        var after = await InvitationAsync(s.InvitationId);
+        after.TokenGeneration.Should().Be(before.TokenGeneration + 1);
+        after.Token.Value.Should().NotBe(before.Token.Value, "the old link must stop working");
+        after.Status.Should().Be(WorkspaceInvitationStatus.Pending);
+        after.InvitedBy.Should().Be(s.Issuer, "a resend by the Owner does not take over the invitation");
+    }
+
+    [Fact]
+    public async Task Admin_RevokesAnotherPersonsInvitation_ThroughTheWorkspaceEndpoint()
+    {
+        var s = await SeedAsync();
+        var admin = await AddBoardManagingAdminAsync(s);
+        using var asAdmin = _host.CreateProvider(s.Stack.AccountId, admin, RegisterInvitationServices);
+
+        await OrgTreeTestHost.SendAsync(asAdmin, new CancelInvitationCommand(s.Stack.WorkspaceId, s.InvitationId));
+
+        var revoked = await InvitationAsync(s.InvitationId);
+        revoked.Status.Should().Be(WorkspaceInvitationStatus.Revoked);
+        FluentActions.Invoking(() => revoked.Accept(Guid.NewGuid(), OrgTreeTestHost.BaseTime))
+            .Should().Throw<Notrelix.Domain.Common.Exceptions.BusinessRuleException>("a revoked link cannot be accepted");
+    }
+
+    [Fact]
+    public async Task BoardManagerWhoIsNotOwnerOrAdmin_CannotUseTheWorkspaceEndpoints()
+    {
+        var s = await SeedAsync();
+        var before = await InvitationAsync(s.InvitationId);
+        using var asOther = _host.CreateProvider(s.Stack.AccountId, s.OtherManager, RegisterInvitationServices);
+
+        var resend = () => OrgTreeTestHost.SendAsync(asOther, new ResendInvitationCommand(s.Stack.WorkspaceId, s.InvitationId));
+        var cancel = () => OrgTreeTestHost.SendAsync(asOther, new CancelInvitationCommand(s.Stack.WorkspaceId, s.InvitationId));
+
+        await resend.Should().ThrowAsync<AppForbidden>();
+        await cancel.Should().ThrowAsync<AppForbidden>();
+        var after = await InvitationAsync(s.InvitationId);
+        after.Status.Should().Be(WorkspaceInvitationStatus.Pending);
+        after.TokenGeneration.Should().Be(before.TokenGeneration);
+    }
+
+    [Fact]
+    public async Task OutsiderAndAnotherWorkspacesOwner_CannotResendOrCancelThroughTheWorkspaceEndpoints()
+    {
+        var s = await SeedAsync();
+        var before = await InvitationAsync(s.InvitationId);
+        var outsider = await _host.AddOutsiderAsync(s.Stack);
+        var other = await _host.SeedWorkspaceAsync();
+        using var asOutsider = _host.CreateProvider(s.Stack.AccountId, outsider, RegisterInvitationServices);
+        using var asOtherOwner = _host.CreateProvider(other.AccountId, other.OwnerId, RegisterInvitationServices);
+
+        var outsiderCancel = () => OrgTreeTestHost.SendAsync(asOutsider, new CancelInvitationCommand(s.Stack.WorkspaceId, s.InvitationId));
+        var crossCancel = () => OrgTreeTestHost.SendAsync(asOtherOwner, new CancelInvitationCommand(other.WorkspaceId, s.InvitationId));
+        var crossResend = () => OrgTreeTestHost.SendAsync(asOtherOwner, new ResendInvitationCommand(other.WorkspaceId, s.InvitationId));
+
+        await outsiderCancel.Should().ThrowAsync<AppNotFound>();
+        await crossCancel.Should().ThrowAsync<AppNotFound>("the invitation belongs to another workspace");
+        await crossResend.Should().ThrowAsync<AppNotFound>();
+        var after = await InvitationAsync(s.InvitationId);
+        after.Status.Should().Be(WorkspaceInvitationStatus.Pending);
+        after.TokenGeneration.Should().Be(before.TokenGeneration);
     }
 }
