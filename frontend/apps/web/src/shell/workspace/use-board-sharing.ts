@@ -21,6 +21,21 @@ const BOARD_KIND = "work-management.board";
 
 type Entry = BoardSharingData["entries"][number];
 
+type PendingRows = OperationResponse<
+  "Workspaces.Invitations.ListResourceInvitations",
+  200
+>;
+
+function toPending(rows: PendingRows | undefined) {
+  return (rows ?? []).map((row) => ({
+    id: row.id ?? "",
+    email: row.email ?? "",
+    issuedByYou: row.issuedByYou === true,
+    invitedByName: row.invitedByName ?? "",
+    expiresAt: row.expiresAt ?? "",
+  }));
+}
+
 /**
  * The Board's own permissions, the history and who would lose the Board when it
  * goes Private (`WorkManagement.Boards.GetSharing`), with the writes the dialog
@@ -163,13 +178,10 @@ export function useBoardSharing(
       reload: () => {
         void refetch();
       },
-      pendingInvitations: (invitations.data ?? []).map((row) => ({
-        id: row.id ?? "",
-        email: row.email ?? "",
-        issuedByYou: row.issuedByYou === true,
-        invitedByName: row.invitedByName ?? "",
-        expiresAt: row.expiresAt ?? "",
-      })),
+      pendingInvitations: toPending(invitations.data),
+      /** The pending invitations as the cache holds them now: after a refused invite, who already sent one. */
+      readPendingInvitations: () =>
+        toPending(client.getQueryData<PendingRows>(invitationsKey)),
       changeLevel: async (entryId: string, level: SharingLevel) => {
         const entry = entryOf(entryId);
         if (entry) await runAll(planLevelChange(entry, level));
@@ -260,6 +272,7 @@ export function useBoardSharing(
     [
       api,
       boardId,
+      client,
       entryOf,
       invitations.data,
       invitationsKey,

@@ -22,6 +22,7 @@ import {
   buildSharingLog,
   buildSharingRows,
   fillBoardShareCopy,
+  guestInviteConflict,
   SHARING_LEVEL_OF,
   shareToneFor,
   type ShareCandidate,
@@ -173,6 +174,7 @@ export function BoardShareDialog({
           : "off"
         : "unknown",
       canManage: sharing.data?.canManage ?? access.myLevel === "manager",
+      archived: board.isArchived,
       hiddenCounts:
         sharing.data && !sharing.data.entriesDisclosed
           ? {
@@ -264,8 +266,16 @@ export function BoardShareDialog({
     row: ShareRowView;
     removal: boolean;
   } | null>(null);
+  // An invitation refused because the email already has a pending one: the notice names who sent it.
+  const [guestConflict, setGuestConflict] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
   useEffect(() => {
-    if (!open) setRefused(null);
+    if (!open) {
+      setRefused(null);
+      setGuestConflict(null);
+    }
   }, [open]);
 
   const write = useCallback(
@@ -317,6 +327,7 @@ export function BoardShareDialog({
         addManager: true,
       };
     }
+    if (guestConflict) return { kind: "refused" as const, ...guestConflict };
     // Managing through Governance: the person is no Manager entry of the Board.
     if (
       view?.canManage &&
@@ -330,7 +341,7 @@ export function BoardShareDialog({
       };
     }
     return null;
-  }, [copy, refused, view]);
+  }, [copy, guestConflict, refused, view]);
 
   const copyLink = useCallback(
     (options?: { readonly silent?: boolean }) => {
@@ -357,6 +368,9 @@ export function BoardShareDialog({
   };
 
   if (!view) return null;
+  // An archived Board is read-only for everyone (GOV-033): nothing here writes.
+  const canWrite =
+    view.canManage && Boolean(sharing.data) && !board?.isArchived;
   return (
     <BoardShareDialogSurface
       copy={copy}
@@ -371,9 +385,9 @@ export function BoardShareDialog({
         sharing.loading ? "loading" : sharing.failed ? "error" : undefined
       }
       onRetryPeople={sharing.reload}
-      candidates={view.canManage && sharing.data ? candidates : undefined}
+      candidates={canWrite ? candidates : undefined}
       onInvite={
-        view.canManage && sharing.data
+        canWrite
           ? async (userId: string, level: ShareLevel) => {
               try {
                 await sharing.invite(userId, SHARING_LEVEL_OF[level]);
@@ -386,7 +400,7 @@ export function BoardShareDialog({
           : undefined
       }
       onChangeLevel={
-        view.canManage && sharing.data
+        canWrite
           ? (rowId: string, level: ShareLevel) =>
               write(
                 () => sharing.changeLevel(rowId, SHARING_LEVEL_OF[level]),
@@ -395,14 +409,14 @@ export function BoardShareDialog({
           : undefined
       }
       onRemove={
-        view.canManage && sharing.data
+        canWrite
           ? (rowId: string) =>
               write(() => sharing.remove(rowId), subjectOf(rowId, true))
           : undefined
       }
       pendingInvitations={sharing.pendingInvitations}
       onResendInvitation={
-        view.canManage && sharing.data
+        canWrite
           ? async (invitationId: string) => {
               const row = sharing.pendingInvitations.find(
                 (r) => r.id === invitationId,
@@ -424,7 +438,7 @@ export function BoardShareDialog({
           : undefined
       }
       onRevokeInvitation={
-        view.canManage && sharing.data
+        canWrite
           ? async (invitationId: string) => {
               const row = sharing.pendingInvitations.find(
                 (r) => r.id === invitationId,
@@ -446,8 +460,9 @@ export function BoardShareDialog({
           : undefined
       }
       onInviteGuest={
-        view.canManage && sharing.data
+        canWrite
           ? async (email: string) => {
+              setGuestConflict(null);
               try {
                 await sharing.inviteGuest(email);
                 toast.success(
@@ -455,27 +470,32 @@ export function BoardShareDialog({
                 );
                 return true;
               } catch (error: unknown) {
-                toastFailure(copy.footer.writeFailed, error, "");
+                // The write refreshed the pending list: a pending invitation for this email names who sent it.
+                const conflict = guestInviteConflict(
+                  email,
+                  sharing.readPendingInvitations(),
+                  copy,
+                );
+                if (conflict) setGuestConflict(conflict);
+                else toastFailure(copy.add.inviteFailed, error, "");
                 return false;
               }
             }
           : undefined
       }
       onClaimOwner={
-        view.canManage && sharing.data?.canAssignOwner && user?.id
+        canWrite && sharing.data?.canAssignOwner && user?.id
           ? () => write(() => sharing.claimOwner(user.id))
           : undefined
       }
       onMakeOwner={
-        view.canManage && sharing.data?.canAssignOwner
+        canWrite && sharing.data?.canAssignOwner
           ? (rowId: string) => write(() => sharing.makeOwner(rowId))
           : undefined
       }
-      onChangeGeneral={
-        view.canManage && sharing.data ? () => undefined : undefined
-      }
+      onChangeGeneral={canWrite ? () => undefined : undefined}
       onConfirmPrivate={
-        view.canManage && sharing.data
+        canWrite
           ? (ids: readonly string[], addMeAsOwner: boolean) =>
               write(() => sharing.makePrivate(ids, addMeAsOwner))
           : undefined
