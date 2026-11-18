@@ -152,7 +152,10 @@ public class MoveBoardItemToBoardTests : WorkManagementHandlerTestBase
         var actors = new Mock<IActorLookupService>();
         actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ActorSnapshot> { new(TestUserId, "Hà Nguyễn", null) });
-        var query = new ListBoardItemTrashQueryHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, actors.Object);
+        var access = new Mock<IWorkspaceAccessResolver>();
+        access.Setup(a => a.ResolveAsync(TestWorkspaceId, TestUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceAccessSnapshot(TestAccountId, TestWorkspaceId, TestUserId, true, true));
+        var query = new ListBoardItemTrashQueryHandler(DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, actors.Object, access.Object);
 
         var page = await query.Handle(new ListBoardItemTrashQuery(_source.Id), CancellationToken.None);
 
