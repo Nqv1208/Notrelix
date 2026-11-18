@@ -69,7 +69,8 @@ public sealed class ListApiTokensQueryHandler
             t.ExpiresAt,
             t.CreatedAt,
             t.RevokedAt,
-            t.TokenSuffix)).ToList();
+            t.TokenSuffix,
+            t.RevokedReason?.ToString())).ToList();
 
         var nextCursor = hasMore ? ApiTokenCursor.Encode(rows[limit - 1].CreatedAt, rows[limit - 1].Id) : null;
 

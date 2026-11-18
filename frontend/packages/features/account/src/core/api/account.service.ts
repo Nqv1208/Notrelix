@@ -1,5 +1,6 @@
 import { resolveApiAssetUrl } from "@notrelix/contracts";
 import type {
+  AccountApiTokenRevokedReason,
   AccountLeaveFailure,
   AccountPhotoFailure,
   AccountWorkspaceEntry,
@@ -344,10 +345,20 @@ interface ApiTokenPageWire {
         readonly expiresAt?: string | null;
         readonly createdAt?: string;
         readonly suffix?: string | null;
+        readonly revokedReason?: string | null;
       }[]
     | null;
   readonly nextCursor?: string | null;
 }
+
+/** The producer names the reason (`ApiTokenRevokedReason`, serialized as a string). */
+const REVOKED_REASONS: Readonly<Record<string, AccountApiTokenRevokedReason>> =
+  {
+    Manual: "manual",
+    MemberRemoved: "member-removed",
+    MemberSuspended: "member-suspended",
+    MemberLeft: "member-left",
+  };
 
 export function toApiTokenPage(wire: ApiTokenPageWire): AccountApiTokenPage {
   return {
@@ -362,6 +373,7 @@ export function toApiTokenPage(wire: ApiTokenPageWire): AccountApiTokenPage {
       expiresAt: item.expiresAt ?? null,
       createdAt: item.createdAt ?? "",
       suffix: item.suffix ?? null,
+      revokedReason: REVOKED_REASONS[item.revokedReason ?? ""] ?? null,
     })),
     nextCursor: wire.nextCursor ?? null,
   };

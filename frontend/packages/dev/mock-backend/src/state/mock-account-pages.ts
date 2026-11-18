@@ -190,6 +190,8 @@ export interface MockApiToken {
   expiresAt: string;
   createdAt: string;
   revokedAt: string | null;
+  revokedReason:
+    "Manual" | "MemberRemoved" | "MemberSuspended" | "MemberLeft" | null;
   suffix: string;
 }
 
@@ -212,6 +214,7 @@ const defaultApiTokens = (
     expiresAt: offsetMinutes(left * day),
     createdAt: offsetMinutes(-n * day),
     revokedAt: null,
+    revokedReason: null,
     suffix,
   });
   return [

@@ -127,6 +127,7 @@ export const accountApiTokenOperations = [
         expiresAt: body.expiresAt,
         createdAt: store.getClock().isoNow(),
         revokedAt: null,
+        revokedReason: null,
         suffix: serial,
       };
       all.unshift(token);
@@ -154,6 +155,7 @@ export const accountApiTokenOperations = [
       if (token.status !== "Revoked") {
         token.status = "Revoked";
         token.revokedAt = store.getClock().isoNow();
+        token.revokedReason = "Manual";
       }
       return noContent();
     },

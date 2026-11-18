@@ -23,6 +23,7 @@ public class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
         builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
         builder.Property(x => x.RevokedBy).HasColumnName("revoked_by");
+        builder.Property(x => x.RevokedReason).HasColumnName("revoked_reason").HasConversion<string>().HasMaxLength(50);
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
