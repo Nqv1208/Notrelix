@@ -239,7 +239,9 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
     }) as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
     fireEvent.click(within(dialog).getByRole("checkbox"));
-    fireEvent.click(within(dialog).getByRole("button", { name: "Invite (1)" }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Invite 1 person" }),
+    );
     await waitFor(async () =>
       expect(
         (await s.service.getChannel(WORKSPACE, s.created.id)).members.map(
@@ -258,8 +260,9 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
     fireEvent.click(
       await screen.findByRole("button", { name: "Invite more people" }),
     );
+    await screen.findByText("Everyone is already in this channel");
     await screen.findByText(
-      "Everyone in the Workspace is already in this channel.",
+      "No one is left to invite. Add new people to the Workspace in member settings.",
     );
   });
 

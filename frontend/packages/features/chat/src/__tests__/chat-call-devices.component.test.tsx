@@ -112,6 +112,7 @@ function held(over: Partial<ChatCurrentCall> = {}): ChatCurrentCall {
   return {
     call: activeCall("voice"),
     media: "connected",
+    attempt: null,
     audioOn: true,
     videoOn: false,
     deviceNotice: null,
