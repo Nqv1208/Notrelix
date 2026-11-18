@@ -10,6 +10,7 @@ using Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendInvita
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendResourceInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.RevokeResourceInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.ListResourceInvitations;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces.Invitations;
 using Notrelix.Domain.Workspaces.Members;
@@ -59,6 +60,7 @@ public sealed class ResourceInvitationIssuerIntegrationTests : IAsyncLifetime
         services.AddSingleton(new Mock<IAuditService>().Object);
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<IGuestResourceInvitationFacts, GuestResourceInvitationFactsAdapter>();
+        services.AddScoped<IInvitationManageAuthorizer, InvitationManageAuthorizer>();
     }
 
     private sealed record Seed(OrgStack Stack, Guid BoardId, Guid Issuer, Guid OtherManager, Guid InvitationId);

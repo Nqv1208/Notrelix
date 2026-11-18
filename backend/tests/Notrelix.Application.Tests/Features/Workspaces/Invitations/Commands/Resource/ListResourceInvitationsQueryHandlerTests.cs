@@ -1,4 +1,6 @@
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.ListResourceInvitations;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Domain.Workspaces.Invitations;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.Resource;
@@ -6,7 +8,8 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands.Re
 /// <summary>
 /// The pending list of one Board's resource invitations: only pending, unexpired invitations of this
 /// workspace and this exact resource, with who may resend or revoke each row. The pipeline already
-/// requires manage permission on the resource; the handler decides the per-row <c>CanManage</c>.
+/// requires manage permission on the resource; the handler decides the per-row <c>CanManage</c> from the issuer and from
+/// the policy's answer on managing any invitation of the workspace.
 /// </summary>
 public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
 {
@@ -15,6 +18,7 @@ public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
     private static readonly Guid BoardId = Guid.CreateVersion7();
 
     private readonly Mock<IActorLookupService> _actors = new();
+    private readonly Mock<IInvitationManageAuthorizer> _manage = new();
 
     public ListResourceInvitationsQueryHandlerTests()
     {
@@ -24,7 +28,7 @@ public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
     }
 
     private ListResourceInvitationsQueryHandler Handler() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _actors.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _actors.Object, _manage.Object);
 
     private WorkspaceInvitation Invitation(
         Guid invitedBy, Guid? boardId = null, Guid? workspaceId = null, string email = "guest@example.com") =>
@@ -52,7 +56,6 @@ public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
             TestAccountId, TestWorkspaceId, "member@example.com", WorkspaceRole.Member,
             InvitationTokenHash.Create(Hash), 1, TestUserId, TestNow.AddDays(-1));
         SetupInvitations(pending, revoked, expired, otherBoard, otherWorkspace, workspaceInvitation);
-        SetupMembers(CreateMember(WorkspaceRole.Member));
 
         var result = await ListAsync();
 
@@ -64,19 +67,20 @@ public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
     [Fact]
     public async Task List_IsEmptyWhenNothingIsPending()
     {
-        SetupMembers(CreateMember(WorkspaceRole.Member));
-
         (await ListAsync()).Data.Should().BeEmpty();
     }
 
+    private void ManageAnyInvitation(bool allowed) =>
+        _manage.Setup(m => m.CanManageAnyInvitationAsync(TestWorkspaceId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allowed);
+
     [Theory]
-    [InlineData(WorkspaceRole.Member)]
-    [InlineData(WorkspaceRole.Admin)]
-    [InlineData(WorkspaceRole.Owner)]
-    public async Task List_AnyActorMayManageTheirOwnInvitation(WorkspaceRole role)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task List_AnyActorMayManageTheirOwnInvitation(bool mayManageAny)
     {
         SetupInvitations(Invitation(TestUserId));
-        SetupMembers(CreateMember(role));
+        ManageAnyInvitation(mayManageAny);
 
         var row = (await ListAsync()).Data.Single();
 
@@ -84,13 +88,11 @@ public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
         row.CanManage.Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(WorkspaceRole.Admin)]
-    [InlineData(WorkspaceRole.Owner)]
-    public async Task List_OwnerAndAdminMayManageAnotherPersonsInvitation(WorkspaceRole role)
+    [Fact]
+    public async Task List_AnActorWhoMayManageAnyInvitationMayManageAnotherPersonsInvitation()
     {
         SetupInvitations(Invitation(Guid.CreateVersion7()));
-        SetupMembers(CreateMember(role));
+        ManageAnyInvitation(true);
 
         var row = (await ListAsync()).Data.Single();
 
@@ -98,28 +100,15 @@ public class ListResourceInvitationsQueryHandlerTests : WorkspaceHandlerTestBase
         row.CanManage.Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(WorkspaceRole.Member)]
-    [InlineData(WorkspaceRole.Guest)]
-    public async Task List_APlainBoardManagerMayNotManageAnotherPersonsInvitation(WorkspaceRole role)
+    [Fact]
+    public async Task List_APlainBoardManagerMayNotManageAnotherPersonsInvitation()
     {
         SetupInvitations(Invitation(Guid.CreateVersion7()));
-        SetupMembers(CreateMember(role));
+        ManageAnyInvitation(false);
 
         var row = (await ListAsync()).Data.Single();
 
         row.IssuedByYou.Should().BeFalse();
         row.CanManage.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task List_ASuspendedAdminHasNoManageRight()
-    {
-        var member = CreateMember(WorkspaceRole.Admin);
-        member.Suspend(Guid.CreateVersion7(), TestNow, activeOwnerCount: 2);
-        SetupInvitations(Invitation(Guid.CreateVersion7()));
-        SetupMembers(member);
-
-        (await ListAsync()).Data.Single().CanManage.Should().BeFalse();
     }
 }
