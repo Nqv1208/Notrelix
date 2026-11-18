@@ -24,6 +24,9 @@ public record ReorderChannelsRequest(IReadOnlyList<ChannelPlacementRequest>? Pla
 /// <summary>Workspace members to add to a channel.</summary>
 public record AddChannelMembersRequest(IReadOnlyList<Guid>? UserIds);
 
+/// <summary>The role a channel member is given: "manager" or "member".</summary>
+public record SetChannelMemberRoleRequest(string? Role);
+
 /// <summary>A new sidebar category. A missing position puts it last.</summary>
 public record CreateChannelGroupRequest(string Name, double? Position);
 

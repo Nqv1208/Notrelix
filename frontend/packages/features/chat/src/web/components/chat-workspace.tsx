@@ -79,7 +79,10 @@ import { PinnedBar } from "./chat-pins";
 import { PinLimitBanner, UnpinDialog } from "./chat-pin-ui";
 import { ChatInfoPanelHost } from "./chat-info-panel-host";
 import type { ChatInfoAction, ChatInfoSectionKey } from "./chat-info-panel";
-import { ChatChannelMemberRows } from "./chat-channel-members";
+import {
+  ChatChannelMemberRows,
+  ChatInviteDialog,
+} from "./chat-channel-members";
 import { ChatMentionProvider } from "./chat-mention-context";
 import type { QuoteView } from "./chat-message-row";
 import { createChatHooks, type ChatHookDeps } from "../query/create-chat-hooks";
@@ -434,6 +437,7 @@ export function ChatWorkspace({
   const updater = hooks.useUpdateChannel(ws, ch);
   const archiver = hooks.useArchiveChannel(ws, ch);
   const memberRemover = hooks.useRemoveMember(ws, ch, viewerId);
+  const roleSetter = hooks.useSetMemberRole(ws, ch);
   const channelDeleter = hooks.useDeleteChannel(ws, ch);
   const joiner = hooks.useJoinChannel(ws);
   const reactor = hooks.useReaction(ws);
@@ -476,6 +480,8 @@ export function ChatWorkspace({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [leaveChannelOpen, setLeaveChannelOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [permissionsError, setPermissionsError] = useState<string | null>(null);
@@ -974,6 +980,27 @@ export function ChatWorkspace({
     });
   }
 
+  function handleInvite(userIds: readonly string[]) {
+    setInviteError(null);
+    channelAdder.mutate(userIds, {
+      onSuccess: (result) => {
+        setInviteOpen(false);
+        if (result.skipped.length > 0) {
+          setNotice(
+            pluralCopy(
+              {
+                one: copy.membership.inviteSkipped_one,
+                other: copy.membership.inviteSkipped_other,
+              },
+              result.skipped.length,
+            ),
+          );
+        }
+      },
+      onError: () => setInviteError(copy.membership.inviteFailed),
+    });
+  }
+
   function handleRemoveMember() {
     if (removeTarget === null) return;
     memberRemover.mutate(removeTarget, {
@@ -1092,6 +1119,11 @@ export function ChatWorkspace({
     const inside = new Set(conversation?.participants.map((p) => p.userId));
     return pickable.filter((person) => !inside.has(person.id));
   }, [pickable, conversation]);
+
+  const insideChannel = new Set(members.map((member) => member.userId));
+  const inviteCandidates = pickable.filter(
+    (person) => !insideChannel.has(person.id),
+  );
 
   function handleStart(input: ChatStartConversationInput) {
     if (!onOpenConversation) return;
@@ -2084,6 +2116,31 @@ export function ChatWorkspace({
                                     ? setRemoveTarget
                                     : undefined
                                 }
+                                onSetRole={
+                                  canManage && !channel?.isArchived
+                                    ? (userId, role) =>
+                                        roleSetter.mutate(
+                                          { userId, role },
+                                          {
+                                            onError: (error) =>
+                                              setNotice(
+                                                chatFailureOf(error).code ===
+                                                  "last-manager"
+                                                  ? copy.membership.lastManager
+                                                  : copy.membership.roleFailed,
+                                              ),
+                                          },
+                                        )
+                                    : undefined
+                                }
+                                onInvite={
+                                  canManage && !channel?.isArchived
+                                    ? () => {
+                                        setInviteError(null);
+                                        setInviteOpen(true);
+                                      }
+                                    : undefined
+                                }
                               />
                             ),
                           }
@@ -2238,6 +2295,16 @@ export function ChatWorkspace({
                     if (!next) setRemoveTarget(null);
                   }}
                   onConfirm={handleRemoveMember}
+                />
+                <ChatInviteDialog
+                  open={inviteOpen}
+                  busy={channelAdder.isPending}
+                  channelName={channel?.name ?? ""}
+                  candidates={inviteCandidates}
+                  error={inviteError}
+                  copy={copy}
+                  onOpenChange={setInviteOpen}
+                  onSubmit={handleInvite}
                 />
                 <DeleteChannelDialog
                   open={deleteOpen}

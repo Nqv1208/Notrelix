@@ -104,6 +104,11 @@ export interface ChatEndpoints {
       channelId: string,
       userId: string,
     ) => string;
+    channelMemberRole: (
+      workspaceId: string,
+      channelId: string,
+      userId: string,
+    ) => string;
     messages: (workspaceId: string, spaceId: string) => string;
     spaceMentionables: (workspaceId: string, spaceId: string) => string;
     message: (workspaceId: string, messageId: string) => string;
@@ -295,6 +300,19 @@ export function createChatService(
     ): Promise<void> {
       return api.delete<void>(
         paths.channelMember(workspaceId, channelId, userId),
+      );
+    },
+
+    /** `Chat.Members.SetRole`: a manager makes a member a manager, or a manager a member (422 last-manager). */
+    setMemberRole(
+      workspaceId: string,
+      channelId: string,
+      userId: string,
+      role: "manager" | "member",
+    ): Promise<void> {
+      return api.put<void>(
+        paths.channelMemberRole(workspaceId, channelId, userId),
+        { role },
       );
     },
 

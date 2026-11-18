@@ -365,6 +365,12 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/me`,
     channelMember: (workspaceId: string, channelId: string, userId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}`,
+    channelMemberRole: (
+      workspaceId: string,
+      channelId: string,
+      userId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}/role`,
     channelGroups: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups`,
     channelGroup: (workspaceId: string, groupId: string) =>

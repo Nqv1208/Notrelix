@@ -84,7 +84,10 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
   ).toContain(adminId);
 
   await page.goto(`${ws}/chat/${priv.id}`);
-  await page.getByRole("button", { name: /^Members, 2/ }).click();
+  await page.getByRole("button", { name: "Channel info" }).click();
+  const membersSection = page.getByRole("button", { name: /^Members/ });
+  if ((await membersSection.getAttribute("aria-expanded")) !== "true")
+    await membersSection.click();
   expect(await serious(page)).toEqual([]);
   await page.getByRole("button", { name: /^Remove / }).click();
   await page
@@ -118,7 +121,7 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
       .status,
   ).toBeLessThan(300);
   await admin.goto(`${ws}/chat/${pub.id}`);
-  await admin.getByRole("button", { name: "Channel settings" }).click();
+  await admin.getByRole("button", { name: "More" }).click();
   await admin.getByRole("menuitem", { name: "Leave channel" }).click();
   expect(await serious(admin)).toEqual([]);
   await admin
@@ -137,7 +140,7 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
 
   // ── The last manager cannot leave: told why, and still a member.
   await page.goto(`${ws}/chat/${pub.id}`);
-  await page.getByRole("button", { name: "Channel settings" }).click();
+  await page.getByRole("button", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Leave channel" }).click();
   await page
     .getByRole("alertdialog")
@@ -152,7 +155,7 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
 
   // ── Archive, unarchive, then delete with the typed name; a stale version changes nothing.
   const menu = async (item: string) => {
-    await page.getByRole("button", { name: "Channel settings" }).click();
+    await page.getByRole("button", { name: "More" }).click();
     await page.getByRole("menuitem", { name: item }).click();
   };
   await menu("Archive channel");
