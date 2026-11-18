@@ -340,4 +340,14 @@ describe("BoardShareDialogSurface", () => {
     fireEvent.click(revokes[0]!);
     expect(onRevokeInvitation).toHaveBeenCalledWith("inv-1");
   });
+
+  it("UC-WM-A19 says an archived board is read-only on the add field instead of the no-write reason", () => {
+    const scenario = shareDefaultScenario();
+    renderShare({ ...scenario, view: { ...scenario.view, archived: true } });
+    const field = screen.getByRole("textbox", { name: copy.add.placeholder });
+    expect(field.getAttribute("aria-disabled")).toBe("true");
+    expect(field.closest("label")?.getAttribute("title")).toBe(
+      copy.sheet.archivedBody,
+    );
+  });
 });

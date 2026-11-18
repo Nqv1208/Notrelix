@@ -161,14 +161,14 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-K08 | Set a first password (enterprise baseline)            | K          | Signed-in person          | yes     | yes       | none          | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-K09 | Change my sign-in email                               | K          | Signed-in person          | yes     | yes       | none          | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-K10 | Notify me of security changes (enterprise baseline)   | K          | System                    | no      | no        | none          | no       | DEFINED      | no mail                                                                                                             |
-| UC-IDN-K11 | Operator audit of identity security changes           | K          | Auditor                   | partial | n/a       | n/a           | no       | IMPLEMENTING | owner is Governance audit                                                                                           |
+| UC-IDN-K11 | Operator audit of identity security changes           | K          | Auditor                   | partial | n/a       | n/a           | no       | IMPLEMENTING | owner is Governance audit; deferred to 0.2                                                                          |
 | UC-IDN-L01 | List workspace API tokens                             | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-L02 | Issue an API token                                    | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-L03 | Revoke an API token                                   | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-L04 | Call the API with a token                             | L          | Integration client        | yes     | n/a       | n/a           | no       | IMPLEMENTING | scopes not enforced; deferred to 0.2                                                                                |
 | UC-IDN-L05 | Limit a token to chosen scopes                        | L          | Workspace Owner or Admin  | no      | no        | none          | no       | BLOCKED      | scope vocabulary; deferred to 0.2                                                                                   |
 | UC-IDN-L06 | Cap token lifetime (enterprise baseline)              | L          | System                    | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-19, see the Evidence line                                                                            |
-| UC-IDN-L07 | Show when a token was last used (enterprise baseline) | L          | Workspace Owner or Admin  | no      | no        | none          | no       | DEFINED      | no column                                                                                                           |
+| UC-IDN-L07 | Show when a token was last used (enterprise baseline) | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-19, see the Evidence line                                                                            |
 | UC-IDN-L08 | Stop tokens of a person who leaves                    | L          | System                    | no      | n/a       | n/a           | no       | DEFINED      | no rule                                                                                                             |
 | UC-IDN-M01 | Change my display name                                | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                             |
 | UC-IDN-M02 | Read and save my preferences                          | M          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-profile.real.e2e.spec.ts` passes on the real stack                             |
@@ -925,6 +925,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Acceptance: Given a token revoke, when the auditor reads the audit, then an entry shows with no secret.
 - Evidence: `backend/src/Notrelix.API/Middleware/SecurityAuditMiddleware.cs` (path list includes `reset-password`) · Tests API `SecurityAuditMiddlewareTests` · Real e2e none
 - State: IMPLEMENTING. Missing: the Governance reader, a per-action list proof for Identity paths.
+- Deferred to 0.2 (lead decision 2026-11-19): needs the Governance audit reader.
 
 ## Capability L: API token lifecycle
 
@@ -1034,8 +1035,8 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - UI states: "never used".
 - Rules: ID-010; section 49.
 - Acceptance: Given a call with a token, when the list is read, then the last-used time shows.
-- Evidence: Infrastructure `ApiTokenAuthenticationHandler.cs` records use of the token row; the list DTO does not expose it.
-- State: DEFINED. Missing: DTO column, screen.
+- Evidence: Infrastructure `ApiTokenAuthenticationHandler.cs` records the use of the token row at most once per hour (`ApiToken.IsUseRecordDue`, `ApiToken.UseRecordingInterval`) and a failed write never fails the call; the list DTO `ApiTokenSummaryDto.LastUsedAt` carries it to the API tokens page.
+- State: DONE (set 2026-11-19). Built: the first call with a token records its time, a later call within the hour leaves the row alone, a call after the hour records the new time; the list returns it and the API tokens page shows a "last used" column with "never used" for a token no call has used. A concurrent revoke still fails the call closed. Tests: Domain `ApiTokenTests` (`IsUseRecordDue_NeverUsedToken_IsDue`, `IsUseRecordDue_WithinTheInterval_IsNotDue`, `IsUseRecordDue_AtOrAfterTheInterval_IsDue`); Integration `ApiTokenFlowTests` (`Authenticate_RecordsTheFirstUse_ThenLeavesTheTimeAloneWithinTheInterval`, `Authenticate_AfterTheIntervalHasPassed_RecordsTheNewUse`); web `account-tokens.last-used.component.test.tsx` (the column, how long ago, never used).
 
 ### UC-IDN-L08 Stop tokens of a person who leaves
 
