@@ -150,7 +150,7 @@ test("A calls B, B answers and hears A, A hangs up; a video call is declined", a
     await expect(card(b.page)).toContainText("Call ended", { timeout: 30_000 });
     await expect(
       a.page.getByTestId("chat-system-message").last(),
-    ).toContainText(/voice call ended, lasted \d+s/);
+    ).toContainText(/Voice call \d+s/);
     await card(a.page).getByRole("button", { name: "Close" }).click();
     await card(b.page).getByRole("button", { name: "Close" }).click();
 
@@ -163,7 +163,7 @@ test("A calls B, B answers and hears A, A hangs up; a video call is declined", a
     });
     await expect(
       a.page.getByTestId("chat-system-message").last(),
-    ).toContainText(/video call declined/);
+    ).toContainText(/Video call declined/);
   } finally {
     await done();
   }
@@ -222,8 +222,67 @@ test("a video call carries video both ways, the controls reach the other person,
     await expect(ring).toHaveCount(0, { timeout: 30_000 });
     await expect(
       a.page.getByTestId("chat-system-message").last(),
-    ).toContainText(/missed voice call/);
+    ).toContainText(/Missed call/);
   } finally {
+    await done();
+  }
+});
+
+test("busy: B is in a call with C, A calls B and is told B is in another call, with no ring for B", async ({
+  browser,
+}) => {
+  const { a, b, dm, done } = await pair(browser);
+  // C (a Member of the same Workspace) calls B first and B answers, so B is in a live call.
+  const c = await person(browser, realUsers.admin);
+  try {
+    const ws = (await findWorkspace(a.page, "Workspace 3")).id;
+    const base = `/workspaces/${ws}`;
+    const bId = (
+      await apiRead<{ userId: string }>(b.page, `${base}/members/me`)
+    ).userId;
+    const started = await apiWrite<{ conversation: { id: string } }>(
+      c.page,
+      "POST",
+      `${base}/chat/conversations`,
+      { kind: "direct", userId: bId },
+    );
+    expect(started.status).toBeLessThan(300);
+    await c.page.goto(`${base}/chat/dm/${started.data!.conversation.id}`);
+    await expect(c.page.getByRole("heading", { level: 1 })).toBeVisible();
+    await startCall(c.page, started.data!.conversation.id, "voice");
+    const ring = b.page.getByTestId("chat-call-incoming");
+    await expect(ring).toBeVisible({ timeout: 30_000 });
+    await ring.getByRole("button", { name: "Answer" }).click();
+    await expect(card(c.page)).toHaveAttribute("data-phase", "connected", {
+      timeout: 60_000,
+    });
+
+    // A calls B in their own conversation: A is told B is in a call, no call view, and B's screen shows no new ring.
+    await startCall(a.page, dm, "voice");
+    const notice = a.page
+      .getByRole("status")
+      .filter({ hasText: /is in another call\.$/ });
+    await expect(notice).toBeVisible({ timeout: 30_000 });
+    await expect(card(a.page)).toBeHidden();
+    await expect(ring).toHaveCount(0);
+    await expect(
+      a.page.getByTestId("chat-system-message").last(),
+    ).toContainText(/Voice call the other person is in another call/);
+    expect(await serious(a.page)).toEqual([]);
+
+    // The rejection holds after B's call ends: A can call B again and B is rung.
+    await card(c.page).getByRole("button", { name: "Hang up" }).click();
+    await expect(card(b.page)).toContainText("Call ended", { timeout: 30_000 });
+    await card(b.page).getByRole("button", { name: "Close" }).click();
+    await startCall(a.page, dm, "voice");
+    await expect(ring).toBeVisible({ timeout: 30_000 });
+    await expect(card(a.page)).toHaveAttribute(
+      "data-phase",
+      "outgoing-ringing",
+    );
+    await card(a.page).getByRole("button", { name: "Cancel" }).click();
+  } finally {
+    await c.context.close();
     await done();
   }
 });

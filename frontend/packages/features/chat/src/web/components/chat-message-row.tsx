@@ -16,12 +16,15 @@ import {
   MessagesSquare,
   MoreHorizontal,
   Pencil,
+  Phone,
+  PhoneMissed,
   Pin,
   PinOff,
   Reply,
   RotateCw,
   ShieldX,
   Trash2,
+  Video,
   X,
 } from "lucide-react";
 import { Avatar, AvatarFallback, Button, cn } from "@notrelix/ui-web";
@@ -45,7 +48,13 @@ import {
   type MessageMenuItem,
 } from "./chat-message-actions";
 import { isKeyboardFocus, useRowActivity } from "./chat-row-activity";
-import { fillCopy, pluralCopy, systemTextOf } from "./use-chat-copy";
+import { useChatCallRedial } from "./chat-call-redial";
+import {
+  callLineOf,
+  fillCopy,
+  pluralCopy,
+  systemTextOf,
+} from "./use-chat-copy";
 
 export interface MessageAuthor {
   readonly name: string;
@@ -239,10 +248,76 @@ function ChatMessageRowBase({
     [],
   );
   const mentionContext = useChatMentions();
+  const redial = useChatCallRedial();
   const mentionsMe =
     mentionContext.viewerId !== null &&
     mentionsViewer(message, mentionContext.viewerId);
 
+  const callLine = isSystem
+    ? callLineOf(copy, message.content, author.name, isOwn)
+    : null;
+  if (callLine) {
+    const Icon = callLine.missed
+      ? PhoneMissed
+      : callLine.kind === "video"
+        ? Video
+        : Phone;
+    return (
+      <div
+        className="flex justify-center px-4 py-1"
+        data-testid="chat-system-message"
+        data-call-line={callLine.missed ? "missed" : "plain"}
+      >
+        <p
+          className={cn(
+            "inline-flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-[14px] px-3.5 py-2 text-center",
+            callLine.missed
+              ? "bg-destructive/10 text-destructive"
+              : "bg-muted text-muted-foreground",
+          )}
+          style={{ fontSize: 13, lineHeight: 1.45 }}
+        >
+          <span className="sr-only">{copy.list.systemLabel}: </span>
+          <span
+            className="inline-flex min-w-0 items-center gap-2.5"
+            data-testid="chat-call-line-text"
+          >
+            <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+            <span>
+              <b
+                className={cn(
+                  "font-semibold",
+                  !callLine.missed && "text-foreground",
+                )}
+              >
+                {callLine.head}
+              </b>
+              {callLine.tail ? ` ${callLine.tail}` : ""}
+              {" · "}
+              <time
+                dateTime={message.createdAt}
+                className="whitespace-nowrap tabular-nums"
+              >
+                {time}
+              </time>
+            </span>
+          </span>
+          {callLine.missed && redial ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="ms-2 h-7 rounded-[9px] bg-background px-3 font-semibold text-foreground"
+              style={{ fontSize: 13 }}
+              onClick={() => redial(callLine.kind)}
+            >
+              {copy.calls.redial}
+            </Button>
+          ) : null}
+        </p>
+      </div>
+    );
+  }
   if (isSystem) {
     return (
       <div
