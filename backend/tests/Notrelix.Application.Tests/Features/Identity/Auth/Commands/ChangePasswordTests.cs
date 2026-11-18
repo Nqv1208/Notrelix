@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
@@ -16,12 +17,11 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         RequestContextMock.Object,
         PasswordHasherMock.Object,
         JwtBlacklistMock.Object,
-        EmailServiceMock.Object,
         DateTimeProviderMock.Object,
-        ChangePasswordLoggerMock.Object,
         StepUpServiceMock.Object,
         ThrottleMock.Object,
-        ActivityMock.Object);
+        ActivityMock.Object,
+        SecurityNoticeMock.Object);
 
     private void SetupActiveMfa()
     {
@@ -127,7 +127,7 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         JwtBlacklistMock.Verify(
             j => j.RevokeUserBeforeAsync(TestUserId, TestNow, It.IsAny<TimeSpan>()),
             Times.Once);
-        EmailServiceMock.Verify(e => e.SendAsync(TestEmail, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(TestUserId, SecurityNoticeKind.PasswordChanged, TestNow, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class ChangePasswordTests : IdentityHandlerTestBase
         JwtBlacklistMock.Verify(
             j => j.RevokeUserBeforeAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()),
             Times.Never);
-        EmailServiceMock.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<SecurityNoticeKind>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

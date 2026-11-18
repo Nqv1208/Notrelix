@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Logging.Abstractions;
-using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Auth.Commands.Login;
@@ -1037,6 +1036,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
             var handler = new VerifyMfaEnrollmentCommandHandler(
                 context, Actor(userId, sessionId).Object, _totp, _recoveryGenerator, StepUp(context), _jwtBlacklist.Object, _time.Object,
                 Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
+                Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>(),
                 NullLogger<VerifyMfaEnrollmentCommandHandler>.Instance);
             var proof = await EnrollProofAsync(context, userId, sessionId);
             var result = await handler.Handle(new VerifyMfaEnrollmentCommand { MfaMethodId = methodId, Code = code, StepUpToken = proof }, CancellationToken.None);
@@ -1060,6 +1060,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
                 var handler = new VerifyMfaEnrollmentCommandHandler(
                     context, Actor(userId, sessionId).Object, _totp, _recoveryGenerator, StepUp(context), _jwtBlacklist.Object, _time.Object,
                     Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
+                    Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>(),
                     NullLogger<VerifyMfaEnrollmentCommandHandler>.Instance);
                 var proof = await EnrollProofAsync(context, userId, sessionId);
                 var result = await handler.Handle(
@@ -1109,7 +1110,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new DisableMfaCommandHandler(
-                context, Actor(userId, sessionId).Object, _jwtBlacklist.Object, StepUp(context), _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(),
+                context, Actor(userId, sessionId).Object, _jwtBlacklist.Object, StepUp(context), _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>(),
                 NullLogger<DisableMfaCommandHandler>.Instance);
             var result = await handler.Handle(new DisableMfaCommand { StepUpToken = stepUpToken }, CancellationToken.None);
             await context.SaveChangesAsync();
@@ -1161,8 +1162,8 @@ public sealed class MfaFlowTests : IAsyncLifetime
             passwordHasher.Setup(x => x.HashPassword(It.IsAny<string>())).Returns("new-hashed-password");
             var handler = new ChangePasswordCommandHandler(
                 context, Actor(userId, sessionId).Object, passwordHasher.Object, _jwtBlacklist.Object,
-                new Mock<IEmailService>().Object, _time.Object,
-                NullLogger<ChangePasswordCommandHandler>.Instance, StepUp(context), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
+                _time.Object,
+                StepUp(context), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
             var result = await handler.Handle(new ChangePasswordCommand
             {
                 CurrentPassword = currentPassword,

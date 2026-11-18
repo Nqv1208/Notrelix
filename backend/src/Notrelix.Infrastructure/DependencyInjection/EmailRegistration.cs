@@ -65,6 +65,7 @@ public static class EmailRegistration
         services.AddScoped<IEmailOutboxWriter, EmailOutboxWriter>();
         services.AddScoped<IWorkspaceInvitationLinkBuilder, WorkspaceInvitationLinkBuilder>();
         services.AddScoped<IEmailVerificationLinkBuilder, EmailVerificationLinkBuilder>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityPageLink, SecurityPageLink>();
         services.AddScoped<IEmailTemplateMaterializer, WorkspaceInvitationEmailMaterializer>();
         services.AddScoped<IEmailTemplateMaterializer, ResourceInvitationEmailMaterializer>();
         services.AddScoped<IEmailTemplateMaterializer, EmailVerificationEmailMaterializer>();
