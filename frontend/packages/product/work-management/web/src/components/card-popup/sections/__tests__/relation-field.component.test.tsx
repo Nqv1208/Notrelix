@@ -249,6 +249,22 @@ describe("the item picker of a Relation field", () => {
     expect(onSave).toHaveBeenCalledWith(["hid"]);
   });
 
+  it("offers a retry when the items could not be loaded for another reason", () => {
+    const refetch = vi.fn();
+    target.state = {
+      groups: [],
+      isLoading: false,
+      error: { kind: "network" },
+      refetch,
+    };
+    panel([]);
+    expect(
+      screen.getByText("The items of this board could not be loaded."),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refetch).toHaveBeenCalledOnce();
+  });
+
   it("says a field with no target board cannot list items", () => {
     loaded([]);
     wrap(

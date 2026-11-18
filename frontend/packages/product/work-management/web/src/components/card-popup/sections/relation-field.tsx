@@ -95,6 +95,9 @@ export function RelationPickerPanel({
   const total = ticked.length + locked.length;
   const full = total >= RELATION_LINK_LIMIT;
   const unavailable = Boolean(target.error);
+  // A target that is gone or unreadable answers NotFound or Forbidden; any other failure may pass on a retry.
+  const kind = (target.error as { kind?: string } | null)?.kind;
+  const gone = kind === "not_found" || kind === "forbidden";
   // Visible links stay removable even when the target cannot be listed.
   const shownVisible = unavailable
     ? links.filter((link) => !link.locked)
@@ -136,7 +139,7 @@ export function RelationPickerPanel({
             aria-hidden="true"
             className="mt-0.5 size-3.5 shrink-0"
           />
-          <span>{t.unavailable}</span>
+          <span>{gone ? t.unavailable : t.loadFailed}</span>
         </p>
       ) : target.isLoading ? (
         <p role="status" className="m-0 text-[13px] text-meta-foreground">
@@ -249,7 +252,7 @@ export function RelationPickerPanel({
           {fillPopupCopy(t.limit, { max: String(RELATION_LINK_LIMIT) })}
         </p>
       ) : null}
-      {target.error ? (
+      {unavailable && !gone ? (
         <PanelBtn small className="mt-2" onClick={() => void target.refetch()}>
           {t.retry}
         </PanelBtn>
