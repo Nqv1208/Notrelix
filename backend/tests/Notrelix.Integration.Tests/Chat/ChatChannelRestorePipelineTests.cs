@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Audit.Services;

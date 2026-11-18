@@ -4,7 +4,6 @@ using Notrelix.Application.Features.Chat.Audit.Services;
 using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
-using Notrelix.Domain.Chat.Spaces;
 
 namespace Notrelix.Application.Features.Chat.Channels.Commands.RestoreChannel;
 
