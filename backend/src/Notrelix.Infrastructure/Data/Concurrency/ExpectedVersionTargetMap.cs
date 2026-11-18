@@ -7,6 +7,7 @@ using Notrelix.Application.Features.Chat.Calls.Commands.LeaveCall;
 using Notrelix.Application.Features.Chat.Calls.Commands.UpdateCallMediaState;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.RestoreChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
@@ -381,6 +382,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(ArchiveChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(DeleteChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(RestoreChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(UpdateChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
 
         // Chat — call commands quote the call version the client read (SPEC-CHAT-MEDIA-CALLS section 6)

@@ -11,6 +11,9 @@ export const chatQueryKeys = {
     workspaceQueryKey(workspaceId, "chat", "channels"),
   browse: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "channels", "browse"),
+  /** The deleted channels the caller may restore; under `channels`, so a channel list refresh reloads it. */
+  deleted: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "channels", "deleted"),
   channel: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "channel", channelId),
   /** The history of one channel; the anchor is appended by the infinite query. */

@@ -3,6 +3,8 @@ using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.CreateChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.RestoreChannel;
+using Notrelix.Application.Features.Chat.Channels.Queries.ListDeletedChannels;
 using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.ReorderChannels;
 using Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel;
@@ -28,6 +30,12 @@ public static class MapChannelEndpoints
             .WithSummary("List the channels the caller can see")
             .WithDescription("By default the caller's own channels, in sidebar order. With browse=true, the public channels the caller is not in; a Guest browses nothing.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden);
+
+        group.MapWorkspaceGet("/deleted", ListDeletedAsync)
+            .WithName("Chat.Channels.ListDeleted")
+            .WithSummary("List the deleted channels the caller can restore")
+            .WithDescription("Only channels deleted in the last 30 days that the caller could delete (a channel manager, a Workspace Owner or Admin, and a member of a private channel). A private channel's name never reaches anyone else; a Member or Guest gets an empty list.")
+            .ProducesProblems(StatusCodes.Status403Forbidden);
 
         group.MapWorkspacePost("/", CreateAsync)
             .WithIdempotencyKey()
@@ -78,7 +86,28 @@ public static class MapChannelEndpoints
             .WithDescription("Soft-deletes the channel and releases its name. Pass expectedVersion as a query parameter; 412 when it is stale.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status412PreconditionFailed);
 
+        group.MapWorkspacePost("/{channelId:guid}/restore", RestoreAsync)
+            .WithName("Chat.Channels.Restore")
+            .WithSummary("Restore a deleted channel")
+            .WithDescription("Allowed for whoever may delete the channel, inside 30 days of the delete; the channel comes back with its members and roles as they were. A name taken meanwhile is 409 name-conflict; past the window it is 409 restore-window-elapsed; a channel that is not deleted, or that the caller could not have deleted, is 404. A stale expectedVersion is 412.")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
+
         return app;
+    }
+
+    private static async Task<IResult> ListDeletedAsync(Guid workspaceId, ISender sender)
+    {
+        var result = await sender.Send(new ListDeletedChannelsQuery(workspaceId));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> RestoreAsync(Guid workspaceId, Guid channelId, RestoreChannelRequest body, ISender sender)
+    {
+        if (body.ExpectedVersion is not { } expectedVersion)
+            return EndpointExtensions.InvalidInput("expectedVersion is required.");
+
+        var result = await sender.Send(new RestoreChannelCommand(workspaceId, channelId, expectedVersion));
+        return result.ToNoContentResult();
     }
 
     private static async Task<IResult> ListAsync(Guid workspaceId, bool? browse, ISender sender)

@@ -9,6 +9,7 @@ describe("chat endpoint paths", () => {
     const paths = [
       chat.channel("w", hostile),
       chat.channelArchive("w", hostile),
+      chat.channelRestore("w", hostile),
       chat.channelMembers("w", hostile),
       chat.channelJoin("w", hostile),
       chat.channelMember("w", "c", hostile),
