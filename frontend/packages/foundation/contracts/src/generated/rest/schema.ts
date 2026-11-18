@@ -10648,6 +10648,7 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string | null;
             suffix?: string | null;
+            revokedReason?: string | null;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.CreatedApiTokenDto": {
             /** Format: uuid */

@@ -11,7 +11,9 @@ public sealed record ApiTokenSummaryDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? RevokedAt,
     /// <summary>The last four characters of the secret; null for tokens issued before it was kept.</summary>
-    string? Suffix = null);
+    string? Suffix = null,
+    /// <summary>Why a revoked token stopped (Manual, MemberRemoved, MemberSuspended, MemberLeft); null while it is not revoked or for one revoked before the reason was kept.</summary>
+    string? RevokedReason = null);
 
 /// <summary>Issuance result. Contains the raw secret — the only time it is ever returned.</summary>
 public sealed record CreatedApiTokenDto(
