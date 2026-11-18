@@ -968,7 +968,13 @@ function TokenName({
         </b>
         <small className="block truncate font-mono text-xs leading-[1.5] text-meta-foreground">
           {token.suffix ? `ntk_v1.••••••${token.suffix}` : "ntk_v1.••••••"}
-          {token.expiresAt === null ? ` · ${copy.noExpiryHint}` : ""}
+          {token.status === "revoked" &&
+          token.revokedReason &&
+          token.revokedReason !== "manual"
+            ? ` · ${copy.revokedReason[token.revokedReason]}`
+            : token.expiresAt === null
+              ? ` · ${copy.noExpiryHint}`
+              : ""}
         </small>
       </div>
     </div>

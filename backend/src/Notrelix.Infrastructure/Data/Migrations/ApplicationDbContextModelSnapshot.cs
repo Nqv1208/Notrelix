@@ -6077,6 +6077,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("revoked_by");
 
+                    b.Property<string>("RevokedReason")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("revoked_reason");
+
                     b.Property<string>("Scopes")
                         .HasColumnType("text")
                         .HasColumnName("scopes");

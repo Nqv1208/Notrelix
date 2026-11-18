@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.ApiTokens.Commands.CreateApiToken;
+using Notrelix.Application.Features.Identity.ApiTokens.Services;
 using Notrelix.Application.Features.Identity.ApiTokens.Commands.RevokeApiToken;
 using Notrelix.Application.Features.Identity.ApiTokens.DTOs;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
@@ -219,6 +220,44 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         var auth = await AuthenticateAsync(created.Data.RawSecret);
         auth.Succeeded.Should().BeTrue();
         auth.Principal!.FindFirstValue(JwtRegisteredClaimNames.Sub).Should().Be(_user.Id.ToString());
+    }
+
+    private static IDateTimeProvider Clock()
+    {
+        var time = new Mock<IDateTimeProvider>();
+        time.Setup(t => t.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        return time.Object;
+    }
+
+    [Fact]
+    public async Task Authenticate_TokenOfAMemberWhoLeft_IsRefused_WhileAColleaguesTokenKeepsWorking()
+    {
+        var colleague = User.Create("colleague@example.com", "Colleague", "hashed", _now, hasPasswordCredential: true);
+        await using (var seed = _fixture.CreatePostgresOwnerContext())
+        {
+            seed.Users.Add(colleague);
+            await seed.SaveChangesAsync();
+        }
+
+        var leaversToken = await SendCreateToken(_user.Id, "Leaver token");
+        var colleaguesToken = await SendCreateToken(colleague.Id, "Colleague token");
+        (await AuthenticateAsync(leaversToken.Data!.RawSecret)).Succeeded.Should().BeTrue("it works while the person belongs");
+
+        await using (var context = CreateSystemContext())
+        {
+            var revoked = await new IdentityApiTokensProvider(context, Clock())
+                .RevokeForMemberAsync(_user.Id, _workspaceId, colleague.Id, Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd.Removed, CancellationToken.None);
+            await context.SaveChangesAsync();
+            revoked.Should().Be(1);
+        }
+
+        (await AuthenticateAsync(leaversToken.Data.RawSecret)).Succeeded.Should().BeFalse("a token ends with its issuer's membership");
+        (await AuthenticateAsync(colleaguesToken.Data!.RawSecret)).Succeeded.Should().BeTrue();
+
+        await using var after = CreateSystemContext();
+        var stored = after.ApiTokens.Single(x => x.Id == leaversToken.Data.Id);
+        stored.Status.Should().Be(ApiTokenStatus.Revoked);
+        stored.RevokedReason.Should().Be(ApiTokenRevokedReason.MemberRemoved);
     }
 
     [Fact]
