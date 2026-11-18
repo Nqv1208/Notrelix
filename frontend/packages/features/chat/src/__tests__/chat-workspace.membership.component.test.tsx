@@ -20,7 +20,11 @@ beforeAll(() => {
   Element.prototype.scrollIntoView ??= () => undefined;
 });
 
-async function setup(isPrivate: boolean, addOther = true) {
+async function setup(
+  isPrivate: boolean,
+  addOther = true,
+  otherManager = false,
+) {
   const store = new MockStore({ ...defaultConfig, persona: "owner" });
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
@@ -39,6 +43,8 @@ async function setup(isPrivate: boolean, addOther = true) {
     crypto.randomUUID(),
   );
   if (addOther) await service.addMembers(WORKSPACE, created.id, [other.userId]);
+  if (addOther && otherManager)
+    await service.setMemberRole(WORKSPACE, created.id, other.userId, "manager");
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -76,6 +82,14 @@ async function setup(isPrivate: boolean, addOther = true) {
   };
 }
 
+const openMemberMenu = async () =>
+  fireEvent.keyDown(
+    await screen.findByRole("button", {
+      name: "Member actions for Other Person",
+    }),
+    { key: "Enter" },
+  );
+
 const openSettings = async () =>
   fireEvent.keyDown(await screen.findByRole("button", { name: "More" }), {
     key: "Enter",
@@ -87,13 +101,19 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
     fireEvent.click(
       await screen.findByRole("button", { name: "Channel info" }),
     );
+    await openMemberMenu();
     fireEvent.click(
-      await screen.findByRole("button", { name: "Remove Other Person" }),
+      await screen.findByRole("menuitem", { name: "Remove Other Person" }),
     );
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByText("Remove Other Person from #secret-room?"),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByText(/Messages Other Person already sent stay/),
+    ).toBeTruthy();
     fireEvent.click(
-      within(await screen.findByRole("alertdialog")).getByRole("button", {
-        name: "Remove",
-      }),
+      within(dialog).getByRole("button", { name: "Remove from channel" }),
     );
     await waitFor(async () =>
       expect(
@@ -104,24 +124,67 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
     );
   });
 
-  it("the last manager cannot leave and is told why; the channel stays", async () => {
+  it("the only manager is told at once that they cannot leave, and Assign a manager opens the member list; the channel stays", async () => {
     const s = await setup(true);
     await openSettings();
     fireEvent.click(
       await screen.findByRole("menuitem", { name: "Leave channel" }),
     );
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByText("Cannot leave #secret-room yet"),
+    ).toBeTruthy();
+    expect(
+      within(dialog).getByText(/only manager of this channel/),
+    ).toBeTruthy();
     fireEvent.click(
-      within(await screen.findByRole("alertdialog")).getByRole("button", {
-        name: "Leave",
-      }),
+      within(dialog).getByRole("button", { name: "Assign a manager" }),
     );
-    await screen.findByText(/last manager of this channel/);
+    await screen.findByRole("searchbox", { name: "Find a member" });
     expect(s.onOpenChannel).not.toHaveBeenCalled();
     expect(
       (await s.service.listChannels(WORKSPACE)).some(
         (channel) => channel.id === s.created.id,
       ),
     ).toBe(true);
+  });
+
+  it("a manager who is not the only one leaves after a dialog that says so, then the pane says they left (public channel)", async () => {
+    const s = await setup(false, true, true);
+    await openSettings();
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Leave channel" }),
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText("Leave #open-room?")).toBeTruthy();
+    expect(within(dialog).getByText(/one of 2 channel managers/)).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Leave channel" }),
+    );
+    await screen.findByText("You left #open-room");
+    expect(
+      screen.getByRole("button", { name: "Browse public channels" }),
+    ).toBeTruthy();
+    await waitFor(async () =>
+      expect(
+        (await s.service.getChannel(WORKSPACE, s.created.id)).members.map(
+          (member) => member.userId,
+        ),
+      ).not.toContain(s.viewerId),
+    );
+  });
+
+  it("the member list filters by name and shows each role under the name", async () => {
+    await setup(true);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Channel info" }),
+    );
+    expect(await screen.findByText("Manager · You")).toBeTruthy();
+    expect(screen.getByText("Member")).toBeTruthy();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find a member" }), {
+      target: { value: "zzz" },
+    });
+    expect(screen.getByText("No member matches.")).toBeTruthy();
   });
 
   it("deleting needs the typed name, then the channel is gone and the view moves on", async () => {
@@ -165,7 +228,7 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
       await screen.findByRole("button", { name: "Channel info" }),
     );
     fireEvent.click(
-      await screen.findByRole("button", { name: "Invite people" }),
+      await screen.findByRole("button", { name: "Invite more people" }),
     );
     const dialog = await screen.findByRole("dialog");
     expect(
@@ -193,7 +256,7 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
       await screen.findByRole("button", { name: "Channel info" }),
     );
     fireEvent.click(
-      await screen.findByRole("button", { name: "Invite people" }),
+      await screen.findByRole("button", { name: "Invite more people" }),
     );
     await screen.findByText(
       "Everyone in the Workspace is already in this channel.",
@@ -205,8 +268,9 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
     fireEvent.click(
       await screen.findByRole("button", { name: "Channel info" }),
     );
+    await openMemberMenu();
     fireEvent.click(
-      await screen.findByRole("button", {
+      await screen.findByRole("menuitem", {
         name: "Make Other Person a manager",
       }),
     );
@@ -217,7 +281,8 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
         )?.role,
       ).toBe("manager"),
     );
-    await screen.findByRole("button", { name: "Make Other Person a member" });
+    await openMemberMenu();
+    await screen.findByRole("menuitem", { name: "Make Other Person a member" });
     await s.service.setMemberRole(
       WORKSPACE,
       s.created.id,

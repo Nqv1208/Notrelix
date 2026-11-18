@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react";
-import { ShieldCheck, ShieldOff, UserMinus, UserPlus } from "lucide-react";
+import {
+  MoreHorizontal,
+  ShieldCheck,
+  ShieldOff,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -10,6 +16,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
   cn,
 } from "@notrelix/ui-web";
 import type { ChatChannelMember } from "../../core/types/chat";
@@ -45,6 +56,7 @@ export function ChatChannelMemberRows({
   onInvite,
   onSetRole,
 }: ChatChannelMemberRowsProps) {
+  const [query, setQuery] = useState("");
   if (members.length === 0) {
     return (
       <p className="px-4 py-1 text-sm text-muted-foreground">
@@ -52,23 +64,37 @@ export function ChatChannelMemberRows({
       </p>
     );
   }
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? members.filter((member) =>
+        authorName(member.userId).toLowerCase().includes(needle),
+      )
+    : members;
   return (
     <>
-      {onInvite ? (
-        <div className="px-4 pb-2">
-          <Button variant="outline" size="sm" onClick={onInvite}>
-            <UserPlus aria-hidden="true" />
-            {copy.membership.invite}
-          </Button>
-        </div>
+      <div className="px-4 pb-2">
+        <Input
+          type="search"
+          value={query}
+          placeholder={copy.membership.memberSearch}
+          aria-label={copy.membership.memberSearch}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+      {shown.length === 0 ? (
+        <p className="px-4 py-1 text-sm text-muted-foreground">
+          {copy.membership.memberSearchNone}
+        </p>
       ) : null}
       <ul className="flex flex-col px-4">
-        {members.map((member) => {
+        {shown.map((member) => {
           const name = authorName(member.userId);
-          const presence =
-            member.userId === viewerId
-              ? undefined
-              : presenceOf?.(member.userId);
+          const isViewer = member.userId === viewerId;
+          const presence = isViewer ? undefined : presenceOf?.(member.userId);
+          const role =
+            member.role === "manager"
+              ? copy.header.manager
+              : copy.membership.memberRole;
           return (
             <li
               key={member.userId}
@@ -87,58 +113,87 @@ export function ChatChannelMemberRows({
                 </Avatar>
                 {presence ? <PresenceDot state={presence} /> : null}
               </span>
-              <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                {name}
-                {member.userId === viewerId ? ` (${copy.header.you})` : ""}
-                {presence ? (
-                  <span className="sr-only">
-                    {`, ${presenceText(presence, copy)}`}
-                  </span>
-                ) : null}
-              </span>
-              {member.role === "manager" ? (
-                <span className="text-xs text-muted-foreground">
-                  {copy.header.manager}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-medium text-foreground">
+                  {name}
+                  {presence ? (
+                    <span className="sr-only">
+                      {`, ${presenceText(presence, copy)}`}
+                    </span>
+                  ) : null}
                 </span>
-              ) : null}
-              {onSetRole && member.userId !== viewerId ? (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={fillCopy(
-                    member.role === "manager"
-                      ? copy.membership.makeMember
-                      : copy.membership.makeManager,
-                    { name },
-                  )}
-                  onClick={() =>
-                    onSetRole(
-                      member.userId,
-                      member.role === "manager" ? "member" : "manager",
-                    )
-                  }
-                >
-                  {member.role === "manager" ? (
-                    <ShieldOff aria-hidden="true" />
-                  ) : (
-                    <ShieldCheck aria-hidden="true" />
-                  )}
-                </Button>
-              ) : null}
-              {onRemoveMember && member.userId !== viewerId ? (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={fillCopy(copy.membership.remove, { name })}
-                  onClick={() => onRemoveMember(member.userId)}
-                >
-                  <UserMinus aria-hidden="true" />
-                </Button>
+                <span className="truncate text-xs text-muted-foreground">
+                  {isViewer ? `${role} · ${copy.header.you}` : role}
+                </span>
+              </span>
+              {!isViewer && (onSetRole || onRemoveMember) ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={fillCopy(copy.membership.memberActions, {
+                        name,
+                      })}
+                    >
+                      <MoreHorizontal aria-hidden="true" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-auto min-w-[220px] rounded-[12px] border border-border p-1.5 ring-0"
+                  >
+                    {onSetRole ? (
+                      <DropdownMenuItem
+                        className="min-h-9 gap-2.5 px-3.5 text-item-ui"
+                        onSelect={() =>
+                          onSetRole(
+                            member.userId,
+                            member.role === "manager" ? "member" : "manager",
+                          )
+                        }
+                      >
+                        {member.role === "manager" ? (
+                          <ShieldOff className="size-3.5" aria-hidden="true" />
+                        ) : (
+                          <ShieldCheck
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
+                        )}
+                        {fillCopy(
+                          member.role === "manager"
+                            ? copy.membership.makeMember
+                            : copy.membership.makeManager,
+                          { name },
+                        )}
+                      </DropdownMenuItem>
+                    ) : null}
+                    {onRemoveMember ? (
+                      <DropdownMenuItem
+                        variant="destructive"
+                        className="min-h-9 gap-2.5 px-3.5 text-item-ui"
+                        onSelect={() => onRemoveMember(member.userId)}
+                      >
+                        <UserMinus className="size-3.5" aria-hidden="true" />
+                        {fillCopy(copy.membership.remove, { name })}
+                      </DropdownMenuItem>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : null}
             </li>
           );
         })}
       </ul>
+      {onInvite ? (
+        <div className="px-4 pt-2">
+          <Button variant="outline" size="sm" onClick={onInvite}>
+            <UserPlus aria-hidden="true" />
+            {copy.membership.invite}
+          </Button>
+        </div>
+      ) : null}
     </>
   );
 }
