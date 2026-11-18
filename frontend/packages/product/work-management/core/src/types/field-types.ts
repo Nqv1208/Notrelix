@@ -49,6 +49,8 @@ export interface FieldDefinition {
   unit?: string;
   /** A Person field holds several people (field setting `multiple`); otherwise one. */
   multiple?: boolean;
+  /** A Relation field's target board (field setting `targetBoardId`). */
+  relationBoardId?: string;
   /** "mark": a select value drawn with a coloured initials mark (departments). */
   display?: "mark";
   semanticRole?: FieldSemanticRole;
