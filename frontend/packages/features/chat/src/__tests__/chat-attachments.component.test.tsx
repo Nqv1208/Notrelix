@@ -279,6 +279,44 @@ describe("message attachments", () => {
     );
   });
 
+  it("zooms the viewer image with the wheel, a double click and the keys, and swipes to the next image only when it is not zoomed", async () => {
+    const s = setup();
+    const message = await messageWithFiles(
+      s,
+      ["one", "two"].map(
+        (name) => new File([PNG], `${name}.png`, { type: "image/png" }),
+      ),
+    );
+    render(
+      <Row s={s} messageId={message.id} spaceId={message.spaceId} isOwn />,
+      { wrapper: s.wrapper },
+    );
+    const grid = await screen.findByTestId("chat-gallery");
+    fireEvent.click(
+      within(grid).getAllByRole("button", { name: /^Open .*\.png$/ })[0]!,
+    );
+    const viewer = await screen.findByTestId("chat-image-viewer");
+    const stage = await within(viewer).findByTestId("chat-viewer-stage");
+    expect(stage.getAttribute("data-zoom")).toBe("1.00");
+    fireEvent.wheel(stage, { deltaY: -100 });
+    expect(Number(stage.getAttribute("data-zoom"))).toBeGreaterThan(1);
+    fireEvent.keyDown(stage, { key: "0" });
+    expect(stage.getAttribute("data-zoom")).toBe("1.00");
+    fireEvent.doubleClick(stage);
+    expect(stage.getAttribute("data-zoom")).toBe("2.00");
+    // Zoomed: a sideways drag pans and does not page.
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300, clientY: 100 });
+    fireEvent.pointerUp(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    expect(within(viewer).getByText("1 of 2")).not.toBeNull();
+    fireEvent.doubleClick(stage);
+    expect(stage.getAttribute("data-zoom")).toBe("1.00");
+    fireEvent.pointerDown(stage, { pointerId: 2, clientX: 300, clientY: 100 });
+    fireEvent.pointerUp(stage, { pointerId: 2, clientX: 100, clientY: 100 });
+    await waitFor(() =>
+      expect(within(viewer).getByText("2 of 2")).not.toBeNull(),
+    );
+  });
+
   it("offers remove only to the author, asks first, then removes the file", async () => {
     const s = setup();
     const message = await messageWithFiles(s, [
