@@ -20,6 +20,7 @@ const OWN: PendingGuestInvitation = {
   id: "inv-1",
   email: "khach@doitac-erp.vn",
   issuedByYou: true,
+  canManage: true,
   invitedByName: "Nguyễn Thu Hà",
   expiresAt: "2026-11-26T12:00:00Z",
 };
@@ -27,6 +28,7 @@ const OTHER: PendingGuestInvitation = {
   id: "inv-2",
   email: "ketoan@doitac-erp.vn",
   issuedByYou: false,
+  canManage: false,
   invitedByName: "Lê Hoàng Phúc",
   expiresAt: "2026-11-24T12:00:00Z",
 };
@@ -205,6 +207,43 @@ describe("BoardShareSheet guest invitation (phone)", () => {
     );
     fireEvent.click(revokes[0]!);
     expect(onRevokeInvitation).toHaveBeenCalledWith("inv-1");
+  });
+
+  it("UC-WM-A20 lets a workspace Owner or Admin resend and revoke another person's invitation on the phone sheet", async () => {
+    const onResendInvitation = vi.fn(async () => true);
+    const onRevokeInvitation = vi.fn(async () => true);
+    renderSheet({
+      pendingInvitations: [{ ...OTHER, canManage: true }],
+      onResendInvitation,
+      onRevokeInvitation,
+    });
+    const section = screen.getByRole("region", {
+      name: "Lời mời đang chờ · 1",
+    });
+    const resend = within(section).getByRole("button", {
+      name: copy.pending.resend,
+    });
+    const revoke = within(section).getByRole("button", {
+      name: copy.pending.revoke,
+    });
+    expect(resend.getAttribute("aria-disabled")).toBeNull();
+    expect(revoke.getAttribute("aria-disabled")).toBeNull();
+    expect(within(section).queryByText(copy.pending.notIssuer)).toBeNull();
+    fireEvent.click(resend);
+    await waitFor(() =>
+      expect(onResendInvitation).toHaveBeenCalledWith("inv-2"),
+    );
+    await waitFor(() =>
+      expect(revoke.getAttribute("aria-disabled")).toBeNull(),
+    );
+    fireEvent.click(revoke);
+    expect(onRevokeInvitation).toHaveBeenCalledWith("inv-2");
+  });
+
+  it("UC-WM-A20 says who may resend or revoke when the reader is neither the issuer nor a workspace Owner or Admin", () => {
+    renderSheet({ pendingInvitations: [OTHER] });
+    expect(copy.pending.notIssuer).toContain("Quản trị workspace");
+    expect(screen.getByText(copy.pending.notIssuer)).toBeTruthy();
   });
 
   it("UC-WM-A19 disables the add field for a reader who may not manage the board and says why", () => {

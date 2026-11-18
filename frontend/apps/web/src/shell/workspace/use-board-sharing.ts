@@ -31,6 +31,7 @@ function toPending(rows: PendingRows | undefined) {
     id: row.id ?? "",
     email: row.email ?? "",
     issuedByYou: row.issuedByYou === true,
+    canManage: row.canManage === true,
     invitedByName: row.invitedByName ?? "",
     expiresAt: row.expiresAt ?? "",
   }));
@@ -163,6 +164,14 @@ export function useBoardSharing(
     [refresh, run],
   );
 
+  // The issuer's own row goes through the resource endpoints; anyone else's (a workspace Owner or Admin) through the workspace ones.
+  const ownRow = useCallback(
+    (invitationId: string) =>
+      invitations.data?.find((row) => row.id === invitationId)?.issuedByYou ===
+      true,
+    [invitations.data],
+  );
+
   const entryOf = useCallback(
     (entryId: string): Entry | undefined =>
       query.data?.entries.find((entry) => entry.id === entryId),
@@ -191,11 +200,19 @@ export function useBoardSharing(
         runAll([
           { kind: "grant", subjectType: "User", subjectId: userId, level },
         ]),
-      /** Sends a pending guest invitation again: a new link, the old one stops working (UC-WM-A20). */
+      /**
+       * Sends a pending guest invitation again: a new link, the old one stops working (UC-WM-A20). The issuer
+       * uses the resource endpoint; a workspace Owner or Admin acting on another person's row uses the workspace one.
+       */
       resendInvitation: async (invitationId: string) => {
         try {
           await api.api.post(
-            `${endpoints.resourceInvitations.list(BOARD_KIND, boardId)}/${invitationId}/resend`,
+            ownRow(invitationId)
+              ? `${endpoints.resourceInvitations.list(BOARD_KIND, boardId)}/${invitationId}/resend`
+              : endpoints.workspaces.resendInvitation(
+                  workspaceId,
+                  invitationId,
+                ),
             {},
             { headers: { "Idempotency-Key": crypto.randomUUID() } },
           );
@@ -203,15 +220,17 @@ export function useBoardSharing(
           await refresh();
         }
       },
-      /** Revokes a pending guest invitation: its link can no longer be accepted (UC-WM-A20). */
+      /** Revokes a pending guest invitation: its link can no longer be accepted (UC-WM-A20); same two paths as resend. */
       revokeInvitation: async (invitationId: string) => {
         try {
           await api.api.delete(
-            endpoints.resourceInvitations.detail(
-              BOARD_KIND,
-              boardId,
-              invitationId,
-            ),
+            ownRow(invitationId)
+              ? endpoints.resourceInvitations.detail(
+                  BOARD_KIND,
+                  boardId,
+                  invitationId,
+                )
+              : endpoints.workspaces.invitation(workspaceId, invitationId),
             { headers: { "Idempotency-Key": crypto.randomUUID() } },
           );
         } finally {
@@ -275,6 +294,8 @@ export function useBoardSharing(
       client,
       entryOf,
       invitations.data,
+      ownRow,
+      workspaceId,
       invitationsKey,
       query.data,
       query.isLoading,

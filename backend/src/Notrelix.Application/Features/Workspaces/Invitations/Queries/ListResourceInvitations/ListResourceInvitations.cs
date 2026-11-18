@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Queries.ListResourceInvitations;
 
@@ -11,12 +12,15 @@ public sealed record ResourceInvitationDto(
     Guid InvitedBy,
     string InvitedByName,
     DateTimeOffset ExpiresAt,
-    bool IssuedByYou);
+    bool IssuedByYou,
+    bool CanManage);
 
 /// <summary>
 /// The pending resource invitations of one Board or Page (UC-WM-A20): stored, not yet accepted, not expired,
 /// for this exact resource. Authorized as manage permission on the resource, so only a manager of the Board
-/// reads the list. <c>IssuedByYou</c> tells the caller which rows they may resend or revoke.
+/// reads the list. <c>IssuedByYou</c> marks the caller's own rows; <c>CanManage</c> tells the caller which rows they
+/// may resend or revoke: their own, or any when the policy lets them act on every invitation of the Workspace (Owner and Admin by
+/// default). Those act through the workspace resend and cancel endpoints, which authorize the same way.
 /// </summary>
 public sealed record ListResourceInvitationsQuery(string ResourceKind, Guid ResourceId)
     : IQuery<Result<List<ResourceInvitationDto>>>, IAuthenticatedRequest, IReadRequest, IResourceScopedRequest, IRequirePermission
@@ -40,17 +44,20 @@ public sealed class ListResourceInvitationsQueryHandler : IRequestHandler<ListRe
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IActorLookupService _actors;
+    private readonly IInvitationManageAuthorizer _manageAuthorizer;
 
     public ListResourceInvitationsQueryHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
-        IActorLookupService actors)
+        IActorLookupService actors,
+        IInvitationManageAuthorizer manageAuthorizer)
     {
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
         _actors = actors;
+        _manageAuthorizer = manageAuthorizer;
     }
 
     public async Task<Result<List<ResourceInvitationDto>>> Handle(ListResourceInvitationsQuery request, CancellationToken ct)
@@ -58,6 +65,8 @@ public sealed class ListResourceInvitationsQueryHandler : IRequestHandler<ListRe
         var workspaceId = _requestContext.RequireWorkspaceId();
         var actorId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;
+
+        var actsForWorkspace = await _manageAuthorizer.CanManageAnyInvitationAsync(workspaceId, ct);
 
         var rows = await _context.WorkspaceInvitations
             .AsNoTracking()
@@ -83,7 +92,8 @@ public sealed class ListResourceInvitationsQueryHandler : IRequestHandler<ListRe
                 r.InvitedBy,
                 names.TryGetValue(r.InvitedBy, out var actor) ? actor.Name : "Unknown",
                 r.ExpiresAt,
-                r.InvitedBy == actorId))
+                r.InvitedBy == actorId,
+                actsForWorkspace || r.InvitedBy == actorId))
             .ToList();
 
         return Result<List<ResourceInvitationDto>>.Success(result);

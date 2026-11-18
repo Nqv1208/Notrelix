@@ -15,6 +15,7 @@ import {
   TriangleAlert,
   Link2,
   Lock,
+  Mail,
   Users,
   UserPlus,
   X,
@@ -36,7 +37,11 @@ import {
   fillBoardShareCopy as fill,
   type BoardShareCopy,
 } from "./board-share.copy";
-import { EMAIL_SHAPE, type PendingGuestInvitation } from "./board-share-guest";
+import {
+  EMAIL_SHAPE,
+  formatInviteDate,
+  type PendingGuestInvitation,
+} from "./board-share-guest";
 import { BoardShareSheet } from "./board-share-sheet";
 import { MARK_TONE, PERSON_TONE } from "./board-share-tones";
 import type {
@@ -822,57 +827,88 @@ function PendingInvitations({
   onResend?: (invitationId: string) => Promise<boolean | void> | boolean | void;
   onRevoke?: (invitationId: string) => Promise<boolean | void> | boolean | void;
 }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const run = async (
+    id: string,
+    action?: (id: string) => Promise<boolean | void> | boolean | void,
+  ) => {
+    if (!action || busy) return;
+    setBusy(id);
+    try {
+      await action(id);
+    } finally {
+      setBusy(null);
+    }
+  };
+  const title = fill(copy.pending.title, { count: rows.length });
   return (
-    <section
-      data-f="pending"
-      aria-label={fill(copy.pending.title, { count: rows.length })}
-    >
+    <section data-f="pending" aria-label={title}>
       <div className="mb-1.5 text-xs leading-[1.45] font-semibold text-meta-foreground">
-        {fill(copy.pending.title, { count: rows.length })}
+        {title}
       </div>
-      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      <ul className="m-0 list-none overflow-hidden rounded-[10px] border border-line p-0">
         {rows.map((row) => {
-          const enabled = row.issuedByYou;
+          const enabled = row.canManage && !busy;
+          const why = `board-share-pending-why-${row.id}`;
           return (
             <li
               key={row.id}
-              className="flex flex-wrap items-center gap-2 rounded-[9px] border border-line-strong px-2.5 py-2 text-nav"
+              className="flex min-h-[54px] items-center gap-[11px] border-t border-line px-3 py-1.5 first:border-t-0"
             >
-              <span className="min-w-0 flex-1 truncate text-foreground">
-                {row.email}
-              </span>
-              <span className="text-compact text-meta-foreground">
-                {fill(copy.pending.invitedBy, {
-                  name: row.invitedByName,
-                  date: new Date(row.expiresAt).toLocaleDateString(),
-                })}
-              </span>
-              <button
-                type="button"
-                disabled={!enabled || !onResend}
-                title={enabled ? undefined : copy.pending.notIssuer}
-                onClick={() => void onResend?.(row.id)}
-                className={cn(
-                  BTN,
-                  FOCUS,
-                  "disabled:cursor-default disabled:opacity-60",
-                )}
+              <span
+                aria-hidden="true"
+                className="grid size-[34px] shrink-0 place-items-center rounded-[9px] bg-state-hover-strong text-muted-foreground"
               >
-                {copy.pending.resend}
-              </button>
-              <button
-                type="button"
-                disabled={!enabled || !onRevoke}
-                title={enabled ? undefined : copy.pending.notIssuer}
-                onClick={() => void onRevoke?.(row.id)}
-                className={cn(
-                  BTN,
-                  FOCUS,
-                  "disabled:cursor-default disabled:opacity-60",
+                <Mail className="size-4" strokeWidth={1.8} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <b className="block truncate text-[13.5px] font-semibold text-foreground">
+                  {row.email}
+                </b>
+                <small className="block text-xs text-meta-foreground">
+                  {fill(copy.pending.invitedBy, {
+                    name: row.invitedByName || copy.add.someoneElse,
+                    date: formatInviteDate(row.expiresAt),
+                  })}
+                </small>
+                {row.canManage ? null : (
+                  <small
+                    id={why}
+                    className="block text-xs text-meta-foreground"
+                  >
+                    {copy.pending.notIssuer}
+                  </small>
                 )}
-              >
-                {copy.pending.revoke}
-              </button>
+              </span>
+              <span className="flex shrink-0 gap-1.5">
+                <button
+                  type="button"
+                  disabled={!enabled || !onResend}
+                  aria-describedby={row.canManage ? undefined : why}
+                  onClick={() => void run(row.id, onResend)}
+                  className={cn(
+                    BTN,
+                    FOCUS,
+                    "disabled:cursor-default disabled:opacity-60",
+                  )}
+                >
+                  {copy.pending.resend}
+                </button>
+                <button
+                  type="button"
+                  disabled={!enabled || !onRevoke}
+                  aria-describedby={row.canManage ? undefined : why}
+                  onClick={() => void run(row.id, onRevoke)}
+                  className={cn(
+                    BTN,
+                    FOCUS,
+                    "disabled:cursor-default disabled:opacity-60",
+                    row.canManage && onRevoke ? "text-danger-text" : undefined,
+                  )}
+                >
+                  {copy.pending.revoke}
+                </button>
+              </span>
             </li>
           );
         })}

@@ -7,8 +7,10 @@ import {
 export interface PendingGuestInvitation {
   readonly id: string;
   readonly email: string;
-  /** Whether the signed-in person sent it (only the issuer may resend or revoke it). */
+  /** Whether the signed-in person sent it. */
   readonly issuedByYou: boolean;
+  /** Whether the signed-in person may resend or revoke it: the issuer, or a workspace Owner or Admin. */
+  readonly canManage: boolean;
   readonly invitedByName: string;
   /** ISO instant the invitation expires. */
   readonly expiresAt: string;
