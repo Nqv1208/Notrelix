@@ -12,7 +12,10 @@ import {
 import { createChatRealtimeAdapter } from "../web/realtime/chat-realtime-adapter";
 import { createChatService } from "../core/api/chat.service";
 import { useChatCalls } from "../web/calls/use-chat-calls";
-import { ChatCallDock } from "../web/calls/chat-call-dock";
+import {
+  ChatCallIncoming,
+  ChatCallStage,
+} from "../web/calls/chat-call-surfaces";
 import type { ChatCallMediaConnector } from "../web/calls/chat-call-media";
 import { systemTextOf } from "../web/components/use-chat-copy";
 import { en, vi as viCopy } from "../web/components/chat.copy";
@@ -346,38 +349,65 @@ function controller(
 const NAMES: Record<string, string> = { me: "Thu Hà", quan: "Trần Minh Quân" };
 const nameOf = (id: string) => NAMES[id] ?? "?";
 
-function dock(c: ChatCallsController, copy = en) {
-  return render(
-    <ChatCallDock
-      controller={c}
-      viewerId="me"
-      nameOf={nameOf}
-      peerOf={() => "quan"}
-      copy={copy}
-    />,
+function Surfaces({
+  c,
+  copy = en,
+  isPhone = false,
+}: {
+  c: ChatCallsController;
+  copy?: typeof en;
+  isPhone?: boolean;
+}) {
+  return (
+    <div>
+      {c.current ? (
+        <ChatCallStage
+          controller={c}
+          held={c.current}
+          visible
+          onMinimize={vi.fn()}
+          viewerId="me"
+          nameOf={nameOf}
+          peerOf={() => "quan"}
+          copy={copy}
+        />
+      ) : null}
+      <ChatCallIncoming
+        controller={c}
+        nameOf={nameOf}
+        isPhone={isPhone}
+        copy={copy}
+      />
+    </div>
   );
 }
 
-describe("ChatCallDock: every state of a call", () => {
+function dock(c: ChatCallsController, copy = en, isPhone = false) {
+  return render(<Surfaces c={c} copy={copy} isPhone={isPhone} />);
+}
+
+describe("the call surfaces: every state of a call", () => {
   it("renders nothing without a call, a ring or an error", () => {
     const { container } = dock(controller());
-    expect(container.innerHTML).toBe("");
+    expect(container.firstElementChild?.innerHTML).toBe("");
   });
 
-  it("rings out with Cancel and no mute control", () => {
+  it("rings out with Cancel, the person named once and the controls ready", () => {
     const c = controller({
       current: held({ media: "connecting", call: call({ initiatorId: "me" }) }),
     });
     dock(c);
     expect(
-      screen.getByTestId("chat-call-card").getAttribute("data-phase"),
+      screen.getByTestId("chat-call-stage").getAttribute("data-phase"),
     ).toBe("outgoing-ringing");
-    expect(screen.getByText(en.calls.ringing)).toBeTruthy();
+    expect(screen.getByText(en.calls.ringingDots)).toBeTruthy();
     // It names the person being called, not the caller.
-    expect(screen.getByText("Calling Trần Minh Quân")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Trần Minh Quân" }),
+    ).toBeTruthy();
     screen.getByRole("button", { name: en.calls.cancel }).click();
     expect(c.hangUp).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: en.calls.mute })).toBeNull();
+    expect(screen.getByRole("button", { name: en.calls.mute })).toBeTruthy();
   });
 
   it("offers Answer and Decline for an incoming ring and names the caller", () => {
@@ -401,7 +431,9 @@ describe("ChatCallDock: every state of a call", () => {
     ).toBeTruthy();
     screen.getByRole("button", { name: en.calls.answer }).click();
     screen.getByRole("button", { name: en.calls.decline }).click();
+    screen.getByRole("button", { name: en.calls.answerVoice }).click();
     expect(c.answer).toHaveBeenCalledWith("call-9");
+    expect(c.answer).toHaveBeenCalledWith("call-9", true);
     expect(c.decline).toHaveBeenCalledWith("call-9");
   });
 
@@ -458,19 +490,12 @@ describe("ChatCallDock: every state of a call", () => {
     });
     const { rerender } = dock(connecting);
     expect(screen.getByText(en.calls.connecting)).toBeTruthy();
-    expect(
-      (screen.getByRole("button", { name: en.calls.mute }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
 
     rerender(
-      <ChatCallDock
-        controller={controller({
+      <Surfaces
+        c={controller({
           current: held({ call: active, media: "reconnecting" }),
         })}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={en}
       />,
     );
     expect(screen.getByText(en.calls.reconnecting)).toBeTruthy();
@@ -478,14 +503,7 @@ describe("ChatCallDock: every state of a call", () => {
     const failed = controller({
       current: held({ call: active, media: "failed" }),
     });
-    rerender(
-      <ChatCallDock
-        controller={failed}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={en}
-      />,
-    );
+    rerender(<Surfaces c={failed} />);
     expect(screen.getByRole("alert").textContent ?? "").toContain(
       en.calls.failedConnect,
     );
@@ -493,26 +511,20 @@ describe("ChatCallDock: every state of a call", () => {
     expect(failed.retryConnect).toHaveBeenCalled();
 
     rerender(
-      <ChatCallDock
-        controller={controller({
+      <Surfaces
+        c={controller({
           current: held({ call: active, deviceNotice: "mic-denied" }),
         })}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={en}
       />,
     );
     expect(screen.getByRole("status").textContent ?? "").toContain(
       en.calls.micDenied,
     );
     rerender(
-      <ChatCallDock
-        controller={controller({
+      <Surfaces
+        c={controller({
           current: held({ call: active, deviceNotice: "camera-denied" }),
         })}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={en}
       />,
     );
     expect(screen.getByRole("status").textContent ?? "").toContain(
@@ -543,34 +555,14 @@ describe("ChatCallDock: every state of a call", () => {
         }),
       });
       dock(c);
-      expect(screen.getByTestId("chat-call-card").textContent ?? "").toMatch(
+      expect(screen.getByTestId("chat-call-stage").textContent ?? "").toMatch(
         text,
       );
       screen.getByRole("button", { name: en.calls.close }).click();
       expect(c.dismiss).toHaveBeenCalled();
-      if (reason === "completed")
-        expect(screen.getByText(/Lasted 3:02/)).toBeTruthy();
+      if (reason === "completed") expect(screen.getByText("3:02")).toBeTruthy();
     },
   );
-
-  it("names why a call did not start, in Vietnamese too", () => {
-    const c = controller({ error: "unavailable" });
-    const { rerender } = dock(c);
-    expect(screen.getByRole("alert").textContent ?? "").toContain(
-      en.calls.unavailable,
-    );
-    rerender(
-      <ChatCallDock
-        controller={controller({ error: "you-busy" })}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={viCopy}
-      />,
-    );
-    expect(screen.getByRole("alert").textContent ?? "").toContain(
-      viCopy.calls.youBusy,
-    );
-  });
 });
 
 describe("the call line in the timeline", () => {

@@ -25,7 +25,7 @@ type Hook = {
   peer: (space: string) => string | null;
 };
 
-const card = (page: Page) => page.getByTestId("chat-call-card");
+const card = (page: Page) => page.getByTestId("chat-call-stage");
 
 async function openDm(page: Page, mode: "light" | "dark" = "light") {
   await page.addInitScript((m) => {
@@ -84,15 +84,22 @@ const startCall = (page: Page, _space: string, kind: "voice" | "video") =>
     })
     .click();
 
-// The card fades in for 200 ms; axe and the screenshots wait for it to settle.
+// The surface fades in for 200 ms; axe and the screenshots wait for it to settle.
 const settle = (page: Page) => page.waitForTimeout(450);
 
 async function expectNoViolations(page: Page, what: string) {
   await settle(page);
   const result = await new AxeBuilder({ page })
-    .include("[data-testid=chat-call-dock]")
+    .include(
+      "[data-testid=chat-call-stage], [data-testid=chat-call-incoming], [data-testid=chat-call-strip]",
+    )
     .analyze();
-  expect(result.violations.map((v) => `${what}: ${v.id}`)).toEqual([]);
+  expect(
+    result.violations.map(
+      (v) =>
+        `${what}: ${v.id} ${v.nodes.map((n) => `${n.target} ${n.any[0]?.message ?? ""}`).join(" | ")}`,
+    ),
+  ).toEqual([]);
 }
 
 async function shot(page: Page, name: string) {

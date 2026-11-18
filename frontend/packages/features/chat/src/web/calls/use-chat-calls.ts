@@ -57,7 +57,8 @@ export interface ChatCallsController {
   readonly incoming: readonly ChatIncomingCall[];
   readonly error: ChatCallError | null;
   readonly start: (spaceId: string, kind: ChatCallKind) => void;
-  readonly answer: (callId: string) => void;
+  /** `voiceOnly` joins a video call with the camera off. */
+  readonly answer: (callId: string, voiceOnly?: boolean) => void;
   readonly decline: (callId: string) => void;
   /** Cancel while ringing out, end while active. */
   readonly hangUp: () => void;
@@ -189,14 +190,14 @@ export function useChatCalls({
   );
 
   const adopt = useCallback(
-    (join: ChatCallJoin) => {
+    (join: ChatCallJoin, voiceOnly = false) => {
       const { call, joinToken } = join;
       teardown();
       update({
         call,
         media: "idle",
         audioOn: true,
-        videoOn: call.kind === "video",
+        videoOn: call.kind === "video" && !voiceOnly,
         deviceNotice: null,
       });
       if (call.state !== "ended" && joinToken)
@@ -380,7 +381,7 @@ export function useChatCalls({
   );
 
   const answer = useCallback(
-    (id: string) => {
+    (id: string, voiceOnly = false) => {
       const entry = queryClient
         .getQueryData<ChatIncomingCall[]>(incomingKey)
         ?.find((item) => item.callId === id);
@@ -396,7 +397,7 @@ export function useChatCalls({
       )
         .then((join) => {
           dropIncoming(id);
-          adopt(join);
+          adopt(join, voiceOnly);
         })
         .catch((cause) => {
           dropIncoming(id);
