@@ -29,6 +29,7 @@ public sealed class UnlinkOAuthCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<UnlinkOAuthCommandHandler> _logger;
     private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
 
     public UnlinkOAuthCommandHandler(
         IIdentityDbContext identityContext,
@@ -36,7 +37,7 @@ public sealed class UnlinkOAuthCommandHandler
         ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
         ILogger<UnlinkOAuthCommandHandler> logger,
-        ISecurityActivityRecorder activity)
+        ISecurityActivityRecorder activity, ISecurityNotice notice)
     {
         _identityContext = identityContext;
         _currentUser = currentUser;
@@ -44,6 +45,7 @@ public sealed class UnlinkOAuthCommandHandler
         _dateTimeProvider = dateTimeProvider;
         _logger = logger;
         _activity = activity;
+        _notice = notice;
     }
 
     public async Task<Result> Handle(UnlinkOAuthCommand request, CancellationToken cancellationToken)
@@ -97,6 +99,7 @@ public sealed class UnlinkOAuthCommandHandler
         {
             _identityContext.OAuthAccounts.Remove(accountToUnlink);
             _activity.Record(user.Id, SecurityActivityType.ProviderUnlinked, _dateTimeProvider.UtcNow, _currentUser.SessionId);
+            await _notice.QueueAsync(user.Id, SecurityNoticeKind.ProviderUnlinked, _dateTimeProvider.UtcNow, null, cancellationToken);
         }
 
         _logger.LogInformation("OAuth provider {Provider} unlinked from user {UserId}", request.Provider, user.Id);

@@ -70,7 +70,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
 
         return new UnlinkOAuthCommandHandler(
             context, currentUser.Object, stepUp.Service, dateTimeProvider.Object,
-            NullLogger<UnlinkOAuthCommandHandler>.Instance, _activity.Object);
+            NullLogger<UnlinkOAuthCommandHandler>.Instance, _activity.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
     }
 
     private static async Task<string> IssuePasswordProof(StepUpHarness stepUp, Guid userId, string password)

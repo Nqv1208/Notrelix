@@ -45,6 +45,7 @@ public sealed class CreateApiTokenCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CreateApiTokenCommandHandler> _logger;
     private readonly IAuditService _auditService;
+    private readonly ISecurityNotice _notice;
 
     public CreateApiTokenCommandHandler(
         IIdentityDbContext context,
@@ -53,8 +54,10 @@ public sealed class CreateApiTokenCommandHandler
         IApiTokenSecretService secretService,
         IDateTimeProvider dateTimeProvider,
         ILogger<CreateApiTokenCommandHandler> logger,
-        IAuditService auditService)
+        IAuditService auditService,
+        ISecurityNotice notice)
     {
+        _notice = notice;
         _context = context;
         _currentUser = currentUser;
         _stepUpService = stepUpService;
@@ -137,6 +140,7 @@ public sealed class CreateApiTokenCommandHandler
             tokenSuffix: secret.RawToken[^TokenSuffixLength..]);
 
         _context.ApiTokens.Add(token);
+        await _notice.QueueAsync(userId, SecurityNoticeKind.ApiTokenIssued, now, token.Id, ct);
         _logger.LogInformation(
             "Issued API token {TokenId} for workspace {WorkspaceId} by user {UserId}",
             token.Id, request.WorkspaceId, userId);

@@ -96,7 +96,8 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         secretService ?? new FakeApiTokenSecretService(),
         DateTimeProviderMock.Object,
         NullLogger<CreateApiTokenCommandHandler>.Instance,
-        _audit.Object);
+        _audit.Object,
+        SecurityNoticeMock.Object);
 
     [Fact]
     public async Task Create_WithValidStepUp_ReturnsRawSecretOnceAndPersistsDigest()
@@ -278,6 +279,38 @@ public class ApiTokenHandlerTests : IdentityHandlerTestBase
         var result = await sut.Handle(new ListApiTokensQuery(TestWorkspaceId), CancellationToken.None);
 
         result.Data.Items.Should().ContainSingle().Which.Id.Should().Be(own.Id);
+    }
+
+    [Fact]
+    public async Task Create_WithValidStepUp_TellsTheIssuerByMail_NamingTheNewToken()
+    {
+        SetupWorkspaceActor();
+        SetupValidStepUp(StepUpPurpose.IssueApiToken);
+
+        var result = await CreateSut().Handle(new CreateApiTokenCommand(
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(30), ValidProof), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        SecurityNoticeMock.Verify(
+            n => n.QueueAsync(TestUserId, Notrelix.Application.Features.Identity.Security.Abstractions.SecurityNoticeKind.ApiTokenIssued,
+                TestNow, result.Data!.Id, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Create_RefusedByTheStepUp_SendsNoMail()
+    {
+        SetupWorkspaceActor();
+        SetupFailedStepUp(StepUpPurpose.IssueApiToken);
+
+        var result = await CreateSut().Handle(new CreateApiTokenCommand(
+            TestWorkspaceId, "Deploy token", TestNow.AddDays(30), ValidProof), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        SecurityNoticeMock.Verify(
+            n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<Notrelix.Application.Features.Identity.Security.Abstractions.SecurityNoticeKind>(),
+                It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
