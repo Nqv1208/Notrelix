@@ -269,6 +269,25 @@ public sealed class BoardReadContractIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ItemDetail_ForACompletedItem_NamesTheCompleterAndTheLastEditorToAMember()
+    {
+        var detail = await ItemAsync(_doneChild.Id, guest: false);
+
+        detail.CompletedByName.Should().Be("Ada Lovelace");
+        detail.UpdatedByName.Should().Be("Ada Lovelace");
+    }
+
+    [Fact]
+    public async Task ItemDetail_ForACompletedItem_NamesNeitherTheCompleterNorTheLastEditorToAGuest()
+    {
+        var detail = await ItemAsync(_doneChild.Id, guest: true);
+
+        detail.CompletedBy.Should().Be(_userId, "the id stays, only the name is withheld");
+        detail.CompletedByName.Should().BeNull();
+        detail.UpdatedByName.Should().BeNull();
+    }
+
+    [Fact]
     public async Task FullBoard_PagedWithSearch_KeepsTheItemsWhoseTitleOrKeyHoldsTheText_IgnoringCase()
     {
         var byTitle = await FullBoardAsync([_spaceId], search: "PLAIN");

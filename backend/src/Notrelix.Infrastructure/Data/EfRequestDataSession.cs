@@ -190,15 +190,13 @@ public sealed class EfRequestDataSession : IRequestDataSession
             if (current is null) return new Dictionary<string, object?>();
             var by = current.GetValue<Guid?>(nameof(AuditableEntity.UpdatedBy));
             var at = current.GetValue<DateTimeOffset?>(nameof(AuditableEntity.UpdatedAt));
+            // Fail closed: no actor lookup, no workspace-access resolver, no caller, or an entity outside a
+            // workspace names no one. Only a resolved member reads the writer's name.
             string? name = null;
-            if (by is { } actorId && _actors is not null)
+            if (by is { } actorId && _actors is not null && _workspaceAccess is not null && _request is not null
+                && entry.Metadata.FindProperty("WorkspaceId") is not null)
             {
-                var workspaceId = entry.Metadata.FindProperty("WorkspaceId") is null
-                    ? (Guid?)null
-                    : current.GetValue<Guid>("WorkspaceId");
-                name = _workspaceAccess is not null && _request is not null && workspaceId is { } workspace
-                    ? await ActorNotice.NameAsync(_actors, _workspaceAccess, workspace, _request.UserId, actorId, ct)
-                    : (await _actors.FindManyAsync([actorId], ct)).FirstOrDefault()?.Name;
+                name = await ActorNotice.NameAsync(_actors, _workspaceAccess, current.GetValue<Guid>("WorkspaceId"), _request.UserId, actorId, ct);
             }
             return new Dictionary<string, object?>
             {
