@@ -99,6 +99,7 @@ import {
   ChatCallStrip,
 } from "../calls/chat-call-surfaces";
 import { useChatCalls, type ChatCallError } from "../calls/use-chat-calls";
+import type { ChatCallDeviceStore } from "../calls/chat-call-devices";
 
 const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
   unavailable: "unavailable",
@@ -197,6 +198,11 @@ export interface ChatWorkspaceProps {
    * without it drafts live in memory while the page is open. `write` gets null when the draft is empty, sent or discarded.
    */
   readonly draftStore?: ChatDraftStore;
+  /**
+   * Remembers the microphone, camera and speaker a person chose for calls, per browser. The host owns the storage (the package
+   * never touches browser storage); without it a choice lasts one call. The device ids stay in the browser.
+   */
+  readonly callDeviceStore?: ChatCallDeviceStore;
   /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
@@ -335,6 +341,7 @@ export function ChatWorkspace({
   buildMessageLink,
   linkedSequence = null,
   draftStore,
+  callDeviceStore,
   onBackToList,
   connection = "live",
   ephemeral,
@@ -355,7 +362,11 @@ export function ChatWorkspace({
   const channelId = conversationId ?? channelProp;
   const ch = channelId ?? "";
   // Calls: the dock below renders them; the header and info panel buttons start one in the open conversation.
-  const calls = useChatCalls({ deps, workspaceId });
+  const calls = useChatCalls({
+    deps,
+    workspaceId,
+    deviceStore: callDeviceStore,
+  });
   const offersConversations = onOpenConversation !== undefined;
   const isGuest = viewerRole === "guest";
   const canBrowse = viewerRole !== null && !isGuest;

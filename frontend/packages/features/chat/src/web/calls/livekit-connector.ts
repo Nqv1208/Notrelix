@@ -16,7 +16,14 @@ function failureOf(error: unknown): ChatCallDeviceFailure {
 export async function connectLiveKit(
   options: ChatCallMediaOptions,
 ): Promise<ChatCallMediaSession> {
-  const room = new Room({ adaptiveStream: true, dynacast: true });
+  const { audioinput, videoinput, audiooutput } = options.preferred ?? {};
+  const room = new Room({
+    adaptiveStream: true,
+    dynacast: true,
+    ...(audioinput ? { audioCaptureDefaults: { deviceId: audioinput } } : {}),
+    ...(videoinput ? { videoCaptureDefaults: { deviceId: videoinput } } : {}),
+    ...(audiooutput ? { audioOutput: { deviceId: audiooutput } } : {}),
+  });
   // Remote audio plays through hidden elements; they leave with the call.
   const audioElements = new Set<HTMLMediaElement>();
 
@@ -58,6 +65,15 @@ export async function connectLiveKit(
         const el = options.localVideo();
         if (on && el && publication?.track) publication.track.attach(el);
         return null;
+      } catch (error) {
+        return failureOf(error);
+      }
+    },
+    async switchDevice(kind, deviceId) {
+      try {
+        return (await room.switchActiveDevice(kind, deviceId))
+          ? null
+          : "unavailable";
       } catch (error) {
         return failureOf(error);
       }
