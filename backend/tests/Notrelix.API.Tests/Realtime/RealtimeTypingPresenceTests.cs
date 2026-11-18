@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Notrelix.API.Realtime;
@@ -52,6 +54,22 @@ public sealed class RealtimeTypingPresenceTests
             if (kind == "pong")
             {
                 return true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads presence frames until the wanted state arrives. A late "who is here" request answered after the heartbeat
+    /// is one more "online" frame, which is valid, so earlier frames of another state are skipped.
+    /// </summary>
+    private static async Task<JsonElement> PresenceUntilAsync(RealtimeGatewayHarness harness, string state)
+    {
+        while (true)
+        {
+            var frame = await harness.ReceiveAsync("presence");
+            if (frame.GetProperty("state").GetString() == state)
+            {
+                return frame;
             }
         }
     }
@@ -218,14 +236,13 @@ public sealed class RealtimeTypingPresenceTests
         await bob.SendAsync(new { type = "presence", state = "online" });
         (await alice.ReceiveAsync("presence")).GetProperty("state").GetString().Should().Be("online");
 
-        var expired = await alice.ReceiveAsync("presence");
+        var expired = await PresenceUntilAsync(alice, "offline");
         expired.GetProperty("userId").GetGuid().Should().Be(Bob);
-        expired.GetProperty("state").GetString().Should().Be("offline");
 
         await bob.SendAsync(new { type = "presence", state = "online" });
         await alice.ReceiveAsync("presence");
         bob.Connection.RequestClose(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "tab_closed");
-        (await alice.ReceiveAsync("presence")).GetProperty("state").GetString().Should().Be("offline");
+        (await PresenceUntilAsync(alice, "offline")).GetProperty("userId").GetGuid().Should().Be(Bob);
     }
 
     [Fact]
