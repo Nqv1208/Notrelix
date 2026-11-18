@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Lock } from "lucide-react";
 import { TABLET_SLOT, TabletSlot, cn } from "@notrelix/ui-web";
 import type { TableSort } from "@notrelix/work-management-core";
-import { specOf } from "@notrelix/work-management-core";
+import { canEditInTable, specOf } from "@notrelix/work-management-core";
 import { fillTableCopy, type MainTableCopy } from "./main-table.copy";
 import { TableColumnResizeHandle } from "./table-column-resize";
 import {
@@ -92,7 +92,7 @@ export function TableHeaderRow({
           ? null
           : computed
             ? copy.fields.lockComputed
-            : !specOf(field).editable
+            : !canEditInTable(field)
               ? copy.fields.lockType
               : canEditFields
                 ? null

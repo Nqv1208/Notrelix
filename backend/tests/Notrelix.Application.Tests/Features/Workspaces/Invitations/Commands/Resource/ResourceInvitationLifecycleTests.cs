@@ -282,6 +282,43 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         published.RecipientEmail.Should().Be("guest@example.com");
     }
 
+    [Theory]
+    [InlineData("Commenter")]
+    [InlineData("Editor")]
+    [InlineData("Manager")]
+    [InlineData("Owner")]
+    public async Task InviteGuestToResource_AboveViewer_IsRejectedWithAStableRuleCode_AndQueuesNothing(string level)
+    {
+        var handler = new InviteGuestToResourceCommandHandler(
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _tokens.Object,
+            _encryptor.Object, _events.Object, _audit.Object, _actors.Object, _facts.Object);
+
+        var act = () => handler.Handle(
+            new InviteGuestToResourceCommand(BoardKind, BoardId, "guest@example.com", level), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_ResourceLevelAboveViewer);
+        _published.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task InviteGuestToResource_ForABoardTheTenantCannotResolve_IsNotFound_AndQueuesNothing()
+    {
+        // The facts adapter hides archived and deleted boards (GOV-033): a missing title is a NotFound, never an invite.
+        var archivedBoardId = Guid.CreateVersion7();
+        _facts.Setup(f => f.ResolveTitleAsync(BoardKind, archivedBoardId, TestWorkspaceId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+        var handler = new InviteGuestToResourceCommandHandler(
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _tokens.Object,
+            _encryptor.Object, _events.Object, _audit.Object, _actors.Object, _facts.Object);
+
+        var act = () => handler.Handle(
+            new InviteGuestToResourceCommand(BoardKind, archivedBoardId, "guest@example.com", "Viewer"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        _published.Should().BeEmpty();
+    }
+
     // ── Admin is not invitable ───────────────────────────────────────────────
 
     [Fact]

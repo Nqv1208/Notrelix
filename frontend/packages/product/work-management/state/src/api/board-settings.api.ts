@@ -58,6 +58,7 @@ const CREATABLE_FIELD_TYPES: readonly BoardSettingsFieldType[] = [
   "status",
   "person",
   "link",
+  "relation",
   "formula",
   "rollup",
 ];

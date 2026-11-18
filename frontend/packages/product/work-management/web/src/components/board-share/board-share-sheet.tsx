@@ -5,15 +5,18 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleAlert,
   Crown,
   History,
   Info,
   Link2,
   Lock,
+  Mail,
   Trash2,
   TriangleAlert,
   UserPlus,
   Users,
+  WifiOff,
   X,
 } from "lucide-react";
 import {
@@ -26,12 +29,18 @@ import {
 } from "@notrelix/ui-web";
 import { fillBoardShareCopy as fill } from "./board-share.copy";
 import type { BoardShareDialogSurfaceProps } from "./board-share-dialog-surface";
+import {
+  formatInviteDate,
+  guestOffer,
+  type PendingGuestInvitation,
+} from "./board-share-guest";
 import type {
   ShareLevel,
   SharePersonView,
   ShareRowView,
 } from "./board-share-models";
 import { MARK_TONE, PERSON_TONE } from "./board-share-tones";
+import { useOnline } from "./use-online";
 
 /**
  * The Board share dialog under 768 px (Final-M-Share): a full-height bottom sheet with the add field and its
@@ -68,7 +77,8 @@ const SHEET =
 
 type Screen = "share" | "private" | "log";
 type LevelTarget =
-  { readonly kind: "add" } | { readonly kind: "row"; id: string };
+  | { readonly kind: "add"; readonly guestEmail?: string }
+  | { readonly kind: "row"; id: string };
 
 function Avatar({ person }: { person: SharePersonView }) {
   return (
@@ -285,13 +295,18 @@ export function BoardShareSheet(props: BoardShareDialogSurfaceProps) {
           target={target}
           row={targetRow}
           current={
-            target?.kind === "add" ? addLevel : (targetRow?.level ?? null)
+            target?.kind === "add"
+              ? target.guestEmail
+                ? "view"
+                : addLevel
+              : (targetRow?.level ?? null)
           }
           locked={targetRow !== null && targetRow.id === lockedId}
           onClose={() => setTarget(null)}
           onPick={(level) => {
-            if (target?.kind === "add") setAddLevel(level);
-            else if (targetRow && level !== targetRow.level)
+            if (target?.kind === "add") {
+              if (!target.guestEmail) setAddLevel(level);
+            } else if (targetRow && level !== targetRow.level)
               props.onChangeLevel?.(targetRow.id, level);
             setTarget(null);
           }}
@@ -320,6 +335,10 @@ function ShareScreen({
   copyLink,
   candidates,
   onInvite,
+  onInviteGuest,
+  pendingInvitations,
+  onResendInvitation,
+  onRevokeInvitation,
   onChangeGeneral,
   onChangeLevel,
   onClaimOwner,
@@ -344,11 +363,37 @@ function ShareScreen({
   const [query, setQuery] = useState("");
   const [listOpen, setListOpen] = useState(false);
   const [adding, setAdding] = useState(false);
-  const live = Boolean(candidates && onInvite);
+  const online = useOnline();
+  const [touched, setTouched] = useState(false);
+  // Archived (GOV-033) and a reader without ManageBoardPermission read the board; nothing is offered to change.
+  const archived = view.archived === true;
+  const denied = !view.canManage;
+  const readOnly = archived || denied;
+  const guestAllowed = Boolean(onInviteGuest) && !readOnly;
+  const live = (Boolean(candidates && onInvite) || guestAllowed) && !readOnly;
+  const blocked = readOnly || !online;
   const needle = query.trim().toLowerCase();
   const matches = (candidates ?? [])
     .filter((candidate) => candidate.name.toLowerCase().includes(needle))
     .slice(0, 6);
+  const offer = guestAllowed ? guestOffer(query, matches.length) : null;
+  const guestEmail = offer?.kind === "email" ? offer.email : null;
+  const invalid = touched && offer?.kind === "invalid";
+  const banner: Banner | null =
+    notice ??
+    (archived
+      ? {
+          kind: "info",
+          title: copy.sheet.archivedTitle,
+          body: copy.sheet.archivedBody,
+        }
+      : !online && !denied
+        ? {
+            kind: "offline",
+            title: copy.sheet.offlineTitle,
+            body: copy.sheet.offlineBody,
+          }
+        : null);
   const memberRows = view.rows.filter((row) => row.viewer !== true);
   const viewerRows = view.rows.filter((row) => row.viewer === true);
 
@@ -364,6 +409,21 @@ function ShareScreen({
           text: fill(copy.sheet.added, { name, level: copy.levels[addLevel] }),
           undoId: id,
         });
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const inviteGuest = async (email: string) => {
+    if (adding) return;
+    setAdding(true);
+    setListOpen(false);
+    try {
+      const done = await latest.current.onInviteGuest?.(email);
+      if (done !== false) {
+        setQuery("");
+        setTouched(false);
+      }
     } finally {
       setAdding(false);
     }
@@ -412,7 +472,7 @@ function ShareScreen({
           </small>
         ) : null}
       </span>
-      {row.level === null ? null : row.fixed ? (
+      {row.level === null ? null : row.fixed || readOnly ? (
         <span
           data-f="from"
           className="shrink-0 pr-3.5 pl-2 text-[14px] whitespace-nowrap text-meta-foreground"
@@ -460,44 +520,8 @@ function ShareScreen({
             toasted ? "pb-24" : "pb-6",
           )}
         >
-          {notice ? (
-            <div
-              data-f="bn"
-              role={notice.kind === "refused" ? "alert" : "status"}
-              className={cn(
-                "flex items-start gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] leading-[1.45]",
-                notice.kind === "refused"
-                  ? "bg-danger-subtle text-danger-text"
-                  : "bg-state-selected text-link",
-              )}
-            >
-              {notice.kind === "refused" ? (
-                <TriangleAlert
-                  aria-hidden="true"
-                  className="mt-px size-5 shrink-0"
-                  strokeWidth={1.8}
-                />
-              ) : (
-                <Info
-                  aria-hidden="true"
-                  className="mt-px size-5 shrink-0"
-                  strokeWidth={1.8}
-                />
-              )}
-              <span className="flex min-w-0 flex-1 flex-col gap-px">
-                <b className="font-semibold text-foreground">{notice.title}</b>
-                <span>{notice.body}</span>
-                {notice.addManager ? (
-                  <button
-                    type="button"
-                    onClick={addManager}
-                    className={cn(BTN_PLAIN, "mt-2 self-start text-[14px]")}
-                  >
-                    {copy.menu.addManager}
-                  </button>
-                ) : null}
-              </span>
-            </div>
+          {banner ? (
+            <BannerView banner={banner} copy={copy} onAddManager={addManager} />
           ) : null}
 
           <div className="flex flex-col" data-f="add">
@@ -511,50 +535,133 @@ function ShareScreen({
                 ref={field}
                 data-f="in"
                 role="combobox"
-                aria-expanded={listOpen && matches.length > 0}
+                aria-expanded={
+                  listOpen && (matches.length > 0 || guestEmail !== null)
+                }
                 aria-controls="board-share-candidates"
                 aria-autocomplete="list"
-                aria-disabled={live ? undefined : true}
-                readOnly={!live}
-                title={live ? undefined : copy.add.unavailable}
+                aria-disabled={live || blocked ? undefined : true}
+                aria-invalid={invalid ? true : undefined}
+                aria-describedby={
+                  denied
+                    ? "board-share-add-why"
+                    : invalid
+                      ? "board-share-add-error"
+                      : undefined
+                }
+                disabled={blocked}
+                readOnly={!live && !blocked}
+                title={live || blocked ? undefined : copy.add.unavailable}
                 value={query}
-                placeholder={copy.add.placeholder}
-                aria-label={copy.add.placeholder}
+                placeholder={
+                  guestAllowed
+                    ? copy.add.placeholderGuest
+                    : copy.add.placeholder
+                }
+                aria-label={
+                  guestAllowed
+                    ? copy.add.placeholderGuest
+                    : copy.add.placeholder
+                }
                 autoComplete="off"
                 onChange={(event) => {
                   setQuery(event.target.value);
+                  setTouched(false);
                   setListOpen(true);
                 }}
                 onFocus={() => setListOpen(true)}
+                onBlur={() => setTouched(true)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  if (guestEmail) void inviteGuest(guestEmail);
+                  else setTouched(true);
+                }}
                 className={cn(
-                  "box-border block h-[50px] w-full rounded-[12px] border border-line-strong bg-popover pr-3 pl-[42px] dark:bg-card text-[16px] text-foreground placeholder:text-meta-foreground",
+                  "box-border block h-[50px] w-full rounded-[12px] border bg-popover pr-3 pl-[42px] dark:bg-card text-[16px] text-foreground placeholder:text-meta-foreground disabled:cursor-not-allowed disabled:border-state-hover-strong disabled:bg-state-hover disabled:text-meta-foreground",
+                  invalid
+                    ? "border-danger-text ring-1 ring-danger-text"
+                    : "border-line-strong",
                   FOCUS,
                 )}
               />
             </div>
-            <div className="mt-1 flex items-center gap-2 pl-1 text-[13px] text-meta-foreground">
-              <span id="board-share-add-level">{copy.sheet.addLevelLabel}</span>
-              <button
-                data-f="lvl"
-                type="button"
-                aria-haspopup="dialog"
-                aria-disabled={live ? undefined : true}
-                aria-labelledby="board-share-add-level board-share-add-level-value"
-                title={live ? undefined : copy.add.unavailable}
-                onClick={live ? () => openLevel({ kind: "add" }) : undefined}
-                className={LV}
+            {invalid ? (
+              <p
+                id="board-share-add-error"
+                data-f="ferr"
+                role="alert"
+                className="m-0 mx-1 mt-2 flex items-start gap-1.5 text-[13px] leading-[1.4] text-danger-text"
               >
-                <span id="board-share-add-level-value">
-                  {copy.levels[addLevel]}
-                </span>
-                <ChevronDown
+                <CircleAlert
                   aria-hidden="true"
-                  className="size-4"
+                  className="mt-px size-4 shrink-0"
                   strokeWidth={1.8}
                 />
-              </button>
-            </div>
-            {live && listOpen && needle ? (
+                <span>{copy.sheet.emailInvalid}</span>
+              </p>
+            ) : null}
+            {denied ? (
+              <p
+                id="board-share-add-why"
+                data-f="why"
+                className="m-0 mx-1 mt-2 flex items-start gap-1.5 text-[13px] leading-[1.4] text-meta-foreground"
+              >
+                <Lock
+                  aria-hidden="true"
+                  className="mt-px size-4 shrink-0"
+                  strokeWidth={1.8}
+                />
+                <span>{copy.sheet.deniedReason}</span>
+              </p>
+            ) : (
+              <div className="mt-1 flex items-center gap-2 pl-1 text-[13px] text-meta-foreground">
+                <span id="board-share-add-level">
+                  {guestEmail
+                    ? copy.sheet.addGuestLevelLabel
+                    : copy.sheet.addLevelLabel}
+                </span>
+                <button
+                  data-f="lvl"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-disabled={live && !blocked ? undefined : true}
+                  aria-labelledby="board-share-add-level board-share-add-level-value"
+                  title={live || blocked ? undefined : copy.add.unavailable}
+                  onClick={
+                    live && !blocked
+                      ? () =>
+                          openLevel(
+                            guestEmail
+                              ? { kind: "add", guestEmail }
+                              : { kind: "add" },
+                          )
+                      : undefined
+                  }
+                  className={LV}
+                >
+                  <span id="board-share-add-level-value">
+                    {guestEmail
+                      ? copy.sheet.levelShort.view
+                      : copy.levels[addLevel]}
+                  </span>
+                  {guestEmail || archived ? (
+                    <Lock
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.8}
+                    />
+                  ) : (
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.8}
+                    />
+                  )}
+                </button>
+              </div>
+            )}
+            {live && !blocked && listOpen && needle ? (
               matches.length > 0 ? (
                 <ul
                   id="board-share-candidates"
@@ -586,7 +693,43 @@ function ShareScreen({
                     </li>
                   ))}
                 </ul>
-              ) : (
+              ) : guestEmail ? (
+                <ul
+                  id="board-share-candidates"
+                  data-f="cands"
+                  role="listbox"
+                  aria-label={copy.sheet.suggestions}
+                  className={cn(CARD, "m-0 mt-1 list-none overflow-hidden p-0")}
+                >
+                  <li role="option" aria-selected="false">
+                    <button
+                      data-f="guest-option"
+                      type="button"
+                      disabled={adding}
+                      onClick={() => void inviteGuest(guestEmail)}
+                      className={cn(
+                        "flex min-h-[62px] w-full items-center gap-3 border-0 bg-transparent py-2 pr-3.5 pl-3.5 text-left text-foreground active:bg-state-hover",
+                        FOCUS,
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-state-selected text-link"
+                      >
+                        <Mail className="size-5" strokeWidth={1.8} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <b className="block text-[15px] leading-[1.35] font-semibold break-words">
+                          {fill(copy.add.guestOption, { email: guestEmail })}
+                        </b>
+                        <small className="block text-[13px] leading-[1.38] text-meta-foreground">
+                          {copy.add.guestHint}
+                        </small>
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              ) : offer?.kind === "invalid" ? null : (
                 <p
                   role="status"
                   className="m-0 mt-1 px-1 text-[14px] text-meta-foreground"
@@ -596,6 +739,15 @@ function ShareScreen({
               )
             ) : null}
           </div>
+
+          {pendingInvitations && pendingInvitations.length > 0 ? (
+            <PendingSection
+              copy={copy}
+              rows={pendingInvitations}
+              onResend={onResendInvitation}
+              onRevoke={onRevokeInvitation}
+            />
+          ) : null}
 
           <section className="flex flex-col" aria-labelledby="board-share-acc">
             <h3 id="board-share-acc" data-f="lbl" className={LABEL}>
@@ -1223,6 +1375,163 @@ function SheetRow({
   );
 }
 
+interface Banner {
+  readonly kind: "refused" | "info" | "offline";
+  readonly title: string;
+  readonly body: string;
+  readonly addManager?: boolean;
+}
+
+/** The standing notice at the head of the sheet: a refusal, a fact (archived) or no connection. */
+function BannerView({
+  banner,
+  copy,
+  onAddManager,
+}: {
+  banner: Banner;
+  copy: BoardShareDialogSurfaceProps["copy"];
+  onAddManager: () => void;
+}) {
+  const Icon =
+    banner.kind === "refused"
+      ? TriangleAlert
+      : banner.kind === "offline"
+        ? WifiOff
+        : Info;
+  return (
+    <div
+      data-f="bn"
+      role={banner.kind === "refused" ? "alert" : "status"}
+      className={cn(
+        "flex items-start gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] leading-[1.45]",
+        banner.kind === "refused"
+          ? "bg-danger-subtle text-danger-text"
+          : banner.kind === "offline"
+            ? "border border-warning-text/40 bg-warning-subtle text-warning-text"
+            : "bg-state-selected text-link",
+      )}
+    >
+      <Icon
+        aria-hidden="true"
+        className="mt-px size-5 shrink-0"
+        strokeWidth={1.8}
+      />
+      <span className="flex min-w-0 flex-1 flex-col gap-px">
+        <b className="font-semibold text-foreground">{banner.title}</b>
+        <span>{banner.body}</span>
+        {banner.addManager ? (
+          <button
+            type="button"
+            onClick={onAddManager}
+            className={cn(BTN_PLAIN, "mt-2 self-start text-[14px]")}
+          >
+            {copy.menu.addManager}
+          </button>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
+/** The Board's pending guest invitations: the issuer resends or revokes, every other row says why it cannot. */
+function PendingSection({
+  copy,
+  rows,
+  onResend,
+  onRevoke,
+}: {
+  copy: BoardShareDialogSurfaceProps["copy"];
+  rows: readonly PendingGuestInvitation[];
+  onResend: BoardShareDialogSurfaceProps["onResendInvitation"];
+  onRevoke: BoardShareDialogSurfaceProps["onRevokeInvitation"];
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const run = async (
+    id: string,
+    action:
+      ((id: string) => Promise<boolean | void> | boolean | void) | undefined,
+  ) => {
+    if (!action || busy) return;
+    setBusy(id);
+    try {
+      await action(id);
+    } finally {
+      setBusy(null);
+    }
+  };
+  const title = fill(copy.pending.title, { count: rows.length });
+  return (
+    <section data-f="pending" aria-label={title} className="flex flex-col">
+      <h3 data-f="lbl" className={LABEL}>
+        {title}
+      </h3>
+      <ul className={cn(CARD, "m-0 list-none overflow-hidden p-0")}>
+        {rows.map((row) => {
+          const own = row.issuedByYou;
+          const why = `board-share-pending-why-${row.id}`;
+          return (
+            <li
+              key={row.id}
+              className="border-t border-state-hover-strong dark:border-line py-2.5 pr-1 pl-3.5 first:border-t-0"
+            >
+              <div className="flex min-h-11 items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-state-hover-strong text-muted-foreground"
+                >
+                  <Mail className="size-5" strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block truncate text-[15px] leading-[1.35] font-semibold text-foreground">
+                    {row.email}
+                  </b>
+                  <small className="block text-[13px] leading-[1.38] text-meta-foreground">
+                    {fill(copy.pending.invitedBy, {
+                      name: row.invitedByName || copy.add.someoneElse,
+                      date: formatInviteDate(row.expiresAt),
+                    })}
+                  </small>
+                </span>
+              </div>
+              <div className="flex gap-0.5 pl-12">
+                <button
+                  type="button"
+                  aria-disabled={own && onResend && !busy ? undefined : true}
+                  aria-describedby={own ? undefined : why}
+                  onClick={own ? () => void run(row.id, onResend) : undefined}
+                  className={LV}
+                >
+                  {copy.pending.resend}
+                </button>
+                <button
+                  type="button"
+                  aria-disabled={own && onRevoke && !busy ? undefined : true}
+                  aria-describedby={own ? undefined : why}
+                  onClick={own ? () => void run(row.id, onRevoke) : undefined}
+                  className={cn(
+                    LV,
+                    own && onRevoke ? "text-danger-text" : undefined,
+                  )}
+                >
+                  {copy.pending.revoke}
+                </button>
+              </div>
+              {own ? null : (
+                <p
+                  id={why}
+                  className="m-0 pr-3.5 pl-12 text-[13px] leading-[1.4] text-meta-foreground"
+                >
+                  {copy.pending.notIssuer}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 /** The second sheet over the first: the four levels, and for a person the Owner and removal rows. */
 function LevelSheet({
   copy,
@@ -1244,11 +1553,14 @@ function LevelSheet({
   onPick: (level: ShareLevel) => void;
   onAddManager: () => void;
 }) {
-  const guest = row?.badge != null;
+  const guestEmail = target?.kind === "add" ? target.guestEmail : undefined;
+  const guest = row?.badge != null || guestEmail !== undefined;
   const name = row?.shortName ?? row?.name ?? "";
   const heading = row
     ? fill(copy.menu.label, { name: row.name })
-    : copy.sheet.addLevelLabel;
+    : guestEmail !== undefined
+      ? copy.sheet.addGuestLevelLabel
+      : copy.sheet.addLevelLabel;
   return (
     <Dialog
       open={target !== null}
@@ -1273,7 +1585,10 @@ function LevelSheet({
               {heading}
             </DialogTitle>
             <DialogDescription className="m-0 mt-px truncate text-[13px] leading-[1.45] text-meta-foreground">
-              {row?.detail ?? ""}
+              {row?.detail ??
+                (guestEmail !== undefined
+                  ? fill(copy.sheet.guestOf, { email: guestEmail })
+                  : "")}
             </DialogDescription>
           </span>
           <button
@@ -1331,7 +1646,9 @@ function LevelSheet({
                         ? copy.menu.keepCurrent
                         : copy.menu.needManager
                       : disabled
-                        ? copy.levelHints.guestViewOnly
+                        ? level === "manage"
+                          ? copy.levelHints.guestNoManage
+                          : copy.levelHints.guestViewOnly
                         : copy.levelHints[level]}
                   </small>
                 </span>
