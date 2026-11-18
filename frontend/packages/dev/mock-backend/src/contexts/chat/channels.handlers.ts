@@ -6,11 +6,13 @@
  */
 
 import { defineMockOperation } from "../../operations/types";
+import { addDays } from "../../state/clock";
 import { ok } from "../../transport/create-response";
 import {
   archivedProblem,
   callerIn,
   canRestore,
+  chatNowMs,
   deletedChannel,
   groupIn,
   guarded,
@@ -27,6 +29,7 @@ import {
   requireUniqueChannelName,
   requireVersion,
   requireVisible,
+  RESTORE_WINDOW_DAYS,
   RESTORE_WINDOW_MS,
   fail,
   requiredPosition,
@@ -250,7 +253,7 @@ export const channelsOperations = [
         const state = store.chat;
         const caller = callerIn(store, params.workspaceId);
         requireAction(caller, "viewWorkspace");
-        const floor = Date.now() - RESTORE_WINDOW_MS;
+        const floor = chatNowMs(state) - RESTORE_WINDOW_MS;
         const rows = state
           .spacesOfWorkspace(params.workspaceId)
           .filter(
@@ -268,9 +271,7 @@ export const channelsOperations = [
             kind: space.kind,
             deletedAt: space.deletedAt,
             deletedBy: space.deletedBy ?? null,
-            restorableUntil: new Date(
-              Date.parse(space.deletedAt!) + RESTORE_WINDOW_MS,
-            ).toISOString(),
+            restorableUntil: addDays(space.deletedAt!, RESTORE_WINDOW_DAYS),
             version: space.version,
           })),
         );
@@ -493,7 +494,10 @@ export const channelsOperations = [
         );
         // A channel the caller could not have deleted is the same NotFound as a missing one.
         if (!canRestore(state, space, caller)) notFoundProblem();
-        if (Date.now() - Date.parse(space.deletedAt!) > RESTORE_WINDOW_MS) {
+        if (
+          chatNowMs(state) - Date.parse(space.deletedAt!) >
+          RESTORE_WINDOW_MS
+        ) {
           fail(
             409,
             "restore-window-elapsed",

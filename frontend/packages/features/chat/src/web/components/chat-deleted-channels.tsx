@@ -168,7 +168,7 @@ export function ChatDeletedChannels({
             role="alert"
             className="flex flex-col items-center gap-3 py-24 text-center"
           >
-            <p className="text-[15px] font-semibold">{text.error}</p>
+            <p className="text-base font-semibold">{text.error}</p>
             <Button variant="outline" onClick={() => void list.refetch()}>
               {text.retry}
             </Button>
@@ -210,7 +210,7 @@ export function ChatDeletedChannels({
                       <div className="truncate text-sm font-semibold">
                         {row.name}
                       </div>
-                      <div className="mt-0.5 text-[12.5px] text-muted-foreground">
+                      <div className="mt-0.5 text-xs text-muted-foreground">
                         {row.deletedBy
                           ? fillCopy(text.deletedBy, {
                               name: nameOf(row.deletedBy),
@@ -222,7 +222,7 @@ export function ChatDeletedChannels({
                       {answer ? (
                         <p
                           role="alert"
-                          className="mt-1.5 text-[12.5px] text-destructive"
+                          className="mt-1.5 text-xs text-destructive"
                         >
                           {answer}
                         </p>
@@ -230,7 +230,7 @@ export function ChatDeletedChannels({
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5 max-md:w-full max-md:items-stretch">
-                    <span className="text-[12.5px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {fillCopy(text.until, {
                         date: date.format(new Date(row.restorableUntil)),
                       })}

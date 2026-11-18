@@ -20,7 +20,6 @@ import { createChatHooks } from "../web/query/create-chat-hooks";
 
 const WORKSPACE = mockIds.workspaces.primary;
 const GENERAL = "c1000000-0000-4000-8000-000000000001";
-const DAY = 24 * 60 * 60 * 1000;
 const people = new Map([["mock-user-owner", "Owner Person"]]);
 
 /** A deleted copy of the seeded #general under another id and name, deleted `daysAgo` days ago. */
@@ -35,7 +34,7 @@ function deleteCopy(
     ...base,
     id,
     name,
-    deletedAt: new Date(Date.now() - daysAgo * DAY).toISOString(),
+    deletedAt: store.getClock().offsetDays(-daysAgo),
     deletedBy: "mock-user-owner",
   });
 }
@@ -61,6 +60,10 @@ function mount(
     ...defaultConfig,
     persona: options.persona ?? "owner",
   });
+  // The default world already holds a deleted channel (old-notes); these tests set up their own.
+  for (const space of [...store.chat.spaces.values()]) {
+    if (space.deletedAt !== null) store.chat.spaces.delete(space.id);
+  }
   options.seed?.(store);
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",

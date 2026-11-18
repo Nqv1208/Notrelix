@@ -20,12 +20,16 @@ const DELETED = "c1000000-0000-4000-8000-0000000000d1";
 
 function mount(viewerRole: "owner" | "guest", onOpenChannel = vi.fn()) {
   const store = new MockStore({ ...defaultConfig });
+  // The default world already holds a deleted channel (old-notes); these tests set up their own.
+  for (const space of [...store.chat.spaces.values()]) {
+    if (space.deletedAt !== null) store.chat.spaces.delete(space.id);
+  }
   const base = store.chat.spaces.get(GENERAL)!;
   store.chat.spaces.set(DELETED, {
     ...base,
     id: DELETED,
     name: "old-campaign",
-    deletedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    deletedAt: store.getClock().offsetDays(-3),
     deletedBy: store.getCurrentUser().id,
   });
   const client = createNotrelixClient({

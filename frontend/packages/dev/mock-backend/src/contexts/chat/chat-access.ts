@@ -278,7 +278,13 @@ export function requireManager(
 }
 
 /** The days a deleted channel can be restored (backend Space.RestoreWindow). */
-export const RESTORE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+export const RESTORE_WINDOW_DAYS = 30;
+export const RESTORE_WINDOW_MS = RESTORE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+/** The mock's current instant in ms: the clock plus the virtual seconds the writes and a test moved forward. Never the wall clock. */
+export function chatNowMs(state: MockChatState): number {
+  return state.nowDate().getTime() + state.virtualSeconds() * 1000;
+}
 
 /** A deleted channel (not a conversation) of the Workspace; anything else is the same NotFound as a missing one. */
 export function deletedChannel(
