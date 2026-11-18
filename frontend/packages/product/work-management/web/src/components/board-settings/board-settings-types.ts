@@ -254,6 +254,8 @@ export interface BoardSettingsSurfaceProps {
   labels?: BoardLabelsPanelProps;
   /** The fields deleted in the last 30 days: when given, the Fields section has a "Deleted" tab. */
   deletedFields?: DeletedFieldsPanelProps;
+  /** The boards the person can read, for the target of a new Relation field; absent = not read yet. */
+  relationBoards?: readonly RelationBoardChoice[];
   /** The forms of the board: when given, the page has a "Forms" section. */
   forms?: BoardFormsPanelProps;
   /** The form builder of the open form (replaces the forms list while a form is open). */
@@ -331,4 +333,11 @@ export interface WorkspaceRulesPanelProps {
     readonly status: "loading" | "error" | "ready";
     readonly data: readonly WorkspaceAutomationRunDto[];
   };
+}
+
+/** One board a Relation field can point at; an archived board is listed but cannot be chosen. */
+export interface RelationBoardChoice {
+  readonly id: string;
+  readonly title: string;
+  readonly locked: boolean;
 }
