@@ -547,7 +547,7 @@ export const en = {
     delete: "Delete channel",
     deleteTitle: "Delete this channel?",
     deleteBody:
-      "The channel and its messages are removed for everyone. Type the channel name to confirm.",
+      "The channel and its messages are removed for everyone. It is kept for 30 days and can be restored in that time; after that it is gone for good. Type the channel name to confirm.",
     deleteLabel: "Channel name",
     deleteConfirm: "Delete channel",
     cancel: "Cancel",
@@ -1547,7 +1547,7 @@ export const vi: ChatCopy = {
     delete: "Xóa kênh",
     deleteTitle: "Xóa kênh này?",
     deleteBody:
-      "Kênh và mọi tin nhắn trong kênh sẽ bị xóa với tất cả mọi người. Nhập tên kênh để xác nhận.",
+      "Kênh và mọi tin nhắn trong kênh sẽ bị xóa với tất cả mọi người. Kênh được giữ 30 ngày và khôi phục được trong thời gian đó; sau đó kênh mất hẳn. Nhập tên kênh để xác nhận.",
     deleteLabel: "Tên kênh",
     deleteConfirm: "Xóa kênh",
     cancel: "Hủy",

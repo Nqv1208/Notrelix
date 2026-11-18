@@ -131,6 +131,7 @@ describe("ChatWorkspace membership and deletion (UC-CHT-A07, UC-CHT-A08)", () =>
       await screen.findByRole("menuitem", { name: "Delete channel" }),
     );
     const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/kept for 30 days/)).toBeTruthy();
     const confirm = within(dialog).getByRole("button", {
       name: "Delete channel",
     }) as HTMLButtonElement;
