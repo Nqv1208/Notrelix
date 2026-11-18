@@ -136,6 +136,14 @@ export function ChatPage() {
     return map;
   }, [viewer.members.data]);
 
+  const peopleDetails = useMemo(() => {
+    const map = new Map<string, { role?: string; jobTitle?: string }>();
+    for (const member of viewer.members.data ?? []) {
+      map.set(member.userId, { role: member.role, jobTitle: member.jobTitle });
+    }
+    return map;
+  }, [viewer.members.data]);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ChatWorkspace
@@ -158,6 +166,7 @@ export function ChatPage() {
           })
         }
         people={people}
+        peopleDetails={peopleDetails}
         linkedSequence={linkedSequence}
         draftStore={draftStore}
         buildMessageLink={({ spaceId, conversation, sequence }) =>
