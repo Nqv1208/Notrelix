@@ -1149,6 +1149,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/members/{userId}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Make a channel member a manager, or a manager a member
+         * @description Needs a manager, a Workspace Owner or Admin. The last manager of a live channel cannot be made a member: 422 last-manager. A person who is not in the channel is 404; the same role again changes nothing.
+         */
+        put: operations["Chat.Members.SetRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables": {
         parameters: {
             query?: never;
@@ -8405,6 +8425,9 @@ export interface components {
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
             voiceMessage?: boolean | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest": {
+            role?: string | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetChannelPermissionsRequest": {
             entries?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest"][] | null;
@@ -16095,6 +16118,70 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Members.SetRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

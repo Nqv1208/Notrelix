@@ -438,6 +438,26 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         return true;
     }
 
+    /// <summary>
+    /// Makes an active member a manager or a plain member (UC-CHT-A07). Returns false when they already hold the role. A live channel
+    /// keeps at least one manager, so the last one cannot be made a member (422 last-manager). A person who is not an active member
+    /// changes nothing and gives false; the caller decides what that means.
+    /// </summary>
+    public bool SetMemberRole(Guid userId, MembershipRole role)
+    {
+        EnsureNotDeleted();
+        EnsureNotArchived();
+        Guard.NotEmpty(userId);
+
+        var member = GetActiveMembership(userId);
+        if (member is null) return false;
+
+        if (member.Role == MembershipRole.Manager && role != MembershipRole.Manager && ActiveManagerCount() <= 1)
+            throw new BusinessRuleException(ChatRuleCodes.LastManager, "A channel keeps at least one manager.");
+
+        return member.SetRole(role);
+    }
+
     public Membership? GetActiveMembership(Guid userId) =>
         _memberships.SingleOrDefault(m => m.UserId == userId && m.IsActive);
 

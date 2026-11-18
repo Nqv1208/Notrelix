@@ -5811,6 +5811,111 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/members/{userId}/role": {
+      "put": {
+        "tags": [
+          "Chat.Members"
+        ],
+        "summary": "Make a channel member a manager, or a manager a member",
+        "description": "Needs a manager, a Workspace Owner or Admin. The last manager of a live channel cannot be made a member: 422 last-manager. A person who is not in the channel is 404; the same role again changes nothing.",
+        "operationId": "Chat.Members.SetRole",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables": {
       "get": {
         "tags": [
@@ -36267,6 +36372,16 @@
           },
           "voiceMessage": {
             "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
             "nullable": true
           }
         },

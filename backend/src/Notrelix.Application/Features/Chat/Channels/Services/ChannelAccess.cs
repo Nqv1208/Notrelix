@@ -100,7 +100,8 @@ public static class ChannelAccess
     /// <summary>Renaming, archiving, moving and removing others belong to a channel manager, a Workspace Owner or Admin.</summary>
     public static void RequireManager(Space space, WorkspaceMemberFact caller, Guid userId)
     {
-        if (space.IsActiveManager(userId)) return;
+        // A Guest never manages a channel, whatever role a row holds.
+        if (!IsGuest(caller) && space.IsActiveManager(userId)) return;
         if (caller.Role is "Owner" or "Admin") return;
 
         throw new ForbiddenException("Only a channel manager, a Workspace Owner or Admin can change this channel.");

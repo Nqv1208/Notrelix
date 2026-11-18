@@ -980,6 +980,21 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  /** Make a member a manager, or a manager a member (UC-CHT-A07); the member list follows. */
+  function useSetMemberRole(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: { userId: string; role: "manager" | "member" }) =>
+        service.setMemberRole(workspaceId, channelId, input.userId, input.role),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
+      },
+    });
+  }
+
   /** Delete the channel (soft delete with a recovery window); the expected version travels with the call. */
   function useDeleteChannel(workspaceId: string, channelId: string) {
     const queryClient = useQueryClient();
@@ -1548,6 +1563,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     useJoinChannel,
     useAddMembers,
     useRemoveMember,
+    useSetMemberRole,
     useDeleteChannel,
     useThreadReplies,
     useThreadCounts,
