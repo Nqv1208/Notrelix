@@ -36,9 +36,13 @@ public class ListArchivedBoardItemsQueryHandler : IRequestHandler<ListArchivedBo
 {
     private readonly IWorkManagementDbContext _context;
     private readonly IActorLookupService _actors;
+    private readonly ICurrentRequestContext _requestContext;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
-    public ListArchivedBoardItemsQueryHandler(IWorkManagementDbContext context, IActorLookupService actors)
+    public ListArchivedBoardItemsQueryHandler(IWorkManagementDbContext context, IActorLookupService actors, ICurrentRequestContext requestContext, IWorkspaceAccessResolver workspaceAccess)
     {
+        _requestContext = requestContext;
+        _workspaceAccess = workspaceAccess;
         _context = context;
         _actors = actors;
     }
@@ -81,12 +85,15 @@ public class ListArchivedBoardItemsQueryHandler : IRequestHandler<ListArchivedBo
 
         var hasMore = page.Count > limit;
         if (hasMore) page.RemoveAt(limit);
-        var names = (await _actors.FindManyAsync(page.Where(r => r.ArchivedBy is not null).Select(r => r.ArchivedBy!.Value).Distinct().ToList(), ct))
-            .ToDictionary(a => a.UserId);
+        // A Guest (or a caller the server cannot clear) reads no name; the list shows the neutral copy instead.
+        var workspaceId = _requestContext.RequireWorkspaceId();
+        var names = new Dictionary<Guid, string?>();
+        foreach (var by in page.Where(r => r.ArchivedBy is not null).Select(r => r.ArchivedBy!.Value).Distinct())
+            names[by] = await ActorNotice.NameAsync(_actors, _workspaceAccess, workspaceId, _requestContext.UserId, by, ct);
         var items = page
             .Select(r => new ArchivedBoardItemEntryDto(
                 r.Id, r.Name, r.ItemKey, r.GroupId, r.ArchivedAt, r.ArchivedBy,
-                r.ArchivedBy is { } by ? names.GetValueOrDefault(by)?.Name : null, r.SubItems, r.Version))
+                r.ArchivedBy is { } by ? names.GetValueOrDefault(by) : null, r.SubItems, r.Version))
             .ToList();
         var next = hasMore && items.Count > 0 ? TimeOrderedPageCursor.Encode(items[^1].ArchivedAt, items[^1].Id) : null;
         return new ArchivedBoardItemPageDto(items, next, total);

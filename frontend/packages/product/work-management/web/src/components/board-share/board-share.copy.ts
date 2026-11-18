@@ -32,7 +32,7 @@ export const en = {
     resent: "Invitation sent again to {{email}}",
     revoked: "Invitation to {{email}} revoked",
     notIssuer:
-      "Only the person who sent this invitation can resend or revoke it.",
+      "Only the person who sent this invitation, or a workspace Owner or Admin, can resend or revoke it.",
   },
   levels: {
     manage: "Manager",
@@ -279,7 +279,8 @@ export const vi: BoardShareCopy = {
     revoke: "Thu hồi",
     resent: "Đã gửi lại lời mời tới {{email}}",
     revoked: "Đã thu hồi lời mời tới {{email}}",
-    notIssuer: "Chỉ người đã gửi lời mời này mới gửi lại hoặc thu hồi được.",
+    notIssuer:
+      "Chỉ người đã gửi lời mời này, hoặc Chủ sở hữu và Quản trị workspace, mới gửi lại hoặc thu hồi được.",
   },
   levels: {
     manage: "Quản lý",

@@ -27,6 +27,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
     private readonly IResourceLocator _resourceLocator;
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IActorLookupService? _actors;
+    private readonly IWorkspaceAccessResolver? _workspaceAccess;
 
     public UpdateBoardItemFieldValuesCommandHandler(
         IWorkManagementDbContext context,
@@ -34,8 +35,10 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         IDateTimeProvider timeProvider,
         IResourceLocator resourceLocator,
         IBoardRealtimeNotifier? realtime = null,
-        IActorLookupService? actors = null)
+        IActorLookupService? actors = null,
+        IWorkspaceAccessResolver? workspaceAccess = null)
     {
+        _workspaceAccess = workspaceAccess;
         _actors = actors;
         _realtime = realtime;
         _context = context;
@@ -74,7 +77,7 @@ public class UpdateBoardItemFieldValuesCommandHandler : IRequestHandler<UpdateBo
         // A field deleted since the client loaded the board answers the stale-schema precondition naming it, as the
         // single write does (UC-WM-D12); a field the board never had stays the unsupported-field refusal.
         if (unsupported != Guid.Empty
-            && await Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, card.BoardId, unsupported, ct)
+            && await Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _workspaceAccess, _requestContext, card.BoardId, unsupported, ct)
                 is Notrelix.Application.Common.Exceptions.PreconditionFailedException stale)
             throw stale;
         if (unsupported != Guid.Empty)

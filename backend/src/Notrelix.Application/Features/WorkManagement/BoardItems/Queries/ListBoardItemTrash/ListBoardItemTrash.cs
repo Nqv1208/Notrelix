@@ -43,10 +43,12 @@ public class ListBoardItemTrashQueryHandler : IRequestHandler<ListBoardItemTrash
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _timeProvider;
     private readonly IActorLookupService _actors;
+    private readonly IWorkspaceAccessResolver _workspaceAccess;
 
     public ListBoardItemTrashQueryHandler(
-        IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, IActorLookupService actors)
+        IWorkManagementDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider timeProvider, IActorLookupService actors, IWorkspaceAccessResolver workspaceAccess)
     {
+        _workspaceAccess = workspaceAccess;
         _context = context;
         _requestContext = requestContext;
         _timeProvider = timeProvider;
@@ -99,12 +101,14 @@ public class ListBoardItemTrashQueryHandler : IRequestHandler<ListBoardItemTrash
 
         var hasMore = page.Count > limit;
         if (hasMore) page.RemoveAt(limit);
-        var names = (await _actors.FindManyAsync(page.Where(r => r.DeletedBy is not null).Select(r => r.DeletedBy!.Value).Distinct().ToList(), ct))
-            .ToDictionary(a => a.UserId);
+        // A Guest (or a caller the server cannot clear) reads no name; the list shows the neutral copy instead.
+        var names = new Dictionary<Guid, string?>();
+        foreach (var by in page.Where(r => r.DeletedBy is not null).Select(r => r.DeletedBy!.Value).Distinct())
+            names[by] = await ActorNotice.NameAsync(_actors, _workspaceAccess, workspaceId, _requestContext.UserId, by, ct);
         var items = page
             .Select(r => new BoardItemTrashEntryDto(
                 r.Id, r.Name, r.ItemKey, r.GroupId, r.DeletedAt!.Value, r.DeletedBy,
-                r.DeletedBy is { } by ? names.GetValueOrDefault(by)?.Name : null, r.SubItems, r.DeletedAt.Value + BoardItemTrashPolicy.RestoreWindow))
+                r.DeletedBy is { } by ? names.GetValueOrDefault(by) : null, r.SubItems, r.DeletedAt.Value + BoardItemTrashPolicy.RestoreWindow))
             .ToList();
         var next = hasMore && items.Count > 0 ? TimeOrderedPageCursor.Encode(items[^1].DeletedAt, items[^1].Id) : null;
         return new BoardItemTrashPageDto(items, next, total);

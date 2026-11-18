@@ -43,12 +43,9 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             .ToListAsync(ct);
 
         var memberUserIds = memberEntities.Select(m => m.UserId).Distinct().ToList();
-        var lifecycleUserIds = new[] { card.CompletedBy, card.UpdatedBy }.Where(id => id.HasValue).Select(id => id!.Value);
-        memberUserIds = memberUserIds.Concat(lifecycleUserIds).Distinct().ToList();
         var actors = await _actorLookup.FindManyAsync(memberUserIds, ct);
         var actorMap = actors.ToDictionary(a => a.UserId);
 
-        string? NameOf(Guid? userId) => userId.HasValue && actorMap.TryGetValue(userId.Value, out var who) ? who.Name : null;
         var members = memberEntities
             .Select(m => new BoardItemMemberDto(
                 m.UserId,
@@ -99,6 +96,10 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             new Dictionary<Guid, IReadOnlyDictionary<string, System.Text.Json.JsonElement>> { [card.Id] = projected.Stored },
             ct);
 
+        // "Completed by" and "updated by" follow the same rule as every change notice: a Guest reads no name.
+        var completedByName = await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, listContext.WorkspaceId, _requestContext.UserId, card.CompletedBy, ct);
+        var updatedByName = await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, listContext.WorkspaceId, _requestContext.UserId, card.UpdatedBy, ct);
+
         return Result<BoardItemDto>.Success(new BoardItemDto(
             card.Id, listContext.BoardId, listContext.WorkspaceId, card.GroupId, card.Name,
             members, labels, checklists,
@@ -116,7 +117,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             values.ChildProgress,
             card.IsArchived,
             card.CompletedBy,
-            NameOf(card.CompletedBy),
+            completedByName,
             card.ArchivedAt,
             card.ArchivedBy,
             await ActorNotice.NameAsync(_actorLookup, _workspaceAccess, listContext.WorkspaceId, _requestContext.UserId, card.ArchivedBy, ct),
@@ -129,7 +130,7 @@ public class GetBoardItemQueryHandler : IRequestHandler<GetBoardItemQuery, Resul
             card.RepeatRule,
             card.ReminderOffsetMinutes ?? ItemReminder.DefaultMinutes,
             card.UpdatedBy,
-            NameOf(card.UpdatedBy),
+            updatedByName,
             relationLinks.TryGetValue(card.Id, out var linksByField) ? linksByField.ToDictionary(pair => pair.Key, pair => pair.Value) : null
         ));
     }

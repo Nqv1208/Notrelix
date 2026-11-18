@@ -1433,7 +1433,7 @@ function BannerView({
   );
 }
 
-/** The Board's pending guest invitations: the issuer resends or revokes, every other row says why it cannot. */
+/** The Board's pending guest invitations: the issuer, a workspace Owner or Admin resends or revokes, every other row says why it cannot. */
 function PendingSection({
   copy,
   rows,
@@ -1467,7 +1467,7 @@ function PendingSection({
       </h3>
       <ul className={cn(CARD, "m-0 list-none overflow-hidden p-0")}>
         {rows.map((row) => {
-          const own = row.issuedByYou;
+          const own = row.canManage;
           const why = `board-share-pending-why-${row.id}`;
           return (
             <li

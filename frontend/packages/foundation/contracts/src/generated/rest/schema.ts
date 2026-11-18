@@ -12173,6 +12173,7 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
             issuedByYou?: boolean;
+            canManage?: boolean;
         };
         "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
             kind?: string | null;

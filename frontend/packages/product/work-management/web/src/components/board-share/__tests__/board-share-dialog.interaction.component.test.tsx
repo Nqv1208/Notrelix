@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
+import {
+  fireEvent,
+  renderPureUi,
+  screen,
+  waitFor,
+  within,
+} from "@notrelix/testing";
 import {
   shareDefaultScenario,
   shareEmptyScenario,
@@ -315,6 +321,7 @@ describe("BoardShareDialogSurface", () => {
           id: "inv-1",
           email: "a@x.vn",
           issuedByYou: true,
+          canManage: true,
           invitedByName: "Hà",
           expiresAt: "2027-01-01T00:00:00Z",
         },
@@ -322,6 +329,7 @@ describe("BoardShareDialogSurface", () => {
           id: "inv-2",
           email: "b@x.vn",
           issuedByYou: false,
+          canManage: false,
           invitedByName: "Phúc",
           expiresAt: "2027-01-01T00:00:00Z",
         },
@@ -339,6 +347,70 @@ describe("BoardShareDialogSurface", () => {
     expect(revokes[1]).toHaveProperty("disabled", true);
     fireEvent.click(revokes[0]!);
     expect(onRevokeInvitation).toHaveBeenCalledWith("inv-1");
+  });
+
+  it("UC-WM-A20 says why another person's invitation cannot be resent or revoked", () => {
+    renderShare(shareDefaultScenario(), {
+      pendingInvitations: [
+        {
+          id: "inv-2",
+          email: "b@x.vn",
+          issuedByYou: false,
+          canManage: false,
+          invitedByName: "Phúc",
+          expiresAt: "2027-01-01T00:00:00Z",
+        },
+      ],
+      onResendInvitation: vi.fn(),
+      onRevokeInvitation: vi.fn(),
+    });
+    const section = screen.getByRole("region", {
+      name: /Lời mời đang chờ · 1/,
+    });
+    const reason = within(section).getByText(copy.pending.notIssuer);
+    const resend = within(section).getByRole("button", {
+      name: copy.pending.resend,
+    });
+    expect(resend.getAttribute("aria-describedby")).toBe(reason.id);
+    expect(resend).toHaveProperty("disabled", true);
+  });
+
+  it("UC-WM-A20 lets a workspace Owner or Admin resend and revoke another person's invitation", async () => {
+    const onResendInvitation = vi.fn(async () => true);
+    const onRevokeInvitation = vi.fn(async () => true);
+    renderShare(shareDefaultScenario(), {
+      pendingInvitations: [
+        {
+          id: "inv-2",
+          email: "b@x.vn",
+          issuedByYou: false,
+          canManage: true,
+          invitedByName: "Phúc",
+          expiresAt: "2027-01-01T00:00:00Z",
+        },
+      ],
+      onResendInvitation,
+      onRevokeInvitation,
+    });
+    const section = screen.getByRole("region", {
+      name: /Lời mời đang chờ · 1/,
+    });
+    expect(within(section).queryByText(copy.pending.notIssuer)).toBeNull();
+    fireEvent.click(
+      within(section).getByRole("button", { name: copy.pending.resend }),
+    );
+    await waitFor(() =>
+      expect(onResendInvitation).toHaveBeenCalledWith("inv-2"),
+    );
+    await waitFor(() =>
+      expect(
+        within(section).getByRole("button", { name: copy.pending.revoke }),
+      ).toHaveProperty("disabled", false),
+    );
+    fireEvent.click(
+      within(section).getByRole("button", { name: copy.pending.revoke }),
+    );
+    expect(onRevokeInvitation).toHaveBeenCalledWith("inv-2");
   });
 
   it("UC-WM-A19 says an archived board is read-only on the add field instead of the no-write reason", () => {
