@@ -260,6 +260,48 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Authenticate_RecordsTheFirstUse_ThenLeavesTheTimeAloneWithinTheInterval()
+    {
+        var created = await SendCreateToken(_user.Id, "Deploy token");
+        await using (var before = CreateSystemContext())
+        {
+            before.ApiTokens.Single(t => t.Id == created.Data!.Id).LastUsedAt.Should().BeNull("never used");
+        }
+
+        (await AuthenticateAsync(created.Data!.RawSecret)).Succeeded.Should().BeTrue();
+        DateTimeOffset? first;
+        await using (var afterFirst = CreateSystemContext())
+        {
+            first = afterFirst.ApiTokens.Single(t => t.Id == created.Data.Id).LastUsedAt;
+        }
+        first.Should().NotBeNull("the first call records its time");
+
+        (await AuthenticateAsync(created.Data.RawSecret)).Succeeded.Should().BeTrue();
+        await using var afterSecond = CreateSystemContext();
+        afterSecond.ApiTokens.Single(t => t.Id == created.Data.Id).LastUsedAt.Should().Be(first,
+            "a second call within the hour does not write the row again");
+    }
+
+    [Fact]
+    public async Task Authenticate_AfterTheIntervalHasPassed_RecordsTheNewUse()
+    {
+        var created = await SendCreateToken(_user.Id, "Deploy token");
+        // The token is two days old and was last used two hours ago.
+        var stale = DateTimeOffset.UtcNow.AddHours(-2);
+        var tokenId = created.Data!.Id;
+        await using (var seed = CreateSystemContext())
+        {
+            await seed.Database.ExecuteSqlInterpolatedAsync(
+                $"update identity.api_tokens set created_at = {stale.AddDays(-2)}, last_used_at = {stale} where id = {tokenId}");
+        }
+
+        (await AuthenticateAsync(created.Data!.RawSecret)).Succeeded.Should().BeTrue();
+
+        await using var after = CreateSystemContext();
+        after.ApiTokens.Single(t => t.Id == created.Data.Id).LastUsedAt.Should().BeAfter(stale.AddHours(1));
+    }
+
+    [Fact]
     public async Task Authenticate_UnknownSecret_IsRejected()
     {
         var auth = await AuthenticateAsync("ntk_v1.never-issued-secret");

@@ -123,6 +123,32 @@ public class ApiTokenTests
     }
 
     [Fact]
+    public void IsUseRecordDue_NeverUsedToken_IsDue()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+
+        token.IsUseRecordDue(Now).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsUseRecordDue_WithinTheInterval_IsNotDue()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        token.RecordUse(Now);
+
+        token.IsUseRecordDue(Now.Add(ApiToken.UseRecordingInterval).AddSeconds(-1)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsUseRecordDue_AtOrAfterTheInterval_IsDue()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        token.RecordUse(Now);
+
+        token.IsUseRecordDue(Now.Add(ApiToken.UseRecordingInterval)).Should().BeTrue();
+    }
+
+    [Fact]
     public void RecordUse_ShouldSetAuditAndUpdateVersion()
     {
         var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
