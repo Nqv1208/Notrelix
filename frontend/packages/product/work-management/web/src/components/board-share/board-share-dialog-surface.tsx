@@ -36,6 +36,7 @@ import {
   fillBoardShareCopy as fill,
   type BoardShareCopy,
 } from "./board-share.copy";
+import { EMAIL_SHAPE, type PendingGuestInvitation } from "./board-share-guest";
 import { BoardShareSheet } from "./board-share-sheet";
 import { MARK_TONE, PERSON_TONE } from "./board-share-tones";
 import type {
@@ -94,16 +95,7 @@ function Avatar({
 }
 
 /** A person the Board can be shared with. */
-/** A pending resource invitation of this Board (`Workspaces.Invitations.ListResourceInvitations`). */
-export interface PendingGuestInvitation {
-  readonly id: string;
-  readonly email: string;
-  /** Whether the signed-in person sent it (only the issuer may resend or revoke it). */
-  readonly issuedByYou: boolean;
-  readonly invitedByName: string;
-  /** ISO instant the invitation expires. */
-  readonly expiresAt: string;
-}
+export type { PendingGuestInvitation } from "./board-share-guest";
 
 export interface ShareCandidate {
   readonly id: string;
@@ -391,7 +383,9 @@ function ShareBody({
           <div data-f="add" className="flex gap-2 max-md:flex-wrap">
             <label
               data-f="in"
-              title={copy.add.unavailable}
+              title={
+                view.archived ? copy.sheet.archivedBody : copy.add.unavailable
+              }
               className="box-content flex h-[38px] flex-1 items-center gap-2 rounded-[9px] max-md:box-border max-md:h-[50px] max-md:basis-full max-md:rounded-[12px] border border-line-strong px-2.5 text-nav leading-[1.45] font-normal text-meta-foreground"
             >
               <UserPlus
@@ -886,8 +880,6 @@ function PendingInvitations({
     </section>
   );
 }
-
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function AddPeople({
   copy,

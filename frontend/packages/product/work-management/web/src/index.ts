@@ -65,6 +65,7 @@ export {
 } from "./components/board-share/board-share.copy";
 export { useBoardShareCopy } from "./components/board-share/use-board-share-copy";
 export * from "./components/board-share/board-share-models";
+export { guestInviteConflict } from "./components/board-share/board-share-guest";
 export {
   BoardShareDialogSurface,
   type BoardShareDialogSurfaceProps,

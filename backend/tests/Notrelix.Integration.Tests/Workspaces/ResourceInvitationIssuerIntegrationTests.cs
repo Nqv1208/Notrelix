@@ -141,6 +141,57 @@ public sealed class ResourceInvitationIssuerIntegrationTests : IAsyncLifetime
         (await InvitationAsync(s.InvitationId)).Status.Should().Be(WorkspaceInvitationStatus.Pending);
     }
 
+    private Task<int> InvitationCountAsync(Guid workspaceId) =>
+        _host.ReadAsync(c => c.WorkspaceInvitations.CountAsync(i => i.WorkspaceId == workspaceId));
+
+    [Fact]
+    public async Task PlainMember_CannotInviteAGuest_AndNothingIsWritten()
+    {
+        var s = await SeedAsync();
+        var before = await InvitationCountAsync(s.Stack.WorkspaceId);
+        var plain = await _host.AddMemberAsync(s.Stack, WorkspaceRole.Member, "Plain member");
+        using var asPlain = _host.CreateProvider(s.Stack.AccountId, plain, RegisterInvitationServices);
+
+        var invite = () => OrgTreeTestHost.SendAsync(
+            asPlain, new InviteGuestToResourceCommand(BoardKind, s.BoardId, "outsider@example.com", "Viewer"));
+
+        await invite.Should().ThrowAsync<AppForbidden>();
+        (await InvitationCountAsync(s.Stack.WorkspaceId)).Should().Be(before);
+    }
+
+    [Fact]
+    public async Task Manager_CannotInviteAGuestAboveViewer_AndNothingIsWritten()
+    {
+        var s = await SeedAsync();
+        var before = await InvitationCountAsync(s.Stack.WorkspaceId);
+        using var asIssuer = _host.CreateProvider(s.Stack.AccountId, s.Issuer, RegisterInvitationServices);
+
+        var invite = () => OrgTreeTestHost.SendAsync(
+            asIssuer, new InviteGuestToResourceCommand(BoardKind, s.BoardId, "outsider@example.com", "Editor"));
+
+        (await invite.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Invitation_ResourceLevelAboveViewer);
+        (await InvitationCountAsync(s.Stack.WorkspaceId)).Should().Be(before);
+    }
+
+    [Fact]
+    public async Task Manager_CannotInviteAGuestToAnArchivedBoard_AndNothingIsWritten()
+    {
+        var s = await SeedAsync();
+        var archived = await _host.SeedBoardAsync(
+            s.Stack, "Archived board", transition: board => board.Archive(s.Stack.OwnerId, OrgTreeTestHost.BaseTime));
+        await _host.SeedResourcePermissionAsync(s.Stack, BoardKind, archived, PermissionSubjectType.User, s.Issuer, PermissionLevel.Manager);
+        var before = await InvitationCountAsync(s.Stack.WorkspaceId);
+        using var asIssuer = _host.CreateProvider(s.Stack.AccountId, s.Issuer, RegisterInvitationServices);
+
+        var invite = () => OrgTreeTestHost.SendAsync(
+            asIssuer, new InviteGuestToResourceCommand(BoardKind, archived, "outsider@example.com", "Viewer"));
+
+        // The pipeline refuses the write with the reason (S3): the archived board reads, it takes no invitation.
+        (await invite.Should().ThrowAsync<AppForbidden>()).Which.Message.Should().Contain("archived");
+        (await InvitationCountAsync(s.Stack.WorkspaceId)).Should().Be(before);
+    }
+
     [Fact]
     public async Task IssuerWhoLostManagePermission_CannotResendOrRevoke()
     {

@@ -18,6 +18,11 @@ export const en = {
     guestOption: "Invite {{email}} as a guest",
     guestLevel: "A guest can only view this Board",
     guestInvited: "Invitation sent to {{email}}",
+    guestHint: "Outside the company · can only view this Board",
+    inviteFailed: "Couldn't send the invitation",
+    inviteConflict:
+      "{{name}} already invited {{email}}. The pending invitations are up to date.",
+    someoneElse: "Someone else",
   },
   pending: {
     title: "Pending invitations · {{count}}",
@@ -41,6 +46,8 @@ export const en = {
     edit: "Create, edit, assign and move items",
     manage: "Board settings, who has access",
     guestViewOnly: "A guest can only view what is shared with them",
+    guestNoManage:
+      "A guest can't manage the board or share it further (GOV-030)",
   },
   general: {
     label: "Who can open the Board",
@@ -179,6 +186,16 @@ export const en = {
     itemsOpen: "{{count}} items not done",
     itemsOverdue: "{{count}} items not done, {{overdue}} overdue",
     back: "Back to Share",
+    addGuestLevelLabel: "Permission when inviting a guest",
+    guestOf: "Guest · {{email}}",
+    suggestions: "Suggestions",
+    emailInvalid: "That email looks wrong. Use the form name@company.com",
+    deniedReason: "Only Board managers can invite guests.",
+    archivedTitle: "This Board is archived",
+    archivedBody:
+      "You can only view it. No more people or guests can be invited.",
+    offlineTitle: "You're offline",
+    offlineBody: "The invitation can't be sent. Reconnect and try again.",
   },
   leave: {
     title: "Leave board",
@@ -249,6 +266,11 @@ export const vi: BoardShareCopy = {
     guestOption: "Mời {{email}} làm khách",
     guestLevel: "Khách chỉ xem được board này",
     guestInvited: "Đã gửi lời mời tới {{email}}",
+    guestHint: "Ngoài công ty · chỉ xem board này",
+    inviteFailed: "Chưa gửi được lời mời",
+    inviteConflict:
+      "{{name}} đã mời {{email}} rồi. Danh sách lời mời đã được cập nhật.",
+    someoneElse: "Một người khác",
   },
   pending: {
     title: "Lời mời đang chờ · {{count}}",
@@ -271,6 +293,7 @@ export const vi: BoardShareCopy = {
     edit: "Tạo, sửa, giao, di chuyển việc",
     manage: "Thiết lập board, ai được vào board",
     guestViewOnly: "Khách chỉ được xem phần được chia sẻ với họ",
+    guestNoManage: "Khách không được quản lý board hay chia sẻ tiếp (GOV-030)",
   },
   general: {
     label: "Ai vào được board",
@@ -408,6 +431,15 @@ export const vi: BoardShareCopy = {
     itemsOpen: "{{count}} việc chưa xong",
     itemsOverdue: "{{count}} việc chưa xong, {{overdue}} quá hạn",
     back: "Quay lại Chia sẻ",
+    addGuestLevelLabel: "Quyền khi mời khách",
+    guestOf: "Khách · {{email}}",
+    suggestions: "Gợi ý",
+    emailInvalid: "Email chưa đúng. Nhập dạng ten@congty.vn",
+    deniedReason: "Chỉ người quản lý board mời được khách.",
+    archivedTitle: "Board đã lưu trữ",
+    archivedBody: "Chỉ xem được. Không mời thêm người hay khách.",
+    offlineTitle: "Không có mạng",
+    offlineBody: "Chưa gửi được lời mời. Kết nối lại rồi thử lại.",
   },
   leave: {
     title: "Rời board",
