@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Mfa.Commands.DisableMfa;
 using Notrelix.Application.Features.Identity.Security.DTOs;
@@ -24,6 +25,7 @@ public class DisableMfaTests : IdentityHandlerTestBase
         StepUpServiceMock.Object,
         DateTimeProviderMock.Object,
         ActivityMock.Object,
+        SecurityNoticeMock.Object,
         new Mock<ILogger<DisableMfaCommandHandler>>().Object);
 
     private static UserMfaMethod ActiveMethod(Guid userId)
@@ -35,8 +37,13 @@ public class DisableMfaTests : IdentityHandlerTestBase
 
     private static DisableMfaCommand Disable(string proof = "proof") => new() { StepUpToken = proof };
 
-    private void NoteActivity(Times times) => ActivityMock.Verify(
-        a => a.Record(It.IsAny<Guid>(), SecurityActivityType.MfaDisabled, It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), times);
+    private void NoteActivity(Times times)
+    {
+        ActivityMock.Verify(
+            a => a.Record(It.IsAny<Guid>(), SecurityActivityType.MfaDisabled, It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), times);
+        SecurityNoticeMock.Verify(
+            n => n.QueueAsync(It.IsAny<Guid>(), SecurityNoticeKind.MfaDisabled, It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), times);
+    }
 
     [Fact]
     public async Task WithNoActiveFactor_IsASuccessNoOp_ThatConsumesNothingAndRecordsNothing()

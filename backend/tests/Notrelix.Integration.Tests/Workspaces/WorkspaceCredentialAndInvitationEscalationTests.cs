@@ -55,6 +55,7 @@ public sealed class WorkspaceCredentialAndInvitationEscalationTests : IAsyncLife
     {
         services.AddScoped<IGuestResourceInvitationFacts, GuestResourceInvitationFactsAdapter>();
         services.AddScoped<IApiTokenSecretService, ApiTokenSecretService>();
+        services.AddSingleton(Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
 
         var stepUp = new Mock<ISecurityStepUpService>();
         stepUp.Setup(s => s.ConsumeAsync(

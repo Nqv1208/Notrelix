@@ -66,7 +66,11 @@ export function ChatPage() {
       ? Number(rawLinked)
       : null;
   const navigate = useNavigate();
-  const { api: runtimeClient, realtime: realtimeClient } = useAppRuntime();
+  const {
+    api: runtimeClient,
+    realtime: realtimeClient,
+    storage,
+  } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
   const realtime = useRealtimeConnection();
   // Only a connection that is down (not one that has not started yet) reads as reconnecting.
@@ -169,6 +173,7 @@ export function ChatPage() {
         peopleDetails={peopleDetails}
         linkedSequence={linkedSequence}
         draftStore={draftStore}
+        callDeviceStore={storage}
         buildMessageLink={({ spaceId, conversation, sequence }) =>
           `${window.location.origin}/workspaces/${workspaceId}/chat/${
             conversation ? "dm/" : ""

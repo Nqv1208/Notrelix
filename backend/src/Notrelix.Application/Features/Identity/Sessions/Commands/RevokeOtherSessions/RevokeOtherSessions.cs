@@ -36,6 +36,7 @@ public sealed class RevokeOtherSessionsCommandHandler
     private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
     private readonly ILogger<RevokeOtherSessionsCommandHandler> _logger;
 
     private static readonly TimeSpan SessionRevocationMarkerTtl = TimeSpan.FromHours(24);
@@ -46,7 +47,7 @@ public sealed class RevokeOtherSessionsCommandHandler
         IJwtBlacklistService jwtBlacklist,
         ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
-        ISecurityActivityRecorder activity,
+        ISecurityActivityRecorder activity, ISecurityNotice notice,
         ILogger<RevokeOtherSessionsCommandHandler> logger)
     {
         _context = context;
@@ -55,6 +56,7 @@ public sealed class RevokeOtherSessionsCommandHandler
         _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
         _activity = activity;
+        _notice = notice;
         _logger = logger;
     }
 
@@ -99,6 +101,8 @@ public sealed class RevokeOtherSessionsCommandHandler
         }
 
         _activity.Record(userId, SecurityActivityType.OtherSessionsRevoked, now, currentSessionId);
+
+        await _notice.QueueAsync(userId, SecurityNoticeKind.OtherSessionsRevoked, now, null, cancellationToken);
 
         _logger.LogInformation("Revoked {Count} other sessions for user {UserId}", sessions.Count, userId);
 

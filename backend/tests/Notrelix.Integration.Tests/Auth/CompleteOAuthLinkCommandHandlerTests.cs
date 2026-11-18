@@ -78,7 +78,7 @@ public class CompleteOAuthLinkCommandHandlerTests : IAsyncLifetime
             currentUser.Object,
             dateTimeProvider.Object,
             NullLogger<CompleteOAuthLinkCommandHandler>.Instance,
-            _activity.Object);
+            _activity.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
     }
 
     private static CompleteOAuthLinkCommand Command(string? error = null) => new()

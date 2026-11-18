@@ -247,6 +247,30 @@ public sealed class CredentialScopeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ResetPassword_UnderTheAppRole_StagesTheNoticeWithTheChange_AndTheWorkerQueuesExactlyOneMail()
+    {
+        const string countMails =
+            "SELECT count(*) FROM notifications.email_outbox WHERE recipient_user_id = @u AND template_name = 'identity.security-notice'";
+        // One host for the whole flow: the request runs as the application login, the consumer as the worker login.
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        string code;
+        using (var scope = factory.Services.CreateScope())
+            code = await scope.ServiceProvider.GetRequiredService<IOtpService>().GenerateAsync("forgot-password", "a-cred@example.com");
+        using var client = factory.CreateClient();
+
+        var reset = await client.PostAsJsonAsync("/api/v1/auth/reset-password",
+            new { email = "a-cred@example.com", code, newPassword = NewPassword });
+
+        reset.StatusCode.Should().Be(HttpStatusCode.OK, "the application login stages only the event; the mail is the worker's write");
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(45);
+        while (DateTimeOffset.UtcNow < deadline && await OwnerScalarAsync(countMails, ("u", _a.User.Id)) == "0")
+            await Task.Delay(500);
+        await Task.Delay(2000); // a second mail, if there were one, would land by now
+        (await OwnerScalarAsync(countMails, ("u", _a.User.Id))).Should().Be("1");
+        (await OwnerScalarAsync(countMails, ("u", _b.User.Id))).Should().Be("0", "another user gets nothing");
+    }
+
+    [Fact]
     public async Task ForgotPassword_UnderTheAppRole_DoesNotFail_ForKnownOrUnknownAddresses()
     {
         var known = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/forgot-password", new { email = "a-cred@example.com" }));

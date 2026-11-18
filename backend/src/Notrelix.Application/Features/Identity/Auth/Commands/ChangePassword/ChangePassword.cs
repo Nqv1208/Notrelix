@@ -28,12 +28,11 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
     private readonly ICurrentRequestContext _currentUser;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtBlacklistService _jwtBlacklist;
-    private readonly IEmailService _emailService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityStepUpService _stepUpService;
     private readonly ILoginThrottle _throttle;
     private readonly ISecurityActivityRecorder _activity;
-    private readonly ILogger<ChangePasswordCommandHandler> _logger;
+    private readonly ISecurityNotice _notice;
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
     private static readonly TimeSpan RevocationWatermarkTtl = TimeSpan.FromHours(24);
@@ -43,23 +42,20 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         ICurrentRequestContext currentUser,
         IPasswordHasher passwordHasher,
         IJwtBlacklistService jwtBlacklist,
-        IEmailService emailService,
         IDateTimeProvider dateTimeProvider,
-        ILogger<ChangePasswordCommandHandler> logger,
         ISecurityStepUpService stepUpService,
         ILoginThrottle throttle,
-        ISecurityActivityRecorder activity)
+        ISecurityActivityRecorder activity, ISecurityNotice notice)
     {
         _context = context;
         _currentUser = currentUser;
         _passwordHasher = passwordHasher;
         _jwtBlacklist = jwtBlacklist;
-        _emailService = emailService;
         _dateTimeProvider = dateTimeProvider;
-        _logger = logger;
         _stepUpService = stepUpService;
         _throttle = throttle;
         _activity = activity;
+        _notice = notice;
     }
 
     public async Task<Result> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
@@ -113,6 +109,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         user.UpdatePassword(hash, user.Id, now);
         await PasswordChangeRecorder.RecordAsync(_context, user.Id, now, cancellationToken);
         _activity.Record(user.Id, SecurityActivityType.PasswordChanged, now, _currentUser.SessionId);
+        await _notice.QueueAsync(user.Id, SecurityNoticeKind.PasswordChanged, now, null, cancellationToken);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == user.Id && s.Status == SessionStatus.Active)
@@ -124,16 +121,6 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         }
 
         await _jwtBlacklist.RevokeUserBeforeAsync(user.Id, now, RevocationWatermarkTtl);
-
-        try
-        {
-            var html = EmailTemplateService.PasswordChanged(user.Name);
-            await _emailService.SendAsync(user.Email.Value, "Password changed — Notrelix", html, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send password changed notification to {UserId}", user.Id);
-        }
 
         return Result.Success();
     }
