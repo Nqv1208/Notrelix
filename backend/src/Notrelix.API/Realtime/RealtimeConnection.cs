@@ -102,7 +102,9 @@ public sealed class RealtimeConnection
 
         Enqueue(RealtimeProtocol.Ready(ConnectionId, _options));
 
-        var send = SendLoopAsync(sendLinked.Token);
+        // The send loop is not cancelled by a close request: cancelling a WebSocket write in flight aborts the socket
+        // and the peer would see a dropped connection instead of the close code. Completing the outbox ends it.
+        var send = SendLoopAsync(requestAborted);
         var receive = ReceiveLoopAsync(receiveLinked.Token);
         var maintain = MaintenanceLoopAsync(sendLinked.Token);
 
