@@ -117,7 +117,7 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-A01 | Read the signed-in person                             | A          | Signed-in person          | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                            |
 | UC-IDN-A02 | Bootstrap read for a client                           | A          | Signed-in person          | yes     | no        | none          | no       | DONE         | closed 2026-11-03, see the Evidence line                                                                            |
 | UC-IDN-A03 | Get and send the CSRF token                           | A          | Browser client            | yes     | yes       | n/a           | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                            |
-| UC-IDN-A04 | Mobile token transport                                | A          | Mobile client             | no      | no        | Final-M-Auth  | no       | DEFINED      | header and body transport absent                                                                                    |
+| UC-IDN-A04 | Mobile token transport                                | A          | Mobile client             | no      | no        | Final-M-Auth  | no       | DEFINED      | header and body transport absent; deferred until the native mobile app                                              |
 | UC-IDN-B01 | Identify the sign-in method                           | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                            |
 | UC-IDN-B02 | Sign in with email and password                       | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                            |
 | UC-IDN-B03 | Register                                              | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | closed 2026-11-03, see the Evidence line                                                                            |
@@ -125,7 +125,7 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-B05 | Request or resend the confirmation                    | B          | Visitor, signed-in person | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
 | UC-IDN-B06 | Ask for a password reset                              | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
 | UC-IDN-B07 | Complete a password reset                             | B          | Visitor                   | yes     | no        | none          | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
-| UC-IDN-B08 | Sign in through the company provider                  | B          | Visitor                   | no      | mock only | Final-Auth    | no       | BLOCKED      | Accounts enforcement fact, protocol                                                                                 |
+| UC-IDN-B08 | Sign in through the company provider                  | B          | Visitor                   | no      | mock only | Final-Auth    | no       | BLOCKED      | Accounts enforcement fact, protocol; deferred to 0.2                                                                |
 | UC-IDN-B09 | Lock sign-in after repeated failures                  | B          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
 | UC-IDN-C01 | Sign out this device                                  | C          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
 | UC-IDN-C02 | List my sessions and devices                          | C          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
@@ -149,8 +149,8 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-J01 | Sign in with a recovery code                          | J          | Visitor                   | yes     | yes       | Final-Auth    | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
 | UC-IDN-J02 | Regenerate recovery codes                             | J          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-02, see the Evidence line                                                                          |
 | UC-IDN-J03 | Turn the second factor off                            | J          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01; the policy-blocked refusal waits on J05                                                        |
-| UC-IDN-J04 | Recover an account that lost both factors             | J          | Person, Account admin     | no      | no        | none          | no       | BLOCKED      | who may reset another person                                                                                        |
-| UC-IDN-J05 | Enforce an account-required second factor             | J          | System                    | no      | no        | none          | no       | BLOCKED      | Accounts policy fact                                                                                                |
+| UC-IDN-J04 | Recover an account that lost both factors             | J          | Person, Account admin     | no      | no        | none          | no       | BLOCKED      | who may reset another person; deferred to 0.2                                                                       |
+| UC-IDN-J05 | Enforce an account-required second factor             | J          | System                    | no      | no        | none          | no       | BLOCKED      | Accounts policy fact; deferred to 0.2                                                                               |
 | UC-IDN-K01 | Read my security summary                              | K          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack                            |
 | UC-IDN-K02 | Read my security activity                             | K          | Signed-in person          | yes     | yes       | Final-Account | no       | DONE         | real spec `frontend/e2e/real/account-security.real.e2e.spec.ts` passes on the real stack                            |
 | UC-IDN-K03 | Ask which step-up factor applies                      | K          | Signed-in person          | yes     | yes       | Final-Account | yes      | DONE         | accepted 2026-11-01 by the fix lane for the lead to review; both provider prompts are undrawn (reviewed)            |
@@ -165,8 +165,8 @@ Design column: `Final-Auth` (1440), `Final-M-Auth` (390), `Final-Account` (1440)
 | UC-IDN-L01 | List workspace API tokens                             | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-L02 | Issue an API token                                    | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
 | UC-IDN-L03 | Revoke an API token                                   | L          | Workspace Owner or Admin  | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-17, see the Evidence line                                                                            |
-| UC-IDN-L04 | Call the API with a token                             | L          | Integration client        | yes     | n/a       | n/a           | no       | IMPLEMENTING | scopes not enforced                                                                                                 |
-| UC-IDN-L05 | Limit a token to chosen scopes                        | L          | Workspace Owner or Admin  | no      | no        | none          | no       | BLOCKED      | scope vocabulary                                                                                                    |
+| UC-IDN-L04 | Call the API with a token                             | L          | Integration client        | yes     | n/a       | n/a           | no       | IMPLEMENTING | scopes not enforced; deferred to 0.2                                                                                |
+| UC-IDN-L05 | Limit a token to chosen scopes                        | L          | Workspace Owner or Admin  | no      | no        | none          | no       | BLOCKED      | scope vocabulary; deferred to 0.2                                                                                   |
 | UC-IDN-L06 | Cap token lifetime (enterprise baseline)              | L          | System                    | yes     | yes       | Idn-Tokens    | yes      | DONE         | closed 2026-11-19, see the Evidence line                                                                            |
 | UC-IDN-L07 | Show when a token was last used (enterprise baseline) | L          | Workspace Owner or Admin  | no      | no        | none          | no       | DEFINED      | no column                                                                                                           |
 | UC-IDN-L08 | Stop tokens of a person who leaves                    | L          | System                    | no      | n/a       | n/a           | no       | DEFINED      | no rule                                                                                                             |
@@ -241,6 +241,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Acceptance: Given the header, when the app signs in, then the body holds the tokens and no cookie is set. Given no header, then behaviour is unchanged.
 - Evidence: BE none; API none (`RefreshTokenEndpoint.cs` reads only the cookie) · FE none · Design Final-M-Auth · Tests none · Real e2e none
 - State: DEFINED. Missing: everything. Product decision (owner, 2026-10-27): mobile uses a bearer and a rotating refresh token in the body selected by `X-Notrelix-Client: mobile`; web stays cookie plus CSRF.
+- Deferred until the native mobile app (lead decision 2026-11-19): needs the native mobile app.
 
 ## Capability B: Login
 
@@ -363,6 +364,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Acceptance: Given an enforced domain, when the person identifies, then the provider path is the only path. Given a replayed callback, then no second session.
 - Evidence: BE `Auth/Queries/IdentifySignIn/IdentifySignIn.cs` (stub, always password); Domain `backend/src/Notrelix.Domain/Accounts/IdentityProviders/AccountIdentityProvider.cs` (Draft, Active, Disabled; no enforcement flag) · FE mock path in `packages/dev/mock-backend/src/contexts/account/` · Design Final-Auth (company provider step) · Tests mock e2e `auth-flow.mock.e2e.spec.ts` · Real e2e none
 - State: BLOCKED. Waits on the Accounts decision that adds the enforcement fact and the verified-domain rule (Part 5), and on the protocol choice (Part 4).
+- Deferred to 0.2 (lead decision 2026-11-19): depends on the Accounts/Governance policy facts and the token scope vocabulary.
 
 ### UC-IDN-B09 Lock sign-in after repeated failures
 
@@ -739,6 +741,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Acceptance: not defined until the decision.
 - Evidence: none.
 - State: BLOCKED. Needs a decision on who may reset another person's second factor, what proof the person gives, and the delay and notice. A wrong choice weakens account takeover defence.
+- Deferred to 0.2 (lead decision 2026-11-19): depends on the Accounts/Governance policy facts and the token scope vocabulary.
 
 ### UC-IDN-J05 Enforce an account-required second factor
 
@@ -754,6 +757,7 @@ Common facts, stated once. Every authenticated endpoint is `MapAuthenticated*`; 
 - Acceptance: not defined until the decision.
 - Evidence: none (a `LoginFailureReason` mentions MFA only for challenges).
 - State: BLOCKED. Waits on the Accounts or Governance policy fact and on which Account's policy wins when a person belongs to several.
+- Deferred to 0.2 (lead decision 2026-11-19): depends on the Accounts/Governance policy facts and the token scope vocabulary.
 
 ## Capability K: Security settings
 
@@ -985,6 +989,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Acceptance: Given a valid token, when it calls a workspace route of its workspace, then the call is authorized as the issuer would be. Given another workspace, then NotFound.
 - Evidence: Infrastructure `backend/src/Notrelix.Infrastructure/Auth/ApiTokens/ApiTokenAuthenticationHandler.cs` · Tests Integration `ApiTokenScopeTests`, `ApiTokenHttpFlowTests` · Real e2e `frontend/e2e/real/api-token.real.e2e.spec.ts` (a call with a token is answered 200, then 401 after the revoke)
 - State: IMPLEMENTING. Missing: scope enforcement (L05), a decision that tokens may not reach person-level Identity routes (sessions, security, profile).
+- Deferred to 0.2 (lead decision 2026-11-19): depends on the Accounts/Governance policy facts and the token scope vocabulary.
 
 ### UC-IDN-L05 Limit a token to chosen scopes
 
@@ -1000,6 +1005,7 @@ Tokens are workspace-scoped credentials bound to the person who issued them (`Ap
 - Acceptance: Given a read-only scope, when the token writes, then 403.
 - Evidence: Domain `backend/src/Notrelix.Domain/Identity/Tokens/ApiTokenScopes.cs` (value object; no consumer calls `Allows`) · Tests Domain `ApiTokenScopesTests`.
 - State: BLOCKED. Needs a product decision on the scope vocabulary (per context, read and write) and on whether a token may call person-level routes; a token acting as a full user is a security-principal choice.
+- Deferred to 0.2 (lead decision 2026-11-19): depends on the Accounts/Governance policy facts and the token scope vocabulary.
 
 ### UC-IDN-L06 Cap token lifetime (enterprise baseline)
 
