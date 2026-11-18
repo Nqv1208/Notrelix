@@ -50,11 +50,11 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | F      | CHT-006 Threads, replies and pins                                 | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
 | G      | CHT-007 Mentions, reactions, attachments and notification handoff | 9         | 0       | 0            | 0           | 1         | 8    | 0       |
 | H      | CHT-008 Access, moderation, retention, search and hardening       | 10        | 0       | 0            | 0           | 5         | 5    | 0       |
-| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 4         | 0    | 0       |
+| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 3         | 1    | 0       |
 | J      | CHT-010 Calls                                                     | 8         | 2       | 0            | 0           | 0         | 6    | 0       |
-|        | Total                                                             | 84        | 9       | 0            | 0           | 13        | 62   | 0       |
+|        | Total                                                             | 84        | 9       | 0            | 0           | 12        | 63   | 0       |
 
-The counts are those of the index below (section 2), counted by State on 2026-11-19: 62 DONE, 13 HARDENING, 9 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 and J07 (screen share and group calls, Phase 6, SYS-ADR-002). HARDENING rows: A06, A07, A08, G03, H03, H04, H05, H09, H10, I01, I03, I04 and I05; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
+The counts are those of the index below (section 2), counted by State on 2026-11-19: 63 DONE, 12 HARDENING, 9 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 and J07 (screen share and group calls, Phase 6, SYS-ADR-002). HARDENING rows: A06, A07, A08, G03, H03, H04, H05, H09, H10, I01, I03 and I04; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
 
 ### 1.2 Gaps
 
@@ -149,7 +149,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-I02 | Show upload progress, cancel and retry | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No zoom or touch swipe. |
 | UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. Not in threads yet; the Ogg duration comes from the client. |
-| UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No playback speed. |
+| UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | DONE      | Speed control built (1x, 1.5x, 2x); tests chat-voice-message.component.test.tsx, voice-model.unit.test.ts. |
 | UC-CHT-I06 | Send a sticker or GIF | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I07 | Copy a message link and mark unread from here | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I08 | Create a task from a message | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
@@ -1283,7 +1283,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
 - Evidence: BE the attachment view carries durationMs and waveform (migration 20261113124451_AddChatVoiceMessage) · FE ChatVoiceMessage (frontend/packages/features/chat/src/web/components/chat-voice-message.tsx): play and pause, the waveform with progress, the duration · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests `frontend/packages/features/chat/src/__tests__/chat-voice-message.component.test.tsx`, voice-model.unit.test.ts · Real e2e none yet
-- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; playback speed.
+- State: DONE (2026-11-19) — Built to the use case and the Chat-Media board: play and pause, a waveform that seeks on click and the arrow keys, elapsed and total time, a speed control (1x, 1.5x, 2x) and a retry when the bytes do not load. Tests: `frontend/packages/features/chat/src/__tests__/chat-voice-message.component.test.tsx` (speed cycles and sets the playback rate), voice-model.unit.test.ts.
 
 ### UC-CHT-I06 Send a sticker or GIF
 
