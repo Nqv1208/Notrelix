@@ -69,6 +69,12 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
         IncrementVersion();
     }
 
+    /// <summary>Last use is written at most once per interval, so a busy integration does not write the token row on every call.</summary>
+    public static readonly TimeSpan UseRecordingInterval = TimeSpan.FromHours(1);
+
+    public bool IsUseRecordDue(DateTimeOffset now) =>
+        LastUsedAt is null || now - LastUsedAt.Value >= UseRecordingInterval;
+
     public void RecordUse(DateTimeOffset usedAt)
     {
         if (Status != ApiTokenStatus.Active)
