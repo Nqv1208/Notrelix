@@ -14,6 +14,7 @@ import { chatCatalog } from "../web/components/chat.catalog";
 import { ChatWorkspace } from "../web/components/chat-workspace";
 import { createChatService } from "../core/api/chat.service";
 import { en } from "../web/components/chat.copy";
+import { fillCopy } from "../web/components/use-chat-copy";
 
 const WS = mockIds.workspaces.primary;
 
@@ -98,6 +99,38 @@ describe("ChatWorkspace: the two places a call starts", () => {
       kind: "video",
       state: "ringing",
     });
+  });
+
+  it("tells the caller the other person is in a call, with a notice above the composer and no call view", async () => {
+    const { store, name } = await open();
+    const other = store.chat
+      .membershipsOfSpace(Array.from(store.chat.spaces.keys())[0]!)
+      .map((row) => row.userId)
+      .find((id) => id !== store.getCurrentUser().id)!;
+    const channel = Array.from(store.chat.spaces.values()).find(
+      (space) =>
+        space.kind === "channel_public" &&
+        store.chat.activeMembershipOf(space.id, other),
+    )!;
+    (
+      globalThis as unknown as {
+        __notrelixMockCall: {
+          ring: (space: string, person: string, kind: string) => string;
+        };
+      }
+    ).__notrelixMockCall.ring(channel.id, other, "voice");
+    const header = document.querySelector("header") as HTMLElement;
+    fireEvent.click(
+      await within(header).findByRole("button", { name: en.panel.voiceCall }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("status").map((el) => el.textContent),
+      ).toContain(fillCopy(en.calls.busyNotice, { name })),
+    );
+    expect(screen.getByTestId("chat-call-stage").hasAttribute("hidden")).toBe(
+      true,
+    );
   });
 
   it("offers no call button to a Guest", async () => {

@@ -59,3 +59,32 @@ export function systemTextOf(copy: ChatCopy, stored: string | null): string {
   }
   return copy.list.systemText[text] ?? text;
 }
+
+/** A stored call line as the board draws it: a bold head ("Cuộc gọi video"), a tail ("24 phút", "từ Quân") and whether it is missed. */
+export function callLineOf(
+  copy: ChatCopy,
+  stored: string | null,
+  authorName: string,
+  isOwn: boolean,
+) {
+  const call = parseStoredCallLine(stored);
+  if (!call) return null;
+  const c = copy.calls;
+  const kind = call.kind === "video" ? c.kindVideo : c.kindVoice;
+  const tail = {
+    completed: call.duration ?? "",
+    missed: isOwn
+      ? c.lineTailMissedOwn
+      : fillCopy(c.lineTailMissedFrom, { name: authorName }),
+    declined: c.lineTailDeclined,
+    cancelled: c.lineTailCancelled,
+    busy: c.lineTailBusy,
+    failed: c.lineTailFailed,
+  }[call.outcome];
+  return {
+    kind: call.kind,
+    head: call.outcome === "missed" ? c.lineHeadMissed : kind,
+    tail,
+    missed: call.outcome === "missed",
+  };
+}

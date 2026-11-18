@@ -19,6 +19,7 @@ export {
   ChatWorkspace,
   type ChatViewerRole,
   type ChatWorkspaceProps,
+  type ChatDraftStore,
 } from "./components/chat-workspace";
 export {
   DiscussButton,

@@ -135,7 +135,7 @@ test("rings out, connects when the other person answers, mutes and ends with the
   await card(page).getByRole("button", { name: copy.calls.hangUp }).click();
   await expect(card(page)).toContainText(copy.calls.endedCompleted);
   await expect(page.getByTestId("chat-system-message").last()).toContainText(
-    /cuộc gọi thoại đã kết thúc, kéo dài \d+s/,
+    /Cuộc gọi thoại \d+s/,
   );
   await expectNoViolations(page, "ended");
   await shot(page, "voice-ended-1440-light-vi");
@@ -183,7 +183,7 @@ test("a video call shows the stage and the camera control; the other person decl
   await hook(page, "miss", (await hook(page, "live", space)) as string);
   await expect(card(page)).toContainText(/không trả lời/);
   await expect(page.getByTestId("chat-system-message").last()).toContainText(
-    /cuộc gọi thoại nhỡ/,
+    /Cuộc gọi nhỡ/,
   );
   await card(page).getByRole("button", { name: copy.calls.close }).click();
 
@@ -213,7 +213,7 @@ test("an incoming ring is answered, and another is declined", async ({
   await ring.getByRole("button", { name: copy.calls.decline }).click();
   await expect(ring).toHaveCount(0);
   await expect(page.getByTestId("chat-system-message").last()).toContainText(
-    /cuộc gọi video bị từ chối/,
+    /Cuộc gọi video bị từ chối/,
   );
 
   // The caller cancels a ring nobody answered: it leaves the screen.

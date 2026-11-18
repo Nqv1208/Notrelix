@@ -1,5 +1,5 @@
 import { cn } from "@notrelix/ui-web";
-import { tokenizeInline } from "../../core/model/markup-model";
+import { tokenizeBlocks, tokenizeInline } from "../../core/model/markup-model";
 
 /**
  * Text with the inline markup a message may carry (UC-CHT-B08): bold, italic, code and http(s) links, drawn as elements from
@@ -11,6 +11,65 @@ export function ChatInlineText({
 }: {
   readonly text: string;
   readonly tone?: "own" | "default";
+}) {
+  const blocks = tokenizeBlocks(text);
+  if (blocks.length === 1 && blocks[0]!.type === "paragraph") {
+    return <Inline text={text} tone={tone} />;
+  }
+  // Block markup is drawn with block-level spans so it stays valid inside the message's paragraph.
+  return (
+    <>
+      {blocks.map((block, index) => {
+        if (block.type === "paragraph") {
+          return (
+            <span key={index} className="block">
+              <Inline text={block.text} tone={tone} />
+            </span>
+          );
+        }
+        if (block.type === "quote") {
+          return (
+            <span
+              key={index}
+              className="block border-s-2 border-current/70 ps-2 opacity-80"
+              data-block="quote"
+            >
+              <Inline text={block.text} tone={tone} />
+            </span>
+          );
+        }
+        return (
+          <span
+            key={index}
+            role="list"
+            className="block"
+            data-block={block.ordered ? "ordered-list" : "list"}
+          >
+            {block.items.map((item, position) => (
+              <span
+                key={position}
+                role="listitem"
+                className="block ps-5 -indent-4"
+              >
+                <span aria-hidden="true">
+                  {block.ordered ? `${position + 1}.` : "\u2022"}{" "}
+                </span>
+                <Inline text={item} tone={tone} />
+              </span>
+            ))}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+function Inline({
+  text,
+  tone,
+}: {
+  readonly text: string;
+  readonly tone: "own" | "default";
 }) {
   return (
     <>

@@ -156,6 +156,27 @@ describe("message attachments", () => {
     expect(await blob.text()).toBe("1234567890");
   });
 
+  it("shows a hostile file name as inert text (UC-CHT-B08)", async () => {
+    const s = setup();
+    const name = "<img src=x onerror=window.__pwned=1>.pdf";
+    const message = await messageWithFiles(s, [
+      new File(["x"], name, { type: "application/pdf" }),
+    ]);
+    const { container } = render(
+      <Row s={s} messageId={message.id} spaceId={message.spaceId} isOwn />,
+      { wrapper: s.wrapper },
+    );
+    const group = await screen.findByRole("group", { name: "Files" });
+    // The server stores the name with angle brackets replaced; whatever comes back is drawn as text.
+    expect(
+      within(group).getByText(/img src=x onerror=window.__pwned=1.*\.pdf/),
+    ).not.toBeNull();
+    expect(
+      container.querySelector("img[src='x'], a[href^='javascript']"),
+    ).toBeNull();
+    expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+  });
+
   it("previews an image inline from bytes read with the session", async () => {
     const s = setup();
     const message = await messageWithFiles(s, [
