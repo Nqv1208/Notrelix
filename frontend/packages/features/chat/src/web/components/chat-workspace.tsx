@@ -30,6 +30,7 @@ import {
   BellOff,
   EyeOff,
   Hash,
+  Info,
   Lock,
   MessageSquareText,
   Phone,
@@ -109,7 +110,7 @@ const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
 import { useChannelTimeline } from "./use-channel-timeline";
-import { ChatMessageLinkProvider } from "./chat-link-context";
+import { ChatLinkAndRedialProvider } from "./chat-call-redial";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
 import { ChatRateLimitNotice } from "./chat-rate-limit";
@@ -157,6 +158,12 @@ export type ChatViewerRole = "owner" | "admin" | "member" | "guest";
 /** Whether the realtime stream is live; the host reports a drop while it reconnects. */
 export type ChatConnectionState = "live" | "reconnecting";
 
+/** A host-provided store for drafts, keyed by space (UC-CHT-B07). It must not throw. */
+export interface ChatDraftStore {
+  read(spaceKey: string): string | null;
+  write(spaceKey: string, text: string | null): void;
+}
+
 export interface ChatWorkspaceProps {
   readonly deps: ChatHookDeps;
   readonly workspaceId: string;
@@ -185,6 +192,11 @@ export interface ChatWorkspaceProps {
     readonly sequence: number;
   }) => string;
   readonly linkedSequence?: number | null;
+  /**
+   * Keeps a draft across a reload (UC-CHT-B07). The host owns the storage (the package never touches browser storage);
+   * without it drafts live in memory while the page is open. `write` gets null when the draft is empty, sent or discarded.
+   */
+  readonly draftStore?: ChatDraftStore;
   /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
@@ -273,20 +285,25 @@ function useElementHeight(): [(element: HTMLElement | null) => void, number] {
 function ChatDraftComposer({
   draftKey,
   drafts,
+  store,
   onSend,
   onTypingStop,
   ...rest
 }: Omit<ChatComposerProps, "value" | "onChange"> & {
   readonly draftKey: string;
   readonly drafts: RefObject<Record<string, string>>;
+  readonly store?: ChatDraftStore;
   /** The caller stopped typing: the draft emptied, was sent, or lost the focus. */
   readonly onTypingStop?: () => void;
 }) {
-  const [value, setValue] = useState(drafts.current[draftKey] ?? "");
+  const [value, setValue] = useState(
+    () => drafts.current[draftKey] ?? store?.read(draftKey) ?? "",
+  );
   function change(next: string) {
     setValue(next);
     if (next.length === 0) delete drafts.current[draftKey];
     else drafts.current[draftKey] = next;
+    store?.write(draftKey, next.length === 0 ? null : next);
     if (next.trim().length === 0) onTypingStop?.();
   }
   return (
@@ -317,6 +334,7 @@ export function ChatWorkspace({
   onOpenChannel,
   buildMessageLink,
   linkedSequence = null,
+  draftStore,
   onBackToList,
   connection = "live",
   ephemeral,
@@ -462,8 +480,7 @@ export function ChatWorkspace({
     pinQuery.data?.pages.reduce((sum, page) => sum + page.items.length, 0) ?? 0;
 
   // ─── Local interaction state ──────────────────────────────────────────────
-  // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
-  // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
+  // Drafts are kept per space while the page is open (UC-CHT-B07); a host-provided draftStore keeps them across a reload.
   const drafts = useRef<Record<string, string>>({});
   const [dockRef, dockHeight] = useElementHeight();
   const [editing, setEditing] = useState<EditState | null>(null);
@@ -1044,8 +1061,14 @@ export function ChatWorkspace({
   const heldCall = calls.current;
   const callSpaceOpen =
     heldCall !== null && channelId === heldCall.call.spaceId;
+  // The other person is in a call: no call view, a notice above the composer (Chat-Var-Call-Busy).
+  const busyEnded =
+    callSpaceOpen &&
+    heldCall.call.state === "ended" &&
+    heldCall.call.endReason === "busy";
   const stageVisible =
     callSpaceOpen &&
+    !busyEnded &&
     (heldCall.call.state === "ended" || minimizedCallId !== heldCall.call.id);
   const callPeople = {
     viewerId,
@@ -1056,7 +1079,7 @@ export function ChatWorkspace({
         ?.participants.find((p) => p.userId !== viewerId)?.userId ?? null,
   };
   const callStrip =
-    heldCall && !stageVisible ? (
+    heldCall && !stageVisible && !busyEnded ? (
       <ChatCallStrip
         controller={calls}
         held={heldCall}
@@ -1488,7 +1511,10 @@ export function ChatWorkspace({
 
   return (
     <ChatMentionProvider value={mentionContext}>
-      <ChatMessageLinkProvider value={messageLink}>
+      <ChatLinkAndRedialProvider
+        link={messageLink}
+        redial={callsEnabled ? onStartCall : null}
+      >
         <ChatHighlightProvider value={timeline.highlightId}>
           <div className="relative flex h-full min-h-0 w-full">
             {listOnly ? (
@@ -1908,11 +1934,23 @@ export function ChatWorkspace({
                           }}
                         />
                       ) : null}
+                      {busyEnded ? (
+                        <ChatStatusBanner
+                          tone="neutral"
+                          placement="notice"
+                          icon={<Info />}
+                        >
+                          {fillCopy(copy.calls.busyNotice, {
+                            name: nameOf(callPeople.peerOf(ch) ?? ""),
+                          })}
+                        </ChatStatusBanner>
+                      ) : null}
                       <ChatDraftComposer
                         floating
                         key={ch}
                         draftKey={ch}
                         drafts={drafts}
+                        store={draftStore}
                         channelName={spaceName}
                         labelOverride={
                           conversation
@@ -2473,7 +2511,7 @@ export function ChatWorkspace({
             />
           </div>
         </ChatHighlightProvider>
-      </ChatMessageLinkProvider>
+      </ChatLinkAndRedialProvider>
     </ChatMentionProvider>
   );
 }

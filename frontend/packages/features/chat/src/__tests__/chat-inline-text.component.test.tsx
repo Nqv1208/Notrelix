@@ -31,4 +31,35 @@ describe("ChatInlineText (UC-CHT-B08)", () => {
     expect(container.querySelector("script, img, a")).toBeNull();
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
   });
+
+  it("draws quotes and lists as block elements and keeps hostile text inside them inert", () => {
+    const { container } = render(
+      <p>
+        <ChatInlineText
+          text={
+            "> **said** <b>x</b>\n- one\n- <img src=x onerror=alert(1)>\n1. first"
+          }
+        />
+      </p>,
+    );
+    expect(
+      container.querySelector('[data-block="quote"] strong')?.textContent,
+    ).toBe("said");
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(container.querySelector("img, b")).toBeNull();
+    expect(container.textContent).toContain("<img src=x onerror=alert(1)>");
+  });
+
+  it("gives every link rel noopener noreferrer and shows a data address as text", () => {
+    const { container } = render(
+      <p>
+        <ChatInlineText text="https://a.test data:text/html,x mailto:a@b.test [y](javascript:alert(1))" />
+      </p>,
+    );
+    const links = container.querySelectorAll("a");
+    expect(links).toHaveLength(1);
+    expect(links[0]!.getAttribute("rel")).toContain("noopener");
+    expect(links[0]!.getAttribute("rel")).toContain("noreferrer");
+    expect(container.textContent).toContain("data:text/html,x mailto:a@b.test");
+  });
 });
