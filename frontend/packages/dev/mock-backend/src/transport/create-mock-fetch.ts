@@ -169,7 +169,6 @@ export function createMockFetch(store: MockStore): typeof fetch {
         miss: (callId: string) => boolean;
         live: (spaceId: string) => string | null;
         peer: (spaceId: string) => string | null;
-        channelOf: (personId: string) => string | null;
       };
     }
   ).__notrelixMockCall = {
@@ -179,13 +178,6 @@ export function createMockFetch(store: MockStore): typeof fetch {
       actAsOther(store, callId, personId, action),
     miss: (callId) => missCall(store, callId),
     live: (spaceId) => liveCallOf(store.chat, spaceId)?.id ?? null,
-    // A public channel the person is in, so a check can put them in a call there (busy for a caller).
-    channelOf: (personId) =>
-      Array.from(store.chat.spaces.values()).find(
-        (space) =>
-          space.kind === "channel_public" &&
-          store.chat.activeMembershipOf(space.id, personId),
-      )?.id ?? null,
     peer: (spaceId) =>
       store.chat
         .membershipsOfSpace(spaceId)
