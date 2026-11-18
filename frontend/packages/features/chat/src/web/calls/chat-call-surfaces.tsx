@@ -9,12 +9,14 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CheckIcon,
   ChevronDownIcon,
+  InfoIcon,
   MessageSquareIcon,
   Maximize2,
   Mic,
   MicOff,
   Phone,
   PhoneOff,
+  SettingsIcon,
   Video,
   VideoOff,
   WifiOff,
@@ -33,6 +35,8 @@ import type { ChatCopy } from "../components/chat.copy";
 import { avatarToneOf, initialsOf } from "../components/chat-initials";
 import { fillCopy } from "../components/use-chat-copy";
 import { CALL_RECONNECT_ATTEMPTS } from "./chat-call-media";
+import { useChatCallDevices } from "./chat-call-devices";
+import { ChatCallDevicesDialog } from "./chat-call-devices-dialog";
 import type { ChatCallsController, ChatCurrentCall } from "./use-chat-calls";
 
 export interface ChatCallPeople {
@@ -266,6 +270,18 @@ export function ChatCallStage({
   const showMic = !ended;
   const showCamera = !ended && isVideo;
 
+  // Devices are listed once the room is live (the browser shows their names only after it let the call use them).
+  const [devicesOpen, setDevicesOpen] = useState(false);
+  const [unplugged, setUnplugged] = useState<string | null>(null);
+  const devices = useChatCallDevices({
+    active: !ended && held.media === "connected" && call.state === "active",
+    inUse: held.devices,
+    onUnplugged: (kind, label) => {
+      void controller.switchDevice(kind, null, false);
+      setUnplugged(label || c.deviceDefault);
+    },
+  });
+
   return (
     <div
       ref={ref}
@@ -475,6 +491,15 @@ export function ChatCallStage({
         </div>
       )}
 
+      {unplugged && !ended ? (
+        <p
+          role="status"
+          className="mx-auto mb-2 flex max-w-xl items-center gap-2 rounded-full bg-warning-subtle px-4 py-1.5 text-sm text-warning-subtle-foreground"
+        >
+          <InfoIcon aria-hidden="true" className="size-4 shrink-0" />
+          {fillCopy(c.deviceUnplugged, { label: unplugged })}
+        </p>
+      ) : null}
       {failed ? (
         <div
           role="alert"
@@ -541,6 +566,17 @@ export function ChatCallStage({
             </RoundButton>
           ) : null}
           <RoundButton
+            label={c.devicesOpen}
+            caption={c.devicesShort}
+            showLabel={!stageVideo}
+            onClick={() => {
+              devices.refresh();
+              setDevicesOpen(true);
+            }}
+          >
+            <SettingsIcon aria-hidden="true" />
+          </RoundButton>
+          <RoundButton
             label={phase === "outgoing-ringing" ? c.cancel : c.hangUp}
             showLabel={!stageVideo}
             className={ROUND_END}
@@ -595,6 +631,17 @@ export function ChatCallStage({
           </div>
         </section>
       ) : null}
+      {ended ? null : (
+        <ChatCallDevicesDialog
+          open={devicesOpen}
+          onOpenChange={setDevicesOpen}
+          controller={controller}
+          held={held}
+          devices={devices}
+          onChosen={() => setUnplugged(null)}
+          copy={copy}
+        />
+      )}
     </div>
   );
 }

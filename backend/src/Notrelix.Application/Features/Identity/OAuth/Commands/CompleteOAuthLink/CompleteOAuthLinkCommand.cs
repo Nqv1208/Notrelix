@@ -38,6 +38,7 @@ public sealed class CompleteOAuthLinkCommandHandler
     private readonly ILogger<CompleteOAuthLinkCommandHandler> _logger;
     private readonly IOAuthIdentityProbe? _identityProbe;
     private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
 
     /// <summary>The identity belongs to another person: the answer names no one.</summary>
     public static readonly ApplicationError LinkCollision = new(
@@ -53,10 +54,11 @@ public sealed class CompleteOAuthLinkCommandHandler
         ICurrentRequestContext currentUser,
         IDateTimeProvider dateTimeProvider,
         ILogger<CompleteOAuthLinkCommandHandler> logger,
-        ISecurityActivityRecorder activity,
+        ISecurityActivityRecorder activity, ISecurityNotice notice,
         IOAuthIdentityProbe? identityProbe = null)
     {
         _activity = activity;
+        _notice = notice;
         _identityProbe = identityProbe;
         _stateStore = stateStore;
         _providerClient = providerClient;
@@ -170,6 +172,7 @@ public sealed class CompleteOAuthLinkCommandHandler
         var oauthAccount = user.OAuthAccounts.Last();
         _identityContext.OAuthAccounts.Add(oauthAccount);
         _activity.Record(user.Id, SecurityActivityType.ProviderLinked, now, _currentUser.SessionId);
+        await _notice.QueueAsync(user.Id, SecurityNoticeKind.ProviderLinked, now, null, cancellationToken);
 
         _logger.LogInformation("OAuth provider {Provider} linked to user {UserId}", profile.Provider, user.Id);
         return Result<OAuthLinkResult>.Success(

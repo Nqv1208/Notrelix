@@ -20,9 +20,13 @@ function failureOf(error: unknown): ChatCallDeviceFailure {
 export async function connectLiveKit(
   options: ChatCallMediaOptions,
 ): Promise<ChatCallMediaSession> {
+  const { audioinput, videoinput, audiooutput } = options.preferred ?? {};
   const room = new Room({
     adaptiveStream: true,
     dynacast: true,
+    ...(audioinput ? { audioCaptureDefaults: { deviceId: audioinput } } : {}),
+    ...(videoinput ? { videoCaptureDefaults: { deviceId: videoinput } } : {}),
+    ...(audiooutput ? { audioOutput: { deviceId: audiooutput } } : {}),
     // The call screen says "try n of 5" and gives up with the server's seat: the SDK default would retry 7 times, silently.
     reconnectPolicy: {
       nextRetryDelayInMs: ({ retryCount, elapsedMs }) => {
@@ -77,6 +81,15 @@ export async function connectLiveKit(
         const el = options.localVideo();
         if (on && el && publication?.track) publication.track.attach(el);
         return null;
+      } catch (error) {
+        return failureOf(error);
+      }
+    },
+    async switchDevice(kind, deviceId) {
+      try {
+        return (await room.switchActiveDevice(kind, deviceId))
+          ? null
+          : "unavailable";
       } catch (error) {
         return failureOf(error);
       }

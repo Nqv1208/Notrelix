@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { act, render, renderHook, screen, waitFor } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createNotrelixClient } from "@notrelix/contracts";
 import {
   MockStore,
@@ -17,6 +17,7 @@ import {
   ChatCallStage,
 } from "../web/calls/chat-call-surfaces";
 import type { ChatCallMediaConnector } from "../web/calls/chat-call-media";
+import type { ChatCallDeviceStore } from "../web/calls/chat-call-devices";
 import { systemTextOf } from "../web/components/use-chat-copy";
 import { en, vi as viCopy } from "../web/components/chat.copy";
 import type { ChatCall } from "../core/types/call";
@@ -42,11 +43,15 @@ const okConnector: ChatCallMediaConnector = async (options) => {
   return {
     setMicrophone: async () => null,
     setCamera: async () => null,
+    switchDevice: async () => null,
     disconnect: () => undefined,
   };
 };
 
-async function setup(connector: ChatCallMediaConnector = okConnector) {
+async function setup(
+  connector: ChatCallMediaConnector = okConnector,
+  deviceStore?: ChatCallDeviceStore,
+) {
   const store = new MockStore({ ...defaultConfig });
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
@@ -79,7 +84,7 @@ async function setup(connector: ChatCallMediaConnector = okConnector) {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   const rendered = renderHook(
-    () => useChatCalls({ deps, workspaceId: WS, connector }),
+    () => useChatCalls({ deps, workspaceId: WS, connector, deviceStore }),
     { wrapper },
   );
   /** Delivers the call frame the server would send (the version the mock holds now). */
@@ -257,6 +262,7 @@ describe("useChatCalls: the one-to-one call from both ends", () => {
       return {
         setMicrophone: async () => "denied",
         setCamera: async () => null,
+        switchDevice: async () => null,
         disconnect: () => undefined,
       };
     };
@@ -283,6 +289,152 @@ describe("useChatCalls: the one-to-one call from both ends", () => {
     await waitFor(() =>
       expect(f.rendered.result.current.current?.media).toBe("failed"),
     );
+  });
+});
+
+describe("useChatCalls: the devices of a call", () => {
+  /** A connector that records what it was asked and what the call asked of the session. */
+  function spyConnector(failure: "denied" | "unavailable" | null = null) {
+    const connects: Array<Record<string, string> | undefined> = [];
+    const switches: Array<[string, string]> = [];
+    const connector: ChatCallMediaConnector = async (options) => {
+      connects.push(options.preferred as Record<string, string> | undefined);
+      queueMicrotask(() => options.onState("connected"));
+      return {
+        setMicrophone: async () => null,
+        setCamera: async () => null,
+        switchDevice: async (kind, id) => {
+          switches.push([kind, id]);
+          return failure;
+        },
+        disconnect: () => undefined,
+      };
+    };
+    return { connector, connects, switches };
+  }
+
+  async function startVoice(t: Awaited<ReturnType<typeof setup>>) {
+    act(() => t.rendered.result.current.start(t.spaceId, "voice"));
+    await waitFor(() =>
+      expect(t.rendered.result.current.current?.media).toBe("connected"),
+    );
+  }
+
+  const KEY = "notrelix.chat.call-devices";
+  let saved: Map<string, string>;
+  let store: ChatCallDeviceStore;
+  beforeEach(() => {
+    saved = new Map();
+    store = {
+      getItem: (key) => saved.get(key) ?? null,
+      setItem: (key, value) => void saved.set(key, value),
+    };
+  });
+
+  it("moves the session to the chosen device, remembers it, and gives it to the next call", async () => {
+    const spy = spyConnector();
+    const t = await setup(spy.connector, store);
+    await startVoice(t);
+    expect(spy.connects[0]).toEqual({});
+
+    await act(async () => {
+      await t.rendered.result.current.switchDevice("audioinput", "mic-2");
+      await t.rendered.result.current.switchDevice("audiooutput", "out-2");
+    });
+    expect(spy.switches).toEqual([
+      ["audioinput", "mic-2"],
+      ["audiooutput", "out-2"],
+    ]);
+    expect(t.rendered.result.current.current?.devices).toEqual({
+      audioinput: "mic-2",
+      audiooutput: "out-2",
+    });
+    expect(saved.get(KEY)).toBe(
+      JSON.stringify({ audioinput: "mic-2", audiooutput: "out-2" }),
+    );
+
+    // A reload: a new controller reads the choice back and gives it to its media session.
+    const again = await setup(spy.connector, store);
+    await startVoice(again);
+    expect(spy.connects.at(-1)).toEqual({
+      audioinput: "mic-2",
+      audiooutput: "out-2",
+    });
+    expect(again.rendered.result.current.current?.devices).toEqual({
+      audioinput: "mic-2",
+      audiooutput: "out-2",
+    });
+  });
+
+  it("goes back to the system default and forgets the choice", async () => {
+    saved.set(KEY, JSON.stringify({ audioinput: "mic-2" }));
+    const spy = spyConnector();
+    const t = await setup(spy.connector, store);
+    await startVoice(t);
+    expect(t.rendered.result.current.current?.devices).toEqual({
+      audioinput: "mic-2",
+    });
+    await act(async () => {
+      await t.rendered.result.current.switchDevice("audioinput", null);
+    });
+    expect(spy.switches).toEqual([["audioinput", "default"]]);
+    expect(t.rendered.result.current.current?.devices).toEqual({});
+    expect(saved.get(KEY)).toBe("{}");
+  });
+
+  it("does not remember a fallback after an unplug, nor a device the call could not use", async () => {
+    saved.set(KEY, JSON.stringify({ audioinput: "mic-2" }));
+    const spy = spyConnector();
+    const t = await setup(spy.connector, store);
+    await startVoice(t);
+    await act(async () => {
+      await t.rendered.result.current.switchDevice("audioinput", null, false);
+    });
+    expect(t.rendered.result.current.current?.devices).toEqual({});
+    expect(saved.get(KEY)).toBe(JSON.stringify({ audioinput: "mic-2" }));
+
+    const bad = spyConnector("unavailable");
+    const u = await setup(bad.connector, store);
+    await startVoice(u);
+    let failure: string | null = null;
+    await act(async () => {
+      failure = await u.rendered.result.current.switchDevice(
+        "audioinput",
+        "mic-9",
+      );
+    });
+    expect(failure).toBe("unavailable");
+    expect(u.rendered.result.current.current?.devices).toEqual({
+      audioinput: "mic-2",
+    });
+  });
+
+  it("never puts a device id in a request to the server", async () => {
+    const spy = spyConnector();
+    const t = await setup(spy.connector, store);
+    const sent: string[] = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      sent.push(String(init?.body ?? ""));
+      return realFetch(input, init);
+    }) as typeof fetch;
+    try {
+      await startVoice(t);
+      await act(async () => {
+        await t.rendered.result.current.switchDevice(
+          "audioinput",
+          "mic-secret",
+        );
+      });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(sent.join("")).not.toContain("mic-secret");
+    expect(
+      JSON.stringify(
+        t.store.chat.calls.get(t.rendered.result.current.current!.call.id),
+      ),
+    ).not.toContain("mic-secret");
   });
 });
 
@@ -321,6 +473,7 @@ function held(over: Partial<ChatCurrentCall> = {}): ChatCurrentCall {
     audioOn: true,
     videoOn: false,
     deviceNotice: null,
+    devices: {},
     ...over,
   };
 }
@@ -339,6 +492,7 @@ function controller(
     hangUp: vi.fn(),
     toggleMicrophone: vi.fn(),
     toggleCamera: vi.fn(),
+    switchDevice: vi.fn(async () => null),
     retryConnect: vi.fn(),
     dismiss: vi.fn(),
     remoteVideoRef: vi.fn(),

@@ -45,6 +45,7 @@ function fakeMedia() {
     return {
       setMicrophone: async () => null,
       setCamera: async () => null,
+      switchDevice: async () => null,
       disconnect: disconnects,
     };
   };
@@ -289,6 +290,7 @@ function held(over: Partial<ChatCurrentCall> = {}): ChatCurrentCall {
     audioOn: true,
     videoOn: false,
     deviceNotice: null,
+    devices: {},
     ...over,
   };
 }
@@ -305,6 +307,7 @@ function controller(current: ChatCurrentCall): ChatCallsController {
     hangUp: vi.fn(),
     toggleMicrophone: vi.fn(),
     toggleCamera: vi.fn(),
+    switchDevice: vi.fn(),
     retryConnect: vi.fn(),
     dismiss: vi.fn(),
     remoteVideoRef: vi.fn(),

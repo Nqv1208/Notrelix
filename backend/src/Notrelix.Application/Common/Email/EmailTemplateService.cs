@@ -183,4 +183,51 @@ public static class EmailTemplateService
         </html>
         """;
     }
+
+    /// <summary>The plain mail after a security change: what, when, from which device, and a link; no secret.</summary>
+    public static string SecurityNotice(string userName, string headline, string detail, string whenUtc, string device, string link)
+    {
+        static string E(string value) => System.Net.WebUtility.HtmlEncode(value);
+        return $"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </head>
+        <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+          <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px">
+            <tr>
+              <td align="center">
+                <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+                  <tr>
+                    <td style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:32px 40px;text-align:center">
+                      <h1 style="margin:0;color:#fff;font-size:24px;font-weight:700;letter-spacing:-0.5px">Notrelix</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:40px">
+                      <p style="margin:0 0 8px;font-size:16px;color:#18181b">Hi {E(userName)},</p>
+                      <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#18181b">{E(headline)}</p>
+                      <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.6">{E(detail)}</p>
+                      <p style="margin:0 0 4px;font-size:14px;color:#71717a;line-height:1.6">When: {E(whenUtc)}</p>
+                      <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.6">Device: {E(device)}</p>
+                      <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.6">
+                        If this was you, no action is needed. If it was not, open <a href="{E(link)}" style="color:#4f46e5">Notrelix</a>, go to Account &rarr; Security, change your password and sign out the other devices, then contact our support team.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:20px 40px;border-top:1px solid #f4f4f5;text-align:center">
+                      <p style="margin:0;font-size:12px;color:#a1a1aa">&copy; {DateTime.UtcNow.Year} Notrelix, Inc.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+        """;
+    }
 }

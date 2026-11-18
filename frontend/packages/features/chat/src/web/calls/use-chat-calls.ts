@@ -21,8 +21,17 @@ import type {
 } from "../../core/types/call";
 import { chatQueryKeys } from "../../query/keys";
 import {
+  CHAT_CALL_DEFAULT_DEVICE,
+  type ChatCallDeviceStore,
+  readChatCallDevicePreference,
+  writeChatCallDevicePreference,
+} from "./chat-call-devices";
+import {
   CALL_RECONNECT_LIMIT_MS,
   connectChatCallMedia,
+  type ChatCallDeviceFailure,
+  type ChatCallDeviceKind,
+  type ChatCallDevicePreference,
   type ChatCallMediaConnector,
   type ChatCallMediaSession,
   type ChatCallMediaState,
@@ -54,6 +63,8 @@ export interface ChatCurrentCall {
   readonly videoOn: boolean;
   /** A device the browser refused; the call goes on without it. */
   readonly deviceNotice: "mic-denied" | "camera-denied" | null;
+  /** The devices the call uses; a kind that is missing uses the system default. Client-side only. */
+  readonly devices: ChatCallDevicePreference;
 }
 
 export interface ChatCallsController {
@@ -70,6 +81,15 @@ export interface ChatCallsController {
   readonly hangUp: () => void;
   readonly toggleMicrophone: () => void;
   readonly toggleCamera: () => void;
+  /**
+   * Moves the call to another device of that kind (`null` is the system default). A person's own choice is remembered
+   * in this browser; a fallback after an unplug (`remember: false`) is not.
+   */
+  readonly switchDevice: (
+    kind: ChatCallDeviceKind,
+    deviceId: string | null,
+    remember?: boolean,
+  ) => Promise<ChatCallDeviceFailure | null>;
   readonly retryConnect: () => void;
   readonly dismiss: () => void;
   readonly remoteVideoRef: (el: HTMLVideoElement | null) => void;
@@ -81,6 +101,8 @@ export interface UseChatCallsOptions {
   readonly workspaceId: string;
   /** Replaces the media plane; the default loads LiveKit (or connects the mock token at once). */
   readonly connector?: ChatCallMediaConnector;
+  /** Where the browser's chosen devices are remembered (the host's storage); without it a choice lasts one call. */
+  readonly deviceStore?: ChatCallDeviceStore;
 }
 
 const errorOf = (error: unknown): ChatCallError => {
@@ -116,6 +138,7 @@ export function useChatCalls({
   deps,
   workspaceId: ws,
   connector = connectChatCallMedia,
+  deviceStore,
 }: UseChatCallsOptions): ChatCallsController {
   const queryClient = useQueryClient();
   const service = useMemo(
@@ -232,6 +255,7 @@ export function useChatCalls({
           token,
           remoteVideo: () => remoteEl.current,
           localVideo: () => localEl.current,
+          preferred: currentRef.current?.devices,
           onState: (state) => {
             if (generation !== generationRef.current) return;
             const held = currentRef.current;
@@ -281,11 +305,12 @@ export function useChatCalls({
         audioOn: true,
         videoOn: call.kind === "video" && !voiceOnly,
         deviceNotice: null,
+        devices: readChatCallDevicePreference(deviceStore),
       });
       if (call.state !== "ended" && joinToken)
         void connect(joinToken.url, joinToken.token);
     },
-    [connect, teardown, update],
+    [connect, deviceStore, teardown, update],
   );
 
   // Devices go live once the room is joined and the other person has answered.
@@ -634,6 +659,32 @@ export function useChatCalls({
     }
   }, [armGiveUp, connect, disarmGiveUp, patch, service, settle, ws]);
 
+  const switchDevice = useCallback(
+    async (
+      kind: ChatCallDeviceKind,
+      deviceId: string | null,
+      remember = true,
+    ) => {
+      const session = sessionRef.current;
+      if (!session) return "unavailable" as const;
+      const failure = await session.switchDevice(
+        kind,
+        deviceId ?? CHAT_CALL_DEFAULT_DEVICE,
+      );
+      if (failure) return failure;
+      const heldNow = currentRef.current;
+      if (heldNow) {
+        const devices = { ...heldNow.devices };
+        if (deviceId) devices[kind] = deviceId;
+        else delete devices[kind];
+        update({ ...heldNow, devices });
+      }
+      if (remember) writeChatCallDevicePreference(deviceStore, kind, deviceId);
+      return null;
+    },
+    [deviceStore, update],
+  );
+
   const retryConnect = useCallback(() => {
     if (currentRef.current?.media === "lost") {
       void recover();
@@ -666,6 +717,7 @@ export function useChatCalls({
     hangUp,
     toggleMicrophone,
     toggleCamera,
+    switchDevice,
     retryConnect,
     dismiss,
     remoteVideoRef,
