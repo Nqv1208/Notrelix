@@ -158,6 +158,12 @@ export type ChatViewerRole = "owner" | "admin" | "member" | "guest";
 /** Whether the realtime stream is live; the host reports a drop while it reconnects. */
 export type ChatConnectionState = "live" | "reconnecting";
 
+/** A host-provided store for drafts, keyed by space (UC-CHT-B07). It must not throw. */
+export interface ChatDraftStore {
+  read(spaceKey: string): string | null;
+  write(spaceKey: string, text: string | null): void;
+}
+
 export interface ChatWorkspaceProps {
   readonly deps: ChatHookDeps;
   readonly workspaceId: string;
@@ -186,6 +192,11 @@ export interface ChatWorkspaceProps {
     readonly sequence: number;
   }) => string;
   readonly linkedSequence?: number | null;
+  /**
+   * Keeps a draft across a reload (UC-CHT-B07). The host owns the storage (the package never touches browser storage);
+   * without it drafts live in memory while the page is open. `write` gets null when the draft is empty, sent or discarded.
+   */
+  readonly draftStore?: ChatDraftStore;
   /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
@@ -274,20 +285,25 @@ function useElementHeight(): [(element: HTMLElement | null) => void, number] {
 function ChatDraftComposer({
   draftKey,
   drafts,
+  store,
   onSend,
   onTypingStop,
   ...rest
 }: Omit<ChatComposerProps, "value" | "onChange"> & {
   readonly draftKey: string;
   readonly drafts: RefObject<Record<string, string>>;
+  readonly store?: ChatDraftStore;
   /** The caller stopped typing: the draft emptied, was sent, or lost the focus. */
   readonly onTypingStop?: () => void;
 }) {
-  const [value, setValue] = useState(drafts.current[draftKey] ?? "");
+  const [value, setValue] = useState(
+    () => drafts.current[draftKey] ?? store?.read(draftKey) ?? "",
+  );
   function change(next: string) {
     setValue(next);
     if (next.length === 0) delete drafts.current[draftKey];
     else drafts.current[draftKey] = next;
+    store?.write(draftKey, next.length === 0 ? null : next);
     if (next.trim().length === 0) onTypingStop?.();
   }
   return (
@@ -318,6 +334,7 @@ export function ChatWorkspace({
   onOpenChannel,
   buildMessageLink,
   linkedSequence = null,
+  draftStore,
   onBackToList,
   connection = "live",
   ephemeral,
@@ -463,8 +480,7 @@ export function ChatWorkspace({
     pinQuery.data?.pages.reduce((sum, page) => sum + page.items.length, 0) ?? 0;
 
   // ─── Local interaction state ──────────────────────────────────────────────
-  // Drafts are kept per space while the page is open (UC-CHT-B07). A feature package does not touch browser
-  // storage, so keeping them across a reload needs a host-provided store: owner decision, not built here.
+  // Drafts are kept per space while the page is open (UC-CHT-B07); a host-provided draftStore keeps them across a reload.
   const drafts = useRef<Record<string, string>>({});
   const [dockRef, dockHeight] = useElementHeight();
   const [editing, setEditing] = useState<EditState | null>(null);
@@ -1934,6 +1950,7 @@ export function ChatWorkspace({
                         key={ch}
                         draftKey={ch}
                         drafts={drafts}
+                        store={draftStore}
                         channelName={spaceName}
                         labelOverride={
                           conversation

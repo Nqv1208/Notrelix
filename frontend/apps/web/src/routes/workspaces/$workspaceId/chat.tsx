@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   ChatWorkspace,
   createChatHooks,
+  type ChatDraftStore,
   type ChatViewerRole,
 } from "@notrelix/features-chat/web";
 import type { ChatEphemeralPort } from "@notrelix/features-chat";
@@ -11,6 +12,30 @@ import { useAppRuntime } from "@notrelix/runtime-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 import { useRealtimeConnection } from "../../../realtime/use-realtime-connection";
+
+/**
+ * Drafts survive a reload in this tab only (UC-CHT-B07): session storage, keyed by Workspace and person, never sent anywhere.
+ * Storage that is missing or full leaves the draft in memory.
+ */
+function sessionDraftStore(prefix: string): ChatDraftStore {
+  return {
+    read: (key) => {
+      try {
+        return window.sessionStorage.getItem(`${prefix}:${key}`);
+      } catch {
+        return null;
+      }
+    },
+    write: (key, text) => {
+      try {
+        if (text === null) window.sessionStorage.removeItem(`${prefix}:${key}`);
+        else window.sessionStorage.setItem(`${prefix}:${key}`, text);
+      } catch {
+        // Storage unavailable: the draft stays in memory.
+      }
+    },
+  };
+}
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -71,6 +96,15 @@ export function ChatPage() {
     }),
     [realtimeClient, workspaceId],
   );
+  const draftStore = useMemo(
+    () =>
+      viewer.userId
+        ? sessionDraftStore(
+            `notrelix-chat-draft:${workspaceId}:${viewer.userId}`,
+          )
+        : undefined,
+    [workspaceId, viewer.userId],
+  );
   const channels = hooks.useChannels(workspaceId);
   const firstChannelId = channels.data?.[0]?.id ?? null;
 
@@ -125,6 +159,7 @@ export function ChatPage() {
         }
         people={people}
         linkedSequence={linkedSequence}
+        draftStore={draftStore}
         buildMessageLink={({ spaceId, conversation, sequence }) =>
           `${window.location.origin}/workspaces/${workspaceId}/chat/${
             conversation ? "dm/" : ""
