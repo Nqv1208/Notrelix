@@ -2,7 +2,6 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
-using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.SuspendMember;
@@ -79,7 +78,7 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
 
         // The person's API tokens in this workspace stop with the suspension, in the same transaction.
         await _apiTokens.RevokeForMemberAsync(
-            request.UserId, request.WorkspaceId, _requestContext.UserId, ApiTokenRevokedReason.MemberSuspended, ct);
+            request.UserId, request.WorkspaceId, _requestContext.UserId, MemberAccessEnd.Suspended, ct);
 
         _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();

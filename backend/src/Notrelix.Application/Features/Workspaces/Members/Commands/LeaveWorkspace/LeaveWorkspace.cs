@@ -3,7 +3,6 @@ using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Identity.Public.DefaultWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
-using Notrelix.Domain.Identity.Tokens;
 using Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;
@@ -108,7 +107,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
         await _defaultWorkspace.ClearIfAsync(userId, workspace.Id, ct);
 
         // The tokens the person issued in this workspace leave with them, in the same transaction.
-        await _apiTokens.RevokeForMemberAsync(userId, workspace.Id, userId, ApiTokenRevokedReason.MemberLeft, ct);
+        await _apiTokens.RevokeForMemberAsync(userId, workspace.Id, userId, MemberAccessEnd.Left, ct);
 
         // No access signal here: the grant ended in this transaction, so the person can no longer write a
         // workspace-scoped fact; their own client is cut by the periodic re-authorization pass.

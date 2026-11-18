@@ -1,6 +1,12 @@
-using Notrelix.Domain.Identity.Tokens;
-
 namespace Notrelix.Application.Features.Identity.Public.ApiTokens;
+
+/// <summary>Why a person's access to a Workspace ended, as Workspaces tells Identity.</summary>
+public enum MemberAccessEnd
+{
+    Removed,
+    Suspended,
+    Left
+}
 
 /// <summary>
 /// Producer-owned public surface for ending a person's API tokens when their access to a Workspace ends.
@@ -18,6 +24,6 @@ public interface IIdentityApiTokens
         Guid userId,
         Guid workspaceId,
         Guid revokedBy,
-        ApiTokenRevokedReason reason,
+        MemberAccessEnd reason,
         CancellationToken cancellationToken);
 }

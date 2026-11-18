@@ -245,7 +245,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         await using (var context = CreateSystemContext())
         {
             var revoked = await new IdentityApiTokensProvider(context, Clock())
-                .RevokeForMemberAsync(_user.Id, _workspaceId, colleague.Id, ApiTokenRevokedReason.MemberRemoved, CancellationToken.None);
+                .RevokeForMemberAsync(_user.Id, _workspaceId, colleague.Id, Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd.Removed, CancellationToken.None);
             await context.SaveChangesAsync();
             revoked.Should().Be(1);
         }

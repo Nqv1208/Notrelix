@@ -49,7 +49,7 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
         GrantProjectionMock.Verify(g => g.ClearCustomRoleAssignmentsAsync(
             TestAccountId, TestWorkspaceId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _apiTokens.Verify(t => t.RevokeForMemberAsync(TestUserId, TestWorkspaceId, TestUserId,
-            Notrelix.Domain.Identity.Tokens.ApiTokenRevokedReason.MemberLeft, It.IsAny<CancellationToken>()), Times.Once);
+            Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd.Left, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
         GrantProjectionMock.Verify(g => g.RevokeLeavingMemberGrantAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
         _apiTokens.Verify(t => t.RevokeForMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-            It.IsAny<Notrelix.Domain.Identity.Tokens.ApiTokenRevokedReason>(), It.IsAny<CancellationToken>()), Times.Never);
+            It.IsAny<Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

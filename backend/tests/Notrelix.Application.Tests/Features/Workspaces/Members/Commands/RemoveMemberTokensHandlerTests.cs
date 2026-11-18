@@ -1,6 +1,5 @@
 using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
-using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Members.Commands;
 
@@ -26,7 +25,7 @@ public class RemoveMemberTokensHandlerTests : WorkspaceHandlerTestBase
         result.Succeeded.Should().BeTrue();
         _apiTokens.Verify(
             t => t.RevokeForMemberAsync(_targetId, TestWorkspaceId, TestUserId,
-                ApiTokenRevokedReason.MemberRemoved, It.IsAny<CancellationToken>()),
+                MemberAccessEnd.Removed, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -42,7 +41,7 @@ public class RemoveMemberTokensHandlerTests : WorkspaceHandlerTestBase
 
         _apiTokens.Verify(
             t => t.RevokeForMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<ApiTokenRevokedReason>(), It.IsAny<CancellationToken>()),
+                It.IsAny<MemberAccessEnd>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 }

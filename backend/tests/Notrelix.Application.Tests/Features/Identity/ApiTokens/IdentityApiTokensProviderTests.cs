@@ -1,4 +1,5 @@
 using Notrelix.Application.Features.Identity.ApiTokens.Services;
+using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Tests.Features.Identity.ApiTokens;
@@ -25,7 +26,7 @@ public class IdentityApiTokensProviderTests : IdentityHandlerTestBase
         SetupApiTokens(leaver, leaverElsewhere, colleague);
 
         var revoked = await Sut().RevokeForMemberAsync(
-            TestUserId, WorkspaceId, Admin, ApiTokenRevokedReason.MemberRemoved, CancellationToken.None);
+            TestUserId, WorkspaceId, Admin, MemberAccessEnd.Removed, CancellationToken.None);
 
         revoked.Should().Be(1);
         leaver.Status.Should().Be(ApiTokenStatus.Revoked);
@@ -41,10 +42,10 @@ public class IdentityApiTokensProviderTests : IdentityHandlerTestBase
     {
         var leaver = Token(TestUserId, WorkspaceId, "h1");
         SetupApiTokens(leaver);
-        await Sut().RevokeForMemberAsync(TestUserId, WorkspaceId, Admin, ApiTokenRevokedReason.MemberSuspended, CancellationToken.None);
+        await Sut().RevokeForMemberAsync(TestUserId, WorkspaceId, Admin, MemberAccessEnd.Suspended, CancellationToken.None);
         var version = leaver.Version;
 
-        var again = await Sut().RevokeForMemberAsync(TestUserId, WorkspaceId, Admin, ApiTokenRevokedReason.MemberRemoved, CancellationToken.None);
+        var again = await Sut().RevokeForMemberAsync(TestUserId, WorkspaceId, Admin, MemberAccessEnd.Removed, CancellationToken.None);
 
         again.Should().Be(0);
         leaver.RevokedReason.Should().Be(ApiTokenRevokedReason.MemberSuspended);
@@ -57,7 +58,7 @@ public class IdentityApiTokensProviderTests : IdentityHandlerTestBase
         SetupApiTokens();
 
         var revoked = await Sut().RevokeForMemberAsync(
-            TestUserId, WorkspaceId, Admin, ApiTokenRevokedReason.MemberLeft, CancellationToken.None);
+            TestUserId, WorkspaceId, Admin, MemberAccessEnd.Left, CancellationToken.None);
 
         revoked.Should().Be(0);
     }

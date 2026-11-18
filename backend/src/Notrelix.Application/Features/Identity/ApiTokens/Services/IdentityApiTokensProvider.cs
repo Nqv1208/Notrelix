@@ -23,9 +23,17 @@ public sealed class IdentityApiTokensProvider : IIdentityApiTokens
         Guid userId,
         Guid workspaceId,
         Guid revokedBy,
-        ApiTokenRevokedReason reason,
+        MemberAccessEnd reason,
         CancellationToken cancellationToken)
     {
+        var revokedReason = reason switch
+        {
+            MemberAccessEnd.Removed => ApiTokenRevokedReason.MemberRemoved,
+            MemberAccessEnd.Suspended => ApiTokenRevokedReason.MemberSuspended,
+            MemberAccessEnd.Left => ApiTokenRevokedReason.MemberLeft,
+            _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, null)
+        };
+
         var tokens = await _context.ApiTokens
             .Where(t => t.WorkspaceId == workspaceId && t.UserId == userId && t.Status == ApiTokenStatus.Active)
             .ToListAsync(cancellationToken);
@@ -33,7 +41,7 @@ public sealed class IdentityApiTokensProvider : IIdentityApiTokens
         var now = _dateTimeProvider.UtcNow;
         foreach (var token in tokens)
         {
-            token.Revoke(revokedBy, now, reason);
+            token.Revoke(revokedBy, now, revokedReason);
         }
 
         return tokens.Count;

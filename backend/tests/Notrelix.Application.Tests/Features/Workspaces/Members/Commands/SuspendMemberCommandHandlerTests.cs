@@ -102,7 +102,7 @@ public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
 
         ApiTokens.Verify(
             t => t.RevokeForMemberAsync(_targetId, TestWorkspaceId, TestUserId,
-                Notrelix.Domain.Identity.Tokens.ApiTokenRevokedReason.MemberSuspended, It.IsAny<CancellationToken>()),
+                Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd.Suspended, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -118,7 +118,7 @@ public class SuspendMemberCommandHandlerTests : WorkspaceHandlerTestBase
 
         ApiTokens.Verify(
             t => t.RevokeForMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<Notrelix.Domain.Identity.Tokens.ApiTokenRevokedReason>(), It.IsAny<CancellationToken>()),
+                It.IsAny<Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 }
