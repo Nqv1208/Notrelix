@@ -198,6 +198,8 @@ public static class DependencyInjection
         services.AddScoped<IBoardItemSummaryBuilder, BoardItemSummaryBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.BoardExportBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.ImportPeopleDirectory>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationManageAuthorizer,
+            Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationManageAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer,
             Notrelix.Application.Features.Chat.Mentions.Services.BroadcastAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
