@@ -20,6 +20,7 @@ import {
   UsersIcon,
   Video,
   VideoOff,
+  WifiOff,
   X,
 } from "lucide-react";
 import { Avatar, AvatarFallback, Button, cn } from "@notrelix/ui-web";
@@ -36,6 +37,7 @@ import type { ChatCall } from "../../core/types/call";
 import type { ChatCopy } from "../components/chat.copy";
 import { avatarToneOf, initialsOf } from "../components/chat-initials";
 import { fillCopy } from "../components/use-chat-copy";
+import { CALL_RECONNECT_ATTEMPTS } from "./chat-call-media";
 import { useChatCallDevices } from "./chat-call-devices";
 import {
   ChatCallParticipantGrid,
@@ -108,13 +110,15 @@ function useCallFacts(
   const status =
     phase === "outgoing-ringing"
       ? c.ringingDots
-      : held.media === "reconnecting"
-        ? c.reconnecting
-        : phase === "connected"
-          ? timer
-          : phase === "connecting"
-            ? c.connecting
-            : "";
+      : held.media === "lost"
+        ? c.lostShort
+        : held.media === "reconnecting"
+          ? c.reconnecting
+          : phase === "connected"
+            ? timer
+            : phase === "connecting"
+              ? c.connecting
+              : "";
   return {
     call,
     phase,
@@ -250,6 +254,18 @@ export function ChatCallStage({
   const other = call.participants.find((p) => p.personId === otherId);
   const remoteVideoOn = Boolean(other?.videoOn && !other.leftAt);
   const failed = held.media === "failed" && !ended;
+  const lost = held.media === "lost" && !ended;
+  const reconnecting = held.media === "reconnecting" && !ended;
+  // While the connection is down the stage underneath cannot be reached: only the overlay's buttons can.
+  useEffect(() => {
+    const stage = ref.current;
+    if (!stage || !(lost || reconnecting)) return;
+    const under = [...stage.children].filter(
+      (el) => el.getAttribute("data-testid") !== "chat-call-reconnect",
+    );
+    under.forEach((el) => el.setAttribute("inert", ""));
+    return () => under.forEach((el) => el.removeAttribute("inert"));
+  }, [lost, reconnecting]);
   const completed = ended && call.endReason === "completed";
   const lasted =
     completed && call.answeredAt && call.endedAt
@@ -642,6 +658,51 @@ export function ChatCallStage({
           </RoundButton>
         </div>
       )}
+
+      {lost || reconnecting ? (
+        <section
+          role={lost ? "alert" : "status"}
+          aria-label={lost ? c.lostTitle : c.reconnectTitle}
+          data-testid="chat-call-reconnect"
+          data-state={lost ? "lost" : "reconnecting"}
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-inverse-surface/80 p-8 text-center animate-in fade-in duration-200 motion-reduce:animate-none"
+        >
+          <span className="grid size-16 place-items-center rounded-full bg-inverse-foreground/10">
+            <WifiOff aria-hidden="true" className="size-8" />
+          </span>
+          <h3 className="text-xl font-semibold">
+            {lost ? c.lostTitle : c.reconnectTitle}
+          </h3>
+          <p className="max-w-md text-inverse-muted">
+            {lost
+              ? c.lostBody
+              : held.attempt
+                ? fillCopy(c.reconnectAttempt, {
+                    attempt: String(held.attempt),
+                    max: String(CALL_RECONNECT_ATTEMPTS),
+                  })
+                : c.reconnectWait}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-2.5">
+            {lost ? (
+              <button
+                type="button"
+                className={cn(PILL, PILL_PRIMARY)}
+                onClick={controller.retryConnect}
+              >
+                {c.retry}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={cn(PILL, PILL_NEUTRAL)}
+              onClick={controller.hangUp}
+            >
+              {c.leaveCall}
+            </button>
+          </div>
+        </section>
+      ) : null}
       {ended ? null : (
         <ChatCallDevicesDialog
           open={devicesOpen}
@@ -877,11 +938,13 @@ export function ChatCallStrip({
             ? endedTitle(call.endReason, name, c)
             : ringing
               ? c.ringingDots
-              : held.media === "reconnecting"
-                ? c.reconnecting
-                : phase === "connecting"
-                  ? c.connecting
-                  : c.connected}
+              : held.media === "lost"
+                ? c.lostShort
+                : held.media === "reconnecting"
+                  ? c.reconnecting
+                  : phase === "connecting"
+                    ? c.connecting
+                    : c.connected}
         </p>
         <p className="truncate text-xs text-muted-foreground">{name}</p>
       </div>

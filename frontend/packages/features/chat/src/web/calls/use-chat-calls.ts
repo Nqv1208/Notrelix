@@ -27,6 +27,7 @@ import {
   writeChatCallDevicePreference,
 } from "./chat-call-devices";
 import {
+  CALL_RECONNECT_LIMIT_MS,
   connectChatCallMedia,
   type ChatCallDeviceFailure,
   type ChatCallDeviceKind,
@@ -51,8 +52,13 @@ export interface ChatCallsDeps {
 
 export interface ChatCurrentCall {
   readonly call: ChatCall;
-  /** The media plane: idle until a join token arrives. */
-  readonly media: "idle" | ChatCallMediaState | "connecting";
+  /**
+   * The media plane: idle until a join token arrives. `lost` is a connection that stayed down for the whole limit (or whose
+   * room closed under an active call); the screen offers a retry and leaving.
+   */
+  readonly media: "idle" | ChatCallMediaState | "connecting" | "lost";
+  /** The reconnect try the media client is on (from 1), or null while the number is not known (offline, waiting). */
+  readonly attempt: number | null;
   readonly audioOn: boolean;
   readonly videoOn: boolean;
   /** A device the browser refused; the call goes on without it. */
@@ -166,6 +172,13 @@ export function useChatCalls({
   const sessionRef = useRef<ChatCallMediaSession | null>(null);
   const tokenRef = useRef<{ url: string; token: string } | null>(null);
   const devicesOnRef = useRef(false);
+  // The media plane's own word, the browser's network, and the one timer that gives a dropped connection up.
+  const sdkStateRef = useRef<ChatCallMediaState | null>(null);
+  const offlineRef = useRef(false);
+  const giveUpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A session whose events no longer count (it was dropped or replaced).
+  const generationRef = useRef(0);
+  const leavingRef = useRef(false);
   const remoteEl = useRef<HTMLVideoElement | null>(null);
   const localEl = useRef<HTMLVideoElement | null>(null);
 
@@ -181,14 +194,55 @@ export function useChatCalls({
     [update],
   );
 
-  const teardown = useCallback(() => {
-    sessionRef.current?.disconnect();
-    sessionRef.current = null;
-    tokenRef.current = null;
-    devicesOnRef.current = false;
-    setSpeakingIds([]);
+  const disarmGiveUp = useCallback(() => {
+    if (giveUpTimerRef.current) clearTimeout(giveUpTimerRef.current);
+    giveUpTimerRef.current = null;
   }, []);
+
+  /** Closes the media session; what it still reports is ignored. */
+  const dropSession = useCallback(() => {
+    generationRef.current += 1;
+    disarmGiveUp();
+    sdkStateRef.current = null;
+    devicesOnRef.current = false;
+    const session = sessionRef.current;
+    sessionRef.current = null;
+    session?.disconnect();
+    setSpeakingIds([]);
+  }, [disarmGiveUp]);
+
+  const teardown = useCallback(() => {
+    dropSession();
+    tokenRef.current = null;
+  }, [dropSession]);
   useEffect(() => teardown, [teardown]);
+
+  /** The connection the person is in: the media plane's state, or reconnecting while the browser is offline. */
+  const syncMedia = useCallback(() => {
+    const held = currentRef.current;
+    const sdk = sdkStateRef.current;
+    if (!held || held.call.state === "ended" || !sdk) return;
+    const media =
+      sdk === "connected" && offlineRef.current ? "reconnecting" : sdk;
+    patch({
+      media,
+      attempt: media === "reconnecting" ? held.attempt : null,
+    });
+  }, [patch]);
+
+  /** The limit passed without a connection: the session is closed (the media server sees the person leave) and the screen offers a retry. */
+  const giveUp = useCallback(() => {
+    disarmGiveUp();
+    const held = currentRef.current;
+    if (!held || held.call.state !== "active") return;
+    dropSession();
+    patch({ media: "lost", attempt: null });
+  }, [disarmGiveUp, dropSession, patch]);
+
+  const armGiveUp = useCallback(() => {
+    if (!giveUpTimerRef.current)
+      giveUpTimerRef.current = setTimeout(giveUp, CALL_RECONNECT_LIMIT_MS);
+  }, [giveUp]);
 
   const settle = useCallback(
     (call: ChatCall) => {
@@ -206,9 +260,16 @@ export function useChatCalls({
   );
 
   const connect = useCallback(
-    async (url: string, token: string) => {
+    async (
+      url: string,
+      token: string,
+      // A first connect says "connecting"; a recovery keeps saying "reconnecting" and falls back to "lost".
+      recovering = false,
+    ) => {
       tokenRef.current = { url, token };
-      patch({ media: "connecting" });
+      const generation = (generationRef.current += 1);
+      sdkStateRef.current = null;
+      if (!recovering) patch({ media: "connecting" });
       try {
         const session = await connector({
           url,
@@ -219,30 +280,51 @@ export function useChatCalls({
           onSpeakers: (ids) => setSpeakingIds(ids),
           preferred: currentRef.current?.devices,
           onState: (state) => {
+            if (generation !== generationRef.current) return;
             const held = currentRef.current;
-            if (held && held.call.state !== "ended") patch({ media: state });
+            if (!held || held.call.state === "ended") return;
+            sdkStateRef.current = state;
+            if (state === "connected") disarmGiveUp();
+            else if (state === "reconnecting" && held.call.state === "active")
+              armGiveUp();
+            // The room closed under a call that goes on: nothing more will come from this session.
+            if (state === "disconnected" && held.call.state === "active")
+              giveUp();
+            else syncMedia();
+          },
+          onAttempt: (attempt) => {
+            if (generation === generationRef.current) patch({ attempt });
           },
         });
         const held = currentRef.current;
-        if (!held || held.call.state === "ended") {
+        if (
+          generation !== generationRef.current ||
+          !held ||
+          held.call.state === "ended"
+        ) {
           session.disconnect();
           return;
         }
         sessionRef.current = session;
+        syncMedia();
       } catch {
-        patch({ media: "failed" });
+        if (generation !== generationRef.current) return;
+        patch({ media: recovering ? "lost" : "failed" });
       }
     },
-    [connector, patch],
+    [armGiveUp, connector, disarmGiveUp, giveUp, patch, syncMedia],
   );
 
   const adopt = useCallback(
     (join: ChatCallJoin, voiceOnly = false) => {
       const { call, joinToken } = join;
       teardown();
+      leavingRef.current = false;
+      offlineRef.current = false;
       update({
         call,
         media: "idle",
+        attempt: null,
         audioOn: true,
         videoOn: call.kind === "video" && !voiceOnly,
         deviceNotice: null,
@@ -341,6 +423,27 @@ export function useChatCalls({
     }, SAFETY_POLL_MS);
     return () => clearInterval(timer);
   }, [live, liveCallId, liveSpaceId, service, settle, ws]);
+
+  // The browser's network: offline during a call is a dropped connection, and coming back online ends it when the media plane is still up.
+  useEffect(() => {
+    if (!live) return;
+    const goOffline = () => {
+      offlineRef.current = true;
+      if (currentRef.current?.call.state === "active") armGiveUp();
+      syncMedia();
+    };
+    const goOnline = () => {
+      offlineRef.current = false;
+      if (sdkStateRef.current === "connected") disarmGiveUp();
+      syncMedia();
+    };
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, [armGiveUp, disarmGiveUp, live, syncMedia]);
 
   // The ended card leaves by itself.
   const endedId = current?.call.state === "ended" ? current.call.id : null;
@@ -502,6 +605,9 @@ export function useChatCalls({
   const hangUp = useCallback(() => {
     const heldCall = currentRef.current?.call;
     if (!heldCall || heldCall.state === "ended") return;
+    // A second press while the first is on its way sends nothing more.
+    if (leavingRef.current) return;
+    leavingRef.current = true;
     const group = isGroupSpace?.(heldCall.spaceId) ?? false;
     // A group call goes on without the person who leaves it, its starter too; a direct call ends for both.
     const action =
@@ -518,10 +624,11 @@ export function useChatCalls({
         else settle(call);
       })
       .catch((cause) => {
-        // Someone else ended it first: the call is over either way.
+        // Someone else ended it first, or the network is gone (the media server already sees the person leave): over either way.
         if (
           chatFailureOf(cause).code === "call-ended" ||
-          chatFailureOf(cause).kind === "not-found"
+          chatFailureOf(cause).kind === "not-found" ||
+          chatFailureOf(cause).kind === "network"
         )
           settle(
             ended(
@@ -544,7 +651,7 @@ export function useChatCalls({
     ws,
   ]);
 
-  const syncMedia = useCallback(
+  const syncDevices = useCallback(
     (audioOn: boolean, videoOn: boolean) => {
       const heldCall = currentRef.current?.call;
       if (!heldCall || heldCall.state !== "active") return;
@@ -567,8 +674,8 @@ export function useChatCalls({
     const next = !heldNow.audioOn;
     patch({ audioOn: next });
     void sessionRef.current?.setMicrophone(next);
-    syncMedia(next, heldNow.videoOn);
-  }, [patch, syncMedia]);
+    syncDevices(next, heldNow.videoOn);
+  }, [patch, syncDevices]);
 
   const toggleCamera = useCallback(() => {
     const heldNow = currentRef.current;
@@ -576,8 +683,41 @@ export function useChatCalls({
     const next = !heldNow.videoOn;
     patch({ videoOn: next });
     void sessionRef.current?.setCamera(next);
-    syncMedia(heldNow.audioOn, next);
-  }, [patch, syncMedia]);
+    syncDevices(heldNow.audioOn, next);
+  }, [patch, syncDevices]);
+
+  /** After a give-up: read the call, and when it still runs ask for a fresh token (a repeat answer returns one) and join the room again. */
+  const recover = useCallback(async () => {
+    const heldCall = currentRef.current?.call;
+    if (!heldCall || heldCall.state !== "active") return;
+    patch({ media: "reconnecting", attempt: null });
+    armGiveUp();
+    const gone = () =>
+      settle(
+        ended(
+          heldCall,
+          "completed",
+          heldCall.version + 1,
+          new Date().toISOString(),
+        ),
+      );
+    try {
+      const fresh = await service.getActiveCall(ws, heldCall.spaceId);
+      if (!fresh || fresh.id !== heldCall.id || fresh.state === "ended")
+        return fresh ? settle(fresh) : gone();
+      const join = await service.answerCall(ws, fresh.id, fresh.version);
+      settle(join.call);
+      if (join.call.state !== "ended" && join.joinToken)
+        await connect(join.joinToken.url, join.joinToken.token, true);
+    } catch (cause) {
+      const failure = chatFailureOf(cause);
+      if (failure.code === "call-ended" || failure.kind === "not-found") gone();
+      else {
+        disarmGiveUp();
+        patch({ media: "lost", attempt: null });
+      }
+    }
+  }, [armGiveUp, connect, disarmGiveUp, patch, service, settle, ws]);
 
   const switchDevice = useCallback(
     async (
@@ -606,9 +746,13 @@ export function useChatCalls({
   );
 
   const retryConnect = useCallback(() => {
+    if (currentRef.current?.media === "lost") {
+      void recover();
+      return;
+    }
     const ticket = tokenRef.current;
     if (ticket) void connect(ticket.url, ticket.token);
-  }, [connect]);
+  }, [connect, recover]);
 
   const dismiss = useCallback(() => {
     setError(null);

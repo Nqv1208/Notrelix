@@ -7,6 +7,10 @@
 export type ChatCallMediaState =
   "connected" | "reconnecting" | "disconnected" | "failed";
 
+/** A dropped media connection is retried this many times, and for no longer than the limit: the server keeps the seat about as long. */
+export const CALL_RECONNECT_ATTEMPTS = 5;
+export const CALL_RECONNECT_LIMIT_MS = 30_000;
+
 /** Why a device could not be switched on. `denied` is the browser or the person refusing; `unavailable` is no such device. */
 export type ChatCallDeviceFailure = "denied" | "unavailable";
 
@@ -43,6 +47,8 @@ export interface ChatCallMediaOptions {
   /** The people the room hears speaking now (ids), loudest first; sent on every change. */
   readonly onSpeakers?: (personIds: readonly string[]) => void;
   readonly onState: (state: ChatCallMediaState) => void;
+  /** Called with the number (from 1) of each reconnect try, so the screen can say "try 2 of 5". */
+  readonly onAttempt?: (attempt: number) => void;
   /** The devices this browser remembers; a device that is gone falls back to the default. */
   readonly preferred?: ChatCallDevicePreference;
 }

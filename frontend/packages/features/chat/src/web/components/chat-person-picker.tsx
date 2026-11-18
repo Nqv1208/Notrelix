@@ -7,6 +7,10 @@ import { avatarToneOf, initialsOf } from "./chat-initials";
 export interface PickablePerson {
   readonly id: string;
   readonly name: string;
+  /** The person's title in the Workspace, when known (the invite list shows it under the name). */
+  readonly detail?: string;
+  /** A Guest of the Workspace: listed apart and warned about when picked. */
+  readonly guest?: boolean;
 }
 
 export interface ChatPersonPickerProps {

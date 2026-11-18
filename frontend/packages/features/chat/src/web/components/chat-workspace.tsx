@@ -186,6 +186,11 @@ export interface ChatWorkspaceProps {
   readonly onCloseConversation?: () => void;
   /** Names of the Workspace members by user id (the host supplies them). */
   readonly people: ReadonlyMap<string, string>;
+  /** The Workspace role and title of members by user id, when the host has them (the invite list groups Guests and shows titles). */
+  readonly peopleDetails?: ReadonlyMap<
+    string,
+    { readonly role?: string; readonly jobTitle?: string }
+  >;
   readonly onOpenChannel: (channelId: string) => void;
   /**
    * Message links (UC-CHT-B10). `buildMessageLink` returns the address of a message of the open space (the host owns the routes);
@@ -342,6 +347,7 @@ export function ChatWorkspace({
   onOpenConversation,
   onCloseConversation,
   people,
+  peopleDetails,
   onOpenChannel,
   buildMessageLink,
   linkedSequence = null,
@@ -529,6 +535,7 @@ export function ChatWorkspace({
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [permissionsError, setPermissionsError] = useState<string | null>(null);
@@ -1029,11 +1036,12 @@ export function ChatWorkspace({
 
   function handleInvite(userIds: readonly string[]) {
     setInviteError(null);
+    setInviteNotice(null);
     channelAdder.mutate(userIds, {
       onSuccess: (result) => {
-        setInviteOpen(false);
         if (result.skipped.length > 0) {
-          setNotice(
+          // The dialog stays open and says so (the board draws the warning inside it); the people added leave its list.
+          setInviteNotice(
             pluralCopy(
               {
                 one: copy.membership.inviteSkipped_one,
@@ -1042,6 +1050,8 @@ export function ChatWorkspace({
               result.skipped.length,
             ),
           );
+        } else {
+          setInviteOpen(false);
         }
       },
       onError: () => setInviteError(copy.membership.inviteFailed),
@@ -1167,8 +1177,16 @@ export function ChatWorkspace({
     () =>
       [...people.entries()]
         .filter(([id]) => id !== viewerId)
-        .map(([id, name]) => ({ id, name })),
-    [people, viewerId],
+        .map(([id, name]) => {
+          const detail = peopleDetails?.get(id);
+          return {
+            id,
+            name,
+            ...(detail?.jobTitle ? { detail: detail.jobTitle } : {}),
+            ...(detail?.role?.toLowerCase() === "guest" ? { guest: true } : {}),
+          };
+        }),
+    [people, peopleDetails, viewerId],
   );
   const addCandidates = useMemo(() => {
     const inside = new Set(conversation?.participants.map((p) => p.userId));
@@ -2217,6 +2235,7 @@ export function ChatWorkspace({
                                   canManage && !channel?.isArchived
                                     ? () => {
                                         setInviteError(null);
+                                        setInviteNotice(null);
                                         setInviteOpen(true);
                                       }
                                     : undefined
@@ -2380,8 +2399,10 @@ export function ChatWorkspace({
                   open={inviteOpen}
                   busy={channelAdder.isPending}
                   channelName={channel?.name ?? ""}
+                  isPrivate={channel?.kind === "channel_private"}
                   candidates={inviteCandidates}
                   error={inviteError}
+                  notice={inviteNotice}
                   copy={copy}
                   onOpenChange={setInviteOpen}
                   onSubmit={handleInvite}
