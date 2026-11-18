@@ -19,6 +19,7 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
     private readonly IBoardRealtimeNotifier? _realtime;
     private readonly IActorLookupService? _actors;
     private readonly ICurrentRequestContext? _requestContext;
+    private readonly IWorkspaceAccessResolver? _workspaceAccess;
 
     public ClearFieldValueCommandHandler(
         IWorkManagementDbContext context,
@@ -26,8 +27,10 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
         IDateTimeProvider timeProvider,
         IBoardRealtimeNotifier? realtime = null,
         IActorLookupService? actors = null,
-        ICurrentRequestContext? requestContext = null)
+        ICurrentRequestContext? requestContext = null,
+        IWorkspaceAccessResolver? workspaceAccess = null)
     {
+        _workspaceAccess = workspaceAccess;
         _realtime = realtime;
         _actors = actors;
         _requestContext = requestContext;
@@ -60,7 +63,7 @@ public class ClearFieldValueCommandHandler : IRequestHandler<ClearFieldValueComm
         if (field is null)
             throw _requestContext is null
                 ? new NotFoundException(nameof(BoardField), request.FieldId)
-                : await Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, ct);
+                : await Notrelix.Application.Features.WorkManagement.BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _workspaceAccess, _requestContext, item.BoardId, request.FieldId, ct);
 
         BoardItemFieldWrites.EnsureNotClearingRequired(field, FieldValue.Empty());
         var statusField = await BoardItemFieldWrites.LoadStatusFieldAsync(_context, item.BoardId, ct);
