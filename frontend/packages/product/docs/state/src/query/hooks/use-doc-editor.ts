@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   convertBlockProperties,
@@ -47,6 +47,18 @@ export function createUseDocEditor(
     const [failed, setFailed] = useState(false);
     const [titleConflict, setTitleConflict] = useState(false);
     const pendingRetry = useRef<(() => void) | null>(null);
+    // A save that settles after the editor closed must not touch state or refetch.
+    const alive = useRef(true);
+    useEffect(() => {
+      alive.current = true;
+      return () => {
+        alive.current = false;
+        pendingRetry.current = null;
+      };
+    }, []);
+    const fail = useCallback(() => {
+      if (alive.current) setFailed(true);
+    }, []);
 
     /** The version of a block as the page cache last read it. */
     const cachedVersion = (blockId: string): number | undefined =>
@@ -176,25 +188,23 @@ export function createUseDocEditor(
     const updateBlock = useCallback(
       (blockId: string, payload: UpdateBlockPayload) => {
         const attempt = () =>
-          void update
-            .mutateAsync({ blockId, payload })
-            .catch(() => setFailed(true));
+          void update.mutateAsync({ blockId, payload }).catch(() => fail());
         run(attempt);
         attempt();
       },
-      [run, update],
+      [run, update, fail],
     );
     const createBlock = useCallback(
       (payload: CreateBlockPayload) => {
         const attempt = () =>
           create.mutateAsync(payload).catch((error: unknown) => {
-            setFailed(true);
+            fail();
             throw error;
           });
         run(() => void attempt().catch(() => undefined));
         return attempt();
       },
-      [create, run],
+      [create, run, fail],
     );
     const convertBlock = useCallback(
       (
@@ -206,22 +216,22 @@ export function createUseDocEditor(
           convert
             .mutateAsync({ block, type, properties })
             .catch((error: unknown) => {
-              setFailed(true);
+              fail();
               throw error;
             });
         run(() => void attempt().catch(() => undefined));
         return attempt();
       },
-      [convert, run],
+      [convert, run, fail],
     );
     const deleteBlock = useCallback(
       (blockId: string) => {
         const attempt = () =>
-          void remove.mutateAsync(blockId).catch(() => setFailed(true));
+          void remove.mutateAsync(blockId).catch(() => fail());
         run(attempt);
         attempt();
       },
-      [remove, run],
+      [remove, run, fail],
     );
     const updateTitle = useCallback(
       (title: string) => {
@@ -229,14 +239,15 @@ export function createUseDocEditor(
           // mutateAsync: a rename that overlaps another keeps its own outcome.
           void rename.mutateAsync({ title }).catch((error: unknown) => {
             if (error instanceof PageVersionConflict) {
+              if (!alive.current) return;
               setTitleConflict(true);
               refreshPage();
-            } else setFailed(true);
+            } else fail();
           });
         run(attempt);
         attempt();
       },
-      [rename, run],
+      [rename, run, fail],
     );
     const clearTitleConflict = useCallback(() => setTitleConflict(false), []);
     const retry = useCallback(() => {
