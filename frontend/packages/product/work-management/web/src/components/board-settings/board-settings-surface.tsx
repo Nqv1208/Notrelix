@@ -362,6 +362,7 @@ function ReadyBody(props: BoardSettingsSurfaceProps) {
         defaultPickerOpen={props.defaultPickerOpen}
         defaultArchiveFieldId={props.defaultArchiveFieldId}
         deleted={props.deletedFields}
+        relationBoards={props.relationBoards}
       />
     );
 

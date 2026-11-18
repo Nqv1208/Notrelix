@@ -12,7 +12,10 @@ import { FieldPanel } from "./board-settings-field-panel";
 import { ComputedFieldDialog } from "./board-settings-computed-dialog";
 import { FieldTypePicker } from "./board-settings-field-picker";
 import { DeletedFieldsList } from "./board-settings-deleted-fields";
-import type { DeletedFieldsPanelProps } from "./board-settings-types";
+import type {
+  DeletedFieldsPanelProps,
+  RelationBoardChoice,
+} from "./board-settings-types";
 import {
   fieldLabel,
   fillCopy,
@@ -43,6 +46,7 @@ export function FieldsSection({
   defaultPickerOpen,
   defaultArchiveFieldId,
   deleted,
+  relationBoards,
 }: {
   fieldId: string | null;
   onSelectField: (fieldId: string | null) => void;
@@ -50,6 +54,8 @@ export function FieldsSection({
   defaultArchiveFieldId?: string | null;
   /** The deleted fields: when given, a "Deleted" tab lists them. */
   deleted?: DeletedFieldsPanelProps;
+  /** The boards a new Relation field can point at. */
+  relationBoards?: readonly RelationBoardChoice[];
 }) {
   const { copy, settings, actions, run, timeZone } = useSettings();
   const t = copy.fields;
@@ -145,6 +151,7 @@ export function FieldsSection({
                 <FieldTypePicker
                   copy={copy}
                   allowed={settings.unavailable?.creatableFieldTypes}
+                  boards={relationBoards}
                   onPick={addField}
                 />
               </PopoverContent>

@@ -103,8 +103,14 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTok
 
         try
         {
-            token.RecordUse(now);
-            await context.SaveChangesAsync(Context.RequestAborted);
+            // shortcut: a token revoked in the microseconds after this read, inside the hour a use is not
+            // written, still authenticates this one call; upgrade by writing every use if that matters.
+            if (token.IsUseRecordDue(now))
+            {
+                token.RecordUse(now);
+                await context.SaveChangesAsync(Context.RequestAborted);
+            }
+
             await transaction.CommitAsync(Context.RequestAborted);
         }
         catch (DbUpdateConcurrencyException)
@@ -113,6 +119,11 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTok
             // credential may no longer be authoritative. Fail closed rather
             // than authenticating against a raced read.
             return AuthenticateResult.NoResult();
+        }
+        catch (DbUpdateException ex)
+        {
+            // Recording the last use must not fail the call: the token itself was read as active.
+            Logger.LogWarning(ex, "Could not record the use of API token {TokenId}", token.Id);
         }
 
         var identity = new ClaimsIdentity(
