@@ -150,7 +150,7 @@ test("A calls B, B answers and hears A, A hangs up; a video call is declined", a
     await expect(card(b.page)).toContainText("Call ended", { timeout: 30_000 });
     await expect(
       a.page.getByTestId("chat-system-message").last(),
-    ).toContainText(/voice call ended, lasted \d+s/);
+    ).toContainText(/Voice call \d+s/);
     await card(a.page).getByRole("button", { name: "Close" }).click();
     await card(b.page).getByRole("button", { name: "Close" }).click();
 
@@ -163,7 +163,7 @@ test("A calls B, B answers and hears A, A hangs up; a video call is declined", a
     });
     await expect(
       a.page.getByTestId("chat-system-message").last(),
-    ).toContainText(/video call declined/);
+    ).toContainText(/Video call declined/);
   } finally {
     await done();
   }
@@ -222,7 +222,7 @@ test("a video call carries video both ways, the controls reach the other person,
     await expect(ring).toHaveCount(0, { timeout: 30_000 });
     await expect(
       a.page.getByTestId("chat-system-message").last(),
-    ).toContainText(/missed voice call/);
+    ).toContainText(/Missed call/);
   } finally {
     await done();
   }

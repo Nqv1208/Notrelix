@@ -30,6 +30,7 @@ import {
   BellOff,
   EyeOff,
   Hash,
+  Info,
   Lock,
   MessageSquareText,
   Phone,
@@ -109,7 +110,7 @@ const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
 import { useChannelTimeline } from "./use-channel-timeline";
-import { ChatMessageLinkProvider } from "./chat-link-context";
+import { ChatLinkAndRedialProvider } from "./chat-call-redial";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
 import { ChatRateLimitNotice } from "./chat-rate-limit";
@@ -1044,8 +1045,14 @@ export function ChatWorkspace({
   const heldCall = calls.current;
   const callSpaceOpen =
     heldCall !== null && channelId === heldCall.call.spaceId;
+  // The other person is in a call: no call view, a notice above the composer (Chat-Var-Call-Busy).
+  const busyEnded =
+    callSpaceOpen &&
+    heldCall.call.state === "ended" &&
+    heldCall.call.endReason === "busy";
   const stageVisible =
     callSpaceOpen &&
+    !busyEnded &&
     (heldCall.call.state === "ended" || minimizedCallId !== heldCall.call.id);
   const callPeople = {
     viewerId,
@@ -1056,7 +1063,7 @@ export function ChatWorkspace({
         ?.participants.find((p) => p.userId !== viewerId)?.userId ?? null,
   };
   const callStrip =
-    heldCall && !stageVisible ? (
+    heldCall && !stageVisible && !busyEnded ? (
       <ChatCallStrip
         controller={calls}
         held={heldCall}
@@ -1488,7 +1495,10 @@ export function ChatWorkspace({
 
   return (
     <ChatMentionProvider value={mentionContext}>
-      <ChatMessageLinkProvider value={messageLink}>
+      <ChatLinkAndRedialProvider
+        link={messageLink}
+        redial={callsEnabled ? onStartCall : null}
+      >
         <ChatHighlightProvider value={timeline.highlightId}>
           <div className="relative flex h-full min-h-0 w-full">
             {listOnly ? (
@@ -1907,6 +1917,17 @@ export function ChatWorkspace({
                               sender.retry(entry);
                           }}
                         />
+                      ) : null}
+                      {busyEnded ? (
+                        <ChatStatusBanner
+                          tone="neutral"
+                          placement="notice"
+                          icon={<Info />}
+                        >
+                          {fillCopy(copy.calls.busyNotice, {
+                            name: nameOf(callPeople.peerOf(ch) ?? ""),
+                          })}
+                        </ChatStatusBanner>
                       ) : null}
                       <ChatDraftComposer
                         floating
@@ -2473,7 +2494,7 @@ export function ChatWorkspace({
             />
           </div>
         </ChatHighlightProvider>
-      </ChatMessageLinkProvider>
+      </ChatLinkAndRedialProvider>
     </ChatMentionProvider>
   );
 }
