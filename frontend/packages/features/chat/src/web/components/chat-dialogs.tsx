@@ -17,10 +17,11 @@ import {
   DialogTitle,
   Input,
   Label,
-  Switch,
+  RadioGroup,
+  RadioGroupItem,
   Textarea,
 } from "@notrelix/ui-web";
-import { CHAT_LIMITS } from "../../core/types/chat";
+import { CHAT_LIMITS, type ChatChannelGroup } from "../../core/types/chat";
 import { slowModeChoices } from "../../core/model/rate-limit-model";
 import type { ChatCopy } from "./chat.copy";
 import { formatWait } from "./chat-rate-limit";
@@ -29,6 +30,7 @@ export interface CreateChannelValues {
   readonly name: string;
   readonly topic: string;
   readonly isPrivate: boolean;
+  readonly groupId: string | null;
 }
 
 export interface CreateChannelDialogProps {
@@ -36,16 +38,19 @@ export interface CreateChannelDialogProps {
   readonly busy: boolean;
   /** An error from the last attempt, already worded for the user. */
   readonly error: string | null;
+  /** The sidebar categories a channel can be placed in (the Channel group field is left out when there are none). */
+  readonly groups?: readonly ChatChannelGroup[];
   readonly copy: ChatCopy;
   readonly onOpenChange: (open: boolean) => void;
   readonly onSubmit: (values: CreateChannelValues) => void;
 }
 
-/** Create a channel (UC-CHT-A01). The caller becomes its first manager. */
+/** Create a channel (UC-CHT-A01), laid out as the Chat-Var-Channel-Create board. The caller becomes its first manager. */
 export function CreateChannelDialog({
   open,
   busy,
   error,
+  groups = [],
   copy,
   onOpenChange,
   onSubmit,
@@ -53,12 +58,18 @@ export function CreateChannelDialog({
   const [name, setName] = useState("");
   const [topic, setTopic] = useState("");
   const [isPrivate, setPrivate] = useState(false);
+  const [groupId, setGroupId] = useState("");
   const trimmed = name.trim();
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (trimmed.length === 0 || busy) return;
-    onSubmit({ name: trimmed, topic: topic.trim(), isPrivate });
+    onSubmit({
+      name: trimmed,
+      topic: topic.trim(),
+      isPrivate,
+      groupId: groupId === "" ? null : groupId,
+    });
   }
 
   return (
@@ -70,16 +81,25 @@ export function CreateChannelDialog({
           </DialogHeader>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="chat-create-name">{copy.create.nameLabel}</Label>
-            <Input
-              id="chat-create-name"
-              value={name}
-              maxLength={CHAT_LIMITS.channelNameMaxLength}
-              onChange={(event) => setName(event.target.value)}
-              autoComplete="off"
-              autoFocus
-              aria-describedby="chat-create-name-hint"
-              aria-invalid={error !== null || undefined}
-            />
+            <div className="relative">
+              <Input
+                id="chat-create-name"
+                value={name}
+                maxLength={CHAT_LIMITS.channelNameMaxLength}
+                onChange={(event) => setName(event.target.value)}
+                autoComplete="off"
+                autoFocus
+                className="pe-16"
+                aria-describedby="chat-create-name-hint"
+                aria-invalid={error !== null || undefined}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs text-muted-foreground tabular-nums"
+              >
+                {`${name.length}/${CHAT_LIMITS.channelNameMaxLength}`}
+              </span>
+            </div>
             <p
               id="chat-create-name-hint"
               className="text-xs text-muted-foreground"
@@ -88,28 +108,73 @@ export function CreateChannelDialog({
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
+            <span id="chat-create-visibility" className="text-sm font-medium">
+              {copy.create.visibilityLabel}
+            </span>
+            <RadioGroup
+              aria-labelledby="chat-create-visibility"
+              value={isPrivate ? "private" : "public"}
+              onValueChange={(value) => setPrivate(value === "private")}
+              className="gap-2"
+            >
+              {(
+                [
+                  ["public", copy.create.publicLabel, copy.create.publicHint],
+                  [
+                    "private",
+                    copy.create.privateLabel,
+                    copy.create.privateHint,
+                  ],
+                ] as const
+              ).map(([value, label, hint]) => (
+                <label
+                  key={value}
+                  htmlFor={`chat-create-${value}`}
+                  className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                >
+                  <RadioGroupItem
+                    id={`chat-create-${value}`}
+                    value={value}
+                    className="mt-0.5"
+                  />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {hint}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+          {groups.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="chat-create-group">
+                {copy.create.groupLabel}
+              </Label>
+              <select
+                id="chat-create-group"
+                value={groupId}
+                onChange={(event) => setGroupId(event.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <option value="">{copy.create.groupNone}</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="chat-create-topic">{copy.create.topicLabel}</Label>
-            <Textarea
+            <Input
               id="chat-create-topic"
               value={topic}
               maxLength={CHAT_LIMITS.channelTopicMaxLength}
               onChange={(event) => setTopic(event.target.value)}
-              rows={2}
-            />
-          </div>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex flex-col gap-0.5">
-              <Label htmlFor="chat-create-private">
-                {copy.create.privateLabel}
-              </Label>
-              <span className="text-xs text-muted-foreground">
-                {copy.create.privateHint}
-              </span>
-            </div>
-            <Switch
-              id="chat-create-private"
-              checked={isPrivate}
-              onCheckedChange={setPrivate}
+              autoComplete="off"
             />
           </div>
           {error ? (

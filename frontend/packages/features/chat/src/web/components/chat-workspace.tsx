@@ -922,6 +922,7 @@ export function ChatWorkspace({
         name: values.name,
         topic: values.topic.length > 0 ? values.topic : null,
         isPrivate: values.isPrivate,
+        groupId: values.groupId,
       },
       {
         onSuccess: (created) => {
@@ -2250,6 +2251,7 @@ export function ChatWorkspace({
               open={createOpen}
               busy={creator.isPending}
               error={createError}
+              groups={channelGroups.data}
               copy={copy}
               onOpenChange={setCreateOpen}
               onSubmit={handleCreate}
