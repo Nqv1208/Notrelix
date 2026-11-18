@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Notrelix.Application.Common.SystemOperations;
+using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.RestoreBoardField;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.ListBoardItemTrash;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Audit;
@@ -7,7 +9,10 @@ using Notrelix.Infrastructure.Data.Audit;
 namespace Notrelix.Infrastructure.BackgroundJobs;
 
 /// <summary>
-/// Purge of deleted boards (UC-WM-A07, UC-WM-B17, D76.1). A board deleted more than 30 days ago
+/// Purge of the Work Management trash (UC-WM-A07, UC-WM-B17, D76.1, D76.5, D78.10): boards, items and fields.
+/// An item or field deleted more than 30 days ago (<see cref="BoardItemTrashPolicy.RestoreWindow"/>,
+/// <see cref="BoardFieldTrashPolicy.RestoreWindow"/>) is removed with the rows that follow it by foreign key, and one
+/// audit fact (<c>PurgeItem</c>, <c>PurgeField</c>) is written; the same options switch all three purges. A board deleted more than 30 days ago
 /// (<see cref="Board.RestoreWindow"/>) can no longer be restored, and this job removes it and its children for
 /// good. Bound from <c>WorkManagement:Boards:Purge</c> and validated on start. Off by default: removing a board is
 /// irreversible and the first release keeps every deleted board (owner decision pending), so an operator turns it
@@ -73,6 +78,16 @@ internal sealed class DeletedBoardPurger
 {
     private const string BoardsTable = "work.boards";
 
+    /// <summary>What one purge removes: the table, its window, the audit fact it writes and the column naming its board.</summary>
+    private sealed record PurgeKind(string Table, TimeSpan Window, string Action, string ResourceType, string BoardColumn);
+
+    private static readonly PurgeKind[] Kinds =
+    [
+        new(BoardsTable, Board.RestoreWindow, "PurgeBoard", "work-management.board", "id"),
+        new("work.board_items", BoardItemTrashPolicy.RestoreWindow, "PurgeItem", "work-management.board-item", "board_id"),
+        new("work.board_fields", BoardFieldTrashPolicy.RestoreWindow, "PurgeField", "work-management.board-field", "board_id"),
+    ];
+
     private static readonly SystemOperationReason PurgeReason =
         new("WorkManagement", "Purge the boards deleted more than 30 days ago");
 
@@ -82,7 +97,7 @@ internal sealed class DeletedBoardPurger
     private readonly IDateTimeProvider _clock;
     private readonly DeletedBoardPurgeOptions _options;
     private readonly ILogger<DeletedBoardPurger> _logger;
-    private IReadOnlyList<PurgeStep>? _plan;
+    private readonly Dictionary<string, IReadOnlyList<PurgeStep>> _plans = new(StringComparer.Ordinal);
 
     public DeletedBoardPurger(
         ApplicationDbContext context,
@@ -100,40 +115,46 @@ internal sealed class DeletedBoardPurger
         _logger = logger;
     }
 
-    /// <returns>The number of boards purged.</returns>
+    /// <returns>The number of boards, items and fields purged.</returns>
     public async Task<int> RunOnceAsync(CancellationToken cancellationToken)
     {
-        // Strictly older than the window: a board is restorable up to and including its last instant.
-        var cutoff = _clock.UtcNow - Board.RestoreWindow;
         var purged = 0;
-
-        while (purged < _options.BatchSize && !cancellationToken.IsCancellationRequested)
+        foreach (var kind in Kinds)
         {
-            if (!await PurgeOneAsync(cutoff, cancellationToken))
-                break;
-            purged++;
-        }
+            // Strictly older than the window: a row is restorable up to and including its last instant.
+            var cutoff = _clock.UtcNow - kind.Window;
+            var count = 0;
+            while (count < _options.BatchSize && !cancellationToken.IsCancellationRequested)
+            {
+                if (!await PurgeOneAsync(kind, cutoff, cancellationToken))
+                    break;
+                count++;
+            }
 
-        if (purged > 0)
-            _logger.LogInformation("Deleted board purge removed {Count} boards", purged);
+            if (count > 0)
+                _logger.LogInformation("Work Management trash purge removed {Count} rows of {Table}", count, kind.Table);
+            purged += count;
+        }
 
         return purged;
     }
 
-    private async Task<bool> PurgeOneAsync(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    private async Task<bool> PurgeOneAsync(PurgeKind kind, DateTimeOffset cutoff, CancellationToken cancellationToken)
     {
         using var system = new SystemContextScope(_tenant, _logger, "deleted-board.purge", PurgeReason);
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         await _rls.ApplyAsync(cancellationToken);
 
-        var claimed = (await _context.Database.SqlQuery<PurgeTarget>($"""
-            SELECT id, account_id, workspace_id, deleted_at, deleted_by
-            FROM work.boards
-            WHERE deleted_at IS NOT NULL AND deleted_at < {cutoff}
+#pragma warning disable EF1002 // the table and column come from the constant kinds above; the cutoff is a parameter
+        var claimed = (await _context.Database.SqlQueryRaw<PurgeTarget>($"""
+            SELECT id, account_id, workspace_id, {kind.BoardColumn} AS board_id, deleted_at, deleted_by
+            FROM {kind.Table}
+            WHERE deleted_at IS NOT NULL AND deleted_at < @cutoff
             ORDER BY deleted_at
             LIMIT 1
             FOR UPDATE SKIP LOCKED
-            """).ToListAsync(cancellationToken)).SingleOrDefault();
+            """, new NpgsqlParameter("cutoff", cutoff)).ToListAsync(cancellationToken)).SingleOrDefault();
+#pragma warning restore EF1002
 
         if (claimed is null)
         {
@@ -141,7 +162,8 @@ internal sealed class DeletedBoardPurger
             return false;
         }
 
-        var plan = _plan ??= await ResolvePlanAsync(cancellationToken);
+        if (!_plans.TryGetValue(kind.Table, out var plan))
+            _plans[kind.Table] = plan = await ResolvePlanAsync(kind.Table, cancellationToken);
         long rows = 0;
         foreach (var step in plan)
         {
@@ -153,24 +175,27 @@ internal sealed class DeletedBoardPurger
 #pragma warning restore EF1002
         }
 
-        await _context.Database.ExecuteSqlInterpolatedAsync(
-            $"DELETE FROM work.boards WHERE id = {claimed.Id}", cancellationToken);
+#pragma warning disable EF1002
+        await _context.Database.ExecuteSqlRawAsync(
+            $"DELETE FROM {kind.Table} WHERE id = @board", [new NpgsqlParameter("board", claimed.Id)], cancellationToken);
+#pragma warning restore EF1002
 
         var metadata = JsonSerializer.SerializeToDocument(new
         {
             accountId = claimed.AccountId,
+            boardId = claimed.BoardId,
             deletedAt = claimed.DeletedAt,
             deletedBy = claimed.DeletedBy,
             tablesEmptied = plan.Count,
             rowsRemoved = rows,
         });
         _context.EnterpriseAuditLogs.Add(new AuditLog(
-            claimed.WorkspaceId, null, "System", "PurgeBoard", "work-management.board", claimed.Id, null, null,
+            claimed.WorkspaceId, null, "System", kind.Action, kind.ResourceType, claimed.Id, null, null,
             "Critical", "Succeeded", null, null, null, null, null, null, null, metadata, _clock.UtcNow));
         await _context.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
-        _logger.LogInformation("Purged deleted board {BoardId}: {Rows} rows in {Tables} tables", claimed.Id, rows, plan.Count);
+        _logger.LogInformation("Purged {Table} row {Id}: {Rows} rows in {Tables} tables", kind.Table, claimed.Id, rows, plan.Count);
         return true;
     }
 
@@ -179,9 +204,10 @@ internal sealed class DeletedBoardPurger
     /// <c>board_id</c> or ending in <c>_board_id</c>, and the foreign keys outside the retained schemas.
     /// See <see cref="BuildPlan"/>.
     /// </summary>
-    private async Task<IReadOnlyList<PurgeStep>> ResolvePlanAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<PurgeStep>> ResolvePlanAsync(string root, CancellationToken cancellationToken)
     {
-        var boardColumns = await _context.Database.SqlQuery<TableColumn>($"""
+        // Items and fields have no children named by a board column: their plan follows foreign keys only.
+        var boardColumns = root != BoardsTable ? [] : await _context.Database.SqlQuery<TableColumn>($"""
             SELECT format('%I.%I', n.nspname, c.relname) AS table_name, format('%I', a.attname) AS column_name
             FROM pg_attribute a
             JOIN pg_class c ON c.oid = a.attrelid AND c.relkind IN ('r', 'p')
@@ -207,7 +233,7 @@ internal sealed class DeletedBoardPurger
               AND cn.nspname NOT IN ('audit', 'billing', 'messaging', 'events', 'ops', 'operators')
             """).ToListAsync(cancellationToken);
 
-        return BuildPlan(boardColumns, foreignKeys);
+        return BuildPlan(boardColumns, foreignKeys, root);
     }
 
     /// <summary>
@@ -217,12 +243,12 @@ internal sealed class DeletedBoardPurger
     /// and a cascade is spelled out (and then has nothing left to do).
     /// </summary>
     internal static IReadOnlyList<PurgeStep> BuildPlan(
-        IReadOnlyList<TableColumn> boardColumns, IReadOnlyList<ForeignKey> foreignKeys)
+        IReadOnlyList<TableColumn> boardColumns, IReadOnlyList<ForeignKey> foreignKeys, string root = BoardsTable)
     {
         var following = foreignKeys.Where(k => k.Follows).ToList();
 
         // 1. The tables of the plan: the seeds, the boards table, and every table following a key into one of them.
-        var tables = new HashSet<string>(boardColumns.Select(c => c.TableName), StringComparer.Ordinal) { BoardsTable };
+        var tables = new HashSet<string>(boardColumns.Select(c => c.TableName), StringComparer.Ordinal) { root };
         bool grew;
         do
         {
@@ -259,11 +285,11 @@ internal sealed class DeletedBoardPurger
         }
 
         // 3. The rows of each table, parents first: its own board columns, or a key into rows being removed.
-        var predicates = new Dictionary<string, string>(StringComparer.Ordinal) { [BoardsTable] = "id = @board" };
+        var predicates = new Dictionary<string, string>(StringComparer.Ordinal) { [root] = "id = @board" };
         for (var index = childrenFirst.Count - 1; index >= 0; index--)
         {
             var table = childrenFirst[index];
-            if (table == BoardsTable)
+            if (table == root)
                 continue;
             var conditions = boardColumns
                 .Where(c => c.TableName == table)
@@ -280,7 +306,7 @@ internal sealed class DeletedBoardPurger
         }
 
         return childrenFirst
-            .Where(t => t != BoardsTable)
+            .Where(t => t != root)
             .Select(t => new PurgeStep(t, predicates[t]))
             .ToList();
     }
@@ -292,7 +318,7 @@ internal sealed class DeletedBoardPurger
 
     internal sealed record PurgeStep(string Table, string Predicate);
 
-    private sealed record PurgeTarget(Guid Id, Guid AccountId, Guid WorkspaceId, DateTimeOffset DeletedAt, Guid? DeletedBy);
+    private sealed record PurgeTarget(Guid Id, Guid AccountId, Guid WorkspaceId, Guid BoardId, DateTimeOffset DeletedAt, Guid? DeletedBy);
 }
 
 /// <summary>Hosted loop of <see cref="DeletedBoardPurger"/>; each pass runs in its own DI scope.</summary>
