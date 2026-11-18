@@ -1,27 +1,27 @@
-using Notrelix.Application.Common.Email;
+using Notrelix.Application.Common.Messaging;
+using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Services;
 
 namespace Notrelix.Application.Tests.Features.Identity.Security;
 
-/// <summary>The plain mail a person gets after a security change: what happened, when, on which device, and no secret.</summary>
+/// <summary>The fact a security change stages in its own transaction: who, what, when, from which device, and no secret.</summary>
 public class SecurityNoticeServiceTests : IdentityHandlerTestBase
 {
-    private readonly Mock<IEmailOutboxWriter> _outbox = new();
-    private readonly Mock<ISecurityPageLink> _link = new();
-    private readonly List<QueueRenderedEmailRequest> _queued = new();
+    private readonly Mock<IIntegrationEventCollector> _events = new();
+    private readonly List<IIntegrationEvent> _staged = new();
 
     public SecurityNoticeServiceTests()
     {
-        _link.Setup(l => l.Build()).Returns("https://app.example.test/");
-        _outbox.Setup(o => o.QueueRenderedEmailAsync(It.IsAny<QueueRenderedEmailRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<QueueRenderedEmailRequest, CancellationToken>((r, _) => _queued.Add(r))
-            .Returns(Task.CompletedTask);
+        _events.Setup(e => e.Add(It.IsAny<IIntegrationEvent>())).Callback<IIntegrationEvent>(_staged.Add);
         ClientMetadataMock.Setup(c => c.UserAgent).Returns("Mozilla/5.0 (Macintosh) Safari/605");
         ClientMetadataMock.Setup(c => c.IpAddress).Returns("203.0.113.9");
     }
 
-    private SecurityNoticeService Sut() => new(IdentityContextMock.Object, ClientMetadataMock.Object, _outbox.Object, _link.Object);
+    private SecurityNoticeService Sut() => new(IdentityContextMock.Object, ClientMetadataMock.Object, _events.Object);
+
+    private SecurityNoticeRequestedIntegrationEventV1 OnlyEvent() =>
+        _staged.Should().ContainSingle().Subject.Should().BeOfType<SecurityNoticeRequestedIntegrationEventV1>().Subject;
 
     [Theory]
     [InlineData(SecurityNoticeKind.PasswordChanged)]
@@ -33,50 +33,37 @@ public class SecurityNoticeServiceTests : IdentityHandlerTestBase
     [InlineData(SecurityNoticeKind.SessionRevoked)]
     [InlineData(SecurityNoticeKind.OtherSessionsRevoked)]
     [InlineData(SecurityNoticeKind.ApiTokenIssued)]
-    public async Task EveryKind_QueuesOneMailToTheSignInAddress_WithTheTimeTheDeviceAndALink(SecurityNoticeKind kind)
+    public async Task EveryKind_StagesOneEvent_ForTheSignInAddress_WithTheTimeAndTheDevice(SecurityNoticeKind kind)
     {
         var user = CreateUser();
         SetupUsers(user);
 
         await Sut().QueueAsync(user.Id, kind, TestNow, null, CancellationToken.None);
 
-        var mail = _queued.Should().ContainSingle().Subject;
-        mail.RecipientEmail.Should().Be(user.Email.Value);
-        mail.RecipientUserId.Should().Be(user.Id);
-        mail.Subject.Should().EndWith("— Notrelix").And.NotBeNullOrWhiteSpace();
-        mail.BodyHtml.Should().Contain("Mozilla/5.0 (Macintosh) Safari/605");
-        mail.BodyHtml.Should().Contain("203.0.113.9");
-        mail.BodyHtml.Should().Contain("2025-01-15 10:00 UTC");
-        mail.BodyHtml.Should().Contain("https://app.example.test/");
+        var staged = OnlyEvent();
+        staged.UserId.Should().Be(user.Id);
+        staged.Email.Should().Be(user.Email.Value);
+        staged.UserName.Should().Be(user.Name);
+        staged.Kind.Should().Be(kind.ToString());
+        staged.OccurredAt.Should().Be(TestNow);
+        staged.Device.Should().Be("Mozilla/5.0 (Macintosh) Safari/605 · 203.0.113.9");
     }
 
     [Fact]
-    public async Task TheMailHoldsNoSecret()
+    public async Task TheEventHoldsNoSecret()
     {
         var user = CreateUser();
         SetupUsers(user);
 
         await Sut().QueueAsync(user.Id, SecurityNoticeKind.PasswordChanged, TestNow, null, CancellationToken.None);
 
-        var body = _queued.Single().BodyHtml!;
-        body.Should().NotContain(user.PasswordHash);
-        body.Should().NotContainEquivalentOf("token=").And.NotContainEquivalentOf("password:");
+        var json = System.Text.Json.JsonSerializer.Serialize(OnlyEvent());
+        json.Should().NotContain(user.PasswordHash);
+        json.Should().NotContainEquivalentOf("token=").And.NotContainEquivalentOf("password:");
     }
 
     [Fact]
-    public async Task TheDeviceTextIsEncoded_SoAnAgentStringCannotInjectMarkup()
-    {
-        var user = CreateUser();
-        SetupUsers(user);
-        ClientMetadataMock.Setup(c => c.UserAgent).Returns("<script>alert(1)</script>");
-
-        await Sut().QueueAsync(user.Id, SecurityNoticeKind.MfaDisabled, TestNow, null, CancellationToken.None);
-
-        _queued.Single().BodyHtml.Should().NotContain("<script>").And.Contain("&lt;script&gt;");
-    }
-
-    [Fact]
-    public async Task WithoutClientDetails_TheMailSaysTheDeviceIsUnknown()
+    public async Task WithoutClientDetails_TheDeviceIsUnknown()
     {
         var user = CreateUser();
         SetupUsers(user);
@@ -85,46 +72,33 @@ public class SecurityNoticeServiceTests : IdentityHandlerTestBase
 
         await Sut().QueueAsync(user.Id, SecurityNoticeKind.ProviderLinked, TestNow, null, CancellationToken.None);
 
-        _queued.Single().BodyHtml.Should().Contain("Unknown device");
+        OnlyEvent().Device.Should().Be("Unknown device");
     }
 
     [Fact]
-    public async Task TheSameEventQueuesTheSameKey_SoARetrySendsAtMostOneMail_AndADifferentEventGetsAnother()
+    public async Task EachCallStagesItsOwnEventId_AndTheSubjectTravelsWithIt()
     {
         var user = CreateUser();
         SetupUsers(user);
-        var tokenA = Guid.CreateVersion7();
-        var tokenB = Guid.CreateVersion7();
+        var token = Guid.CreateVersion7();
 
-        await Sut().QueueAsync(user.Id, SecurityNoticeKind.ApiTokenIssued, TestNow, tokenA, CancellationToken.None);
-        await Sut().QueueAsync(user.Id, SecurityNoticeKind.ApiTokenIssued, TestNow, tokenA, CancellationToken.None);
-        await Sut().QueueAsync(user.Id, SecurityNoticeKind.ApiTokenIssued, TestNow, tokenB, CancellationToken.None);
+        await Sut().QueueAsync(user.Id, SecurityNoticeKind.ApiTokenIssued, TestNow, token, CancellationToken.None);
+        await Sut().QueueAsync(user.Id, SecurityNoticeKind.ApiTokenIssued, TestNow, token, CancellationToken.None);
 
-        _queued[0].DeduplicationKey.Should().Be(_queued[1].DeduplicationKey);
-        _queued[2].DeduplicationKey.Should().NotBe(_queued[0].DeduplicationKey);
+        var events = _staged.Cast<SecurityNoticeRequestedIntegrationEventV1>().ToList();
+        events.Should().HaveCount(2);
+        events[0].EventId.Should().NotBe(events[1].EventId);
+        events.Should().OnlyContain(e => e.SubjectId == token);
     }
 
     [Fact]
-    public async Task ForAnUnknownPerson_NothingIsQueuedAndNothingFails()
+    public async Task ForAnUnknownPerson_NothingIsStagedAndNothingFails()
     {
         SetupUsers();
 
         var act = () => Sut().QueueAsync(Guid.CreateVersion7(), SecurityNoticeKind.PasswordChanged, TestNow, null, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        _queued.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task AFailureToQueue_NeverFailsTheEvent()
-    {
-        var user = CreateUser();
-        SetupUsers(user);
-        _outbox.Setup(o => o.QueueRenderedEmailAsync(It.IsAny<QueueRenderedEmailRequest>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("outbox down"));
-
-        var act = () => Sut().QueueAsync(user.Id, SecurityNoticeKind.PasswordChanged, TestNow, null, CancellationToken.None);
-
-        await act.Should().NotThrowAsync();
+        _staged.Should().BeEmpty();
     }
 }

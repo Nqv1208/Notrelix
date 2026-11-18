@@ -59,6 +59,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "SendSecurityNoticeEmailConsumer",
+                EventName = "identity.security-notice-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-identity-security-notice-v1",
+                BoundedContext = "Identity",
+                Description = "Tells the owner of an account that its sign-in security changed",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "SendRegistrationNoticeEmailConsumer",
                 EventName = "identity.registration-attempted-on-existing-account",
                 EventVersion = 1,

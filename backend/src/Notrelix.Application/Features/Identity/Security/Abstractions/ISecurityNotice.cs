@@ -16,9 +16,9 @@ public enum SecurityNoticeKind
 
 /// <summary>
 /// Tells a person by mail that one of their security settings changed: what, when, from which device, and a
-/// link to the app; never a secret. The mail is only staged in the outbox, so it commits (or rolls back) with
-/// the change it describes and is sent after the commit. The same event queues the same key, so a retry sends at
-/// most one mail, and a failure to stage it never fails the change.
+/// link to the app; never a secret. The notice is staged as an integration event in the transaction of the change,
+/// so it commits (or rolls back) with it; a worker consumer queues the mail after the commit under a per-event key,
+/// so a redelivery sends at most one mail. A mail that cannot be delivered never undoes the change.
 /// </summary>
 public interface ISecurityNotice
 {
