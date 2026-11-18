@@ -10,10 +10,23 @@ export type ChatCallMediaState =
 /** Why a device could not be switched on. `denied` is the browser or the person refusing; `unavailable` is no such device. */
 export type ChatCallDeviceFailure = "denied" | "unavailable";
 
+/** The three kinds of device a call uses, named as the browser names them. */
+export type ChatCallDeviceKind = "audioinput" | "videoinput" | "audiooutput";
+
+/** The device ids a person chose, per kind; a missing kind uses the system default. Client-side only, never sent to the server. */
+export type ChatCallDevicePreference = Partial<
+  Record<ChatCallDeviceKind, string>
+>;
+
 export interface ChatCallMediaSession {
   /** Switches the microphone on or off; resolves with the failure when the device cannot be used. */
   setMicrophone(on: boolean): Promise<ChatCallDeviceFailure | null>;
   setCamera(on: boolean): Promise<ChatCallDeviceFailure | null>;
+  /** Moves the call to another device of that kind; resolves with the failure when the device cannot be used. */
+  switchDevice(
+    kind: ChatCallDeviceKind,
+    deviceId: string,
+  ): Promise<ChatCallDeviceFailure | null>;
   disconnect(): void;
 }
 
@@ -24,6 +37,8 @@ export interface ChatCallMediaOptions {
   readonly remoteVideo: () => HTMLVideoElement | null;
   readonly localVideo: () => HTMLVideoElement | null;
   readonly onState: (state: ChatCallMediaState) => void;
+  /** The devices this browser remembers; a device that is gone falls back to the default. */
+  readonly preferred?: ChatCallDevicePreference;
 }
 
 export type ChatCallMediaConnector = (
@@ -38,6 +53,7 @@ function connectMock(
   return Promise.resolve({
     setMicrophone: () => Promise.resolve(null),
     setCamera: () => Promise.resolve(null),
+    switchDevice: () => Promise.resolve(null),
     disconnect: () => options.onState("disconnected"),
   });
 }
