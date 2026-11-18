@@ -173,6 +173,8 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Identity.Auth.Services.CredentialScope>();
         services.AddScoped<Notrelix.Application.Features.Identity.Public.DefaultWorkspace.IIdentityDefaultWorkspace,
             Notrelix.Application.Features.Identity.Profiles.Services.IdentityDefaultWorkspaceProvider>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice,
+            Notrelix.Application.Features.Identity.Security.Services.SecurityNoticeService>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
         services.AddScoped<IAccountDomainFacts, AccountDomainFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure,

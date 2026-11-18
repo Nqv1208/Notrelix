@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Mfa.Abstractions;
@@ -35,6 +36,7 @@ public class VerifyMfaEnrollmentTests : IdentityHandlerTestBase
         JwtBlacklistMock.Object,
         DateTimeProviderMock.Object,
         ActivityMock.Object,
+        SecurityNoticeMock.Object,
         new Mock<ILogger<VerifyMfaEnrollmentCommandHandler>>().Object);
 
     private UserMfaMethod Pending()
@@ -181,6 +183,7 @@ public class VerifyMfaEnrollmentTests : IdentityHandlerTestBase
         current.Status.Should().Be(Notrelix.Domain.Identity.Sessions.SessionStatus.Active);
         other.Status.Should().Be(Notrelix.Domain.Identity.Sessions.SessionStatus.Revoked);
         ActivityMock.Verify(a => a.Record(TestUserId, Notrelix.Domain.Identity.Security.SecurityActivityType.MfaEnabled, TestNow, current.Id), Times.Once);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(TestUserId, SecurityNoticeKind.MfaEnabled, TestNow, null, It.IsAny<CancellationToken>()), Times.Once);
         ActivityMock.Verify(a => a.Record(TestUserId, Notrelix.Domain.Identity.Security.SecurityActivityType.OtherSessionsRevoked, TestNow, current.Id), Times.Once);
     }
 }

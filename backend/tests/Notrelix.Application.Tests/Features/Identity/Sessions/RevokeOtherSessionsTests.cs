@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Sessions.Commands.RevokeOtherSessions;
@@ -30,6 +31,7 @@ public class RevokeOtherSessionsTests : IdentityHandlerTestBase
         StepUpServiceMock.Object,
         DateTimeProviderMock.Object,
         ActivityMock.Object,
+        SecurityNoticeMock.Object,
         new Mock<ILogger<RevokeOtherSessionsCommandHandler>>().Object);
 
     private void NothingChanged()
@@ -39,6 +41,7 @@ public class RevokeOtherSessionsTests : IdentityHandlerTestBase
         _other2.Status.Should().Be(SessionStatus.Active);
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()), Times.Never);
         ActivityMock.Verify(a => a.Record(It.IsAny<Guid>(), It.IsAny<SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<SecurityNoticeKind>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -57,6 +60,7 @@ public class RevokeOtherSessionsTests : IdentityHandlerTestBase
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(_other2.Id, TestNow, It.IsAny<TimeSpan>()), Times.Once);
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(_current.Id, It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()), Times.Never);
         ActivityMock.Verify(a => a.Record(TestUserId, SecurityActivityType.OtherSessionsRevoked, TestNow, _current.Id), Times.Once);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(TestUserId, SecurityNoticeKind.OtherSessionsRevoked, TestNow, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
@@ -102,6 +106,7 @@ public class RevokeOtherSessionsTests : IdentityHandlerTestBase
             It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()), Times.Never);
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()), Times.Never);
         ActivityMock.Verify(a => a.Record(It.IsAny<Guid>(), It.IsAny<SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<SecurityNoticeKind>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

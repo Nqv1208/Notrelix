@@ -38,6 +38,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
     private readonly ILogger<VerifyMfaEnrollmentCommandHandler> _logger;
 
     private static readonly TimeSpan SessionRevocationMarkerTtl = TimeSpan.FromHours(24);
@@ -50,7 +51,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
         ISecurityStepUpService stepUpService,
         IJwtBlacklistService jwtBlacklist,
         IDateTimeProvider dateTimeProvider,
-        ISecurityActivityRecorder activity,
+        ISecurityActivityRecorder activity, ISecurityNotice notice,
         ILogger<VerifyMfaEnrollmentCommandHandler> logger)
     {
         _context = context;
@@ -61,6 +62,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
         _jwtBlacklist = jwtBlacklist;
         _dateTimeProvider = dateTimeProvider;
         _activity = activity;
+        _notice = notice;
         _logger = logger;
     }
 
@@ -144,6 +146,7 @@ public sealed class VerifyMfaEnrollmentCommandHandler
 
         settings.EnableMfa(MfaMethodType.AuthenticatorApp, now);
         _activity.Record(userId, SecurityActivityType.MfaEnabled, now, _currentUser.SessionId);
+        await _notice.QueueAsync(userId, SecurityNoticeKind.MfaEnabled, now, null, cancellationToken);
 
         await InvalidateExistingBatchesAsync(userId, now, cancellationToken);
         var endedOthers = await EndOtherSessionsAsync(userId, currentSessionId, now, cancellationToken);
