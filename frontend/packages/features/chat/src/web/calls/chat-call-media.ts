@@ -27,6 +27,8 @@ export interface ChatCallMediaSession {
     kind: ChatCallDeviceKind,
     deviceId: string,
   ): Promise<ChatCallDeviceFailure | null>;
+  /** Puts a person's picture on a tile that mounted after their track arrived (group calls). */
+  attachVideo?(personId: string, element: HTMLVideoElement): void;
   disconnect(): void;
 }
 
@@ -36,6 +38,10 @@ export interface ChatCallMediaOptions {
   /** The tile elements, read when a track arrives so a remount does not lose the picture. */
   readonly remoteVideo: () => HTMLVideoElement | null;
   readonly localVideo: () => HTMLVideoElement | null;
+  /** A group call's tile element for one person (their id is the media identity); without it a video lands on `remoteVideo`. */
+  readonly participantVideo?: (personId: string) => HTMLVideoElement | null;
+  /** The people the room hears speaking now (ids), loudest first; sent on every change. */
+  readonly onSpeakers?: (personIds: readonly string[]) => void;
   readonly onState: (state: ChatCallMediaState) => void;
   /** The devices this browser remembers; a device that is gone falls back to the default. */
   readonly preferred?: ChatCallDevicePreference;

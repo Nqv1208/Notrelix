@@ -36,6 +36,22 @@ public static class ChatCallAccess
         return (space, caller);
     }
 
+    /// <summary>
+    /// Takes the space lock for an active member before a seat is taken, so two people reaching for the last seat run one after the other: the
+    /// second loads the call after the first committed and is told <c>call-full</c>, not that its version was stale. A person who is not a
+    /// member takes no lock (the load that follows answers NotFound). Call it before <see cref="MemberCallAsync"/>, which loads the call.
+    /// </summary>
+    public static async Task LockSpaceForSeatAsync(
+        IChatDbContext db, ISpaceSequenceAllocator sequences, Guid workspaceId, Guid callId, Guid userId, CancellationToken ct)
+    {
+        var spaceId = await db.ChatCalls.AsNoTracking()
+            .Where(c => c.Id == callId && c.WorkspaceId == workspaceId)
+            .Select(c => (Guid?)c.SpaceId)
+            .FirstOrDefaultAsync(ct);
+        if (spaceId is { } id && await db.ChatMemberships.AsNoTracking().AnyAsync(m => m.SpaceId == id && m.UserId == userId && m.LeftAt == null, ct))
+            await sequences.LockAsync(id, ct);
+    }
+
     /// <summary>The tracked call with its participants, for an active member of its space.</summary>
     public static async Task<(Call Call, Space Space, WorkspaceMemberFact Caller)> MemberCallAsync(
         IChatDbContext db, IWorkspaceMemberFacts members, Guid workspaceId, Guid callId, Guid userId, CancellationToken ct)

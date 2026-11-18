@@ -164,7 +164,7 @@ export function createMockFetch(store: MockStore): typeof fetch {
         act: (
           callId: string,
           personId: string,
-          action: "answer" | "decline" | "cancel" | "end",
+          action: "answer" | "decline" | "cancel" | "end" | "join" | "leave",
         ) => boolean;
         miss: (callId: string) => boolean;
         live: (spaceId: string) => string | null;

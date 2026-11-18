@@ -11,12 +11,7 @@ import { streamIdOf } from "./chat-state";
 import type { MockChatState } from "./chat-state";
 import type { ChatSpaceRecord } from "./chat-model";
 import { CHAT_ERROR } from "./chat-model";
-import {
-  fail,
-  forbiddenProblem,
-  notFoundProblem,
-  ruleProblem,
-} from "./chat-access";
+import { fail, forbiddenProblem, notFoundProblem } from "./chat-access";
 import { appendSystemMessage } from "./chat-writes";
 
 export type MockCallKind = "voice" | "video";
@@ -63,6 +58,11 @@ const CALL_CAP = { voice: 25, video: 12 } as const;
 
 function callConflict(code: string, title: string, detail: string): never {
   return fail(409, code, title, detail);
+}
+
+/** A full call is 422 with the stable code `call-full`, as the backend answers it (a business-rule 400 would not match the client). */
+function callFull(): never {
+  return fail(422, "call-full", "Call full", "The call is full.");
 }
 
 export function callView(call: MockCallRecord) {
@@ -194,7 +194,13 @@ export function announceCall(
       space.id,
     ),
   );
-  if (!rings || call.state !== "ringing") return;
+  // Only a direct or group conversation rings; a channel call shows its banner and people join (RingsMembers).
+  if (
+    !rings ||
+    call.state !== "ringing" ||
+    (space.kind !== "direct" && space.kind !== "group")
+  )
+    return;
   for (const member of state.membershipsOfSpace(space.id)) {
     if (member.leftAt !== null || member.userId === call.initiatorId) continue;
     publishMockScopeFrame(
@@ -431,7 +437,7 @@ export function answerCall(
     call.participants.filter((p) => p.leftAt === null).length >=
     CALL_CAP[call.kind]
   ) {
-    ruleProblem("call-full", "The call is full.");
+    callFull();
   }
   const now = state.stampWrite();
   seat(call, userId, now);
@@ -539,7 +545,7 @@ export function joinCall(
     return { status: 200, body: joinView(state, call, userId, true) };
   }
   requireLive(call);
-  if (space.kind === "direct" || call.state !== "active") {
+  if (space.kind === "direct") {
     callConflict(
       CALL_RULE.stateInvalid,
       "Call state invalid",
@@ -553,7 +559,19 @@ export function joinCall(
       "You are already in another call.",
     );
   }
-  seat(call, userId, state.stampWrite());
+  if (
+    call.participants.filter((p) => p.leftAt === null).length >=
+    CALL_CAP[call.kind]
+  ) {
+    callFull();
+  }
+  const now = state.stampWrite();
+  seat(call, userId, now);
+  // A ringing call becomes active with the first person who joins, as an answer does.
+  if (call.state === "ringing") {
+    call.state = "active";
+    call.answeredAt ??= now;
+  }
   call.version += 1;
   announceCall(state, space, call, false);
   return { status: 200, body: joinView(state, call, userId, true) };
@@ -650,7 +668,7 @@ export function actAsOther(
   store: MockStore,
   callId: string,
   personId: string,
-  action: "answer" | "decline" | "cancel" | "end",
+  action: "answer" | "decline" | "cancel" | "end" | "join" | "leave",
 ): boolean {
   const call = store.chat.calls.get(callId);
   if (!call) return false;
@@ -659,6 +677,8 @@ export function actAsOther(
     decline: declineCall,
     cancel: cancelCall,
     end: endCall,
+    join: joinCall,
+    leave: leaveCall,
   }[action];
   run(store, call.workspaceId, callId, personId, call.version);
   return true;

@@ -17,14 +17,17 @@ import {
   Phone,
   PhoneOff,
   SettingsIcon,
+  UsersIcon,
   Video,
   VideoOff,
   X,
 } from "lucide-react";
 import { Avatar, AvatarFallback, Button, cn } from "@notrelix/ui-web";
 import {
+  CHAT_CALL_CAP,
   callPhaseOf,
   counterpartOf,
+  joinedParticipants,
   elapsedSeconds,
   formatCallTimer,
   type ChatCallPhase,
@@ -34,6 +37,10 @@ import type { ChatCopy } from "../components/chat.copy";
 import { avatarToneOf, initialsOf } from "../components/chat-initials";
 import { fillCopy } from "../components/use-chat-copy";
 import { useChatCallDevices } from "./chat-call-devices";
+import {
+  ChatCallParticipantGrid,
+  ChatCallPeoplePanel,
+} from "./chat-call-participants";
 import { ChatCallDevicesDialog } from "./chat-call-devices-dialog";
 import type { ChatCallsController, ChatCurrentCall } from "./use-chat-calls";
 
@@ -208,6 +215,8 @@ export interface ChatCallStageProps extends ChatCallPeople {
   readonly visible: boolean;
   readonly onMinimize: () => void;
   readonly copy: ChatCopy;
+  /** Set for a channel or group conversation: the stage shows everyone in a grid and leaving keeps the call for the others. */
+  readonly group?: { readonly name: string };
 }
 
 export function ChatCallStage({
@@ -216,11 +225,14 @@ export function ChatCallStage({
   visible,
   onMinimize,
   copy,
+  group,
   ...people
 }: ChatCallStageProps) {
   const c = copy.calls;
   const facts = useCallFacts(held, people, copy);
-  const { call, phase, otherId, name, isVideo } = facts;
+  const { call, phase, otherId, isVideo } = facts;
+  const name = group?.name ?? facts.name;
+  const [peopleOpen, setPeopleOpen] = useState(true);
   const ref = useRef<HTMLDivElement | null>(null);
   // The conversation under the stage is not reachable while the stage covers it.
   useEffect(() => {
@@ -233,7 +245,8 @@ export function ChatCallStage({
 
   const ended = call.state === "ended";
   const inCall = !ended && (phase === "connecting" || phase === "connected");
-  const stageVideo = isVideo && inCall;
+  const grouped = group !== undefined && !ended;
+  const stageVideo = isVideo && inCall && !grouped;
   const other = call.participants.find((p) => p.personId === otherId);
   const remoteVideoOn = Boolean(other?.videoOn && !other.leftAt);
   const failed = held.media === "failed" && !ended;
@@ -244,13 +257,18 @@ export function ChatCallStage({
           (Date.parse(call.endedAt) - Date.parse(call.answeredAt)) / 1000,
         )
       : null;
-  const topic = ended
-    ? kindWord(isVideo, c)
-    : phase === "outgoing-ringing"
-      ? isVideo
-        ? c.topicVideoOut
-        : c.topicVoiceOut
-      : kindWord(isVideo, c);
+  const topic = grouped
+    ? fillCopy(c.groupPeople, {
+        count: String(joinedParticipants(call).length),
+        cap: String(CHAT_CALL_CAP[call.kind]),
+      })
+    : ended
+      ? kindWord(isVideo, c)
+      : phase === "outgoing-ringing"
+        ? isVideo
+          ? c.topicVideoOut
+          : c.topicVoiceOut
+        : kindWord(isVideo, c);
   const showMic = !ended;
   const showCamera = !ended && isVideo;
 
@@ -286,6 +304,15 @@ export function ChatCallStage({
             {name}
           </h2>
           <span className="truncate text-xs text-inverse-muted">{topic}</span>
+          {grouped ? (
+            <span
+              role="timer"
+              aria-label={c.timerLabel}
+              className="text-xs text-inverse-muted tabular-nums"
+            >
+              {facts.status || c.groupWaiting}
+            </span>
+          ) : null}
           <button
             type="button"
             aria-label={c.minimize}
@@ -298,7 +325,29 @@ export function ChatCallStage({
         </header>
       )}
 
-      {stageVideo ? (
+      {grouped ? (
+        <div
+          className="flex min-h-0 flex-1 flex-col md:flex-row"
+          data-testid="chat-call-group"
+        >
+          <ChatCallParticipantGrid
+            controller={controller}
+            held={held}
+            viewerId={people.viewerId}
+            nameOf={people.nameOf}
+            copy={copy}
+          />
+          {peopleOpen ? (
+            <ChatCallPeoplePanel
+              controller={controller}
+              held={held}
+              viewerId={people.viewerId}
+              nameOf={people.nameOf}
+              copy={copy}
+            />
+          ) : null}
+        </div>
+      ) : stageVideo ? (
         <div className="relative min-h-0 flex-1" data-testid="chat-call-video">
           <video
             ref={controller.remoteVideoRef}
@@ -560,8 +609,31 @@ export function ChatCallStage({
           >
             <SettingsIcon aria-hidden="true" />
           </RoundButton>
+          {grouped ? (
+            <RoundButton
+              label={peopleOpen ? c.groupHidePeople : c.groupShowPeople}
+              caption={c.groupParticipants}
+              showLabel
+              aria-pressed={peopleOpen}
+              className={peopleOpen ? ROUND_ON : undefined}
+              onClick={() => setPeopleOpen((open) => !open)}
+            >
+              <UsersIcon aria-hidden="true" />
+            </RoundButton>
+          ) : null}
           <RoundButton
-            label={phase === "outgoing-ringing" ? c.cancel : c.hangUp}
+            label={
+              phase === "outgoing-ringing"
+                ? c.cancel
+                : grouped
+                  ? c.groupLeave
+                  : c.hangUp
+            }
+            caption={
+              grouped && phase !== "outgoing-ringing"
+                ? c.groupLeaveShort
+                : undefined
+            }
             showLabel={!stageVideo}
             className={ROUND_END}
             onClick={controller.hangUp}

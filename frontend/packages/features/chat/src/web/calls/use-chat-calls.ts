@@ -1,5 +1,5 @@
 /**
- * The call controller of one Workspace's Chat (one-to-one calls). It starts, answers, declines, cancels and ends calls over REST,
+ * The call controller of one Workspace's Chat (one-to-one and group calls). It starts, answers, joins, leaves, declines, cancels and ends calls over REST,
  * keeps the call it holds in step with the call frames and a short safety poll, and drives the media session through the
  * connector seam. The header's voice and video buttons call `start`; the dock renders `current`, `incoming` and `error`.
  */
@@ -68,6 +68,16 @@ export interface ChatCallsController {
   readonly incoming: readonly ChatIncomingCall[];
   readonly error: ChatCallError | null;
   readonly start: (spaceId: string, kind: ChatCallKind) => void;
+  /** Joins a live group or channel call (the banner's button); a full call sets the `full` error and `fullKind`. */
+  readonly join: (call: ChatCall, voiceOnly?: boolean) => void;
+  /** The kind of the call that refused the last join as full, for the dialog that names its cap. */
+  readonly fullKind: ChatCallKind | null;
+  /** The people the room hears speaking now (ids). */
+  readonly speaking: ReadonlySet<string>;
+  /** The tile element of one person of a group call; the media plane puts their picture on it. */
+  readonly participantVideoRef: (
+    personId: string,
+  ) => (el: HTMLVideoElement | null) => void;
   /** `voiceOnly` joins a video call with the camera off. */
   readonly answer: (callId: string, voiceOnly?: boolean) => void;
   readonly decline: (callId: string) => void;
@@ -97,6 +107,8 @@ export interface UseChatCallsOptions {
   readonly connector?: ChatCallMediaConnector;
   /** Where the browser's chosen devices are remembered (the host's storage); without it a choice lasts one call. */
   readonly deviceStore?: ChatCallDeviceStore;
+  /** Whether a space is a channel or group conversation: leaving it keeps the call for the others, where a direct call ends. */
+  readonly isGroupSpace?: (spaceId: string) => boolean;
 }
 
 const errorOf = (error: unknown): ChatCallError => {
@@ -133,6 +145,7 @@ export function useChatCalls({
   workspaceId: ws,
   connector = connectChatCallMedia,
   deviceStore,
+  isGroupSpace,
 }: UseChatCallsOptions): ChatCallsController {
   const queryClient = useQueryClient();
   const service = useMemo(
@@ -142,6 +155,13 @@ export function useChatCalls({
   const [current, setCurrent] = useState<ChatCurrentCall | null>(null);
   const [error, setError] = useState<ChatCallError | null>(null);
   const [disabled, setDisabled] = useState(false);
+  const [fullKind, setFullKind] = useState<ChatCallKind | null>(null);
+  const [speakingIds, setSpeakingIds] = useState<readonly string[]>([]);
+  const speaking = useMemo(() => new Set(speakingIds), [speakingIds]);
+  const tileEls = useRef(new Map<string, HTMLVideoElement>());
+  const tileRefs = useRef(
+    new Map<string, (el: HTMLVideoElement | null) => void>(),
+  );
   const currentRef = useRef<ChatCurrentCall | null>(null);
   const sessionRef = useRef<ChatCallMediaSession | null>(null);
   const tokenRef = useRef<{ url: string; token: string } | null>(null);
@@ -166,6 +186,7 @@ export function useChatCalls({
     sessionRef.current = null;
     tokenRef.current = null;
     devicesOnRef.current = false;
+    setSpeakingIds([]);
   }, []);
   useEffect(() => teardown, [teardown]);
 
@@ -194,6 +215,8 @@ export function useChatCalls({
           token,
           remoteVideo: () => remoteEl.current,
           localVideo: () => localEl.current,
+          participantVideo: (personId) => tileEls.current.get(personId) ?? null,
+          onSpeakers: (ids) => setSpeakingIds(ids),
           preferred: currentRef.current?.devices,
           onState: (state) => {
             const held = currentRef.current;
@@ -405,6 +428,28 @@ export function useChatCalls({
     [adopt, service, ws],
   );
 
+  const join = useCallback(
+    (target: ChatCall, voiceOnly = false) => {
+      const heldCall = currentRef.current?.call;
+      if (heldCall && heldCall.state !== "ended") {
+        setError("you-busy");
+        return;
+      }
+      setError(null);
+      setFullKind(null);
+      void withFreshVersion(target.spaceId, target.id, target.version, (v) =>
+        service.joinCall(ws, target.id, v),
+      )
+        .then((joined) => adopt(joined, voiceOnly))
+        .catch((cause) => {
+          const next = errorOf(cause);
+          if (next === "full") setFullKind(target.kind);
+          setError(next);
+        });
+    },
+    [adopt, service, withFreshVersion, ws],
+  );
+
   const answer = useCallback(
     (id: string, voiceOnly = false) => {
       const entry = queryClient
@@ -457,7 +502,10 @@ export function useChatCalls({
   const hangUp = useCallback(() => {
     const heldCall = currentRef.current?.call;
     if (!heldCall || heldCall.state === "ended") return;
-    const action = heldCall.state === "ringing" ? "cancel" : "end";
+    const group = isGroupSpace?.(heldCall.spaceId) ?? false;
+    // A group call goes on without the person who leaves it, its starter too; a direct call ends for both.
+    const action =
+      heldCall.state === "ringing" ? "cancel" : group ? "leave" : "end";
     teardown();
     void withFreshVersion(
       heldCall.spaceId,
@@ -465,7 +513,10 @@ export function useChatCalls({
       heldCall.version,
       (v) => service.changeCall(ws, heldCall.id, action, v),
     )
-      .then((call) => settle(call))
+      .then((call) => {
+        if (action === "leave" && call.state !== "ended") update(null);
+        else settle(call);
+      })
       .catch((cause) => {
         // Someone else ended it first: the call is over either way.
         if (
@@ -482,7 +533,16 @@ export function useChatCalls({
           );
       });
     patch({ media: "idle" });
-  }, [patch, service, settle, teardown, withFreshVersion, ws]);
+  }, [
+    isGroupSpace,
+    patch,
+    service,
+    settle,
+    teardown,
+    update,
+    withFreshVersion,
+    ws,
+  ]);
 
   const syncMedia = useCallback(
     (audioOn: boolean, videoOn: boolean) => {
@@ -552,6 +612,7 @@ export function useChatCalls({
 
   const dismiss = useCallback(() => {
     setError(null);
+    setFullKind(null);
     if (currentRef.current?.call.state === "ended") update(null);
   }, [update]);
 
@@ -562,12 +623,30 @@ export function useChatCalls({
     localEl.current = el;
   }, []);
 
+  const participantVideoRef = useCallback((personId: string) => {
+    let ref = tileRefs.current.get(personId);
+    if (!ref) {
+      ref = (el) => {
+        if (el) {
+          tileEls.current.set(personId, el);
+          sessionRef.current?.attachVideo?.(personId, el);
+        } else tileEls.current.delete(personId);
+      };
+      tileRefs.current.set(personId, ref);
+    }
+    return ref;
+  }, []);
+
   return {
     enabled: !disabled,
     current,
     incoming,
     error,
     start,
+    join,
+    fullKind,
+    speaking,
+    participantVideoRef,
     answer,
     decline,
     hangUp,

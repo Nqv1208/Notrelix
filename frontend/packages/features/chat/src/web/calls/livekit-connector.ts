@@ -1,5 +1,5 @@
 /** The LiveKit side of the media seam. Loaded on demand by `connectChatCallMedia`; nothing else imports `livekit-client`. */
-import { Room, RoomEvent, Track } from "livekit-client";
+import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
 import type {
   ChatCallDeviceFailure,
   ChatCallMediaOptions,
@@ -26,10 +26,15 @@ export async function connectLiveKit(
   });
   // Remote audio plays through hidden elements; they leave with the call.
   const audioElements = new Set<HTMLMediaElement>();
+  // The picture of each person, kept so a tile that mounts after the track arrived still gets it.
+  const videoTracks = new Map<string, RemoteTrack>();
 
-  room.on(RoomEvent.TrackSubscribed, (track) => {
+  room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
     if (track.kind === Track.Kind.Video) {
-      const el = options.remoteVideo();
+      videoTracks.set(participant.identity, track);
+      const el =
+        options.participantVideo?.(participant.identity) ??
+        options.remoteVideo();
       if (el) track.attach(el);
     } else if (track.kind === Track.Kind.Audio) {
       const el = track.attach();
@@ -38,11 +43,16 @@ export async function connectLiveKit(
       audioElements.add(el);
     }
   });
-  room.on(RoomEvent.TrackUnsubscribed, (track) => {
+  room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
+    if (videoTracks.get(participant.identity) === track)
+      videoTracks.delete(participant.identity);
     track.detach().forEach((el) => {
       if (audioElements.delete(el)) el.remove();
     });
   });
+  room.on(RoomEvent.ActiveSpeakersChanged, (speakers) =>
+    options.onSpeakers?.(speakers.map((speaker) => speaker.identity)),
+  );
   room.on(RoomEvent.Reconnecting, () => options.onState("reconnecting"));
   room.on(RoomEvent.Reconnected, () => options.onState("connected"));
   room.on(RoomEvent.Disconnected, () => options.onState("disconnected"));
@@ -78,7 +88,11 @@ export async function connectLiveKit(
         return failureOf(error);
       }
     },
+    attachVideo(personId, element) {
+      videoTracks.get(personId)?.attach(element);
+    },
     disconnect() {
+      videoTracks.clear();
       audioElements.forEach((el) => el.remove());
       audioElements.clear();
       void room.disconnect();

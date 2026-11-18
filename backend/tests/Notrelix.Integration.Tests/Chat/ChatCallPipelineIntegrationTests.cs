@@ -372,6 +372,132 @@ public sealed class ChatCallPipelineIntegrationTests
         (await LiveCallsAsync(channel.Id)).Should().Be(1);
     }
 
+    /// <summary>Seeds a live call of a channel with <paramref name="seated"/> people in it (the starter and the first members), the way the pipeline would have left it.</summary>
+    private async Task<Call> SeedLiveCallAsync(OrgStack stack, Space channel, CallKind kind, IReadOnlyList<Guid> members, int seated)
+    {
+        var call = Call.Start(stack.AccountId, stack.WorkspaceId, channel.Id, channel.Kind, stack.OwnerId, kind, $"room-{Guid.NewGuid():N}", "ap-southeast-1", T0);
+        foreach (var member in members.Take(seated - 1)) call.Join(member, T0);
+        await _gateway.CreateRoomAsync(call.RoomKey, call.Region, Call.MaxParticipants(channel.Kind, kind), CancellationToken.None);
+        await _host.WithSystemContextAsync(seed =>
+        {
+            seed.ChatCalls.Add(call);
+            return Task.CompletedTask;
+        });
+        return call;
+    }
+
+    [Fact]
+    public async Task TwoPeopleTakingTheLastVoiceSeatAtOnce_GetExactlyOneSeat_AndTheOtherIsRefusedAsFull()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var members = await AddMembersAsync(stack, ChatLimits.CallMaxParticipantsVoice);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, members);
+        var call = await SeedLiveCallAsync(stack, channel, CallKind.Voice, members, ChatLimits.CallMaxParticipantsVoice - 1);
+        var racers = new[] { members[^2], members[^1] };
+        var version = await VersionAsync(call.Id);
+
+        var gate = new TaskCompletionSource();
+        var tasks = racers.Select(person => Task.Run(async () =>
+        {
+            using var provider = ProviderFor(stack, person);
+            await gate.Task;
+            return (person, Error: await Record.ExceptionAsync(() => SendAsync(provider, new JoinCallCommand(stack.WorkspaceId, call.Id, version))));
+        })).ToList();
+        await Task.Delay(200);
+        gate.SetResult();
+        var outcomes = await Task.WhenAll(tasks);
+
+        outcomes.Count(o => o.Error is null).Should().Be(1, "exactly one person gets the last seat");
+        var refused = outcomes.Single(o => o.Error is not null).Error!;
+        CodeOf(refused).Should().Be(ChatRuleCodes.CallFull, "the person who lost the race is told the call is full, not that their version was stale");
+        (await LoadAsync(call.Id)).Participants.Count(p => p.IsJoined).Should().Be(ChatLimits.CallMaxParticipantsVoice);
+    }
+
+    [Fact]
+    public async Task TwoPeopleTakingTheLastVideoSeatAtOnce_GetExactlyOneSeat_AndTheOtherIsRefusedAsFull()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var members = await AddMembersAsync(stack, ChatLimits.CallMaxParticipantsVideo);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, members);
+        var call = await SeedLiveCallAsync(stack, channel, CallKind.Video, members, ChatLimits.CallMaxParticipantsVideo - 1);
+        var version = await VersionAsync(call.Id);
+
+        var gate = new TaskCompletionSource();
+        var tasks = new[] { members[^2], members[^1] }.Select(person => Task.Run(async () =>
+        {
+            using var provider = ProviderFor(stack, person);
+            await gate.Task;
+            return await Record.ExceptionAsync(() => SendAsync(provider, new JoinCallCommand(stack.WorkspaceId, call.Id, version)));
+        })).ToList();
+        await Task.Delay(200);
+        gate.SetResult();
+        var errors = await Task.WhenAll(tasks);
+
+        errors.Count(e => e is null).Should().Be(1);
+        CodeOf(errors.Single(e => e is not null)!).Should().Be(ChatRuleCodes.CallFull);
+        (await LoadAsync(call.Id)).Participants.Count(p => p.IsJoined).Should().Be(ChatLimits.CallMaxParticipantsVideo);
+    }
+
+    [Fact]
+    public async Task AMemberJoinsALiveChannelCallAndGetsAToken_AndTheStarterLeavingKeepsTheCallAliveForTheOthers()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var members = await AddMembersAsync(stack, 2);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPublic, members);
+        using var asOwner = ProviderFor(stack, stack.OwnerId);
+        var started = await StartAsync(asOwner, new StartCallCommand(stack.WorkspaceId, channel.Id, "voice"));
+
+        using var asFirst = ProviderFor(stack, members[0]);
+        var joined = await SendAsync(asFirst, new JoinCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
+        joined.JoinToken.Should().NotBeNull();
+        joined.Call.State.Should().Be("active");
+        using var asSecond = ProviderFor(stack, members[1]);
+        await SendAsync(asSecond, new JoinCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
+
+        await SendAsync(asOwner, new LeaveCallCommand(stack.WorkspaceId, started.Call.Id, await VersionAsync(started.Call.Id)));
+
+        var after = await LoadAsync(started.Call.Id);
+        after.State.Should().Be(CallState.Active, "the call goes on while others remain, even when its starter has left");
+        after.Participants.Where(p => p.IsJoined).Select(p => p.PersonId).Should().BeEquivalentTo(members);
+        (await CallMessagesAsync(channel.Id, started.Call.Id)).Should().Be(0, "the call line is written when the call ends");
+        var active = await SendAsync(asFirst, new GetActiveCallQuery(stack.WorkspaceId, channel.Id));
+        active!.Id.Should().Be(started.Call.Id);
+    }
+
+    [Fact]
+    public async Task ACallOfAPrivateChannelIsNotFoundToANonMemberAnOutsiderAndAnotherWorkspace_AndAGuestIsRefusedEvenWhenTheCallIsFull()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var members = await AddMembersAsync(stack, ChatLimits.CallMaxParticipantsVoice);
+        var notInChannel = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "NotInChannel");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "GuestJoiner");
+        var stranger = await _host.AddOutsiderAsync(stack);
+        var channel = await SeedChannelAsync(stack, stack.OwnerId, SpaceKind.ChannelPrivate, [.. members, guest]);
+        var call = await SeedLiveCallAsync(stack, channel, CallKind.Voice, members, ChatLimits.CallMaxParticipantsVoice - 1);
+        var otherStack = await _host.SeedWorkspaceAsync();
+
+        foreach (var person in new[] { notInChannel, stranger })
+        {
+            using var provider = ProviderFor(stack, person);
+            (await RefusalAsync(provider, new JoinCallCommand(stack.WorkspaceId, call.Id, await VersionAsync(call.Id))))
+                .Should().BeOfType<Notrelix.Application.Common.Exceptions.NotFoundException>("a person outside the channel does not learn the call exists");
+        }
+
+        using var asOtherWorkspace = ProviderFor(otherStack, otherStack.OwnerId);
+        (await RefusalAsync(asOtherWorkspace, new JoinCallCommand(stack.WorkspaceId, call.Id, await VersionAsync(call.Id))))
+            .Should().BeAssignableTo<Exception>("another workspace's owner has no access to this call");
+
+        using var asGuest = ProviderFor(stack, guest);
+        (await RefusalAsync(asGuest, new JoinCallCommand(stack.WorkspaceId, call.Id, await VersionAsync(call.Id))))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>("a Guest never takes part, and a seat free or not does not change that");
+        using var last = ProviderFor(stack, members[^1]);
+        await SendAsync(last, new JoinCallCommand(stack.WorkspaceId, call.Id, await VersionAsync(call.Id)));
+        (await RefusalAsync(asGuest, new JoinCallCommand(stack.WorkspaceId, call.Id, await VersionAsync(call.Id))))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>("the call is full now, and the Guest is still refused for who they are, not for the cap");
+
+        (await LoadAsync(call.Id)).Participants.Count(p => p.IsJoined).Should().Be(ChatLimits.CallMaxParticipantsVoice);
+    }
+
     private async Task<List<(Guid User, Exception? Error)>> RaceStartsAsync(OrgStack stack, Guid spaceId, IReadOnlyList<Guid> users)
     {
         var gate = new TaskCompletionSource();

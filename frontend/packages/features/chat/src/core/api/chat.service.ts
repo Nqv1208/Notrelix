@@ -983,6 +983,18 @@ export function createChatService(
       );
     },
 
+    /** `Chat.Calls.Join`: a member joins a live group or channel call; a full call is 422 `call-full`. A stale version is 412. */
+    joinCall(
+      workspaceId: string,
+      callId: string,
+      expectedVersion: number,
+    ): Promise<ChatCallJoin> {
+      return api.post<ChatCallJoin>(
+        paths.callAction(workspaceId, callId, "join"),
+        { expectedVersion },
+      );
+    },
+
     /** `Chat.Calls.Decline`, `Cancel`, `End` and `Leave`: each takes the version the caller read; a stale one is 412. */
     changeCall(
       workspaceId: string,
