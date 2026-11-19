@@ -311,6 +311,7 @@ export {
   type AddTeamMemberInput,
   type WorkspaceTeamSurfaceProps,
 } from "./teams/workspace-team-surface";
+export type { TeamDeleteOutcome } from "./teams/delete-team-dialog";
 export {
   WorkspaceSecuritySurface,
   type WorkspaceSecurityView,

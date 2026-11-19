@@ -34779,7 +34779,8 @@
           "Workspaces.Teams",
           "Workspaces.Teams"
         ],
-        "summary": "Permanently delete a team",
+        "summary": "Delete a team (restorable)",
+        "description": "A Team that Spaces still list is refused with 409 and the stable code workspaces.team.still-referenced; the problem carries references (only the Spaces the caller can see) and moreReferencesHidden (true when some referencing Space is hidden from the caller, no count). Remove the entries first, then delete. A Team with no references is deleted and can be restored.",
         "operationId": "Workspaces.Teams.DeleteTeam",
         "parameters": [
           {
@@ -34813,6 +34814,16 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [

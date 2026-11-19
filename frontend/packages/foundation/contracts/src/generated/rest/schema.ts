@@ -7933,7 +7933,10 @@ export interface paths {
         /** Rename a team */
         put: operations["Workspaces.Teams.RenameTeam"];
         post?: never;
-        /** Permanently delete a team */
+        /**
+         * Delete a team (restorable)
+         * @description A Team that Spaces still list is refused with 409 and the stable code workspaces.team.still-referenced; the problem carries references (only the Spaces the caller can see) and moreReferencesHidden (true when some referencing Space is hidden from the caller, no count). Remove the entries first, then delete. A Team with no references is deleted and can be restored.
+         */
         delete: operations["Workspaces.Teams.DeleteTeam"];
         options?: never;
         head?: never;
@@ -33011,6 +33014,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
         };
     };
