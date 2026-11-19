@@ -153,7 +153,7 @@ export const en = {
     lostLine: "lost access to {{where}}",
     keptLine: "stays {{role}}, added directly",
     footnote:
-      "Archiving doesn't delete the Team; restore it and the access comes back. Work assigned to them keeps its assignee.",
+      "Archiving doesn't delete the Team from {{workspace}}; restore it and the access comes back. Work assigned to them keeps its assignee.",
     cancel: "Cancel",
     confirm: "Archive Team",
     confirming: "Archiving…",
@@ -508,7 +508,7 @@ export const vi: WorkspaceTeamsCopy = {
     lostLine: "mất quyền vào {{where}}",
     keptLine: "vẫn là {{role}}, thêm trực tiếp",
     footnote:
-      "Lưu trữ không xoá nhóm; khôi phục thì quyền quay lại. Việc đang giao cho họ vẫn giữ người phụ trách.",
+      "Lưu trữ không xoá nhóm khỏi {{workspace}}; khôi phục thì quyền quay lại. Việc đang giao cho họ vẫn giữ người phụ trách.",
     cancel: "Huỷ",
     confirm: "Lưu trữ nhóm",
     confirming: "Đang lưu trữ…",

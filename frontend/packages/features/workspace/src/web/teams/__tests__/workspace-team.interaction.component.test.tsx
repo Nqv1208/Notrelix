@@ -137,6 +137,8 @@ describe("WorkspaceTeamSurface", () => {
     const dialog = screen.getByRole("dialog", {
       name: "Lưu trữ Nhóm Kỹ sư ERP?",
     });
+    // The workspace the Team belongs to is named in the confirmation.
+    expect(dialog.textContent).toContain("Minh An Group");
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Lưu trữ nhóm" }),
     );
