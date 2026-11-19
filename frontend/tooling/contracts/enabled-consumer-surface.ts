@@ -828,6 +828,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.TransferOwnership",
+    operationId: "Workspaces.Workspaces.TransferOwnership",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "restoreWorkspace",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   describeWorkspaceFailure,
   isWorkspaceAdmin,
+  type WorkspaceFailure,
   type WorkspaceSettings,
 } from "@notrelix/features-workspace/core";
 import {
@@ -16,6 +17,8 @@ import {
   WorkspaceSetupFrame,
   WorkspaceSettingsSurface,
   type SaveStatus,
+  type TransferCandidate,
+  type TransferFailure,
   type WorkspaceProfileValues,
   type WorkspaceSettingsCopy,
 } from "@notrelix/features-workspace/web";
@@ -45,6 +48,23 @@ function failureStatus(
             ? copy.toasts.network
             : copy.toasts.unknown;
   return { state: "error", message };
+}
+
+/** What the handover dialog says about a refused write: a stale list or a person who is gone is one case. */
+function transferFailure(failure: WorkspaceFailure): TransferFailure {
+  switch (failure.kind) {
+    case "conflict":
+    case "not-found":
+      return { kind: "conflict" };
+    case "rule":
+      return { kind: "rejected", message: failure.detail ?? null };
+    case "forbidden":
+      return { kind: "forbidden" };
+    case "network":
+      return { kind: "network" };
+    default:
+      return { kind: "unknown" };
+  }
 }
 
 /**
@@ -176,6 +196,51 @@ export function SettingsPage() {
     toast.success(formatCopy(copy.toasts.deleted, values));
   };
 
+  // Active members who are not Guests and not yet Owners; Admins first, as the handover dialog lists them.
+  const transferCandidates = useMemo<TransferCandidate[]>(
+    () =>
+      (viewer.members.data ?? [])
+        .filter(
+          (member) =>
+            member.userId !== viewer.userId &&
+            member.membership !== "suspended" &&
+            (member.role === "admin" || member.role === "member"),
+        )
+        .map((member) => ({
+          userId: member.userId,
+          name: member.name,
+          role:
+            member.role === "admin" ? ("admin" as const) : ("member" as const),
+          detail: member.jobTitle ?? null,
+        }))
+        .sort(
+          (a, b) =>
+            Number(b.role === "admin") - Number(a.role === "admin") ||
+            a.name.localeCompare(b.name),
+        ),
+    [viewer.members.data, viewer.userId],
+  );
+
+  const onTransfer = async (
+    userId: string,
+  ): Promise<TransferFailure | null> => {
+    if (version === undefined || !workspace) return { kind: "conflict" };
+    try {
+      await mutations.transferOwnership.mutateAsync({
+        newOwnerId: userId,
+        expectedVersion: version,
+      });
+    } catch (error) {
+      return transferFailure(describeWorkspaceFailure(error));
+    }
+    const name =
+      transferCandidates.find((person) => person.userId === userId)?.name ?? "";
+    toast.success(
+      formatCopy(copy.toasts.transferred, { name, workspace: workspace.name }),
+    );
+    return null;
+  };
+
   return (
     <WorkspaceSetupFrame
       copy={teamsCopy}
@@ -195,6 +260,16 @@ export function SettingsPage() {
         canDelete={viewer.role === "owner"}
         isPersonal={workspace?.isPersonal === true}
         deleting={mutations.remove.isPending}
+        canTransfer={viewer.role === "owner"}
+        transferCandidates={transferCandidates}
+        onTransfer={onTransfer}
+        onInviteForTransfer={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/members",
+            params: { workspaceId },
+            search: { tab: "invitations" },
+          })
+        }
         onSaveProfile={onSaveProfile}
         onSaveDefaults={onSaveDefaults}
         onArchive={onArchive}

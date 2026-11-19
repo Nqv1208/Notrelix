@@ -34,6 +34,11 @@ import {
 import type { SectionState } from "../home/home-models";
 import { formatCopy } from "../shell/shell-models";
 import type { WorkspaceSettingsCopy } from "./workspace-settings.copy";
+import {
+  TransferOwnershipFlow,
+  type TransferCandidate,
+  type TransferFailure,
+} from "./transfer-ownership-flow";
 
 export interface WorkspaceProfileValues {
   readonly name: string;
@@ -69,6 +74,12 @@ export interface WorkspaceSettingsSurfaceProps {
   /** A personal workspace is never deleted: the action is explained and off. */
   readonly isPersonal: boolean;
   readonly deleting: boolean;
+  /** Only an Owner hands the workspace over (`TransferOwnership`, LD-05). */
+  readonly canTransfer: boolean;
+  /** Active members who are not Guests and not yet Owners; empty offers the invite path. */
+  readonly transferCandidates: readonly TransferCandidate[];
+  readonly onTransfer: (userId: string) => Promise<TransferFailure | null>;
+  readonly onInviteForTransfer: () => void;
   readonly onSaveProfile: (values: WorkspaceProfileValues) => void;
   readonly onSaveDefaults: (settings: WorkspaceSettings) => void;
   readonly onArchive: () => void;
@@ -749,6 +760,10 @@ export function WorkspaceSettingsSurface({
   canDelete,
   isPersonal,
   deleting,
+  canTransfer,
+  transferCandidates,
+  onTransfer,
+  onInviteForTransfer,
   onSaveProfile,
   onSaveDefaults,
   onArchive,
@@ -864,6 +879,17 @@ export function WorkspaceSettingsSurface({
               pending={archiving}
               onConfirm={onArchive}
             />
+            {canTransfer ? (
+              <TransferOwnershipFlow
+                copy={copy}
+                workspaceName={workspaceName ?? ""}
+                candidates={transferCandidates}
+                disabled={!versionAvailable || !workspaceName}
+                onTransfer={onTransfer}
+                onReload={onReload}
+                onInvite={onInviteForTransfer}
+              />
+            ) : null}
             {canDelete ? (
               <DangerFlow
                 copy={copy}

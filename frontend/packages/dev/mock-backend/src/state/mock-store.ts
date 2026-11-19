@@ -207,6 +207,10 @@ export interface MockWorkspaceSettingsRecord {
 export type MockMemberChange =
   "ok" | "not-found" | "last-owner" | "owner-direct" | "inactive";
 
+/** Outcome of the ownership handover (`TransferOwnership`, LD-05). */
+export type MockOwnershipTransfer =
+  "ok" | "not-found" | "stale" | "self" | "guest";
+
 /**
  * Outcome of a versioned workspace write (`expectedVersion`, WX-SET-001):
  * `stale` mirrors the producer's 412 when the version the member last read is
@@ -4569,6 +4573,31 @@ export class MockStore {
       workspaceId,
       this.getWorkspaceVersion(workspaceId) + 1,
     );
+    return "ok";
+  }
+
+  /**
+   * The current Owner hands the workspace to an active non-Guest member: the person becomes Owner, the caller
+   * Admin. The caller being an Owner is the handler's check; the version is checked first, as the producer's
+   * pipeline does.
+   */
+  transferOwnership(
+    workspaceId: string,
+    newOwnerId: string,
+    expectedVersion: unknown,
+  ): MockOwnershipTransfer {
+    if (!this.getWorkspace(workspaceId)) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    const caller = this.findMembership(workspaceId, this.getCurrentUser().id);
+    if (!caller) return "not-found";
+    if (caller.userId === newOwnerId) return "self";
+    const target = this.findMembership(workspaceId, newOwnerId);
+    if (!target || this.suspendedMembershipIds.has(target.id))
+      return "not-found";
+    if (target.role === "guest") return "guest";
+    target.role = "owner";
+    caller.role = "admin";
     return "ok";
   }
 

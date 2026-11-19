@@ -90,6 +90,9 @@ export const endpoints = {
     remove: (workspaceId: string, expectedVersion: number) =>
       `/workspaces/${workspaceId}?expectedVersion=${expectedVersion}`,
     restore: (workspaceId: string) => `/workspaces/${workspaceId}/restore`,
+    // Workspaces.Workspaces.TransferOwnership (an active Owner only, to an active non-Guest member).
+    transferOwnership: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/transfer-ownership`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,

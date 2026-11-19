@@ -524,6 +524,44 @@ export const workspaceOperations = [
     },
   }),
 
+  // ─── Hand the workspace over (LD-05: an active Owner, to an active non-Guest member) ───
+
+  defineMockOperation<
+    { workspaceId: string },
+    { newOwnerId?: string; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.transferOwnership",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.TransferOwnership",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/transfer-ownership",
+    async handle({ params, body, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner") return forbidden();
+      const outcome = store.transferOwnership(
+        params.workspaceId,
+        body?.newOwnerId ?? "",
+        body?.expectedVersion,
+      );
+      switch (outcome) {
+        case "ok":
+          return noContent();
+        case "stale":
+          return preconditionFailed();
+        case "not-found":
+          return notFound();
+        case "self":
+          return ruleViolation("Cannot transfer ownership to yourself.");
+        case "guest":
+          return ruleViolation("A guest cannot become the owner.");
+      }
+    },
+  }),
+
   // ─── Delete, Recently deleted and restore (owner decision 2026-11-01) ─────
 
   defineMockOperation<{ workspaceId: string }, never, void>({

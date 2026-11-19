@@ -571,6 +571,17 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
           {d.archivedBanner}
         </p>
       ) : null}
+      {!archived &&
+      members.status === "ready" &&
+      !list.some((member) => member.role === "Lead") ? (
+        <p
+          role="status"
+          data-f="needs-lead"
+          className="m-0 rounded-[8px] border border-line bg-background px-3 py-2 text-crumb text-warning-text"
+        >
+          {d.needsLeadBanner}
+        </p>
+      ) : null}
       <div className="@container">
         <div
           data-f="dgrid"
