@@ -133,9 +133,11 @@ describe("Transfer ownership (hand the workspace over)", () => {
     expect(props.ownershipStepUp.request).toHaveBeenCalledTimes(1);
     expect(props.onTransfer).not.toHaveBeenCalled();
     await proveWithCode(dialog);
+    // The code is given for the person chosen: the producer refuses it for anyone else.
     expect(props.ownershipStepUp.withCode).toHaveBeenCalledWith(
       "challenge-1",
       "123456",
+      "u-khoa",
     );
     expect(props.onTransfer).toHaveBeenCalledWith("u-khoa", "proof-1");
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
@@ -359,7 +361,10 @@ describe("Transfer ownership (hand the workspace over)", () => {
           within(dialog).getByRole("button", { name: d.stepUpConfirm }),
         );
       });
-      expect(port.withPassword).toHaveBeenLastCalledWith("right-password");
+      expect(port.withPassword).toHaveBeenLastCalledWith(
+        "right-password",
+        "u-ha",
+      );
       expect(props.onTransfer).toHaveBeenCalledWith("u-ha", "proof-pw");
       expect(port.withCode).not.toHaveBeenCalled();
     });
@@ -385,6 +390,7 @@ describe("Transfer ownership (hand the workspace over)", () => {
       expect(port.withCode).toHaveBeenCalledWith(
         "challenge-1",
         "RC01-MOCK-1000",
+        "u-ha",
       );
       expect(props.onTransfer).toHaveBeenCalledWith("u-ha", "proof-1");
     });
@@ -600,12 +606,45 @@ describe("Transfer ownership (hand the workspace over)", () => {
       ).toBeNull();
     });
 
-    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a return reopens the dialog, takes the proof once and hands over", async () => {
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a return alone claims nothing and hands nothing over: it reopens on the person and waits for Transfer", async () => {
       const port = providerPort({
         resume: vi.fn(() => ({ newOwnerId: "u-lan", failed: false })),
       });
       const props = renderSettings(settingsDefaultScenario(), {
         ownershipStepUp: port,
+      });
+
+      const dialog = await screen.findByRole("alertdialog");
+      expect(
+        await within(dialog).findByText(
+          "Your provider confirmed you. Ownership of Product moves to Vũ Ngọc Lan only when you press Transfer.",
+          { exact: false },
+        ),
+      ).toBeTruthy();
+      // Nothing happened on its own, however long it waits.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+      expect(port.provider?.claim).not.toHaveBeenCalled();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+      expect(screen.queryByRole("alertdialog")).not.toBeNull();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] pressing Transfer after a return takes the proof once and hands over to the person the return named", async () => {
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-lan", failed: false })),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+
+      const dialog = await screen.findByRole("alertdialog");
+      const transfer = await within(dialog).findByRole("button", {
+        name: "Transfer to Vũ Ngọc Lan",
+      });
+      expect(port.provider?.claim).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(transfer);
       });
 
       await waitFor(() =>
@@ -617,6 +656,29 @@ describe("Transfer ownership (hand the workspace over)", () => {
       expect(props.onTransfer).toHaveBeenCalledTimes(1);
       expect(port.provider?.claim).toHaveBeenCalledTimes(1);
       await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] closing the dialog after a return spends nothing", async () => {
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-lan", failed: false })),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+
+      const dialog = await screen.findByRole("alertdialog");
+      await within(dialog).findByRole("button", {
+        name: "Transfer to Vũ Ngọc Lan",
+      });
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: d.stepUpClose }),
+        );
+      });
+
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+      expect(port.provider?.claim).not.toHaveBeenCalled();
+      expect(props.onTransfer).not.toHaveBeenCalled();
     });
 
     it("FUI[workspace.settings:transfer-ownership-stepup-provider] a provider that refuses hands nothing over and offers the buttons again", async () => {
@@ -650,6 +712,11 @@ describe("Transfer ownership (hand the workspace over)", () => {
       });
 
       const dialog = await screen.findByRole("alertdialog");
+      await act(async () => {
+        fireEvent.click(
+          await within(dialog).findByRole("button", { name: /^Transfer to / }),
+        );
+      });
       expect(
         await within(dialog).findByText(d.stepUpExpiredTitle, { exact: false }),
       ).toBeTruthy();
@@ -681,6 +748,11 @@ describe("Transfer ownership (hand the workspace over)", () => {
       });
 
       const dialog = await screen.findByRole("alertdialog");
+      await act(async () => {
+        fireEvent.click(
+          await within(dialog).findByRole("button", { name: /^Transfer to / }),
+        );
+      });
       expect(
         await within(dialog).findByText(d.stepUpRefusedTitle, { exact: false }),
       ).toBeTruthy();

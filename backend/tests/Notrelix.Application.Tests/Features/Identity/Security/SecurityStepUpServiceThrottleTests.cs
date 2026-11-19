@@ -37,7 +37,7 @@ public class SecurityStepUpServiceThrottleTests : IdentityHandlerTestBase
         Lock(LoginThrottleScope.StepUpMfa);
 
         var result = await CreateSut().CompleteMfaAsync(
-            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, "challenge", "123456", CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, "challenge", "123456", null, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.TypedErrors.Should().ContainSingle(e =>
@@ -52,7 +52,7 @@ public class SecurityStepUpServiceThrottleTests : IdentityHandlerTestBase
         ChallengeStoreMock.Setup(s => s.PeekAsync("nope", It.IsAny<CancellationToken>())).ReturnsAsync((MfaChallengePayload?)null);
 
         var result = await CreateSut().CompleteMfaAsync(
-            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, "nope", "123456", CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, "nope", "123456", null, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         ThrottleMock.Verify(t => t.RecordFailureAsync(LoginThrottleScope.StepUpMfa, TestUserId.ToString("N"), It.IsAny<CancellationToken>()), Times.Once);
@@ -65,7 +65,7 @@ public class SecurityStepUpServiceThrottleTests : IdentityHandlerTestBase
         Lock(LoginThrottleScope.PasswordReverification);
 
         var result = await CreateSut().CompletePasswordAsync(
-            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, TestPassword, CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, TestPassword, null, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         result.TypedErrors.Should().ContainSingle(e => e.Code == LoginThrottleErrors.Code);
@@ -80,7 +80,7 @@ public class SecurityStepUpServiceThrottleTests : IdentityHandlerTestBase
         PasswordHasherMock.Setup(h => h.VerifyPassword("bad", TestHashedPassword)).Returns(false);
 
         var result = await CreateSut().CompletePasswordAsync(
-            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, "bad", CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, "bad", null, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
         ThrottleMock.Verify(t => t.RecordFailureAsync(LoginThrottleScope.PasswordReverification, TestUserId.ToString("N"), It.IsAny<CancellationToken>()), Times.Once);
@@ -94,7 +94,7 @@ public class SecurityStepUpServiceThrottleTests : IdentityHandlerTestBase
         PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
 
         var result = await CreateSut().CompletePasswordAsync(
-            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, TestPassword, CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.DisableMfa, TestPassword, null, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         ThrottleMock.Verify(t => t.RecordSuccessAsync(LoginThrottleScope.PasswordReverification, TestUserId.ToString("N"), It.IsAny<CancellationToken>()), Times.Once);

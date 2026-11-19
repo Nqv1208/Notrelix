@@ -12,4 +12,5 @@ public sealed record OAuthLoginState(
     OAuthFlowKind Flow = OAuthFlowKind.Login,
     Guid? BoundUserId = null,
     Guid? BoundSessionId = null,
-    MfaChallengePurpose? StepUpPurpose = null);
+    MfaChallengePurpose? StepUpPurpose = null,
+    string? StepUpTarget = null);

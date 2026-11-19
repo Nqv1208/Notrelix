@@ -17,8 +17,8 @@ export const endpoints = {
     stepUpRequirement: "/auth/security/step-up/requirement",
     stepUpCompleteMfa: "/auth/security/step-up/complete-mfa",
     stepUpCompletePassword: "/auth/security/step-up/complete-password",
-    // The provider re-authentication: the browser leaves for `oauthStepUpStart`, the backend hands the
-    // proof back in an httpOnly cookie, and `stepUpClaimProvider` reads it once.
+    // The provider re-authentication: `oauthStepUpStart` (a POST) answers the provider's URL, the browser
+    // leaves for it, the backend hands the proof back in an httpOnly cookie, and `stepUpClaimProvider` reads it once.
     stepUpClaimProvider: "/auth/security/step-up/claim-provider",
     oauthStepUpStart: (provider: string) =>
       `/auth/oauth/${encodeURIComponent(provider)}/step-up/start`,

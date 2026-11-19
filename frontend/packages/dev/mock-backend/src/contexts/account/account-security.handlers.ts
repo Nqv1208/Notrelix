@@ -81,6 +81,32 @@ function checkProof(
   return identityProblem(400, wrongCode, "The proof is not right.");
 }
 
+/** What a handover proof names, besides the purpose: the workspace and the incoming Owner. */
+interface ProofTarget {
+  workspaceId?: string;
+  newOwnerId?: string;
+}
+
+const HANDOVER = "TransferWorkspaceOwnership";
+
+/**
+ * What a proof is held under: the purpose, and for a handover the workspace and the person too, so a proof given
+ * for one person is refused for another, like the producer. `null` when a handover names neither.
+ */
+function proofKey(purpose: string, target?: ProofTarget): string | null {
+  if (purpose !== HANDOVER) return purpose;
+  return target?.workspaceId && target.newOwnerId
+    ? `${purpose}|${target.workspaceId}|${target.newOwnerId}`
+    : null;
+}
+
+const targetRequired = () =>
+  identityProblem(
+    400,
+    "common.validation",
+    "workspaceId and newOwnerId are required for TransferWorkspaceOwnership.",
+  );
+
 /** Issues a single-use proof; the token never repeats while an earlier one is unspent. */
 function issueProof(security: SecurityDetails, purpose: string): string {
   let n = security.proofs.size + 1;
@@ -103,8 +129,9 @@ function invalidProof(
   security: SecurityDetails,
   token: string,
   purpose: string,
+  target?: ProofTarget,
 ) {
-  return security.proofs.get(token) === purpose
+  return security.proofs.get(token) === proofKey(purpose, target)
     ? null
     : identityProblem(
         400,
@@ -121,13 +148,14 @@ export function spendStepUpProof(
   store: MockStore,
   token: string | undefined,
   purpose: string,
+  target?: ProofTarget,
 ) {
   if (!token) return proofRequired();
   const security = securityOf(store);
-  const refused = invalidProof(security, token, purpose);
-  if (refused) return refused;
+  const refused = invalidProof(security, token, purpose, target);
+  // Spent by the try, whatever the answer: a refused target does not leave the proof to try again.
   security.proofs.delete(token);
-  return null;
+  return refused;
 }
 
 /** The path the browser lands on after a provider re-authentication; `failed` is how the backend says it could not. */
@@ -381,34 +409,55 @@ export const accountSecurityOperations = [
     },
   }),
 
-  defineMockOperation<{ provider: string }, never, unknown>({
+  defineMockOperation<
+    { provider: string },
+    ProofTarget & { purpose?: string; returnUrl?: string },
+    unknown
+  >({
     id: "account.security.oauthStepUpStart",
     contract: {
       kind: "openapi",
       operationId: "Identity.Auth.OAuth.StepUpStart",
     },
-    method: "GET",
+    method: "POST",
     route: "/auth/oauth/:provider/step-up/start",
-    async handle({ params, query, store }) {
-      // The real call redirects the browser to the provider and back; the mock plays the round trip
-      // and says where the backend's redirect lands (`redirectTo`): the page that asked.
-      const returnUrl = query.returnUrl?.startsWith("/")
-        ? query.returnUrl
-        : "/";
+    async handle({ params, body, store }) {
+      // The real call answers the provider's URL and the browser leaves for it; the mock plays the round trip
+      // and answers where it lands: the page that asked.
+      const asked = body?.returnUrl;
+      if (
+        asked !== undefined &&
+        (!asked.startsWith("/") ||
+          asked.startsWith("//") ||
+          asked.includes("\\"))
+      )
+        return identityProblem(
+          400,
+          "common.validation",
+          "returnUrl must be an internal path.",
+        );
+      const returnUrl = asked ?? "/";
+      const purpose = body?.purpose ?? "";
+      if (!PURPOSES.includes(purpose))
+        return identityProblem(400, "common.validation", "Unknown purpose.");
+      const key = proofKey(purpose, body);
+      if (key === null) return targetRequired();
       const security = securityOf(store);
       const linked =
         security.signInProvider?.toLowerCase() ===
         params.provider.toLowerCase();
-      if (!linked || !PURPOSES.includes(query.purpose ?? ""))
-        return ok({ redirectTo: providerLanding(returnUrl, true) });
+      if (!linked)
+        return identityProblem(
+          409,
+          "identity.oauth.provider-not-linked",
+          "This provider is not linked to your account.",
+        );
       // Turning two-factor on spends two proofs: one re-authentication buys both.
       security.providerProofs = [
-        issueProof(security, query.purpose!),
-        ...(query.purpose === "EnrollMfa"
-          ? [issueProof(security, query.purpose)]
-          : []),
+        issueProof(security, key),
+        ...(purpose === "EnrollMfa" ? [issueProof(security, key)] : []),
       ];
-      return ok({ redirectTo: providerLanding(returnUrl, false) });
+      return ok({ authorizationUrl: providerLanding(returnUrl, false) });
     },
   }),
 
@@ -520,7 +569,7 @@ export const accountSecurityOperations = [
 
   defineMockOperation<
     Record<string, never>,
-    { purpose?: string; challengeToken?: string; code?: string }
+    ProofTarget & { purpose?: string; challengeToken?: string; code?: string }
   >({
     id: "account.security.stepUpCompleteMfa",
     contract: {
@@ -530,6 +579,8 @@ export const accountSecurityOperations = [
     method: "POST",
     route: "/auth/security/step-up/complete-mfa",
     async handle({ body, store }) {
+      const key = proofKey(body?.purpose ?? "", body);
+      if (key === null) return targetRequired();
       const security = securityOf(store);
       const code = (body?.code ?? "").replace(/[\s-]/g, "").toUpperCase();
       const right =
@@ -542,14 +593,14 @@ export const accountSecurityOperations = [
         "identity.security.step-up-invalid-code",
       );
       if (refusal) return refusal;
-      const proofToken = issueProof(security, body?.purpose ?? "");
+      const proofToken = issueProof(security, key);
       return ok({ proofToken, expiresAt: store.getClock().offsetMinutes(5) });
     },
   }),
 
   defineMockOperation<
     Record<string, never>,
-    { purpose?: string; password?: string }
+    ProofTarget & { purpose?: string; password?: string }
   >({
     id: "account.security.stepUpCompletePassword",
     contract: {
@@ -559,6 +610,8 @@ export const accountSecurityOperations = [
     method: "POST",
     route: "/auth/security/step-up/complete-password",
     async handle({ body, store }) {
+      const key = proofKey(body?.purpose ?? "", body);
+      if (key === null) return targetRequired();
       const security = securityOf(store);
       const refusal = checkProof(
         security,
@@ -566,7 +619,7 @@ export const accountSecurityOperations = [
         "identity.security.step-up-invalid-password",
       );
       if (refusal) return refusal;
-      const proofToken = issueProof(security, body?.purpose ?? "");
+      const proofToken = issueProof(security, key);
       return ok({ proofToken, expiresAt: store.getClock().offsetMinutes(5) });
     },
   }),

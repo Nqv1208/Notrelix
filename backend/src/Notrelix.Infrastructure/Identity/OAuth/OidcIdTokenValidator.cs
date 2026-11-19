@@ -47,7 +47,8 @@ internal static class OidcIdTokenValidator
         IReadOnlyList<string> issuers,
         string clientId,
         string? expectedNonce,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        TimeSpan? maxAuthenticationAge = null)
     {
         var parts = idToken.Split('.');
         if (parts.Length != 3 || parts[1].Length == 0)
@@ -75,6 +76,8 @@ internal static class OidcIdTokenValidator
             RequireAudience(root, clientId);
             RequireTimes(root, now);
             RequireNonce(root, expectedNonce);
+            if (maxAuthenticationAge is { } window)
+                RequireRecentAuthentication(root, now, window);
 
             if (string.IsNullOrWhiteSpace(StringClaim(root, "sub")))
                 throw new OidcIdTokenException("subject missing");
@@ -175,6 +178,17 @@ internal static class OidcIdTokenValidator
             throw new OidcIdTokenException("id token issued in the future");
         if (issuedAt < now - MaxAge - ClockSkew)
             throw new OidcIdTokenException("id token too old");
+    }
+
+    /// <summary>
+    /// A step-up needs the provider to have authenticated the person just now. When the token says when
+    /// (<c>auth_time</c>, OIDC Core 2), an older sign-in is refused; a provider that omits it was already
+    /// asked to re-authenticate (<c>prompt=login</c>).
+    /// </summary>
+    private static void RequireRecentAuthentication(JsonElement root, DateTimeOffset now, TimeSpan window)
+    {
+        if (SecondsClaim(root, "auth_time") is { } authenticatedAt && authenticatedAt < now - window - ClockSkew)
+            throw new OidcIdTokenException("authentication too old");
     }
 
     private static void RequireNonce(JsonElement root, string? expectedNonce)

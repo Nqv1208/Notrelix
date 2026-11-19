@@ -8,7 +8,8 @@ namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferO
 
 /// <summary>
 /// Hands the workspace to another active, non-Guest member. The most sensitive account action: it needs a
-/// single-use step-up proof for the TransferWorkspaceOwnership purpose, spent only once the caller is
+/// single-use step-up proof for the TransferWorkspaceOwnership purpose, bound to this workspace and this
+/// incoming Owner, spent only once the caller is
 /// proven to be the active Owner and the target exists, so a non-Owner still gets the identical NotFound.
 /// </summary>
 public record TransferOwnershipCommand(
@@ -83,7 +84,7 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
         if (newOwner is null)
             throw new NotFoundException(nameof(WorkspaceMember), request.NewOwnerId);
 
-        var stepUp = await ConsumeStepUpAsync(currentOwnerId, request.StepUpToken, ct);
+        var stepUp = await ConsumeStepUpAsync(currentOwnerId, request, ct);
         if (!stepUp.Succeeded)
             return stepUp;
 
@@ -111,9 +112,9 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
         return Result.Success();
     }
 
-    private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken ct)
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, TransferOwnershipCommand request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(stepUpToken) || _requestContext.SessionId is not { } sessionId)
+        if (string.IsNullOrWhiteSpace(request.StepUpToken) || _requestContext.SessionId is not { } sessionId)
         {
             return Result.Failure(new ApplicationError(
                 "identity.security.step-up-required",
@@ -121,6 +122,9 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
                 ApplicationErrorType.PreconditionFailed));
         }
 
-        return await _stepUp.ConsumeAsync(stepUpToken, userId, sessionId, StepUpPurpose.TransferWorkspaceOwnership, ct);
+        // The proof names this workspace and this incoming Owner: one given for another person is refused (and spent).
+        return await _stepUp.ConsumeBoundAsync(
+            request.StepUpToken, userId, sessionId, StepUpPurpose.TransferWorkspaceOwnership,
+            StepUpTarget.OwnershipTransfer(request.WorkspaceId, request.NewOwnerId), ct);
     }
 }

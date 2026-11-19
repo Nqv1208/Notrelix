@@ -255,8 +255,13 @@ export function SettingsPage() {
 
   const ownershipStepUp = useMemo(
     () =>
-      createOwnershipStepUp(runtimeClient.api, runtimeClient.endpoints, env),
-    [runtimeClient, env],
+      createOwnershipStepUp(
+        runtimeClient.api,
+        runtimeClient.endpoints,
+        workspaceId,
+        env,
+      ),
+    [runtimeClient, workspaceId, env],
   );
 
   const onTransfer = async (

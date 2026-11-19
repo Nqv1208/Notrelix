@@ -247,7 +247,7 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Auth.OAuth.StepUpStart",
     operationId: "Identity.Auth.OAuth.StepUpStart",
-    mutation: false,
+    mutation: true,
   },
   {
     context: "Account",

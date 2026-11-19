@@ -5,4 +5,5 @@ public sealed record OAuthAuthorizationRequest(
     string State,
     string? Nonce,
     string? CodeChallenge,
-    string? CodeChallengeMethod);
+    string? CodeChallengeMethod,
+    bool FreshAuthentication = false);

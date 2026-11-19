@@ -123,11 +123,17 @@ public static class SecurityStepUpEndpoints
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
+        if (!StepUpTargetInput.TryResolve(purpose, request.WorkspaceId, request.NewOwnerId, out var target))
+        {
+            return EndpointExtensions.InvalidInput(StepUpTargetInput.Missing);
+        }
+
         var result = await sender.Send(new CompleteStepUpMfaCommand
         {
             Purpose = purpose,
             ChallengeToken = request.ChallengeToken,
-            Code = request.Code
+            Code = request.Code,
+            Target = target
         });
 
         return result.ToApiResult();
@@ -142,10 +148,16 @@ public static class SecurityStepUpEndpoints
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
+        if (!StepUpTargetInput.TryResolve(purpose, request.WorkspaceId, request.NewOwnerId, out var target))
+        {
+            return EndpointExtensions.InvalidInput(StepUpTargetInput.Missing);
+        }
+
         var result = await sender.Send(new CompleteStepUpPasswordCommand
         {
             Purpose = purpose,
-            Password = request.Password
+            Password = request.Password,
+            Target = target
         });
 
         return result.ToApiResult();
@@ -162,10 +174,22 @@ public sealed record CompleteStepUpMfaRequest
     public string Purpose { get; init; } = string.Empty;
     public string ChallengeToken { get; init; } = string.Empty;
     public string Code { get; init; } = string.Empty;
+
+    /// <summary>The workspace of a handover proof (TransferWorkspaceOwnership only).</summary>
+    public Guid? WorkspaceId { get; init; }
+
+    /// <summary>The incoming Owner of a handover proof (TransferWorkspaceOwnership only).</summary>
+    public Guid? NewOwnerId { get; init; }
 }
 
 public sealed record CompleteStepUpPasswordRequest
 {
     public string Purpose { get; init; } = string.Empty;
     public string Password { get; init; } = string.Empty;
+
+    /// <summary>The workspace of a handover proof (TransferWorkspaceOwnership only).</summary>
+    public Guid? WorkspaceId { get; init; }
+
+    /// <summary>The incoming Owner of a handover proof (TransferWorkspaceOwnership only).</summary>
+    public Guid? NewOwnerId { get; init; }
 }

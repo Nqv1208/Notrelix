@@ -14,7 +14,7 @@ function setup(requirement: object) {
     if (url === "/req") return requirement;
     return { proofToken: "proof-1" };
   });
-  const stepUp = createOwnershipStepUp({ post } as never, endpoints);
+  const stepUp = createOwnershipStepUp({ post } as never, endpoints, "w-1");
   return { post, stepUp };
 }
 
@@ -36,22 +36,31 @@ describe("The host's answer to the ownership handover's proof", () => {
     },
   );
 
-  it("completes a code and a password for that purpose only and returns the single-use proof", async () => {
+  it("completes a code and a password for that purpose, this workspace and the chosen person only, and returns the single-use proof", async () => {
     const { post, stepUp } = setup({});
-    expect(await stepUp.withCode("challenge-1", "123456")).toBe("proof-1");
-    expect(await stepUp.withPassword("secret")).toBe("proof-1");
+    expect(await stepUp.withCode("challenge-1", "123456", "u-ha")).toBe(
+      "proof-1",
+    );
+    expect(await stepUp.withPassword("secret", "u-ha")).toBe("proof-1");
     expect(post).toHaveBeenCalledWith(
       "/mfa",
       {
         purpose: "TransferWorkspaceOwnership",
         challengeToken: "challenge-1",
         code: "123456",
+        workspaceId: "w-1",
+        newOwnerId: "u-ha",
       },
       expect.anything(),
     );
     expect(post).toHaveBeenCalledWith(
       "/pw",
-      { purpose: "TransferWorkspaceOwnership", password: "secret" },
+      {
+        purpose: "TransferWorkspaceOwnership",
+        password: "secret",
+        workspaceId: "w-1",
+        newOwnerId: "u-ha",
+      },
       expect.anything(),
     );
   });
@@ -69,11 +78,16 @@ describe("The host's provider round trip for the ownership handover", () => {
   } as never;
 
   function provider(env = { mockApi: false, apiUrl: "https://api.test" }) {
-    const post = vi.fn(async () => ({ proofToken: "proof-cookie" }));
+    const post = vi.fn(async (url: string) =>
+      url.endsWith("/step-up/start")
+        ? { authorizationUrl: "https://accounts.google.test/authorize?s=1" }
+        : { proofToken: "proof-cookie" },
+    );
     const get = vi.fn(async () => ({ linkedProviders: ["Google"] }));
     const stepUp = createOwnershipStepUp(
       { post, get } as never,
       providerEndpoints,
+      "w-1",
       env,
     );
     return { post, get, stepUp: stepUp.provider! };
@@ -104,17 +118,23 @@ describe("The host's provider round trip for the ownership handover", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("leaves for the provider with this purpose and the chosen person in the way back", async () => {
+  it("starts the provider round trip with a POST naming this purpose, workspace and person, then leaves for the URL it answers", async () => {
     const { assign } = browserAt("https://app.test/workspaces/w-1/settings");
-    await provider().stepUp.start("Google", "u-ha");
-    const target = String(assign.mock.calls[0]?.[0]);
-    expect(
-      target.startsWith("https://api.test/oauth/Google/step-up/start?"),
-    ).toBe(true);
-    const query = new URL(target).searchParams;
-    expect(query.get("purpose")).toBe("TransferWorkspaceOwnership");
-    expect(query.get("returnUrl")).toBe(
-      "/workspaces/w-1/settings?stepUp=TransferWorkspaceOwnership&newOwner=u-ha",
+    const { post, stepUp } = provider();
+    await stepUp.start("Google", "u-ha");
+    expect(post).toHaveBeenCalledWith(
+      "/oauth/Google/step-up/start",
+      {
+        purpose: "TransferWorkspaceOwnership",
+        returnUrl:
+          "/workspaces/w-1/settings?stepUp=TransferWorkspaceOwnership&newOwner=u-ha",
+        workspaceId: "w-1",
+        newOwnerId: "u-ha",
+      },
+      expect.anything(),
+    );
+    expect(assign).toHaveBeenCalledWith(
+      "https://accounts.google.test/authorize?s=1",
     );
   });
 
@@ -151,6 +171,7 @@ describe("The host's provider round trip for the ownership handover", () => {
     const stepUp = createOwnershipStepUp(
       { post: vi.fn() } as never,
       providerEndpoints,
+      "w-1",
     );
     expect(stepUp.provider).toBeUndefined();
   });

@@ -78,7 +78,7 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
     }
 
     public async Task<Result<StepUpProofResult>> CompleteMfaAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code, CancellationToken ct)
+        Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code, string? target, CancellationToken ct)
     {
         // A signed-in session does not make code guessing free: reserve an attempt for the
         // user (atomic, so parallel guesses cannot overshoot) before any code is checked.
@@ -136,11 +136,11 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         }
 
         await _throttle.RecordSuccessAsync(LoginThrottleScope.StepUpMfa, subject, ct);
-        return await IssueProofAsync(userId, sessionId, purpose, now, ct);
+        return await IssueProofAsync(userId, sessionId, purpose, now, target, ct);
     }
 
     public async Task<Result<StepUpProofResult>> CompletePasswordAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, string password, CancellationToken ct)
+        Guid userId, Guid sessionId, StepUpPurpose purpose, string password, string? target, CancellationToken ct)
     {
         var subject = userId.ToString("N");
         var gate = await _throttle.BeginAttemptAsync(LoginThrottleScope.PasswordReverification, subject, ct);
@@ -168,15 +168,23 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
         }
 
         await _throttle.RecordSuccessAsync(LoginThrottleScope.PasswordReverification, subject, ct);
-        return await IssueProofAsync(userId, sessionId, purpose, _dateTimeProvider.UtcNow, ct);
+        return await IssueProofAsync(userId, sessionId, purpose, _dateTimeProvider.UtcNow, target, ct);
     }
 
     public async Task<Result<StepUpProofResult>> GrantOAuthProofAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, CancellationToken ct)
-        => await IssueProofAsync(userId, sessionId, purpose, _dateTimeProvider.UtcNow, ct);
+        Guid userId, Guid sessionId, StepUpPurpose purpose, string? target, CancellationToken ct)
+        => await IssueProofAsync(userId, sessionId, purpose, _dateTimeProvider.UtcNow, target, ct);
 
-    public async Task<Result> ConsumeAsync(
+    public Task<Result> ConsumeAsync(
         string proofToken, Guid userId, Guid sessionId, StepUpPurpose purpose, CancellationToken ct)
+        => ConsumeCoreAsync(proofToken, userId, sessionId, purpose, null, ct);
+
+    public Task<Result> ConsumeBoundAsync(
+        string proofToken, Guid userId, Guid sessionId, StepUpPurpose purpose, string target, CancellationToken ct)
+        => ConsumeCoreAsync(proofToken, userId, sessionId, purpose, target, ct);
+
+    private async Task<Result> ConsumeCoreAsync(
+        string proofToken, Guid userId, Guid sessionId, StepUpPurpose purpose, string? target, CancellationToken ct)
     {
         var now = _dateTimeProvider.UtcNow;
 
@@ -185,6 +193,7 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
             || proof.UserId != userId
             || proof.SessionId != sessionId
             || proof.Purpose != purpose
+            || !string.Equals(proof.Target, target, StringComparison.Ordinal)
             || proof.ExpiresAt < now)
         {
             return Result.Failure(new ApplicationError(
@@ -208,10 +217,10 @@ public sealed class SecurityStepUpService : ISecurityStepUpService
             ApplicationErrorType.Validation));
 
     private async Task<Result<StepUpProofResult>> IssueProofAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, DateTimeOffset now, CancellationToken ct)
+        Guid userId, Guid sessionId, StepUpPurpose purpose, DateTimeOffset now, string? target, CancellationToken ct)
     {
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        var payload = new StepUpProofPayload(userId, sessionId, purpose, now, now.Add(SecurityStepUpPolicy.ProofTtl));
+        var payload = new StepUpProofPayload(userId, sessionId, purpose, now, now.Add(SecurityStepUpPolicy.ProofTtl), target);
         await _proofStore.StoreAsync(token, payload, SecurityStepUpPolicy.ProofTtl, ct);
         return Result<StepUpProofResult>.Success(new StepUpProofResult(token, payload.ExpiresAt));
     }
