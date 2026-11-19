@@ -69,6 +69,29 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
             TestUserId, TestSessionId, StepUpPurpose.RevokeOtherSessions, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// A person who signs in only through a provider has no code and no password: for every purpose, including
+    /// handing a workspace over, the provider is the one way to prove presence, and the proof carries that purpose.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryPurpose))]
+    public async Task EveryStepUpPurpose_CanBeProvenWithTheLinkedProvider(StepUpPurpose purpose)
+    {
+        _states.Setup(s => s.ConsumeAsync("s", It.IsAny<CancellationToken>())).ReturnsAsync(new OAuthLoginState(
+            "s", "n", "v", OAuthProvider.Google, null, TestNow.AddMinutes(10),
+            OAuthFlowKind.StepUp, TestUserId, TestSessionId, Enum.Parse<MfaChallengePurpose>($"StepUp{purpose}")));
+
+        var result = await CreateSut().Handle(Callback(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        StepUpServiceMock.Verify(s => s.GrantOAuthProofAsync(
+            TestUserId, TestSessionId, purpose, It.IsAny<CancellationToken>()),
+            Times.Exactly(purpose == StepUpPurpose.EnrollMfa ? 2 : 1));
+    }
+
+    public static IEnumerable<object[]> EveryPurpose() =>
+        Enum.GetValues<StepUpPurpose>().Select(p => new object[] { p });
+
     [Fact]
     public async Task ForEnrollment_OneReauthenticationBuysTwoDifferentProofs()
     {
