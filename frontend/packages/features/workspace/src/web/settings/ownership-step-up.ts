@@ -13,7 +13,30 @@ export interface OwnershipProofRequest {
   readonly challengeToken: string | null;
 }
 
+/** Where the browser is sent back from a provider: the person it was chosen for, and whether the provider refused. */
+export interface OwnershipProviderReturn {
+  readonly newOwnerId: string;
+  readonly failed: boolean;
+}
+
+/**
+ * The provider round trip, for a person who signs in only through a provider: the browser leaves for it and
+ * returns to this page, the single-use proof waiting server side. Optional: a host without it leaves such a
+ * person with the "add a way to confirm first" message.
+ */
+export interface OwnershipProviderStepUp {
+  /** The linked providers the person can confirm with, by display name. */
+  providers(): Promise<readonly string[]>;
+  /** Leaves for `provider`, to come back with `newOwnerId` in the address. */
+  start(provider: string, newOwnerId: string): Promise<void>;
+  /** Reads the return address once (and clears it, so a reload spends nothing); `null` when this is not a return. */
+  resume(): OwnershipProviderReturn | null;
+  /** Takes the single-use proof the provider return left; rejects with the host's error when there is none. */
+  claim(): Promise<string>;
+}
+
 export interface OwnershipStepUp {
+  readonly provider?: OwnershipProviderStepUp;
   /** Asks which factor to satisfy; rejects when the host cannot be reached. */
   request(): Promise<OwnershipProofRequest>;
   /** Resolves the single-use proof of a code answer; rejects with the host's error when it is refused. */
