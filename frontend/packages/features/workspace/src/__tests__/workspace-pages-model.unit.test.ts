@@ -845,6 +845,12 @@ describe("parseInvitationEntryRefusals", () => {
         entries: [
           { index: 1, kind: "team", targetId: "t-1", reason: "not-active" },
           {
+            index: 2,
+            kind: "team",
+            targetId: "t-3",
+            reason: "guest-cannot-join-team",
+          },
+          {
             index: 3,
             kind: "space",
             targetId: "s-1",
@@ -858,6 +864,7 @@ describe("parseInvitationEntryRefusals", () => {
 
     expect(refused).toEqual([
       { kind: "team", targetId: "t-1", reason: "not-active" },
+      { kind: "team", targetId: "t-3", reason: "guest-cannot-join-team" },
       { kind: "space", targetId: "s-1", reason: "guest-too-privileged" },
     ]);
   });

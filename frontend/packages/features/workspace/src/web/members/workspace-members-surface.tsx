@@ -593,9 +593,11 @@ function InvitationEntries({
                     className="m-0 basis-full text-metadata text-destructive"
                   >
                     {formatCopy(
-                      refusalOf(entry) === "not-active"
-                        ? t.notActive
-                        : t.guestTooPrivileged,
+                      {
+                        "not-active": t.notActive,
+                        "guest-too-privileged": t.guestTooPrivileged,
+                        "guest-cannot-join-team": t.guestCannotJoinTeam,
+                      }[refusalOf(entry) as InvitationEntryRefusalReason],
                       { name },
                     )}
                   </p>
