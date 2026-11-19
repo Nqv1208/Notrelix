@@ -34,7 +34,7 @@ Product meaning: [work-management](../../product/work-management.md). Team: [wor
 
 Requirement ids cited below are `WMREQ001` to `WMREQ156` of the transactional core pack. The views pack has no requirement ids, so it is cited as "views pack section n". Product decisions are cited as `D28` to `D75` (owner decision items 28 to 75), `D76.n`, `D77.n`, `D78.n` (owner decision items 76 to 78) and `Q1` to `Q13` (Board core answers); each is written out in part 4. `LDn` are lead decisions of this catalog, also in part 4.
 
-State reflects `develop`. Work that sits in an open pull request (#201 filters and personal view state, #204 Table field columns, #193 realtime) is not on `develop`; it is described as "in open PR #n" in the gap text and does not raise the state.
+State reflects `develop`. Work that sits in an open pull request is not on `develop`; it is described as "in open PR #n" in the gap text and does not raise the state. Pull requests #201 (filters and personal view state), #204 (Table field columns) and #193 (realtime) were closed without merging; where a row's Evidence line still says "open PR", the row's State line records the later work that reached `develop`.
 
 # 1. Assessment
 
@@ -47,44 +47,44 @@ The product doc also owns approvals, labels, templates, import, export, search a
 
 | Letter | Capability | Team id | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|---|
-| A | Board lifecycle | WM-001 | 27 | 0 | 0 | 1 | 2 | 24 | 0 |
-| B | BoardItem lifecycle | WM-002 | 36 | 2 | 0 | 0 | 1 | 33 | 0 |
-| C | BoardField definitions | WM-003 | 22 | 0 | 1 | 0 | 1 | 20 | 0 |
-| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 1 | 11 | 0 |
+| A | Board lifecycle | WM-001 | 27 | 0 | 0 | 0 | 0 | 27 | 0 |
+| B | BoardItem lifecycle | WM-002 | 36 | 1 | 0 | 0 | 0 | 35 | 0 |
+| C | BoardField definitions | WM-003 | 22 | 0 | 0 | 0 | 0 | 22 | 0 |
+| D | Field values | WM-004 | 12 | 0 | 0 | 0 | 0 | 12 | 0 |
 | E | Groups and grouping | WM-005 | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
 | F | Ordering | WM-006 | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
 | G | Checklists | WM-007 | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
 | H | Query, filter and sort foundation | WM-008 | 19 | 0 | 0 | 0 | 0 | 19 | 0 |
 | I | Table view | WM-009 | 3 | 0 | 0 | 0 | 0 | 3 | 0 |
 | J | Kanban view | WM-010 | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
-| K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| K | Calendar view | WM-011 | 1 | 0 | 0 | 0 | 0 | 1 | 0 |
 | L | Timeline view | WM-012 | 1 | 0 | 0 | 0 | 0 | 1 | 0 |
 | M | Dashboard projection | WM-013 | 1 | 0 | 0 | 0 | 0 | 1 | 0 |
-| N | Form input | WM-014 | 6 | 0 | 0 | 0 | 4 | 1 | 1 |
+| N | Form input | WM-014 | 6 | 0 | 0 | 0 | 0 | 5 | 1 |
 | O | Activity and event production | WM-015 | 4 | 0 | 0 | 1 | 0 | 3 | 0 |
 | P | Realtime synchronization | WM-016 | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
 | Q | Automation handoff | WM-017 | 3 | 1 | 0 | 0 | 0 | 2 | 0 |
-| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 0 | 2 | 6 | 0 |
+| R | Collaboration handoff | WM-018 | 8 | 0 | 0 | 0 | 0 | 8 | 0 |
 | S | Billing and entitlement integration | WM-019 | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| T | Performance and hardening | WM-020 | 5 | 2 | 0 | 0 | 1 | 2 | 0 |
-|  | Total |  | 171 | 6 | 1 | 2 | 13 | 148 | 1 |
+| T | Performance and hardening | WM-020 | 5 | 2 | 0 | 0 | 0 | 3 | 0 |
+|  | Total |  | 171 | 5 | 0 | 1 | 0 | 164 | 1 |
 
 Counts cover the 171 live use cases. A further 8 are retired by decision and listed in part 6.1; with them the catalog holds 179 use cases, all of the prior catalog. Seven of the 171 are enterprise-baseline additions.
 
 ## 1.2 The ten most important gaps
 
-1. Competing writes are last-writer-wins. Eight item commands (status, due date, complete, reopen, move to board, assign, unassign), label update and delete, member role change, view config writes and form question writes carry no expected version, and bulk edit sends none per item. The decision is that all of them carry it (UC-WM-B05, UC-WM-B06, UC-WM-B08, UC-WM-B14, UC-WM-A17, UC-WM-C22, UC-WM-H02, UC-WM-N02; D77.3; WMREQ110 to WMREQ113).
+1. ~~Competing writes are last-writer-wins.~~ Fixed: the item commands (status, due date, complete, reopen, move to board, assign, unassign), label update and delete, member role change, view config writes, form question writes and each item of a bulk edit now carry the expected version, and a stale one answers 412 and changes nothing (UC-WM-B05, UC-WM-B06, UC-WM-B08, UC-WM-B14, UC-WM-D04, UC-WM-D05, UC-WM-A17, UC-WM-C22, UC-WM-H02, UC-WM-N02; D77.3; WMREQ110 to WMREQ113). Evidence, from the State lines: UC-WM-B08 "move to another board with the expected version (stale 412)"; UC-WM-B14 "per-item expected versions on bulk update are proven (`BulkUpdate_WithAStaleItem_RefusesTheWholeRequest`, 412 and nothing stored)"; UC-WM-C22 "The server carries the expected version on update and delete".
 2. Realtime is a notify-only board stream: every board change sends one content-free frame and the open board and card refetch (UC-WM-P01 to UC-WM-P04, UC-WM-Q02). The connection status, the draft choice and live role lowering are built; real e2e and owner check remain. The stream version is also a wall-clock counter, not the resource version (LD4).
-3. Large boards do not scale. Board, item and trash reads are unpaged, filter and sort run on the client, and no read returns filtered totals (UC-WM-T01, UC-WM-H17, UC-WM-I01, UC-WM-J01; WMREQ147).
-4. The delete lifecycle is half built. Board restore applies no 30-day rule, field delete is a hard delete with no restore, and no purge job exists for boards, fields or items (UC-WM-A07, UC-WM-C05, UC-WM-B17).
-5. Personal view state (filter, sort, group, swimlane, return to the shared view, stale-reference hint) exists only in open PR #201; saved filters and preferences are stored but never applied on the server (UC-WM-H06, UC-WM-H07, UC-WM-H08, UC-WM-J04, UC-WM-H11, UC-WM-H12, UC-WM-H09).
-6. Approvals are inconsistent with the decided model. Team approvers can never decide, two decide paths exist (one without expected version), and a re-request does not link to the previous request (UC-WM-B25, UC-WM-B26, UC-WM-B27).
+3. ~~Large boards do not scale.~~ Built: the archive and trash are read a page at a time with the total (UC-WM-B13), a paged board shows the server-paged foot "Đã hiện N trên 200" with "Hiện thêm 50 việc" (UC-WM-T01), and the facets, the member's filter, the sort and the search go to the server on a paged read (UC-WM-H06, UC-WM-H07, UC-WM-H17). Still on the client: an overdue facet, a sort the server cannot order (Formula, Rollup, Vote, people, several choices) and server-side grouping on paged boards (UC-WM-H06, UC-WM-H07, UC-WM-H08; WMREQ147).
+4. ~~The delete lifecycle is half built.~~ Built: board restore refuses after 30 days (UC-WM-A07), field delete is a soft delete restorable for 30 days (UC-WM-C04, UC-WM-C05), and the purge job removes boards, items and fields deleted more than 30 days ago (UC-WM-B17: "`DeletedBoardPurger` now purges, besides boards (D76.1, earlier), items and fields deleted more than 30 days ago"). The purge is off by default until an operator turns it on (`WorkManagement:Boards:Purge`); that switch is an owner question on UC-WM-A07.
+5. ~~Personal view state exists only in open PR #201.~~ Built on `develop`: personal filter, sort and group, swimlane, return to the shared view (UC-WM-H11, with a real e2e spec `view-personal-state.real.e2e.spec.ts`) and the stale-reference hint (UC-WM-H12) are DONE, and the criteria, sort and facets are applied on the server on a paged read (UC-WM-H06, UC-WM-H07, UC-WM-H08, UC-WM-J04, UC-WM-H09). Server-side grouping on paged boards is still not built (UC-WM-H08: "Not built: server-side grouping on paged boards (Q9)").
+6. Approvals: partly fixed. Team approvers now decide ("a step that names a team is decided by a current member of that team, checked at decision time", UC-WM-B25) and a re-request links to the previous one ("the new request links to the previous one (`approval_requests.previous_request_id`", UC-WM-B27). Open: two decide paths stay ("The two decide paths stay: the item popup uses the workspace-scoped one (first decision wins by the status check), the board-scoped pair keeps the version", UC-WM-B25); a cancel after a decision answers 409 (UC-WM-B26).
 7. ~~Link cycles are not blocked.~~ Fixed for creation: a link that would close a waits-on cycle on the board is refused naming the path (UC-WM-B20). Open: links across boards, and a kind change, for which no update command exists yet (UC-WM-B21).
-8. Forms do not match the decided model. A member submission records an Accepted entry only, but there is no inbox flow proven by a test, no API-level tests exist for Forms, and anonymous public forms are BLOCKED on an owner security decision (UC-WM-N01 to N06).
-9. Table-stakes functions are not built: provider import, Relation field, required fields, WIP limit, published limits, guest invitation to one board, last-manager protection, native mobile (UC-WM-B32, UC-WM-C18, UC-WM-C19, UC-WM-J06, UC-WM-T03, UC-WM-A19, UC-WM-A26, UC-WM-T04).
-10. Proof is thin. Of 171 use cases, 148 are DONE and 13 are HARDENING in the index, most on a recorded real-stack check rather than a committed real e2e spec, and none has a recorded 1-px design diff or owner check. About 40 contract operations have no mock handler, so mock e2e cannot prove those flows.
+8. Forms match the decided model for members. A member submission records an Accepted entry only; the response inbox, reject, undo and create-item flows are built, and API-level tests exist (`FormsEndpointTests` 17, UC-WM-N02). Anonymous public forms are BLOCKED on an owner security decision (UC-WM-N06: "Owner decision 67: execution principal and abuse controls"; UC-WM-N01 to N05 are DONE).
+9. Table-stakes functions still not built: provider import (UC-WM-B32, DEFINED: "Integrations-owned migration path; no WM work scheduled") and native mobile (UC-WM-T04, DEFINED: "the mobile package is placeholder screens"). Built since the prior assessment: required fields (UC-WM-C19), WIP limit (UC-WM-J06), published limits (UC-WM-T03), guest invitation to one board (UC-WM-A19) and last-manager protection (UC-WM-A26), all DONE; the Relation field (UC-WM-C18) is built on the server and in the sheet, with its index row DONE and its State line still reading IMPLEMENTING.
+10. Proof is uneven. Of 171 use cases, 164 are DONE, 1 is INTEGRATING, 5 are DEFINED and 1 is BLOCKED in the index. Many DONE rows list tests, real e2e, design measurement and the owner check as remaining notes (for example UC-WM-P01: "Line 4: real e2e pending (test phase)"), while others record a 1-px design measurement (for example UC-WM-B06 and UC-WM-B08, `design-fidelity-item-remind` and `design-fidelity-item-move`). About 40 contract operations have no mock handler, so mock e2e cannot prove those flows.
 
-Two use cases were accepted against README §7 by an acceptance agent that did not build them (UC-WM-A24, 2026-11-01, and UC-WM-B09, 2026-11-02). The index rows are the state of record: DONE needs every state and width the artboards draw within 1 px, the acceptance screenshots and axe at 1440, 1024 and 390 in light and dark, a real e2e journey and a recorded lead acceptance, A use case is HARDENING only when a real e2e spec proves its main flow; specs that only pass through it (marked implicit, smoke, negative only, count only or partial in the Real e2e cell) leave it INTEGRATING. A use case with an open-PR dependency is judged on `develop` only.
+Two use cases were accepted against README §7 by an acceptance agent that did not build them (UC-WM-A24, 2026-11-01, and UC-WM-B09, 2026-11-02). The index rows are the state of record. Most DONE rows read "Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap)"; the README section 7 standard (every state and width the artboards draw within 1 px, the acceptance screenshots and axe at 1440, 1024 and 390 in light and dark, a real e2e journey and a recorded lead acceptance) is what a row's own State line says it met. A use case is HARDENING only when a real e2e spec proves its main flow; specs that only pass through it (marked implicit, smoke, negative only, count only or partial in the Real e2e cell) leave it INTEGRATING. A use case with an open-PR dependency is judged on `develop` only.
 
 
 ## 1.3 Defects in shipped code
@@ -150,25 +150,25 @@ Table stakes (offered by at least 5 of 7 vendors) and where Notrelix stands on `
 
 | Capability (vendors of 7) | Use cases | Position |
 |---|---|---|
-| Board lifecycle with duplicate (7) | UC-WM-A01 to A11 | Create, rename, archive, delete and duplicate built; restore and purge incomplete (UC-WM-A07, UC-WM-B17) |
-| Item CRUD and sub-items (7) | UC-WM-B01 to B04, UC-WM-B07 to B14 | Built; expected version missing on most writes (gap 1) |
-| Rich custom field types (6) | UC-WM-C01 to C19, UC-WM-D01, UC-WM-F01, UC-WM-H15 | Eleven types built; Relation (UC-WM-C18) and required fields (UC-WM-C19) missing |
+| Board lifecycle with duplicate (7) | UC-WM-A01 to A11 | Create, rename, archive, delete, duplicate and restore built; the purge job exists and is off by default (UC-WM-A07, UC-WM-B17) |
+| Item CRUD and sub-items (7) | UC-WM-B01 to B04, UC-WM-B07 to B14 | Built; the expected version is carried by the item writes (gap 1 fixed) |
+| Rich custom field types (6) | UC-WM-C01 to C19, UC-WM-D01, UC-WM-F01, UC-WM-H15 | Eleven types built; required fields built (UC-WM-C19); Relation built on the server and in the sheet (UC-WM-C18, index DONE, State line IMPLEMENTING) |
 | Groups and sections (6) | UC-WM-E01 to E05, UC-WM-F02 | Built; group delete needs a target group (D76.6) |
-| Table and Kanban (7) | UC-WM-I01, UC-WM-J01 | Built, with custom Table columns; no WIP limit (UC-WM-J06) |
+| Table and Kanban (7) | UC-WM-I01, UC-WM-J01 | Built, with custom Table columns and the WIP limit (UC-WM-J06) |
 | Calendar (6) | UC-WM-K01 | Built and proven on the real stack (drag, day click, guest) |
-| Saved, shared and personal views (6) | UC-WM-H01 to H05, UC-WM-H09 to H11, UC-WM-I02 | Shared and private views built; personal state in open PR #201 |
-| Filter, sort, group (7) | UC-WM-H06 to H08, UC-WM-H15 | Client-side only; server-side on paged boards missing (gap 3) |
-| Bulk edit (7) | UC-WM-B14, UC-WM-I03 | Built all-or-nothing; no per-item version, no Kanban selection |
-| Trash and restore with 30-day window (6) | UC-WM-B11 to B13, UC-WM-A06, UC-WM-A07, UC-WM-C04, UC-WM-C05 | Items and fields built; boards incomplete |
+| Saved, shared and personal views (6) | UC-WM-H01 to H05, UC-WM-H09 to H11, UC-WM-I02 | Shared and private views built; personal state built (UC-WM-H11, UC-WM-H12) |
+| Filter, sort, group (7) | UC-WM-H06 to H08, UC-WM-H15 | Server-side on a paged read for criteria, facets, sort and search; overdue facet, some sorts and grouping stay on the client (gap 3) |
+| Bulk edit (7) | UC-WM-B14, UC-WM-I03 | Built all-or-nothing with a version per item and Kanban selection |
+| Trash and restore with 30-day window (6) | UC-WM-B11 to B13, UC-WM-A06, UC-WM-A07, UC-WM-C04, UC-WM-C05 | Items, fields and boards built; the purge is off by default |
 | Item detail panel (6) | UC-WM-B18 to B23, UC-WM-G01 to G02, UC-WM-O01, UC-WM-R01 to R06 | Built; actor names on conflict, deleted and archived notices built (Q12) |
 | Dependencies (7) | UC-WM-B20, UC-WM-B21, UC-WM-L01 | Built; cycle check runs on create (gap 7 fixed); kind change and cross-board open |
 | Templates (7) | UC-WM-A12 to A15 | Built; items-included option and 500-item refusal missing |
 | Forms (6) | UC-WM-N01 to N06 | Member forms built; public forms BLOCKED |
 | Import and export (7) | UC-WM-B29 to B32 | Tabular import and export built; provider import (UC-WM-B32) not built |
-| Search (7) | UC-WM-H16 to H18 | Command search and My Work built; in-board text filter is client-side |
-| Realtime collaboration (7) | UC-WM-B33 to B36, UC-WM-D12, UC-WM-F04, UC-WM-P01 to P04 | Refetch only; adapter in open PR #193 |
-| Board roles and guests (7) | UC-WM-A16 to A26 | Roles built; guest invitation to one board and last-manager guard missing |
-| Near-stakes: timeline with dependencies (4), formula and rollup (4), published limits (4) | UC-WM-L01, UC-WM-C20 to C21, UC-WM-D07 to D10, UC-WM-T03 | Timeline and formula built; limits missing |
+| Search (7) | UC-WM-H16 to H18 | Command search and My Work built; the in-board text search goes to the server on a paged read (UC-WM-H17) |
+| Realtime collaboration (7) | UC-WM-B33 to B36, UC-WM-D12, UC-WM-F04, UC-WM-P01 to P04 | Refetch on a board frame; adapter and connection status built (UC-WM-P01 to P04) |
+| Board roles and guests (7) | UC-WM-A16 to A26 | Roles, guest invitation to one board and the last-manager guard built (UC-WM-A19, UC-WM-A26) |
+| Near-stakes: timeline with dependencies (4), formula and rollup (4), published limits (4) | UC-WM-L01, UC-WM-C20 to C21, UC-WM-D07 to D10, UC-WM-T03 | Timeline, formula and published limits built (UC-WM-T03) |
 | Differentiators: approvals (3), workload (3) | UC-WM-B24 to B28, retired workload | Approvals built with defects; workload is retired from board core (D76.12) |
 
 Not owned here, with the owner: audit log, SSO and SCIM, field-level and view-level permissions (Governance and Identity); notification delivery (Collaboration; UC-WM-R07 covers the Work Management side). Table-stakes use cases that the product doc did not list were added and marked "(enterprise baseline)": UC-WM-A11, UC-WM-A26, UC-WM-C18, UC-WM-C19, UC-WM-B17, UC-WM-T03, UC-WM-T04.
