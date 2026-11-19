@@ -41,8 +41,10 @@ jobs:
           mkdir -p artifacts/release
           jq -e '.images|length>0 and all(.[];.ref|contains("@sha256:"))' <<<"$IMAGES" >/dev/null
           { echo services:; jq -r '.images[]|"  \(.compose_service):\n    image: \(.ref)"' <<<"$IMAGES"; } > artifacts/release/release.generated.yml
+          # backend-realtime and backend-worker take the backend image from this variable, not from the generated overlay.
+          jq -r '.images[]|"\(.deploy_env_var)=\(.ref)"' <<<"$IMAGES" > artifacts/release/images.env
           scripts/ci/write-test-env.sh /tmp/stack.env
-          c=(docker compose --env-file /tmp/stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml)
+          c=(docker compose --env-file /tmp/stack.env --env-file artifacts/release/images.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml)
           "${c[@]}" config >/dev/null; "${c[@]}" pull; "${c[@]}" up -d --no-build postgres redis rabbitmq
           service="$(jq -er .migration_service <<<"$CONTRACT")"; while IFS= read -r cmd; do "${c[@]}" run --rm "$service" "$cmd"; done < <(jq -r '.migration_commands[]' <<<"$CONTRACT")
           "${c[@]}" up -d --no-build --remove-orphans
@@ -54,4 +56,4 @@ jobs:
           component_id: release-stack
           plan_sha256: ${{ inputs.plan_sha256 }}
       - if: always()
-        run: docker compose --env-file /tmp/stack.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml down -v --remove-orphans || true
+        run: docker compose --env-file /tmp/stack.env --env-file artifacts/release/images.env -f docker-compose.yml -f docker-compose.staging.yml -f artifacts/release/release.generated.yml down -v --remove-orphans || true
