@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Features.Documents.Pages.Commands.CreatePage;
 using Notrelix.Application.Features.WorkManagement.Boards.Commands.CreateBoardInWorkspace;
 using Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;
@@ -8,7 +7,6 @@ using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
-using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure.Data.Authz;
