@@ -44,7 +44,19 @@ public sealed class CallParticipant : IWorkspaceScoped
         SharingScreen = false;
     }
 
-    internal void Leave(DateTimeOffset at) => LeftAt = at;
+    /// <summary>A person who left shares nothing.</summary>
+    internal void Leave(DateTimeOffset at)
+    {
+        LeftAt = at;
+        SharingScreen = false;
+    }
+
+    internal bool StopSharing()
+    {
+        if (!SharingScreen) return false;
+        SharingScreen = false;
+        return true;
+    }
 
     internal bool SetMedia(bool audioOn, bool videoOn, bool sharingScreen)
     {

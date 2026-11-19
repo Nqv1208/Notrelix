@@ -31,6 +31,13 @@ export interface ChatCallMediaSession {
     kind: ChatCallDeviceKind,
     deviceId: string,
   ): Promise<ChatCallDeviceFailure | null>;
+  /**
+   * Shares the screen (the browser opens its own picker) or stops the share; resolves with the failure when nothing was shared
+   * (`denied` is a refused permission or a closed picker). Absent where the browser has no screen picker (a phone).
+   */
+  setScreenShare?(on: boolean): Promise<ChatCallDeviceFailure | null>;
+  /** Puts the shared screen of the other person on a tile that mounted after its track arrived. */
+  attachScreen?(element: HTMLVideoElement | null): void;
   /** Puts a person's picture on a tile that mounted after their track arrived (group calls). */
   attachVideo?(personId: string, element: HTMLVideoElement): void;
   disconnect(): void;
@@ -42,6 +49,10 @@ export interface ChatCallMediaOptions {
   /** The tile elements, read when a track arrives so a remount does not lose the picture. */
   readonly remoteVideo: () => HTMLVideoElement | null;
   readonly localVideo: () => HTMLVideoElement | null;
+  /** The tile that shows the other person's shared screen, read when its track arrives. */
+  readonly screenVideo?: () => HTMLVideoElement | null;
+  /** The browser (its own "Stop sharing" bar) or the media plane ended this person's own share. */
+  readonly onScreenEnded?: () => void;
   /** A group call's tile element for one person (their id is the media identity); without it a video lands on `remoteVideo`. */
   readonly participantVideo?: (personId: string) => HTMLVideoElement | null;
   /** The people the room hears speaking now (ids), loudest first; sent on every change. */
@@ -66,6 +77,7 @@ function connectMock(
     setMicrophone: () => Promise.resolve(null),
     setCamera: () => Promise.resolve(null),
     switchDevice: () => Promise.resolve(null),
+    setScreenShare: () => Promise.resolve(null),
     disconnect: () => options.onState("disconnected"),
   });
 }

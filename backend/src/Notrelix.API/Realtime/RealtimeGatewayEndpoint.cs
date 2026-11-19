@@ -160,7 +160,8 @@ public static class RealtimeGatewayEndpoint
             socket, principal, options, authorizer, credentials, source,
             loggerFactory.CreateLogger<RealtimeConnection>(),
             accessSource: services.GetService<IRealtimeAccessSignalSource>(),
-            ephemeralBus: services.GetService<IRealtimeEphemeralBus>());
+            ephemeralBus: services.GetService<IRealtimeEphemeralBus>(),
+            presenceRegistry: services.GetService<IRealtimePresenceRegistry>());
         await connection.RunAsync(context.RequestAborted).ConfigureAwait(false);
 
         // The response is complete once the socket closes.

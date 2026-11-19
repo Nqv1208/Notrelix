@@ -137,6 +137,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.ChatAuditFacts>();
         services.AddScoped<Notrelix.Application.Features.Chat.Links.Services.ChatResourceViews>();
         services.AddScoped<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
+        services.AddSingleton<Notrelix.Application.Common.Realtime.Gateway.IRealtimePresenceRegistry, Notrelix.Application.Common.Realtime.Gateway.RealtimePresenceRegistry>();
         services.AddScoped<Notrelix.Application.Features.Chat.Notifications.Services.ChatNotificationHandoff>();
         services.AddScoped<Notrelix.Application.Features.Chat.Public.SpaceViewFacts.IChatSpaceViewFacts, Notrelix.Application.Features.Chat.Notifications.Services.ChatSpaceViewFacts>();
         services.AddScoped<Notrelix.Application.Features.Chat.Public.Digest.IChatDigestFacts, Notrelix.Application.Features.Chat.Notifications.Services.ChatDigestFacts>();

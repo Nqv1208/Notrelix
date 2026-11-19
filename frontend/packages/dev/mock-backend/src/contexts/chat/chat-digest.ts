@@ -138,7 +138,7 @@ export function runDigest(
         messageId,
         reason: entry.reason,
         excerpt: inboxEntry.excerpt,
-        path: `/workspaces/${workspaceId}/chat/${space.id}`,
+        path: `/workspaces/${workspaceId}/chat/${space.id}?m=${message.sequence}`,
         at: entry.at,
       });
     }

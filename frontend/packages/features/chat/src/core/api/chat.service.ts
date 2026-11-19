@@ -1028,16 +1028,24 @@ export function createChatService(
       });
     },
 
-    /** `Chat.Calls.UpdateMediaState`: the caller's microphone and camera (a voice call carries no camera). */
+    /**
+     * `Chat.Calls.UpdateMediaState`: the caller's microphone, camera and screen share (a voice call carries neither camera nor screen).
+     * `replaceShare` confirms that starting a share ends another person's share; without it a second share is 409.
+     */
     setCallMediaState(
       workspaceId: string,
       callId: string,
-      state: { audioOn: boolean; videoOn: boolean },
+      state: {
+        audioOn: boolean;
+        videoOn: boolean;
+        sharingScreen?: boolean;
+        replaceShare?: boolean;
+      },
       expectedVersion: number,
     ): Promise<ChatCall> {
       return api.put<ChatCall>(
         paths.callAction(workspaceId, callId, "participants/me"),
-        { ...state, sharingScreen: false, expectedVersion },
+        { sharingScreen: false, ...state, expectedVersion },
       );
     },
   };
