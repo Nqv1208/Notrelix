@@ -325,6 +325,127 @@ public class CallTests
     }
 
     [Fact]
+    public void A_voice_call_carries_no_screen_share()
+    {
+        Refused(() => Active().UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8)), ChatRuleCodes.CallMediaNotAllowed);
+    }
+
+    private static Call VideoRoom()
+    {
+        var call = Ringing(SpaceKind.ChannelPublic, CallKind.Video);
+        call.Join(Bob, T0.AddSeconds(5));
+        call.Join(Carol, T0.AddSeconds(6));
+        return call;
+    }
+
+    private static bool Shares(Call call, Guid person) => call.Participants.Single(p => p.PersonId == person).SharingScreen;
+
+    [Fact]
+    public void One_person_shares_a_screen_and_stopping_clears_it()
+    {
+        var call = VideoRoom();
+
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8)).Should().BeTrue();
+        Shares(call, Bob).Should().BeTrue();
+        call.UpdateMediaState(Bob, true, false, false, T0.AddSeconds(9)).Should().BeTrue();
+        Shares(call, Bob).Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_second_share_is_refused_while_someone_shares_and_nothing_changes()
+    {
+        var call = VideoRoom();
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+        var version = call.Version;
+
+        Refused(() => call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(9)), ChatRuleCodes.CallScreenShareTaken);
+
+        call.Version.Should().Be(version);
+        (Shares(call, Bob), Shares(call, Carol)).Should().Be((true, false));
+    }
+
+    [Fact]
+    public void A_confirmed_second_share_replaces_the_first_in_one_change()
+    {
+        var call = VideoRoom();
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+        var version = call.Version;
+
+        call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(9), replaceShare: true).Should().BeTrue();
+
+        (Shares(call, Bob), Shares(call, Carol)).Should().Be((false, true));
+        call.Version.Should().Be(version + 1, "the swap is one change, so every client sees one frame");
+    }
+
+    [Fact]
+    public void A_person_who_stops_sharing_never_blocks_the_next_share_and_a_repeat_changes_nothing()
+    {
+        var call = VideoRoom();
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(9)).Should().BeFalse("the same values change nothing");
+
+        call.UpdateMediaState(Bob, true, false, false, T0.AddSeconds(10));
+        call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(11)).Should().BeTrue();
+        Shares(call, Carol).Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_replace_with_nobody_sharing_is_an_ordinary_share()
+    {
+        var call = VideoRoom();
+
+        call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(8), replaceShare: true).Should().BeTrue();
+
+        Shares(call, Carol).Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_sharer_who_leaves_stops_sharing_and_the_next_person_may_share()
+    {
+        var call = VideoRoom();
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+
+        call.Leave(Bob, T0.AddSeconds(9));
+
+        Shares(call, Bob).Should().BeFalse("a person who left shares nothing");
+        call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(10)).Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_person_removed_from_the_call_while_sharing_stops_sharing()
+    {
+        var call = VideoRoom();
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+
+        call.Revoke(Bob, T0.AddSeconds(9));
+
+        Shares(call, Bob).Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_call_that_ends_while_someone_shares_clears_every_share()
+    {
+        var call = Active(kind: CallKind.Video);
+        call.UpdateMediaState(Bob, true, true, true, T0.AddSeconds(8));
+
+        call.End(Alice, T0.AddSeconds(9));
+
+        call.Participants.Should().OnlyContain(p => !p.SharingScreen);
+    }
+
+    [Fact]
+    public void A_rejoin_after_leaving_starts_without_a_share()
+    {
+        var call = VideoRoom();
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+        call.Leave(Bob, T0.AddSeconds(9));
+
+        call.Join(Bob, T0.AddSeconds(10));
+
+        Shares(call, Bob).Should().BeFalse();
+    }
+
+    [Fact]
     public void Media_state_of_a_person_who_is_not_in_the_call_is_refused()
     {
         Refused(() => Active().UpdateMediaState(Carol, true, false, false, T0.AddSeconds(8)), ChatRuleCodes.CallNotParticipant);

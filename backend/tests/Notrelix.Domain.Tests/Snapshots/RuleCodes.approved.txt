@@ -117,6 +117,7 @@ call-ended|Chat|CallEnded
 call-full|Chat|CallFull
 call-media-not-allowed|Chat|CallMediaNotAllowed
 call-not-participant|Chat|CallNotParticipant
+call-screen-share-taken|Chat|CallScreenShareTaken
 call-state-invalid|Chat|CallStateInvalid
 chat.calls.unavailable|Chat|CallsUnavailable
 channel-archived|Chat|ChannelArchived

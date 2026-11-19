@@ -731,7 +731,7 @@ export interface paths {
         get?: never;
         /**
          * Set the caller's microphone, camera and screen share
-         * @description A voice call carries no camera (400 call-media-not-allowed). A caller who is not in the call is 403 call-not-participant. The same values change nothing. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         * @description A voice call carries no camera and no screen share (400 call-media-not-allowed). A caller who is not in the call is 403 call-not-participant. Only one person shares a screen at a time: a second share is 409 call-screen-share-taken unless replaceShare is true, and then the first share ends. Starting a share needs the right to take part (a Guest or a member the channel keeps from posting is 403). The same values change nothing. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
          */
         put: operations["Chat.Calls.UpdateMediaState"];
         post?: never;
@@ -8514,6 +8514,7 @@ export interface components {
             sharingScreen?: boolean;
             /** Format: int64 */
             expectedVersion?: number | null;
+            replaceShare?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.UpdateChannelGroupRequest": {
             name?: string | null;

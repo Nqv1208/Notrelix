@@ -272,8 +272,13 @@ public sealed class Call : AggregateRoot, IWorkspaceScoped
         Finish(CallEndReason.Completed, InitiatorId, at);
     }
 
-    /// <summary>A participant's own microphone, camera and screen share. A voice call carries no camera. Same values change nothing (false).</summary>
-    public bool UpdateMediaState(Guid personId, bool audioOn, bool videoOn, bool sharingScreen, DateTimeOffset at)
+    /// <summary>
+    /// A participant's own microphone, camera and screen share. A voice call carries no camera and no screen (the media token grants only the
+    /// microphone there). Only one person shares at a time: starting a share while another person shares is refused unless
+    /// <paramref name="replaceShare"/> says the caller confirmed it, and then the other person's share ends in the same change. Same values
+    /// change nothing (false).
+    /// </summary>
+    public bool UpdateMediaState(Guid personId, bool audioOn, bool videoOn, bool sharingScreen, DateTimeOffset at, bool replaceShare = false)
     {
         EnsureNotEnded();
         var participant = Find(personId);
@@ -281,8 +286,20 @@ public sealed class Call : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.CallNotParticipant, "You are not in this call.");
         if (videoOn && Kind == CallKind.Voice)
             throw new BusinessRuleException(ChatRuleCodes.CallMediaNotAllowed, "A voice call carries no camera.");
+        if (sharingScreen && Kind == CallKind.Voice)
+            throw new BusinessRuleException(ChatRuleCodes.CallMediaNotAllowed, "A voice call carries no screen share.");
 
-        if (!participant.SetMedia(audioOn, videoOn, sharingScreen)) return false;
+        var changed = false;
+        if (sharingScreen && !participant.SharingScreen)
+        {
+            var current = _participants.Where(p => p.IsJoined && p.SharingScreen && p.PersonId != personId).ToList();
+            if (current.Count > 0 && !replaceShare)
+                throw new BusinessRuleException(ChatRuleCodes.CallScreenShareTaken, "Someone else is already sharing a screen.");
+            foreach (var other in current) changed |= other.StopSharing();
+        }
+
+        changed |= participant.SetMedia(audioOn, videoOn, sharingScreen);
+        if (!changed) return false;
         Touch(personId, at);
         return true;
     }
