@@ -102,7 +102,7 @@ public sealed class LiveKitChatCallMediaGatewayTests
     }
 
     [Fact]
-    public async Task AVoiceTokenCannotPublishACameraAndAVideoTokenCan()
+    public async Task AVoiceTokenCanShareAScreenButNotPublishACameraAndAVideoTokenCanDoBoth()
     {
         static JsonElement Grant(string token) =>
             JsonDocument.Parse(new JwtSecurityTokenHandler().ReadJwtToken(token).Payload["video"].ToString()!).RootElement.Clone();
@@ -114,7 +114,7 @@ public sealed class LiveKitChatCallMediaGatewayTests
         voice.GetProperty("roomJoin").GetBoolean().Should().BeTrue();
         voice.GetProperty("canSubscribe").GetBoolean().Should().BeTrue();
         voice.GetProperty("canPublish").GetBoolean().Should().BeTrue();
-        voice.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString()).Should().Equal("microphone");
+        voice.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString()).Should().Equal("microphone", "screen_share", "screen_share_audio");
         voice.TryGetProperty("roomAdmin", out _).Should().BeFalse("a person's token never carries an admin grant");
         voice.TryGetProperty("roomCreate", out _).Should().BeFalse();
         video.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString())
@@ -250,7 +250,7 @@ public sealed class LiveKitChatCallMediaGatewayTests
         muted.GetProperty("canPublishSources").GetArrayLength().Should().Be(0);
         var voice = JsonDocument.Parse(handler.Calls[1].Body).RootElement.GetProperty("permission");
         voice.GetProperty("canPublish").GetBoolean().Should().BeTrue();
-        voice.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString()).Should().Equal("microphone");
+        voice.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString()).Should().Equal("microphone", "screen_share", "screen_share_audio");
     }
 
     [Fact]

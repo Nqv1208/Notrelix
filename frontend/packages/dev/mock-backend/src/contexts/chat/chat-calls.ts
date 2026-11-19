@@ -636,12 +636,12 @@ export function updateCallMedia(
       "You are not in the call.",
     );
   }
-  if (call.kind === "voice" && (media.videoOn || media.sharingScreen)) {
+  if (call.kind === "voice" && media.videoOn) {
     fail(
       400,
       CALL_RULE.mediaNotAllowed,
       "Media not allowed",
-      "A voice call carries no camera and no screen share.",
+      "A voice call carries no camera.",
     );
   }
   // Starting a share needs the right to take part, as the server asks (a Guest or an archived channel is refused).

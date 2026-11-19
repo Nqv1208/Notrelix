@@ -301,9 +301,9 @@ export function ChatCallStage({
   const iShare = held.screen === "on";
   const otherSharer =
     sharerId && sharerId !== people.viewerId ? sharerId : null;
-  const sharing = isVideo && inCall && (iShare || otherSharer !== null);
+  const sharing = inCall && (iShare || otherSharer !== null);
   const showShare =
-    !ended && isVideo && Boolean(held.screenSupported) && phase === "connected";
+    !ended && Boolean(held.screenSupported) && phase === "connected";
   const [replaceOpen, setReplaceOpen] = useState(false);
 
   // Devices are listed once the room is live (the browser shows their names only after it let the call use them).
@@ -518,6 +518,30 @@ export function ChatCallStage({
           >
             <ChevronDownIcon aria-hidden="true" className="size-5" />
           </button>
+        </div>
+      ) : sharing ? (
+        // A one-to-one voice call has no camera pictures: the shared screen is the main tile and the two voice cards are the strip.
+        <div
+          className="flex min-h-0 flex-1 flex-col gap-2.5 p-3.5"
+          data-testid="chat-call-voice-share"
+        >
+          {iShare ? (
+            <ChatCallShareOwn controller={controller} copy={copy} />
+          ) : (
+            <ChatCallShareTile
+              controller={controller}
+              name={people.nameOf(otherSharer ?? "")}
+              copy={copy}
+            />
+          )}
+          <ChatCallParticipantGrid
+            controller={controller}
+            held={held}
+            viewerId={people.viewerId}
+            nameOf={people.nameOf}
+            copy={copy}
+            strip
+          />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 p-6 text-center">

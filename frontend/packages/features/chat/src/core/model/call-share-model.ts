@@ -10,6 +10,6 @@ export function screenSharerOf(call: ChatCall): string | null {
   );
 }
 
-/** Only a video call carries a screen (a voice call's media ticket holds the microphone alone). */
+/** A screen may be shared in any live call, voice or video (a voice call still carries no camera). */
 export const canShareInCall = (call: ChatCall): boolean =>
-  call.kind === "video" && call.state === "active";
+  call.state === "active";

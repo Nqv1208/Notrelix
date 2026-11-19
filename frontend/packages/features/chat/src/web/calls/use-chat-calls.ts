@@ -19,7 +19,10 @@ import type {
   ChatCallJoin,
   ChatCallKind,
 } from "../../core/types/call";
-import { screenSharerOf } from "../../core/model/call-share-model";
+import {
+  canShareInCall,
+  screenSharerOf,
+} from "../../core/model/call-share-model";
 import { chatQueryKeys } from "../../query/keys";
 import {
   CHAT_CALL_DEFAULT_DEVICE,
@@ -752,8 +755,7 @@ export function useChatCalls({
       if (
         !heldNow ||
         !session?.setScreenShare ||
-        heldNow.call.kind !== "video" ||
-        heldNow.call.state !== "active" ||
+        !canShareInCall(heldNow.call) ||
         (heldNow.screen ?? "off") !== "off"
       )
         return;

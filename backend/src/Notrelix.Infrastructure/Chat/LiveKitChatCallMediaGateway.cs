@@ -156,9 +156,9 @@ public sealed class LiveKitChatCallMediaGateway(
         }
     }
 
-    // A voice call carries no camera or screen; a video call may publish all four sources.
+    // A voice call carries no camera but may share a screen; a video call may publish all four sources.
     private static string[] Sources(bool video) =>
-        video ? ["microphone", "camera", "screen_share", "screen_share_audio"] : ["microphone"];
+        video ? ["microphone", "camera", "screen_share", "screen_share_audio"] : ["microphone", "screen_share", "screen_share_audio"];
 
     private SymmetricSecurityKey SigningKey() => new(Encoding.UTF8.GetBytes(Options.ApiSecret));
 

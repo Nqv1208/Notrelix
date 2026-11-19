@@ -98,7 +98,7 @@ public static class MapCallEndpoints
         group.MapWorkspacePut("/calls/{callId:guid}/participants/me", UpdateMediaStateAsync)
             .WithName("Chat.Calls.UpdateMediaState")
             .WithSummary("Set the caller's microphone, camera and screen share")
-            .WithDescription("A voice call carries no camera and no screen share (400 call-media-not-allowed). A caller who is not in the call is 403 call-not-participant. Only one person shares a screen at a time: a second share is 409 call-screen-share-taken unless replaceShare is true, and then the first share ends. Starting a share needs the right to take part (a Guest or a member the channel keeps from posting is 403). The same values change nothing. " + VersionNote)
+            .WithDescription("A voice call carries no camera (400 call-media-not-allowed) but a screen may be shared in it. A caller who is not in the call is 403 call-not-participant. Only one person shares a screen at a time: a second share is 409 call-screen-share-taken unless replaceShare is true, and then the first share ends. Starting a share needs the right to take part (a Guest or a member the channel keeps from posting is 403). The same values change nothing. " + VersionNote)
             .Produces<CallDto>(StatusCodes.Status200OK)
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
 

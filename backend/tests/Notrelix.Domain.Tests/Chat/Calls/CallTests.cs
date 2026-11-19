@@ -325,9 +325,37 @@ public class CallTests
     }
 
     [Fact]
-    public void A_voice_call_carries_no_screen_share()
+    public void A_voice_call_accepts_a_screen_share_from_a_participant()
     {
-        Refused(() => Active().UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8)), ChatRuleCodes.CallMediaNotAllowed);
+        var call = Active();
+
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8)).Should().BeTrue();
+
+        call.Participants.Single(p => p.PersonId == Bob).SharingScreen.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_voice_call_still_refuses_a_camera_when_a_screen_is_shared_with_it()
+    {
+        var call = Active();
+
+        Refused(() => call.UpdateMediaState(Bob, true, true, true, T0.AddSeconds(8)), ChatRuleCodes.CallMediaNotAllowed);
+
+        call.Participants.Single(p => p.PersonId == Bob).SharingScreen.Should().BeFalse("a refused change stores nothing");
+    }
+
+    [Fact]
+    public void In_a_voice_call_a_second_share_is_refused_until_the_replace_is_confirmed()
+    {
+        var call = Ringing(SpaceKind.ChannelPublic, CallKind.Voice);
+        call.Join(Bob, T0.AddSeconds(5));
+        call.Join(Carol, T0.AddSeconds(6));
+        call.UpdateMediaState(Bob, true, false, true, T0.AddSeconds(8));
+
+        Refused(() => call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(9)), ChatRuleCodes.CallScreenShareTaken);
+        call.UpdateMediaState(Carol, true, false, true, T0.AddSeconds(10), replaceShare: true).Should().BeTrue();
+
+        (Shares(call, Bob), Shares(call, Carol)).Should().Be((false, true));
     }
 
     private static Call VideoRoom()
