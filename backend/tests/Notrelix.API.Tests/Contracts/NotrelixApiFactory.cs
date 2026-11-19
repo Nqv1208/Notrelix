@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Notrelix.Application.Common.Data;
@@ -24,6 +25,7 @@ using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMembers;
 using InvitationByToken = Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
@@ -407,6 +409,8 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<CursorPage<WorkspaceMemberDto>>.Success(new CursorPage<WorkspaceMemberDto>([], null)));
             MockWorkspaceHandler<InviteMemberCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<InviteMembersCommand, Result<MemberInvitationBatchResultDto>>(services,
+                Result<MemberInvitationBatchResultDto>.Success(new MemberInvitationBatchResultDto([])));
             MockWorkspaceHandler<UpdateMemberRoleCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RemoveMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetWorkspaceInvitationsQuery, Result<CursorPage<WorkspaceInvitationDto>>>(services,

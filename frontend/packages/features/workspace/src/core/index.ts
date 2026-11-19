@@ -49,10 +49,12 @@ export {
   createInvitationsService,
   createWorkspaceInvitationsService,
   parseInvitations,
+  parseInviteManyOutcomes,
   parsePendingInvitations,
   PENDING_INVITATION_EXISTS_CODE,
   type AcceptedInvitation,
   type InvitationsEndpoints,
+  type InviteManyOutcome,
   type WorkspaceInvitationsEndpoints,
   type WorkspaceInvitationsService,
 } from "./api/invitations.service";

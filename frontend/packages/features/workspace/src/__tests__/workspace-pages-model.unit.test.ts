@@ -322,6 +322,7 @@ describe("Invitations", () => {
     const service = createWorkspaceInvitationsService(api, {
       workspaces: {
         members: (id) => `/workspaces/${id}/members`,
+        inviteMembers: (id) => `/workspaces/${id}/members/bulk`,
         invitations: (id) => `/workspaces/${id}/invitations`,
         invitation: (id, inv) => `/workspaces/${id}/invitations/${inv}`,
         invitationRole: (id, inv) =>

@@ -10,6 +10,7 @@ export {
 export {
   createUseChangeInvitationRole,
   createUseCreateInvitation,
+  createUseInviteMembers,
   createUseResendInvitation,
   createUseRevokeInvitation,
 } from "./hooks/mutations/use-create-invitation";

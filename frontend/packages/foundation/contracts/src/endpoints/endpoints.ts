@@ -98,6 +98,9 @@ export const endpoints = {
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,
+    // Workspaces.Members.InviteMembers: one to 50 addresses, one outcome each.
+    inviteMembers: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/bulk`,
     member: (workspaceId: string, userId: string) =>
       `/workspaces/${workspaceId}/members/${userId}`,
     suspendMember: (workspaceId: string, userId: string) =>

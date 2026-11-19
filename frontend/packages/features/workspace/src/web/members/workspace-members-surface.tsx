@@ -65,6 +65,7 @@ import type {
   WorkspaceMember,
   WorkspaceRole,
 } from "../../core/types/workspace";
+import type { InviteManyOutcome } from "../../core/api/invitations.service";
 import type { InvitationEntryRefusalReason } from "../../core/model/errors";
 import type { SectionState, SurfaceFormatters } from "../home/home-models";
 import { IdentityMark } from "../shell/shell-link";
@@ -136,6 +137,9 @@ export interface WorkspaceMembersSurfaceProps {
   readonly onInviteMany?: (
     inputs: readonly CreateWorkspaceInvitationInput[],
   ) => void;
+  /** The per-address outcomes of the last batch (`Wsp-Var-Invites-Bulk`); `null` or absent shows no dialog. */
+  readonly inviteResults?: readonly InviteManyOutcome[] | null;
+  readonly onDismissInviteResults?: () => void;
   /** Changes the role a waiting invitation offers; absent shows the role as text. */
   readonly onChangeInvitationRole?: (
     invitation: WorkspaceInvitation,
@@ -641,6 +645,79 @@ function InvitationEntries({
         </Select>
       ) : null}
     </fieldset>
+  );
+}
+
+/**
+ * Each address of a batch invitation with what became of it (`Wsp-Var-Invites-Bulk`): the batch is not
+ * all-or-nothing, so some are sent while others are skipped or refused, each for its own reason.
+ */
+function InviteResultsDialog({
+  copy,
+  results,
+  onClose,
+}: {
+  copy: WorkspaceMembersCopy;
+  results: readonly InviteManyOutcome[] | null;
+  onClose: () => void;
+}) {
+  const labels = copy.invitations.results;
+  const sent = results?.filter((row) => row.outcome === "sent").length ?? 0;
+  const total = results?.length ?? 0;
+  const reason = (row: InviteManyOutcome) =>
+    row.outcome === "sent"
+      ? labels.sent
+      : row.outcome === "already-member"
+        ? labels.alreadyMember
+        : row.outcome === "already-pending"
+          ? labels.alreadyPending
+          : row.outcome === "invalid"
+            ? labels.invalid
+            : row.code === "workspace.guest_invites_off"
+              ? labels.guestInvitesOff
+              : labels.refused;
+  return (
+    <AlertDialog
+      open={results !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{labels.title}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {formatCopy(labels.summary, { sent, total })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <ul
+          aria-label={labels.title}
+          className="flex max-h-72 flex-col gap-2 overflow-y-auto"
+        >
+          {(results ?? []).map((row) => (
+            <li
+              key={row.email}
+              className="flex items-start justify-between gap-3 text-body"
+            >
+              <span className="min-w-0 break-all">{row.email}</span>
+              <span
+                className={cn(
+                  "shrink-0 text-metadata",
+                  row.outcome === "sent"
+                    ? "text-success-text"
+                    : "text-danger-text",
+                )}
+              >
+                {reason(row)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <AlertDialogFooter>
+          <AlertDialogAction onClick={onClose}>{labels.done}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -1330,6 +1407,12 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
       ) : (
         membersPanel
       )}
+
+      <InviteResultsDialog
+        copy={copy}
+        results={props.inviteResults ?? null}
+        onClose={props.onDismissInviteResults ?? (() => undefined)}
+      />
 
       {props.onSaveJobTitle ? (
         <EditJobTitleDialog

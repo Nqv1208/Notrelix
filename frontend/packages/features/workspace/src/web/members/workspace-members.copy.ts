@@ -160,6 +160,18 @@ export const en = {
     emailHint:
       "Invite several people at once: separate the addresses with commas, spaces or new lines.",
     emailInvalidMany: "Check these addresses: {{emails}}",
+    results: {
+      title: "Invitation results",
+      summary:
+        "{{sent}} of {{total}} invitations sent. Each address is handled on its own.",
+      sent: "Sent",
+      alreadyMember: "Already a member",
+      alreadyPending: "Already has a pending invitation",
+      invalid: "Not a valid address or role",
+      guestInvitesOff: "Guest invitations are off",
+      refused: "Refused",
+      done: "Done",
+    },
     tooMany: "Invite up to {{max}} people at a time.",
     adminOnly: "Only workspace admins and owners can invite people.",
   },
@@ -369,6 +381,18 @@ export const vi: WorkspaceMembersCopy = {
     emailHint:
       "Mời nhiều người một lần: ngăn cách các địa chỉ bằng dấu phẩy, dấu cách hoặc xuống dòng.",
     emailInvalidMany: "Kiểm tra lại các địa chỉ này: {{emails}}",
+    results: {
+      title: "Kết quả gửi lời mời",
+      summary:
+        "Đã gửi {{sent}} trên {{total}} lời mời. Mỗi địa chỉ được xử lý riêng.",
+      sent: "Đã gửi",
+      alreadyMember: "Đã là thành viên",
+      alreadyPending: "Đã có lời mời đang chờ",
+      invalid: "Địa chỉ hoặc vai trò không hợp lệ",
+      guestInvitesOff: "Lời mời khách đang tắt",
+      refused: "Bị từ chối",
+      done: "Xong",
+    },
     tooMany: "Mỗi lần mời tối đa {{max}} người.",
     adminOnly: "Chỉ quản trị viên và chủ sở hữu mới mời được người khác.",
   },

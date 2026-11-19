@@ -954,6 +954,76 @@ export const workspaceOperations = [
     },
   }),
 
+  // Many addresses at once (Workspaces.Members.InviteMembers): one outcome per address, not all-or-nothing.
+  defineMockOperation<
+    { workspaceId: string },
+    { entries?: { email?: string; role?: string }[] },
+    unknown
+  >({
+    id: "workspace.members.inviteMany",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.InviteMembers",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/bulk",
+    async handle({ params, body, store, request }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      if (!request.headers.get("Idempotency-Key"))
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      const entries = body?.entries ?? [];
+      if (entries.length < 1 || entries.length > 50)
+        return validationError({
+          Entries: ["Invite between 1 and 50 people at a time."],
+        });
+      const guestsAllowed = store.getWorkspaceSettings(
+        params.workspaceId,
+      ).allowGuestInvites;
+      const seen = new Set<string>();
+      const outcomes: {
+        email: string;
+        role: string;
+        outcome: string;
+        code: string | null;
+        invitationId: string | null;
+      }[] = [];
+      for (const entry of entries) {
+        const email = (entry.email ?? "").trim().toLowerCase();
+        if (email && seen.has(email)) continue;
+        seen.add(email);
+        const role = parseRole(entry.role);
+        const row = (
+          outcome: string,
+          code: string | null = null,
+          id: string | null = null,
+        ) =>
+          outcomes.push({
+            email,
+            role: entry.role ?? "",
+            outcome,
+            code,
+            invitationId: id,
+          });
+        if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email) || !role)
+          row("invalid");
+        else if (role === "owner" || role === "admin")
+          row("refused", "Workspaces_Invitation_CannotInviteAsAdmin");
+        else if (role === "guest" && !guestsAllowed)
+          row("refused", "workspace.guest_invites_off");
+        else if (store.isActiveMemberEmail(params.workspaceId, email))
+          row("already-member", "workspaces.invitation.already-member");
+        else {
+          const id = store.createInvitation(params.workspaceId, email, role);
+          if (id) row("sent", null, id);
+          else row("already-pending", "workspaces.invitation.pending-exists");
+        }
+      }
+      return ok({ outcomes });
+    },
+  }),
+
   defineMockOperation<{ workspaceId: string }, never, unknown>({
     id: "workspace.invitations.list",
     contract: {

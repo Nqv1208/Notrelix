@@ -9,10 +9,12 @@ import {
   type WorkspaceInvitation,
   type WorkspaceMember,
   type WorkspaceRole,
+  type InviteManyOutcome,
 } from "@notrelix/features-workspace/core";
 import {
   createUseChangeInvitationRole,
   createUseCreateInvitation,
+  createUseInviteMembers,
   createUseMemberMutations,
   createUseResendInvitation,
   createUseRevokeInvitation,
@@ -92,6 +94,7 @@ export function MembersPage() {
       useMemberMutations: createUseMemberMutations(deps),
       useInvitations: createUseWorkspaceInvitations(deps),
       useCreateInvitation: createUseCreateInvitation(deps),
+      useInviteMembers: createUseInviteMembers(deps),
       useRevokeInvitation: createUseRevokeInvitation(deps),
       useResendInvitation: createUseResendInvitation(deps),
       useChangeInvitationRole: createUseChangeInvitationRole(deps),
@@ -105,6 +108,10 @@ export function MembersPage() {
   const invitations = hooks.useInvitations(workspaceId, { enabled: admin });
   const mutations = hooks.useMemberMutations(workspaceId);
   const createInvitation = hooks.useCreateInvitation(workspaceId);
+  const inviteMembers = hooks.useInviteMembers(workspaceId);
+  const [inviteResults, setInviteResults] = useState<
+    readonly InviteManyOutcome[] | null
+  >(null);
   const revokeInvitation = hooks.useRevokeInvitation(workspaceId);
   const resendInvitation = hooks.useResendInvitation(workspaceId);
   const changeInvitationRole = hooks.useChangeInvitationRole(workspaceId);
@@ -294,9 +301,8 @@ export function MembersPage() {
     [copy, createInvitation, hint, invitations.data, now],
   );
 
-  // Several addresses typed at once: sent one after the other, each decided
-  // by the producer; what was not sent stays in the field to be fixed.
-  const onInviteMany = useCallback(
+  // Sent one after the other, each decided by the producer; what was not sent stays in the field to be fixed.
+  const inviteOneByOne = useCallback(
     async (inputs: readonly CreateWorkspaceInvitationInput[]) => {
       setInviteError(null);
       const failed: string[] = [];
@@ -326,6 +332,32 @@ export function MembersPage() {
       setInviteError(formatCopy(copy.invitations.emailInvalidMany, { emails }));
     },
     [copy, createInvitation, invitations.data, now],
+  );
+
+  // Several addresses typed at once go in one request: the producer decides each address on its own and
+  // the dialog lists every outcome. A list that names Teams or Spaces to join keeps the one-by-one path,
+  // because the batch takes address and role only.
+  const onInviteMany = useCallback(
+    async (inputs: readonly CreateWorkspaceInvitationInput[]) => {
+      if (inputs.some((input) => input.initialEntries?.length))
+        return inviteOneByOne(inputs);
+      setInviteError(null);
+      try {
+        const outcomes = await inviteMembers.mutateAsync(inputs);
+        setInviteResults(outcomes);
+        if (outcomes.every((row) => row.outcome === "sent"))
+          setInviteResetKey((key) => key + 1);
+      } catch (error) {
+        toastFailure(
+          formatCopy(copy.toasts.inviteFailed, {
+            email: inputs[0]?.email ?? "",
+          }),
+          error,
+          hint,
+        );
+      }
+    },
+    [copy, hint, inviteMembers, inviteOneByOne],
   );
 
   const onChangeInvitationRole = useCallback(
@@ -468,6 +500,8 @@ export function MembersPage() {
         entryOptions={entryOptions}
         onInvite={onInvite}
         onInviteMany={onInviteMany}
+        inviteResults={inviteResults}
+        onDismissInviteResults={() => setInviteResults(null)}
         onResend={onResend}
         onChangeInvitationRole={onChangeInvitationRole}
         onRevoke={onRevoke}

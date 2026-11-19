@@ -731,6 +731,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createWorkspaceInvitationsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Members.InviteMembers",
+    operationId: "Workspaces.Members.InviteMembers",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
     capability: "Workspaces.Invitations.ListWorkspaceInvitations",
     operationId: "Workspaces.Invitations.ListWorkspaceInvitations",
     mutation: false,

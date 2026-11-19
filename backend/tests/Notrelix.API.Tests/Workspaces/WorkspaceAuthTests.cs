@@ -65,6 +65,17 @@ public class WorkspaceAuthTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
+    public async Task InviteMembers_Unauthenticated_ReturnsUnauthorized()
+    {
+        var client = _factory.CreateClient();
+        var body = JsonContent(new { Entries = new[] { new { Email = "ana@example.com", Role = "Member" } } });
+
+        var response = await client.PostAsync($"{BasePath}/{WorkspaceId}/members/bulk", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task ChangeWorkspaceSlug_Unauthenticated_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
