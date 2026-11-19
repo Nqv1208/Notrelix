@@ -4,6 +4,7 @@ using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.ReadState.DTOs;
 using Notrelix.Application.Features.Chat.ReadState.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.ReadState.Commands.MarkAllRead;
 
@@ -12,7 +13,7 @@ namespace Notrelix.Application.Features.Chat.ReadState.Commands.MarkAllRead;
 /// while the request runs stay unread. Returns the summary after the change.
 /// </summary>
 public record MarkAllReadCommand(Guid WorkspaceId)
-    : ICommand<Result<UnreadSummaryDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<UnreadSummaryDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

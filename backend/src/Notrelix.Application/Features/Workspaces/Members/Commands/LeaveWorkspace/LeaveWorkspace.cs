@@ -66,7 +66,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
         var userId = _requestContext.UserId;
 
         // Serializes owner-affecting changes so the active-owner count below cannot be stale.
-        var workspace = await _locker.LockWorkspaceAsync(request.WorkspaceId, ct)
+        var workspace = await _locker.LockWorkspaceIncludingArchivedAsync(request.WorkspaceId, ct)
             ?? throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var member = await _context.WorkspaceMembers

@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
+using Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
 using Notrelix.Domain.Workspaces.Invitations;
 
@@ -39,6 +40,28 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
 
         result.Data!.Version.Should().Be(workspace.Version).And.BeGreaterThan(1, "a rename advances the version");
         result.Data.MemberCount.Should().Be(2, "a removed member no longer participates");
+    }
+
+    [Fact]
+    public async Task AnArchivedWorkspace_StaysReadable_AsAWorkspaceTheMembersListAndTheInvitations()
+    {
+        SetupWorkspaces(CreateWorkspace(TestWorkspaceId, isArchived: true));
+        SetupMembers(Active());
+        SetupInvitations();
+
+        var workspace = await new GetWorkspaceQueryHandler(DbContextMock.Object)
+            .Handle(new GetWorkspaceQuery(TestWorkspaceId), CancellationToken.None);
+        var members = await new GetWorkspaceMembersQueryHandler(DbContextMock.Object, _actors.Object, _phones.Object, RequestContextMock.Object)
+            .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None);
+        var invitations = await new GetWorkspaceInvitationsQueryHandler(DbContextMock.Object, DateTimeProviderMock.Object)
+            .Handle(new GetWorkspaceInvitationsQuery(TestWorkspaceId), CancellationToken.None);
+        var activity = await new GetWorkspaceActivityQueryHandler(DbContextMock.Object)
+            .Handle(new GetWorkspaceActivityQuery(TestWorkspaceId), CancellationToken.None);
+
+        workspace.Data!.IsArchived.Should().BeTrue();
+        members.Data!.Items.Should().ContainSingle();
+        invitations.Data.Should().NotBeNull();
+        activity.Data.Should().NotBeNull();
     }
 
     [Fact]

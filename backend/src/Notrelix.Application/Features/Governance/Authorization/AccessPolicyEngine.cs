@@ -129,7 +129,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 AccessDenialCodes.FeatureNotEnabled);
         }
 
-        return RefuseWriteOnArchived(facts, request) ?? AccessDecision.Allow();
+        return RefuseWriteOnArchived(descriptor, facts, request) ?? AccessDecision.Allow();
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// do a person's own preferences and follows (<see cref="IPersonalBoardRequest"/>), which
     /// change nothing on the Board.
     /// </summary>
-    private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
+    private static AccessDecision? RefuseWriteOnArchived(RequestDescriptor descriptor, AccessFacts facts, object request)
     {
         // A suspended or closed account is read-only for everyone in it, whatever the request (owner decision:
         // the platform operator suspends an account; its content stays and nothing is deleted).
@@ -151,6 +151,20 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 AccessDecisionKind.Forbidden,
                 "This account is suspended. It is read-only until the suspension is lifted.",
                 AccessDenialCodes.AccountSuspended);
+        }
+
+        // An archived workspace is read-only for every member, Owner and Admin included: every write inside it is
+        // refused (a Board lifecycle write too) except the workspace lifecycle, which is the way back, and a
+        // person's own state, which changes nothing the workspace holds.
+        if (request is IWriteRequest
+            && descriptor.Scope is ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && facts.WorkspaceArchived
+            && request is not (IWorkspaceLifecycleRequest or IPersonalWorkspaceRequest or IPersonalBoardRequest))
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This workspace is archived. It is read-only until an owner or admin unarchives it.",
+                AccessDenialCodes.WorkspaceArchived);
         }
 
         if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)

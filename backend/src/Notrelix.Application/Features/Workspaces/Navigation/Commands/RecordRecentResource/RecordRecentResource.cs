@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Navigation.Services;
 using Notrelix.Domain.Workspaces.Navigation;
 using Notrelix.Domain.Workspaces.Rules;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Workspaces.Navigation.Commands.RecordRecentResource;
 
@@ -15,7 +16,7 @@ public record RecordRecentResourceCommand(
     Guid WorkspaceId,
     string Kind,
     Guid ResourceId
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest, IIdempotentRequest
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

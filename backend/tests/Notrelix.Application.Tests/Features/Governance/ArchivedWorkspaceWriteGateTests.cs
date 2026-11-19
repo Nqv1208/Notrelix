@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.WorkManagement.Public.Authorization;
 using Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;
 using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
@@ -98,9 +99,43 @@ public sealed class ArchivedWorkspaceWriteGateTests
     public void AMember_CanLeaveAnArchivedWorkspace() =>
         Evaluate(new LeaveWorkspaceCommand(WorkspaceId), "Member", archived: true).Kind.Should().Be(AccessDecisionKind.Allowed);
 
-    private static AccessDecision Evaluate(IWorkspaceRequest request, string? workspaceRole, bool archived)
+    [Theory]
+    [InlineData("Owner")]
+    [InlineData("Admin")]
+    [InlineData("Member")]
+    [InlineData("Guest")]
+    public void ABoardWrite_OnAnArchivedWorkspace_IsRefused_EvenTheBoardLifecycleOnes(string role)
     {
-        var scope = ApplicationScopeKind.Workspace;
+        // Archiving or unarchiving a Board is a write inside the workspace, so it is refused like any other.
+        var decision = Evaluate(new BoardLifecycleProbe(WorkspaceId, PermissionAction.ViewWorkspace, WorkspaceRef), role, archived: true);
+
+        decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
+        decision.Code.Should().Be(AccessDenialCodes.WorkspaceArchived);
+    }
+
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("Guest")]
+    public void APersonalBoardWrite_OnAnArchivedWorkspace_StaysAllowed(string role) =>
+        Evaluate(new PersonalBoardProbe(WorkspaceId, PermissionAction.ViewWorkspace, WorkspaceRef), role, archived: true)
+            .Kind.Should().Be(AccessDecisionKind.Allowed);
+
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("Member")]
+    [InlineData("Guest")]
+    public void APersonalWorkspaceWrite_OnAnArchivedWorkspace_StaysAllowed(string role) =>
+        Evaluate(new PersonalWorkspaceProbe(WorkspaceId, PermissionAction.ViewWorkspace, WorkspaceRef), role, archived: true)
+            .Kind.Should().Be(AccessDecisionKind.Allowed);
+
+    [Fact]
+    public void AnAccountScopedWrite_IsNotAffectedByAWorkspaceArchivedFact() =>
+        Evaluate(new AccountWriteProbe(PermissionAction.ViewWorkspace), "Owner", archived: true, ApplicationScopeKind.Account)
+            .Kind.Should().Be(AccessDecisionKind.Allowed);
+
+    private static AccessDecision Evaluate(
+        object request, string? workspaceRole, bool archived, ApplicationScopeKind scope = ApplicationScopeKind.Workspace)
+    {
         var descriptor = RequestDescriptorValidator.Create(request.GetType()) with { Scope = scope };
         var snapshot = new ExecutionContextSnapshot(
             Guid.NewGuid(), Guid.NewGuid(), WorkspaceId, null,
@@ -130,6 +165,21 @@ public sealed class ArchivedWorkspaceWriteGateTests
 
     private sealed record WriteProbe(Guid WorkspaceId, PermissionAction Action, ResourceRef Resource)
         : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission;
+
+    private sealed record BoardLifecycleProbe(Guid WorkspaceId, PermissionAction Action, ResourceRef Resource)
+        : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IBoardLifecycleRequest;
+
+    private sealed record PersonalBoardProbe(Guid WorkspaceId, PermissionAction Action, ResourceRef Resource)
+        : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalBoardRequest;
+
+    private sealed record PersonalWorkspaceProbe(Guid WorkspaceId, PermissionAction Action, ResourceRef Resource)
+        : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest;
+
+    private sealed record AccountWriteProbe(PermissionAction Action)
+        : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IAccountRequest, IRequirePermission
+    {
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("accounts.account"), Guid.Empty);
+    }
 
     private sealed record ReadProbe(Guid WorkspaceId, PermissionAction Action, ResourceRef Resource)
         : IQuery<Result>, IReadRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission;

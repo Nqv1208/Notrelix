@@ -20,4 +20,10 @@ public interface IWorkspaceOwnerUpdateLocker
     /// rolls back. Returns <c>null</c> when no such workspace exists.
     /// </summary>
     Task<Workspace?> LockWorkspaceAsync(Guid workspaceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Same lock, but an archived workspace is returned too. Only for what must still work in an archived workspace
+    /// (leaving it); every other membership write is refused there before it reaches a handler.
+    /// </summary>
+    Task<Workspace?> LockWorkspaceIncludingArchivedAsync(Guid workspaceId, CancellationToken cancellationToken);
 }
