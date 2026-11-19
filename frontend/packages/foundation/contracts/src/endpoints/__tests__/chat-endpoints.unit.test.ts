@@ -18,6 +18,7 @@ describe("chat endpoint paths", () => {
       chat.messages("w", hostile),
       chat.message("w", hostile),
       chat.markRead("w", hostile),
+      chat.markUnreadFrom("w", hostile),
       chat.notificationLevel("w", hostile),
       chat.threadReplies("w", hostile),
       chat.threadFollow("w", hostile),

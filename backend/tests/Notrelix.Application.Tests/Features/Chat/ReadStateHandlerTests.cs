@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.ReadState.DTOs;
 using Notrelix.Application.Features.Chat.ReadState.Commands.MarkAllRead;
 using Notrelix.Application.Features.Chat.ReadState.Commands.MarkSpaceRead;
+using Notrelix.Application.Features.Chat.ReadState.Commands.MarkSpaceUnreadFrom;
 using Notrelix.Application.Features.Chat.ReadState.Commands.SetNotificationLevel;
 using Notrelix.Application.Features.Chat.ReadState.Queries.GetUnreadSummary;
 using Notrelix.Application.Features.Workspaces.Public.Members;
@@ -326,6 +327,108 @@ public class ReadStateHandlerTests
         var act = () => MarkRead(foreign.Id, 1);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    // --- I07: mark unread from a message ---
+
+    private Task<Result<ReadBoundaryDto>> MarkUnreadFrom(Guid spaceId, long from) =>
+        new MarkSpaceUnreadFromCommandHandler(_db.Object, _context.Object, _members.Object, _store, _events.Object, _clock.Object)
+            .Handle(new MarkSpaceUnreadFromCommand(_workspaceId, spaceId, from), CancellationToken.None);
+
+    [Fact]
+    public async Task MarkUnreadFrom_MovesTheCallersBoundaryToJustBeforeTheMessage_SoItAndLaterOnesAreUnread()
+    {
+        AsUser(_member);
+        var alpha = Channel("alpha");
+        Join(alpha, _member);
+        for (var i = 1; i <= 6; i++) Store(alpha, i, _owner, $"m{i}");
+        await MarkRead(alpha.Id, 6);
+
+        var result = await MarkUnreadFrom(alpha.Id, 4);
+
+        result.Data!.ReadSequence.Should().Be(3);
+        (await Summary()).Data!.Spaces.Single().UnreadCount.Should().Be(3, "messages 4, 5 and 6 are unread again");
+    }
+
+    [Fact]
+    public async Task MarkUnreadFrom_NeverMovesTheBoundaryForward()
+    {
+        AsUser(_member);
+        var alpha = Channel("alpha");
+        Join(alpha, _member);
+        for (var i = 1; i <= 6; i++) Store(alpha, i, _owner, $"m{i}");
+        await MarkRead(alpha.Id, 2);
+
+        var result = await MarkUnreadFrom(alpha.Id, 5);
+
+        result.Data!.ReadSequence.Should().Be(2, "a message that is already unread changes nothing");
+    }
+
+    [Fact]
+    public async Task MarkUnreadFrom_ASequenceAboveTheLastOne_ChangesNothing()
+    {
+        AsUser(_member);
+        var alpha = Channel("alpha");
+        Join(alpha, _member);
+        for (var i = 1; i <= 3; i++) Store(alpha, i, _owner, $"m{i}");
+        await MarkRead(alpha.Id, 3);
+
+        var result = await MarkUnreadFrom(alpha.Id, 99);
+
+        result.Data!.ReadSequence.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task MarkUnreadFrom_TouchesOnlyTheCallersOwnBoundary()
+    {
+        AsUser(_member);
+        var alpha = Channel("alpha");
+        Join(alpha, _member);
+        Join(alpha, _owner);
+        for (var i = 1; i <= 4; i++) Store(alpha, i, _guest, $"m{i}");
+        await MarkRead(alpha.Id, 4);
+        AsUser(_owner);
+        await MarkRead(alpha.Id, 4);
+
+        AsUser(_member);
+        await MarkUnreadFrom(alpha.Id, 2);
+
+        MembershipOf(alpha, _member).ReadSequence.Should().Be(1);
+        MembershipOf(alpha, _owner).ReadSequence.Should().Be(4, "someone else's read state is not touched");
+    }
+
+    [Fact]
+    public async Task MarkUnreadFrom_ForASpaceTheCallerIsNotIn_IsTheSameNotFound()
+    {
+        AsUser(_member);
+        var secret = Channel("secret", SpaceKind.ChannelPrivate);
+        Join(secret, _owner);
+        Store(secret, 1, _owner, "private");
+
+        var act = () => MarkUnreadFrom(secret.Id, 1);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task MarkUnreadFrom_ForAChannelOfAnotherWorkspace_IsNotFound()
+    {
+        AsUser(_member);
+        var foreign = Channel("foreign", workspaceId: _otherWorkspaceId);
+        Join(foreign, _member);
+
+        var act = () => MarkUnreadFrom(foreign.Id, 1);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public void MarkUnreadFrom_Validator_RejectsASequenceBelowOne()
+    {
+        var validator = new MarkSpaceUnreadFromCommandValidator();
+
+        validator.TestValidate(new MarkSpaceUnreadFromCommand(_workspaceId, Guid.NewGuid(), 0)).ShouldHaveValidationErrorFor(x => x.FromSequence);
+        validator.TestValidate(new MarkSpaceUnreadFromCommand(_workspaceId, Guid.NewGuid(), 1)).ShouldNotHaveValidationErrorFor(x => x.FromSequence);
     }
 
     [Fact]

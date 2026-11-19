@@ -106,6 +106,45 @@ export const readStateOperations = [
     },
   }),
 
+  // ─── PUT /spaces/:spaceId/unread-from ─────────────────────────────────────
+
+  defineMockOperation<SpaceParams, { fromSequence?: number | null }>({
+    id: "chat.readState.markUnreadFrom",
+    contract: { kind: "openapi", operationId: "Chat.ReadState.MarkUnreadFrom" },
+    method: "PUT",
+    route: "/workspaces/:workspaceId/chat/spaces/:spaceId/unread-from",
+    async handle({ params, body, store }) {
+      return guarded(async () => {
+        const state = store.chat;
+        const caller = callerIn(store, params.workspaceId);
+        requireAction(caller, "viewWorkspace");
+        const from = body?.fromSequence;
+        if (typeof from !== "number" || !Number.isInteger(from) || from < 1) {
+          validationProblem("fromSequence is required.");
+        }
+        const space = liveSpace(state, params.workspaceId, params.spaceId);
+        const membership = state.activeMembershipOf(space.id, caller.userId);
+        if (!membership) notFoundProblem();
+        // The one way a boundary moves back: the caller's own, and never forward (ReadBoundary.Before).
+        if (from <= space.lastSequence) {
+          membership.readSequence = Math.min(membership.readSequence, from - 1);
+        }
+        const rows = unreadSummaryOf(
+          state,
+          params.workspaceId,
+          caller.userId,
+          state.nowDate(),
+        ).spaces.filter((row: ChatSpaceUnreadRow) => row.spaceId === space.id);
+        announceOwnReadState(state, params.workspaceId, caller.userId, rows);
+        return ok({
+          spaceId: space.id,
+          readSequence: membership.readSequence,
+          lastSequence: space.lastSequence,
+        });
+      });
+    },
+  }),
+
   // ─── POST /me/read-all ────────────────────────────────────────────────────
 
   defineMockOperation<{ workspaceId: string }>({

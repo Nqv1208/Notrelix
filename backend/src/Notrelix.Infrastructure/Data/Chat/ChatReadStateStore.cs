@@ -39,6 +39,31 @@ public sealed class ChatReadStateStore(ApplicationDbContext db) : IChatReadState
         return touched > 0;
     }
 
+    public async Task<bool> RewindAsync(Guid workspaceId, Guid spaceId, Guid userId, long target, CancellationToken cancellationToken)
+    {
+        // Locked first, like AdvanceAsync, so a concurrent read cannot move the boundary between the lock and the update.
+        var locked = await db.Database.SqlQuery<int>($"""
+            SELECT 1 AS "Value" FROM chat.memberships
+            WHERE space_id = {spaceId} AND user_id = {userId} AND workspace_id = {workspaceId} AND left_at IS NULL
+            FOR UPDATE
+            """).ToListAsync(cancellationToken);
+        if (locked.Count == 0)
+            return false;
+
+        var touched = await db.ChatMemberships
+            .Where(m => m.SpaceId == spaceId && m.UserId == userId && m.WorkspaceId == workspaceId && m.LeftAt == null)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.ReadSequence, m => Math.Min(m.ReadSequence, target))
+                .SetProperty(m => m.MentionCount, m => db.ChatMessages.Count(msg =>
+                    msg.SpaceId == m.SpaceId && msg.Sequence > Math.Min(m.ReadSequence, target)
+                    && msg.CreatedAt >= m.JoinedAt && msg.AuthorId != m.UserId && msg.Kind == MessageKind.User && msg.DeletedAt == null
+                    && db.ChatMessageMentions.Any(x => x.MessageId == msg.Id && x.SpaceId == msg.SpaceId
+                        && ((x.Kind == MentionKind.User && x.TargetId == m.UserId)
+                            || x.Kind == MentionKind.BroadcastChannel || x.Kind == MentionKind.BroadcastHere)))),
+                cancellationToken);
+        return touched > 0;
+    }
+
     public async Task<int> AdvanceAllAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
     {
         // Each space's last sequence is read from the statement's snapshot: a message committed after the statement

@@ -117,6 +117,10 @@ const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
 import { useChannelTimeline } from "./use-channel-timeline";
+import {
+  taskDraftFromMessage,
+  type ChatTaskDraft,
+} from "../../core/model/task-draft";
 import { ChatLinkAndRedialProvider } from "./chat-call-redial";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
@@ -207,6 +211,11 @@ export interface ChatWorkspaceProps {
     readonly sequence: number;
   }) => string;
   readonly linkedSequence?: number | null;
+  /**
+   * Create a task from a message (UC-CHT-I08). The host owns Work Management, so it opens its create dialog with the draft (title,
+   * description with a link back, the Board the channel is linked to or null); without it the Create task entry is not shown.
+   */
+  readonly onCreateTask?: (draft: ChatTaskDraft) => void;
   /**
    * Keeps a draft across a reload (UC-CHT-B07). The host owns the storage (the package never touches browser storage);
    * without it drafts live in memory while the page is open. `write` gets null when the draft is empty, sent or discarded.
@@ -359,6 +368,7 @@ export function ChatWorkspace({
   peopleDetails,
   onOpenChannel,
   buildMessageLink,
+  onCreateTask,
   linkedSequence = null,
   draftStore,
   callDeviceStore,
@@ -712,6 +722,30 @@ export function ChatWorkspace({
       { messageId: message.id, kind: emoji, add },
       { onError: () => setNotice(copy.reactions.failed) },
     );
+  }
+
+  function handleCreateTask(message: ChatMessage) {
+    const linked = channel?.link;
+    onCreateTask?.(
+      taskDraftFromMessage({
+        text: message.content ?? "",
+        link: messageLink?.(message) ?? null,
+        linkLabel: fillCopy(copy.toolbar.taskSource, { name: panelSpaceLabel }),
+        boardId:
+          linked?.kind === "work-management.board" ? linked.resourceId : null,
+      }),
+    );
+  }
+
+  function handleMarkUnread(message: ChatMessage) {
+    timeline
+      .markUnreadFrom(message.sequence)
+      .then(() =>
+        toast.success(copy.toolbar.markedUnread, { id: "chat-mark-unread" }),
+      )
+      .catch(() =>
+        toast.error(copy.toolbar.markUnreadFailed, { id: "chat-mark-unread" }),
+      );
   }
 
   function handleTogglePin(message: ChatMessage, pinned: boolean) {
@@ -2028,6 +2062,8 @@ export function ChatWorkspace({
                       }
                       onOpenThread={handleOpenThread}
                       onTogglePin={grants.pin ? handleTogglePin : undefined}
+                      onMarkUnread={handleMarkUnread}
+                      onCreateTask={onCreateTask ? handleCreateTask : undefined}
                       attachmentsReadOnly={channel?.isArchived === true}
                       bottomInset={dockHeight}
                       showNames={conversation?.kind !== "direct"}

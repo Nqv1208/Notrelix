@@ -40,6 +40,17 @@ internal sealed class InMemoryChatReadStateStore(IChatDbContext db) : IChatReadS
         return Task.FromResult(true);
     }
 
+    public Task<bool> RewindAsync(Guid workspaceId, Guid spaceId, Guid userId, long target, CancellationToken cancellationToken)
+    {
+        var membership = db.ChatMemberships.ToList().SingleOrDefault(m => m.SpaceId == spaceId && m.UserId == userId && m.IsActive);
+        if (membership is null) return Task.FromResult(false);
+
+        typeof(Membership).GetProperty(nameof(Membership.ReadSequence))!.GetSetMethod(nonPublic: true)!
+            .Invoke(membership, [Math.Min(membership.ReadSequence, target)]);
+        Recount(membership);
+        return Task.FromResult(true);
+    }
+
     public Task<int> AdvanceAllAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
     {
         var touched = 0;
