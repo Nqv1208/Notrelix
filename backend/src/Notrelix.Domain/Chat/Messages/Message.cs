@@ -218,12 +218,13 @@ public class Message : AggregateRoot, IWorkspaceScoped
     /// lets other readers patch its file list. The caller has stored the file and checked the standing.
     /// </summary>
     public void RecordAttachmentAdded(
-        Guid actorId, Guid attachmentId, string fileName, long sizeBytes, string contentType, Guid uploadedBy, DateTimeOffset createdAt, DateTimeOffset now)
+        Guid actorId, Guid attachmentId, string fileName, long sizeBytes, string contentType, Guid uploadedBy, DateTimeOffset createdAt, DateTimeOffset now,
+        int? width = null, int? height = null)
     {
         Guard.NotEmpty(actorId);
         Guard.NotEmpty(attachmentId);
         RaiseDomainEvent(new MessageAttachmentChangedDomainEvent(
-            AccountId, WorkspaceId, SpaceId, Id, actorId, Added: true, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, now));
+            AccountId, WorkspaceId, SpaceId, Id, actorId, Added: true, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, now, width, height));
     }
 
     /// <summary>Records that a file was removed from this message (UC-CHT-G08); the message does not change.</summary>

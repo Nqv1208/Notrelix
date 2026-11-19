@@ -29,6 +29,24 @@ public class ChatAttachmentRealtimeTests
     };
 
     [Fact]
+    public void An_added_image_carries_its_pixel_size_so_a_reader_reserves_the_box_before_the_bytes_load()
+    {
+        var fact = Added("photo.png") with { ContentType = "image/png", Width = 640, Height = 480 };
+
+        var json = ChatRealtime.ForAttachmentChanged(fact, Now).Payload.GetRawText();
+
+        json.Should().Contain("\"width\":640").And.Contain("\"height\":480");
+    }
+
+    [Fact]
+    public void A_removed_file_carries_no_pixel_size()
+    {
+        var json = ChatRealtime.ForAttachmentChanged(Removed() with { Width = 640, Height = 480 }, Now).Payload.GetRawText();
+
+        json.Should().NotContain("width").And.NotContain("height");
+    }
+
+    [Fact]
     public void An_added_file_is_a_channel_frame_with_its_metadata_and_download_route()
     {
         var fact = Added();

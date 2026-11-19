@@ -23,7 +23,9 @@ public sealed record ChatMessageAttachmentChangedIntegrationEvent(
     Guid CorrelationId,
     Guid? ActorUserId = null,
     Guid? CausationId = null,
-    DateTimeOffset OccurredAt = default
+    DateTimeOffset OccurredAt = default,
+    int? Width = null,
+    int? Height = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "chat.message.attachment.changed",
