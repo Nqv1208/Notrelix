@@ -152,6 +152,12 @@ export const en = {
     stepUpProviderTitle: "Add a way to confirm first",
     stepUpProviderBody:
       "You sign in with a provider and have no password or two-factor yet. Add one in Account settings, Security, then come back to hand the workspace over.",
+    stepUpProviderText:
+      "Confirm with the account you signed in with. The browser leaves for it and comes back here to finish the handover.",
+    stepUpProviderButton: "Confirm with {{provider}}",
+    stepUpProviderPending: "Confirming…",
+    stepUpProviderFailed:
+      "The provider could not confirm you. Ownership was not transferred; try again or close.",
   },
   toasts: {
     profileSaved: "Profile saved.",
@@ -335,6 +341,12 @@ export const vi: WorkspaceSettingsCopy = {
     stepUpProviderTitle: "Thêm cách xác nhận trước",
     stepUpProviderBody:
       "Bạn đăng nhập bằng nhà cung cấp và chưa có mật khẩu hay xác thực hai bước. Hãy thêm một trong hai ở Cài đặt tài khoản, mục Bảo mật, rồi quay lại để chuyển quyền.",
+    stepUpProviderText:
+      "Hãy xác nhận bằng tài khoản bạn đã dùng để đăng nhập. Trình duyệt rời đi rồi quay lại đây để hoàn tất việc chuyển quyền.",
+    stepUpProviderButton: "Xác nhận với {{provider}}",
+    stepUpProviderPending: "Đang xác nhận…",
+    stepUpProviderFailed:
+      "Nhà cung cấp không xác nhận được. Bạn chưa chuyển quyền; thử lại hoặc đóng.",
   },
   toasts: {
     profileSaved: "Đã lưu hồ sơ.",

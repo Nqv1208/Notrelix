@@ -556,6 +556,166 @@ describe("Transfer ownership (hand the workspace over)", () => {
     });
   });
 
+  describe("the provider round trip (a person who signs in only through a provider)", () => {
+    function providerPort(
+      over: Partial<NonNullable<OwnershipStepUp["provider"]>> = {},
+    ): OwnershipStepUp {
+      return stepUpPort({
+        request: vi.fn(async () => ({
+          factor: "provider" as const,
+          challengeToken: null,
+        })),
+        provider: {
+          providers: vi.fn(async () => ["Google", "Microsoft"]),
+          start: vi.fn(async () => undefined),
+          resume: vi.fn(() => null),
+          claim: vi.fn(async () => "proof-provider"),
+          ...over,
+        },
+      });
+    }
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] offers one button per linked provider and leaves with the chosen person", async () => {
+      const port = providerPort();
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+      const dialog = open();
+      await confirmChoice(dialog);
+
+      expect(within(dialog).getByText(d.stepUpProviderText)).toBeTruthy();
+      expect(
+        within(dialog).getByRole("button", { name: "Confirm with Microsoft" }),
+      ).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "Confirm with Google" }),
+        );
+      });
+
+      expect(port.provider?.start).toHaveBeenCalledWith("Google", "u-ha");
+      expect(props.onTransfer).not.toHaveBeenCalled();
+      expect(
+        within(dialog).queryByRole("button", { name: d.stepUpConfirm }),
+      ).toBeNull();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a return reopens the dialog, takes the proof once and hands over", async () => {
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-lan", failed: false })),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+
+      await waitFor(() =>
+        expect(props.onTransfer).toHaveBeenCalledWith(
+          "u-lan",
+          "proof-provider",
+        ),
+      );
+      expect(props.onTransfer).toHaveBeenCalledTimes(1);
+      expect(port.provider?.claim).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a provider that refuses hands nothing over and offers the buttons again", async () => {
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-ha", failed: true })),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+
+      const dialog = await screen.findByRole("alertdialog");
+      expect(
+        await within(dialog).findByText(d.stepUpProviderFailed),
+      ).toBeTruthy();
+      expect(
+        within(dialog).getByRole("button", { name: "Confirm with Google" }),
+      ).toBeTruthy();
+      expect(port.provider?.claim).not.toHaveBeenCalled();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a return with no proof left says the confirmation expired and hands nothing over", async () => {
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-ha", failed: false })),
+        claim: vi.fn(async () => {
+          throw { status: 400, code: "identity.security.step-up-invalid" };
+        }),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+
+      const dialog = await screen.findByRole("alertdialog");
+      expect(
+        await within(dialog).findByText(d.stepUpExpiredTitle, { exact: false }),
+      ).toBeTruthy();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a return naming someone who is not eligible is ignored and spends nothing", async () => {
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-nobody", failed: false })),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+
+      await waitFor(() => expect(port.provider?.resume).toHaveBeenCalled());
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+      expect(port.provider?.claim).not.toHaveBeenCalled();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a proof the producer refuses is said in place and the buttons come back", async () => {
+      const failure: TransferFailure = { kind: "step-up-invalid" };
+      const port = providerPort({
+        resume: vi.fn(() => ({ newOwnerId: "u-ha", failed: false })),
+      });
+      renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+        onTransfer: vi.fn(async () => failure),
+      });
+
+      const dialog = await screen.findByRole("alertdialog");
+      expect(
+        await within(dialog).findByText(d.stepUpRefusedTitle, { exact: false }),
+      ).toBeTruthy();
+      expect(
+        within(dialog).getByRole("button", { name: "Confirm with Google" }),
+      ).toBeTruthy();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] a provider that cannot be reached says so and nothing leaves", async () => {
+      const port = providerPort({
+        start: vi.fn(async () => {
+          throw { kind: "network" };
+        }),
+      });
+      renderSettings(settingsDefaultScenario(), { ownershipStepUp: port });
+      const dialog = open();
+      await confirmChoice(dialog);
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "Confirm with Google" }),
+        );
+      });
+      expect(await within(dialog).findByText(copy.toasts.network)).toBeTruthy();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup-provider] with no linked provider the dialog still says to add a way to confirm", async () => {
+      renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: providerPort({ providers: vi.fn(async () => []) }),
+      });
+      const dialog = open();
+      await confirmChoice(dialog);
+      expect(within(dialog).getByText(d.stepUpProviderTitle)).toBeTruthy();
+    });
+  });
+
   it("FUI[workspace.settings:transfer-ownership] has a Vietnamese copy for every string", () => {
     const vi_ = workspaceSettingsCopy("vi").danger;
     for (const key of Object.keys(d) as (keyof typeof d)[]) {
