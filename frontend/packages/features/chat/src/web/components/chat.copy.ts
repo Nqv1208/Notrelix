@@ -384,6 +384,7 @@ export const en = {
     tooLong: "Shorten the message to {{max}} characters.",
     emptyHint: "Write a message to send it.",
     archived: "This channel is archived, so nobody can post.",
+    workspaceArchived: "This workspace is archived, so nobody can post.",
     readOnly: "Posting is turned off for your role in this channel.",
     notMember: "Join the channel to post.",
     slowMode: "Slow mode: one message every {{wait}}.",
@@ -1551,6 +1552,8 @@ export const vi: ChatCopy = {
     tooLong: "Hãy rút ngắn tin nhắn còn {{max}} ký tự.",
     emptyHint: "Nhập tin nhắn để gửi.",
     archived: "Kênh đã được lưu trữ nên không ai gửi được tin.",
+    workspaceArchived:
+      "Không gian làm việc đã được lưu trữ nên không ai gửi được tin.",
     readOnly: "Vai trò của bạn không được gửi tin trong kênh này.",
     notMember: "Tham gia kênh để gửi tin nhắn.",
     slowMode: "Chế độ chậm: mỗi {{wait}} một tin nhắn.",
