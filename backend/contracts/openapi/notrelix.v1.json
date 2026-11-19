@@ -32092,7 +32092,7 @@
           "Workspaces.Members"
         ],
         "summary": "Invite a member to workspace",
-        "description": "Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.",
+        "description": "Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again. An invitation whose initial Team or Space entries are refused answers 400 with a ruleCode (Workspaces_Invitation_EntryTargetNotActive when a Team or Space is not an active one of the workspace, Workspaces_Invitation_GuestEntryRoleTooPrivileged when a Guest invitation names a Team lead or Space admin) and an entries list in the problem: each refused entry with its index in the request, its kind (team or space), its targetId and a reason (not-active or guest-too-privileged); nothing is stored and no email is sent.",
         "operationId": "Workspaces.Members.InviteMember",
         "parameters": [
           {
@@ -34720,6 +34720,51 @@
           },
           "503": {
             "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/teams/deleted": {
+      "get": {
+        "tags": [
+          "Workspaces.Teams",
+          "Workspaces.Teams"
+        ],
+        "summary": "Get the deleted teams of a workspace",
+        "description": "For Owners and Admins only (ManageTeams, the right to restore): a Member or Guest is refused with 403 and a person outside the workspace gets 404. Newest deletion first, at most 200. Restore a Team with POST .../teams/{teamId}/restore; its members return with it.",
+        "operationId": "Workspaces.Teams.GetDeletedTeams",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -48759,6 +48804,41 @@
             "format": "date-time"
           },
           "accessLevel": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "deletedByName": {
             "type": "string",
             "nullable": true
           }

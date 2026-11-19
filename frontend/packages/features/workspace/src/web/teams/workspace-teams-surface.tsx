@@ -23,6 +23,7 @@ import {
   type CreateTeamValues,
   type TeamCandidate,
 } from "./create-team-dialog";
+import type { DeletedTeam } from "../../core/model/teams";
 import {
   filterTeamRows,
   teamInitials,
@@ -66,6 +67,16 @@ export interface WorkspaceTeamsSurfaceProps {
   readonly onRestore: (teamId: string) => void;
   readonly onRetry: () => void;
   readonly formatDay: (iso: string) => string;
+  /**
+   * The Teams deleted from the workspace, which an Owner or Admin can restore (`Wsp-Var-Teams-Deleted-T`). Leave it
+   * out and the page offers no deleted view.
+   */
+  readonly deleted?: SectionState<readonly DeletedTeam[]>;
+  /** Restores a deleted Team; its people return with it. */
+  readonly onRestoreDeleted?: (teamId: string) => void;
+  readonly onRetryDeleted?: () => void;
+  /** Starts on the deleted view (stories, tests). */
+  readonly initialView?: "teams" | "deleted";
   /** Starts with the create dialog open (stories, tests). */
   readonly initialCreateOpen?: boolean;
   readonly initialMenuTeamId?: string | null;
@@ -379,6 +390,176 @@ function ListSkeleton({ label }: { label: string }) {
   );
 }
 
+const DELETED_COLS =
+  "grid grid-cols-[minmax(0,1fr)_112px] items-center gap-3.5 px-3.5 @min-[480px]:grid-cols-[minmax(0,1fr)_90px_128px] @min-[800px]:grid-cols-[minmax(0,1fr)_190px_90px_120px_128px]";
+
+/**
+ * The Teams an Owner or Admin deleted (`Wsp-Var-Teams-Deleted-T`, `Wsp-Var-Teams-Deleted-Empty-T`): who deleted
+ * each and when, how many people return with it, and Restore. Loading, a failed read with a retry, and none yet
+ * are each said apart from an empty search.
+ */
+function DeletedTeamsList({
+  copy,
+  workspaceName,
+  state,
+  query,
+  pendingIds,
+  formatDay,
+  onRestore,
+  onRetry,
+}: {
+  copy: WorkspaceTeamsCopy;
+  workspaceName: string;
+  state: SectionState<readonly DeletedTeam[]>;
+  query: string;
+  pendingIds: ReadonlySet<string>;
+  formatDay: (iso: string) => string;
+  onRestore: (teamId: string) => void;
+  onRetry: () => void;
+}) {
+  const t = copy.deleted;
+  if (state.status === "loading") return <ListSkeleton label={t.loading} />;
+  if (state.status === "error")
+    return (
+      <div
+        role="alert"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-popover px-4 py-3 dark:bg-card"
+      >
+        <p className="m-0 text-body text-muted-foreground">{t.error}</p>
+        <button type="button" onClick={onRetry} className={cn(BTN_SM, FOCUS)}>
+          {t.retry}
+        </button>
+      </div>
+    );
+  if (state.data.length === 0)
+    return (
+      <section
+        data-f="deleted-empty"
+        aria-labelledby="teams-deleted-empty"
+        className="grid place-items-center p-6"
+      >
+        <div className="flex max-w-[440px] flex-col items-center gap-3 text-center">
+          <span className="box-content grid size-11 place-items-center rounded-[12px] border border-line bg-popover text-muted-foreground dark:bg-card">
+            <Glyph name="archive" />
+          </span>
+          <h3
+            id="teams-deleted-empty"
+            className="m-0 text-lg leading-[1.45] font-[650] text-foreground"
+          >
+            {t.empty.title}
+          </h3>
+          <p className="m-0 text-nav leading-[1.55] text-muted-foreground">
+            {t.empty.text}
+          </p>
+        </div>
+      </section>
+    );
+  const needle = query.trim().toLowerCase();
+  const rows = needle
+    ? state.data.filter((row) => row.name.toLowerCase().includes(needle))
+    : state.data;
+  return (
+    <div
+      data-f="deleted-list"
+      role="table"
+      aria-label={formatCopy(t.tableLabel, { workspace: workspaceName })}
+      className="@container rounded-[12px] border border-line bg-popover dark:bg-card"
+    >
+      <div
+        role="row"
+        className={cn(
+          DELETED_COLS,
+          "box-content h-9 rounded-t-[12px] border-b border-line bg-background text-micro leading-[1.45] font-semibold text-meta-foreground",
+        )}
+      >
+        <span role="columnheader">{t.head.team}</span>
+        <span role="columnheader" className="hidden @min-[800px]:inline">
+          {t.head.deletedBy}
+        </span>
+        <span role="columnheader" className="hidden @min-[480px]:inline">
+          {t.head.people}
+        </span>
+        <span role="columnheader" className="hidden @min-[800px]:inline">
+          {t.head.deletedAt}
+        </span>
+        <span role="columnheader">
+          <span className="sr-only">{copy.page.head.actions}</span>
+        </span>
+      </div>
+      {rows.length === 0 ? (
+        <p
+          data-f="empty"
+          className="m-0 px-4 py-6 text-center text-compact text-meta-foreground"
+        >
+          {t.noMatches}
+        </p>
+      ) : (
+        rows.map((row, index) => (
+          <div
+            key={row.id}
+            data-f="tr"
+            role="row"
+            className={cn(
+              DELETED_COLS,
+              "box-content min-h-16 hover:bg-background",
+              index > 0 && "border-t border-line",
+            )}
+          >
+            <span role="cell" className="flex min-w-0 items-center gap-[11px]">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  TAV,
+                  "size-[34px] bg-state-hover-strong text-meta-foreground",
+                )}
+              >
+                {teamInitials(row.name)}
+              </span>
+              <span className="min-w-0">
+                <b className="block truncate text-body leading-[1.45] font-medium text-muted-foreground">
+                  {row.name}
+                </b>
+                <small className="block truncate text-xs leading-[1.45] text-meta-foreground">
+                  {formatCopy(t.line, { date: formatDay(row.deletedAt) })}
+                </small>
+              </span>
+            </span>
+            <span
+              role="cell"
+              className="hidden min-w-0 truncate text-compact @min-[800px]:block"
+            >
+              {row.deletedByName ?? t.unknownPerson}
+            </span>
+            <span
+              role="cell"
+              className="hidden text-compact @min-[480px]:block"
+            >
+              {formatCopy(copy.page.peopleCount, { count: row.memberCount })}
+            </span>
+            <span
+              role="cell"
+              className="hidden text-compact @min-[800px]:block"
+            >
+              {formatDay(row.deletedAt)}
+            </span>
+            <span role="cell" className="justify-self-end">
+              <button
+                type="button"
+                disabled={pendingIds.has(row.id)}
+                aria-label={formatCopy(t.restoreLabel, { name: row.name })}
+                onClick={() => onRestore(row.id)}
+                className={cn(BTN_SM, FOCUS)}
+              >
+                {pendingIds.has(row.id) ? t.restoring : t.restore}
+              </button>
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 /**
  * The Teams of the workspace inside "Thiết lập workspace" (Final-Teams
  * `danh-sach`, `tao-moi`, `luu-tru`, `khong-co-quyen`): the table with the
@@ -397,6 +578,9 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
   );
   const [archiveId, setArchiveId] = React.useState<string | null>(
     props.initialArchiveTeamId ?? null,
+  );
+  const [view, setView] = React.useState<"teams" | "deleted">(
+    props.initialView ?? "teams",
   );
   const closeMenu = React.useCallback(() => setMenuId(null), []);
 
@@ -484,6 +668,8 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
   const shownArchived = filterTeamRows(archived, query);
   const archiveRow = archiveId ? all.find((row) => row.id === archiveId) : null;
 
+  const showDeleted = canManage && props.deleted != null && view === "deleted";
+
   const head = (
     <div
       data-f="th"
@@ -540,7 +726,50 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
             </button>
           ) : null}
         </div>
-        <div data-f="bar" className="flex items-center gap-2.5">
+        <div data-f="bar" className="flex flex-wrap items-center gap-2.5">
+          {canManage && props.deleted ? (
+            <div
+              data-f="views"
+              role="group"
+              aria-label={copy.deleted.viewLabel}
+              className="flex overflow-hidden rounded-[8px] border border-line-strong"
+            >
+              <button
+                type="button"
+                aria-pressed={view === "teams"}
+                onClick={() => setView("teams")}
+                className={cn(
+                  BTN_SM,
+                  FOCUS,
+                  "rounded-none border-0",
+                  view === "teams" && "bg-state-hover-strong font-semibold",
+                )}
+              >
+                {copy.deleted.inUse}
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === "deleted"}
+                onClick={() => setView("deleted")}
+                className={cn(
+                  BTN_SM,
+                  FOCUS,
+                  "rounded-none border-0",
+                  view === "deleted" && "bg-state-hover-strong font-semibold",
+                )}
+              >
+                {copy.deleted.tab}
+                {props.deleted.status === "ready" ? (
+                  <span
+                    data-f="deleted-count"
+                    className="ml-1 rounded-[5px] bg-state-hover-strong px-[7px] text-xs font-semibold"
+                  >
+                    {props.deleted.data.length}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+          ) : null}
           <label
             data-f="field"
             className="box-border flex h-8 w-[260px] items-center gap-2 rounded-[7px] border border-line-strong bg-popover px-2.5 text-compact text-meta-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-state-selected dark:bg-card"
@@ -556,7 +785,15 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
             />
           </label>
           <span className="flex-1" />
-          {props.teams.status === "ready" ? (
+          {showDeleted ? (
+            props.deleted?.status === "ready" ? (
+              <span data-f="sum" className="text-crumb text-meta-foreground">
+                {formatCopy(copy.deleted.summary, {
+                  count: props.deleted.data.length,
+                })}
+              </span>
+            ) : null
+          ) : props.teams.status === "ready" ? (
             <span data-f="sum" className="text-crumb text-meta-foreground">
               {formatCopy(copy.page.summary, {
                 active: active.length,
@@ -571,7 +808,18 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
           ) : null}
         </div>
 
-        {props.teams.status === "loading" ? (
+        {showDeleted && props.deleted ? (
+          <DeletedTeamsList
+            copy={copy}
+            workspaceName={props.frame.workspaceName}
+            state={props.deleted}
+            query={query}
+            pendingIds={props.pendingIds}
+            formatDay={props.formatDay}
+            onRestore={(teamId) => props.onRestoreDeleted?.(teamId)}
+            onRetry={() => props.onRetryDeleted?.()}
+          />
+        ) : props.teams.status === "loading" ? (
           <ListSkeleton label={copy.list.loading} />
         ) : props.teams.status === "error" ? (
           <div

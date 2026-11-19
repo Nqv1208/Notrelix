@@ -31,6 +31,8 @@ import {
 import {
   describeWorkspaceFailure,
   GUEST_INVITES_OFF_CODE,
+  parseInvitationEntryRefusals,
+  type InvitationEntryRefusalReason,
   PENDING_INVITATION_EXISTS_CODE,
 } from "@notrelix/features-workspace/core";
 import { useFormatters } from "@notrelix/i18n";
@@ -109,6 +111,10 @@ export function MembersPage() {
   const pendingMembers = useIdSet();
   const pendingInvitations = useIdSet();
   const [inviteError, setInviteError] = useState<string | null>(null);
+  // Entries the producer refused, shown under the entry (`kind:targetId`).
+  const [entryRefusals, setEntryRefusals] = useState<
+    ReadonlyMap<string, InvitationEntryRefusalReason>
+  >(() => new Map());
   const [inviteResetKey, setInviteResetKey] = useState(0);
   const hint = useMemo(() => recoveryHint(copy), [copy]);
 
@@ -204,6 +210,7 @@ export function MembersPage() {
   const onInvite = useCallback(
     (input: CreateWorkspaceInvitationInput) => {
       setInviteError(null);
+      setEntryRefusals(new Map());
       // One pending invitation per address (the producer's rule): say so in
       // the member's language before sending. The producer still decides.
       const waiting = pendingInvitationFor(
@@ -248,6 +255,19 @@ export function MembersPage() {
               formatCopy(copy.invitations.alreadyPending, {
                 email: input.email,
               }),
+            );
+            return;
+          }
+          // The producer names each entry it refused: the reason shows under that entry.
+          const refusedEntries = parseInvitationEntryRefusals(error);
+          if (refusedEntries.length > 0) {
+            setEntryRefusals(
+              new Map(
+                refusedEntries.map((entry) => [
+                  `${entry.kind}:${entry.targetId}`,
+                  entry.reason,
+                ]),
+              ),
             );
             return;
           }
@@ -423,6 +443,7 @@ export function MembersPage() {
         pendingInvitationIds={pendingInvitations.ids}
         inviting={createInvitation.isPending}
         inviteError={inviteError}
+        entryRefusals={entryRefusals}
         inviteResetKey={inviteResetKey}
         onChangeRole={onChangeRole}
         onRemove={(member) =>

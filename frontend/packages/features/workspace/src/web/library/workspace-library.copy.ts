@@ -86,6 +86,8 @@ export const en = {
     unpinned_other: "Unpinned {{count}} items.",
     pinFailed: "Some pins couldn't be updated.",
     pinFailedHint: "The pin list shows what was saved. Try again.",
+    pinLimitReached:
+      "You can pin up to 50 items in a workspace. Unpin one to pin another.",
   },
 };
 
@@ -177,6 +179,8 @@ export const vi: WorkspaceLibraryCopy = {
     unpinned_other: "Đã bỏ ghim {{count}} mục.",
     pinFailed: "Không cập nhật được một số ghim.",
     pinFailedHint: "Danh sách ghim hiển thị những gì đã lưu. Hãy thử lại.",
+    pinLimitReached:
+      "Bạn chỉ ghim được tối đa 50 mục trong một không gian làm việc. Hãy bỏ ghim một mục để ghim mục khác.",
   },
 };
 

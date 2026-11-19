@@ -65,6 +65,7 @@ import type {
   WorkspaceMember,
   WorkspaceRole,
 } from "../../core/types/workspace";
+import type { InvitationEntryRefusalReason } from "../../core/model/errors";
 import type { SectionState, SurfaceFormatters } from "../home/home-models";
 import { IdentityMark } from "../shell/shell-link";
 import { formatCopy } from "../shell/shell-models";
@@ -125,6 +126,11 @@ export interface WorkspaceMembersSurfaceProps {
   ) => Promise<JobTitleOutcome>;
   /** Teams and Spaces the inviter may name on an invitation; absent hides the picker. */
   readonly entryOptions?: InvitationEntryOptions | null;
+  /**
+   * Entries the producer refused, by `kind:targetId` (`Wsp-Var-Invites-Entry-Denied`): the reason shows under the
+   * entry it belongs to.
+   */
+  readonly entryRefusals?: ReadonlyMap<string, InvitationEntryRefusalReason>;
   readonly onInvite: (input: CreateWorkspaceInvitationInput) => void;
   /** Invites several addresses typed at once; absent, one address at a time. */
   readonly onInviteMany?: (
@@ -459,12 +465,14 @@ function InvitationEntries({
   options,
   guest,
   entries,
+  refusals,
   onChange,
 }: {
   copy: WorkspaceMembersCopy;
   options: InvitationEntryOptions;
   guest: boolean;
   entries: readonly InvitationEntryInput[];
+  refusals?: ReadonlyMap<string, InvitationEntryRefusalReason>;
   onChange: (entries: readonly InvitationEntryInput[]) => void;
 }) {
   const t = copy.invitations.entries;
@@ -474,6 +482,8 @@ function InvitationEntries({
       (target) => target.id === entry.targetId,
     )?.name ?? "";
   const key = (kind: "team" | "space", id: string) => `${kind}:${id}`;
+  const refusalOf = (entry: InvitationEntryInput) =>
+    refusals?.get(key(entry.kind, entry.targetId));
   const taken = new Set(
     entries.map((entry) => key(entry.kind, entry.targetId)),
   );
@@ -573,6 +583,19 @@ function InvitationEntries({
                 >
                   <X aria-hidden="true" />
                 </Button>
+                {refusalOf(entry) ? (
+                  <p
+                    role="alert"
+                    className="m-0 basis-full text-metadata text-destructive"
+                  >
+                    {formatCopy(
+                      refusalOf(entry) === "not-active"
+                        ? t.notActive
+                        : t.guestTooPrivileged,
+                      { name },
+                    )}
+                  </p>
+                ) : null}
               </li>
             );
           })}
@@ -629,6 +652,7 @@ function InviteForm({
   onInvite,
   onInviteMany,
   entryOptions,
+  entryRefusals,
 }: Pick<
   WorkspaceMembersSurfaceProps,
   | "copy"
@@ -638,6 +662,7 @@ function InviteForm({
   | "onInvite"
   | "onInviteMany"
   | "entryOptions"
+  | "entryRefusals"
 >) {
   const [email, setEmail] = React.useState("");
   const [role, setRole] =
@@ -789,6 +814,7 @@ function InviteForm({
           options={entryOptions}
           guest={role === "guest"}
           entries={initialEntries}
+          refusals={entryRefusals}
           onChange={setEntries}
         />
       ) : null}
@@ -1028,6 +1054,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
         onInvite={props.onInvite}
         onInviteMany={props.onInviteMany}
         entryOptions={props.entryOptions}
+        entryRefusals={props.entryRefusals}
       />
       <section
         aria-labelledby="pending-invitations"

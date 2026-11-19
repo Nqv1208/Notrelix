@@ -3,8 +3,10 @@ import type {
   OperationResponse,
 } from "@notrelix/contracts";
 import {
+  parseDeletedTeam,
   parseTeam,
   parseTeamMember,
+  type DeletedTeam,
   type Team,
   type TeamMember,
   type TeamRole,
@@ -13,6 +15,10 @@ import type { SpacesApiClient } from "./spaces.service";
 
 type CreateTeamBody = OperationRequestBody<"Workspaces.Teams.CreateTeam">;
 type TeamPage = OperationResponse<"Workspaces.Teams.GetWorkspaceTeams", 200>;
+type DeletedTeamRows = OperationResponse<
+  "Workspaces.Teams.GetDeletedTeams",
+  200
+>;
 type RenameTeamBody = OperationRequestBody<"Workspaces.Teams.RenameTeam">;
 type DescribeTeamBody =
   OperationRequestBody<"Workspaces.Teams.UpdateTeamDescription">;
@@ -26,6 +32,7 @@ type ChangeTeamMemberRoleBody =
 export interface TeamsEndpoints {
   workspaces: {
     teams: (workspaceId: string) => string;
+    teamsDeleted: (workspaceId: string) => string;
     team: (workspaceId: string, teamId: string) => string;
     teamDescription: (workspaceId: string, teamId: string) => string;
     teamArchive: (workspaceId: string, teamId: string) => string;
@@ -169,6 +176,16 @@ export function createTeamsService(
       await api.delete<void>(
         `${e.team(workspaceId, teamId)}?expectedVersion=${encodeURIComponent(String(input.expectedVersion))}`,
       );
+    },
+
+    /** The Teams deleted from the Workspace, newest first (Owner or Admin only; others are refused). */
+    async listDeleted(workspaceId: string): Promise<DeletedTeam[]> {
+      const rows = await api.get<DeletedTeamRows | null>(
+        e.teamsDeleted(workspaceId),
+      );
+      return (rows ?? [])
+        .filter((row) => Boolean((row as { id?: string } | null)?.id))
+        .map(parseDeletedTeam);
     },
 
     /** Restores a deleted Team. The producer takes no expected version. */

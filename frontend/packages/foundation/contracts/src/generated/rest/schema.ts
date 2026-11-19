@@ -7233,7 +7233,7 @@ export interface paths {
         put?: never;
         /**
          * Invite a member to workspace
-         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.
+         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again. An invitation whose initial Team or Space entries are refused answers 400 with a ruleCode (Workspaces_Invitation_EntryTargetNotActive when a Team or Space is not an active one of the workspace, Workspaces_Invitation_GuestEntryRoleTooPrivileged when a Guest invitation names a Team lead or Space admin) and an entries list in the problem: each refused entry with its index in the request, its kind (team or space), its targetId and a reason (not-active or guest-too-privileged); nothing is stored and no email is sent.
          */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
@@ -7915,6 +7915,26 @@ export interface paths {
         put?: never;
         /** Create a new team in the workspace */
         post: operations["Workspaces.Teams.CreateTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/teams/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the deleted teams of a workspace
+         * @description For Owners and Admins only (ManageTeams, the right to restore): a Member or Guest is refused with 403 and a person outside the workspace gets 404. Newest deletion first, at most 200. Restore a Team with POST .../teams/{teamId}/restore; its members return with it.
+         */
+        get: operations["Workspaces.Teams.GetDeletedTeams"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12548,6 +12568,19 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             accessLevel?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: uuid */
+            deletedBy?: string | null;
+            deletedByName?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto": {
             /** Format: uuid */
@@ -33026,6 +33059,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Workspaces.Teams.GetDeletedTeams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto"][];
+                };
             };
         };
     };

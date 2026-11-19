@@ -275,6 +275,7 @@ export type {
 
 // ── Teams (WX-TEAM-001) ───────────────────────────────────────────
 export {
+  createUseDeletedTeams,
   createUseTeam,
   createUseTeamMembers,
   createUseTeamsMembers,

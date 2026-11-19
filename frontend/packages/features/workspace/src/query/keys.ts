@@ -52,6 +52,9 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "spaces", spaceId, "members"),
   teams: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "teams"),
+  /** The deleted Teams (Owner or Admin); under `teams`, so any Team write refreshes it. */
+  deletedTeams: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "teams", "deleted"),
   team: (workspaceId: string, teamId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "teams", teamId),
   teamMembers: (workspaceId: string, teamId: string) =>

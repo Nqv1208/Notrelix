@@ -348,4 +348,38 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     );
     expect(screen.getByText(copy.invitations.entries.refused)).toBeTruthy();
   });
+  it("FUI[workspace.members:invite-entry-refused] names each refused entry under it and leaves the others alone", () => {
+    renderMembers(membersInvitationsScenario(), {
+      entryOptions,
+      entryRefusals: new Map([["team:team-erp", "not-active" as const]]),
+    });
+    pick("Nhóm Kỹ sư ERP");
+    pick("Công nghệ");
+
+    const refused = screen.getByRole("alert");
+    expect(refused.textContent).toBe(
+      "Nhóm Kỹ sư ERP isn't active any more, so it can't take this person. Remove it or choose another.",
+    );
+    expect(refused.closest("li")?.textContent).toContain("Nhóm Kỹ sư ERP");
+    expect(
+      within(
+        screen.getByText("Công nghệ").closest("li") as HTMLElement,
+      ).queryByRole("alert"),
+      "the entry that was not refused",
+    ).toBeNull();
+  });
+
+  it("FUI[workspace.members:invite-entry-refused-guest] says a Guest cannot hold the role of a refused entry", () => {
+    renderMembers(membersInvitationsScenario(), {
+      entryOptions,
+      entryRefusals: new Map([
+        ["space:space-cn", "guest-too-privileged" as const],
+      ]),
+    });
+    pick("Công nghệ");
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "A Guest can't have this role in Công nghệ. Choose a lower role or remove it.",
+    );
+  });
 });

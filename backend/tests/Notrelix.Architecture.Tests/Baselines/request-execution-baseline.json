@@ -12775,6 +12775,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.GetDeletedTeamsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.GetDeletedTeamsQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.GetTeamQuery",
     "kind": "Query",
     "principalMarkers": [

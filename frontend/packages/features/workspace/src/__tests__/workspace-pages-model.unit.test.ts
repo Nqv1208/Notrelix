@@ -18,7 +18,10 @@ import {
   parseWorkspaceSettings,
   parseWorkspaceSummary,
 } from "../core/api/workspace.service";
-import { describeWorkspaceFailure } from "../core/model/errors";
+import {
+  describeWorkspaceFailure,
+  parseInvitationEntryRefusals,
+} from "../core/model/errors";
 import {
   countOwners,
   invitationState,
@@ -799,5 +802,41 @@ describe("Library directory model (WX-DIR-001)", () => {
         viewportHeight: 400,
       }).end,
     ).toBe(320);
+  });
+});
+
+describe("parseInvitationEntryRefusals", () => {
+  it("reads each refused entry of an invitation and drops anything it does not know", () => {
+    const refused = parseInvitationEntryRefusals({
+      kind: "unknown",
+      status: 400,
+      details: {
+        errorCode: "business_rule.violation",
+        ruleCode: "Workspaces_Invitation_EntryTargetNotActive",
+        entries: [
+          { index: 1, kind: "team", targetId: "t-1", reason: "not-active" },
+          {
+            index: 3,
+            kind: "space",
+            targetId: "s-1",
+            reason: "guest-too-privileged",
+          },
+          { index: 4, kind: "board", targetId: "b-1", reason: "not-active" },
+          { index: 5, kind: "team", targetId: "t-2", reason: "somethingelse" },
+        ],
+      },
+    });
+
+    expect(refused).toEqual([
+      { kind: "team", targetId: "t-1", reason: "not-active" },
+      { kind: "space", targetId: "s-1", reason: "guest-too-privileged" },
+    ]);
+  });
+
+  it("is empty for a failure that names no entries", () => {
+    expect(
+      parseInvitationEntryRefusals({ details: { errorCode: "x" } }),
+    ).toEqual([]);
+    expect(parseInvitationEntryRefusals(new Error("network"))).toEqual([]);
   });
 });
