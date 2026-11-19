@@ -32,7 +32,7 @@ review_on:
 
 # Use cases: Chat
 
-Dates: this catalog was written on 2026-11-10 as a specification and recounted on 2026-11-13 against the code. A use case is HARDENING only when its backend, mock handler, UI and tests all exist (checked by operation, handler, component and test file); where one is missing the use case stays DEFINED and its State line says what is missing. The owner sets DONE; no agent does.
+Dates: this catalog was written on 2026-11-10 as a specification and recounted on 2026-11-13 against the code. A use case is HARDENING only when its backend, mock handler, UI and tests all exist (checked by operation, handler, component and test file); where one is missing the use case stays DEFINED and its State line says what is missing. DONE is set by the lane pull request that closes the row, after the lead accepts it; the owner tests as a user.
 
 The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capability letters map to the team capabilities CHT-001 to CHT-008 of `docs/workstreams/teams/chat.md`; these are catalog coordinates, not product rule IDs.
 
@@ -59,7 +59,7 @@ The counts are those of the index below (section 2), counted by State on 2026-11
 ### 1.2 Gaps
 
 1. The one BLOCKED row, H11: it waits for the Governance Team visibility fact and the Documents Page header slot (Deferred to 0.2).
-2. The owner tests and sets DONE; the Gap column of the index names what each row still lacks (an owner check, a real e2e, a design record or an axe record).
+2. The lead accepts the row and its lane pull request sets DONE; the Gap column of the index names what each row still lacks (an owner check, a real e2e, a design record or an axe record).
 3. The operations runbook, the performance budgets and the load test (typing and presence included) are not done (see the delivery plan).
 4. A thread's reply count never goes down: a deleted reply keeps its thread sequence and stays counted, so the "N replies" chip counts tombstones.
 5. The category names are read with a separate list call (Chat.ChannelGroups.List) and refreshed on the stale interval, not pushed by a realtime frame.
