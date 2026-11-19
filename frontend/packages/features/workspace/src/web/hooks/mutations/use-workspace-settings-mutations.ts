@@ -94,6 +94,31 @@ export function createUseWorkspaceSettingsMutations({
       },
     });
 
-    return { updateProfile, updateSettings, archive, remove };
+    // The roles of two people changed: the member list, the viewer's own membership and the workspace record
+    // are all read again, so the former owner sees an admin's page at once.
+    const transferOwnership = useMutation({
+      mutationFn: ({
+        newOwnerId,
+        expectedVersion,
+      }: {
+        newOwnerId: string;
+        expectedVersion: number;
+      }) => service.transferOwnership(workspaceId, newOwnerId, expectedVersion),
+      retry: false,
+      onSettled: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.members(workspaceId),
+        });
+        await refreshWorkspace();
+      },
+    });
+
+    return {
+      updateProfile,
+      updateSettings,
+      archive,
+      remove,
+      transferOwnership,
+    };
   };
 }

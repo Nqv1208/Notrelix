@@ -95,6 +95,28 @@ export const en = {
     deleteConfirmAction: "Delete workspace",
     deleting: "Deleting…",
     deletePersonal: "A personal workspace can't be deleted.",
+    transferTitle: "Transfer ownership",
+    transferDescription:
+      "Choose a member to become the owner of {{workspace}}. You become an admin.",
+    transferAction: "Transfer ownership",
+    transferDialogTitle: "Transfer ownership of {{workspace}}",
+    transferPick: "New owner",
+    transferEffect:
+      "{{name}} becomes the owner and can manage the plan and delete the workspace. You become an admin and can't take ownership back yourself.",
+    transferConfirm: "Transfer to {{name}}",
+    transferPending: "Transferring…",
+    transferNoneTitle: "There is nobody to hand the workspace to yet",
+    transferNoneBody:
+      "Only an active member who isn't a guest can become the owner. Add or invite a member first.",
+    transferInvite: "Invite a member",
+    transferConflictTitle: "The member list has changed.",
+    transferConflictBody:
+      "The workspace or the person you chose changed since you opened this. Reload the list and choose again.",
+    transferRejected:
+      "That person can't become the owner. Choose another member.",
+    transferReload: "Reload the list",
+    transferRoleAdmin: "Admin",
+    transferRoleMember: "Member",
   },
   toasts: {
     profileSaved: "Profile saved.",
@@ -108,6 +130,8 @@ export const en = {
     deleteConflict:
       "{{workspace}} changed since you opened this page. Reload and try again.",
     deletePersonal: "A personal workspace can't be deleted.",
+    transferred:
+      "{{name}} is now the owner of {{workspace}}. You are an admin.",
     forbidden: "You don't have permission to change these settings.",
     network: "The server couldn't be reached. Nothing was changed; try again.",
     unknown:
@@ -212,6 +236,28 @@ export const vi: WorkspaceSettingsCopy = {
     deleteConfirmAction: "Xóa không gian làm việc",
     deleting: "Đang xóa…",
     deletePersonal: "Không thể xóa không gian làm việc cá nhân.",
+    transferTitle: "Chuyển quyền sở hữu",
+    transferDescription:
+      "Chọn một thành viên làm Chủ sở hữu mới của {{workspace}}. Bạn trở thành Quản trị.",
+    transferAction: "Chuyển quyền",
+    transferDialogTitle: "Chuyển quyền sở hữu {{workspace}}",
+    transferPick: "Chủ sở hữu mới",
+    transferEffect:
+      "{{name}} thành Chủ sở hữu, quản lý được gói và xóa được không gian làm việc. Bạn thành Quản trị và không tự lấy lại quyền được.",
+    transferConfirm: "Chuyển cho {{name}}",
+    transferPending: "Đang chuyển…",
+    transferNoneTitle: "Chưa có ai để nhận quyền sở hữu",
+    transferNoneBody:
+      "Chỉ thành viên đang hoạt động và không phải Khách mới nhận được quyền Chủ sở hữu. Hãy thêm hoặc mời một thành viên trước.",
+    transferInvite: "Mời thành viên",
+    transferConflictTitle: "Danh sách thành viên đã thay đổi.",
+    transferConflictBody:
+      "Không gian làm việc hoặc người bạn chọn đã thay đổi từ lúc bạn mở hộp thoại. Tải lại danh sách rồi chọn lại.",
+    transferRejected:
+      "Người này không nhận được quyền Chủ sở hữu. Hãy chọn người khác.",
+    transferReload: "Tải lại danh sách",
+    transferRoleAdmin: "Quản trị",
+    transferRoleMember: "Thành viên",
   },
   toasts: {
     profileSaved: "Đã lưu hồ sơ.",
@@ -225,6 +271,8 @@ export const vi: WorkspaceSettingsCopy = {
     deleteConflict:
       "{{workspace}} đã thay đổi từ khi bạn mở trang này. Hãy tải lại rồi thử lại.",
     deletePersonal: "Không thể xóa không gian làm việc cá nhân.",
+    transferred:
+      "{{name}} giờ là Chủ sở hữu của {{workspace}}. Bạn là Quản trị.",
     forbidden: "Bạn không có quyền thay đổi các cài đặt này.",
     network: "Không kết nối được máy chủ. Chưa có gì thay đổi; hãy thử lại.",
     unknown: "Máy chủ gặp sự cố. Chưa có gì thay đổi; hãy thử lại.",

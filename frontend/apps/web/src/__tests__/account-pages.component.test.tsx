@@ -1426,6 +1426,99 @@ describe("AccountWorkspacesPage container", () => {
   });
 });
 
+describe("AccountWorkspacesPage leave states", () => {
+  const owned = [
+    {
+      id: "w-1",
+      name: "Minh An Group",
+      slug: "minh-an",
+      role: "Owner",
+      memberCount: 86,
+      departmentCount: 5,
+      isDefault: true,
+      canLeave: false,
+    },
+    {
+      id: "w-2",
+      name: "Minh An Đà Nẵng",
+      slug: "da-nang",
+      role: "Member",
+      memberCount: 18,
+      departmentCount: null,
+      isDefault: false,
+      canLeave: true,
+    },
+  ];
+
+  it("leads the sole owner to the workspace settings to hand the workspace over, and no other row", async () => {
+    runtime.get = reads({ "/account/workspaces": owned });
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Group"));
+    const links = Array.from(
+      host?.querySelectorAll<HTMLAnchorElement>(
+        'a[aria-label^="Transfer the ownership of"]',
+      ) ?? [],
+    );
+    expect(links).toHaveLength(1);
+    expect(links[0]?.getAttribute("href")).toBe("/workspaces/w-1/settings");
+    expect(text()).toContain("You are the only owner of Minh An Group.");
+    await act(async () => links[0]?.click());
+    expect(runtime.navigate).toHaveBeenCalledWith({
+      to: "/workspaces/w-1/settings",
+    });
+  });
+
+  it("shows a leave in progress: the buttons stay off until the producer answers", async () => {
+    let finish: () => void = () => undefined;
+    runtime.get = reads({ "/account/workspaces": owned });
+    runtime.del = () =>
+      new Promise<null>((resolve) => {
+        finish = () => resolve(null);
+      });
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Đà Nẵng"));
+    const trigger = host?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Leave the workspace Minh An Đà Nẵng…"]',
+    );
+    await act(async () => trigger?.click());
+    const confirm = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ).find((button) => button.textContent === "Leave workspace");
+    await act(async () => confirm?.click());
+    await until(() =>
+      expect(
+        host?.querySelector<HTMLButtonElement>(
+          'button[aria-label="Leave the workspace Minh An Đà Nẵng…"]',
+        )?.disabled,
+      ).toBe(true),
+    );
+    await act(async () => finish());
+  });
+
+  it("says a failed leave in words and keeps the workspace listed", async () => {
+    runtime.get = reads({ "/account/workspaces": owned });
+    runtime.del = () => {
+      throw Object.assign(new Error("offline"), { status: 0 });
+    };
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Đà Nẵng"));
+    const trigger = host?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Leave the workspace Minh An Đà Nẵng…"]',
+    );
+    await act(async () => trigger?.click());
+    const confirm = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ).find((button) => button.textContent === "Leave workspace");
+    await act(async () => confirm?.click());
+    await until(() => expect(text()).toContain("We couldn't do that."));
+    expect(text()).toContain("Minh An Đà Nẵng");
+  });
+});
+
 describe("AccountOutsideWorkspacePage container", () => {
   it("lets a person with no workspace reach Recently deleted and restore one", async () => {
     const post = vi.fn(() => null);

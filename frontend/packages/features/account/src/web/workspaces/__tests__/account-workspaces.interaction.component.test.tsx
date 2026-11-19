@@ -121,6 +121,44 @@ describe("AccountWorkspacesSurface", () => {
     refused.view.unmount();
   });
 
+  it("FUI[account.workspaces:sole-owner] leads the sole owner to the handover and not any other row", () => {
+    const copy = workspacesCopyFixture("en");
+    const onNavigate = vi.fn();
+    const scenario = workspacesSoleOwnerScenario("en");
+    const rows =
+      scenario.workspaces.status === "ready" ? scenario.workspaces.data : [];
+    const { props } = renderWorkspaces({
+      ...scenario,
+      workspaces: {
+        status: "ready",
+        data: rows.map((row, index) =>
+          index === 0
+            ? {
+                ...row,
+                handover: { href: "/workspaces/w-1/settings", onNavigate },
+              }
+            : row,
+        ),
+      },
+    });
+    const links = screen.getAllByRole("link", {
+      name: /Transfer the ownership of/,
+    });
+    expect(links).toHaveLength(1);
+    expect(links[0]?.getAttribute("href")).toBe("/workspaces/w-1/settings");
+    fireEvent.click(links[0]!);
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(copy.transferOwnership)).toBeTruthy();
+    expect(props.onLeave).not.toHaveBeenCalled();
+  });
+
+  it("FUI[account.workspaces:sole-owner] offers no handover link where the member can leave", () => {
+    renderWorkspaces(workspacesDefaultScenario("en"));
+    expect(
+      screen.queryByRole("link", { name: /Transfer the ownership of/ }),
+    ).toBeNull();
+  });
+
   it("FUI[account.workspaces:guest] shows a guest only the role, with no people or department count and no invented notes", () => {
     const copy = workspacesCopyFixture("vi");
     const { view } = renderWorkspaces(workspacesDefaultScenario("vi"));

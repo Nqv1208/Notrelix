@@ -38,6 +38,7 @@ public static class WorkspaceRuleCodes
     // ── Member ────────────────────────────────────────────────────────────
     public const string Workspaces_Member_CannotChangeRoleOfInactive = "Workspaces_Member_CannotChangeRoleOfInactive";
     public const string Workspaces_Member_CannotPromoteInactiveToOwner = "Workspaces_Member_CannotPromoteInactiveToOwner";
+    public const string Workspaces_Member_CannotPromoteGuestToOwner = "Workspaces_Member_CannotPromoteGuestToOwner";
     public const string Workspaces_Member_CannotActivateRemoved = "Workspaces_Member_CannotActivateRemoved";
     public const string Workspaces_Member_CannotRejoinNonRemoved = "Workspaces_Member_CannotRejoinNonRemoved";
     public const string Workspaces_Member_CannotActOnLastOwner = "Workspaces_Member_CannotActOnLastOwner";

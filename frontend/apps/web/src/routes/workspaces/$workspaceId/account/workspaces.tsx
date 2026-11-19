@@ -74,6 +74,16 @@ export function AccountWorkspacesPage() {
                   href: to,
                   onNavigate: () => void router.navigate({ to }),
                 },
+                // The sole Owner hands the workspace over from its settings before leaving.
+                ...(workspace.role === "owner" && !workspace.canLeave
+                  ? {
+                      handover: {
+                        href: `${to}/settings`,
+                        onNavigate: () =>
+                          void router.navigate({ to: `${to}/settings` }),
+                      },
+                    }
+                  : {}),
               };
             }),
           }

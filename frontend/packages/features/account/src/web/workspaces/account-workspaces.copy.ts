@@ -49,9 +49,11 @@ export const en = {
   leaveLabel: "Leave the workspace {{name}}…",
   noteSoleOwner:
     "You are the only owner of {{workspace}}. Hand the ownership to someone else before you leave.",
+  transferOwnership: "Transfer ownership",
+  transferOwnershipLabel: "Transfer the ownership of {{name}}",
   confirm: {
     title: "Leave {{name}}?",
-    text: "You lose access to every department, board and page in {{name}}. Items assigned to you keep their assignee.",
+    text: "You lose access to every department, board and page in {{name}}. You also leave its departments and Teams. Items assigned to you keep their assignee.",
     cancel: "Cancel",
     action: "Leave workspace",
   },
@@ -111,9 +113,11 @@ export const vi: AccountWorkspacesCopy = {
   leaveLabel: "Rời workspace {{name}}…",
   noteSoleOwner:
     "Bạn là chủ sở hữu duy nhất của {{workspace}}. Hãy chuyển quyền chủ sở hữu cho người khác trước khi rời.",
+  transferOwnership: "Chuyển quyền sở hữu",
+  transferOwnershipLabel: "Chuyển quyền sở hữu của {{name}}",
   confirm: {
     title: "Rời {{name}}?",
-    text: "Bạn mất quyền vào mọi phòng ban, board và trang trong {{name}}. Việc đang giao cho bạn vẫn giữ người phụ trách.",
+    text: "Bạn mất quyền vào mọi phòng ban, board và trang trong {{name}}. Bạn cũng rời các phòng ban và nhóm của workspace này. Việc đang giao cho bạn vẫn giữ người phụ trách.",
     cancel: "Hủy",
     action: "Rời workspace",
   },

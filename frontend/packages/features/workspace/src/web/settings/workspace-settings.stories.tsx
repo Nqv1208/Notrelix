@@ -27,6 +27,8 @@ const callbacks = {
   onDelete: noop,
   onReload: noop,
   onRetryDefaults: noop,
+  onTransfer: async () => null,
+  onInviteForTransfer: noop,
 };
 
 export const Default: Story = {

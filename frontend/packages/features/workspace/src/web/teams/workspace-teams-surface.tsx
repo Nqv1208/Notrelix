@@ -273,6 +273,10 @@ function TeamRow({
             />
             <span className="truncate">{row.lead.name}</span>
           </>
+        ) : row.needsLead ? (
+          <span data-f="needs-lead" className="truncate text-warning-text">
+            {copy.page.needsLead}
+          </span>
         ) : null}
       </span>
       <span
@@ -558,6 +562,11 @@ export function WorkspaceTeamsSurface(props: WorkspaceTeamsSurfaceProps) {
                 active: active.length,
                 archived: archived.length,
               })}
+              {active.some((row) => row.needsLead)
+                ? ` · ${formatCopy(copy.page.needsLeadSummary, {
+                    count: active.filter((row) => row.needsLead).length,
+                  })}`
+                : ""}
             </span>
           ) : null}
         </div>

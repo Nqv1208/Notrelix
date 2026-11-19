@@ -36,6 +36,8 @@ function renderSettings(
     onDelete: vi.fn(),
     onReload: vi.fn(),
     onRetryDefaults: vi.fn(),
+    onTransfer: vi.fn(async () => null),
+    onInviteForTransfer: vi.fn(),
     ...overrides,
   };
   renderPureUi(<WorkspaceSettingsSurface {...props} />);
