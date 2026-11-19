@@ -1,7 +1,7 @@
 # Notrelix authenticated web container. Build/runtime bases are digest-pinned
 # and updated centrally through delivery/images.lock.toml.
 ARG NODE_BASE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
-ARG NGINX_BASE_IMAGE=nginx:alpine@sha256:1ed1b0e1d7652937d6cbdaf4018c7b6fc009a7dd6c3047351e2eddda745de43f
+ARG NGINX_BASE_IMAGE=nginx:1.30.7-alpine@sha256:bef154735288bc38d99fac41ae63730684bcc661503673a04a0f9bc526ba8598
 
 FROM ${NODE_BASE_IMAGE} AS base
 RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
