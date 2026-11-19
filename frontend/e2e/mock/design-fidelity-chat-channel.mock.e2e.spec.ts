@@ -156,7 +156,8 @@ for (const mode of ["light", "dark"] as const) {
           size.phone ? 12 : 20,
           0,
         );
-        // The old Pins and Following toggles are gone from the header; the calls stay hidden while the flag is off.
+        // The old Pins and Following toggles are gone from the header. A member of a channel has the voice and video call
+        // buttons in front of the three above (a group call starts from the channel); the three keep their boxes.
         await expect(
           page.locator("main header").getByRole("button", { name: /^Pins$/ }),
         ).toHaveCount(0);
@@ -164,7 +165,7 @@ for (const mode of ["light", "dark"] as const) {
           page
             .locator("main header")
             .getByRole("button", { name: copy.panel.voiceCall }),
-        ).toHaveCount(0);
+        ).toHaveCount(1);
         const list = await box(page, "[data-testid=chat-message-list]");
         expect(list.y - (head.y + head.h)).toBeLessThanOrEqual(1);
       });

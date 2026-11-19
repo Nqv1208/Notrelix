@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MockRealtimeTransport } from "../realtime/mock-realtime-transport";
 import type { RealtimeEnvelope } from "@notrelix/realtime";
-import { actAs, chat, key, storeAs, USERS } from "./chat-test-kit";
+import { actAs, chat, key, SPACES, storeAs, USERS } from "./chat-test-kit";
 
 type Store = ReturnType<typeof storeAs>;
 
@@ -189,5 +189,62 @@ describe("MFB-CHAT-CALLS: one-to-one call state in the mock", () => {
       stops.forEach((stop) => stop());
       transport.dispose();
     }
+  });
+});
+
+describe("MFB-CHAT-CALLS: a group call in a channel in the mock", () => {
+  it("lets a member join a ringing channel call (it turns active), refuses the seat after the cap with 422 call-full and keeps a Guest out", async () => {
+    const store = storeAs("owner");
+    const started = await start(store, SPACES.general, "grp-a");
+    expect(started.status).toBe(201);
+    const id = started.body.call.id;
+    const call = store.chat.calls.get(id)!;
+
+    actAs(store, "member");
+    const joined = await chat(store, "POST", `/calls/${id}/join`, {
+      body: { expectedVersion: 1 },
+    });
+    expect(joined.status).toBe(200);
+    expect(joined.body.call).toMatchObject({ state: "active", version: 2 });
+
+    while (call.participants.length < 25) {
+      call.participants.push({
+        personId: `crowd-${call.participants.length}`,
+        joinedAt: call.startedAt,
+        leftAt: null,
+        audioOn: true,
+        videoOn: false,
+        sharingScreen: false,
+      });
+    }
+    call.version += 1;
+    actAs(store, "admin");
+    const full = await chat(store, "POST", `/calls/${id}/join`, {
+      body: { expectedVersion: call.version },
+    });
+    expect(full.status).toBe(422);
+    expect(full.body.errorCode).toBe("call-full");
+  });
+
+  it("holds 12 people in a video call", async () => {
+    const store = storeAs("owner");
+    const started = await start(store, SPACES.general, "grp-v", "video");
+    const call = store.chat.calls.get(started.body.call.id)!;
+    while (call.participants.length < 12) {
+      call.participants.push({
+        personId: `crowd-${call.participants.length}`,
+        joinedAt: call.startedAt,
+        leftAt: null,
+        audioOn: true,
+        videoOn: true,
+        sharingScreen: false,
+      });
+    }
+    actAs(store, "member");
+    const full = await chat(store, "POST", `/calls/${call.id}/join`, {
+      body: { expectedVersion: call.version },
+    });
+    expect(full.status).toBe(422);
+    expect(full.body.errorCode).toBe("call-full");
   });
 });

@@ -21,6 +21,7 @@ public class AnswerCallCommandHandler(
     IChatDbContext db,
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
+    ISpaceSequenceAllocator sequences,
     IChatCallMediaGateway media,
     IDateTimeProvider clock,
     IOptions<ChatCallOptions> options) : IRequestHandler<AnswerCallCommand, Result<CallJoinDto>>
@@ -29,6 +30,7 @@ public class AnswerCallCommandHandler(
     {
         ChatCallAccess.RequireEnabled(options);
         var userId = requestContext.UserId;
+        await ChatCallAccess.LockSpaceForSeatAsync(db, sequences, request.WorkspaceId, request.CallId, userId, cancellationToken);
         var (call, space, caller) = await ChatCallAccess.MemberCallAsync(db, members, request.WorkspaceId, request.CallId, userId, cancellationToken);
         var now = clock.UtcNow;
         await ChatCallAccess.RequireMayTakePartAsync(db, space, caller, userId, cancellationToken);

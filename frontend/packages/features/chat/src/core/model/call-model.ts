@@ -33,6 +33,22 @@ export function counterpartOf(
   return joined?.personId ?? memberIds.find((id) => id !== viewerId) ?? null;
 }
 
+/** The most people one group or channel call holds: 25 in a voice call, 12 in a video call (the server enforces it; `call-full`). */
+export const CHAT_CALL_CAP: Readonly<Record<ChatCallKind, number>> = {
+  voice: 25,
+  video: 12,
+};
+
+/** The people in the call now (a person who left stays in the list with a `leftAt`). */
+export function joinedParticipants(call: ChatCall) {
+  return call.participants.filter((p) => p.leftAt === null);
+}
+
+/** Whether the call has no seat left. */
+export function isCallFull(call: ChatCall): boolean {
+  return joinedParticipants(call).length >= CHAT_CALL_CAP[call.kind];
+}
+
 /** `m:ss`, or `h:mm:ss` from one hour; a negative or fractional input counts as whole seconds from zero. */
 export function formatCallTimer(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
