@@ -182,11 +182,28 @@ public sealed class InvitationAcceptanceService
 
         if (existingMember is not null)
         {
+            // An invitation never changes the role of an existing Active membership (ChangeRole is the only path), and
+            // its entries apply only where the CURRENT role may hold them: a Guest is not a Team member
+            // (Workspaces_Team_GuestCannotJoin) and holds no Space entry, so none are applied and the audit trail names them.
             invitation.Accept(userId, now);
             if (invitation.InitialEntries.Count > 0)
-                await _initialEntries.ApplyAsync(
-                    invitation.WorkspaceId, userId, existingMember.Id, invitation.InvitedBy,
-                    invitation.InitialEntries, now, ct);
+            {
+                if (Notrelix.Domain.Workspaces.Rules.WorkspaceMemberRules.TakesGuestSeat(existingMember.Role))
+                    await _auditService.RecordAsync(
+                        invitation.WorkspaceId,
+                        userId,
+                        "AcceptInvitationEntriesSkipped",
+                        ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), invitation.WorkspaceId, invitation.WorkspaceId),
+                        AuditMetadata.Create(),
+                        AuditSeverity.Info,
+                        cancellationToken: ct,
+                        change: new AuditChange("workspaces.member", userId, null,
+                            new { skippedEntries = invitation.InitialEntries.Select(e => new { kind = e.Kind.ToString(), e.TargetId, e.Role }) }));
+                else
+                    await _initialEntries.ApplyAsync(
+                        invitation.WorkspaceId, userId, existingMember.Id, invitation.InvitedBy,
+                        invitation.InitialEntries, now, ct);
+            }
 
             return Result<AcceptInvitationResultDto>.Success(
                 ResultFor(workspace, invitation));
