@@ -218,6 +218,14 @@ services:
       - backend-network
       - frontend-network
 
+networks:
+  # Pinned so nginx can trust exactly this network's gateway (172.29.0.1) as the Caddy hop, see
+  # infra/nginx/nginx.prod.conf. Change both together if the CIDR collides with the host.
+  frontend-network:
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
+
 volumes:
   # Shared by the three backend processes so they read one Data Protection key ring.
   dataprotection_keys:
