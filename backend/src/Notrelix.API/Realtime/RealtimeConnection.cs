@@ -22,6 +22,8 @@ public sealed class RealtimeConnection
     private readonly IRealtimeAccessSignalSource? _accessSource;
     private readonly Dictionary<Guid, IAsyncDisposable> _accessHandles = new();
     private readonly IRealtimeEphemeralBus? _ephemeral;
+    private readonly IRealtimePresenceRegistry? _presenceRegistry;
+    private readonly Guid _connectionId = Guid.NewGuid();
     private readonly ILogger _logger;
     private readonly TimeProvider _clock;
     private readonly object _presenceSync = new();
@@ -53,8 +55,10 @@ public sealed class RealtimeConnection
         ILogger logger,
         TimeProvider? clock = null,
         IRealtimeAccessSignalSource? accessSource = null,
-        IRealtimeEphemeralBus? ephemeralBus = null)
+        IRealtimeEphemeralBus? ephemeralBus = null,
+        IRealtimePresenceRegistry? presenceRegistry = null)
     {
+        _presenceRegistry = presenceRegistry;
         _accessSource = accessSource;
         _ephemeral = ephemeralBus;
         _socket = socket;
@@ -541,6 +545,7 @@ public sealed class RealtimeConnection
     {
         // A closing connection tells its spaces the person left (another tab of theirs re-announces within a heartbeat).
         AnnouncePresenceOffline();
+        _presenceRegistry?.Drop(_connectionId);
 
         foreach (var handle in _accessHandles.Values)
         {
@@ -724,6 +729,7 @@ public sealed class RealtimeConnection
             return;
         }
 
+        _presenceRegistry?.Mark(_connectionId, subscription.WorkspaceId, _principal.UserId, state == RealtimePresenceStates.Online);
         PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
             RealtimeEphemeralKinds.Presence, subscription.WorkspaceId, _principal.UserId, state, to));
     }
