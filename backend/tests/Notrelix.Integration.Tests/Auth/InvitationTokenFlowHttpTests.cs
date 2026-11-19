@@ -55,6 +55,7 @@ public sealed class InvitationTokenFlowHttpTests : IAsyncLifetime
         _accountId = account.Id;
         _workspaceSlug = $"acme-{Guid.NewGuid():N}"[..20];
         var workspace = Workspace.Create(account.Id, owner.Id, "Acme Workspace", _workspaceSlug, _now);
+        workspace.UpdateSettings(Domain.Workspaces.Workspaces.WorkspaceSettings.Create(allowGuestInvites: true), owner.Id, _now);
         _workspaceId = workspace.Id;
         var board = Board.Create(account.Id, workspace.Id, owner.Id, "Roadmap", null, _now);
         _boardId = board.Id;
@@ -326,6 +327,32 @@ public sealed class InvitationTokenFlowHttpTests : IAsyncLifetime
             .Role.Should().Be(WorkspaceRole.Guest);
         (await probe.ResourcePermissions.SingleAsync(p => p.ResourceId == _boardId)).SubjectId.Should().Be(user.Id);
         (await probe.WorkspaceInvitations.SingleAsync()).Status.Should().Be(WorkspaceInvitationStatus.Accepted);
+    }
+
+    [Fact]
+    public async Task AcceptWithRegistration_OfAGuestInvitationIssuedBeforeGuestInvitesWereTurnedOff_Is403_AndCreatesNothing()
+    {
+        var token = await SeedBoardInvitationAsync(_boardId);
+        await using (var off = SystemContext())
+        {
+            var workspace = await off.Workspaces.SingleAsync(w => w.Id == _workspaceId);
+            workspace.UpdateSettings(Domain.Workspaces.Workspaces.WorkspaceSettings.Create(allowGuestInvites: false), _ownerId, _now);
+            await off.SaveChangesAsync();
+        }
+        using var factory = CreateFactory();
+        using var client = await CreateCsrfClientAsync(factory);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/v1/invitations/accept-with-registration", new { token, name = "Ivy Invitee", password = Password });
+
+        var text = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden, text);
+        JsonDocument.Parse(text).RootElement.GetProperty("errorCode").GetString().Should().Be("workspace.guest_invites_off");
+        await using var probe = SystemContext();
+        (await probe.Users.CountAsync(u => u.NormalizedEmail == InviteeEmail)).Should().Be(0, "the refused registration is rolled back");
+        (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == _workspaceId)).Should().Be(0);
+        (await probe.ResourcePermissions.CountAsync(p => p.ResourceId == _boardId)).Should().Be(0);
+        (await probe.WorkspaceInvitations.SingleAsync()).Status.Should().Be(WorkspaceInvitationStatus.Pending);
     }
 
     [Fact]

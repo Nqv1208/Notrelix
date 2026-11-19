@@ -3,6 +3,7 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
+using Notrelix.Application.Features.Workspaces.Public.Invitations;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Workspaces.Rules;
 
@@ -26,8 +27,10 @@ public record InviteMemberCommand(
     string Email,
     WorkspaceRole Role,
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest, IGuestInvitationRequest
 {
+    bool IGuestInvitationRequest.IntroducesGuest => Role == WorkspaceRole.Guest;
+
     private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
         InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;
 

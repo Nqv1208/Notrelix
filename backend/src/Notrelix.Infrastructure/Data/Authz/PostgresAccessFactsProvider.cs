@@ -150,6 +150,7 @@ public sealed class PostgresAccessFactsProvider : IAccessFactsProvider
                 CustomRole = ParseCustomRole(NullableString(reader, 21)),
                 AccountSuspended = reader.GetBoolean(22),
                 WorkspaceArchived = reader.GetBoolean(23),
+                GuestInvitesAllowed = reader.GetBoolean(24),
             };
         }
 

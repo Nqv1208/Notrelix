@@ -68,6 +68,7 @@ public sealed class ResourceInvitationIssuerIntegrationTests : IAsyncLifetime
     private async Task<Seed> SeedAsync()
     {
         var stack = await _host.SeedWorkspaceAsync();
+        await _host.SetGuestInvitesAsync(stack, true);
         var issuer = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Issuer");
         var other = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Other manager");
         var boardId = await _host.SeedBoardAsync(stack, "Triển khai ERP Q4");

@@ -77,6 +77,13 @@ public sealed class InvitationAcceptanceService
             return Result<AcceptInvitationResultDto>.Failure(
                 "Cannot accept invitation for an inactive workspace.");
 
+        // AllowGuestInvites is read at acceptance too: an invitation issued while it was on cannot bring a Guest in once it
+        // is off. Thrown before any mutation, so the Guest gets no membership and no entry and the invitation stays Pending
+        // (it works again if the setting comes back on, and its issuer or an admin can still revoke it).
+        if ((invitation.Role == WorkspaceRole.Guest || invitation.IsResourceInvitation) && !workspace.Settings.AllowGuestInvites)
+            throw new ForbiddenException(
+                "Guest invitations are turned off for this workspace.", AccessDenialCodes.GuestInvitesOff);
+
         var accountAdmission = await _accountMembershipFacts.GetAdmissionAsync(
             workspace.AccountId, ct);
 
