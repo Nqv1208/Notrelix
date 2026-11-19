@@ -390,6 +390,8 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/unread`,
     markRead: (workspaceId: string, spaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/read`,
+    markUnreadFrom: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/unread-from`,
     markAllRead: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/read-all`,
     notificationLevel: (workspaceId: string, spaceId: string) =>

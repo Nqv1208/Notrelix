@@ -43,6 +43,22 @@ public class ReadBoundaryTests
         ReadBoundary.Advance(current, target).Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(4, 3)]
+    public void Before_IsTheSequenceJustBeforeTheMessage(long fromSequence, long expected)
+    {
+        ReadBoundary.Before(fromSequence).Should().Be(expected);
+    }
+
+    [Fact]
+    public void Before_RejectsASequenceBelowOne()
+    {
+        var act = () => ReadBoundary.Before(0);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
     [Fact]
     public void AMixedSequenceOfRequests_LeavesTheBoundaryAtTheHighestAcceptedValue()
     {

@@ -242,6 +242,10 @@ export interface ChatMessageListProps {
   readonly onReply?: (message: ChatMessage) => void;
   readonly onOpenThread?: (message: ChatMessage) => void;
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
+  /** Mark unread from this message (UC-CHT-I07): a message of the open channel; without a handler the entry is not offered. */
+  readonly onMarkUnread?: (message: ChatMessage) => void;
+  /** Create a task from this message (UC-CHT-I08): offered on a message with text; without a handler the entry is not offered. */
+  readonly onCreateTask?: (message: ChatMessage) => void;
   readonly onOpenQuote?: (messageId: string) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
@@ -315,6 +319,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
       onOpenThread: (m: ChatMessage) => latest.current.onOpenThread?.(m),
       onTogglePin: (m: ChatMessage, pinned: boolean) =>
         latest.current.onTogglePin?.(m, pinned),
+      onMarkUnread: (m: ChatMessage) => latest.current.onMarkUnread?.(m),
+      onCreateTask: (m: ChatMessage) => latest.current.onCreateTask?.(m),
       onOpenQuote: (id: string) => {
         jumpRef.current(id);
         latest.current.onOpenQuote?.(id);
@@ -1014,6 +1020,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
     onReply: props.onReply ? rowHandlers.onReply : undefined,
     onOpenThread: props.onOpenThread ? rowHandlers.onOpenThread : undefined,
     onTogglePin: props.onTogglePin ? rowHandlers.onTogglePin : undefined,
+    onMarkUnread: props.onMarkUnread ? rowHandlers.onMarkUnread : undefined,
+    onCreateTask: props.onCreateTask ? rowHandlers.onCreateTask : undefined,
     onOpenQuote: props.onOpenQuote ? rowHandlers.onOpenQuote : undefined,
     attachmentsReadOnly: props.attachmentsReadOnly,
   });

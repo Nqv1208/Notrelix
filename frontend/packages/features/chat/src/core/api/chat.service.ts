@@ -120,6 +120,7 @@ export interface ChatEndpoints {
     message: (workspaceId: string, messageId: string) => string;
     unread: (workspaceId: string) => string;
     markRead: (workspaceId: string, spaceId: string) => string;
+    markUnreadFrom: (workspaceId: string, spaceId: string) => string;
     markAllRead: (workspaceId: string) => string;
     notificationLevel: (workspaceId: string, spaceId: string) => string;
     threadReplies: (workspaceId: string, rootId: string) => string;
@@ -663,6 +664,18 @@ export function createChatService(
       return api.put<ChatReadBoundary>(paths.markRead(workspaceId, spaceId), {
         upToSequence,
       });
+    },
+
+    /** `Chat.ReadState.MarkUnreadFrom`: the caller's own boundary moves back to just before the message; never forward. */
+    markUnreadFrom(
+      workspaceId: string,
+      spaceId: string,
+      fromSequence: number,
+    ): Promise<ChatReadBoundary> {
+      return api.put<ChatReadBoundary>(
+        paths.markUnreadFrom(workspaceId, spaceId),
+        { fromSequence },
+      );
     },
 
     /** `Chat.ReadState.MarkAllRead`: returns the unread summary after the change. */

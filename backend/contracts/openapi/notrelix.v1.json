@@ -7699,6 +7699,92 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/unread-from": {
+      "put": {
+        "tags": [
+          "Chat.ReadState"
+        ],
+        "summary": "Mark a space unread from a message",
+        "description": "Moves the caller's own boundary back to just before fromSequence, so that message and every later one count as unread again; the one call that lowers a boundary. A message already unread changes nothing, and a sequence above the space's last one changes nothing. Only the caller's own state moves. A space the caller is not a member of is 404.",
+        "operationId": "Chat.ReadState.MarkUnreadFrom",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "spaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.MarkSpaceUnreadFromRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/chat/me/read-all": {
       "post": {
         "tags": [
@@ -36417,6 +36503,17 @@
         "type": "object",
         "properties": {
           "upToSequence": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Chat.Requests.MarkSpaceUnreadFromRequest": {
+        "type": "object",
+        "properties": {
+          "fromSequence": {
             "type": "integer",
             "format": "int64",
             "nullable": true

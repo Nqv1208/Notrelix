@@ -804,7 +804,48 @@ export function createChatHooks(deps: ChatHookDeps) {
       return true;
     }
 
-    return { markRead, flush, isPending: mutation.isPending };
+    const unreadFromMutation = useMutation({
+      mutationFn: (input: { spaceId: string; fromSequence: number }) =>
+        service.markUnreadFrom(workspaceId, input.spaceId, input.fromSequence),
+      onSuccess: (boundary) => {
+        // The server lowered the boundary: the next read from this client is a real forward move again.
+        sentRef.current.set(boundary.spaceId, boundary.readSequence);
+        queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (summary) =>
+          summary
+            ? {
+                ...summary,
+                spaces: summary.spaces.map((row) =>
+                  row.spaceId === boundary.spaceId
+                    ? { ...row, readSequence: boundary.readSequence }
+                    : row,
+                ),
+              }
+            : summary,
+        );
+      },
+      // The counts and the first unread message come from the server, not from a local guess.
+      onSettled: () => queryClient.invalidateQueries({ queryKey: unreadKey }),
+    });
+
+    /**
+     * Mark unread from a message (UC-CHT-I07): drops what this client queued for the space, so a late read cannot undo it, and
+     * moves the caller's own boundary back. Rejects when the server refuses; the caller shows the notice.
+     */
+    function markUnreadFrom(
+      spaceId: string,
+      fromSequence: number,
+    ): Promise<unknown> {
+      queuedRef.current.delete(spaceId);
+      return unreadFromMutation.mutateAsync({ spaceId, fromSequence });
+    }
+
+    return {
+      markRead,
+      markUnreadFrom,
+      flush,
+      isPending: mutation.isPending,
+      unreadFromPending: unreadFromMutation.isPending,
+    };
   }
 
   /** Mark every channel as read (UC-CHT-D07). */
