@@ -136,8 +136,14 @@ public class InviteMembersCommandHandler : IRequestHandler<InviteMembersCommand,
         return _policy.Evaluate(descriptor, current, facts, probe);
     }
 
-    private static bool TryParseRole(string text, out WorkspaceRole role) =>
-        Enum.TryParse(text, ignoreCase: true, out role) && Enum.IsDefined(role);
+    // Names only: Enum.TryParse also takes numbers ("3"), which would let a client name a role by its ordinal.
+    // The Domain still refuses Owner and Admin whatever the spelling.
+    private static bool TryParseRole(string text, out WorkspaceRole role)
+    {
+        role = default;
+        return Enum.GetNames<WorkspaceRole>().Contains(text, StringComparer.OrdinalIgnoreCase)
+            && Enum.TryParse(text, ignoreCase: true, out role);
+    }
 
     private static bool IsValidEmail(string email) =>
         email.Length is > 0 and <= 256 && EmailRule.Validate(email).IsValid;

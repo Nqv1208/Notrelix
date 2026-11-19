@@ -11,11 +11,13 @@ using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
+using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Interceptors;
+using Notrelix.Infrastructure.Data.Messaging;
 using Notrelix.Infrastructure.Workspaces.Members;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
@@ -90,6 +92,11 @@ public sealed class InviteMembersBulkIntegrationTests : IAsyncLifetime
     private Task<List<string>> InvitedEmailsAsync(OrgStack stack) =>
         _host.ReadAsync(c => c.WorkspaceInvitations.Where(i => i.WorkspaceId == stack.WorkspaceId)
             .Select(i => i.Email).OrderBy(e => e).ToListAsync());
+
+    // The delivery request (the email) is staged as an outbox message together with the invitation row.
+    private Task<int> InvitationDeliveriesAsync(OrgStack stack) =>
+        _host.ReadAsync(c => c.Set<MessagingOutboxMessage>().IgnoreQueryFilters()
+            .CountAsync(m => m.WorkspaceId == stack.WorkspaceId && m.MessageName.Contains("invitation")));
 
     private static string Outcome(MemberInvitationBatchResultDto result, string email) =>
         result.Outcomes.Single(o => o.Email == email).Outcome;
@@ -181,21 +188,67 @@ public sealed class InviteMembersBulkIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AMember_IsForbidden_AnOutsiderIsNotFound_AndNothingIsSent()
+    public async Task AMemberAndAGuest_AreForbiddenForTheWholeBatch_AnOutsiderIsNotFound_AndNothingIsStoredOrSent()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
         var outsider = await _host.AddOutsiderAsync(stack);
 
-        using var asMember = As(stack, member);
-        var asMemberSend = () => OrgTreeTestHost.SendAsync(asMember, Batch(stack, ("ana@example.com", "Member")));
-        await asMemberSend.Should().ThrowAsync<AppForbidden>();
+        foreach (var caller in new[] { member, guest })
+        {
+            using var provider = As(stack, caller);
+            var send = () => OrgTreeTestHost.SendAsync(provider, Batch(stack, ("ana@example.com", "Member"), ("ben@example.com", "Guest")));
+            await send.Should().ThrowAsync<AppForbidden>();
+        }
 
         using var asOutsider = As(stack, outsider);
         var asOutsiderSend = () => OrgTreeTestHost.SendAsync(asOutsider, Batch(stack, ("ana@example.com", "Member")));
         await asOutsiderSend.Should().ThrowAsync<AppNotFound>();
 
         (await InvitedEmailsAsync(stack)).Should().BeEmpty();
+        (await InvitationDeliveriesAsync(stack)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task OwnerAndAdminEntries_AreRefusedOneByOneByTheDomain_NothingIsStoredOrSentForThem_AndTheValidEntriesGoOut()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        await _host.SetGuestInvitesAsync(stack, true);
+        using var asOwner = As(stack, stack.OwnerId);
+
+        var result = await SendAsync(asOwner, Batch(stack,
+            ("owner@example.com", "Owner"), ("ana@example.com", "Member"),
+            ("admin@example.com", "Admin"), ("shouty@example.com", "ADMIN"), ("ben@example.com", "Guest")));
+
+        result.Outcomes.Single(o => o.Email == "owner@example.com").Should().Match<MemberInvitationOutcomeDto>(
+            o => o.Outcome == MemberInvitationOutcomes.Refused && o.Code == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner && o.InvitationId == null, Dump(result));
+        foreach (var admin in new[] { "admin@example.com", "shouty@example.com" })
+            result.Outcomes.Single(o => o.Email == admin).Should().Match<MemberInvitationOutcomeDto>(
+                o => o.Outcome == MemberInvitationOutcomes.Refused && o.Code == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin && o.InvitationId == null, Dump(result));
+        Outcome(result, "ana@example.com").Should().Be(MemberInvitationOutcomes.Sent);
+        Outcome(result, "ben@example.com").Should().Be(MemberInvitationOutcomes.Sent);
+
+        (await InvitedEmailsAsync(stack)).Should().Equal("ana@example.com", "ben@example.com");
+        (await InvitationDeliveriesAsync(stack)).Should().Be(2, "only the two valid entries stage an email");
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData("2")]
+    [InlineData("3")]
+    public async Task ARoleGivenAsANumber_IsInvalid_NothingIsStoredOrSent_AndTheValidEntryGoesOut(string numericRole)
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        using var asOwner = As(stack, stack.OwnerId);
+
+        var result = await SendAsync(asOwner, Batch(stack, ("num@example.com", numericRole), ("ana@example.com", "Member")));
+
+        Outcome(result, "num@example.com").Should().Be(MemberInvitationOutcomes.Invalid);
+        Outcome(result, "ana@example.com").Should().Be(MemberInvitationOutcomes.Sent);
+        (await InvitedEmailsAsync(stack)).Should().Equal("ana@example.com");
+        (await InvitationDeliveriesAsync(stack)).Should().Be(1);
     }
 
     [Fact]

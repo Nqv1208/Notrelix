@@ -83,4 +83,43 @@ public class InviteMembersCommandHandlerTests
         result.Data!.Outcomes.Should().ContainSingle();
         _single.Verify(h => h.Handle(It.IsAny<InviteMemberCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task OwnerAndAdminEntries_AreRefusedByTheDomainOneByOne_AndTheValidEntriesStillGo()
+    {
+        var sentId = Guid.NewGuid();
+        _single.Setup(h => h.Handle(It.IsAny<InviteMemberCommand>(), It.IsAny<CancellationToken>()))
+            .Returns((InviteMemberCommand c, CancellationToken _) => c.Role switch
+            {
+                WorkspaceRole.Owner => throw new DomainRuleException(WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner, "no"),
+                WorkspaceRole.Admin => throw new DomainRuleException(WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin, "no"),
+                _ => Task.FromResult(Result<Guid>.Success(sentId)),
+            });
+
+        var result = await Sut(AccessDecision.Allow()).Handle(new InviteMembersCommand(_workspaceId,
+            [new("owner@x.com", "Owner"), new("a@x.com", "Member"), new("admin@x.com", "admin"), new("g@x.com", "Guest")]),
+            CancellationToken.None);
+
+        var rows = result.Data!.Outcomes.ToDictionary(o => o.Email);
+        rows["owner@x.com"].Should().Match<MemberInvitationOutcomeDto>(o => o.Outcome == MemberInvitationOutcomes.Refused && o.Code == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsOwner && o.InvitationId == null);
+        rows["admin@x.com"].Should().Match<MemberInvitationOutcomeDto>(o => o.Outcome == MemberInvitationOutcomes.Refused && o.Code == WorkspaceRuleCodes.Workspaces_Invitation_CannotInviteAsAdmin && o.InvitationId == null);
+        rows["a@x.com"].Outcome.Should().Be(MemberInvitationOutcomes.Sent);
+        rows["g@x.com"].Outcome.Should().Be(MemberInvitationOutcomes.Sent);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData("2")]
+    [InlineData("3")]
+    [InlineData(" 3 ")]
+    [InlineData("-1")]
+    [InlineData("Member,Guest")]
+    public async Task ARoleGivenAsANumberOrAList_IsInvalid_AndNeverReachesTheInvitation(string role)
+    {
+        var result = await Sut(AccessDecision.Allow()).Handle(new InviteMembersCommand(_workspaceId, [new("n@x.com", role)]), CancellationToken.None);
+
+        result.Data!.Outcomes.Should().ContainSingle().Which.Outcome.Should().Be(MemberInvitationOutcomes.Invalid);
+        _single.Verify(h => h.Handle(It.IsAny<InviteMemberCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
