@@ -50,11 +50,11 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | F      | CHT-006 Threads, replies and pins                                 | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
 | G      | CHT-007 Mentions, reactions, attachments and notification handoff | 9         | 0       | 0            | 0           | 1         | 8    | 0       |
 | H      | CHT-008 Access, moderation, retention, search and hardening       | 10        | 0       | 0            | 0           | 5         | 5    | 0       |
-| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 4         | 0    | 0       |
+| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 3         | 1    | 0       |
 | J      | CHT-010 Calls                                                     | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
-|        | Total                                                             | 84        | 8       | 0            | 0           | 10        | 66   | 0       |
+|        | Total                                                             | 84        | 8       | 0            | 0           | 9         | 67   | 0       |
 
-The counts are those of the index below (section 2), counted by State on 2026-11-19: 66 DONE, 10 HARDENING, 8 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 (screen share, Phase 6, SYS-ADR-002). HARDENING rows: G03, H03, H04, H05, H09, H10, I01, I03, I04 and I05; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
+The counts are those of the index below (section 2), counted by State on 2026-11-19: 67 DONE, 9 HARDENING, 8 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 (screen share, Phase 6, SYS-ADR-002). HARDENING rows: G03, H03, H04, H05, H09, H10, I01, I04 and I05; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
 
 ### 1.2 Gaps
 
@@ -147,7 +147,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-H10 | Link a channel to a Board, Page or Team | H | Channel manager | yes | yes | no | no | HARDENING | No real e2e, design record, owner check or axe record. A Team cannot be linked yet (Governance publishes no Team visibility fact); the Discuss entry is wired on the Board header only, the Page header has no slot for it (see Readings). |
 | UC-CHT-I01 | Send several images as a gallery | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. The live attachment frame does not carry width and height yet; image loaders do not read through signed URLs yet. |
 | UC-CHT-I02 | Show upload progress, cancel and retry | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
-| UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No zoom or touch swipe. |
+| UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | DONE | Zoom (wheel, double click, pinch, + - 0 keys) and swipe built; tests chat-attachments.component.test.tsx, image-zoom-model.unit.test.ts. |
 | UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. Not in threads yet; the Ogg duration comes from the client. |
 | UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No playback speed. |
 | UC-CHT-I06 | Send a sticker or GIF | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
@@ -1253,7 +1253,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
 - Evidence: FE ImageViewer and ViewerImage (frontend/packages/features/chat/src/web/components/chat-image-gallery.tsx): one image at a time, previous and next buttons and the arrow keys, the position as n of total (polite live region), download, Escape and the backdrop close · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests `frontend/packages/features/chat/src/__tests__/chat-attachments.component.test.tsx` · Real e2e none yet
-- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; zoom and swipe on touch are not built.
+- State: DONE (2026-11-19) — Built to the use case and the Chat-Media board: one image at a time with previous and next, the arrow keys, the position, download and close, plus zoom (wheel, double click, pinch, the + - 0 keys, up to 4x, a drag pans a zoomed image) and a touch swipe to the next or previous image when the image is not zoomed. The zoom adds no new chrome to the drawn viewer. Tests: `frontend/packages/features/chat/src/__tests__/chat-attachments.component.test.tsx` (zoom and swipe), `frontend/packages/features/chat/src/__tests__/image-zoom-model.unit.test.ts`.
 
 ### UC-CHT-I04 Record and send a voice message
 

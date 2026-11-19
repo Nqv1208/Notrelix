@@ -1,8 +1,10 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type PointerEvent,
 } from "react";
 import {
   ChevronLeft,
@@ -20,6 +22,14 @@ import {
   DialogTitle,
 } from "@notrelix/ui-web";
 import { imageBoxRatio } from "../../core/model/attachment-model";
+import {
+  MAX_ZOOM,
+  MIN_ZOOM,
+  clampZoom,
+  pinchZoom,
+  swipeStep,
+  wheelZoom,
+} from "../../core/model/image-zoom-model";
 import type { ChatAttachment } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
@@ -288,6 +298,7 @@ export function ImageViewer({
             workspaceId={workspaceId}
             hooks={hooks}
             copy={copy}
+            onSwipe={(step) => index !== null && go(index + step)}
           />
         ) : null}
         <div className="flex items-center justify-between gap-2">
@@ -332,20 +343,109 @@ function ViewerImage({
   workspaceId,
   hooks,
   copy,
-}: GalleryShared & { readonly attachment: ChatAttachment }) {
+  onSwipe,
+}: GalleryShared & {
+  readonly attachment: ChatAttachment;
+  /** A swipe of the fitted image: -1 for the previous image, 1 for the next. */
+  readonly onSwipe: (step: -1 | 1) => void;
+}) {
   const { url, isError } = useAttachmentImageUrl(
     hooks,
     workspaceId,
     messageId,
     attachment.id,
   );
+  const [scale, setScale] = useState(MIN_ZOOM);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef({
+    startX: 0,
+    startY: 0,
+    pinchDistance: 0,
+    pinchScale: MIN_ZOOM,
+  });
+  const zoomTo = (next: number) => {
+    const clamped = clampZoom(next);
+    setScale(clamped);
+    if (clamped === MIN_ZOOM) setPan({ x: 0, y: 0 });
+  };
+  const distance = () => {
+    const [a, b] = [...pointers.current.values()];
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+  };
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    pointers.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    gesture.current.startX = event.clientX;
+    gesture.current.startY = event.clientY;
+    if (pointers.current.size === 2) {
+      gesture.current.pinchDistance = distance();
+      gesture.current.pinchScale = scale;
+    }
+  }
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const previous = pointers.current.get(event.pointerId);
+    if (!previous) return;
+    pointers.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    if (pointers.current.size === 2) {
+      zoomTo(
+        pinchZoom(
+          gesture.current.pinchScale,
+          gesture.current.pinchDistance,
+          distance(),
+        ),
+      );
+    } else if (scale > MIN_ZOOM) {
+      setPan((current) => ({
+        x: current.x + event.clientX - previous.x,
+        y: current.y + event.clientY - previous.y,
+      }));
+    }
+  }
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (!pointers.current.delete(event.pointerId)) return;
+    if (pointers.current.size > 0) return;
+    const step = swipeStep(
+      event.clientX - gesture.current.startX,
+      event.clientY - gesture.current.startY,
+      scale,
+    );
+    if (step !== 0) onSwipe(step);
+  }
   if (url) {
     return (
-      <img
-        src={url}
-        alt={attachment.fileName}
-        className="mx-auto block max-h-[70vh] max-w-full rounded-lg object-contain"
-      />
+      <div
+        data-testid="chat-viewer-stage"
+        data-zoom={scale.toFixed(2)}
+        className="touch-none overflow-hidden rounded-lg"
+        onWheel={(event) => zoomTo(wheelZoom(scale, event.deltaY))}
+        onDoubleClick={() => zoomTo(scale > MIN_ZOOM ? MIN_ZOOM : 2)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onKeyDown={(event) => {
+          if (event.key === "+" || event.key === "=") zoomTo(scale * 1.25);
+          else if (event.key === "-") zoomTo(scale / 1.25);
+          else if (event.key === "0") zoomTo(MIN_ZOOM);
+        }}
+      >
+        <img
+          src={url}
+          alt={attachment.fileName}
+          draggable={false}
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+            cursor: scale >= MAX_ZOOM ? "zoom-out" : "zoom-in",
+          }}
+          className="mx-auto block max-h-[70vh] max-w-full rounded-lg object-contain transition-transform duration-100 motion-reduce:transition-none"
+        />
+      </div>
     );
   }
   return (
