@@ -779,6 +779,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
         onQueryChange={setPaletteQuery}
+        search={
+          paletteSearch.status === "ready"
+            ? undefined
+            : { status: paletteSearch.status, onRetry: paletteSearch.retry }
+        }
         workspace={paletteData.workspace}
         work={paletteData.work}
         docs={paletteData.docs}
