@@ -13,6 +13,7 @@ import {
   Copy,
   EyeOff,
   Link2,
+  ListPlus,
   MessageSquareText,
   MessagesSquare,
   MoreHorizontal,
@@ -125,6 +126,8 @@ export interface ChatMessageRowProps {
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   /** Mark unread from this message (UC-CHT-I07): a message of the open channel; without a handler the entry is not offered. */
   readonly onMarkUnread?: (message: ChatMessage) => void;
+  /** Create a task from this message (UC-CHT-I08): offered on a message with text; without a handler the entry is not offered. */
+  readonly onCreateTask?: (message: ChatMessage) => void;
   readonly onOpenQuote?: (messageId: string) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
@@ -221,6 +224,7 @@ function ChatMessageRowBase({
   onOpenThread,
   onTogglePin,
   onMarkUnread,
+  onCreateTask,
   onOpenQuote,
   attachmentsReadOnly = false,
 }: ChatMessageRowProps) {
@@ -367,6 +371,7 @@ function ChatMessageRowBase({
         onOpenThread,
         onTogglePin,
         onMarkUnread,
+        onCreateTask,
       })
     : [];
   const replyHandler = live && onReply ? () => onReply(message) : undefined;
@@ -817,6 +822,7 @@ export function buildMenuItems({
   onOpenThread,
   onTogglePin,
   onMarkUnread,
+  onCreateTask,
 }: {
   readonly message: ChatMessage;
   readonly copy: ChatCopy;
@@ -830,6 +836,8 @@ export function buildMenuItems({
   readonly onOpenThread?: (message: ChatMessage) => void;
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   readonly onMarkUnread?: (message: ChatMessage) => void;
+  /** Create a task from this message (UC-CHT-I08): offered on a message with text; without a handler the entry is not offered. */
+  readonly onCreateTask?: (message: ChatMessage) => void;
 }): MessageMenuItem[] {
   const items: MessageMenuItem[] = [];
   if (onOpenThread) {
@@ -883,6 +891,14 @@ export function buildMenuItems({
       label: copy.toolbar.markUnread,
       icon: EyeOff,
       onSelect: () => onMarkUnread(message),
+    });
+  }
+  if (onCreateTask && content.trim().length > 0) {
+    items.push({
+      key: "createTask",
+      label: copy.toolbar.createTask,
+      icon: ListPlus,
+      onSelect: () => onCreateTask(message),
     });
   }
   if (isOwn && onDelete) {

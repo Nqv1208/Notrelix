@@ -34,6 +34,7 @@ export function BoardCardCreate({
   boards,
   initialBoardId,
   initialTitle,
+  initialDescription,
   assigneeId,
   onCreated,
 }: {
@@ -44,6 +45,8 @@ export function BoardCardCreate({
   readonly boards: readonly BoardCardCreateBoard[];
   readonly initialBoardId?: string | null;
   readonly initialTitle?: string;
+  /** Markdown the description starts with (a task made from a chat message carries its text and a link back). */
+  readonly initialDescription?: string;
   readonly assigneeId?: string | null;
   readonly onCreated?: (result: {
     readonly boardId: string;
@@ -129,6 +132,7 @@ export function BoardCardCreate({
       defaultGroupId={loaded ? (groups[0]?.id ?? "") : ""}
       defaultStatusId={null}
       defaultTitle={initialTitle}
+      defaultDescription={initialDescription}
       defaultAssigneeIds={defaultAssigneeIds}
       onCreated={onCreated}
     />
