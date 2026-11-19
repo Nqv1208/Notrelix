@@ -273,8 +273,8 @@ public sealed class Call : AggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
-    /// A participant's own microphone, camera and screen share. A voice call carries no camera and no screen (the media token grants only the
-    /// microphone there). Only one person shares at a time: starting a share while another person shares is refused unless
+    /// A participant's own microphone, camera and screen share. A voice call carries no camera (the media token grants the microphone and the
+    /// screen sources there, as Discord's voice channels do) but a screen may be shared in it. Only one person shares at a time: starting a share while another person shares is refused unless
     /// <paramref name="replaceShare"/> says the caller confirmed it, and then the other person's share ends in the same change. Same values
     /// change nothing (false).
     /// </summary>
@@ -286,8 +286,6 @@ public sealed class Call : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.CallNotParticipant, "You are not in this call.");
         if (videoOn && Kind == CallKind.Voice)
             throw new BusinessRuleException(ChatRuleCodes.CallMediaNotAllowed, "A voice call carries no camera.");
-        if (sharingScreen && Kind == CallKind.Voice)
-            throw new BusinessRuleException(ChatRuleCodes.CallMediaNotAllowed, "A voice call carries no screen share.");
 
         var changed = false;
         if (sharingScreen && !participant.SharingScreen)

@@ -304,7 +304,7 @@ describe("useChatCalls: sharing the screen", () => {
     expect(t.sharersOnServer()).toEqual([]);
   });
 
-  it("offers no share where the browser has no screen picker, and in a voice call asks for nothing", async () => {
+  it("offers no share where the browser has no screen picker", async () => {
     const bare: ChatCallMediaConnector = async (options) => {
       queueMicrotask(() => options.onState("connected"));
       return {
@@ -319,12 +319,23 @@ describe("useChatCalls: sharing the screen", () => {
     act(() => t.current().startScreenShare());
     expect(t.current().current?.screen).toBe("off");
     expect(t.sharersOnServer()).toEqual([]);
+  });
 
+  it("shares the screen in a voice call too, with the camera still off", async () => {
     const media = fakeMedia();
     const voice = await setup(media.connector, "voice");
+    await waitFor(() =>
+      expect(voice.current().current?.screenSupported).toBe(true),
+    );
+
     act(() => voice.current().startScreenShare());
-    expect(media.shares).toEqual([]);
-    expect(voice.sharersOnServer()).toEqual([]);
+    await waitFor(() => expect(voice.current().current?.screen).toBe("on"));
+    expect(media.shares).toEqual([true]);
+    expect(voice.sharersOnServer()).toEqual([voice.viewerId]);
+    expect(voice.current().current?.videoOn).toBe(false);
+
+    act(() => voice.current().stopScreenShare());
+    await waitFor(() => expect(voice.sharersOnServer()).toEqual([]));
   });
 });
 
@@ -520,7 +531,7 @@ describe("the group call stage with a screen share", () => {
     expect(d.startScreenShare).toHaveBeenCalledWith(true);
   });
 
-  it("offers the control in a group video call, and not in a group voice call", () => {
+  it("offers the control in a group voice call as in a group video call", () => {
     const { unmount } = render(
       stage(controller(), held({}, groupCall(null)), en, { name: "erp" }),
     );
@@ -535,8 +546,21 @@ describe("the group call stage with a screen share", () => {
       }),
     );
     expect(
-      screen.queryByRole("button", { name: en.calls.shareStart }),
-    ).toBeNull();
+      screen.getByRole("button", { name: en.calls.shareStart }),
+    ).toBeTruthy();
+  });
+
+  it("shows a shared screen in a group voice call as the main tile over the voice cards, without camera pictures", () => {
+    render(
+      stage(controller(), held({}, groupCall("quan", "voice")), en, {
+        name: "erp",
+      }),
+    );
+
+    expect(screen.getByTestId("chat-call-share")).toBeTruthy();
+    const strip = screen.getByTestId("chat-call-grid");
+    expect(within(strip).getAllByTestId("chat-call-tile")).toHaveLength(3);
+    expect(strip.querySelector("video")).toBeNull();
   });
 });
 
@@ -630,7 +654,7 @@ describe("the call stage with a screen share", () => {
     expect(c.stopScreenShare).toHaveBeenCalledTimes(1);
   });
 
-  it("offers the share control in a video call only, and starts a share from it", () => {
+  it("offers the share control in a video call and in a voice call, and starts a share from it", () => {
     const c = controller();
     const { unmount } = render(stage(c, held()));
     const button = screen.getByRole("button", { name: en.calls.shareStart });
@@ -639,10 +663,51 @@ describe("the call stage with a screen share", () => {
     expect(c.startScreenShare).toHaveBeenCalledWith(false);
     unmount();
 
-    render(stage(controller(), held({}, callWith([], "voice"))));
+    const voice = controller();
+    render(stage(voice, held({}, callWith([], "voice"))));
+    fireEvent.click(screen.getByRole("button", { name: en.calls.shareStart }));
+    expect(voice.startScreenShare).toHaveBeenCalledWith(false);
     expect(
-      screen.queryByRole("button", { name: en.calls.shareStart }),
+      screen.queryByRole("button", { name: en.calls.cameraOn }),
     ).toBeNull();
+  });
+
+  it("shows a shared screen in a one-to-one voice call as the main tile over the two voice cards, and returns when it stops", () => {
+    const { rerender } = render(
+      stage(
+        controller(),
+        held({}, callWith([{}, { sharingScreen: true }], "voice")),
+      ),
+    );
+
+    expect(screen.getByTestId("chat-call-share").textContent).toContain(
+      "Trần Minh Quân is sharing their screen",
+    );
+    const strip = screen.getByTestId("chat-call-grid");
+    expect(within(strip).getAllByTestId("chat-call-tile")).toHaveLength(2);
+    expect(strip.querySelector("video")).toBeNull();
+
+    rerender(stage(controller(), held({}, callWith([], "voice"))));
+    expect(screen.queryByTestId("chat-call-share")).toBeNull();
+    expect(screen.getByTestId("chat-call-halo")).toBeTruthy();
+  });
+
+  it("shows the sharer of a one-to-one voice call the own-share card with the stop button", () => {
+    const c = controller();
+    render(
+      stage(
+        c,
+        held({ screen: "on" }, callWith([{ sharingScreen: true }], "voice")),
+      ),
+    );
+
+    fireEvent.click(
+      within(screen.getByTestId("chat-call-share-own")).getByRole("button", {
+        name: en.calls.shareStop,
+      }),
+    );
+    expect(c.stopScreenShare).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("chat-call-share")).toBeNull();
   });
 
   it("hides the control where the browser cannot share (a phone), and while the browser's picker is open disables it", () => {
