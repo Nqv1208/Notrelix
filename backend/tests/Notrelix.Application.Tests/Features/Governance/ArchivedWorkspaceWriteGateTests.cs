@@ -33,7 +33,7 @@ public sealed class ArchivedWorkspaceWriteGateTests
 
         decision.Kind.Should().Be(AccessDecisionKind.Forbidden);
         decision.Code.Should().Be(AccessDenialCodes.WorkspaceArchived).And.Be("workspace.archived");
-        decision.Message.Should().Be("This workspace is archived. It is read-only until an owner or admin unarchives it.");
+        decision.Message.Should().Be("This workspace is archived. It is read-only until an owner unarchives it.");
     }
 
     [Fact]
