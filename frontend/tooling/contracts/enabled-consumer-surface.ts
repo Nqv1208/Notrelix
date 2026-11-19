@@ -4832,6 +4832,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Move a channel's read boundary forward",
     ],
     [
+      "Chat.ReadState.MarkUnreadFrom",
+      "PUT",
+      "/workspaces/{workspaceId}/chat/spaces/{spaceId}/unread-from",
+      true,
+      "Mark a space unread from a message",
+    ],
+    [
       "Chat.ReadState.MarkAllRead",
       "POST",
       "/workspaces/{workspaceId}/chat/me/read-all",

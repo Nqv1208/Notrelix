@@ -66,6 +66,9 @@ public record EditMessageRequest(string? Content, long? ExpectedVersion, IReadOn
 /// <summary>The sequence the person has read up to in a space (UC-CHT-D02). A lower sequence than the boundary changes nothing.</summary>
 public record MarkSpaceReadRequest(long? UpToSequence);
 
+/// <summary>The sequence of the message to start the unread run from (UC-CHT-I07): that message and every later one become unread for the caller.</summary>
+public record MarkSpaceUnreadFromRequest(long? FromSequence);
+
 /// <summary>
 /// How the person is notified in a space: all, mentions or none (UC-CHT-D06). With none, an optional until time makes it a
 /// timed mute (UC-CHT-D05). An until time with another level is refused.

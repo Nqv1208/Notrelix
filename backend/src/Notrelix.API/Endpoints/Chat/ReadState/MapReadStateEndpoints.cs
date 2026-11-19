@@ -2,6 +2,7 @@ using Notrelix.API.Contracts.Chat.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.ReadState.Commands.MarkAllRead;
 using Notrelix.Application.Features.Chat.ReadState.Commands.MarkSpaceRead;
+using Notrelix.Application.Features.Chat.ReadState.Commands.MarkSpaceUnreadFrom;
 using Notrelix.Application.Features.Chat.ReadState.Commands.SetNotificationLevel;
 using Notrelix.Application.Features.Chat.ReadState.Queries.GetUnreadSummary;
 
@@ -27,6 +28,12 @@ public static class MapReadStateEndpoints
             .WithName("Chat.ReadState.MarkRead")
             .WithSummary("Move the read boundary of a space forward")
             .WithDescription("Idempotent. A sequence at or below the boundary changes nothing; a sequence above the space's last sequence is read to the end. Returns the boundary after the call. A space the caller is not a member of is 404.")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound);
+
+        group.MapWorkspacePut("/spaces/{spaceId:guid}/unread-from", MarkUnreadFromAsync)
+            .WithName("Chat.ReadState.MarkUnreadFrom")
+            .WithSummary("Mark a space unread from a message")
+            .WithDescription("Moves the caller's own boundary back to just before fromSequence, so that message and every later one count as unread again; the one call that lowers a boundary. A message already unread changes nothing, and a sequence above the space's last one changes nothing. Only the caller's own state moves. A space the caller is not a member of is 404.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound);
 
         group.MapWorkspacePost("/me/read-all", MarkAllReadAsync)
@@ -56,6 +63,15 @@ public static class MapReadStateEndpoints
             return EndpointExtensions.InvalidInput("upToSequence is required.");
 
         var result = await sender.Send(new MarkSpaceReadCommand(workspaceId, spaceId, upToSequence));
+        return result.ToApiResult();
+    }
+
+    private static async Task<IResult> MarkUnreadFromAsync(Guid workspaceId, Guid spaceId, MarkSpaceUnreadFromRequest body, ISender sender)
+    {
+        if (body.FromSequence is not { } fromSequence)
+            return EndpointExtensions.InvalidInput("fromSequence is required.");
+
+        var result = await sender.Send(new MarkSpaceUnreadFromCommand(workspaceId, spaceId, fromSequence));
         return result.ToApiResult();
     }
 

@@ -1453,6 +1453,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/unread-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark a space unread from a message
+         * @description Moves the caller's own boundary back to just before fromSequence, so that message and every later one count as unread again; the one call that lowers a boundary. A message already unread changes nothing, and a sequence above the space's last one changes nothing. Only the caller's own state moves. A space the caller is not a member of is 404.
+         */
+        put: operations["Chat.ReadState.MarkUnreadFrom"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/me/read-all": {
         parameters: {
             query?: never;
@@ -8432,6 +8452,10 @@ export interface components {
         "Notrelix.API.Contracts.Chat.Requests.MarkSpaceReadRequest": {
             /** Format: int64 */
             upToSequence?: number | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.MarkSpaceUnreadFromRequest": {
+            /** Format: int64 */
+            fromSequence?: number | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.MarkThreadReadRequest": {
             /** Format: int64 */
@@ -17400,6 +17424,60 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MarkSpaceReadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.ReadState.MarkUnreadFrom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MarkSpaceUnreadFromRequest"];
             };
         };
         responses: {

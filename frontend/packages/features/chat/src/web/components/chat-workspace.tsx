@@ -117,10 +117,16 @@ const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
 import { ChatHeader } from "./chat-header";
 import { ChatHighlightProvider } from "./chat-highlight-context";
 import { useChannelTimeline } from "./use-channel-timeline";
+import {
+  taskDraftFromMessage,
+  type ChatTaskDraft,
+} from "../../core/model/task-draft";
 import { ChatLinkAndRedialProvider } from "./chat-call-redial";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
 import { ChatRateLimitNotice } from "./chat-rate-limit";
+import { useCategoryManagement } from "./use-category-management";
+import type { ChatCollapseStore } from "./use-collapsed-groups";
 import {
   ChatSidebar,
   type ChannelListStatus,
@@ -206,6 +212,11 @@ export interface ChatWorkspaceProps {
   }) => string;
   readonly linkedSequence?: number | null;
   /**
+   * Create a task from a message (UC-CHT-I08). The host owns Work Management, so it opens its create dialog with the draft (title,
+   * description with a link back, the Board the channel is linked to or null); without it the Create task entry is not shown.
+   */
+  readonly onCreateTask?: (draft: ChatTaskDraft) => void;
+  /**
    * Keeps a draft across a reload (UC-CHT-B07). The host owns the storage (the package never touches browser storage);
    * without it drafts live in memory while the page is open. `write` gets null when the draft is empty, sent or discarded.
    */
@@ -215,6 +226,11 @@ export interface ChatWorkspaceProps {
    * never touches browser storage); without it a choice lasts one call. The device ids stay in the browser.
    */
   readonly callDeviceStore?: ChatCallDeviceStore;
+  /**
+   * Remembers which sidebar categories a person collapsed, per Workspace and category, in this browser only. The host owns
+   * the storage (the package never touches browser storage); without it every category shows open after a reload.
+   */
+  readonly collapseStore?: ChatCollapseStore;
   /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
@@ -352,9 +368,11 @@ export function ChatWorkspace({
   peopleDetails,
   onOpenChannel,
   buildMessageLink,
+  onCreateTask,
   linkedSequence = null,
   draftStore,
   callDeviceStore,
+  collapseStore,
   onBackToList,
   connection = "live",
   ephemeral,
@@ -421,6 +439,15 @@ export function ChatWorkspace({
     () => new Map((channelGroups.data ?? []).map((g) => [g.id, g.name])),
     [channelGroups.data],
   );
+  const categories = useCategoryManagement({
+    hooks,
+    workspaceId: ws,
+    copy,
+    groups: channelGroups.data,
+    canManageGroups: canManageWorkspace && !isGuest,
+    canManageChannels: viewerRole !== null && !isGuest,
+    collapseStore,
+  });
   const blockedQuery = hooks.useBlockedPeople(ws);
   const blockedPeople = blockedQuery.data;
   const channel: ChatChannel | null =
@@ -702,6 +729,30 @@ export function ChatWorkspace({
       { messageId: message.id, kind: emoji, add },
       { onError: () => setNotice(copy.reactions.failed) },
     );
+  }
+
+  function handleCreateTask(message: ChatMessage) {
+    const linked = channel?.link;
+    onCreateTask?.(
+      taskDraftFromMessage({
+        text: message.content ?? "",
+        link: messageLink?.(message) ?? null,
+        linkLabel: fillCopy(copy.toolbar.taskSource, { name: panelSpaceLabel }),
+        boardId:
+          linked?.kind === "work-management.board" ? linked.resourceId : null,
+      }),
+    );
+  }
+
+  function handleMarkUnread(message: ChatMessage) {
+    timeline
+      .markUnreadFrom(message.sequence)
+      .then(() =>
+        toast.success(copy.toolbar.markedUnread, { id: "chat-mark-unread" }),
+      )
+      .catch(() =>
+        toast.error(copy.toolbar.markUnreadFailed, { id: "chat-mark-unread" }),
+      );
   }
 
   function handleTogglePin(message: ChatMessage, pinned: boolean) {
@@ -1552,6 +1603,7 @@ export function ChatWorkspace({
     <ChatSidebar
       conversations={conversationList}
       groupNames={groupNames}
+      {...categories.sidebar}
       channels={channels.data ?? []}
       status={channelsStatus}
       activeChannelId={conversationId || deletedOpen ? null : channelProp}
@@ -2017,6 +2069,8 @@ export function ChatWorkspace({
                       }
                       onOpenThread={handleOpenThread}
                       onTogglePin={grants.pin ? handleTogglePin : undefined}
+                      onMarkUnread={handleMarkUnread}
+                      onCreateTask={onCreateTask ? handleCreateTask : undefined}
                       attachmentsReadOnly={channel?.isArchived === true}
                       bottomInset={dockHeight}
                       showNames={conversation?.kind !== "direct"}
@@ -2392,6 +2446,7 @@ export function ChatWorkspace({
               </aside>
             ) : null}
 
+            {categories.dialogs}
             <CreateChannelDialog
               open={createOpen}
               busy={creator.isPending}

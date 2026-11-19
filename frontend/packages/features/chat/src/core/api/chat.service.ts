@@ -1,6 +1,9 @@
 import type {
   ChatBlockedPerson,
   ChatChannelGroup,
+  ChatChannelPlacement,
+  ChatCreateChannelGroupInput,
+  ChatUpdateChannelGroupInput,
   ChatAddMembersResult,
   ChatAttachment,
   ChatChannel,
@@ -117,6 +120,7 @@ export interface ChatEndpoints {
     message: (workspaceId: string, messageId: string) => string;
     unread: (workspaceId: string) => string;
     markRead: (workspaceId: string, spaceId: string) => string;
+    markUnreadFrom: (workspaceId: string, spaceId: string) => string;
     markAllRead: (workspaceId: string) => string;
     notificationLevel: (workspaceId: string, spaceId: string) => string;
     threadReplies: (workspaceId: string, rootId: string) => string;
@@ -181,6 +185,8 @@ export interface ChatEndpoints {
     spaceActiveCall: (workspaceId: string, spaceId: string) => string;
     callAction: (workspaceId: string, callId: string, action: string) => string;
     channelGroups: (workspaceId: string) => string;
+    channelGroup: (workspaceId: string, groupId: string) => string;
+    channelOrder: (workspaceId: string) => string;
   };
 }
 
@@ -215,6 +221,56 @@ export function createChatService(
     /** `Chat.ChannelGroups.List`: the sidebar categories with their names, in sidebar order. */
     listChannelGroups(workspaceId: string): Promise<ChatChannelGroup[]> {
       return api.get<ChatChannelGroup[]>(paths.channelGroups(workspaceId));
+    },
+
+    /** `Chat.ChannelGroups.Create`: the Idempotency-Key is required; a duplicate name is 409, no manage right is 403. */
+    createChannelGroup(
+      workspaceId: string,
+      input: ChatCreateChannelGroupInput,
+      idempotencyKey: string,
+    ): Promise<ChatChannelGroup> {
+      return api.post<ChatChannelGroup>(
+        paths.channelGroups(workspaceId),
+        input,
+        {
+          idempotencyKey,
+        },
+      );
+    },
+
+    /** `Chat.ChannelGroups.Update`: rename or move a category; a stale expectedVersion is 412. */
+    updateChannelGroup(
+      workspaceId: string,
+      groupId: string,
+      input: ChatUpdateChannelGroupInput,
+    ): Promise<ChatChannelGroup> {
+      return api.patch<ChatChannelGroup>(
+        paths.channelGroup(workspaceId, groupId),
+        input,
+      );
+    },
+
+    /** `Chat.ChannelGroups.Delete`: its channels stay and become ungrouped; the expected version travels in the query string. */
+    deleteChannelGroup(
+      workspaceId: string,
+      groupId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      return api.delete<void>(
+        withQuery(paths.channelGroup(workspaceId, groupId), {
+          expectedVersion,
+        }),
+      );
+    },
+
+    /** `Chat.Channels.Reorder`: moves channels between categories and positions in one request (at most 200); any stale version refuses all. */
+    reorderChannels(
+      workspaceId: string,
+      placements: readonly ChatChannelPlacement[],
+    ): Promise<void> {
+      return api.patch<void>(paths.channelOrder(workspaceId), {
+        placements: [...placements],
+      });
     },
 
     /** `Chat.Channels.List` with browse=true: the public channels the caller is not in. */
@@ -610,6 +666,18 @@ export function createChatService(
       return api.put<ChatReadBoundary>(paths.markRead(workspaceId, spaceId), {
         upToSequence,
       });
+    },
+
+    /** `Chat.ReadState.MarkUnreadFrom`: the caller's own boundary moves back to just before the message; never forward. */
+    markUnreadFrom(
+      workspaceId: string,
+      spaceId: string,
+      fromSequence: number,
+    ): Promise<ChatReadBoundary> {
+      return api.put<ChatReadBoundary>(
+        paths.markUnreadFrom(workspaceId, spaceId),
+        { fromSequence },
+      );
     },
 
     /** `Chat.ReadState.MarkAllRead`: returns the unread summary after the change. */

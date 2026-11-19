@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   ChatWorkspace,
@@ -6,10 +6,12 @@ import {
   type ChatDraftStore,
   type ChatViewerRole,
 } from "@notrelix/features-chat/web";
-import type { ChatEphemeralPort } from "@notrelix/features-chat";
+import type { ChatEphemeralPort, ChatTaskDraft } from "@notrelix/features-chat";
 import { useIsMobile } from "@notrelix/ui-web";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { BoardCardCreate } from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 import { useRealtimeConnection } from "../../../realtime/use-realtime-connection";
 
@@ -109,6 +111,14 @@ export function ChatPage() {
         : undefined,
     [workspaceId, viewer.userId],
   );
+  // A task made from a message (UC-CHT-I08): Work Management's own create dialog opens with the draft.
+  const resources = useWorkspaceResources(workspaceId);
+  const [taskDraft, setTaskDraft] = useState<ChatTaskDraft | null>(null);
+  const taskBoards = useMemo(
+    () =>
+      resources.boards.map((board) => ({ id: board.id, label: board.name })),
+    [resources.boards],
+  );
   const channels = hooks.useChannels(workspaceId);
   const firstChannelId = channels.data?.[0]?.id ?? null;
 
@@ -174,6 +184,7 @@ export function ChatPage() {
         linkedSequence={linkedSequence}
         draftStore={draftStore}
         callDeviceStore={storage}
+        collapseStore={storage}
         buildMessageLink={({ spaceId, conversation, sequence }) =>
           `${window.location.origin}/workspaces/${workspaceId}/chat/${
             conversation ? "dm/" : ""
@@ -181,12 +192,25 @@ export function ChatPage() {
         }
         connection={connection}
         ephemeral={ephemeral}
+        onCreateTask={setTaskDraft}
         onOpenChannel={(id) =>
           void navigate({
             to: "/workspaces/$workspaceId/chat/$channelId",
             params: { workspaceId, channelId: id },
           })
         }
+      />
+      <BoardCardCreate
+        open={taskDraft !== null}
+        onOpenChange={(open) => {
+          if (!open) setTaskDraft(null);
+        }}
+        workspaceId={workspaceId}
+        boards={taskBoards}
+        initialBoardId={taskDraft?.boardId ?? null}
+        initialTitle={taskDraft?.title}
+        initialDescription={taskDraft?.descriptionMd}
+        assigneeId={viewer.userId}
       />
     </div>
   );

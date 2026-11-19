@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Notrelix.Domain.Chat.Spaces;
+using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Chat;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -118,5 +120,46 @@ public sealed class ChatReadStateRlsTests : IAsyncLifetime
         var moved = await new ChatReadStateStore(db).AdvanceAsync(_b.WorkspaceId, _spaceId, _a.User.Id, 5, CancellationToken.None);
 
         moved.Should().BeFalse("the membership is in another Workspace, so the store finds no row to move");
+    }
+
+    [Fact]
+    public async Task TheStoreRefusesToRewindABoundaryFromAnotherWorkspace()
+    {
+        await AsAppNonQueryAsync(_a, $"UPDATE chat.memberships SET read_sequence = 5 WHERE space_id = '{_spaceId}'");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(_b.AccountId, _b.WorkspaceId, _b.User.Id);
+
+        await using var db = _fixture.CreateAppContext(tenant);
+        var moved = await new ChatReadStateStore(db).RewindAsync(_b.WorkspaceId, _spaceId, _a.User.Id, 1, CancellationToken.None);
+        var value = await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'");
+
+        moved.Should().BeFalse("the membership is in another Workspace, so the store finds no row to rewind");
+        value.Should().Be("5", "the owning Workspace's boundary is untouched");
+    }
+
+    [Fact]
+    public async Task TheOwningWorkspaceRewindsItsOwnBoundaryUnderTheAppRole_AndNeverForward()
+    {
+        await AsAppNonQueryAsync(_a, $"UPDATE chat.memberships SET read_sequence = 5 WHERE space_id = '{_spaceId}'");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(_a.AccountId, _a.WorkspaceId, _a.User.Id);
+
+        // One request: a transaction with the Workspace session context applied, as the data session does.
+        async Task<bool> RewindAsync(long target)
+        {
+            await using var db = _fixture.CreateAppContext(tenant);
+            await using var tx = await db.Database.BeginTransactionAsync();
+            await new RlsSessionContext(db, Options.Create(new RlsOptions { SetSessionContext = true }), tenant).ApplyAsync(default);
+            var moved = await new ChatReadStateStore(db).RewindAsync(_a.WorkspaceId, _spaceId, _a.User.Id, target, CancellationToken.None);
+            await tx.CommitAsync();
+            return moved;
+        }
+
+        (await RewindAsync(2)).Should().BeTrue();
+        (await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'")).Should().Be("2");
+
+        await RewindAsync(4);
+        (await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'"))
+            .Should().Be("2", "a target ahead of the boundary never reads anything forward");
     }
 }

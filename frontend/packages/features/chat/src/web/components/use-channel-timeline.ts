@@ -76,6 +76,10 @@ export function useChannelTimeline({
   markReadRef.current = reader.markRead;
   const showThreadRef = useRef(onShowThread);
   showThreadRef.current = onShowThread;
+  /** The space the reader marked unread from a message: the open list does not read it again until they leave. */
+  const unreadHoldRef = useRef<string | null>(null);
+  /** Redraws the "New" divider after it moved above the message the reader marked. */
+  const [, setDividerMoves] = useState(0);
 
   // The history opens once per visit: at the first unread message when there is
   // one (D03), otherwise at the newest. The choice does not move while the reader
@@ -167,6 +171,11 @@ export function useChannelTimeline({
     setAtBottom(true);
   }, [channelId, messages.isSuccess, messages.isPlaceholderData, lock, anchor]);
 
+  // Leaving the channel ends the hold: coming back reads it again.
+  useEffect(() => {
+    if (unreadHoldRef.current !== channelId) unreadHoldRef.current = null;
+  }, [channelId]);
+
   // Read state: the boundary moves to the newest message only when it is
   // loaded and on screen (the reader is at the bottom and the page is visible).
   const newest = flat[flat.length - 1];
@@ -180,6 +189,8 @@ export function useChannelTimeline({
       document.visibilityState === "hidden"
     )
       return;
+    // Mark unread from here (UC-CHT-I07) holds the channel unread until the reader leaves it.
+    if (unreadHoldRef.current === channelId) return;
     markReadRef.current(channelId, newestSequence);
   }, [channelId, newestSequence, hasNewer, atBottom]);
 
@@ -285,6 +296,25 @@ export function useChannelTimeline({
     }
   }
 
+  /**
+   * Mark unread from a message (UC-CHT-I07): the caller's boundary moves back to just before it, the "New" divider moves above
+   * it, and the open list stops reading the channel until the reader leaves. Rejects when the server refuses.
+   */
+  async function markUnreadFrom(sequence: number): Promise<void> {
+    if (!channelId) return;
+    unreadHoldRef.current = channelId;
+    try {
+      await reader.markUnreadFrom(channelId, sequence);
+    } catch (error) {
+      unreadHoldRef.current = null;
+      throw error;
+    }
+    if (lockRef.current?.channelId === channelId) {
+      lockRef.current = { ...lockRef.current, firstUnread: sequence };
+      setDividerMoves((count) => count + 1);
+    }
+  }
+
   return {
     /** The open window's query: pages, status, `fetchPreviousPage`, `fetchNextPage`, `refetch`. */
     messages,
@@ -302,5 +332,6 @@ export function useChannelTimeline({
     openMessage,
     jumpToLatest,
     afterSend,
+    markUnreadFrom,
   };
 }
