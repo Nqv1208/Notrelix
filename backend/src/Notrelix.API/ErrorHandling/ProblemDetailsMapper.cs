@@ -147,6 +147,13 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallScreenShareTaken } ex => (
+                StatusCodes.Status409Conflict,
+                Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallScreenShareTaken,
+                "Screen share taken",
+                ex.Message,
+                null
+            ),
             Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallNotParticipant } ex => (
                 StatusCodes.Status403Forbidden,
                 Notrelix.Domain.Chat.Rules.ChatRuleCodes.CallNotParticipant,

@@ -19,6 +19,7 @@ import type {
   ChatCallJoin,
   ChatCallKind,
 } from "../../core/types/call";
+import { screenSharerOf } from "../../core/model/call-share-model";
 import { chatQueryKeys } from "../../query/keys";
 import {
   CHAT_CALL_DEFAULT_DEVICE,
@@ -41,6 +42,7 @@ import {
 export const INCOMING_RING_TTL_MS = 50_000;
 const ENDED_CARD_MS = 8_000;
 const SAFETY_POLL_MS = 5_000;
+const SCREEN_NOTICE_MS = 10_000;
 
 export type ChatCallError =
   "unavailable" | "start-failed" | "you-busy" | "already-active" | "full";
@@ -65,6 +67,13 @@ export interface ChatCurrentCall {
   readonly deviceNotice: "mic-denied" | "camera-denied" | null;
   /** The devices the call uses; a kind that is missing uses the system default. Client-side only. */
   readonly devices: ChatCallDevicePreference;
+  /** Whether this browser can share its screen in this call (it has a screen picker); absent or false until the room is joined. */
+  readonly screenSupported?: boolean;
+  /** This person's own share (absent means off): `starting` while the browser's picker is open or the server is told, `on` once the call knows. */
+  readonly screen?: "off" | "starting" | "on";
+  /** Why the last share did not start or stopped; clears by itself. */
+  readonly screenNotice?:
+    "denied" | "unavailable" | "taken" | "ended" | "replaced" | null;
 }
 
 export interface ChatCallsController {
@@ -100,15 +109,26 @@ export interface ChatCallsController {
     deviceId: string | null,
     remember?: boolean,
   ) => Promise<ChatCallDeviceFailure | null>;
+  /**
+   * Shares this person's screen: the browser opens its picker, then the call is told. `replace` confirms that another person's
+   * share ends (without it a second share is refused by the server).
+   */
+  readonly startScreenShare: (replace?: boolean) => void;
+  readonly stopScreenShare: () => void;
+  readonly dismissScreenNotice: () => void;
   readonly retryConnect: () => void;
   readonly dismiss: () => void;
   readonly remoteVideoRef: (el: HTMLVideoElement | null) => void;
   readonly localVideoRef: (el: HTMLVideoElement | null) => void;
+  /** The tile that shows the other person's shared screen. */
+  readonly screenVideoRef: (el: HTMLVideoElement | null) => void;
 }
 
 export interface UseChatCallsOptions {
   readonly deps: ChatCallsDeps;
   readonly workspaceId: string;
+  /** The signed-in person: the call's frames say who shares, and a share that someone else replaced ends here. */
+  readonly viewerId?: string;
   /** Replaces the media plane; the default loads LiveKit (or connects the mock token at once). */
   readonly connector?: ChatCallMediaConnector;
   /** Where the browser's chosen devices are remembered (the host's storage); without it a choice lasts one call. */
@@ -149,6 +169,7 @@ const ended = (
 export function useChatCalls({
   deps,
   workspaceId: ws,
+  viewerId,
   connector = connectChatCallMedia,
   deviceStore,
   isGroupSpace,
@@ -181,6 +202,7 @@ export function useChatCalls({
   const leavingRef = useRef(false);
   const remoteEl = useRef<HTMLVideoElement | null>(null);
   const localEl = useRef<HTMLVideoElement | null>(null);
+  const screenEl = useRef<HTMLVideoElement | null>(null);
 
   const update = useCallback((next: ChatCurrentCall | null) => {
     currentRef.current = next;
@@ -236,7 +258,7 @@ export function useChatCalls({
     const held = currentRef.current;
     if (!held || held.call.state !== "active") return;
     dropSession();
-    patch({ media: "lost", attempt: null });
+    patch({ media: "lost", attempt: null, screen: "off" });
   }, [disarmGiveUp, dropSession, patch]);
 
   const armGiveUp = useCallback(() => {
@@ -250,13 +272,73 @@ export function useChatCalls({
       if (!held || held.call.id !== call.id) return;
       if (call.version < held.call.version) return;
       if (call.state === "ended") teardown();
+      // A share this page started that the call no longer lists as this person's: another person replaced it (or it was cleared), so the capture stops.
+      const mine = viewerId
+        ? call.participants.find((p) => p.personId === viewerId)
+        : undefined;
+      const lostShare =
+        held.screen === "on" &&
+        call.state !== "ended" &&
+        mine &&
+        !mine.sharingScreen;
+      if (lostShare) void sessionRef.current?.setScreenShare?.(false);
       update({
         ...held,
         call,
         media: call.state === "ended" ? "idle" : held.media,
+        screen: call.state === "ended" || lostShare ? "off" : held.screen,
+        screenNotice: lostShare
+          ? screenSharerOf(call)
+            ? "replaced"
+            : null
+          : held.screenNotice,
       });
     },
-    [teardown, update],
+    [teardown, update, viewerId],
+  );
+
+  /** A call write with the version the caller read; a stale one reads the call again and tries once more. */
+  const withFreshVersion = useCallback(
+    async <T>(
+      spaceId: string,
+      id: string,
+      version: number,
+      run: (version: number) => Promise<T>,
+    ): Promise<T> => {
+      try {
+        return await run(version);
+      } catch (cause) {
+        if (chatFailureOf(cause).kind !== "stale") throw cause;
+        const fresh = await service.getActiveCall(ws, spaceId);
+        if (!fresh || fresh.id !== id) throw cause;
+        return run(fresh.version);
+      }
+    },
+    [service, ws],
+  );
+
+  const syncDevices = useCallback(
+    (audioOn: boolean, videoOn: boolean) => {
+      const heldCall = currentRef.current?.call;
+      if (!heldCall || heldCall.state !== "active") return;
+      // Every write carries the whole media state, so a mute never clears a share that is on.
+      const sharingScreen = currentRef.current?.screen === "on";
+      void withFreshVersion(
+        heldCall.spaceId,
+        heldCall.id,
+        heldCall.version,
+        (v) =>
+          service.setCallMediaState(
+            ws,
+            heldCall.id,
+            { audioOn, videoOn, sharingScreen },
+            v,
+          ),
+      )
+        .then(settle)
+        .catch(() => undefined);
+    },
+    [service, settle, withFreshVersion, ws],
   );
 
   const connect = useCallback(
@@ -276,6 +358,14 @@ export function useChatCalls({
           token,
           remoteVideo: () => remoteEl.current,
           localVideo: () => localEl.current,
+          screenVideo: () => screenEl.current,
+          onScreenEnded: () => {
+            if (generation !== generationRef.current) return;
+            const heldNow = currentRef.current;
+            if (!heldNow || (heldNow.screen ?? "off") === "off") return;
+            patch({ screen: "off", screenNotice: "ended" });
+            syncDevices(heldNow.audioOn, heldNow.videoOn);
+          },
           participantVideo: (personId) => tileEls.current.get(personId) ?? null,
           onSpeakers: (ids) => setSpeakingIds(ids),
           preferred: currentRef.current?.devices,
@@ -306,13 +396,16 @@ export function useChatCalls({
           return;
         }
         sessionRef.current = session;
+        patch({ screenSupported: Boolean(session.setScreenShare) });
+        // A tile that was already on screen when the share track arrived gets it now.
+        if (screenEl.current) session.attachScreen?.(screenEl.current);
         syncMedia();
       } catch {
         if (generation !== generationRef.current) return;
         patch({ media: recovering ? "lost" : "failed" });
       }
     },
-    [armGiveUp, connector, disarmGiveUp, giveUp, patch, syncMedia],
+    [armGiveUp, connector, disarmGiveUp, giveUp, patch, syncDevices, syncMedia],
   );
 
   const adopt = useCallback(
@@ -329,6 +422,9 @@ export function useChatCalls({
         videoOn: call.kind === "video" && !voiceOnly,
         deviceNotice: null,
         devices: readChatCallDevicePreference(deviceStore),
+        screenSupported: false,
+        screen: "off",
+        screenNotice: null,
       });
       if (call.state !== "ended" && joinToken)
         void connect(joinToken.url, joinToken.token);
@@ -491,26 +587,6 @@ export function useChatCalls({
     return () => clearTimeout(timer);
   }, [incoming, incomingKey, queryClient]);
 
-  /** A call write with the version the caller read; a stale one reads the call again and tries once more. */
-  const withFreshVersion = useCallback(
-    async <T>(
-      spaceId: string,
-      id: string,
-      version: number,
-      run: (version: number) => Promise<T>,
-    ): Promise<T> => {
-      try {
-        return await run(version);
-      } catch (cause) {
-        if (chatFailureOf(cause).kind !== "stale") throw cause;
-        const fresh = await service.getActiveCall(ws, spaceId);
-        if (!fresh || fresh.id !== id) throw cause;
-        return run(fresh.version);
-      }
-    },
-    [service, ws],
-  );
-
   const start = useCallback(
     (spaceId: string, kind: ChatCallKind) => {
       const heldCall = currentRef.current?.call;
@@ -639,7 +715,7 @@ export function useChatCalls({
             ),
           );
       });
-    patch({ media: "idle" });
+    patch({ media: "idle", screen: "off" });
   }, [
     isGroupSpace,
     patch,
@@ -650,23 +726,6 @@ export function useChatCalls({
     withFreshVersion,
     ws,
   ]);
-
-  const syncDevices = useCallback(
-    (audioOn: boolean, videoOn: boolean) => {
-      const heldCall = currentRef.current?.call;
-      if (!heldCall || heldCall.state !== "active") return;
-      void withFreshVersion(
-        heldCall.spaceId,
-        heldCall.id,
-        heldCall.version,
-        (v) =>
-          service.setCallMediaState(ws, heldCall.id, { audioOn, videoOn }, v),
-      )
-        .then(settle)
-        .catch(() => undefined);
-    },
-    [service, settle, withFreshVersion, ws],
-  );
 
   const toggleMicrophone = useCallback(() => {
     const heldNow = currentRef.current;
@@ -685,6 +744,91 @@ export function useChatCalls({
     void sessionRef.current?.setCamera(next);
     syncDevices(heldNow.audioOn, next);
   }, [patch, syncDevices]);
+
+  const startScreenShare = useCallback(
+    (replace = false) => {
+      const heldNow = currentRef.current;
+      const session = sessionRef.current;
+      if (
+        !heldNow ||
+        !session?.setScreenShare ||
+        heldNow.call.kind !== "video" ||
+        heldNow.call.state !== "active" ||
+        (heldNow.screen ?? "off") !== "off"
+      )
+        return;
+      const share = session.setScreenShare;
+      patch({ screen: "starting", screenNotice: null });
+      void (async () => {
+        // The browser's own picker first: a refusal or a closed picker never reaches the server.
+        const failure = await share(true);
+        if (failure) {
+          patch({ screen: "off", screenNotice: failure });
+          return;
+        }
+        const heldCall = currentRef.current?.call;
+        if (!heldCall || heldCall.state !== "active") {
+          void share(false);
+          return;
+        }
+        try {
+          const call = await withFreshVersion(
+            heldCall.spaceId,
+            heldCall.id,
+            heldCall.version,
+            (v) =>
+              service.setCallMediaState(
+                ws,
+                heldCall.id,
+                {
+                  audioOn: currentRef.current?.audioOn ?? true,
+                  videoOn: currentRef.current?.videoOn ?? false,
+                  sharingScreen: true,
+                  replaceShare: replace,
+                },
+                v,
+              ),
+          );
+          settle(call);
+          patch({ screen: "on" });
+        } catch (cause) {
+          void share(false);
+          patch({
+            screen: "off",
+            screenNotice:
+              chatFailureOf(cause).code === "call-screen-share-taken"
+                ? "taken"
+                : "unavailable",
+          });
+        }
+      })();
+    },
+    [patch, service, settle, withFreshVersion, ws],
+  );
+
+  const stopScreenShare = useCallback(() => {
+    const heldNow = currentRef.current;
+    if (!heldNow || (heldNow.screen ?? "off") === "off") return;
+    patch({ screen: "off", screenNotice: null });
+    void sessionRef.current?.setScreenShare?.(false);
+    syncDevices(heldNow.audioOn, heldNow.videoOn);
+  }, [patch, syncDevices]);
+
+  const dismissScreenNotice = useCallback(
+    () => patch({ screenNotice: null }),
+    [patch],
+  );
+
+  // A share notice leaves by itself.
+  const screenNotice = current?.screenNotice ?? null;
+  useEffect(() => {
+    if (!screenNotice) return;
+    const timer = setTimeout(
+      () => patch({ screenNotice: null }),
+      SCREEN_NOTICE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [patch, screenNotice]);
 
   /** After a give-up: read the call, and when it still runs ask for a fresh token (a repeat answer returns one) and join the room again. */
   const recover = useCallback(async () => {
@@ -709,6 +853,13 @@ export function useChatCalls({
       settle(join.call);
       if (join.call.state !== "ended" && join.joinToken)
         await connect(join.joinToken.url, join.joinToken.token, true);
+      // The old room took the capture with it: a share the call still lists for this person is cleared.
+      const latest = currentRef.current;
+      const mine = viewerId
+        ? latest?.call.participants.find((p) => p.personId === viewerId)
+        : undefined;
+      if (latest && mine?.sharingScreen)
+        syncDevices(latest.audioOn, latest.videoOn);
     } catch (cause) {
       const failure = chatFailureOf(cause);
       if (failure.code === "call-ended" || failure.kind === "not-found") gone();
@@ -717,7 +868,17 @@ export function useChatCalls({
         patch({ media: "lost", attempt: null });
       }
     }
-  }, [armGiveUp, connect, disarmGiveUp, patch, service, settle, ws]);
+  }, [
+    armGiveUp,
+    connect,
+    disarmGiveUp,
+    patch,
+    service,
+    settle,
+    syncDevices,
+    viewerId,
+    ws,
+  ]);
 
   const switchDevice = useCallback(
     async (
@@ -766,6 +927,10 @@ export function useChatCalls({
   const localVideoRef = useCallback((el: HTMLVideoElement | null) => {
     localEl.current = el;
   }, []);
+  const screenVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    screenEl.current = el;
+    if (el) sessionRef.current?.attachScreen?.(el);
+  }, []);
 
   const participantVideoRef = useCallback((personId: string) => {
     let ref = tileRefs.current.get(personId);
@@ -797,9 +962,13 @@ export function useChatCalls({
     toggleMicrophone,
     toggleCamera,
     switchDevice,
+    startScreenShare,
+    stopScreenShare,
+    dismissScreenNotice,
     retryConnect,
     dismiss,
     remoteVideoRef,
     localVideoRef,
+    screenVideoRef,
   };
 }

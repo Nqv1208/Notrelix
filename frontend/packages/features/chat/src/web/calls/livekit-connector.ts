@@ -45,8 +45,20 @@ export async function connectLiveKit(
   // The picture of each person, kept so a tile that mounts after the track arrived still gets it.
   const videoTracks = new Map<string, RemoteTrack>();
 
+  // The other person's shared screen, kept so a tile that mounts after the track arrived still gets it. It never lands on a camera tile.
+  let screenTrack: RemoteTrack | null = null;
+  // Set while this page stops its own share, so the unpublish it causes is not reported as the browser ending it.
+  let stoppingScreen = false;
+
   room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
-    if (track.kind === Track.Kind.Video) {
+    if (
+      track.kind === Track.Kind.Video &&
+      track.source === Track.Source.ScreenShare
+    ) {
+      screenTrack = track;
+      const el = options.screenVideo?.();
+      if (el) track.attach(el);
+    } else if (track.kind === Track.Kind.Video) {
       videoTracks.set(participant.identity, track);
       const el =
         options.participantVideo?.(participant.identity) ??
@@ -60,11 +72,16 @@ export async function connectLiveKit(
     }
   });
   room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
+    if (screenTrack === track) screenTrack = null;
     if (videoTracks.get(participant.identity) === track)
       videoTracks.delete(participant.identity);
     track.detach().forEach((el) => {
       if (audioElements.delete(el)) el.remove();
     });
+  });
+  room.on(RoomEvent.LocalTrackUnpublished, (publication) => {
+    if (publication.source === Track.Source.ScreenShare && !stoppingScreen)
+      options.onScreenEnded?.();
   });
   room.on(RoomEvent.ActiveSpeakersChanged, (speakers) =>
     options.onSpeakers?.(speakers.map((speaker) => speaker.identity)),
@@ -75,6 +92,10 @@ export async function connectLiveKit(
 
   await room.connect(options.url, options.token);
   options.onState("connected");
+
+  const canShareScreen =
+    typeof navigator !== "undefined" &&
+    typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
   return {
     async setMicrophone(on) {
@@ -104,6 +125,27 @@ export async function connectLiveKit(
         return failureOf(error);
       }
     },
+    ...(canShareScreen
+      ? {
+          async setScreenShare(on: boolean) {
+            stoppingScreen = !on;
+            try {
+              await room.localParticipant.setScreenShareEnabled(
+                on,
+                on ? { audio: true } : undefined,
+              );
+              return null;
+            } catch (error) {
+              return failureOf(error);
+            } finally {
+              stoppingScreen = false;
+            }
+          },
+          attachScreen(element: HTMLVideoElement | null) {
+            if (element) screenTrack?.attach(element);
+          },
+        }
+      : {}),
     attachVideo(personId, element) {
       videoTracks.get(personId)?.attach(element);
     },

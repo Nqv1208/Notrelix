@@ -13,6 +13,8 @@ import { fillCopy } from "../components/use-chat-copy";
 import type { ChatCallsController, ChatCurrentCall } from "./use-chat-calls";
 
 export interface ChatCallParticipantsProps {
+  /** A screen share is on: the tiles shrink to a strip under the shared screen (the tiles stay mounted, so the pictures keep playing). */
+  readonly strip?: boolean;
   readonly controller: ChatCallsController;
   readonly held: ChatCurrentCall;
   readonly viewerId: string;
@@ -53,8 +55,12 @@ export function ChatCallParticipantGrid(props: ChatCallParticipantsProps) {
       data-testid="chat-call-grid"
       data-count={people.length}
       className={cn(
-        "grid min-h-0 flex-1 auto-rows-fr gap-2 overflow-y-auto p-3",
-        columnsOf(people.length),
+        props.strip
+          ? "flex h-[104px] shrink-0 gap-2.5 overflow-x-auto p-0"
+          : cn(
+              "grid min-h-0 flex-1 auto-rows-fr gap-2 overflow-y-auto p-3",
+              columnsOf(people.length),
+            ),
       )}
     >
       {people.map((p) => {
@@ -78,6 +84,7 @@ export function ChatCallParticipantGrid(props: ChatCallParticipantsProps) {
               .join(", ")}
             className={cn(
               "relative grid min-h-24 place-items-center overflow-hidden rounded-xl bg-inverse-foreground/10 transition-shadow motion-reduce:transition-none",
+              props.strip && "h-full w-44 shrink-0",
               speaking && "ring-3 ring-success",
             )}
           >
