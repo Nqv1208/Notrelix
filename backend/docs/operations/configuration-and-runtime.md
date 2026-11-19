@@ -448,7 +448,7 @@ the delete, `Space.RestoreWindow`. It is off by default: an operator turns it on
 under the system context with the RLS worker scope, one channel deleted more than 30 days ago with `FOR UPDATE SKIP LOCKED` and, in one transaction,
 removes every row of a `chat` table that names it in `space_id` (messages, members, threads, pins, reactions, mentions, calls), the rows that follow
 those by foreign key, then the channel row, and writes an audit fact `PurgeChatSpace` (actor type System, Critical). Rows of other contexts that
-name the channel without a foreign key (Inbox notifications, uploaded files and their storage objects) follow their own retention. There is no
+name the channel without a foreign key (Inbox notifications) follow their own retention. The files of the channel (the Collaboration attachment rows of its messages) are removed in the same transaction, and their storage objects are deleted after the commit; a failed object delete is logged and the orphan sweep of the attachment reaper removes the object later. There is no
 legal hold in the platform, so none can skip a channel. A failure rolls the channel back and the next pass retries it.
 
 | Key | Default | Meaning |

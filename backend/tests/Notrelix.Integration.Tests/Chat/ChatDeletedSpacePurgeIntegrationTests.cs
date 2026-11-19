@@ -1,6 +1,10 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Notrelix.Application.Common.Storage;
+using Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Notrelix.Domain.Chat.Messages;
+using Notrelix.Domain.Collaboration.Attachments;
+using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Infrastructure.BackgroundJobs;
 using Notrelix.Infrastructure.Data.Rls;
@@ -27,6 +31,7 @@ public sealed class ChatDeletedSpacePurgeIntegrationTests : IAsyncLifetime
     private readonly Guid _workspaceId = Guid.NewGuid();
     private readonly Guid _owner = Guid.NewGuid();
     private readonly Guid _alice = Guid.NewGuid();
+    private readonly Dictionary<Guid, string> _fileKeys = [];
 
     public ChatDeletedSpacePurgeIntegrationTests(PostgresTestContainer db) => _db = db;
 
@@ -57,6 +62,11 @@ public sealed class ChatDeletedSpacePurgeIntegrationTests : IAsyncLifetime
         ctx.ChatThreads.Add(thread);
         ctx.ChatMessages.Add(Message.CreateThreadReply(_accountId, _workspaceId, channel.Id, 2, root.Id, n, _alice, "reply", $"{name}-2", false, Now.AddDays(-89)));
         ctx.ChatPins.Add(Pin.Create(_accountId, _workspaceId, channel.Id, root.Id, _owner, Now.AddDays(-88)));
+        var key = AttachmentStorageKey.Create(_accountId, _workspaceId);
+        _fileKeys[channel.Id] = key;
+        ctx.Attachments.Add(Attachment.CreateStoredFile(
+            _accountId, _workspaceId, ResourceRef.Create(AttachmentTargets.ChatMessage, root.Id, _workspaceId), AttachmentType.Document,
+            "plan.pdf", 12, "application/pdf", key, 1024 * 1024, 0, 10, _alice, Now.AddDays(-90)));
         await ctx.SaveChangesAsync();
 
         if (deletedAt is { } at)
@@ -80,6 +90,14 @@ public sealed class ChatDeletedSpacePurgeIntegrationTests : IAsyncLifetime
             await ctx.ChatPins.IgnoreQueryFilters().CountAsync(p => p.SpaceId == space));
     }
 
+    private async Task<int> FilesAsync(Guid space)
+    {
+        await using var ctx = _db.CreateOwnerContext(SystemTenant());
+        return await ctx.Attachments.IgnoreQueryFilters().CountAsync(a => a.Metadata.StorageKey == _fileKeys[space]);
+    }
+
+    private readonly Mock<IStorageService> _storage = new();
+
     private async Task<int> PurgeAsync()
     {
         var tenant = new CurrentTenantContext();
@@ -88,7 +106,7 @@ public sealed class ChatDeletedSpacePurgeIntegrationTests : IAsyncLifetime
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(c => c.UtcNow).Returns(Now);
         var purger = new DeletedChatSpacePurger(
-            context, tenant, rls, clock.Object,
+            context, tenant, rls, clock.Object, _storage.Object,
             Options.Create(new DeletedChatSpacePurgeOptions { Enabled = true, BatchSize = 10 }),
             NullLogger<DeletedChatSpacePurger>.Instance);
         return await purger.RunOnceAsync(default);
@@ -104,6 +122,11 @@ public sealed class ChatDeletedSpacePurgeIntegrationTests : IAsyncLifetime
         (await PurgeAsync()).Should().Be(1);
 
         (await RowsAsync(expired)).Should().Be((0, 0, 0, 0, 0));
+        (await FilesAsync(expired)).Should().Be(0, "the files of a purged channel go with it");
+        (await FilesAsync(recent)).Should().Be(1);
+        (await FilesAsync(live)).Should().Be(1);
+        _storage.Verify(s => s.DeleteAsync(_fileKeys[expired], It.IsAny<CancellationToken>()), Times.Once);
+        _storage.Verify(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once, "only the purged channel's object is deleted");
         (await RowsAsync(recent)).Should().Be((1, 2, 2, 1, 1));
         (await RowsAsync(live)).Should().Be((1, 2, 2, 1, 1));
         await using var ctx = _db.CreateOwnerContext(SystemTenant());
@@ -111,6 +134,18 @@ public sealed class ChatDeletedSpacePurgeIntegrationTests : IAsyncLifetime
             .Should().Be(1);
 
         (await PurgeAsync()).Should().Be(0, "a purged channel is gone, so a second pass finds nothing");
+    }
+
+    [Fact]
+    public async Task AFailedObjectDeleteIsLoggedAndTheChannelStaysPurged()
+    {
+        var expired = await SeedChannelAsync("old-files", Now.AddDays(-31));
+        _storage.Setup(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(new IOException("storage down"));
+
+        (await PurgeAsync()).Should().Be(1);
+
+        (await RowsAsync(expired)).Spaces.Should().Be(0);
+        (await FilesAsync(expired)).Should().Be(0);
     }
 
     [Fact]

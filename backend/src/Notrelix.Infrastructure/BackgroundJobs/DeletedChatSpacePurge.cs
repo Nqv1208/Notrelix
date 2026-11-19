@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.SystemOperations;
+using Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Audit;
@@ -53,8 +54,8 @@ public sealed class DeletedChatSpacePurgeOptionsValidator : IValidateOptions<Del
 /// fact. A failure rolls the space back and the next pass retries it; a purged space is gone, so a second pass changes nothing.
 /// </summary>
 /// <remarks>
-/// Kept: the audit trail, and rows of other contexts that name the space without a foreign key (Inbox notifications, uploaded files and
-/// their storage objects), which follow their own retention. There is no legal hold in the platform, so none can skip a space.
+/// Kept: the audit trail, and rows of other contexts that name the space without a foreign key (Inbox notifications), which follow their own retention.
+/// The uploaded files of the space (Collaboration attachment rows and their storage objects) are purged with it. There is no legal hold in the platform, so none can skip a space.
 /// shortcut: one transaction per space; upgrade to chunked deletes when one space holds millions of messages.
 /// </remarks>
 internal sealed class DeletedChatSpacePurger(
@@ -62,6 +63,7 @@ internal sealed class DeletedChatSpacePurger(
     ICurrentTenantContext tenant,
     IRlsSessionContext rls,
     IDateTimeProvider clock,
+    IStorageService storage,
     IOptions<DeletedChatSpacePurgeOptions> options,
     ILogger<DeletedChatSpacePurger> logger)
 {
@@ -110,8 +112,21 @@ internal sealed class DeletedChatSpacePurger(
             return false;
         }
 
+        // The files hang on the messages by resource id with no foreign key, so they go first, while the messages still name the space.
+        var kind = AttachmentTargets.ChatMessage.ToString();
+        var fileKeys = await context.Database.SqlQuery<string>($"""
+            SELECT storage_key AS "Value"
+            FROM collab.attachments
+            WHERE resource_type = {kind} AND storage_key IS NOT NULL AND purged_at IS NULL
+              AND resource_id IN (SELECT id FROM chat.messages WHERE space_id = {claimed.Id})
+            """).ToListAsync(cancellationToken);
+        long rows = await context.Database.ExecuteSqlInterpolatedAsync($"""
+            DELETE FROM collab.attachments
+            WHERE resource_type = {kind}
+              AND resource_id IN (SELECT id FROM chat.messages WHERE space_id = {claimed.Id})
+            """, cancellationToken);
+
         var plan = _plan ??= await ResolvePlanAsync(cancellationToken);
-        long rows = 0;
         foreach (var step in plan)
         {
 #pragma warning disable EF1002 // identifiers come from the database catalog and are quoted; the space id is a parameter
@@ -136,8 +151,34 @@ internal sealed class DeletedChatSpacePurger(
         await context.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+        await DeleteObjectsAsync(claimed, fileKeys, cancellationToken);
         logger.LogInformation("Purged deleted chat space {SpaceId}: {Rows} rows in {Tables} tables", claimed.Id, rows, plan.Count);
         return true;
+    }
+
+    /// <summary>
+    /// After the commit, so a failed commit never leaves rows pointing at missing files. A failed delete is logged and never undoes the purge;
+    /// the object is then unreferenced and the orphan sweep of <see cref="AttachmentObjectReaper"/> removes it on a later pass.
+    /// </summary>
+    private async Task DeleteObjectsAsync(PurgeTarget space, IReadOnlyList<string> keys, CancellationToken cancellationToken)
+    {
+        foreach (var key in keys)
+        {
+            if (!AttachmentStorageKey.BelongsTo(key, space.AccountId, space.WorkspaceId))
+            {
+                logger.LogWarning("A file of purged chat space {SpaceId} has a storage key outside its tenant prefix; object not deleted", space.Id);
+                continue;
+            }
+
+            try
+            {
+                await storage.DeleteAsync(key, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Deleting a file object of purged chat space {SpaceId} failed; the orphan sweep removes it later", space.Id);
+            }
+        }
     }
 
     /// <summary>The <c>chat</c> tables (but the spaces table) with a uuid <c>space_id</c> column, and the foreign keys outside the retained schemas.</summary>
