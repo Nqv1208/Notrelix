@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Features.Chat.Notifications.Services;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Notrelix.Domain.Collaboration.Preferences;
@@ -83,6 +85,8 @@ public sealed class ChatNotificationIntentIntegrationTests : IAsyncLifetime
         await using var context = _db.CreateOwnerContext(WorkspaceTenant());
         var handoff = new ChatNotificationHandoff(
             context, new PostgresChatNotificationIntents(context, NullLogger<PostgresChatNotificationIntents>.Instance),
+            new RealtimePresenceRegistry(),
+            Mock.Of<IWorkspaceMemberFacts>(),
             NullLogger<ChatNotificationHandoff>.Instance);
         return await handoff.HandOffAsync(_workspaceId, message.Id, Guid.NewGuid(), Now, CancellationToken.None);
     }
@@ -134,6 +138,8 @@ public sealed class ChatNotificationIntentIntegrationTests : IAsyncLifetime
         await using var context = _db.CreateOwnerContext(WorkspaceTenant());
         var handoff = new ChatNotificationHandoff(
             context, new PostgresChatNotificationIntents(context, NullLogger<PostgresChatNotificationIntents>.Instance),
+            new RealtimePresenceRegistry(),
+            Mock.Of<IWorkspaceMemberFacts>(),
             NullLogger<ChatNotificationHandoff>.Instance);
         return await handoff.HandOffRemovalAsync(_workspaceId, message.SpaceId, message.Id, Guid.NewGuid(), Now, CancellationToken.None);
     }

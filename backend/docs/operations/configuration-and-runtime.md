@@ -398,7 +398,7 @@ files and requeues a job stuck Running for more than 15 minutes. The request is 
 `Export` (`RateLimiting:Chat:Export`, default 5 per person and 20 per Workspace per hour).
 `Chat:Digest` (Infrastructure, `ChatDigestOptions`, validated on start by `ChatDigestOptionsValidator`) configures the missed-mention email digest
 `Chat.Notifications.Digest` (`ChatDigestService`, a hosted service; UC-CHT-H09). Each pass looks at the unread chat notifications
-(mention, direct message, thread reply, broadcast) created in the latest completed window, and for each person who turned the `digest` email
+(mention, direct message, thread reply, broadcast) created in the latest completed window (and the `CatchUpWindows` before it), and for each person who turned the `digest` email
 preference on queues ONE email on the shared email outbox (the same `EmailDispatcher` and retries as every other mail; no second mail path). The
 deduplication key `chat-digest:{workspace}:{user}:{window}` makes a repeated pass add nothing, and a failed send is retried by the dispatcher.
 Chat supplies the facts through `IChatDigestFacts` (membership, level, mute, read and permission are re-checked at send); the address comes from
@@ -409,6 +409,7 @@ Identity's `IMemberDeliveryAddresses` (a Guest has none). It runs under the syst
 | `Enabled` | `true` | When false nothing is queued. |
 | `Interval` | `00:15:00` | Time between passes. Range 10 seconds to 1 day. |
 | `Window` | `1.00:00:00` | Length of one digest window (a person gets at most one digest per window). |
+| `CatchUpWindows` | 3 | Completed windows before the latest that a pass also sends when they were missed; one mail per person and window, never twice. Range 0 to 30. |
 | `MaxItems` | 10 | Message lines in one digest; the rest read "and N more". Range 1 to 50. |
 | `BatchSize` | 200 | People looked at per batch. Range 1 to 5000. |
 
