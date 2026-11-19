@@ -127,7 +127,8 @@ export type InboxType =
   | "chat_mention"
   | "chat_direct"
   | "chat_thread"
-  | "chat_broadcast";
+  | "chat_broadcast"
+  | "chat_removed";
 
 export type InboxNeed = "approve" | "reply" | "overdue";
 
@@ -353,7 +354,11 @@ export class MockWorkFeedState {
     readonly createdAt: string;
     readonly type: Extract<
       InboxType,
-      "chat_mention" | "chat_direct" | "chat_thread" | "chat_broadcast"
+      | "chat_mention"
+      | "chat_direct"
+      | "chat_thread"
+      | "chat_broadcast"
+      | "chat_removed"
     >;
     readonly actorId: string;
     readonly chatSpaceId: string;

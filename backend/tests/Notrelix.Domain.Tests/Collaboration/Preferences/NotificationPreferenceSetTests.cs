@@ -54,6 +54,7 @@ public class NotificationPreferenceSetTests
         NotificationTypes.FromProducedType(NotificationTypes.ChatMentionProducedType).Should().Be(NotificationTypes.Mention);
         NotificationTypes.FromProducedType(NotificationTypes.ChatDirectMessageProducedType).Should().Be(NotificationTypes.Mention);
         NotificationTypes.FromProducedType(NotificationTypes.ChatBroadcastProducedType).Should().Be(NotificationTypes.Mention);
+        NotificationTypes.FromProducedType(NotificationTypes.ChatMessageRemovedProducedType).Should().Be(NotificationTypes.Mention);
         NotificationTypes.FromProducedType(NotificationTypes.ChatThreadReplyProducedType).Should().Be(NotificationTypes.Watching);
         NotificationTypes.All.Should().HaveCount(7, "the preference matrix a person sees does not change");
     }

@@ -157,6 +157,7 @@ export type InboxTypeDto =
   | "chat_direct"
   | "chat_thread"
   | "chat_broadcast"
+  | "chat_removed"
   | "system";
 
 export interface InboxTargetDto {
@@ -541,6 +542,7 @@ const INBOX_TYPES: Readonly<Record<string, InboxTypeDto>> = {
   "chat.direct-message": "chat_direct",
   "chat.thread-reply": "chat_thread",
   "chat.broadcast": "chat_broadcast",
+  "chat.message-removed": "chat_removed",
 };
 
 const APPROVAL_STATUSES = {

@@ -947,6 +947,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatMessageRemovedNotificationConsumer",
+                EventName = "chat.message.deleted",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-removed-notification-v1",
+                BoundedContext = "Chat",
+                Description = "Tells the author that a moderator removed their message and hands the notice to Collaboration, which writes the Inbox notification once per message and recipient",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatMessageAttachmentRealtimeConsumer",
                 EventName = "chat.message.attachment.changed",
                 EventVersion = 1,

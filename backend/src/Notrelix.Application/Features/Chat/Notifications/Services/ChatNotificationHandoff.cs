@@ -118,6 +118,35 @@ public sealed class ChatNotificationHandoff(
     }
 
     /// <summary>
+    /// Tells the author that a moderator removed their message (UC-CHT-H03). Decided now from Chat's own rows: the message must be a
+    /// tombstone left by someone other than its author, and the author must still be an active member of a live space. The notice
+    /// carries no text and no reason (the reason belongs to the Audit fact); a person who left the channel is not told.
+    /// </summary>
+    public async Task<ChatNotificationDelivery> HandOffRemovalAsync(
+        Guid workspaceId, Guid spaceId, Guid messageId, Guid? sourceEventId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var message = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(
+            m => m.Id == messageId && m.SpaceId == spaceId && m.WorkspaceId == workspaceId, cancellationToken);
+        if (message is null || !message.IsRemovedByModerator || message.DeletedBy is not { } moderator)
+            return ChatNotificationDelivery.None;
+
+        var space = await db.ChatSpaces.AsNoTracking().FirstOrDefaultAsync(
+            s => s.Id == message.SpaceId && s.WorkspaceId == workspaceId && s.DeletedAt == null, cancellationToken);
+        if (space is null)
+            return ChatNotificationDelivery.None;
+
+        var authorStays = await db.ChatMemberships.AsNoTracking()
+            .AnyAsync(m => m.SpaceId == space.Id && m.UserId == message.AuthorId && m.LeftAt == null, cancellationToken);
+        if (!authorStays)
+            return ChatNotificationDelivery.None;
+
+        var source = new ChatNotificationSource(
+            message.AccountId, message.WorkspaceId, space.Id, message.Id, message.ThreadRootId, moderator, sourceEventId,
+            SpaceName(space), Preview: null, now);
+        return await intents.DeliverAsync(source, [new ChatNotificationIntent(message.AuthorId, ChatNotificationReasons.MessageRemoved)], cancellationToken);
+    }
+
+    /// <summary>
     /// The one reason a recipient is notified, or null for none. Muted (level None) gives nothing for any reason. At the Mentions level a
     /// message in a conversation is not enough; a mention, a broadcast and a followed thread still are.
     /// </summary>
