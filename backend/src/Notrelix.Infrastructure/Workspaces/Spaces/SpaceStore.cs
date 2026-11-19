@@ -220,11 +220,13 @@ public sealed class SpaceStore : ISpaceStore
                 member.CreatedAt))
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, SpaceRole? role, SpaceMemberSubjectType? kind, CancellationToken cancellationToken) =>
         await (
             from member in _context.SpaceMembers.AsNoTracking()
             where member.WorkspaceId == workspaceId && member.SpaceId == spaceId
                 && (afterSubjectId == null || member.SubjectId > afterSubjectId.Value)
+                && (role == null || member.Role == role.Value)
+                && (kind == null || member.SubjectType == kind.Value)
             join team in _context.Teams.AsNoTracking() on member.SubjectId equals team.Id into teams
             from team in teams.DefaultIfEmpty()
             orderby member.SubjectId

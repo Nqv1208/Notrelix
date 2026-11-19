@@ -164,6 +164,24 @@ const TREE_PAGE_SIZE = 200;
 /** Members are read 200 entries at a time (the producer's largest page). */
 const MEMBER_PAGE_SIZE = 200;
 
+/** The members tab asks for 50 entries at a time (the producer's default page). */
+export const SPACE_MEMBERS_TAB_PAGE_SIZE = 50;
+
+/** One page of a Space's entries; the filters keep only matching entries before the page is cut. */
+export interface SpaceMembersPageQuery {
+  readonly role?: SpaceRole | null;
+  readonly kind?: SpaceSubjectType | null;
+  readonly cursor?: string | null;
+  readonly limit?: number;
+}
+
+export interface SpaceMembersPageResult {
+  /** Entries in the producer's subject id order, Admins first within this page. */
+  readonly entries: SpaceMemberEntry[];
+  /** Pass back as `cursor` for the next page; `null` on the last page. */
+  readonly nextCursor: string | null;
+}
+
 /** The order the members tab shows people in: Admins first, then Members, then Viewers. */
 const ROLE_RANK: Record<SpaceRole, number> = { Admin: 3, Member: 2, Viewer: 1 };
 
@@ -238,6 +256,32 @@ export function createSpacesService(
       return parseSpaceMembers(items).sort(
         (a, b) => ROLE_RANK[b.role] - ROLE_RANK[a.role],
       );
+    },
+
+    /**
+     * One page of the direct entries, narrowed by role and kind on the producer. Admins are listed
+     * first within the page, so a later page never moves a row above one already shown.
+     */
+    async getMembersPage(
+      workspaceId: string,
+      spaceId: string,
+      query: SpaceMembersPageQuery = {},
+    ): Promise<SpaceMembersPageResult> {
+      const params = new URLSearchParams({
+        limit: String(query.limit ?? SPACE_MEMBERS_TAB_PAGE_SIZE),
+      });
+      if (query.role) params.set("role", query.role);
+      if (query.kind) params.set("kind", query.kind);
+      if (query.cursor) params.set("cursor", query.cursor);
+      const page: SpaceMembersPage = await api.get<SpaceMembersPage>(
+        `${e.spaceMembers(workspaceId, spaceId)}?${params.toString()}`,
+      );
+      return {
+        entries: parseSpaceMembers(page?.items).sort(
+          (a, b) => ROLE_RANK[b.role] - ROLE_RANK[a.role],
+        ),
+        nextCursor: page?.nextCursor ?? null,
+      };
     },
 
     /**

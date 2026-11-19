@@ -15,5 +15,13 @@ public class GetSpaceMembersQueryValidator : AbstractValidator<GetSpaceMembersQu
             .Must(c => SpaceIdCursor.TryDecode(c, out _))
             .When(x => !string.IsNullOrEmpty(x.Cursor))
             .WithMessage("Cursor is not a valid space member list cursor.");
+        RuleFor(x => x.Role)
+            .Must(r => Enum.GetNames<SpaceRole>().Contains(r, StringComparer.OrdinalIgnoreCase))
+            .When(x => !string.IsNullOrEmpty(x.Role))
+            .WithMessage("Role must be Admin, Member or Viewer.");
+        RuleFor(x => x.Kind)
+            .Must(k => Enum.GetNames<SpaceMemberSubjectType>().Contains(k, StringComparer.OrdinalIgnoreCase))
+            .When(x => !string.IsNullOrEmpty(x.Kind))
+            .WithMessage("Kind must be User or Team.");
     }
 }
