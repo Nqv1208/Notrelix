@@ -240,6 +240,11 @@ export interface ChatWorkspaceProps {
    * shows no typing row and no presence dots, and sends nothing.
    */
   readonly ephemeral?: ChatEphemeralPort;
+  /**
+   * The Workspace is archived: every write is refused by the server, so the composer reads as off, the message actions
+   * and attachments are read-only, and typing and presence are not sent (the person still sees others' typing and presence).
+   */
+  readonly workspaceArchived?: boolean;
   readonly timeZone?: string;
 }
 
@@ -375,10 +380,23 @@ export function ChatWorkspace({
   collapseStore,
   onBackToList,
   connection = "live",
-  ephemeral,
+  ephemeral: ephemeralPort,
+  workspaceArchived = false,
   timeZone,
 }: ChatWorkspaceProps) {
   const copy = useChatCopy();
+  // In an archived Workspace the port still delivers what others do, but nothing of the caller's is sent.
+  const ephemeral = useMemo<ChatEphemeralPort | undefined>(
+    () =>
+      ephemeralPort && workspaceArchived
+        ? {
+            ...ephemeralPort,
+            sendTyping: () => undefined,
+            sendPresence: () => undefined,
+          }
+        : ephemeralPort,
+    [ephemeralPort, workspaceArchived],
+  );
   const { locale } = useLocale();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
@@ -635,22 +653,24 @@ export function ChatWorkspace({
     : null;
   const counterpartBlocked =
     counterpartId !== null && (blockedPeople ?? []).includes(counterpartId);
-  const composerDisabledReason = conversation
-    ? counterpartBlocked
-      ? copy.dm.view.blockedComposer
-      : null
-    : !channel
-      ? null
-      : channel.isArchived
-        ? copy.composer.archived
-        : !channel.isMember
-          ? copy.composer.notMember
-          : channel.capabilities?.canPost === false
-            ? copy.composer.readOnly
-            : null;
+  const composerDisabledReason = workspaceArchived
+    ? copy.composer.workspaceArchived
+    : conversation
+      ? counterpartBlocked
+        ? copy.dm.view.blockedComposer
+        : null
+      : !channel
+        ? null
+        : channel.isArchived
+          ? copy.composer.archived
+          : !channel.isMember
+            ? copy.composer.notMember
+            : channel.capabilities?.canPost === false
+              ? copy.composer.readOnly
+              : null;
   // What the message actions offer here: archived is read-only, and the server's capabilities decide the rest.
   const grants = messageActionGrants({
-    archived: channel?.isArchived === true,
+    archived: channel?.isArchived === true || workspaceArchived,
     postRefused: composerDisabledReason !== null,
     canReact: channel?.capabilities?.canReact,
     canPin: channel?.capabilities?.canPin,
@@ -713,6 +733,13 @@ export function ChatWorkspace({
   ) {
     if (!channelId) return;
     sender.send(content, replyTo?.id ?? null, payload, files);
+    setReplyTo(null);
+    timeline.afterSend();
+  }
+
+  function handleSendSticker(stickerId: string) {
+    if (!channelId) return;
+    sender.sendSticker(stickerId, replyTo?.id ?? null);
     setReplyTo(null);
     timeline.afterSend();
   }
@@ -2063,8 +2090,14 @@ export function ChatWorkspace({
                       onOpenThread={handleOpenThread}
                       onTogglePin={grants.pin ? handleTogglePin : undefined}
                       onMarkUnread={handleMarkUnread}
-                      onCreateTask={onCreateTask ? handleCreateTask : undefined}
-                      attachmentsReadOnly={channel?.isArchived === true}
+                      onCreateTask={
+                        onCreateTask && !workspaceArchived
+                          ? handleCreateTask
+                          : undefined
+                      }
+                      attachmentsReadOnly={
+                        channel?.isArchived === true || workspaceArchived
+                      }
                       bottomInset={dockHeight}
                       showNames={conversation?.kind !== "direct"}
                       typingIds={
@@ -2156,6 +2189,7 @@ export function ChatWorkspace({
                         onTyping={ephemeral ? typingSignal.start : undefined}
                         onTypingStop={ephemeral ? typingSignal.stop : undefined}
                         onSend={handleSend}
+                        onSendSticker={handleSendSticker}
                         mentions={composerMentions}
                         attachments={{ draftKey: ch }}
                         slowModeSeconds={channel?.slowModeSeconds ?? 0}
@@ -2432,7 +2466,9 @@ export function ChatWorkspace({
                     onClose={() => setPanel(null)}
                     onReact={grants.react ? handleReact : undefined}
                     onTogglePin={grants.pin ? handleTogglePin : undefined}
-                    attachmentsReadOnly={channel?.isArchived === true}
+                    attachmentsReadOnly={
+                      channel?.isArchived === true || workspaceArchived
+                    }
                   />
                 ) : null}
               </aside>

@@ -1,3 +1,4 @@
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Identity.Security.Services;
 using Notrelix.Testing.Application.Fakes;
@@ -24,10 +25,10 @@ public class SecurityStepUpServiceConsumeTests : IdentityHandlerTestBase
         DateTimeProviderMock.Object,
         ThrottleMock.Object);
 
-    private Task Issue(Guid? userId = null, Guid? sessionId = null, StepUpPurpose purpose = StepUpPurpose.EnrollMfa, TimeSpan? ttl = null) =>
+    private Task Issue(Guid? userId = null, Guid? sessionId = null, StepUpPurpose purpose = StepUpPurpose.EnrollMfa, TimeSpan? ttl = null, string? target = null) =>
         _proofs.StoreAsync(
             Token,
-            new StepUpProofPayload(userId ?? TestUserId, sessionId ?? TestSessionId, purpose, TestNow, TestNow.Add(ttl ?? TimeSpan.FromMinutes(5))),
+            new StepUpProofPayload(userId ?? TestUserId, sessionId ?? TestSessionId, purpose, TestNow, TestNow.Add(ttl ?? TimeSpan.FromMinutes(5)), target),
             TimeSpan.FromMinutes(5));
 
     [Fact]
@@ -99,5 +100,69 @@ public class SecurityStepUpServiceConsumeTests : IdentityHandlerTestBase
         var result = await CreateSut().ConsumeAsync(Token, TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
+    }
+
+    private static readonly Guid Workspace = Guid.Parse("00000000-0000-0000-0000-00000000000a");
+    private static readonly Guid PersonX = Guid.Parse("00000000-0000-0000-0000-000000000001");
+    private static readonly Guid PersonY = Guid.Parse("00000000-0000-0000-0000-000000000002");
+    private static readonly string TargetX = StepUpTarget.OwnershipTransfer(Workspace, PersonX);
+    private static readonly string TargetY = StepUpTarget.OwnershipTransfer(Workspace, PersonY);
+
+    private Task<Result> ConsumeBound(string target) =>
+        CreateSut().ConsumeBoundAsync(Token, TestUserId, TestSessionId, StepUpPurpose.TransferWorkspaceOwnership, target, CancellationToken.None);
+
+    [Fact]
+    public async Task AProofGivenForATarget_IsAcceptedForThatTarget()
+    {
+        await Issue(purpose: StepUpPurpose.TransferWorkspaceOwnership, target: TargetX);
+
+        (await ConsumeBound(TargetX)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AProofGivenForOnePerson_IsRefusedForAnother()
+    {
+        await Issue(purpose: StepUpPurpose.TransferWorkspaceOwnership, target: TargetX);
+
+        var result = await ConsumeBound(TargetY);
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.security.step-up-invalid");
+    }
+
+    [Fact]
+    public async Task AProofGivenForOneWorkspace_IsRefusedForAnother()
+    {
+        await Issue(purpose: StepUpPurpose.TransferWorkspaceOwnership, target: TargetX);
+        var otherWorkspace = StepUpTarget.OwnershipTransfer(Guid.NewGuid(), PersonX);
+
+        (await ConsumeBound(otherWorkspace)).Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AProofGivenWithNoTarget_IsRefusedWhereATargetIsRequired()
+    {
+        await Issue(purpose: StepUpPurpose.TransferWorkspaceOwnership);
+
+        (await ConsumeBound(TargetX)).Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AProofGivenForATarget_IsRefusedWhereNoTargetIsChecked()
+    {
+        await Issue(purpose: StepUpPurpose.TransferWorkspaceOwnership, target: TargetX);
+
+        var result = await CreateSut().ConsumeAsync(Token, TestUserId, TestSessionId, StepUpPurpose.TransferWorkspaceOwnership, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ARefusedTarget_BurnsTheProof_SoItCannotBeTriedAgainstTheRightOne()
+    {
+        await Issue(purpose: StepUpPurpose.TransferWorkspaceOwnership, target: TargetX);
+
+        (await ConsumeBound(TargetY)).Succeeded.Should().BeFalse();
+        (await ConsumeBound(TargetX)).Succeeded.Should().BeFalse();
     }
 }

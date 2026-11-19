@@ -614,6 +614,7 @@ export function messageView(
     content: message.content,
     clientMessageId: message.clientMessageId,
     replyToId: message.replyToId,
+    stickerId: message.stickerId ?? null,
     threadRootId: message.threadRootId,
     threadSequence: message.threadSequence,
     alsoSentToChannel: message.alsoSentToChannel,

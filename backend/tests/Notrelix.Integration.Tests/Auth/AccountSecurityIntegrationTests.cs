@@ -110,7 +110,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
     {
         await using var context = _fixture.CreatePostgresOwnerContext();
         return await StepUp(context, CreateThrottle())
-            .CompletePasswordAsync(user.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, password, CancellationToken.None);
+            .CompletePasswordAsync(user.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, password, null, CancellationToken.None);
     }
 
     private static string Code(Result result) => result.TypedErrors.Single().Code;
@@ -159,11 +159,11 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
         for (var i = 0; i < AccountMax; i++)
         {
-            var bad = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", CancellationToken.None);
+            var bad = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", null, CancellationToken.None);
             Code(bad).Should().Be("identity.security.step-up-invalid");
         }
 
-        var locked = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", CancellationToken.None);
+        var locked = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", null, CancellationToken.None);
         Code(locked).Should().Be(LoginThrottleErrors.Code);
 
         (await StepUpPasswordAsync(_alice, GoodPassword)).Succeeded.Should().BeTrue("the password budget is a separate counter");

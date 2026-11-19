@@ -32,6 +32,7 @@ export * from "./model/search-model";
 export * from "./model/call-model";
 export * from "./model/permission-model";
 export * from "./model/link-model";
+export * from "./model/sticker-model";
 export * from "./model/task-draft";
 export * from "./model/emoji-data";
 export * from "./model/emoji-model";

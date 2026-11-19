@@ -166,7 +166,9 @@ export const en = {
     stepUpProviderBody:
       "You sign in with a provider and have no password or two-factor yet. Add one in Account settings, Security, then come back to hand the workspace over.",
     stepUpProviderText:
-      "Confirm with the account you signed in with. The browser leaves for it and comes back here to finish the handover.",
+      "Confirm with the account you signed in with. The browser leaves for it and comes back here, where you press Transfer to finish the handover.",
+    stepUpProviderBack:
+      "Your provider confirmed you. Ownership of {{workspace}} moves to {{name}} only when you press Transfer.",
     stepUpProviderButton: "Confirm with {{provider}}",
     stepUpProviderPending: "Confirming…",
     stepUpProviderFailed:
@@ -369,7 +371,9 @@ export const vi: WorkspaceSettingsCopy = {
     stepUpProviderBody:
       "Bạn đăng nhập bằng nhà cung cấp và chưa có mật khẩu hay xác thực hai bước. Hãy thêm một trong hai ở Cài đặt tài khoản, mục Bảo mật, rồi quay lại để chuyển quyền.",
     stepUpProviderText:
-      "Hãy xác nhận bằng tài khoản bạn đã dùng để đăng nhập. Trình duyệt rời đi rồi quay lại đây để hoàn tất việc chuyển quyền.",
+      "Hãy xác nhận bằng tài khoản bạn đã dùng để đăng nhập. Trình duyệt rời đi rồi quay lại đây, nơi bạn bấm Chuyển để hoàn tất việc chuyển quyền.",
+    stepUpProviderBack:
+      "Nhà cung cấp đã xác nhận bạn. Quyền sở hữu {{workspace}} chỉ chuyển cho {{name}} khi bạn bấm Chuyển.",
     stepUpProviderButton: "Xác nhận với {{provider}}",
     stepUpProviderPending: "Đang xác nhận…",
     stepUpProviderFailed:

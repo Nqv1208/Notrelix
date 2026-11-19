@@ -77,7 +77,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
     {
         stepUp.PasswordHasher.Setup(x => x.VerifyPassword(password, It.IsAny<string>())).Returns(true);
         var proof = await stepUp.Service.CompletePasswordAsync(
-            userId, stepUp.SessionId, StepUpPurpose.UnlinkOAuth, password, CancellationToken.None);
+            userId, stepUp.SessionId, StepUpPurpose.UnlinkOAuth, password, null, CancellationToken.None);
         proof.Succeeded.Should().BeTrue($"password proof failed: {string.Join(", ", proof.Errors)}");
         return proof.Data!.ProofToken;
     }
@@ -85,7 +85,7 @@ public class UnlinkOAuthCommandHandlerTests : IAsyncLifetime
     private static async Task<string> IssueOAuthProof(StepUpHarness stepUp, Guid userId)
     {
         var proof = await stepUp.Service.GrantOAuthProofAsync(
-            userId, stepUp.SessionId, StepUpPurpose.UnlinkOAuth, CancellationToken.None);
+            userId, stepUp.SessionId, StepUpPurpose.UnlinkOAuth, null, CancellationToken.None);
         proof.Succeeded.Should().BeTrue();
         return proof.Data!.ProofToken;
     }

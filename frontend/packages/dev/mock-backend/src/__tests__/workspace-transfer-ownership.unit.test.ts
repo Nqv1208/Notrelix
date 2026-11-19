@@ -20,11 +20,20 @@ function setup(persona: MockPersona = "owner") {
 
 type Api = ReturnType<typeof setup>["api"];
 
-/** A single-use proof for a purpose, answered the way the account page does, with whichever factor the mock person has. */
+/**
+ * A single-use proof for a purpose, answered the way the account page does, with whichever factor the mock person
+ * has. A handover proof names the workspace and the incoming Owner (the admin unless another is given).
+ */
 async function proofFor(
   api: Api,
   purpose = "TransferWorkspaceOwnership",
+  newOwnerId: string = mockIds.users.admin,
+  forWorkspaceId: string = workspaceId,
 ): Promise<string> {
+  const target =
+    purpose === "TransferWorkspaceOwnership"
+      ? { workspaceId: forWorkspaceId, newOwnerId }
+      : {};
   const requirement = (await api.post("/auth/security/step-up/requirement", {
     purpose,
   })) as { requiredFactor: string; challengeToken: string | null };
@@ -33,10 +42,12 @@ async function proofFor(
         purpose,
         challengeToken: requirement.challengeToken,
         code: MOCK_AUTH.otpCode,
+        ...target,
       })
     : api.post("/auth/security/step-up/complete-password", {
         purpose,
         password: MOCK_AUTH.personalPassword,
+        ...target,
       }))) as { proofToken: string };
   return proof.proofToken;
 }
@@ -97,7 +108,11 @@ describe("Transfer ownership in the mock world (LD-05)", () => {
   it("spends the proof: one refused for its rule cannot be used again", async () => {
     const { store, api } = setup();
     const expectedVersion = store.getWorkspaceVersion(workspaceId);
-    const stepUpToken = await proofFor(api);
+    const stepUpToken = await proofFor(
+      api,
+      "TransferWorkspaceOwnership",
+      mockIds.users.viewer,
+    );
     await expect(
       api.post(url, {
         newOwnerId: mockIds.users.viewer,
@@ -116,6 +131,66 @@ describe("Transfer ownership in the mock world (LD-05)", () => {
       code: "identity.security.step-up-invalid",
     });
     expect(roleOf(store, mockIds.users.admin)).toBe("admin");
+  });
+
+  it("refuses a proof given for another person with 400 step-up-invalid, spends it, and changes nobody", async () => {
+    const { store, api } = setup();
+    const expectedVersion = store.getWorkspaceVersion(workspaceId);
+    const forMember = await proofFor(
+      api,
+      "TransferWorkspaceOwnership",
+      mockIds.users.member,
+    );
+    await expect(
+      api.post(url, {
+        newOwnerId: mockIds.users.admin,
+        expectedVersion,
+        stepUpToken: forMember,
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "identity.security.step-up-invalid",
+    });
+    // Spent by the try: it cannot be tried again against the person it was given for.
+    await expect(
+      api.post(url, {
+        newOwnerId: mockIds.users.member,
+        expectedVersion,
+        stepUpToken: forMember,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(roleOf(store, mockIds.users.owner)).toBe("owner");
+    expect(roleOf(store, mockIds.users.admin)).toBe("admin");
+  });
+
+  it("refuses a proof given for another workspace with 400 step-up-invalid", async () => {
+    const { store, api } = setup();
+    await expect(
+      api.post(url, {
+        newOwnerId: mockIds.users.admin,
+        expectedVersion: store.getWorkspaceVersion(workspaceId),
+        stepUpToken: await proofFor(
+          api,
+          "TransferWorkspaceOwnership",
+          mockIds.users.admin,
+          "another-workspace",
+        ),
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "identity.security.step-up-invalid",
+    });
+    expect(roleOf(store, mockIds.users.admin)).toBe("admin");
+  });
+
+  it("will not give a handover proof that names no target", async () => {
+    const { api } = setup();
+    await expect(
+      api.post("/auth/security/step-up/complete-password", {
+        purpose: "TransferWorkspaceOwnership",
+        password: MOCK_AUTH.personalPassword,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
   });
 
   it("refuses a stale version with 412 and changes nobody", async () => {
@@ -143,7 +218,11 @@ describe("Transfer ownership in the mock world (LD-05)", () => {
         api.post(url, {
           newOwnerId,
           expectedVersion,
-          stepUpToken: await proofFor(api),
+          stepUpToken: await proofFor(
+            api,
+            "TransferWorkspaceOwnership",
+            newOwnerId,
+          ),
         }),
       ).rejects.toMatchObject({ status });
     }

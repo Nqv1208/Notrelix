@@ -626,6 +626,7 @@ export const workspaceOperations = [
         store,
         body?.stepUpToken,
         "TransferWorkspaceOwnership",
+        { workspaceId: params.workspaceId, newOwnerId: body?.newOwnerId },
       );
       if (unproven) return unproven;
       const outcome = store.transferOwnership(

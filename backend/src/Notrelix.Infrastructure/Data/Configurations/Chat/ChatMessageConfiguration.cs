@@ -29,6 +29,7 @@ public class ChatMessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(x => x.ThreadSequence).HasColumnName("thread_sequence");
         builder.Property(x => x.AlsoSentToChannel).HasColumnName("also_sent_to_channel").IsRequired().HasDefaultValue(false);
         builder.Property(x => x.CallId).HasColumnName("call_id");
+        builder.Property(x => x.StickerId).HasColumnName("sticker_id").HasMaxLength(ChatLimits.StickerIdMaxLength);
         builder.Property(x => x.EditedAt).HasColumnName("edited_at");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.Property(x => x.DeletedBy).HasColumnName("deleted_by");

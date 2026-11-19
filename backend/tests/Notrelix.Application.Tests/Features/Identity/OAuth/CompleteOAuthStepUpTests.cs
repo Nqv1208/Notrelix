@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Identity.OAuth.Abstractions;
 using Notrelix.Application.Features.Identity.OAuth.Commands.CompleteOAuthStepUp;
 using Notrelix.Application.Features.Identity.OAuth.DTOs;
 using Notrelix.Application.Features.Identity.Mfa.DTOs;
+using Notrelix.Application.Features.Identity.Security;
 using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Identity.OAuth;
 
@@ -21,7 +22,7 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
         SetupUsers(CreateUser());
         _options.Setup(o => o.GetRedirectUri(It.IsAny<OAuthProvider>())).Returns("https://api.test/callback");
         StepUpServiceMock
-            .Setup(s => s.GrantOAuthProofAsync(TestUserId, TestSessionId, It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GrantOAuthProofAsync(TestUserId, TestSessionId, It.IsAny<StepUpPurpose>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => Result<StepUpProofResult>.Success(new StepUpProofResult(Guid.NewGuid().ToString("N"), TestNow.AddMinutes(5))));
         LinkProvider(Subject);
         ProviderAnswers(Subject);
@@ -66,7 +67,7 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
         result.Data!.Proof.ProofToken.Should().NotBeNullOrEmpty();
         result.Data.SpareProof.Should().BeNull();
         StepUpServiceMock.Verify(s => s.GrantOAuthProofAsync(
-            TestUserId, TestSessionId, StepUpPurpose.RevokeOtherSessions, It.IsAny<CancellationToken>()), Times.Once);
+            TestUserId, TestSessionId, StepUpPurpose.RevokeOtherSessions, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     /// <summary>
@@ -85,7 +86,7 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         StepUpServiceMock.Verify(s => s.GrantOAuthProofAsync(
-            TestUserId, TestSessionId, purpose, It.IsAny<CancellationToken>()),
+            TestUserId, TestSessionId, purpose, It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Exactly(purpose == StepUpPurpose.EnrollMfa ? 2 : 1));
     }
 
@@ -103,7 +104,7 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
         result.Data!.SpareProof.Should().NotBeNull();
         result.Data.SpareProof!.ProofToken.Should().NotBe(result.Data.Proof.ProofToken);
         StepUpServiceMock.Verify(s => s.GrantOAuthProofAsync(
-            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, It.IsAny<CancellationToken>()), Times.Exactly(2));
+            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -116,7 +117,7 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         StepUpServiceMock.Verify(s => s.GrantOAuthProofAsync(
-            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()), Times.Never);
+            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -154,5 +155,33 @@ public class CompleteOAuthStepUpTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeFalse();
         StepUpServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task TheTargetTheStartNamed_TravelsToTheProof()
+    {
+        var target = StepUpTarget.OwnershipTransfer(Guid.CreateVersion7(), Guid.CreateVersion7());
+        _states.Setup(s => s.ConsumeAsync("s", It.IsAny<CancellationToken>())).ReturnsAsync(new OAuthLoginState(
+            "s", "n", "v", OAuthProvider.Google, null, TestNow.AddMinutes(10),
+            OAuthFlowKind.StepUp, TestUserId, TestSessionId, MfaChallengePurpose.StepUpTransferWorkspaceOwnership, target));
+
+        var result = await CreateSut().Handle(Callback(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        StepUpServiceMock.Verify(s => s.GrantOAuthProofAsync(
+            TestUserId, TestSessionId, StepUpPurpose.TransferWorkspaceOwnership, target, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TheCodeIsRedeemed_AskingForAnAuthenticationNoOlderThanTheProofWindow()
+    {
+        State();
+
+        await CreateSut().Handle(Callback(), CancellationToken.None);
+
+        _provider.Verify(p => p.RedeemCodeAsync(
+            OAuthProvider.Google,
+            It.Is<OAuthCodeRedemptionRequest>(r => r.MaxAuthenticationAge == SecurityStepUpPolicy.ProofTtl),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

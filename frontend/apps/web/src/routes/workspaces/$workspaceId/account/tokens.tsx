@@ -193,21 +193,15 @@ export function AccountTokensPage() {
     (provider: string) => {
       const { name, days } = draft.current;
       const back = `/workspaces/${workspaceId}/account/tokens?stepUp=${PURPOSE}&name=${encodeURIComponent(name)}&days=${days}`;
-      const path = service.providerStepUpPath(provider, PURPOSE, back);
-      if (!env.mockApi) {
-        window.location.assign(`${env.apiUrl}${path}`);
-        return;
-      }
-      void runtimeClient.api
-        .get<{ redirectTo?: string }>(path, {
-          skipAuthRefresh: true,
-          skipGlobalErrorToast: true,
-        })
-        .then((answer) => {
-          const landing = new URL(
-            answer.redirectTo ?? "/",
-            window.location.origin,
-          );
+      void service
+        .startProviderStepUp(provider, PURPOSE, back)
+        .then((url) => {
+          if (!env.mockApi) {
+            window.location.assign(url);
+            return;
+          }
+          // No browser leaves in the mock world: the answer is the page the round trip lands on.
+          const landing = new URL(url, window.location.origin);
           void navigate({
             to: landing.pathname,
             search: Object.fromEntries(landing.searchParams),
@@ -218,7 +212,7 @@ export function AccountTokensPage() {
           setFlow((c) => (c?.kind === "proof" ? { ...c, error: "failed" } : c)),
         );
     },
-    [env, navigate, runtimeClient.api, service, workspaceId],
+    [env, navigate, service, workspaceId],
   );
 
   // Back from the provider: issue the token the address names, spending the proof it left.

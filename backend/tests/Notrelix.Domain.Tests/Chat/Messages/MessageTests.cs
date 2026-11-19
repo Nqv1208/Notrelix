@@ -37,6 +37,50 @@ public class MessageTests
     }
 
     [Fact]
+    public void CreateStickerMessage_KeepsTheStickerId_AndCarriesOnlyTheCatalogPreviewText()
+    {
+        var message = Message.CreateStickerMessage(_accountId, _workspaceId, _spaceId, 2, _author, "thumbs-up", "c-s", null, _now);
+
+        message.StickerId.Should().Be("thumbs-up");
+        message.Content.Should().Be("Sticker: Thumbs up", "a sticker has no typed text: its content is the catalog preview");
+        message.Kind.Should().Be(MessageKind.User);
+        message.DomainEvents.OfType<MessageCreatedDomainEvent>().Should().ContainSingle().Which.StickerId.Should().Be("thumbs-up");
+    }
+
+    [Theory]
+    [InlineData("not-a-sticker")]
+    [InlineData("")]
+    [InlineData("THUMBS-UP")]
+    public void CreateStickerMessage_AnIdOutsideTheCatalog_IsRefused(string id)
+    {
+        var act = () => Message.CreateStickerMessage(_accountId, _workspaceId, _spaceId, 1, _author, id, "c-s", null, _now);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(ChatRuleCodes.StickerInvalid);
+    }
+
+    [Fact]
+    public void ASticker_IsNeverEdited_ButItsAuthorMayDeleteIt()
+    {
+        var message = Message.CreateStickerMessage(_accountId, _workspaceId, _spaceId, 1, _author, "party", "c-s", null, _now);
+
+        var edit = () => message.Edit("typed text", _author, _now);
+
+        edit.Should().Throw<BusinessRuleException>().Which.RuleCode.Should().Be(ChatRuleCodes.StickerInvalid);
+        message.Delete(_author, _now).Should().BeTrue();
+        message.Content.Should().BeNull();
+    }
+
+    [Fact]
+    public void EveryCatalogIdFitsTheStoredColumn_AndHasAPreview()
+    {
+        foreach (var id in StickerCatalog.Ids)
+        {
+            id.Length.Should().BeLessThanOrEqualTo(ChatLimits.StickerIdMaxLength);
+            StickerCatalog.PreviewText(id).Should().StartWith("Sticker: ");
+        }
+    }
+
+    [Fact]
     public void CreateUserMessage_RaisesMessageCreatedWithTheSequence()
     {
         var message = NewUserMessage(sequence: 3);

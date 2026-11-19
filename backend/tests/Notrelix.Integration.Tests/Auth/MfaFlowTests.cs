@@ -1009,7 +1009,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         private async Task<string> EnrollProofAsync(ApplicationDbContext context, Guid userId, Guid sessionId)
         {
             var proof = await StepUp(context, passwordMatches: true).CompletePasswordAsync(
-                userId, sessionId, StepUpPurpose.EnrollMfa, "Password1!", CancellationToken.None);
+                userId, sessionId, StepUpPurpose.EnrollMfa, "Password1!", null, CancellationToken.None);
             proof.Succeeded.Should().BeTrue($"enrol proof should be issued: {string.Join(", ", proof.Errors)}");
             return proof.Data!.ProofToken;
         }
@@ -1084,7 +1084,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         public async Task<string> GrantProviderProof(Guid userId, Guid sessionId, StepUpPurpose purpose)
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
-            var proof = await StepUp(context).GrantOAuthProofAsync(userId, sessionId, purpose, CancellationToken.None);
+            var proof = await StepUp(context).GrantOAuthProofAsync(userId, sessionId, purpose, null, CancellationToken.None);
             proof.Succeeded.Should().BeTrue();
             return proof.Data!.ProofToken;
         }
@@ -1138,7 +1138,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
             return await StepUp(context).CompleteMfaAsync(
-                userId, sessionId, purpose, challengeToken, code, CancellationToken.None);
+                userId, sessionId, purpose, challengeToken, code, null, CancellationToken.None);
         }
 
         public async Task<Result<AuthResult>> SendLogin(string email)

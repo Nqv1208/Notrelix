@@ -175,26 +175,19 @@ export function AccountEmailPage() {
   // back to this page with `stepUp=changeEmail`, the backend's proof waiting in its httpOnly cookie.
   const startProviderStepUp = useCallback(
     (provider: string) => {
-      const path = service.providerStepUpPath(
-        provider,
-        PURPOSE,
-        `/workspaces/${workspaceId}/account/email?stepUp=changeEmail&email=${encodeURIComponent(pending.current)}`,
-      );
-      if (!env.mockApi) {
-        window.location.assign(`${env.apiUrl}${path}`);
-        return;
-      }
-      // No browser leaves in the mock world: the mock plays the round trip and says where the redirect lands.
-      void runtimeClient.api
-        .get<{ redirectTo?: string }>(path, {
-          skipAuthRefresh: true,
-          skipGlobalErrorToast: true,
-        })
-        .then((answer) => {
-          const landing = new URL(
-            answer.redirectTo ?? "/",
-            window.location.origin,
-          );
+      void service
+        .startProviderStepUp(
+          provider,
+          PURPOSE,
+          `/workspaces/${workspaceId}/account/email?stepUp=changeEmail&email=${encodeURIComponent(pending.current)}`,
+        )
+        .then((url) => {
+          if (!env.mockApi) {
+            window.location.assign(url);
+            return;
+          }
+          // No browser leaves in the mock world: the answer is the page the round trip lands on.
+          const landing = new URL(url, window.location.origin);
           void navigate({
             to: landing.pathname,
             search: Object.fromEntries(landing.searchParams),
@@ -203,7 +196,7 @@ export function AccountEmailPage() {
         })
         .catch(() => setStepError({ error: "failed" }));
     },
-    [env, navigate, runtimeClient.api, service, workspaceId],
+    [env, navigate, service, workspaceId],
   );
 
   // Back from the provider: spend the proof it left on the change that asked for it.

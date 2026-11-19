@@ -1244,7 +1244,7 @@ export interface paths {
         put?: never;
         /**
          * Send a message to a space
-         * @description clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required. A new message is counted per person and per space (chat.send) and an @channel or @here also under chat.broadcast, from which a Workspace Admin is not exempt; a repeat of a stored send costs nothing. Over a limit the answer is 429 with a Retry-After header, errorCode rate_limit.exceeded and ruleCode rate-limited; a channel in slow mode answers 429 with ruleCode slow-mode and the seconds to wait. The sender keeps the text and retries after the wait.
+         * @description clientMessageId is the sender's key for the message: stickerId (one of the Notrelix catalog) sends a sticker alone: no text, no voice, no mentions, and a sticker is never edited; an unknown id is 400. a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required. A new message is counted per person and per space (chat.send) and an @channel or @here also under chat.broadcast, from which a Workspace Admin is not exempt; a repeat of a stored send costs nothing. Over a limit the answer is 429 with a Retry-After header, errorCode rate_limit.exceeded and ruleCode rate-limited; a channel in slow mode answers 429 with ruleCode slow-mode and the seconds to wait. The sender keeps the text and retries after the wait.
          */
         post: operations["Chat.Messages.Send"];
         delete?: never;
@@ -3304,13 +3304,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
          * Start OAuth step-up (re-authentication) flow
-         * @description Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.
+         * @description Answers the provider URL the browser must go to, to re-authenticate for a security purpose; the provider is asked for a fresh sign-in (prompt=login, max_age=0). returnUrl, when given, must be an internal root-relative path (anything else answers 400). TransferWorkspaceOwnership also needs workspaceId and newOwnerId: the proof is bound to them and is refused for any other. Completion grants a purpose-bound step-up proof; no new session is issued.
          */
-        get: operations["Identity.Auth.OAuth.StepUpStart"];
-        put?: never;
-        post?: never;
+        post: operations["Identity.Auth.OAuth.StepUpStart"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8580,6 +8580,7 @@ export interface components {
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
             voiceMessage?: boolean | null;
+            stickerId?: string | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest": {
             role?: string | null;
@@ -9698,10 +9699,18 @@ export interface components {
             purpose?: string | null;
             challengeToken?: string | null;
             code?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest": {
             purpose?: string | null;
             password?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest": {
             stepUpToken?: string | null;
@@ -9736,6 +9745,14 @@ export interface components {
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
             stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest": {
+            purpose?: string | null;
+            returnUrl?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
@@ -10847,6 +10864,9 @@ export interface components {
             hasRecoveryCodes?: boolean;
             /** Format: int32 */
             recoveryCodesRemaining?: number;
+        };
+        "Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult": {
+            authorizationUrl?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
             email?: string | null;
@@ -22103,17 +22123,18 @@ export interface operations {
     };
     "Identity.Auth.OAuth.StepUpStart": {
         parameters: {
-            query?: {
-                purpose?: string;
-                returnUrl?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 provider: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -22121,15 +22142,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult"];
                 };
-            };
-            /** @description Found */
-            302: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Bad Request */
             400: {

@@ -46,7 +46,8 @@ public record SendMessageRequest(
     Guid? ReplyToId,
     IReadOnlyList<MentionRequest>? Mentions = null,
     bool? ConfirmBroadcast = null,
-    bool? VoiceMessage = null);
+    bool? VoiceMessage = null,
+    string? StickerId = null);
 
 /// <summary>
 /// One mention in a message's text (UC-CHT-G01, G03, G04). Kind is user, channel-link, broadcast-channel or broadcast-here. Start and

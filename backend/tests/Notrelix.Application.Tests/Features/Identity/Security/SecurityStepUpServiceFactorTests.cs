@@ -39,7 +39,7 @@ public class SecurityStepUpServiceFactorTests : IdentityHandlerTestBase
         TestNow, TestNow.AddMinutes(5), session ?? TestSessionId);
 
     private Task<Result<StepUpProofResult>> CompleteMfa(string token = "tok") => CreateSut().CompleteMfaAsync(
-        TestUserId, TestSessionId, StepUpPurpose.DisableMfa, token, "123456", CancellationToken.None);
+        TestUserId, TestSessionId, StepUpPurpose.DisableMfa, token, "123456", null, CancellationToken.None);
 
     [Fact]
     public async Task Requirement_WithAnActiveFactor_IsMfa_AndIssuesAChallengeBoundToTheSession()
@@ -190,7 +190,7 @@ public class SecurityStepUpServiceFactorTests : IdentityHandlerTestBase
         SetupUsers(user);
 
         var result = await CreateSut().CompletePasswordAsync(
-            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, "anything", CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, "anything", null, CancellationToken.None);
 
         result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.security.step-up-invalid");
         _proofStore.Verify(p => p.StoreAsync(It.IsAny<string>(), It.IsAny<StepUpProofPayload>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -203,11 +203,27 @@ public class SecurityStepUpServiceFactorTests : IdentityHandlerTestBase
         PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
 
         var result = await CreateSut().CompletePasswordAsync(
-            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, TestPassword, CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, TestPassword, null, CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
         _proofStore.Verify(p => p.StoreAsync(result.Data!.ProofToken,
             It.Is<StepUpProofPayload>(x => x.UserId == TestUserId && x.SessionId == TestSessionId && x.Purpose == StepUpPurpose.EnrollMfa),
+            It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CompletePassword_ForATarget_BindsTheProofToIt()
+    {
+        SetupUsers(CreateUser());
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        var target = StepUpTarget.OwnershipTransfer(Guid.NewGuid(), Guid.NewGuid());
+
+        var result = await CreateSut().CompletePasswordAsync(
+            TestUserId, TestSessionId, StepUpPurpose.TransferWorkspaceOwnership, TestPassword, target, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        _proofStore.Verify(p => p.StoreAsync(result.Data!.ProofToken,
+            It.Is<StepUpProofPayload>(x => x.Purpose == StepUpPurpose.TransferWorkspaceOwnership && x.Target == target),
             It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -218,7 +234,7 @@ public class SecurityStepUpServiceFactorTests : IdentityHandlerTestBase
         PasswordHasherMock.Setup(h => h.VerifyPassword("bad", TestHashedPassword)).Returns(false);
 
         var result = await CreateSut().CompletePasswordAsync(
-            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, "bad", CancellationToken.None);
+            TestUserId, TestSessionId, StepUpPurpose.EnrollMfa, "bad", null, CancellationToken.None);
 
         result.TypedErrors.Should().ContainSingle(e =>
             e.Code == "identity.security.step-up-invalid-password" && e.Type == ApplicationErrorType.Validation);

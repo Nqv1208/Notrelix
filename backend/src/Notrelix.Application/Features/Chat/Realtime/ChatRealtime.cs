@@ -77,7 +77,8 @@ public static class ChatRealtime
         long Version,
         Guid? ThreadRootId = null,
         long? ThreadSequence = null,
-        string? ClientMessageId = null);
+        string? ClientMessageId = null,
+        string? StickerId = null);
 
     /// <summary>The longest preview text of an unread frame, in characters.</summary>
     public const int PreviewMaxLength = 140;
@@ -114,7 +115,7 @@ public static class ChatRealtime
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, e.Kind, e.Content, ContentOmitted: false, Deleted: false,
             CreatedAt: e.OccurredAt, EditedAt: null, ReplyToId: e.ReplyToId, Version: e.Version,
-            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence, ClientMessageId: e.ClientMessageId);
+            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence, ClientMessageId: e.ClientMessageId, StickerId: e.StickerId);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageCreatedEvent, Fit(frame), now);
     }

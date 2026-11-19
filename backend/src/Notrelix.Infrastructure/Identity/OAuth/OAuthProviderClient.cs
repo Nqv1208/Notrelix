@@ -67,6 +67,14 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
             queryParams["allow_signup"] = "true";
         }
 
+        // A step-up proves the person is at the provider now: an existing provider session must not
+        // answer for them (OIDC Core 3.1.2.1 prompt=login, max_age=0).
+        if (request.FreshAuthentication && OidcIdTokenValidator.IsOidc(provider))
+        {
+            queryParams["prompt"] = "login";
+            queryParams["max_age"] = "0";
+        }
+
         var queryString = string.Join("&",
             queryParams.Where(p => p.Value is not null)
                 .Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value!)}"));
@@ -135,7 +143,8 @@ public sealed class OAuthProviderClient : IOAuthProviderClient
                 OidcIdTokenValidator.IssuersOf(provider, config),
                 config.ClientId,
                 request.Nonce,
-                _clock.UtcNow);
+                _clock.UtcNow,
+                request.MaxAuthenticationAge);
 
             if (provider == OAuthProvider.Google)
                 return BuildProfileFromIdToken(provider, claims);

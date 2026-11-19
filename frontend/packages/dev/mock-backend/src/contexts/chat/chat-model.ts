@@ -67,6 +67,8 @@ export interface ChatMessageRecord {
   /** Null for system messages. */
   readonly clientMessageId: string | null;
   readonly replyToId: string | null;
+  /** The Notrelix sticker of a sticker message (UC-CHT-I06); null for any other message. */
+  readonly stickerId?: string | null;
   /** The root of the thread a reply belongs to; null for a message of the main flow. */
   readonly threadRootId: string | null;
   /** The reply's place in its thread: 1 for the first reply, gap-free; null outside a thread. */
@@ -180,6 +182,25 @@ export const CHAT_LIMITS = {
   pageSizeDefault: 50,
   pageSizeMax: 100,
   clientMessageIdMaxLength: 128,
+  /** The Notrelix sticker ids and their preview text (the server StickerCatalog). */
+  stickers: {
+    "thumbs-up": "Thumbs up",
+    clap: "Clapping",
+    party: "Party",
+    heart: "Heart",
+    laugh: "Laughing",
+    wow: "Wow",
+    thinking: "Thinking",
+    sad: "Sad",
+    fire: "On fire",
+    rocket: "Rocket",
+    eyes: "Eyes on it",
+    check: "Done",
+    pray: "Thank you",
+    hundred: "100",
+    coffee: "Coffee break",
+    bug: "Bug",
+  } as Readonly<Record<string, string>>,
   channelNameMaxLength: 80,
   channelTopicMaxLength: 250,
   channelGroupNameMaxLength: 60,
@@ -217,6 +238,7 @@ export const CHAT_ERROR = {
   lastManager: "last-manager",
   messageDeleted: "message-deleted",
   systemMessageImmutable: "system-message-immutable",
+  stickerInvalid: "sticker-invalid",
   notFound: "resource.not_found",
   forbidden: "auth.forbidden",
   validation: "validation.failed",

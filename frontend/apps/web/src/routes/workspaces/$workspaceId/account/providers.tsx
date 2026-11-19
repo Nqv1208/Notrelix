@@ -217,26 +217,19 @@ export function AccountProvidersPage() {
   const startProviderStepUp = useCallback(
     (provider: string) => {
       if (!step) return;
-      const path = service.providerStepUpPath(
-        provider,
-        PURPOSE[step.purpose],
-        `/workspaces/${workspaceId}/account/providers?stepUp=${step.purpose}${step.provider ? `&provider=${encodeURIComponent(step.provider)}` : ""}`,
-      );
-      if (!env.mockApi) {
-        window.location.assign(`${env.apiUrl}${path}`);
-        return;
-      }
-      // No browser leaves in the mock world: the mock plays the round trip and says where the redirect lands.
-      void runtimeClient.api
-        .get<{ redirectTo?: string }>(path, {
-          skipAuthRefresh: true,
-          skipGlobalErrorToast: true,
-        })
-        .then((answer) => {
-          const landing = new URL(
-            answer.redirectTo ?? "/",
-            window.location.origin,
-          );
+      void service
+        .startProviderStepUp(
+          provider,
+          PURPOSE[step.purpose],
+          `/workspaces/${workspaceId}/account/providers?stepUp=${step.purpose}${step.provider ? `&provider=${encodeURIComponent(step.provider)}` : ""}`,
+        )
+        .then((url) => {
+          if (!env.mockApi) {
+            window.location.assign(url);
+            return;
+          }
+          // No browser leaves in the mock world: the answer is the page the round trip lands on.
+          const landing = new URL(url, window.location.origin);
           void navigate({
             to: landing.pathname,
             search: Object.fromEntries(landing.searchParams),
@@ -245,7 +238,7 @@ export function AccountProvidersPage() {
         })
         .catch(() => setStepError({ error: "failed" }));
     },
-    [env, navigate, runtimeClient.api, service, step, workspaceId],
+    [env, navigate, service, step, workspaceId],
   );
 
   // Back from the provider: spend the proof it left on the action that asked for it.

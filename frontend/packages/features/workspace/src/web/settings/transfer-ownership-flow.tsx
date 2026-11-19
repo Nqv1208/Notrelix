@@ -135,6 +135,9 @@ export function TransferOwnershipFlow({
     [],
   );
   const [providerFailed, setProviderFailed] = React.useState(false);
+  // Back from the provider with a confirmation waiting: nothing is claimed or handed over until the person
+  // presses Transfer, because the address that brought them back could have been written by anyone.
+  const [backFromProvider, setBackFromProvider] = React.useState(false);
   // Back from a provider: read once at mount, acted on once the people and the version are known.
   const [returned, setReturned] =
     React.useState<OwnershipProviderReturn | null>(null);
@@ -159,6 +162,7 @@ export function TransferOwnershipFlow({
 
   const reset = (next: boolean) => {
     setOpen(next);
+    setBackFromProvider(false);
     if (next) {
       setSelected(candidates[0]?.userId ?? "");
       setFailure(null);
@@ -220,10 +224,11 @@ export function TransferOwnershipFlow({
     let token: string;
     try {
       token = usesPassword
-        ? await stepUp.withPassword(value)
+        ? await stepUp.withPassword(value, choice.userId)
         : await stepUp.withCode(
             asked.challengeToken ?? "",
             recovery ? value.trim() : value.replace(/\s+/g, ""),
+            choice.userId,
           );
     } catch (error) {
       setPending(false);
@@ -258,6 +263,28 @@ export function TransferOwnershipFlow({
     setPending(false);
   };
 
+  /** The person pressed Transfer after the provider confirmed them: only now is the proof taken and spent. */
+  const finishAfterProvider = async () => {
+    const provider = stepUp.provider;
+    if (!choice || !provider || pending) return;
+    setPending(true);
+    setFailure(null);
+    setRefused(false);
+    setProofError(null);
+    let token: string;
+    try {
+      token = await provider.claim();
+    } catch (error) {
+      setBackFromProvider(false);
+      setProofError(describeProofRefusal(error));
+      setPending(false);
+      return;
+    }
+    // Taken: whatever follows, another handover needs another confirmation.
+    setBackFromProvider(false);
+    await settle(choice.userId, token);
+  };
+
   /** Leaves for the provider; the choice travels in the return address, nothing secret does. */
   const confirmWithProvider = async (provider: string) => {
     if (!choice || !stepUp.provider || pending) return;
@@ -280,7 +307,7 @@ export function TransferOwnershipFlow({
     setReturned(stepUp.provider?.resume() ?? null);
   }, [stepUp]);
 
-  // Back from the provider: reopen on the chosen person, take the proof it left and hand over, once.
+  // Back from the provider: reopen on the chosen person and wait for the person's own click, once.
   React.useEffect(() => {
     const provider = stepUp.provider;
     if (!returned || !provider || returnHandled.current) return;
@@ -294,26 +321,13 @@ export function TransferOwnershipFlow({
     setPending(true);
     void (async () => {
       const asking = await ask();
-      if (!asking) {
-        setPending(false);
-        return;
+      if (asking) {
+        if (returned.failed) setProviderFailed(true);
+        else setBackFromProvider(true);
       }
-      if (returned.failed) {
-        setProviderFailed(true);
-        setPending(false);
-        return;
-      }
-      let token: string;
-      try {
-        token = await provider.claim();
-      } catch (error) {
-        setProofError(describeProofRefusal(error));
-        setPending(false);
-        return;
-      }
-      await settle(returned.newOwnerId, token);
+      setPending(false);
     })();
-    // The handover runs once for one return, guarded by `returnHandled`.
+    // The dialog reopens once for one return, guarded by `returnHandled`.
   }, [returned, disabled, candidates, stepUp]);
 
   return (
@@ -340,7 +354,11 @@ export function TransferOwnershipFlow({
             onSubmit={(event) => {
               event.preventDefault();
               if (stale) return;
-              void (proving ? prove() : confirmChoice());
+              void (backFromProvider
+                ? finishAfterProvider()
+                : proving
+                  ? prove()
+                  : confirmChoice());
             }}
             className="flex flex-col gap-4"
           >
@@ -391,7 +409,17 @@ export function TransferOwnershipFlow({
                     </span>
                   </p>
                 ) : null}
-                {usesProvider && providerNames.length > 0 ? (
+                {usesProvider && backFromProvider ? (
+                  <p className="m-0 flex items-start gap-2 rounded-md bg-state-hover-strong px-3 py-2 text-metadata text-muted-foreground">
+                    <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    <span>
+                      {formatCopy(d.stepUpProviderBack, {
+                        ...values,
+                        name: choice?.name ?? "",
+                      })}
+                    </span>
+                  </p>
+                ) : usesProvider && providerNames.length > 0 ? (
                   <div className="flex flex-col gap-3">
                     <p className="m-0 text-metadata text-muted-foreground">
                       {d.stepUpProviderText}
@@ -595,7 +623,20 @@ export function TransferOwnershipFlow({
                 {expired || usesProvider ? d.stepUpClose : d.cancel}
               </AlertDialogCancel>
               {proving ? (
-                usesProvider ? null : expired ? (
+                usesProvider ? (
+                  backFromProvider && choice ? (
+                    <Button
+                      type="submit"
+                      variant="destructive"
+                      disabled={pending}
+                      className="max-md:h-touch!"
+                    >
+                      {pending
+                        ? d.transferPending
+                        : formatCopy(d.transferConfirm, { name: choice.name })}
+                    </Button>
+                  ) : null
+                ) : expired ? (
                   <Button
                     type="button"
                     variant="destructive"
