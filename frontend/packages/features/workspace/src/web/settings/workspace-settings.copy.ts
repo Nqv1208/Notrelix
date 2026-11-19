@@ -9,7 +9,7 @@ export const en = {
   descriptionLoading:
     "How this workspace is named, set up for new people, and retired.",
   readOnly:
-    "Only workspace admins and owners can change these settings. You can see them here.",
+    "Only the workspace owner can change these settings. You can see them here.",
   versionUnavailable:
     "Saving is turned off for now: this server doesn't report the workspace version that is needed to save changes safely.",
   save: "Save changes",
@@ -173,7 +173,7 @@ export const vi: WorkspaceSettingsCopy = {
   descriptionLoading:
     "Tên, thiết lập cho người mới và việc lưu trữ không gian làm việc này.",
   readOnly:
-    "Chỉ quản trị viên và chủ sở hữu mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
+    "Chỉ chủ sở hữu workspace mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
   versionUnavailable:
     "Tạm thời chưa lưu được: máy chủ này chưa cung cấp phiên bản của không gian làm việc, thông tin cần để lưu thay đổi an toàn.",
   save: "Lưu thay đổi",

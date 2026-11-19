@@ -161,7 +161,7 @@ export const en = {
   security: {
     title: "Sharing and security",
     description:
-      "Rules for every Board and page in {{workspace}}. Only the owner and workspace admins can change them.",
+      "Rules for every Board and page in {{workspace}}. Only the workspace owner can change them.",
     loading: "Loading sharing and security",
     error: "Sharing and security couldn't load. Nothing was changed.",
     retry: "Try again",
@@ -201,7 +201,7 @@ export const en = {
       title: "Company domain",
       text: "Only shown and suggested when inviting; it does not decide who is a guest. A guest is decided by the role in the workspace, so a person with a company email can still be a guest.",
     },
-    readOnly: "Only the owner and workspace admins change these rules.",
+    readOnly: "Only the workspace owner changes these rules.",
   },
   nav: { teams: "Teams" },
   list: {
@@ -519,7 +519,7 @@ export const vi: WorkspaceTeamsCopy = {
   security: {
     title: "Chia sẻ và bảo mật",
     description:
-      "Quy định chung cho mọi board và trang trong {{workspace}}. Chỉ chủ sở hữu và quản trị workspace đổi được.",
+      "Quy định chung cho mọi board và trang trong {{workspace}}. Chỉ chủ sở hữu workspace đổi được.",
     loading: "Đang tải chia sẻ và bảo mật",
     error: "Không tải được chia sẻ và bảo mật. Chưa có gì thay đổi.",
     retry: "Thử lại",
@@ -559,7 +559,7 @@ export const vi: WorkspaceTeamsCopy = {
       title: "Tên miền công ty",
       text: "Chỉ để hiển thị và gợi ý khi mời; không dùng để quyết định ai là khách. Ai là khách do vai trò trong workspace quyết định, nên người dùng email công ty vẫn có thể là khách.",
     },
-    readOnly: "Chỉ chủ sở hữu và quản trị workspace đổi được các quy định này.",
+    readOnly: "Chỉ chủ sở hữu workspace đổi được các quy định này.",
   },
   nav: { teams: "Nhóm" },
   list: {

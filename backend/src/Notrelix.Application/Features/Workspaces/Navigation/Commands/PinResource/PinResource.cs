@@ -57,14 +57,23 @@ public class PinResourceCommandHandler : IRequestHandler<PinResourceCommand, Res
         if (existing is not null)
             return Result.Success();
 
-        var pinCount = await _store.CountPinsAsync(request.WorkspaceId, userId, ct);
+        // The cap counts the pins the member can still read. Pins to something gone or no longer shared are
+        // deleted here, in the same transaction as the new pin, so a member never stays stuck below the cap
+        // with entries the list hides. If the cap refuses the pin, the request rolls the deletes back too.
+        var stored = await _store.LoadPinsAsync(request.WorkspaceId, userId, ct);
+        var readable = await NavigationResourceReference.ReadableAsync(
+            _visibility, request.WorkspaceId, userId, stored.Select(p => (p.ResourceKind, p.ResourceId)).ToList(), ct);
+        var unreadable = stored.Where(p => !readable.Contains((p.ResourceKind, p.ResourceId))).ToList();
+        foreach (var stale in unreadable)
+            _store.RemovePin(stale);
+
         var pin = PinnedResource.Create(
             _requestContext.RequireAccountId(),
             request.WorkspaceId,
             userId,
             request.Kind,
             request.ResourceId,
-            pinCount,
+            stored.Count - unreadable.Count,
             _dateTimeProvider.UtcNow);
 
         _store.AddPin(pin);
