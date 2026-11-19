@@ -43,6 +43,7 @@ import { VoiceRecorderPanel } from "./chat-voice-recorder";
 import {
   checkPendingFiles,
   formatFileSize,
+  isInlineImage,
   type PendingFileRefusal,
 } from "../../core/model/attachment-model";
 import {
@@ -63,6 +64,7 @@ import { rememberEmoji } from "./chat-emoji-recent";
 import { EmojiPickerButton } from "./chat-emoji-picker";
 import { AttachmentGlyphIcon } from "./chat-attachments";
 import { fillCopy } from "./use-chat-copy";
+import { useObjectUrl } from "./use-object-url";
 import { formatWait } from "./chat-rate-limit";
 
 /** What the composer needs to mention people and link channels (UC-CHT-G01 to G04); without it @ and # are plain text. */
@@ -595,6 +597,9 @@ export function ChatComposer({
                 refusals={refusals}
                 copy={copy}
                 onRemove={removeFile}
+                onDismissRefusal={(index) =>
+                  setRefusals((held) => held.filter((_, at) => at !== index))
+                }
               />
             ) : null}
             {dragging ? (
@@ -741,6 +746,7 @@ function PendingFiles({
   refusals,
   copy,
   onRemove,
+  onDismissRefusal,
 }: {
   readonly files: readonly File[];
   readonly refusals: readonly {
@@ -749,6 +755,7 @@ function PendingFiles({
   }[];
   readonly copy: ChatCopy;
   readonly onRemove: (index: number) => void;
+  readonly onDismissRefusal: (index: number) => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5 border-b border-border px-3 py-2">
@@ -761,57 +768,124 @@ function PendingFiles({
           className="flex flex-wrap gap-1.5"
           data-testid="chat-pending-files"
         >
-          {files.map((file, index) => (
-            <li
-              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
-              className="flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/50 py-0.5 ps-2 pe-0.5 text-xs"
-            >
-              <AttachmentGlyphIcon
-                contentType={file.type}
-                fileName={file.name}
-                className="text-muted-foreground"
+          {files.map((file, index) =>
+            isInlineImage(file.type) ? (
+              <PendingImageTile
+                key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                file={file}
+                copy={copy}
+                onRemove={() => onRemove(index)}
               />
-              <span className="max-w-40 truncate font-medium text-foreground">
-                {file.name}
-              </span>
-              <span className="tabular-nums text-muted-foreground">
-                {formatFileSize(file.size)}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                aria-label={fillCopy(copy.attachments.removePending, {
-                  name: file.name,
-                })}
-                title={copy.attachments.removeShort}
-                onClick={() => onRemove(index)}
+            ) : (
+              <li
+                key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                className="flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/50 py-0.5 ps-2 pe-0.5 text-xs"
               >
-                <X aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
+                <AttachmentGlyphIcon
+                  contentType={file.type}
+                  fileName={file.name}
+                  className="text-muted-foreground"
+                />
+                <span className="max-w-40 truncate font-medium text-foreground">
+                  {file.name}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatFileSize(file.size)}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={fillCopy(copy.attachments.removePending, {
+                    name: file.name,
+                  })}
+                  title={copy.attachments.removeShort}
+                  onClick={() => onRemove(index)}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </li>
+            ),
+          )}
         </ul>
       ) : null}
       {refusals.length > 0 ? (
         <ul
           role="alert"
-          className="flex flex-col gap-0.5 text-xs text-destructive"
+          className="flex flex-col gap-1 text-xs text-destructive"
         >
           {refusals.map((refusal, index) => (
-            <li key={`${refusal.name}-${index}`}>
-              {fillCopy(copy.attachments.refused[refusal.reason], {
-                name: refusal.name,
-                max:
-                  refusal.reason === "too-large"
-                    ? formatFileSize(CHAT_LIMITS.attachmentMaxBytes)
-                    : CHAT_LIMITS.attachmentsPerMessageMax,
-              })}
+            <li
+              key={`${refusal.name}-${index}`}
+              className="flex items-center gap-2"
+            >
+              <span className="min-w-0 flex-1">
+                {fillCopy(copy.attachments.refused[refusal.reason], {
+                  name: refusal.name,
+                  max:
+                    refusal.reason === "too-large"
+                      ? formatFileSize(CHAT_LIMITS.attachmentMaxBytes)
+                      : CHAT_LIMITS.attachmentsPerMessageMax,
+                })}
+              </span>
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                aria-label={fillCopy(copy.attachments.refusedRemove, {
+                  name: refusal.name,
+                })}
+                onClick={() => onDismissRefusal(index)}
+              >
+                {copy.attachments.removeShort}
+              </Button>
             </li>
           ))}
         </ul>
       ) : null}
     </div>
+  );
+}
+
+/** A picked image in the tray: its own thumbnail at once, from the local file, with the remove control on its corner. */
+function PendingImageTile({
+  file,
+  copy,
+  onRemove,
+}: {
+  readonly file: File;
+  readonly copy: ChatCopy;
+  readonly onRemove: () => void;
+}) {
+  const url = useObjectUrl(file);
+  return (
+    <li
+      className="relative size-14 overflow-hidden rounded-lg border border-border bg-muted"
+      title={file.name}
+    >
+      {url ? (
+        <img
+          src={url}
+          alt={fillCopy(copy.attachments.previewOfPending, {
+            name: file.name,
+          })}
+          className="block size-full object-cover"
+        />
+      ) : null}
+      <Button
+        type="button"
+        variant="secondary"
+        size="icon-xs"
+        className="absolute end-0.5 top-0.5 size-5 rounded-full"
+        aria-label={fillCopy(copy.attachments.removePending, {
+          name: file.name,
+        })}
+        title={copy.attachments.removeShort}
+        onClick={onRemove}
+      >
+        <X aria-hidden="true" />
+      </Button>
+    </li>
   );
 }
 

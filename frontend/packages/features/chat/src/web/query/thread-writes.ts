@@ -13,6 +13,7 @@ import {
   appendThreadMessage,
   bumpThreadCount,
   patchMessageInData,
+  patchThreadSummary,
   type ThreadCounts,
 } from "./interaction-cache";
 
@@ -79,6 +80,16 @@ export function applyStoredReply(
     queryClient.setQueriesData(
       { queryKey: chatQueryKeys.thread(workspaceId, rootId) },
       (data: unknown) => appendThreadMessage(data, reply),
+    );
+    // A reply reopens an archived thread: the open panel drops its Archived banner at once.
+    queryClient.setQueriesData(
+      { queryKey: chatQueryKeys.thread(workspaceId, rootId) },
+      (data: unknown) =>
+        patchThreadSummary(data, (summary: ChatThreadSummary) => ({
+          ...summary,
+          archived: false,
+          lastReplyAt: reply.createdAt,
+        })),
     );
     seedThreadCount(queryClient, workspaceId, {
       rootMessageId: rootId,

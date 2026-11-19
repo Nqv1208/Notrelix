@@ -119,6 +119,15 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                         throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
                     }
 
+                    // An API token is bound to one workspace: a resource anywhere else, even one the issuing
+                    // user may open, is as missing as a made-up id.
+                    if (_credential.Kind == CredentialKind.ApiToken
+                        && (location.WorkspaceId != _credential.BoundWorkspaceId
+                            || location.AccountId != _credential.BoundAccountId))
+                    {
+                        throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
+                    }
+
                     accountId = location.AccountId;
                     workspaceId = location.WorkspaceId;
                     _tenant.SetWorkspace(location.AccountId, location.WorkspaceId, actorId);

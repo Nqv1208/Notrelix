@@ -3,7 +3,7 @@ import type {
   CardCover as CardCoverModel,
   CardCoverColor,
 } from "@notrelix/work-management-core";
-import { useCardImageUrl } from "@notrelix/work-management-state";
+import { useWmUiPorts } from "../../shared/wm-ui-ports";
 
 /** Literal classes, so Tailwind sees every one of them. */
 export const COVER_COLOR_CLASS: Readonly<Record<CardCoverColor, string>> = {
@@ -19,8 +19,13 @@ export const COVER_COLOR_CLASS: Readonly<Record<CardCoverColor, string>> = {
   red: "bg-cover-red",
 };
 
-/** The image of a cover attachment (see `useCardImageUrl`). */
-export const useCoverImageUrl = useCardImageUrl;
+/** The image of a cover attachment, read by the host (see `WmUiPorts.useCardImageUrl`). */
+export function useCoverImageUrl(
+  cardId: string,
+  attachmentId: string | null | undefined,
+): string | null {
+  return useWmUiPorts().useCardImageUrl(cardId, attachmentId);
+}
 
 /**
  * The cover as a band: a colour or an image. Decorative (`aria-hidden`); the card's meaning never depends
