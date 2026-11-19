@@ -21,6 +21,7 @@ public sealed class ChatAuditFacts(IAuditService audit, ICurrentRequestContext r
     public const string ChannelArchived = "ChatChannelArchived";
     public const string ChannelUnarchived = "ChatChannelUnarchived";
     public const string ChannelDeleted = "ChatChannelDeleted";
+    public const string ChannelRestored = "ChatChannelRestored";
     public const string MemberAdded = "ChatMemberAdded";
     public const string MemberRemoved = "ChatMemberRemoved";
     public const string MemberRoleChanged = "ChatMemberRoleChanged";
@@ -40,6 +41,9 @@ public sealed class ChatAuditFacts(IAuditService audit, ICurrentRequestContext r
 
     public Task ChannelDeletedAsync(Space space, CancellationToken ct) =>
         RecordAsync(ChannelDeleted, ChannelTarget(space), space.WorkspaceId, null, ct);
+
+    public Task ChannelRestoredAsync(Space space, CancellationToken ct) =>
+        RecordAsync(ChannelRestored, ChannelTarget(space), space.WorkspaceId, null, ct);
 
     public Task MemberAddedAsync(Space space, Guid userId, CancellationToken ct) =>
         RecordAsync(MemberAdded, ChannelTarget(space), space.WorkspaceId, new AuditChange("User", userId, null, null), ct);

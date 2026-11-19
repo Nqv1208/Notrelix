@@ -38,6 +38,8 @@ public class SystemContextUsageTests
         "RestoreBoardItem.cs",
         "ListBoardItemTrash.cs",
         "RestoreBoardView.cs",
+        "ChannelAccess.cs",
+        "ListDeletedChannels.cs",
         "RestoreForm.cs",
         "RestoreApprovalRequest.cs",
         "RestoreSavedFilter.cs",

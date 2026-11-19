@@ -152,6 +152,16 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  /** The deleted channels the caller may restore (Chat.Channels.ListDeleted). */
+  function useDeletedChannels(workspaceId: string, enabled: boolean) {
+    return useQuery({
+      queryKey: chatQueryKeys.deleted(workspaceId),
+      queryFn: () => service.listDeletedChannels(workspaceId),
+      staleTime: CHANNEL_STALE_MS,
+      enabled: enabled && workspaceId.length > 0,
+    });
+  }
+
   /** One channel with its members (Chat.Channels.Get). */
   function useChannel(workspaceId: string, channelId: string | undefined) {
     return useQuery({
@@ -918,6 +928,26 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  /** Restore a deleted channel; the id and its version are passed per call (the list restores one row at a time). */
+  function useRestoreChannel(workspaceId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: { channelId: string; expectedVersion: number }) =>
+        service.restoreChannel(
+          workspaceId,
+          input.channelId,
+          input.expectedVersion,
+        ),
+      // The deleted list lives under the channels key, so this reloads it and the sidebar together.
+      onSuccess: () => refreshChannels(queryClient, workspaceId),
+      // A stale version or a missing row means the list is out of date: reload it too.
+      onError: () =>
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.deleted(workspaceId),
+        }),
+    });
+  }
+
   /** Join a public channel; the id is passed per call (the sidebar joins one it is not in). */
   function useJoinChannel(workspaceId: string) {
     const queryClient = useQueryClient();
@@ -1538,6 +1568,8 @@ export function createChatHooks(deps: ChatHookDeps) {
     useChannels,
     useChannelGroups,
     useBrowseChannels,
+    useDeletedChannels,
+    useRestoreChannel,
     useChannel,
     useUnreadSummary,
     useMessages,

@@ -4738,6 +4738,20 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Archive or unarchive a channel",
     ],
     [
+      "Chat.Channels.ListDeleted",
+      "GET",
+      "/workspaces/{workspaceId}/chat/channels/deleted",
+      false,
+      "List the deleted channels the caller can restore",
+    ],
+    [
+      "Chat.Channels.Restore",
+      "POST",
+      "/workspaces/{workspaceId}/chat/channels/{channelId}/restore",
+      true,
+      "Restore a deleted channel",
+    ],
+    [
       "Chat.Members.Add",
       "POST",
       "/workspaces/{workspaceId}/chat/channels/{channelId}/members",

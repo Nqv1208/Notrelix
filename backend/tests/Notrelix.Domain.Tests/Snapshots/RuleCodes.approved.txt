@@ -142,6 +142,7 @@ permission-exceeds-role|Chat|PermissionExceedsRole
 permission-lockout|Chat|PermissionLockout
 rate-limited|Chat|RateLimited
 reaction-kind-invalid|Chat|ReactionKindInvalid
+restore-window-elapsed|Chat|RestoreWindowElapsed
 retention-invalid|Chat|RetentionInvalid
 self-target|Chat|SelfTarget
 slow-mode|Chat|SlowMode
