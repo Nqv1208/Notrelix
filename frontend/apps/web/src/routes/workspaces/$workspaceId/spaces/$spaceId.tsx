@@ -13,6 +13,7 @@ import {
   spacePath,
   type SpaceMemberEntry,
   type SpaceRole,
+  type SpaceSubjectType,
   type SpaceTab,
 } from "@notrelix/features-workspace/core";
 import {
@@ -127,6 +128,42 @@ export function SpacePage() {
     ].join(":"),
   );
   const mover = useMoveToSpace();
+
+  // The members tab reads its own server-paged, server-filtered list (role and kind).
+  const [memberFilter, setMemberFilter] = useState<{
+    role: SpaceRole | null;
+    kind: SpaceSubjectType | null;
+  }>({ role: null, kind: null });
+  const memberPages = hooks.useSpaceMembersPage(
+    workspaceId,
+    node ? spaceId : null,
+    memberFilter,
+    tab === "members",
+  );
+  const memberTabEntries = useMemo(
+    () => memberPages.data?.pages.flatMap((page) => page.entries) ?? null,
+    [memberPages.data],
+  );
+  const onMemberFilterChange = useCallback(
+    (next: { role: SpaceRole | null; kind: SpaceSubjectType | null }) =>
+      setMemberFilter((current) =>
+        current.role === next.role && current.kind === next.kind
+          ? current
+          : next,
+      ),
+    [],
+  );
+  const membersPaging = useMemo(
+    () => ({
+      hasMore: memberPages.hasNextPage && !memberPages.isPlaceholderData,
+      loadingMore: memberPages.isFetchingNextPage,
+      loadMoreFailed:
+        memberPages.isFetchNextPageError && memberTabEntries !== null,
+      onLoadMore: () => void memberPages.fetchNextPage(),
+      onFilterChange: onMemberFilterChange,
+    }),
+    [memberPages, memberTabEntries, onMemberFilterChange],
+  );
 
   const extra = useSpaceMembersExtra(
     workspaceId,
@@ -877,6 +914,14 @@ export function SpacePage() {
             : null
         }
         members={sectionState(members, members.data)}
+        membersTab={
+          memberPages.isError && memberTabEntries === null
+            ? { status: "error" }
+            : memberTabEntries === null
+              ? { status: "loading" }
+              : { status: "ready", data: memberTabEntries }
+        }
+        membersPaging={membersPaging}
         candidateUsers={candidateUsers}
         candidateTeams={sectionState(teams, teams.data)}
         pendingMemberKeys={pendingMemberKeys}
@@ -932,7 +977,10 @@ export function SpacePage() {
           if (placements.isError) void placements.refetch();
           if (pages.isError) void pages.refetch();
         }}
-        onRetryMembers={() => void members.refetch()}
+        onRetryMembers={() => {
+          void members.refetch();
+          void memberPages.refetch();
+        }}
       />
       {mover.dialog}
       {createResource.dialog}

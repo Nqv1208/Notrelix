@@ -96,11 +96,13 @@ public sealed class InMemorySpaceStore : ISpaceStore
                 m.CreatedAt))
             .ToList());
 
-    public Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, SpaceRole? role, SpaceMemberSubjectType? kind, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<SpaceMemberRow>>(Spaces
             .Where(s => s.WorkspaceId == workspaceId && s.Id == spaceId)
             .SelectMany(s => s.Members)
             .Where(m => afterSubjectId is null || m.SubjectId.CompareTo(afterSubjectId.Value) > 0)
+            .Where(m => role is null || m.Role == role)
+            .Where(m => kind is null || m.SubjectType == kind)
             .OrderBy(m => m.SubjectId)
             .Take(take)
             .Select(m => new SpaceMemberRow(

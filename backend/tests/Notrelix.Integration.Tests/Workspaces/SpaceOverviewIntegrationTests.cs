@@ -328,6 +328,44 @@ public sealed class SpaceOverviewIntegrationTests : IAsyncLifetime
         overview.Workload.Should().HaveCount(5);
     }
 
+    [Fact]
+    public async Task ALargeSpace_CountsEveryPersonOnceAtTheHighestRole_AndShowsOnlyFourNames()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        async Task<List<Guid>> AddAsync(string prefix, int count)
+        {
+            var ids = new List<Guid>();
+            for (var i = 0; i < count; i++)
+                ids.Add(await _host.AddMemberAsync(stack, WorkspaceRole.Member, $"{prefix} {i}"));
+            return ids;
+        }
+
+        var admins = await AddAsync("Admin", 9);
+        var members = await AddAsync("Member", 60);
+        var viewers = await AddAsync("Viewer", 10);
+        var teamOnly = await AddAsync("Team only", 40);
+        var team = Team.Create(stack.AccountId, stack.WorkspaceId, "Operations", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        foreach (var id in teamOnly.Concat(members.Take(10)))
+            team.AddMember(id, TeamMemberRole.Member, stack.OwnerId, OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(c => { c.Teams.Add(team); return Task.CompletedTask; });
+        var space = await _host.SeedSpaceAsync(stack, "Operations", SpaceVisibility.Workspace, stack.OwnerId, type: SpaceType.Department, transition: s =>
+        {
+            s.AddMember(SpaceMemberSubjectType.Team, team.Id, SpaceRole.Viewer, stack.OwnerId, OrgTreeTestHost.BaseTime);
+            foreach (var id in admins) s.AddMember(SpaceMemberSubjectType.User, id, SpaceRole.Admin, stack.OwnerId, OrgTreeTestHost.BaseTime);
+            foreach (var id in members) s.AddMember(SpaceMemberSubjectType.User, id, SpaceRole.Member, stack.OwnerId, OrgTreeTestHost.BaseTime);
+            foreach (var id in viewers) s.AddMember(SpaceMemberSubjectType.User, id, SpaceRole.Viewer, stack.OwnerId, OrgTreeTestHost.BaseTime);
+        });
+
+        var overview = await GetAsync(stack, members[^1], space);
+
+        // 1 creator + 9 admins + 60 members (10 of them also reach it through the Team at Viewer) + 10 viewers + 40 Team-only people.
+        overview.PeopleTotal.Should().Be(120);
+        overview.People.Should().HaveCount(4, "the page names at most four people however many there are");
+        overview.Access.Admins.Should().HaveCount(10);
+        overview.Access.Members.People.Should().Be(60, "a Team Viewer does not lower a direct Member");
+        overview.Access.Viewers.People.Should().Be(50);
+    }
+
     private Task SeedViewAsync(OrgStack stack, Guid board, ViewType type, bool isDefault) =>
         _host.WithSystemContextAsync(c =>
         {

@@ -7810,7 +7810,7 @@ export interface paths {
         };
         /**
          * Get the user and team entries of a space
-         * @description Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page.
+         * @description Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page. Optional role (Admin, Member, Viewer) and kind (User, Team) keep only matching entries before the page is cut.
          */
         get: operations["Workspaces.Spaces.GetSpaceMembers"];
         put?: never;
@@ -32699,6 +32699,8 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: number;
+                role?: string;
+                kind?: string;
             };
             header?: never;
             path: {

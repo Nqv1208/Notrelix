@@ -550,9 +550,22 @@ export const spacesOperations = [
           return validationError({ Limit: ["Use a page size from 1 to 200."] });
         if (after === false)
           return validationError({ Cursor: ["Cursor is not valid."] });
+        // A role and kind filter only remove entries, before the page is cut.
+        const roleParam = request.searchParams.get("role");
+        const kindParam = request.searchParams.get("kind");
+        const role = roleParam ? pick(ROLES, roleParam) : null;
+        const kind = kindParam ? pick(SUBJECTS, kindParam) : null;
+        if (roleParam && !role)
+          return validationError({
+            Role: ["Role must be Admin, Member or Viewer."],
+          });
+        if (kindParam && !kind)
+          return validationError({ Kind: ["Kind must be User or Team."] });
         const rows = store.spaces
           .membersOf(params.spaceId)
           .filter((entry) => after === null || entry.subjectId > after)
+          .filter((entry) => role === null || entry.role === role)
+          .filter((entry) => kind === null || entry.subjectType === kind)
           .sort((a, b) =>
             a.subjectId < b.subjectId ? -1 : a.subjectId > b.subjectId ? 1 : 0,
           );

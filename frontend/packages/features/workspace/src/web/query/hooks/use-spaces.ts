@@ -1,4 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from "@tanstack/react-query";
+import type { SpaceRole, SpaceSubjectType } from "../../../core/model/spaces";
 import {
   createSpacesService,
   type SpacesApiClient,
@@ -63,6 +68,45 @@ export function createUseSpaceMembers({ api, endpoints }: UseSpacesDeps) {
       queryKey: workspaceQueryKeys.spaceMembers(workspaceId, spaceId ?? ""),
       queryFn: () => service.getMembers(workspaceId, spaceId!),
       enabled: !!workspaceId && !!spaceId,
+      staleTime: 30_000,
+    });
+  };
+}
+
+/**
+ * The entries of one Space a page at a time, narrowed on the producer by role and kind (K10). Each
+ * filter pair is its own cached list under the Space's members key, so a member write refreshes
+ * them all; the previous list stays on screen while the next filter loads.
+ */
+export function createUseSpaceMembersPage({ api, endpoints }: UseSpacesDeps) {
+  const service = createSpacesService(api, endpoints);
+
+  return function useSpaceMembersPage(
+    workspaceId: string,
+    spaceId: string | null,
+    filter: {
+      readonly role: SpaceRole | null;
+      readonly kind: SpaceSubjectType | null;
+    },
+    enabled: boolean,
+  ) {
+    return useInfiniteQuery({
+      queryKey: [
+        ...workspaceQueryKeys.spaceMembers(workspaceId, spaceId ?? ""),
+        "page",
+        filter.role ?? "all",
+        filter.kind ?? "any",
+      ],
+      queryFn: ({ pageParam }) =>
+        service.getMembersPage(workspaceId, spaceId!, {
+          role: filter.role,
+          kind: filter.kind,
+          cursor: pageParam,
+        }),
+      initialPageParam: null as string | null,
+      getNextPageParam: (last) => last.nextCursor,
+      placeholderData: keepPreviousData,
+      enabled: enabled && !!workspaceId && !!spaceId,
       staleTime: 30_000,
     });
   };

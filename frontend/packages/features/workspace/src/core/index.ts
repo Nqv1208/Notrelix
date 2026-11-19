@@ -66,10 +66,13 @@ export {
 export {
   createSpacesService,
   parseSpaceMembers,
+  SPACE_MEMBERS_TAB_PAGE_SIZE,
   parseSpaceTree,
   type CreateSpaceInput,
   type MoveSpaceInput,
   type SpaceDetailsInput,
+  type SpaceMembersPageQuery,
+  type SpaceMembersPageResult,
   type SpacesApiClient,
   type SpacesEndpoints,
   type SpacesService,

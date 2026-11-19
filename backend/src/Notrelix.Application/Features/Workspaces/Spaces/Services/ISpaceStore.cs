@@ -56,8 +56,10 @@ public interface ISpaceStore
     /// <summary>
     /// One page of the member entries of a Space, ascending by subject id, at most <paramref name="take"/> rows after
     /// <paramref name="afterSubjectId"/> (null starts at the first). The Team name is set for Team subjects.
+    /// A non-null <paramref name="role"/> or <paramref name="kind"/> keeps only entries of that role or subject type
+    /// before the page is cut.
     /// </summary>
-    Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SpaceMemberRow>> ListMemberPageAsync(Guid workspaceId, Guid spaceId, Guid? afterSubjectId, int take, SpaceRole? role, SpaceMemberSubjectType? kind, CancellationToken cancellationToken);
 }
 
 public sealed record SpaceSiblingEntry(Guid Id, string Name, FractionalIndex Position);
