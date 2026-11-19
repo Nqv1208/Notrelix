@@ -174,6 +174,7 @@ export function ChatPage() {
         linkedSequence={linkedSequence}
         draftStore={draftStore}
         callDeviceStore={storage}
+        collapseStore={storage}
         buildMessageLink={({ spaceId, conversation, sequence }) =>
           `${window.location.origin}/workspaces/${workspaceId}/chat/${
             conversation ? "dm/" : ""

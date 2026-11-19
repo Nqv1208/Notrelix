@@ -78,6 +78,7 @@ import {
 import type { ChatUploadItem } from "../../core/model/attachment-model";
 import { canonicalFilters } from "../../core/model/search-model";
 import { createConversationHooks } from "./create-conversation-hooks";
+import { createChannelGroupHooks } from "./create-channel-group-hooks";
 import { voiceFactsOf } from "../../core/model/voice-model";
 
 export interface ChatHookDeps {
@@ -1560,6 +1561,7 @@ export function createChatHooks(deps: ChatHookDeps) {
   return {
     service,
     ...createConversationHooks(service),
+    ...createChannelGroupHooks(service),
     useUploads,
     useAttachmentActions,
     useAttachmentContent,
