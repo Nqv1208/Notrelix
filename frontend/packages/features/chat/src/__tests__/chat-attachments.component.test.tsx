@@ -280,6 +280,20 @@ describe("message attachments", () => {
   });
 
   it("zooms the viewer image with the wheel, a double click and the keys, and swipes to the next image only when it is not zoomed", async () => {
+    // jsdom has no PointerEvent: a MouseEvent that carries the pointer id gives the handlers real coordinates.
+    vi.stubGlobal(
+      "PointerEvent",
+      class extends MouseEvent {
+        readonly pointerId: number;
+        constructor(
+          type: string,
+          init: MouseEventInit & { pointerId?: number },
+        ) {
+          super(type, init);
+          this.pointerId = init.pointerId ?? 0;
+        }
+      },
+    );
     const s = setup();
     const message = await messageWithFiles(
       s,
@@ -315,6 +329,7 @@ describe("message attachments", () => {
     await waitFor(() =>
       expect(within(viewer).getByText("2 of 2")).not.toBeNull(),
     );
+    vi.unstubAllGlobals();
   });
 
   it("offers remove only to the author, asks first, then removes the file", async () => {
