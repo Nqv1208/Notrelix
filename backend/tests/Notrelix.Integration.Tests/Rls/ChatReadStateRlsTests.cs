@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Notrelix.Domain.Chat.Spaces;
+using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Data.Chat;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -142,17 +144,21 @@ public sealed class ChatReadStateRlsTests : IAsyncLifetime
         var tenant = new FakeCurrentTenantContext();
         tenant.SetWorkspace(_a.AccountId, _a.WorkspaceId, _a.User.Id);
 
-        await using (var db = _fixture.CreateAppContext(tenant))
+        // One request: a transaction with the Workspace session context applied, as the data session does.
+        async Task<bool> RewindAsync(long target)
         {
-            var store = new ChatReadStateStore(db);
-            (await store.RewindAsync(_a.WorkspaceId, _spaceId, _a.User.Id, 2, CancellationToken.None)).Should().BeTrue();
+            await using var db = _fixture.CreateAppContext(tenant);
+            await using var tx = await db.Database.BeginTransactionAsync();
+            await new RlsSessionContext(db, Options.Create(new RlsOptions { SetSessionContext = true }), tenant).ApplyAsync(default);
+            var moved = await new ChatReadStateStore(db).RewindAsync(_a.WorkspaceId, _spaceId, _a.User.Id, target, CancellationToken.None);
+            await tx.CommitAsync();
+            return moved;
         }
+
+        (await RewindAsync(2)).Should().BeTrue();
         (await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'")).Should().Be("2");
 
-        await using (var db = _fixture.CreateAppContext(tenant))
-        {
-            await new ChatReadStateStore(db).RewindAsync(_a.WorkspaceId, _spaceId, _a.User.Id, 4, CancellationToken.None);
-        }
+        await RewindAsync(4);
         (await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'"))
             .Should().Be("2", "a target ahead of the boundary never reads anything forward");
     }
