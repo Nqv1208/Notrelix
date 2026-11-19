@@ -5,7 +5,10 @@ import { AccountScopeProvider } from "@notrelix/query";
 import { endpoints } from "@notrelix/contracts";
 import { AppRuntimeProvider } from "@notrelix/runtime-web";
 import { WorkManagementServicesProvider } from "@notrelix/work-management-state";
-import { ColourBlindLabelsProvider } from "@notrelix/work-management-web";
+import {
+  ColourBlindLabelsProvider,
+  WorkManagementUiPortsHost,
+} from "@notrelix/work-management-web";
 import { createUsePreferences } from "@notrelix/features-account";
 import { I18nProvider } from "@notrelix/i18n";
 import { ThemeProvider, Toaster, useTheme } from "@notrelix/ui-web";
@@ -116,7 +119,9 @@ export function AppProviders({
                 >
                   <ThemeProvider storage={runtime.storage}>
                     <WorkManagementServicesProvider services={workManagement}>
-                      <SignedInColourBlind>{children}</SignedInColourBlind>
+                      <WorkManagementUiPortsHost>
+                        <SignedInColourBlind>{children}</SignedInColourBlind>
+                      </WorkManagementUiPortsHost>
                       <Toaster />
                       <EmailConfirmationToastBridge />
                     </WorkManagementServicesProvider>

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import {
   BellOff,
   CheckCheck,
+  FolderPlus,
   Hash,
   Lock,
   Plus,
@@ -12,7 +13,20 @@ import {
   X,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
-import type { ChatChannel, ChatConversation } from "../../core/types/chat";
+import type {
+  ChatChannel,
+  ChatChannelGroup,
+  ChatChannelPlacement,
+  ChatConversation,
+} from "../../core/types/chat";
+import {
+  sidebarSections,
+  type GroupMove,
+} from "../../core/model/sidebar-order-model";
+import {
+  ChatSidebarSections,
+  type SidebarCategoryActions,
+} from "./chat-sidebar-sections";
 import { conversationTitle } from "../../core/model/conversation-model";
 import type { ChatCopy } from "./chat.copy";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
@@ -66,6 +80,21 @@ export interface ChatSidebarProps {
   readonly conversations?: ChatConversationListView | null;
   /** The category names by group id (`Chat.ChannelGroups.List`); a group without one keeps the numbered fallback. */
   readonly groupNames?: ReadonlyMap<string, string>;
+  /** The categories in position order (`Chat.ChannelGroups.List`), empty ones included; they head the sections, drag and menu. */
+  readonly groups?: readonly ChatChannelGroup[];
+  /** Opens the New category dialog (UC-CHT-A02); only an Owner or an Admin is offered it. */
+  readonly onCreateCategory?: () => void;
+  /** Rename and delete in the category menu; present for the same people as `onCreateCategory`. */
+  readonly category?: SidebarCategoryActions;
+  /** Which channels the caller may drag and move (a channel manager, an Owner or an Admin; UC-CHT-A04). */
+  readonly canReorderChannel?: (channel: ChatChannel) => boolean;
+  readonly onReorderChannels?: (
+    placements: readonly ChatChannelPlacement[],
+  ) => void;
+  readonly onReorderGroups?: (moves: readonly GroupMove[]) => void;
+  /** The reader's own collapse of a category; without it every category stays open. */
+  readonly isCollapsed?: (groupId: string | null) => boolean;
+  readonly onToggleCollapse?: (groupId: string | null) => void;
 }
 
 /** A badge count: nothing for zero, 99+ above 99 (UC-CHT-D01). */
@@ -157,8 +186,16 @@ export function ChatSidebar({
   joiningId,
   conversations = null,
   groupNames,
+  groups: categoryList,
+  onCreateCategory,
+  category,
+  canReorderChannel,
+  onReorderChannels,
+  onReorderGroups,
+  isCollapsed,
+  onToggleCollapse,
 }: ChatSidebarProps) {
-  const groups = groupChannels(channels);
+  const sections = sidebarSections(channels, categoryList);
   const hasConversations = (conversations?.conversations.length ?? 0) > 0;
   const [query, setQuery] = useState("");
   const [activeRaw, setActive] = useState(0);
@@ -276,6 +313,17 @@ export function ChatSidebar({
               onClick={onOpenSettings}
             >
               <Settings aria-hidden="true" />
+            </Button>
+          ) : null}
+          {onCreateCategory ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={copy.groups.newCategory}
+              title={copy.groups.newCategory}
+              onClick={onCreateCategory}
+            >
+              <FolderPlus aria-hidden="true" />
             </Button>
           ) : null}
           {canCreate ? (
@@ -407,7 +455,7 @@ export function ChatSidebar({
               {copy.sidebar.retry}
             </Button>
           </div>
-        ) : channels.length === 0 ? (
+        ) : sections.length === 0 ? (
           // Another section has rows: the empty line would only take room.
           hasConversations ? null : (
             <p className="px-2 pt-2 text-sm text-muted-foreground">
@@ -415,38 +463,48 @@ export function ChatSidebar({
             </p>
           )
         ) : (
-          groups.map((group, index) => {
-            const heading =
-              group.groupId === null
+          <ChatSidebarSections
+            sections={sections}
+            channels={channels}
+            groups={categoryList ?? []}
+            copy={copy}
+            headingOf={(section, index) =>
+              section.groupId === null
                 ? copy.sidebar.channelsHeading
                 : groupHeading(
-                    groupNames?.get(group.groupId),
+                    section.name ?? groupNames?.get(section.groupId),
                     fillCopy(copy.sidebar.groupNumbered, {
-                      number: groupNumber(groups, index),
+                      number: groupNumber(sections, index),
                     }),
-                  );
-            return (
-              <section
-                key={group.groupId ?? "ungrouped"}
-                className="flex flex-col"
-              >
-                <h3 className={HEADING}>{heading}</h3>
-                <ul className="flex flex-col gap-px">
-                  {group.channels.map((channel) => (
-                    <li key={channel.id} className="max-md:-mx-2">
-                      <ChannelButton
-                        channel={channel}
-                        active={channel.id === activeChannelId}
-                        unread={unreadBySpace.get(channel.id)}
-                        copy={copy}
-                        onSelect={onSelect}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })
+                  )
+            }
+            renderChannel={(channel) => (
+              <ChannelButton
+                channel={channel}
+                active={channel.id === activeChannelId}
+                unread={unreadBySpace.get(channel.id)}
+                copy={copy}
+                onSelect={onSelect}
+              />
+            )}
+            canReorderChannel={canReorderChannel}
+            onReorderChannels={onReorderChannels}
+            category={category}
+            onReorderGroups={onReorderGroups}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={onToggleCollapse}
+            hasUnread={(section) =>
+              section.channels.some((channel) => {
+                const unread = unreadBySpace.get(channel.id);
+                return (
+                  unread !== undefined &&
+                  !unread.muted &&
+                  channel.notificationLevel !== "none" &&
+                  unread.count > 0
+                );
+              })
+            }
+          />
         )}
 
         {conversations && !searching ? (
@@ -527,9 +585,11 @@ export function groupHeading(name: string | undefined, fallback: string) {
   return trimmed ? trimmed : fallback;
 }
 
-function groupNumber(groups: readonly ChannelGroup[], index: number): number {
-  return groups.slice(0, index + 1).filter((group) => group.groupId !== null)
-    .length;
+function groupNumber(
+  sections: readonly { readonly groupId: string | null }[],
+  index: number,
+): number {
+  return sections.slice(0, index + 1).filter((s) => s.groupId !== null).length;
 }
 
 function ChannelButton({

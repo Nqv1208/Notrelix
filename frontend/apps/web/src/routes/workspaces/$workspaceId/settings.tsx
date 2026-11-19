@@ -90,7 +90,7 @@ export function SettingsPage() {
   const frame = useSetupFrame("general");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { api: runtimeClient } = useAppRuntime();
+  const { api: runtimeClient, env } = useAppRuntime();
   const hooks = useMemo(() => {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
@@ -254,8 +254,9 @@ export function SettingsPage() {
   );
 
   const ownershipStepUp = useMemo(
-    () => createOwnershipStepUp(runtimeClient.api, runtimeClient.endpoints),
-    [runtimeClient],
+    () =>
+      createOwnershipStepUp(runtimeClient.api, runtimeClient.endpoints, env),
+    [runtimeClient, env],
   );
 
   const onTransfer = async (

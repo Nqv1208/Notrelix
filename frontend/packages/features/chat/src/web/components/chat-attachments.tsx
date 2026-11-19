@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Download,
   File as FileIcon,
@@ -37,6 +37,7 @@ import {
   singleImageBoxStyle,
 } from "./chat-image-gallery";
 import { fillCopy } from "./use-chat-copy";
+import { useObjectUrl } from "./use-object-url";
 import { VoiceMessagePlayer } from "./chat-voice-message";
 import { isAudioAttachment } from "../../core/model/voice-model";
 
@@ -273,6 +274,7 @@ export function MessageAttachments({
                 copy={copy}
                 onRetry={() => actions.retry(item.id)}
                 onDismiss={() => actions.dismiss(item.id)}
+                onCancel={() => actions.cancel(item.id)}
               />
             </li>
           ))}
@@ -506,11 +508,13 @@ function UploadRow({
   copy,
   onRetry,
   onDismiss,
+  onCancel,
 }: {
   readonly item: ChatUploadItem;
   readonly copy: ChatCopy;
   readonly onRetry: () => void;
   readonly onDismiss: () => void;
+  readonly onCancel: () => void;
 }) {
   const name = item.file.name;
   if (item.status === "failed") {
@@ -561,6 +565,28 @@ function UploadRow({
     item.status === "queued"
       ? fillCopy(copy.attachments.waiting, { name })
       : fillCopy(copy.attachments.uploading, { name });
+  const cancel = (
+    <Button
+      type="button"
+      size="xs"
+      variant="ghost"
+      aria-label={fillCopy(copy.attachments.cancelFile, { name })}
+      onClick={onCancel}
+    >
+      <X aria-hidden="true" />
+      {copy.attachments.cancel}
+    </Button>
+  );
+  if (isInlineImage(item.file.type)) {
+    return (
+      <UploadImageTile
+        item={item}
+        label={label}
+        percent={determinate ? percent : null}
+        cancel={cancel}
+      />
+    );
+  }
   return (
     <div
       className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 text-xs text-muted-foreground"
@@ -585,6 +611,108 @@ function UploadRow({
           )}
           style={determinate ? { width: `${percent}%` } : undefined}
         />
+      </div>
+      {cancel}
+    </div>
+  );
+}
+
+const RING_RADIUS = 16;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
+/**
+ * An image on its way up: the tile shows at once from the local file, at the file's own ratio (clamped 3:4 to 2:1, the
+ * same box the stored image takes), with a progress ring over it and the author's Cancel.
+ */
+function UploadImageTile({
+  item,
+  label,
+  percent,
+  cancel,
+}: {
+  readonly item: ChatUploadItem;
+  readonly label: string;
+  /** 0 to 100, or null while no progress is known (the ring turns instead). */
+  readonly percent: number | null;
+  readonly cancel: ReactNode;
+}) {
+  const url = useObjectUrl(item.file);
+  const [ratio, setRatio] = useState<number | null>(null);
+  const box = ratio === null ? null : singleImageBoxStyle(ratio);
+  return (
+    <div
+      className="flex flex-col items-start gap-1"
+      data-testid="chat-upload-progress"
+      data-status={item.status}
+    >
+      <div
+        style={box ?? undefined}
+        className={cn(
+          "relative max-w-full overflow-hidden rounded-2xl border border-border bg-muted",
+          !box && "aspect-[4/3] w-56",
+        )}
+      >
+        {url ? (
+          <img
+            src={url}
+            alt=""
+            className="block size-full object-cover"
+            onLoad={(event) =>
+              setRatio(
+                imageBoxRatio({
+                  width: event.currentTarget.naturalWidth,
+                  height: event.currentTarget.naturalHeight,
+                }),
+              )
+            }
+          />
+        ) : null}
+        <div className="absolute inset-0 flex items-center justify-center bg-foreground/30 text-background">
+          <div
+            role="progressbar"
+            aria-label={label}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent ?? undefined}
+            className="size-10"
+          >
+            <svg
+              viewBox="0 0 40 40"
+              className={cn(
+                "size-10 -rotate-90",
+                percent === null && "animate-spin motion-reduce:animate-none",
+              )}
+              aria-hidden="true"
+            >
+              <circle
+                cx="20"
+                cy="20"
+                r={RING_RADIUS}
+                fill="none"
+                strokeWidth="4"
+                className="stroke-current opacity-30"
+              />
+              <circle
+                cx="20"
+                cy="20"
+                r={RING_RADIUS}
+                fill="none"
+                strokeWidth="4"
+                strokeLinecap="round"
+                className="stroke-current"
+                strokeDasharray={RING_LENGTH}
+                strokeDashoffset={
+                  RING_LENGTH * (1 - (percent === null ? 0.25 : percent / 100))
+                }
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="min-w-0 max-w-56 truncate">{item.file.name}</span>
+        <span className="tabular-nums">{formatFileSize(item.file.size)}</span>
+        {cancel}
       </div>
     </div>
   );

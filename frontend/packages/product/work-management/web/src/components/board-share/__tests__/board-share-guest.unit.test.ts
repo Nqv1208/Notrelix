@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { vi as copy } from "../board-share.copy";
+import { en, vi as copy } from "../board-share.copy";
 import {
   formatInviteDate,
   guestInviteConflict,
+  guestInviteFailureHint,
   guestOffer,
   type PendingGuestInvitation,
 } from "../board-share-guest";
@@ -56,6 +57,22 @@ describe("guestInviteConflict", () => {
       "Một người khác đã mời an@doitac-erp.vn rồi. Danh sách lời mời đã được cập nhật.",
     );
     expect(guestInviteConflict("khac@doitac-erp.vn", PENDING, copy)).toBeNull();
+  });
+});
+
+describe("guestInviteFailureHint", () => {
+  it("UC-WM-A19 says who can switch guest invites on when the workspace has them off, in vi and en", () => {
+    expect(guestInviteFailureHint("workspace.guest_invites_off", copy)).toBe(
+      "Workspace này đang tắt lời mời khách. Hãy nhờ Chủ sở hữu bật lại.",
+    );
+    expect(guestInviteFailureHint("workspace.guest_invites_off", en)).toBe(
+      "Guest invites are off in this workspace. Ask the Owner to turn them on.",
+    );
+  });
+
+  it("adds nothing for any other refusal", () => {
+    expect(guestInviteFailureHint("auth.forbidden", copy)).toBe("");
+    expect(guestInviteFailureHint(null, copy)).toBe("");
   });
 });
 

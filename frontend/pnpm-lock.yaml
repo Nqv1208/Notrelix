@@ -719,6 +719,9 @@ importers:
 
   packages/features/chat:
     dependencies:
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@notrelix/contracts':
         specifier: workspace:*
         version: link:../../foundation/contracts

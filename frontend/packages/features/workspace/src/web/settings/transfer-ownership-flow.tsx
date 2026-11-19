@@ -21,6 +21,7 @@ import {
 import { formatCopy } from "../shell/shell-models";
 import {
   describeProofRefusal,
+  type OwnershipProviderReturn,
   type OwnershipProofRefusal,
   type OwnershipProofRequest,
   type OwnershipStepUp,
@@ -130,6 +131,15 @@ export function TransferOwnershipFlow({
   const [refused, setRefused] = React.useState(false);
   const [recovery, setRecovery] = React.useState(false);
   const [value, setValue] = React.useState("");
+  const [providerNames, setProviderNames] = React.useState<readonly string[]>(
+    [],
+  );
+  const [providerFailed, setProviderFailed] = React.useState(false);
+  // Back from a provider: read once at mount, acted on once the people and the version are known.
+  const [returned, setReturned] =
+    React.useState<OwnershipProviderReturn | null>(null);
+  const returnRead = React.useRef(false);
+  const returnHandled = React.useRef(false);
   const groupId = React.useId();
   const d = copy.danger;
   const values = { workspace: workspaceName };
@@ -163,7 +173,14 @@ export function TransferOwnershipFlow({
   /** Asks the host which factor to satisfy; a fresh challenge every time, because each is spent by one answer. */
   const ask = async (): Promise<boolean> => {
     try {
-      setAsked(await stepUp.request());
+      const request = await stepUp.request();
+      const linked =
+        request.factor === "provider" && stepUp.provider
+          ? await stepUp.provider.providers().catch(() => [])
+          : [];
+      setAsked(request);
+      setProviderNames(linked);
+      setProviderFailed(false);
       setProofError(null);
       setRecovery(false);
       setValue("");
@@ -214,7 +231,12 @@ export function TransferOwnershipFlow({
       setValue("");
       return;
     }
-    const outcome = await onTransfer(choice.userId, token);
+    await settle(choice.userId, token);
+  };
+
+  /** Hands the workspace over with the proof just given, and says in place why when the producer refuses. */
+  const settle = async (userId: string, token: string) => {
+    const outcome = await onTransfer(userId, token);
     if (outcome === null) {
       setPending(false);
       setOpen(false);
@@ -235,6 +257,64 @@ export function TransferOwnershipFlow({
     }
     setPending(false);
   };
+
+  /** Leaves for the provider; the choice travels in the return address, nothing secret does. */
+  const confirmWithProvider = async (provider: string) => {
+    if (!choice || !stepUp.provider || pending) return;
+    setPending(true);
+    setProviderFailed(false);
+    setProofError(null);
+    try {
+      await stepUp.provider.start(provider, choice.userId);
+    } catch (error) {
+      if (describeProofRefusal(error).kind === "network")
+        setFailure({ kind: "network" });
+      else setProviderFailed(true);
+      setPending(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (returnRead.current) return;
+    returnRead.current = true;
+    setReturned(stepUp.provider?.resume() ?? null);
+  }, [stepUp]);
+
+  // Back from the provider: reopen on the chosen person, take the proof it left and hand over, once.
+  React.useEffect(() => {
+    const provider = stepUp.provider;
+    if (!returned || !provider || returnHandled.current) return;
+    if (disabled || !candidates.some((c) => c.userId === returned.newOwnerId))
+      return;
+    returnHandled.current = true;
+    setOpen(true);
+    setSelected(returned.newOwnerId);
+    setFailure(null);
+    setRefused(false);
+    setPending(true);
+    void (async () => {
+      const asking = await ask();
+      if (!asking) {
+        setPending(false);
+        return;
+      }
+      if (returned.failed) {
+        setProviderFailed(true);
+        setPending(false);
+        return;
+      }
+      let token: string;
+      try {
+        token = await provider.claim();
+      } catch (error) {
+        setProofError(describeProofRefusal(error));
+        setPending(false);
+        return;
+      }
+      await settle(returned.newOwnerId, token);
+    })();
+    // The handover runs once for one return, guarded by `returnHandled`.
+  }, [returned, disabled, candidates, stepUp]);
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-danger-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -311,7 +391,41 @@ export function TransferOwnershipFlow({
                     </span>
                   </p>
                 ) : null}
-                {usesProvider ? (
+                {usesProvider && providerNames.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    <p className="m-0 text-metadata text-muted-foreground">
+                      {d.stepUpProviderText}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {providerNames.map((provider) => (
+                        <Button
+                          key={provider}
+                          type="button"
+                          variant="outline"
+                          disabled={pending}
+                          className="max-md:h-touch!"
+                          onClick={() => void confirmWithProvider(provider)}
+                        >
+                          {pending
+                            ? d.stepUpProviderPending
+                            : formatCopy(d.stepUpProviderButton, { provider })}
+                        </Button>
+                      ))}
+                    </div>
+                    {providerFailed ? (
+                      <p
+                        role="alert"
+                        className="m-0 flex items-start gap-2 text-metadata text-danger-subtle-foreground"
+                      >
+                        <AlertTriangle
+                          className="mt-0.5 size-4 shrink-0"
+                          aria-hidden
+                        />
+                        <span>{d.stepUpProviderFailed}</span>
+                      </p>
+                    ) : null}
+                  </div>
+                ) : usesProvider ? (
                   <div className="flex flex-col gap-1 rounded-lg border border-dashed border-line p-4">
                     <b className="text-label text-foreground">
                       {d.stepUpProviderTitle}

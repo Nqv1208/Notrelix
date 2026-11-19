@@ -74,11 +74,6 @@
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
       },
       {
-        "path": "src/components/board-lifecycle/board-move-impact.tsx",
-        "category": "container",
-        "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
-      },
-      {
         "path": "src/components/board-lifecycle/retired-boards-surface.tsx",
         "category": "container",
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
@@ -317,6 +312,56 @@
         "path": "src/components/shared/item-description-editor.tsx",
         "category": "container",
         "reason": "Part of a card popup, board lifecycle or item-field surface that has no story yet; its surface evidence (stories, states, visual baselines) is owed in the evidence phase."
+      },
+      {
+        "path": "src/components/shared/wm-ui-ports-host.tsx",
+        "category": "container",
+        "reason": "Container filling the pure surfaces' data ports (cover image, Relation target) from the state package's queries; mounted once by the app providers."
+      },
+      {
+        "path": "src/components/board-layout/board-notices.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the board workspace container; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/board-lifecycle/board-move-dialog.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the board move container; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/card-popup/approval/approval-section.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the card popup surface; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/filters/field-type-meta.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the filter and sort menus; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/filters/filter-no-results.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the Kanban view container; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/filters/view-sheet.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the view state bar container; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/forms/response-item-dialog.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the forms containers; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/item-actions/action-dialog.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the item action dialogs; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
+      },
+      {
+        "path": "src/components/views/table/table-split-divider.tsx",
+        "category": "container",
+        "reason": "Presentational part mounted only by the main table view container; no registered surface draws it yet, so its states are covered by that container's tests, not by a story."
       }
     ]
   },
@@ -326,7 +371,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "shell",
       "pureEntry": "src/components/board-layout/board-layout-shell.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/components/board-layout/board-state-block.tsx",
+        "src/components/board-layout/view-tab-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-board-layout-shell--default",
@@ -760,8 +808,7 @@
         "src/components/views/kanban/kanban-card-detail-panel.tsx",
         "src/components/views/kanban/kanban-empty-state.tsx",
         "src/components/views/kanban/kanban-settings-panel.tsx",
-        "src/components/views/kanban/kanban-bulk-bar.tsx",
-        "src/components/views/kanban/kanban-swimlane-board.tsx"
+        "src/components/views/kanban/kanban-bulk-bar.tsx"
       ],
       "stories": [
         {
@@ -1085,7 +1132,10 @@
       "coveredSources": [
         "src/components/views/kanban/kanban-card.copy.ts",
         "src/components/views/kanban/kanban-card-quick-actions.tsx",
-        "src/components/shared/priority-glyph.tsx"
+        "src/components/shared/priority-glyph.tsx",
+        "src/components/shared/wm-ui-ports.tsx",
+        "src/components/views/kanban/kanban-card-move-menu.tsx",
+        "src/components/views/kanban/kanban-card-quick-edit.tsx"
       ],
       "stories": [
         {
@@ -1322,8 +1372,7 @@
       "coveredSources": [
         "src/components/filters/field-ref-menu.tsx",
         "src/components/filters/filter-builder.tsx",
-        "src/components/filters/sort-menu.tsx",
-        "src/components/filters/view-state-bar.tsx"
+        "src/components/filters/sort-menu.tsx"
       ],
       "stories": [
         {
@@ -1511,7 +1560,11 @@
         "src/components/views/table/table-row.tsx",
         "src/components/views/table/table-states.tsx",
         "src/components/views/table/table-status-picker.tsx",
-        "src/components/views/table/table-sub-items.tsx"
+        "src/components/views/table/table-sub-items.tsx",
+        "src/components/views/table/table-bulk-phone.tsx",
+        "src/components/views/table/table-due-picker.tsx",
+        "src/components/views/table/table-layout.tsx",
+        "src/components/views/table/table-phone-list.tsx"
       ],
       "stories": [
         {
@@ -1876,7 +1929,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/views/table/table-toolbar.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/components/filters/compact-search.tsx",
+        "src/components/views/table/table-columns-menu.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-table-toolbar--default",
@@ -2027,7 +2083,12 @@
         "src/components/views/calendar/calendar-dates-dialog.tsx",
         "src/components/views/calendar/calendar-event.tsx",
         "src/components/views/calendar/calendar-grid.tsx",
-        "src/components/views/calendar/calendar-toolbar.tsx"
+        "src/components/views/calendar/calendar-toolbar.tsx",
+        "src/components/views/calendar/calendar-basis-menu.tsx",
+        "src/components/views/calendar/calendar-phone-day.tsx",
+        "src/components/views/calendar/calendar-phone-narrow.tsx",
+        "src/components/views/calendar/calendar-phone-sheets.tsx",
+        "src/components/views/calendar/calendar-phone.tsx"
       ],
       "stories": [
         {
@@ -2231,7 +2292,8 @@
         "src/components/views/timeline/timeline-link-dialog.tsx",
         "src/components/views/timeline/timeline-list.tsx",
         "src/components/views/timeline/timeline-toolbar.tsx",
-        "src/components/views/timeline/timeline-tray.tsx"
+        "src/components/views/timeline/timeline-tray.tsx",
+        "src/components/views/timeline/timeline-phone.tsx"
       ],
       "stories": [
         {
@@ -2567,7 +2629,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "navigation",
       "pureEntry": "src/components/board-share/board-share-dialog-surface.tsx",
-      "coveredSources": ["src/components/board-share/board-share-models.ts"],
+      "coveredSources": [
+        "src/components/board-share/board-share-models.ts",
+        "src/components/board-share/board-share-sheet.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-board-share--share-default",
@@ -3669,7 +3734,10 @@
       "owner": "@notrelix/work-management-web",
       "surfaceKind": "form",
       "pureEntry": "src/components/forms/form-builder-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": [
+        "src/components/card-popup/sections/field-pill.tsx",
+        "src/components/card-popup/sections/relation-field.tsx"
+      ],
       "stories": [
         {
           "id": "work-management-forms-builder--default",
@@ -4080,6 +4148,163 @@
           "testFile": "src/components/forms/__tests__/form-inbox-surface.interaction.component.test.tsx"
         }
       ]
+    },
+    {
+      "surfaceId": "wm.kanban.swimlanes",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "data",
+      "pureEntry": "src/components/views/kanban/kanban-swimlane-board.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-kanban-swimlanes--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--by-priority",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--empty",
+          "state": "Empty",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-kanban-swimlanes--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "Empty", "EdgeData", "ReadOnly"],
+        "delegated": [
+          {
+            "state": "Loading",
+            "surfaceId": "wm.kanban.loading",
+            "targetState": "Loading"
+          },
+          {
+            "state": "Error",
+            "surfaceId": "wm.kanban.unavailable",
+            "targetState": "Error"
+          }
+        ],
+        "notApplicable": [
+          {
+            "state": "HighDensity",
+            "reason": "The lanes reuse the Kanban board's cards and columns, whose density is evidenced by wm.kanban.board HighDensity; the swimlane grid adds no density of its own.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "PermissionLimited",
+            "reason": "Board access gives one read-only presentation for commenters and viewers (no drag), evidenced by ReadOnly; there is no partially permitted swimlane state.",
+            "authority": "docs/product/work-management.md"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["a11y", "visual", "purity"],
+      "interactionCases": []
+    },
+    {
+      "surfaceId": "wm.filters.bar",
+      "owner": "@notrelix/work-management-web",
+      "surfaceKind": "navigation",
+      "pureEntry": "src/components/filters/view-state-bar.tsx",
+      "coveredSources": [],
+      "stories": [
+        {
+          "id": "work-management-filters-view-bar--default",
+          "state": "Default",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            },
+            {
+              "viewport": "desktop",
+              "theme": "dark"
+            }
+          ]
+        },
+        {
+          "id": "work-management-filters-view-bar--edge-data",
+          "state": "EdgeData",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        },
+        {
+          "id": "work-management-filters-view-bar--read-only",
+          "state": "ReadOnly",
+          "visualTargets": [
+            {
+              "viewport": "desktop",
+              "theme": "light"
+            }
+          ]
+        }
+      ],
+      "stateCoverage": {
+        "required": ["Default", "EdgeData", "ReadOnly"],
+        "delegated": [],
+        "notApplicable": [
+          {
+            "state": "Loading",
+            "reason": "The bar shows the view state it is given; the board's loading state is owned by the view's loading surface.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          },
+          {
+            "state": "Error",
+            "reason": "The bar shows the view state it is given; a failed read is owned by the view's unavailable surface.",
+            "authority": "frontend-ui-readiness.spec.md §9.3"
+          }
+        ]
+      },
+      "responsive": false,
+      "themeAware": true,
+      "checks": ["a11y", "visual", "purity"],
+      "interactionCases": []
     }
   ]
 }

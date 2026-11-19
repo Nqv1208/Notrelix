@@ -26,7 +26,7 @@ import {
   Textarea,
   cn,
 } from "@notrelix/ui-web";
-import type { ChatMessage } from "../../core/types/chat";
+import { isThreadInactive, type ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ThreadCounts } from "../query/interaction-cache";
 import {
@@ -1257,10 +1257,16 @@ function threadView(counts: ThreadCounts | undefined, message: ChatMessage) {
   const stored = message.threadReplyCount ?? 0;
   const live = entry?.replyCount ?? 0;
   if (live === 0 && stored === 0) return null;
-  if (live >= stored) {
-    return { replyCount: live, lastReplyAt: entry?.lastReplyAt ?? null };
-  }
-  return { replyCount: stored, lastReplyAt: message.threadLastReplyAt ?? null };
+  const lastReplyAt =
+    live >= stored
+      ? (entry?.lastReplyAt ?? null)
+      : (message.threadLastReplyAt ?? null);
+  return {
+    replyCount: Math.max(live, stored),
+    lastReplyAt,
+    // The derived archive rule; a new reply moves lastReplyAt, so the chip goes at once.
+    archived: isThreadInactive(lastReplyAt),
+  };
 }
 
 /**

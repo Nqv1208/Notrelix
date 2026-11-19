@@ -1,6 +1,10 @@
 using System.Net;
 using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Domain.Identity.Tokens;
+using Notrelix.Domain.WorkManagement.Boards;
+using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Workspaces;
+using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Security.ApiTokens;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -122,6 +126,67 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
         var status = await CallAsync($"/api/v1/workspaces/{_b.WorkspaceId}/api-tokens", _tokenA.RawToken);
         status.Should().NotBe(HttpStatusCode.OK);
         status.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized);
+    }
+
+    // The issuing user belongs to a second workspace of the same account and may open its boards themselves;
+    // the token is bound to the first workspace only, so a board of the second is as missing as a made-up id.
+    [Fact]
+    public async Task ATokenCannotOpenABoardOfAnotherWorkspaceItsIssuerBelongsTo()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var second = Workspace.Create(_a.AccountId, _a.User.Id, "Second", $"ws2-{Guid.NewGuid():N}"[..16], now);
+        var board = Board.Create(_a.AccountId, second.Id, _a.User.Id, "Elsewhere", null, now);
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using (var ctx = _fixture.CreateOwnerContext(system))
+        {
+            ctx.Workspaces.Add(second);
+            ctx.Boards.Add(board);
+            ctx.WorkspaceMembers.Add(WorkspaceMember.Create(_a.AccountId, second.Id, _a.User.Id, WorkspaceRole.Owner, _a.User.Id, now));
+            ctx.AccessGrants.Add(new AccessGrant(
+                accountId: _a.AccountId, workspaceId: second.Id, userId: _a.User.Id, sourceContext: "Workspace",
+                membershipStatus: "Active", roleCodes: ["Owner"], permissionCodes: [], isAccountAdmin: false,
+                isWorkspaceAdmin: true, grantedAt: now));
+            await ctx.SaveChangesAsync();
+        }
+
+        (await CallAsync($"/api/v1/boards/{_a.BoardId}", _tokenA.RawToken)).Should().Be(HttpStatusCode.OK);
+        (await CallAsync($"/api/v1/boards/{board.Id}", _tokenA.RawToken)).Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // An integration token is a workspace credential, never a person: every route that belongs to the person
+    // (sessions, security, second factor, providers, profile, preferences, sign-out) refuses it, whatever the
+    // issuing user may do themselves.
+    [Theory]
+    [InlineData("GET", "/api/v1/auth/me", null)]
+    [InlineData("GET", "/api/v1/auth/sessions", null)]
+    [InlineData("GET", "/api/v1/auth/security/summary", null)]
+    [InlineData("GET", "/api/v1/auth/security/activity", null)]
+    [InlineData("GET", "/api/v1/auth/mfa/status", null)]
+    [InlineData("GET", "/api/v1/profile/preferences", null)]
+    [InlineData("POST", "/api/v1/auth/sessions/revoke-others", "{}")]
+    [InlineData("POST", "/api/v1/auth/security/step-up/requirement", "{\"purpose\":\"ChangePassword\"}")]
+    [InlineData("POST", "/api/v1/auth/security/step-up/complete-password", "{\"purpose\":\"ChangePassword\",\"password\":\"Passw0rd!Passw0rd!\"}")]
+    [InlineData("POST", "/api/v1/auth/mfa/disable", "{}")]
+    [InlineData("POST", "/api/v1/auth/change-password", "{\"currentPassword\":\"Passw0rd!Passw0rd!\",\"newPassword\":\"Other-Passw0rd!2\"}")]
+    [InlineData("POST", "/api/v1/auth/set-password", "{\"newPassword\":\"Other-Passw0rd!2\",\"stepUpToken\":\"proof\"}")]
+    [InlineData("POST", "/api/v1/auth/oauth/google/unlink", "{\"stepUpToken\":\"proof\"}")]
+    [InlineData("POST", "/api/v1/profile/email", "{\"email\":\"new-address@example.com\"}")]
+    [InlineData("PATCH", "/api/v1/profile", "{\"name\":\"Someone\"}")]
+    [InlineData("PATCH", "/api/v1/profile/preferences", "{\"expectedVersion\":0,\"locale\":\"vi\"}")]
+    public async Task ATokenCannotReachAPersonLevelRoute(string method, string url, string? body)
+    {
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(new HttpMethod(method), url)
+        {
+            Content = body is null ? null : new StringContent(body, System.Text.Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new("Bearer", _tokenA.RawToken);
+
+        var status = (await client.SendAsync(request)).StatusCode;
+
+        status.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized);
     }
 
     [Fact]

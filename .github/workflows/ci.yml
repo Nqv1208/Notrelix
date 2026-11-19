@@ -2,6 +2,9 @@ name: Notrelix CI
 
 # One pull-request gate, jobs in parallel, only the side that changed.
 # Slow or flaky suites (visual, image scans, CodeQL) run on schedule, never here.
+# On a push to main that follows a green CI gate and touches deployable code, the release-* jobs at the
+# end publish the images, run the full stack on those exact digests and attest the release candidate
+# that release.yml deploys to staging. They never run on pull requests.
 
 on:
   pull_request:
@@ -196,3 +199,114 @@ jobs:
           ok backend-integration "${{ needs.backend-integration.result }}"
           ok frontend "${{ needs.frontend.result }}"
           ok dependencies "${{ needs.dependencies.result }}"
+
+  # ---- Release candidate: main only, after the gate is green and only when the plan says release ----
+  release-plan:
+    name: Release plan
+    needs: ci-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-gate.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      release_candidate: ${{ steps.plan.outputs.release_candidate }}
+      container_matrix: ${{ steps.plan.outputs.container_matrix }}
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: plan
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          python3 -m tools.deliveryctl plan --event-name push --ref "$GITHUB_REF" --source-sha "$GITHUB_SHA" \
+            --before-sha "$BEFORE" --output plan/plan.json --github-output
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-plan
+          path: plan/plan.json
+          if-no-files-found: error
+          retention-days: 30
+
+  release-images:
+    name: Release images (amd64 and arm64)
+    needs: release-plan
+    if: needs.release-plan.outputs.release_candidate == 'true'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/container-ci.yml
+    with:
+      container_matrix: ${{ needs.release-plan.outputs.container_matrix }}
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.release-plan.outputs.plan_sha256 }}
+      publish_mode: ${{ format('{0}', 'true') }}
+
+  release-candidate:
+    name: Build release candidate
+    needs: [release-plan, release-images]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      images_json: ${{ steps.build.outputs.images_json }}
+      contract_json: ${{ steps.build.outputs.contract_json }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-plan, path: plan}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-image-manifests, path: release-images}
+      - id: build
+        env:
+          PLAN_SHA256: ${{ needs.release-plan.outputs.plan_sha256 }}
+        run: |
+          set -euo pipefail
+          # The single CI gate has already passed on this run, so the evidence is that statement, bound to the plan.
+          jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg plan "$PLAN_SHA256" \
+            '{api_version:"delivery.notrelix.dev/v1",kind:"EvidenceSummary",status:"passed",source_sha:$sha,plan_sha256:$plan,run_id:$run,basis:"CI gate passed on this run before images were published"}' > evidence-body.json
+          jq --arg s "$(sha256sum < evidence-body.json | cut -d' ' -f1)" '.summary_sha256=$s' evidence-body.json > evidence-summary.json
+          python3 -m tools.deliveryctl release-candidate --plan plan/plan.json --evidence-summary evidence-summary.json \
+            --images-dir release-images --run-id "$GITHUB_RUN_ID" --output candidate/release-candidate.json
+          { echo "images_json=$(jq -c '{images: .images}' candidate/release-candidate.json)"; echo "contract_json=$(jq -c .release_contract candidate/release-candidate.json)"; } >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-candidate-draft
+          path: candidate/release-candidate.json
+          if-no-files-found: error
+          retention-days: 30
+
+  release-stack:
+    name: Release stack on the published digests
+    needs: [release-plan, release-candidate]
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/stack-smoke.yml
+    with:
+      release_images_json: ${{ needs.release-candidate.outputs.images_json }}
+      release_contract_json: ${{ needs.release-candidate.outputs.contract_json }}
+      plan_sha256: ${{ needs.release-plan.outputs.plan_sha256 }}
+
+  release-seal:
+    name: Attest release candidate
+    needs: [release-candidate, release-stack]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: {name: release-candidate-draft, path: candidate}
+      - uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with: {subject-path: candidate/release-candidate.json}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-candidate
+          path: candidate/release-candidate.json
+          if-no-files-found: error
+          retention-days: 90

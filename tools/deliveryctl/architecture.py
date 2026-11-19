@@ -188,7 +188,7 @@ def check(root: Path = ROOT) -> None:
         publish_end = len(container_text) if next_job is None else publish_start + 1 + next_job.start()
         publish_text = container_text[publish_start:publish_end]
         outside_publish = container_text.replace(publish_text, "", 1)
-        if "docker build" in publish_text:
+        if re.search(r"docker\s+(?:buildx\s+)?build\b", publish_text):
             errors.append("container publish must push the validated image bytes; a second build is forbidden")
         for write in ("packages: write", "id-token: write", "attestations: write"):
             if write in outside_publish:

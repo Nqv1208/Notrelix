@@ -87,8 +87,18 @@ x-backend-service: &backend-service
       max-file: "5"
 
 services:
+  # Hard memory caps sized for one 12 GB host (about 6 GB of containers in total, the rest is
+  # headroom for the migration container, a rolling restart and the OS). Estimates, re-measure with docker stats.
+  postgres:
+    mem_limit: 2g
+  redis:
+    mem_limit: 384m
+  rabbitmq:
+    mem_limit: 1g
+
   # Transaction-mode connection pooler in front of postgres for the runtime logins only.
   pgbouncer:
+    mem_limit: 64m
     image: ${NOTRELIX_PGBOUNCER_IMAGE:-edoburu/pgbouncer:v1.25.2-p0}
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-c"]
@@ -128,6 +138,7 @@ services:
 
   # REST endpoints. Serves /api except the realtime path, and the health probes.
   backend-api:
+    mem_limit: 768m
     <<: *backend-service
     environment:
       <<: *backend-environment
@@ -140,6 +151,7 @@ services:
 
   # WebSocket realtime gateway. No REST routes and no hosted services.
   backend-realtime:
+    mem_limit: 512m
     <<: *backend-service
     environment:
       <<: *backend-environment
@@ -151,6 +163,7 @@ services:
 
   # Background jobs and the outbox relay. No public route.
   backend-worker:
+    mem_limit: 768m
     <<: *backend-service
     environment:
       <<: *backend-environment
@@ -162,6 +175,7 @@ services:
       - dataprotection_keys:/var/lib/notrelix/dataprotection-keys
 
   frontend-marketing:
+    mem_limit: 384m
     build:
       context: .
       dockerfile: frontend/Dockerfile.marketing
@@ -179,6 +193,7 @@ services:
       - frontend-network
 
   frontend-web:
+    mem_limit: 64m
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -195,6 +210,7 @@ services:
       - frontend-network
 
   nginx:
+    mem_limit: 64m
     image: ${NOTRELIX_NGINX_IMAGE:-nginx:1.30.7-alpine-slim}
     restart: unless-stopped
     user: nginx
@@ -217,6 +233,14 @@ services:
     networks:
       - backend-network
       - frontend-network
+
+networks:
+  # Pinned so nginx can trust exactly this network's gateway (172.29.0.1) as the Caddy hop, see
+  # infra/nginx/nginx.prod.conf. Change both together if the CIDR collides with the host.
+  frontend-network:
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
 
 volumes:
   # Shared by the three backend processes so they read one Data Protection key ring.

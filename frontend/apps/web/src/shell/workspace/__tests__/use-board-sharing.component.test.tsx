@@ -69,6 +69,7 @@ const INVITATIONS = [
 function renderSharing(options: { failFirstRead?: boolean } = {}) {
   const store = new MockStore({ ...defaultConfig });
   const requests: string[] = [];
+  const bodies: Record<string, unknown> = {};
   const mockFetch = createMockFetch(store);
   let failures = options.failFirstRead ? 1 : 0;
   runtime.api = createNotrelixClient({
@@ -82,6 +83,8 @@ function renderSharing(options: { failFirstRead?: boolean } = {}) {
       }
       const method = init?.method ?? "GET";
       requests.push(`${method} ${path}`);
+      if (typeof init?.body === "string")
+        bodies[`${method} ${path}`] = JSON.parse(init.body);
       // The mock backend has no resource-invitation operations: this read and its writes are answered here.
       if (path.includes("/invitations")) {
         return method === "GET" && path.endsWith("/invitations")
@@ -111,7 +114,7 @@ function renderSharing(options: { failFirstRead?: boolean } = {}) {
   document.body.append(host);
   root = createRoot(host);
   act(() => root!.render(wrap(<Probe />)));
-  return { result, requests, store };
+  return { result, requests, bodies, store };
 }
 
 async function settled(check: () => boolean) {
@@ -219,6 +222,28 @@ describe("useBoardSharing", () => {
     });
     expect(requests).toContain(`POST /api/v1/boards/${BOARD}/sharing/private`);
     await settled(() => result.current.data?.visibility === "Private");
+  });
+
+  it("UC-WM-A19 invites a guest by email at Viewer with the resource endpoint and reads the pending list again", async () => {
+    const { result, requests, bodies } = renderSharing();
+    await settled(() => result.current.pendingInvitations.length === 3);
+    const reads = () =>
+      requests.filter(
+        (request) =>
+          request ===
+          `GET /api/v1/resources/work-management.board/${BOARD}/invitations`,
+      ).length;
+    const before = reads();
+    await act(async () => {
+      await result.current.inviteGuest("moi@doitac-erp.vn");
+    });
+    const post = `POST /api/v1/resources/work-management.board/${BOARD}/invitations`;
+    expect(requests).toContain(post);
+    expect(bodies[post]).toEqual({
+      email: "moi@doitac-erp.vn",
+      level: "Viewer",
+    });
+    await settled(() => reads() > before);
   });
 
   it("UC-WM-A20 maps who may manage each pending invitation", async () => {
