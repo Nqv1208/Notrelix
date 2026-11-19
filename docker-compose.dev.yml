@@ -262,7 +262,7 @@ services:
         max-file: "3"
 
   nginx:
-    image: nginx:1.29-alpine-slim
+    image: nginx:1.30.7-alpine-slim
     container_name: notrelix-nginx-dev
     restart: unless-stopped
     volumes:
