@@ -1,13 +1,11 @@
 using Notrelix.Application.Common.Messaging;
 using Notrelix.Application.Common.Tokens;
-using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.Workspaces.Spaces.Services;
 using Notrelix.Domain.Workspaces.Invitations;
 using Notrelix.Domain.Workspaces;
-using Notrelix.Domain.Workspaces.Spaces;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands;
 
