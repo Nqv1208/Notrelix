@@ -179,13 +179,23 @@ public sealed class ArchivedWorkspaceWriteGateIntegrationTests : IAsyncLifetime
         await write.Should().ThrowAsync<AppNotFound>();
     }
 
-    [Theory]
-    [InlineData("Owner")]
-    [InlineData("Admin")]
-    public async Task Unarchiving_LetsTheSameWriteSucceedAgain(string unarchiver)
+    [Fact]
+    public async Task AnAdmin_CannotUnarchive_SoTheWorkspaceStaysArchived()
     {
         var (stack, people) = await SeedAsync();
-        await ArchiveAsync(stack, people[unarchiver]);
+        await ArchiveAsync(stack, stack.OwnerId);
+        using var asAdmin = As(stack, people["Admin"]);
+        var refused = async () => await OrgTreeTestHost.SendAsync(asAdmin, new UnarchiveWorkspaceCommand(stack.WorkspaceId, await VersionAsync(stack)));
+        await refused.Should().ThrowAsync<AppForbidden>();
+        (await StatusAsync(stack)).Should().Be(WorkspaceStatus.Archived);
+    }
+
+    [Fact]
+    public async Task Unarchiving_LetsTheSameWriteSucceedAgain()
+    {
+        const string unarchiver = "Owner";
+        var (stack, people) = await SeedAsync();
+        await ArchiveAsync(stack, stack.OwnerId);
         using var asMember = As(stack, people["Member"]);
         var before = await MemberRowAsync(stack, people["Member"]);
         var refused = () => OrgTreeTestHost.SendAsync(asMember, new UpdateMyJobTitleCommand(stack.WorkspaceId, "Engineer", before.Version));
