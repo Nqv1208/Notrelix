@@ -42,23 +42,23 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 
 | Letter | Capability                                                        | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 | ------ | ----------------------------------------------------------------- | --------- | ------- | ------------ | ----------- | --------- | ---- | ------- |
-| A      | CHT-001 Channels and channel groups                               | 8         | 2       | 0            | 0           | 0         | 6    | 0       |
+| A      | CHT-001 Channels and channel groups                               | 8         | 0       | 0            | 0           | 0         | 8    | 0       |
 | B      | CHT-002 Messages                                                  | 10        | 0       | 0            | 0           | 0         | 10   | 0       |
 | C      | CHT-003 Realtime delivery                                         | 9         | 0       | 0            | 0           | 0         | 9    | 0       |
 | D      | CHT-004 Read state and notification levels                        | 7         | 0       | 0            | 0           | 0         | 7    | 0       |
 | E      | CHT-005 Direct and group conversations                            | 7         | 0       | 0            | 0           | 0         | 7    | 0       |
-| F      | CHT-006 Threads, replies and pins                                 | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
+| F      | CHT-006 Threads, replies and pins                                 | 8         | 0       | 0            | 0           | 0         | 8    | 0       |
 | G      | CHT-007 Mentions, reactions, attachments and notification handoff | 9         | 0       | 0            | 0           | 0         | 9    | 0       |
 | H      | CHT-008 Access, moderation, retention, search and hardening       | 11        | 0       | 0            | 0           | 0         | 10   | 1       |
-| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 0         | 4    | 0       |
+| I      | CHT-009 Rich media                                                | 8         | 0       | 0            | 0           | 0         | 8    | 0       |
 | J      | CHT-010 Calls                                                     | 8         | 0       | 0            | 0           | 0         | 8    | 0       |
-|        | Total                                                             | 85        | 7       | 0            | 0           | 0         | 77   | 1       |
+|        | Total                                                             | 85        | 0       | 0            | 0           | 0         | 84   | 1       |
 
-The counts are those of the index below (section 2), counted by State on 2026-11-19: 77 DONE, 0 HARDENING, 7 DEFINED, 1 BLOCKED (H11, waiting for the Governance Team visibility fact). DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built). No row is HARDENING. Capabilities B, C, D, E, G and J are all DONE.
+The counts are those of the index below (section 2), counted by State on 2026-11-20: 84 DONE, 0 HARDENING, 0 DEFINED, 1 BLOCKED (H11, waiting for the Governance Team visibility fact and the Documents Page header slot; Deferred to 0.2). No row is DEFINED, IMPLEMENTING, INTEGRATING or HARDENING. Capabilities A to G, I and J are all DONE.
 
 ### 1.2 Gaps
 
-1. The seven DEFINED rows above, with what each lacks.
+1. The one BLOCKED row, H11: it waits for the Governance Team visibility fact and the Documents Page header slot (Deferred to 0.2).
 2. The owner tests and sets DONE; the Gap column of the index names what each row still lacks (an owner check, a real e2e, a design record or an axe record).
 3. The operations runbook, the performance budgets and the load test (typing and presence included) are not done (see the delivery plan).
 4. A thread's reply count never goes down: a deleted reply keeps its thread sequence and stays counted, so the "N replies" chip counts tombstones.
