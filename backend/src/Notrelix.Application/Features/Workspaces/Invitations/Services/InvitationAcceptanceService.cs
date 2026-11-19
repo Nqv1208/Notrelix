@@ -238,13 +238,37 @@ public sealed class InvitationAcceptanceService
             ct);
 
         if (invitation.InitialEntries.Count > 0)
-            await _initialEntries.ApplyAsync(
-                invitation.WorkspaceId, userId, member.Id, invitation.InvitedBy,
-                invitation.InitialEntries, now, ct);
+        {
+            // A Guest is not a Team member (Workspaces_Team_GuestCannotJoin): an invitation already in flight that names a
+            // Team for a Guest has that Team entry skipped, and the audit trail names it. Space entries still apply.
+            var skipped = invitation.Role == WorkspaceRole.Guest
+                ? invitation.InitialEntries.Where(e => e.Kind == WorkspaceInvitationEntryKind.Team).ToList()
+                : [];
+            if (skipped.Count > 0)
+                await RecordSkippedEntriesAsync(invitation, userId, skipped, ct);
+
+            var applicable = invitation.InitialEntries.Except(skipped).ToList();
+            if (applicable.Count > 0)
+                await _initialEntries.ApplyAsync(
+                    invitation.WorkspaceId, userId, member.Id, invitation.InvitedBy, applicable, now, ct);
+        }
 
         return Result<AcceptInvitationResultDto>.Success(
             ResultFor(workspace, invitation));
     }
+
+    private Task RecordSkippedEntriesAsync(
+        WorkspaceInvitation invitation, Guid userId, IReadOnlyList<WorkspaceInvitationInitialEntry> skipped, CancellationToken ct) =>
+        _auditService.RecordAsync(
+            invitation.WorkspaceId,
+            userId,
+            "AcceptInvitationEntriesSkipped",
+            ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), invitation.WorkspaceId, invitation.WorkspaceId),
+            AuditMetadata.Create(),
+            AuditSeverity.Info,
+            cancellationToken: ct,
+            change: new AuditChange("workspaces.member", userId, null,
+                new { skippedEntries = skipped.Select(e => new { kind = e.Kind.ToString(), e.TargetId, e.Role }) }));
 
     private static AcceptInvitationResultDto ResultFor(Workspace workspace, WorkspaceInvitation invitation) =>
         new(workspace.Slug, invitation.WorkspaceId, invitation.ResourceGrant?.ResourceKind, invitation.ResourceGrant?.ResourceId);

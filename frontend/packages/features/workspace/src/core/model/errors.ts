@@ -158,7 +158,7 @@ export function parseTeamReferencesRefusal(
 
 /** Why an initial Team or Space entry of an invitation was refused (the producer's `entries` extension). */
 export type InvitationEntryRefusalReason =
-  "not-active" | "guest-too-privileged";
+  "not-active" | "guest-too-privileged" | "guest-cannot-join-team";
 
 export interface InvitationEntryRefusal {
   readonly kind: "team" | "space";
@@ -180,7 +180,8 @@ export function parseInvitationEntryRefusals(
       (record.kind !== "team" && record.kind !== "space") ||
       typeof record.targetId !== "string" ||
       (record.reason !== "not-active" &&
-        record.reason !== "guest-too-privileged")
+        record.reason !== "guest-too-privileged" &&
+        record.reason !== "guest-cannot-join-team")
     )
       return [];
     return [

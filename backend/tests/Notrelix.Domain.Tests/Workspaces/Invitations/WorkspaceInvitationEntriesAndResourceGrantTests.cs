@@ -24,16 +24,50 @@ public class WorkspaceInvitationEntriesAndResourceGrantTests
     private static WorkspaceInvitationInitialEntry Space(string role = "Viewer") =>
         new(WorkspaceInvitationEntryKind.Space, Guid.NewGuid(), role);
 
-    [Theory]
-    [InlineData(WorkspaceRole.Member)]
-    [InlineData(WorkspaceRole.Guest)]
-    public void Create_StoresCanonicalInitialEntries_ForMemberOrGuest(WorkspaceRole role)
+    [Fact]
+    public void Create_StoresCanonicalInitialEntries_ForMember()
     {
-        var invitation = Workspace(role, Team("member"), Space("viewer"));
+        var invitation = Workspace(WorkspaceRole.Member, Team("member"), Space("viewer"));
 
         invitation.InitialEntries.Should().HaveCount(2);
         invitation.InitialEntries.Select(e => e.Role).Should().Equal("Member", "Viewer");
         invitation.IsResourceInvitation.Should().BeFalse();
+    }
+
+    // A Guest is not a Team member (Workspaces_Team_GuestCannotJoin, workspaces.md section 46), so a Guest invitation
+    // names Space entries only; the Team entries are refused per entry.
+    [Fact]
+    public void Create_StoresASpaceEntry_ForGuest()
+    {
+        var invitation = Workspace(WorkspaceRole.Guest, Space("viewer"));
+
+        invitation.InitialEntries.Select(e => e.Role).Should().Equal("Viewer");
+    }
+
+    [Theory]
+    [InlineData("Member", InvitationEntryRefusal.GuestCannotJoinTeam)]
+    [InlineData("Lead", InvitationEntryRefusal.GuestTooPrivileged)]
+    public void Create_RejectsATeamEntry_ForGuestInvitation_NamingTheEntry(string role, string reason)
+    {
+        var team = Team(role);
+
+        var thrown = FluentActions.Invoking(() => Workspace(WorkspaceRole.Guest, Space("viewer"), team))
+            .Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged).Which;
+
+        ((IReadOnlyList<InvitationEntryRefusal>)thrown.Details["entries"]!).Should()
+            .Equal(new InvitationEntryRefusal(1, "team", team.TargetId, reason));
+    }
+
+    [Fact]
+    public void ChangeRole_ToGuest_IsRejected_WhenEntriesNameATeam()
+    {
+        var invitation = Workspace(WorkspaceRole.Member, Team("Member"));
+
+        FluentActions.Invoking(() => invitation.ChangeRole(WorkspaceRole.Guest, Guid.NewGuid(), Now))
+            .Should().Throw<BusinessRuleException>()
+            .Where(e => e.RuleCode == WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged);
+        invitation.Role.Should().Be(WorkspaceRole.Member);
     }
 
     [Fact]
