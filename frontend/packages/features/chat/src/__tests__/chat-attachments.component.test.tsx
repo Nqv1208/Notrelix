@@ -15,7 +15,7 @@ import type { ChatMessage } from "../core/types/chat";
 import { chatQueryKeys } from "../query/keys";
 import { createChatHooks, flattenPages } from "../web/query/create-chat-hooks";
 import { ChatMessageRow } from "../web/components/chat-message-row";
-import { en } from "../web/components/chat.copy";
+import { en, vi as viCopy } from "../web/components/chat.copy";
 import { installBlobReaders } from "./blob-shim";
 
 installBlobReaders();
@@ -546,6 +546,106 @@ describe("uploads on a message", () => {
         chatQueryKeys.uploads(WORKSPACE),
       ),
     ).toHaveLength(1);
+  });
+
+  it("shows an image upload as a tile at once from the local file, at its own ratio, with a progress ring", async () => {
+    await mountWithUploads((id) => [
+      upload(id, {
+        progress: 0.62,
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+    ]);
+    const tile = await screen.findByTestId("chat-upload-progress");
+    const ring = within(tile).getByRole("progressbar", {
+      name: "Uploading site.png",
+    });
+    expect(ring.getAttribute("aria-valuenow")).toBe("62");
+    // Before the image has loaded the tile keeps a 4:3 placeholder box; the real size then fixes the ratio.
+    const img = tile.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("blob:preview");
+    Object.defineProperty(img, "naturalWidth", { value: 4000 });
+    Object.defineProperty(img, "naturalHeight", { value: 1000 });
+    fireEvent.load(img);
+    await waitFor(() =>
+      expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("2"),
+    );
+  });
+
+  it("turns the ring instead of filling it while no progress is known", async () => {
+    await mountWithUploads((id) => [
+      upload(id, {
+        status: "queued",
+        progress: 0,
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+    ]);
+    const ring = await screen.findByRole("progressbar", {
+      name: "Waiting to upload site.png",
+    });
+    expect(ring.getAttribute("aria-valuenow")).toBeNull();
+    expect(ring.querySelector("svg")!.getAttribute("class")).toContain(
+      "animate-spin",
+    );
+  });
+
+  it("cancels a running upload from its tile: the tile and the request go", async () => {
+    const { s } = await mountWithUploads((id) => [
+      upload(id, {
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+      upload(id, { status: "queued", progress: 0 }),
+    ]);
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Cancel uploading site.png",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("progressbar", { name: /site.png/ }),
+      ).toBeNull(),
+    );
+    // The other file is untouched and can be cancelled the same way.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cancel uploading slow.zip" }),
+    );
+    await waitFor(() =>
+      expect(
+        s.queryClient.getQueryData<ChatUploadItem[]>(
+          chatQueryKeys.uploads(WORKSPACE),
+        ),
+      ).toEqual([]),
+    );
+  });
+
+  it("keeps a failed image upload as a failed row with Retry, and Retry starts it again", async () => {
+    const { s } = await mountWithUploads((id) => [
+      upload(id, {
+        status: "failed",
+        progress: 0,
+        reason: "retryable",
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+    ]);
+    const alert = await screen.findByTestId("chat-upload-failed");
+    expect(alert.textContent).toContain(
+      "site.png was not uploaded. Check the connection and try again.",
+    );
+    fireEvent.click(
+      within(alert).getByRole("button", { name: "Retry uploading site.png" }),
+    );
+    await waitFor(() =>
+      expect(
+        s.queryClient.getQueryData<ChatUploadItem[]>(
+          chatQueryKeys.uploads(WORKSPACE),
+        )?.[0]?.status,
+      ).not.toBe("failed"),
+    );
+  });
+
+  it("offers Cancel in Vietnamese", () => {
+    expect(viCopy.attachments.cancel).toBe("Hủy");
+    expect(viCopy.attachments.refusedRemove).toContain("Bỏ");
   });
 
   it("does not show another person's uploads", async () => {

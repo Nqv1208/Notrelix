@@ -100,6 +100,45 @@ describe("ChatComposer attachments", () => {
     expect(screen.queryByTestId("chat-pending-files")).toBeNull();
   });
 
+  it("shows a picked image as its own thumbnail at once, and removes it", () => {
+    const createObjectURL = vi.fn(() => "blob:thumb");
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    render(<Harness onSend={vi.fn()} />);
+    pick([new File(["abc"], "site.png", { type: "image/png" })]);
+    const thumb = screen.getByAltText("Preview of site.png");
+    expect(thumb.getAttribute("src")).toBe("blob:thumb");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Remove site.png from the files to send",
+      }),
+    );
+    expect(screen.queryByAltText("Preview of site.png")).toBeNull();
+  });
+
+  it("answers a file over 100 MB with a notice and a Remove action that clears the notice", () => {
+    render(<Harness onSend={vi.fn()} />);
+    const big = new File(["x"], "bao-cao-q3.mov", { type: "video/quicktime" });
+    Object.defineProperty(big, "size", {
+      value: CHAT_LIMITS.attachmentMaxBytes + 1,
+    });
+    pick([big]);
+    expect(screen.getByRole("alert").textContent).toContain(
+      "bao-cao-q3.mov was not added: a file can be up to 100 MB.",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove bao-cao-q3.mov" }),
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByTestId("chat-pending-files")).toBeNull();
+  });
+
   it("does not send files without text and says so", () => {
     const onSend = vi.fn();
     render(<Harness onSend={onSend} />);
@@ -151,7 +190,8 @@ describe("ChatComposer attachments", () => {
     fireEvent.paste(screen.getByRole("textbox"), {
       clipboardData: { files: [pasted], types: ["Files"] },
     });
-    expect(screen.getByText("shot.png")).not.toBeNull();
+    // An image waits in the tray as its own thumbnail; the name is its alt text and tooltip.
+    expect(screen.getByAltText("Preview of shot.png")).not.toBeNull();
   });
 
   it("leaves a text paste alone", () => {
