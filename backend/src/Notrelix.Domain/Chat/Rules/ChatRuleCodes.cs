@@ -9,6 +9,9 @@ public static class ChatRuleCodes
     public const string SpaceNotFound = "space-not-found";
     public const string ChannelArchived = "channel-archived";
     public const string NameConflict = "name-conflict";
+
+    /// <summary>A deleted channel is past its 30-day restore window and stays deleted.</summary>
+    public const string RestoreWindowElapsed = "restore-window-elapsed";
     public const string VersionConflict = "version-conflict";
     public const string RateLimited = "rate-limited";
     public const string LimitReached = "limit-reached";
