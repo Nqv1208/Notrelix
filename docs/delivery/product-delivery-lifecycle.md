@@ -146,7 +146,7 @@ A use case is DONE only when all four hold on the same commit. [`definition-of-d
 | R4 Owner acceptance | The owner runs the release's journeys on the candidate (DEL-012) | Every journey passes; no P0 or P1 open |
 | R5 Release | `vX.Y.Z` is tagged on the release branch | Tag exists |
 
-Branch, tag and version-number mechanics are in [`ci-cd-architecture.md`](ci-cd-architecture.md) §13. Deployment of the candidate to staging follows [`release-and-rollout.md`](release-and-rollout.md); while continuous delivery is dormant the candidate is the tagged commit run on a stack the owner can reach.
+Branch, tag and version-number mechanics are in [`ci-cd-architecture.md`](ci-cd-architecture.md) §13. Deployment of the candidate to staging follows [`release-and-rollout.md`](release-and-rollout.md); the candidate is the exact image digests the `release-*` jobs published for that `main` commit.
 
 ---
 

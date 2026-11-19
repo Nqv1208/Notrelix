@@ -693,7 +693,7 @@ A release is not certified by historical green CI for another SHA.
 
 # 83. CI evidence
 
-`ci.yml` produces `CI gate` success for an exact SHA. The release path is dormant (TRANSITION): `release.yml` waits for a `Notrelix CI` run containing a `release-candidate` job that `ci.yml` does not have, so it consumes no evidence until that input returns.
+`ci.yml` produces `CI gate` success for an exact SHA. On a push to `main` that touches deployable code, the `release-*` jobs of `ci.yml` publish the images, run the stack on those digests and attest the `release-candidate` manifest that `release.yml` consumes. The evidence for that manifest is the green `CI gate` of the same run, bound to the plan hash.
 
 # 84. DEL-REL-038 — Release does not bypass required gates by manual deployment
 

@@ -54,10 +54,10 @@ Protected trunk requires the single check `CI gate`, never per-job names, plus t
 ```text
 delivery/images.lock.toml  the only committed image authority, referenced by digest
 delivery authority parsing  tools/deliveryctl only
-release/promotion/deployment workflows  dormant; they do not build application images
+release/promotion/deployment workflows  consume the release-candidate manifest; they do not build application images
 ```
 
-Release and deploy stay dormant until `ci.yml` produces the release-candidate input `release.yml` waits for.
+Release and deploy consume the release-candidate input that the `release-*` jobs of `ci.yml` produce on a push to `main`.
 
 ## 6. Review checklist
 
