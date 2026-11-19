@@ -402,15 +402,25 @@ function controller(
     remoteVideoRef: vi.fn(),
     localVideoRef: vi.fn(),
     screenVideoRef: vi.fn(),
+    join: vi.fn(),
+    fullKind: null,
+    speaking: new Set<string>(),
+    participantVideoRef: () => vi.fn(),
     ...over,
   };
 }
 
 const NAMES: Record<string, string> = { me: "Thu Hà", quan: "Trần Minh Quân" };
 
-function stage(c: ChatCallsController, h: ChatCurrentCall, copy = en) {
+function stage(
+  c: ChatCallsController,
+  h: ChatCurrentCall,
+  copy = en,
+  group?: { name: string },
+) {
   return (
     <ChatCallStage
+      group={group}
       controller={c}
       held={h}
       visible
@@ -422,6 +432,113 @@ function stage(c: ChatCallsController, h: ChatCurrentCall, copy = en) {
     />
   );
 }
+
+/** A channel call of three people: this person, Quân and Hà. */
+function groupCall(
+  sharing: "me" | "quan" | null,
+  kind: "voice" | "video" = "video",
+): ChatCall {
+  const base = (id: string) => ({
+    personId: id,
+    joinedAt: AT,
+    leftAt: null,
+    audioOn: true,
+    videoOn: false,
+    sharingScreen: sharing === id,
+  });
+  return {
+    ...callWith([], kind),
+    participants: [base("me"), base("quan"), base("ha")],
+  };
+}
+
+describe("the group call stage with a screen share", () => {
+  beforeEach(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        enumerateDevices: async () => [],
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      },
+    });
+    Object.defineProperty(navigator, "permissions", {
+      configurable: true,
+      value: { query: async () => ({ state: "granted" }) },
+    });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, "mediaDevices");
+    Reflect.deleteProperty(navigator, "permissions");
+  });
+
+  it("shows the shared screen as the main tile and keeps every person as a tile in the strip", () => {
+    render(
+      stage(controller(), held({}, groupCall("quan")), en, { name: "erp" }),
+    );
+
+    const main = screen.getByTestId("chat-call-share");
+    expect(main.textContent).toContain(
+      "Trần Minh Quân is sharing their screen",
+    );
+    const grid = screen.getByTestId("chat-call-grid");
+    expect(within(grid).getAllByTestId("chat-call-tile")).toHaveLength(3);
+    expect(grid.className).toContain("h-[104px]");
+  });
+
+  it("is the ordinary grid when nobody shares", () => {
+    render(stage(controller(), held({}, groupCall(null)), en, { name: "erp" }));
+
+    expect(screen.queryByTestId("chat-call-share")).toBeNull();
+    expect(screen.getByTestId("chat-call-grid").className).not.toContain(
+      "h-[104px]",
+    );
+  });
+
+  it("shows the sharer the card with stop, and the control asks before replacing another share", () => {
+    const c = controller();
+    const { unmount } = render(
+      stage(c, held({ screen: "on" }, groupCall("me")), en, { name: "erp" }),
+    );
+    fireEvent.click(
+      within(screen.getByTestId("chat-call-share-own")).getByRole("button", {
+        name: en.calls.shareStop,
+      }),
+    );
+    expect(c.stopScreenShare).toHaveBeenCalledTimes(1);
+    unmount();
+
+    const d = controller();
+    render(stage(d, held({}, groupCall("quan")), en, { name: "erp" }));
+    fireEvent.click(screen.getByRole("button", { name: en.calls.shareStart }));
+    expect(d.startScreenShare).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: en.calls.shareReplaceConfirm,
+      }),
+    );
+    expect(d.startScreenShare).toHaveBeenCalledWith(true);
+  });
+
+  it("offers the control in a group video call, and not in a group voice call", () => {
+    const { unmount } = render(
+      stage(controller(), held({}, groupCall(null)), en, { name: "erp" }),
+    );
+    expect(
+      screen.getByRole("button", { name: en.calls.shareStart }),
+    ).toBeTruthy();
+    unmount();
+
+    render(
+      stage(controller(), held({}, groupCall(null, "voice")), en, {
+        name: "erp",
+      }),
+    );
+    expect(
+      screen.queryByRole("button", { name: en.calls.shareStart }),
+    ).toBeNull();
+  });
+});
 
 describe("the call stage with a screen share", () => {
   // The stage lists devices once the room is live; an empty, granted browser keeps these tests about the share.

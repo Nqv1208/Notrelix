@@ -476,7 +476,14 @@ export function createChatRealtimeAdapter(
       (known: ChatCallFramePayload | undefined) =>
         known && known.version > frame.version ? known : frame,
     );
-    const ringing = frame.state === "ringing" && frame.initiatorId !== viewerId;
+    // A channel call does not ring anyone (people see its banner and join); a direct or group conversation rings.
+    const isChannel = (
+      queryClient.getQueryData<readonly { readonly id: string }[]>(
+        chatQueryKeys.channels(workspaceId),
+      ) ?? []
+    ).some((channel) => channel.id === frame.spaceId);
+    const ringing =
+      frame.state === "ringing" && frame.initiatorId !== viewerId && !isChannel;
     queryClient.setQueryData<ChatIncomingCall[]>(
       chatQueryKeys.incomingCalls(workspaceId),
       (list = []) => {

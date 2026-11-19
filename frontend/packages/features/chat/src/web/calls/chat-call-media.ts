@@ -38,6 +38,8 @@ export interface ChatCallMediaSession {
   setScreenShare?(on: boolean): Promise<ChatCallDeviceFailure | null>;
   /** Puts the shared screen of the other person on a tile that mounted after its track arrived. */
   attachScreen?(element: HTMLVideoElement | null): void;
+  /** Puts a person's picture on a tile that mounted after their track arrived (group calls). */
+  attachVideo?(personId: string, element: HTMLVideoElement): void;
   disconnect(): void;
 }
 
@@ -51,6 +53,10 @@ export interface ChatCallMediaOptions {
   readonly screenVideo?: () => HTMLVideoElement | null;
   /** The browser (its own "Stop sharing" bar) or the media plane ended this person's own share. */
   readonly onScreenEnded?: () => void;
+  /** A group call's tile element for one person (their id is the media identity); without it a video lands on `remoteVideo`. */
+  readonly participantVideo?: (personId: string) => HTMLVideoElement | null;
+  /** The people the room hears speaking now (ids), loudest first; sent on every change. */
+  readonly onSpeakers?: (personIds: readonly string[]) => void;
   readonly onState: (state: ChatCallMediaState) => void;
   /** Called with the number (from 1) of each reconnect try, so the screen can say "try 2 of 5". */
   readonly onAttempt?: (attempt: number) => void;

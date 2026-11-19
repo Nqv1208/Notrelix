@@ -42,13 +42,15 @@ export async function connectLiveKit(
   });
   // Remote audio plays through hidden elements; they leave with the call.
   const audioElements = new Set<HTMLMediaElement>();
+  // The picture of each person, kept so a tile that mounts after the track arrived still gets it.
+  const videoTracks = new Map<string, RemoteTrack>();
 
-  // The other person's shared screen, kept so a tile that mounts after the track arrived still gets it.
+  // The other person's shared screen, kept so a tile that mounts after the track arrived still gets it. It never lands on a camera tile.
   let screenTrack: RemoteTrack | null = null;
   // Set while this page stops its own share, so the unpublish it causes is not reported as the browser ending it.
   let stoppingScreen = false;
 
-  room.on(RoomEvent.TrackSubscribed, (track) => {
+  room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
     if (
       track.kind === Track.Kind.Video &&
       track.source === Track.Source.ScreenShare
@@ -57,7 +59,10 @@ export async function connectLiveKit(
       const el = options.screenVideo?.();
       if (el) track.attach(el);
     } else if (track.kind === Track.Kind.Video) {
-      const el = options.remoteVideo();
+      videoTracks.set(participant.identity, track);
+      const el =
+        options.participantVideo?.(participant.identity) ??
+        options.remoteVideo();
       if (el) track.attach(el);
     } else if (track.kind === Track.Kind.Audio) {
       const el = track.attach();
@@ -66,8 +71,10 @@ export async function connectLiveKit(
       audioElements.add(el);
     }
   });
-  room.on(RoomEvent.TrackUnsubscribed, (track) => {
+  room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
     if (screenTrack === track) screenTrack = null;
+    if (videoTracks.get(participant.identity) === track)
+      videoTracks.delete(participant.identity);
     track.detach().forEach((el) => {
       if (audioElements.delete(el)) el.remove();
     });
@@ -76,6 +83,9 @@ export async function connectLiveKit(
     if (publication.source === Track.Source.ScreenShare && !stoppingScreen)
       options.onScreenEnded?.();
   });
+  room.on(RoomEvent.ActiveSpeakersChanged, (speakers) =>
+    options.onSpeakers?.(speakers.map((speaker) => speaker.identity)),
+  );
   room.on(RoomEvent.Reconnecting, () => options.onState("reconnecting"));
   room.on(RoomEvent.Reconnected, () => options.onState("connected"));
   room.on(RoomEvent.Disconnected, () => options.onState("disconnected"));
@@ -136,7 +146,11 @@ export async function connectLiveKit(
           },
         }
       : {}),
+    attachVideo(personId, element) {
+      videoTracks.get(personId)?.attach(element);
+    },
     disconnect() {
+      videoTracks.clear();
       audioElements.forEach((el) => el.remove());
       audioElements.clear();
       void room.disconnect();

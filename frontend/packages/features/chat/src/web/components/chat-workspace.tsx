@@ -100,6 +100,11 @@ import {
   ChatCallStrip,
 } from "../calls/chat-call-surfaces";
 import { useChatCalls, type ChatCallError } from "../calls/use-chat-calls";
+import {
+  ChatCallFullDialog,
+  ChatCallJoinBanner,
+  useActiveCall,
+} from "../calls/chat-call-banner";
 import type { ChatCallDeviceStore } from "../calls/chat-call-devices";
 
 const CALL_ERROR_COPY: Record<ChatCallError, keyof ChatCopy["calls"]> = {
@@ -369,12 +374,20 @@ export function ChatWorkspace({
   // whether it is a channel or a conversation.
   const channelId = conversationId ?? channelProp;
   const ch = channelId ?? "";
+  // A channel or group conversation: leaving its call keeps the call for the others. A direct call ends for both.
+  function isGroupSpace(spaceId: string): boolean {
+    return (
+      conversationsQuery.data?.find((entry) => entry.id === spaceId)?.kind !==
+      "direct"
+    );
+  }
   // Calls: the dock below renders them; the header and info panel buttons start one in the open conversation.
   const calls = useChatCalls({
     deps,
     workspaceId,
     viewerId,
     deviceStore: callDeviceStore,
+    isGroupSpace,
   });
   const offersConversations = onOpenConversation !== undefined;
   const isGuest = viewerRole === "guest";
@@ -430,12 +443,19 @@ export function ChatWorkspace({
       knownConversations.current.get(conversationId) ??
       null)
     : null;
-  // One-to-one calls only: a direct conversation, for a person who is not a Guest, until the server says calls are off.
+  // A direct or group conversation, or a channel the person belongs to, for a person who is not a Guest, until the server says
+  // calls are off. The server holds the real rules (membership, the 25 and 12 caps, an archived channel).
   const callsEnabled =
     calls.enabled &&
     !isGuest &&
-    conversation?.kind === "direct" &&
-    channelId !== null;
+    channelId !== null &&
+    (conversation !== null || channel?.isMember === true);
+  const openCall = useActiveCall({
+    deps,
+    workspaceId: ws,
+    spaceId: channelId,
+    enabled: callsEnabled,
+  });
   const onStartCall = (kind: ChatCallKind) => {
     if (channelId) calls.start(channelId, kind);
   };
@@ -1104,6 +1124,12 @@ export function ChatWorkspace({
     callSpaceOpen &&
     !busyEnded &&
     (heldCall.call.state === "ended" || minimizedCallId !== heldCall.call.id);
+  const spaceNameOf = (spaceId: string) => {
+    const entry = conversationsQuery.data?.find((e) => e.id === spaceId);
+    return entry
+      ? conversationTitle(entry, viewerId, nameOf)
+      : (channels.data?.find((e) => e.id === spaceId)?.name ?? "");
+  };
   const callPeople = {
     viewerId,
     nameOf,
@@ -1140,24 +1166,26 @@ export function ChatWorkspace({
       copy={copy}
     />
   );
-  const callError = calls.error ? (
-    <ChatStatusBanner
-      tone="warning"
-      icon={<PhoneOff />}
-      action={
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={calls.dismiss}
-        >
-          {copy.calls.close}
-        </Button>
-      }
-    >
-      {copy.calls[CALL_ERROR_COPY[calls.error]]}
-    </ChatStatusBanner>
-  ) : null;
+  // A full call has its own dialog; every other refusal is the line here.
+  const callError =
+    calls.error && !(calls.error === "full" && calls.fullKind !== null) ? (
+      <ChatStatusBanner
+        tone="warning"
+        icon={<PhoneOff />}
+        action={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={calls.dismiss}
+          >
+            {copy.calls.close}
+          </Button>
+        }
+      >
+        {copy.calls[CALL_ERROR_COPY[calls.error]]}
+      </ChatStatusBanner>
+    ) : null;
   const pickable = useMemo(
     () =>
       [...people.entries()]
@@ -2030,6 +2058,20 @@ export function ChatWorkspace({
                           }}
                         />
                       ) : null}
+                      {callsEnabled &&
+                      openCall !== null &&
+                      !(callSpaceOpen && heldCall.call.id === openCall.id) &&
+                      !calls.incoming.some(
+                        (ring) => ring.callId === openCall.id,
+                      ) &&
+                      openCall.initiatorId !== viewerId ? (
+                        <ChatCallJoinBanner
+                          call={openCall}
+                          controller={calls}
+                          nameOf={nameOf}
+                          copy={copy}
+                        />
+                      ) : null}
                       {busyEnded ? (
                         <ChatStatusBanner
                           tone="neutral"
@@ -2088,10 +2130,20 @@ export function ChatWorkspace({
                     visible={stageVisible}
                     onMinimize={() => setMinimizedCallId(heldCall.call.id)}
                     copy={copy}
+                    group={
+                      isGroupSpace(heldCall.call.spaceId)
+                        ? { name: spaceNameOf(heldCall.call.spaceId) }
+                        : undefined
+                    }
                     {...callPeople}
                   />
                 ) : null}
                 {callIncoming}
+                <ChatCallFullDialog
+                  kind={calls.error === "full" ? calls.fullKind : null}
+                  onClose={calls.dismiss}
+                  copy={copy}
+                />
               </section>
             )}
 

@@ -224,4 +224,30 @@ public sealed class ChatCallScreenShareIntegrationTests
         (await LoadAsync(call.Id)).Participants.Should().OnlyContain(p => !p.SharingScreen, "a sharer who left shares nothing");
         (await ShareAsync(asSecond, stack, call, sharing: true)).Participants.Single(p => p.PersonId == second).SharingScreen.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task InAChannelCallOfThree_TheSecondShareIs409_TheThirdReplacesIt_AndAGuestIsRefusedWhoeverShares()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var first = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "RoomFirst");
+        var second = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "RoomSecond");
+        var third = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "RoomThird");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "RoomGuest");
+        var channel = await SeedChannelAsync(stack, [first, second, third, guest]);
+        var call = await SeedCallAsync(stack, channel, CallKind.Video, first, second, third, guest);
+
+        using var asFirst = ProviderFor(stack, first);
+        using var asSecond = ProviderFor(stack, second);
+        using var asThird = ProviderFor(stack, third);
+        using var asGuest = ProviderFor(stack, guest);
+        await ShareAsync(asFirst, stack, call, sharing: true);
+
+        CodeOf(await RefusedAsync(() => ShareAsync(asSecond, stack, call, sharing: true))).Should().Be(ChatRuleCodes.CallScreenShareTaken);
+        (await RefusedAsync(() => ShareAsync(asGuest, stack, call, sharing: true, replace: true)))
+            .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>("a Guest may not replace a share either");
+
+        var replaced = await ShareAsync(asThird, stack, call, sharing: true, replace: true);
+        replaced.Participants.Where(p => p.SharingScreen).Select(p => p.PersonId).Should().Equal(third);
+        (await LoadAsync(call.Id)).Participants.Count(p => p.SharingScreen).Should().Be(1);
+    }
 }

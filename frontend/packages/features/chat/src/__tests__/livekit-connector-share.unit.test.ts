@@ -88,18 +88,45 @@ describe("the LiveKit connector: screen share", () => {
 
     const screen = track("screen_share");
     const camera = track("camera");
-    room.emit("trackSubscribed", screen);
-    room.emit("trackSubscribed", camera);
+    room.emit("trackSubscribed", screen, {}, { identity: "quan" });
+    room.emit("trackSubscribed", camera, {}, { identity: "quan" });
 
     expect(screen.attach).toHaveBeenCalledWith(screenTile);
     expect(screen.attach).not.toHaveBeenCalledWith(remote);
     expect(camera.attach).toHaveBeenCalledWith(remote);
   });
 
+  it("keeps a person's camera and screen apart: the camera on their own tile, the screen on the screen tile", async () => {
+    const personTile = { id: "quan-tile" } as unknown as HTMLVideoElement;
+    const screenTile = { id: "screen-tile" } as unknown as HTMLVideoElement;
+    const session = await connectLiveKit(
+      options({
+        participantVideo: (id) => (id === "quan" ? personTile : null),
+        screenVideo: () => screenTile,
+      }),
+    );
+    const quan = { identity: "quan" };
+    const camera = track("camera");
+    const screen = track("screen_share");
+
+    room.emit("trackSubscribed", camera, {}, quan);
+    room.emit("trackSubscribed", screen, {}, quan);
+
+    expect(camera.attach).toHaveBeenCalledWith(personTile);
+    expect(screen.attach).toHaveBeenCalledWith(screenTile);
+    expect(screen.attach).not.toHaveBeenCalledWith(personTile);
+
+    // A tile that mounts later asks for the camera and gets the camera, never the screen.
+    const later = { id: "later-tile" } as unknown as HTMLVideoElement;
+    session.attachVideo?.("quan", later);
+    expect(camera.attach).toHaveBeenCalledWith(later);
+    expect(screen.attach).not.toHaveBeenCalledWith(later);
+  });
+
   it("gives a screen tile that mounts later the track that already arrived", async () => {
     const session = await connectLiveKit(options());
     const screen = track("screen_share");
-    room.emit("trackSubscribed", screen);
+    room.emit("trackSubscribed", screen, {}, { identity: "quan" });
     expect(screen.attach).not.toHaveBeenCalled();
 
     const late = { id: "late" } as unknown as HTMLVideoElement;
