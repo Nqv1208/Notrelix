@@ -442,6 +442,21 @@ nothing.
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 20 | Boards purged per pass, each in its own transaction. Range 1 to 1000. |
 
+`Chat:Spaces:Purge` (Infrastructure, `DeletedChatSpacePurgeOptions`, validated on start by `DeletedChatSpacePurgeOptionsValidator`) configures the
+purge of deleted Chat channels (`DeletedChatSpacePurgeService`, a hosted service; UC-CHT-H05). The window is the Domain constant of 30 days after
+the delete, `Space.RestoreWindow`. It is off by default: an operator turns it on, because removing a channel is irreversible. Each pass claims,
+under the system context with the RLS worker scope, one channel deleted more than 30 days ago with `FOR UPDATE SKIP LOCKED` and, in one transaction,
+removes every row of a `chat` table that names it in `space_id` (messages, members, threads, pins, reactions, mentions, calls), the rows that follow
+those by foreign key, then the channel row, and writes an audit fact `PurgeChatSpace` (actor type System, Critical). Rows of other contexts that
+name the channel without a foreign key (Inbox notifications, uploaded files and their storage objects) follow their own retention. There is no
+legal hold in the platform, so none can skip a channel. A failure rolls the channel back and the next pass retries it.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `false` | When false nothing is purged. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 20 | Channels purged per pass, each in its own transaction. Range 1 to 1000. |
+
 `Collaboration:DueDateNotifications` (Infrastructure, `DueDateNotificationOptions`, validated on start by
 `DueDateNotificationOptionsValidator`) configures the due-date notifications (`DueDateNotificationService`, a hosted
 service): an assignee of an open, unarchived Item gets one in-app notification that it is due tomorrow and one that it
