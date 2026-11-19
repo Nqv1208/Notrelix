@@ -89,6 +89,11 @@ export {
   type WorkspaceScopeState,
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
+export {
+  ArchivedWorkspaceBanner,
+  type ArchivedBannerState,
+  type ArchivedWorkspaceBannerProps,
+} from "./shell/archived-workspace-banner";
 
 // ── Inbox (Final-Inbox) ───────────────────────────────────────────
 export { workspaceInboxCatalog } from "./inbox/workspace-inbox.catalog";
@@ -176,7 +181,10 @@ export {
   WorkspaceMembersSurface,
   type MembersTab,
   type WorkspaceMembersSurfaceProps,
+  type InvitationEntryOptions,
+  type InvitationEntryTarget,
 } from "./members/workspace-members-surface";
+export type { JobTitleOutcome } from "./members/edit-job-title-dialog";
 
 // ── Settings (WX-SET-001) ─────────────────────────────────────────
 export { workspaceSettingsCatalog } from "./settings/workspace-settings.catalog";
@@ -304,6 +312,7 @@ export {
   type AddTeamMemberInput,
   type WorkspaceTeamSurfaceProps,
 } from "./teams/workspace-team-surface";
+export type { TeamDeleteOutcome } from "./teams/delete-team-dialog";
 export {
   WorkspaceSecuritySurface,
   type WorkspaceSecurityView,

@@ -92,6 +92,11 @@ export const en = {
   recentsEmpty: "Boards and Docs you open will be listed here.",
   loading: "Loading…",
   error: "Some results did not load. Commands still work.",
+  searchError: {
+    title: "Couldn't search just now",
+    text: "The results didn't load. That doesn't mean nothing matches. Try again.",
+    retry: "Try again",
+  },
   commands: {
     home: "Go to Home",
     myWork: "Go to My work",
@@ -231,6 +236,11 @@ export const vi: WorkspaceCommandCopy = {
   recentsEmpty: "Board và tài liệu bạn mở sẽ hiện ở đây.",
   loading: "Đang tải…",
   error: "Một số kết quả chưa tải được. Lệnh vẫn dùng được.",
+  searchError: {
+    title: "Chưa tìm được lúc này",
+    text: "Kết quả chưa tải được. Việc này chưa có nghĩa là không có kết quả. Hãy thử lại.",
+    retry: "Thử lại",
+  },
   commands: {
     home: "Chuyển tới Trang chủ",
     myWork: "Chuyển tới Việc của tôi",

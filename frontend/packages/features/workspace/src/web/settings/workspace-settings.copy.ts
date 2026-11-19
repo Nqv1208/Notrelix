@@ -10,6 +10,8 @@ export const en = {
     "How this workspace is named, set up for new people, and retired.",
   readOnly:
     "Only the workspace owner can change these settings. You can see them here.",
+  archivedReadOnly:
+    "This workspace is archived, so its settings are read-only until the owner unarchives it.",
   versionUnavailable:
     "Saving is turned off for now: this server doesn't report the workspace version that is needed to save changes safely.",
   save: "Save changes",
@@ -77,6 +79,15 @@ export const en = {
     archiveDescription:
       "Archiving makes {{workspace}} read-only for every member and stops all work in it. An owner can restore it later.",
     archiveAction: "Archive workspace",
+    unarchiveTitle: "This workspace is archived",
+    unarchiveDescription:
+      "{{workspace}} is read-only for every member and its automations are paused. Unarchive it to let everyone work again.",
+    unarchiveAction: "Unarchive workspace",
+    unarchiving: "Unarchiving…",
+    unarchiveConfirmTitle: "Unarchive {{workspace}}?",
+    unarchiveConfirmDescription:
+      "Everyone can edit and comment again. Automations and integration sync run again from now on.",
+    unarchiveOwnerOnly: "Only the owner can unarchive this workspace.",
     confirmTitle: "Archive {{workspace}}?",
     confirmDescription:
       "Every member can still read this workspace, but nothing in it can change until an owner restores it. Type the workspace name to confirm.",
@@ -147,6 +158,10 @@ export const en = {
     defaultsSaved: "Defaults saved.",
     saveFailed: "Your changes weren't saved.",
     archived: "{{workspace}} was archived.",
+    unarchived: "{{workspace}} was unarchived.",
+    unarchiveFailed: "{{workspace}} wasn't unarchived.",
+    unarchiveConflict:
+      "{{workspace}} changed since you opened this page. Reload and try again.",
     archiveFailed: "{{workspace}} wasn't archived.",
     archiveConflict:
       "{{workspace}} changed since you opened this page. Reload and try again.",
@@ -174,6 +189,8 @@ export const vi: WorkspaceSettingsCopy = {
     "Tên, thiết lập cho người mới và việc lưu trữ không gian làm việc này.",
   readOnly:
     "Chỉ chủ sở hữu workspace mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
+  archivedReadOnly:
+    "Không gian làm việc này đang được lưu trữ nên cài đặt chỉ xem được cho đến khi chủ sở hữu bỏ lưu trữ.",
   versionUnavailable:
     "Tạm thời chưa lưu được: máy chủ này chưa cung cấp phiên bản của không gian làm việc, thông tin cần để lưu thay đổi an toàn.",
   save: "Lưu thay đổi",
@@ -244,6 +261,16 @@ export const vi: WorkspaceSettingsCopy = {
     archiveDescription:
       "Lưu trữ sẽ chuyển {{workspace}} sang chỉ đọc với mọi thành viên và dừng mọi công việc trong đó. Chủ sở hữu có thể khôi phục sau.",
     archiveAction: "Lưu trữ không gian làm việc",
+    unarchiveTitle: "Không gian làm việc này đang được lưu trữ",
+    unarchiveDescription:
+      "{{workspace}} chỉ xem được với mọi thành viên và tự động hoá đã tạm dừng. Bỏ lưu trữ để mọi người làm việc lại.",
+    unarchiveAction: "Bỏ lưu trữ không gian làm việc",
+    unarchiving: "Đang bỏ lưu trữ…",
+    unarchiveConfirmTitle: "Bỏ lưu trữ {{workspace}}?",
+    unarchiveConfirmDescription:
+      "Mọi người sửa và bình luận lại được. Tự động hoá và đồng bộ tích hợp chạy lại từ lúc này.",
+    unarchiveOwnerOnly:
+      "Chỉ chủ sở hữu mới bỏ lưu trữ được không gian làm việc này.",
     confirmTitle: "Lưu trữ {{workspace}}?",
     confirmDescription:
       "Mọi thành viên vẫn xem được không gian làm việc này nhưng không ai chỉnh sửa được cho đến khi chủ sở hữu khôi phục. Nhập tên không gian làm việc để xác nhận.",
@@ -314,6 +341,10 @@ export const vi: WorkspaceSettingsCopy = {
     defaultsSaved: "Đã lưu mặc định.",
     saveFailed: "Chưa lưu được thay đổi.",
     archived: "Đã lưu trữ {{workspace}}.",
+    unarchived: "Đã bỏ lưu trữ {{workspace}}.",
+    unarchiveFailed: "Chưa bỏ lưu trữ được {{workspace}}.",
+    unarchiveConflict:
+      "{{workspace}} đã thay đổi từ lúc bạn mở trang. Hãy tải lại rồi thử lại.",
     archiveFailed: "Chưa lưu trữ được {{workspace}}.",
     archiveConflict:
       "{{workspace}} đã thay đổi từ khi bạn mở trang này. Hãy tải lại rồi thử lại.",

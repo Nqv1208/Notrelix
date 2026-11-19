@@ -75,6 +75,7 @@ import { useTabletSidebarPreference } from "./use-tablet-sidebar-preference";
 import { useInboxSummary } from "./work-feed-bridge";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
+import { ArchivedWorkspaceBannerHost } from "./archived-workspace-banner-host";
 import { useCommandSearch } from "./use-command-search";
 import { useWorkFeedWrites } from "./work-feed-bridge";
 import { useCreateResource } from "./use-create-resource";
@@ -768,6 +769,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             }
           />
         ) : null}
+        <ArchivedWorkspaceBannerHost />
         {/* The one scroll container of the workspace shell (WX-SHELL-004). */}
         <main id="workspace-main" className="min-h-0 flex-1 overflow-y-auto">
           {children}
@@ -779,6 +781,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
         onQueryChange={setPaletteQuery}
+        search={
+          paletteSearch.status === "ready"
+            ? undefined
+            : { status: paletteSearch.status, onRetry: paletteSearch.retry }
+        }
         workspace={paletteData.workspace}
         work={paletteData.work}
         docs={paletteData.docs}

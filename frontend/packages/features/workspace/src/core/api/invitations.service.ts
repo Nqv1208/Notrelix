@@ -242,6 +242,15 @@ export function createWorkspaceInvitationsService(
       const body: InviteBody = {
         email: input.email.trim(),
         role: ROLE_NAME[input.role],
+        ...(input.initialEntries && input.initialEntries.length > 0
+          ? {
+              initialEntries: input.initialEntries.map((entry) => ({
+                kind: entry.kind === "team" ? "Team" : "Space",
+                targetId: entry.targetId,
+                role: entry.role.charAt(0).toUpperCase() + entry.role.slice(1),
+              })),
+            }
+          : {}),
       };
       const id = await api.post<unknown>(
         endpoints.workspaces.members(workspaceId),

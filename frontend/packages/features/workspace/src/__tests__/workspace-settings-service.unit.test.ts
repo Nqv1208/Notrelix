@@ -16,6 +16,7 @@ const endpoints: WorkspaceSettingsEndpoints = {
     profile: (id) => `/workspaces/${id}/profile`,
     settings: (id) => `/workspaces/${id}/settings`,
     archive: (id) => `/workspaces/${id}/archive`,
+    unarchive: (id) => `/workspaces/${id}/archive/unarchive`,
     remove: (id, version) => `/workspaces/${id}?expectedVersion=${version}`,
     transferOwnership: (id) => `/workspaces/${id}/transfer-ownership`,
   },
@@ -96,5 +97,17 @@ describe("workspace settings service", () => {
         parseWorkspaceSettings({ guestDefaultExpiryDays: bad })
           .guestDefaultExpiryDays,
       ).toBeNull();
+  });
+
+  it("FUI[workspace.unarchive:write] posts the version the member last saw to the unarchive route", async () => {
+    const api = client(stored);
+    api.post.mockResolvedValue(undefined);
+    const service = createWorkspaceSettingsService(api, endpoints);
+
+    await service.unarchive("w1", 7);
+
+    expect(api.post).toHaveBeenCalledWith("/workspaces/w1/archive/unarchive", {
+      expectedVersion: 7,
+    });
   });
 });

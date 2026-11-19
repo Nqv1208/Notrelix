@@ -180,6 +180,9 @@ export const en = {
       board: "Board",
       doc: "Doc",
     },
+    pinned: {
+      title: "Pinned",
+    },
     loadingSection: "Loading",
     toasts: {
       approved: "Approved {{name}}.",
@@ -578,6 +581,9 @@ export const vi: WorkspaceHomeCopy = {
       title: "Tiếp tục",
       board: "Board",
       doc: "Tài liệu",
+    },
+    pinned: {
+      title: "Đã ghim",
     },
     loadingSection: "Đang tải",
     toasts: {

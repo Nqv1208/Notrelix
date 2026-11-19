@@ -1,7 +1,11 @@
 import { useCallback, useMemo, useRef } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { TeamRole } from "@notrelix/features-workspace/core";
+import {
+  describeWorkspaceFailure,
+  parseTeamReferencesRefusal,
+  type TeamRole,
+} from "@notrelix/features-workspace/core";
 import {
   archiveLoss,
   formatCopy,
@@ -9,6 +13,7 @@ import {
   WorkspaceTeamSurface,
   type AddTeamMemberInput,
   type TeamCandidate,
+  type TeamDeleteOutcome,
 } from "@notrelix/features-workspace/web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { sectionState } from "@/shell/workspace/section-state";
@@ -33,6 +38,7 @@ export function TeamPage() {
   const { workspaceId } = useWorkspaceContext();
   const { teamId } = useParams({ strict: false }) as { teamId: string };
   const copy = useWorkspaceTeamsCopy();
+  const navigate = useNavigate();
   const navigation = useShellNavigation();
   const hooks = useTeamHooks();
   const viewer = useWorkspaceViewer(workspaceId);
@@ -143,6 +149,41 @@ export function TeamPage() {
       },
     );
   }, [copy, fail, mutations.unarchive, name, teamId, version]);
+
+  // Delete is refused while Spaces still list the Team (LD-16): the refusal carries those Spaces and the
+  // dialog shows them. On success the person leaves the Team page; the toast offers the restore.
+  const onDelete = useCallback(async (): Promise<TeamDeleteOutcome> => {
+    if (version === null) return { kind: "failed" };
+    try {
+      await mutations.remove.mutateAsync({ teamId, expectedVersion: version });
+    } catch (error) {
+      const refusal = parseTeamReferencesRefusal(error);
+      if (refusal) return { kind: "refused", refusal };
+      const failure = describeWorkspaceFailure(error);
+      if (failure.kind === "conflict") return { kind: "conflict" };
+      if (failure.kind === "forbidden") return { kind: "denied" };
+      return { kind: "failed" };
+    }
+    toast.success(formatCopy(copy.toasts.deleted, { name }), {
+      action: {
+        label: copy.toasts.restore,
+        onClick: () =>
+          void mutations.restore
+            .mutateAsync({ teamId })
+            .then(() =>
+              toast.success(formatCopy(copy.toasts.restored, { name })),
+            )
+            .catch(() =>
+              toast.error(formatCopy(copy.toasts.restoreFailed, { name })),
+            ),
+      },
+    });
+    void navigate({
+      to: "/workspaces/$workspaceId/teams",
+      params: { workspaceId },
+    } as never);
+    return { kind: "deleted" };
+  }, [copy, mutations, name, navigate, teamId, version, workspaceId]);
 
   // Member writes run in turn too: callbacks passed to `mutate` fire only for the latest call, so a second
   // row's write would leave the first one busy and unreported, and both would quote the same Team version.
@@ -257,6 +298,7 @@ export function TeamPage() {
       onDescribe={onDescribe}
       onArchive={onArchive}
       onUnarchive={onUnarchive}
+      onDelete={onDelete}
       onAddMember={onAddMember}
       onChangeRole={onChangeRole}
       onRemove={onRemove}

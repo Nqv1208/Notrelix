@@ -22,6 +22,8 @@ import {
   WorkspaceMembersSurface,
   WorkspaceSetupFrame,
   useWorkspaceTeamsCopy,
+  type InvitationEntryOptions,
+  type JobTitleOutcome,
   type MemberWriteTarget,
   type MembersTab,
   type WorkspaceMembersCopy,
@@ -40,6 +42,7 @@ import { useIdSet } from "@/shell/workspace/use-id-set";
 import { useNow } from "@/shell/workspace/use-now";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
+import { useSpaceHooks } from "@/shell/workspace/use-workspace-spaces";
 
 /** The producer refuses an invitation for a person who is already an Active member. */
 const ALREADY_MEMBER_CODE = "workspaces.invitation.already-member";
@@ -107,6 +110,56 @@ export function MembersPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteResetKey, setInviteResetKey] = useState(0);
   const hint = useMemo(() => recoveryHint(copy), [copy]);
+
+  // What the inviter may name on an invitation: a kind they hold no action for is not offered. Naming
+  // Teams needs `ManageTeams`, naming Spaces `ManageSpaces`, and both kinds together need both; the
+  // producer checks every entry again.
+  const spaceHooks = useSpaceHooks();
+  const teamList = spaceHooks.useWorkspaceTeams(workspaceId, admin);
+  const spaceTree = spaceHooks.useSpaceTree(workspaceId);
+  const entryOptions = useMemo<InvitationEntryOptions | null>(() => {
+    if (!admin) return null;
+    return {
+      teams: viewer.can("ManageTeams")
+        ? (teamList.data ?? []).map((team) => ({
+            id: team.id,
+            name: team.name,
+          }))
+        : null,
+      spaces: viewer.can("ManageSpaces")
+        ? (spaceTree.data ?? [])
+            .filter((space) => !space.isArchived)
+            .map((space) => ({ id: space.id, name: space.name }))
+        : null,
+    };
+  }, [admin, spaceTree.data, teamList.data, viewer]);
+
+  const onSaveJobTitle = useCallback(
+    async (
+      member: WorkspaceMember,
+      jobTitle: string | null,
+    ): Promise<JobTitleOutcome> => {
+      try {
+        await mutations.updateJobTitle.mutateAsync({
+          userId: member.userId,
+          expectedVersion: member.version,
+          jobTitle,
+        });
+      } catch (error) {
+        const failure = describeWorkspaceFailure(error);
+        if (failure.kind === "conflict") return { kind: "conflict" };
+        if (failure.kind === "forbidden") return { kind: "denied" };
+        if (failure.kind === "validation" || failure.kind === "rule")
+          return { kind: "invalid" };
+        return { kind: "failed" };
+      }
+      toast.success(
+        formatCopy(copy.toasts.jobTitleSaved, { name: member.name }),
+      );
+      return { kind: "saved" };
+    },
+    [copy, mutations.updateJobTitle],
+  );
 
   const run = useCallback(
     (
@@ -190,6 +243,11 @@ export function MembersPage() {
                 email: input.email,
               }),
             );
+            return;
+          }
+          // A refusal of an invitation that names Teams or Spaces: the inviter cannot grant one of them.
+          if (failure.kind === "forbidden" && input.initialEntries?.length) {
+            setInviteError(copy.invitations.entries.refused);
             return;
           }
           if (failure.kind === "validation" || failure.kind === "rule") {
@@ -379,6 +437,8 @@ export function MembersPage() {
             failure: copy.toasts.activateFailed,
           })
         }
+        onSaveJobTitle={admin ? onSaveJobTitle : undefined}
+        entryOptions={entryOptions}
         onInvite={onInvite}
         onInviteMany={onInviteMany}
         onResend={onResend}

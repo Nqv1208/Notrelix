@@ -541,6 +541,7 @@ describe("Producer adapters", () => {
         profile: (id) => `/workspaces/${id}/profile`,
         settings: (id) => `/workspaces/${id}/settings`,
         archive: (id) => `/workspaces/${id}/archive`,
+        unarchive: (id) => `/workspaces/${id}/archive/unarchive`,
         remove: (id, version) => `/workspaces/${id}?expectedVersion=${version}`,
         transferOwnership: (id) => `/workspaces/${id}/transfer-ownership`,
       },
