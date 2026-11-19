@@ -98,6 +98,12 @@ export function parseWorkspaceSettings(payload: unknown): WorkspaceSettings {
     allowGuestInvites: raw.allowGuestInvites === true,
     allowPublicSharing: raw.allowPublicSharing === true,
     enforceMfa: raw.enforceMfa === true,
+    guestDefaultExpiryDays:
+      raw.guestDefaultExpiryDays === 30 ||
+      raw.guestDefaultExpiryDays === 90 ||
+      raw.guestDefaultExpiryDays === 180
+        ? raw.guestDefaultExpiryDays
+        : null,
     timeZone:
       typeof raw.timeZone === "string" && raw.timeZone.trim()
         ? raw.timeZone
@@ -186,6 +192,7 @@ export function createWorkspaceSettingsService(
         allowGuestInvites: settings.allowGuestInvites,
         defaultMemberRole: ROLE_NAME[settings.defaultMemberRole],
         invitationExpiryDays: settings.invitationExpiryDays,
+        guestDefaultExpiryDays: settings.guestDefaultExpiryDays,
         timeZone: settings.timeZone,
         weekStart: settings.weekStart,
         expectedVersion,

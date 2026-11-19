@@ -162,6 +162,9 @@ export const en = {
     title: "Sharing and security",
     description:
       "Rules for every Board and page in {{workspace}}. Only the owner and workspace admins can change them.",
+    loading: "Loading sharing and security",
+    error: "Sharing and security couldn't load. Nothing was changed.",
+    retry: "Try again",
     link: {
       title: "Sharing links",
       text: "When off, every sharing link in the workspace stops working; links are not deleted, and turning it on again makes the unexpired ones work again.",
@@ -517,6 +520,9 @@ export const vi: WorkspaceTeamsCopy = {
     title: "Chia sẻ và bảo mật",
     description:
       "Quy định chung cho mọi board và trang trong {{workspace}}. Chỉ chủ sở hữu và quản trị workspace đổi được.",
+    loading: "Đang tải chia sẻ và bảo mật",
+    error: "Không tải được chia sẻ và bảo mật. Chưa có gì thay đổi.",
+    retry: "Thử lại",
     link: {
       title: "Liên kết chia sẻ",
       text: "Khi tắt, mọi liên kết chia sẻ trong workspace ngừng hoạt động; liên kết không bị xoá, bật lại thì liên kết chưa hết hạn chạy lại.",

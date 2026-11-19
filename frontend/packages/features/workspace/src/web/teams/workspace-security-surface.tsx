@@ -24,6 +24,7 @@ export interface WorkspaceSecurityView {
   readonly guestCount: number | null;
   /** Days a new guest's access lasts; `null` = no end. */
   readonly guestExpiryDays: number | null;
+  /** The Account's primary verified domain; `null` hides the row. */
   readonly companyDomain: string | null;
 }
 
@@ -121,7 +122,7 @@ export function WorkspaceSecuritySurface(props: WorkspaceSecuritySurfaceProps) {
         {view.status === "loading" ? (
           <div
             role="status"
-            aria-label={copy.list.loading}
+            aria-label={s.loading}
             className="flex flex-col gap-2"
           >
             <Skeleton className="h-24 w-full rounded-[12px]" />
@@ -132,9 +133,7 @@ export function WorkspaceSecuritySurface(props: WorkspaceSecuritySurfaceProps) {
             role="alert"
             className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-popover px-4 py-3 dark:bg-card"
           >
-            <p className="m-0 text-body text-muted-foreground">
-              {copy.list.error}
-            </p>
+            <p className="m-0 text-body text-muted-foreground">{s.error}</p>
             <button
               type="button"
               onClick={props.onRetry}
@@ -143,7 +142,7 @@ export function WorkspaceSecuritySurface(props: WorkspaceSecuritySurfaceProps) {
                 FOCUS,
               )}
             >
-              {copy.list.retry}
+              {s.retry}
             </button>
           </div>
         ) : (
@@ -262,19 +261,21 @@ export function WorkspaceSecuritySurface(props: WorkspaceSecuritySurfaceProps) {
                 </Select>
               }
             />
-            <Row
-              title={s.domain.title}
-              titleFor="company-domain"
-              text={s.domain.text}
-              control={
-                <input
-                  id="company-domain"
-                  readOnly
-                  value={view.data.companyDomain ?? ""}
-                  className="box-border h-8 min-w-[150px] rounded-[7px] border border-line bg-background px-2.5 font-mono text-compact text-muted-foreground"
-                />
-              }
-            />
+            {view.data.companyDomain !== null ? (
+              <Row
+                title={s.domain.title}
+                titleFor="company-domain"
+                text={s.domain.text}
+                control={
+                  <input
+                    id="company-domain"
+                    readOnly
+                    value={view.data.companyDomain}
+                    className="box-border h-8 min-w-[150px] rounded-[7px] border border-line bg-background px-2.5 font-mono text-compact text-muted-foreground"
+                  />
+                }
+              />
+            ) : null}
           </div>
         )}
       </section>
