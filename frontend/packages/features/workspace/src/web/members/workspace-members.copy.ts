@@ -121,7 +121,7 @@ export const en = {
       spaceRoles: { viewer: "Viewer", member: "Member", admin: "Admin" },
       teamsDenied: "You can't add people to Teams, so none are offered.",
       spacesDenied: "You can't add people to Spaces, so none are offered.",
-      guestNote: "A Guest can't be a Team lead or a Space admin.",
+      guestNote: "A Guest can't join a Team or be a Space admin.",
       refused:
         "A Team or Space you chose can't take this person. Remove it or ask an owner.",
       notActive:
@@ -342,7 +342,7 @@ export const vi: WorkspaceMembersCopy = {
         "Bạn không thêm người vào nhóm được nên không có nhóm nào để chọn.",
       spacesDenied:
         "Bạn không thêm người vào phòng ban được nên không có phòng ban nào để chọn.",
-      guestNote: "Khách không làm được trưởng nhóm hay quản trị phòng ban.",
+      guestNote: "Khách không tham gia được nhóm hay làm quản trị phòng ban.",
       refused:
         "Nhóm hoặc phòng ban bạn chọn không nhận được người này. Bỏ mục đó hoặc nhờ chủ sở hữu.",
       notActive:

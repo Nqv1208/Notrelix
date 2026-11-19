@@ -280,19 +280,20 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     });
   });
 
-  it("FUI[workspace.members:invite-entries-guest] a Guest invitation is never sent with a Team lead or Space admin entry", () => {
+  it("FUI[workspace.members:invite-entries-guest] a Guest invitation is never sent with a Team entry or a Space admin entry", () => {
     const props = renderMembers(membersInvitationsScenario(), { entryOptions });
     pick("Nhóm Kỹ sư ERP");
+    pick("Công nghệ");
     fireEvent.keyDown(
-      screen.getByRole("combobox", { name: "Role in Nhóm Kỹ sư ERP" }),
+      screen.getByRole("combobox", { name: "Role in Công nghệ" }),
       { key: "Enter" },
     );
     fireEvent.click(
       screen.getByRole("option", {
-        name: copy.invitations.entries.teamRoles.lead,
+        name: copy.invitations.entries.spaceRoles.admin,
       }),
     );
-    // Switch the invitation to Guest: the lead entry falls back to Member.
+    // Switch the invitation to Guest: the Team entry is dropped and the admin entry falls back to Member.
     fireEvent.keyDown(
       screen.getByRole("combobox", { name: copy.invitations.roleLabel }),
       {
@@ -306,7 +307,7 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     expect(props.onInvite).toHaveBeenCalledWith({
       email: "khach@dtvina.vn",
       role: "guest",
-      initialEntries: [{ kind: "team", targetId: "team-erp", role: "member" }],
+      initialEntries: [{ kind: "space", targetId: "space-cn", role: "member" }],
     });
   });
 
