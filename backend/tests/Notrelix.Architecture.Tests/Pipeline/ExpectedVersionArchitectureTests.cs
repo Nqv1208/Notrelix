@@ -91,6 +91,7 @@ public static class ExpectedVersionInventory
             ["TransferOwnershipCommand"] = "workspaces.workspace",
             ["UnarchiveWorkspaceCommand"] = "workspaces.workspace",
             ["UpdateWorkspaceProfileCommand"] = "workspaces.workspace",
+            ["ChangeWorkspaceSlugCommand"] = "workspaces.workspace",
             ["UpdateWorkspaceSettingsCommand"] = "workspaces.workspace",
             ["RegenerateWebhookSecretCommand"] = "integrations.connection",
             ["MoveSpaceCommand"] = "workspaces.space",

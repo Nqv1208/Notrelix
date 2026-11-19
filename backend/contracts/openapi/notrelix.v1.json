@@ -35585,6 +35585,58 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/slug": {
+      "patch": {
+        "tags": [
+          "Workspaces.Workspaces",
+          "Workspaces.Workspaces"
+        ],
+        "summary": "Change the workspace address",
+        "description": "Owner only. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. The address follows the same rule as creation (3 to 63 characters, lowercase letters, numbers and single hyphens, not reserved) and is unique within the Account: a taken one answers 409 workspaces.workspace.slug-taken. The same address is a no-op: no version bump, no event. Links use ids, so the old address is released and does not redirect. An archived workspace refuses the change.",
+        "operationId": "Workspaces.Workspaces.ChangeWorkspaceSlug",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/archive": {
       "post": {
         "tags": [
@@ -39818,6 +39870,20 @@
       "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ArchiveWorkspaceRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
           "expectedVersion": {
             "type": "integer",
             "format": "int64"

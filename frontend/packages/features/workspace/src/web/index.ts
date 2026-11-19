@@ -195,7 +195,9 @@ export {
 export { useWorkspaceSettingsCopy } from "./settings/use-workspace-settings-copy";
 export {
   WorkspaceSettingsSurface,
+  type AddressCheckResult,
   type SaveStatus,
+  type WorkspaceAddressProps,
   type WorkspaceProfileValues,
   type WorkspaceSettingsSurfaceProps,
 } from "./settings/workspace-settings-surface";

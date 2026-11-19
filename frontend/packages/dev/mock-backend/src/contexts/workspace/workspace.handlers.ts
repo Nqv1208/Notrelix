@@ -422,6 +422,50 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string },
+    { slug?: string; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.slug.change",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/slug",
+    async handle({ params, body, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner") return forbidden();
+      const slug = (body?.slug ?? "").trim().toLowerCase();
+      if (!slug) return validationError({ Slug: ["Slug must not be empty."] });
+      if (
+        slug.length < 3 ||
+        slug.length > 63 ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+      )
+        return ruleViolation("The workspace address is not valid.");
+      const written = store.changeWorkspaceSlug(
+        params.workspaceId,
+        body?.expectedVersion,
+        slug,
+      );
+      if (written === "taken")
+        return {
+          status: 409,
+          body: {
+            type: "https://docs.notrelix.com/problems/conflict",
+            title: "Conflict",
+            status: 409,
+            detail: "The workspace address is already taken in this account.",
+            errorCode: "workspaces.workspace.slug-taken",
+          },
+        } as MockHttpResult<unknown>;
+      return versionedWriteResult(written);
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
     {
       allowPublicSharing?: boolean;
       enforceMfa?: boolean;

@@ -801,6 +801,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createWorkspaceSettingsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    operationId: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
     capability: "Workspaces.Settings.UpdateWorkspaceSettings",
     operationId: "Workspaces.Settings.UpdateWorkspaceSettings",
     mutation: true,

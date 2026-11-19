@@ -76,6 +76,8 @@ export const endpoints = {
       `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
     // Workspace profile, settings and lifecycle (producer: Workspaces.Workspaces.*).
     profile: (workspaceId: string) => `/workspaces/${workspaceId}/profile`,
+    // Workspaces.Workspaces.ChangeWorkspaceSlug (Owner only, expectedVersion in the body).
+    slug: (workspaceId: string) => `/workspaces/${workspaceId}/slug`,
     // The signed-in member's own job title (Workspaces.Members.UpdateMyJobTitle).
     myJobTitle: (workspaceId: string) =>
       `/workspaces/${workspaceId}/members/me/job-title`,

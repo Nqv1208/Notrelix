@@ -38,6 +38,7 @@ export interface WorkspaceEndpoints {
 export interface WorkspaceSettingsEndpoints {
   workspaces: {
     profile: (workspaceId: string) => string;
+    slug: (workspaceId: string) => string;
     settings: (workspaceId: string) => string;
     archive: (workspaceId: string) => string;
     unarchive: (workspaceId: string) => string;
@@ -49,6 +50,8 @@ export interface WorkspaceSettingsEndpoints {
 
 type ProfileBody =
   OperationRequestBody<"Workspaces.Workspaces.UpdateWorkspaceProfile">;
+type SlugBody =
+  OperationRequestBody<"Workspaces.Workspaces.ChangeWorkspaceSlug">;
 type SettingsBody =
   OperationRequestBody<"Workspaces.Settings.UpdateWorkspaceSettings">;
 type ArchiveBody =
@@ -176,6 +179,23 @@ export function createWorkspaceSettingsService(
         expectedVersion: input.expectedVersion,
       };
       await api.patch<void>(endpoints.workspaces.profile(workspaceId), body);
+    },
+
+    /**
+     * Changes the workspace address (`ChangeWorkspaceSlug`, Owner only). Answers 204; a version that moved
+     * meanwhile answers 412, a taken address 409 `workspaces.workspace.slug-taken`, a rule break 400. Links use
+     * ids, so the old address is released and nothing redirects.
+     */
+    async changeSlug(
+      workspaceId: string,
+      slug: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      const body: SlugBody = {
+        slug: slug.trim().toLowerCase(),
+        expectedVersion,
+      };
+      await api.patch<void>(endpoints.workspaces.slug(workspaceId), body);
     },
 
     async getSettings(workspaceId: string): Promise<WorkspaceSettings> {

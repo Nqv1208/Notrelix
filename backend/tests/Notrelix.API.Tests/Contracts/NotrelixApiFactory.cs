@@ -31,6 +31,7 @@ using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ChangeWorkspaceSlug;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
@@ -399,6 +400,7 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
                     Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
             MockWorkspaceHandler<UpdateWorkspaceProfileCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ChangeWorkspaceSlugCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ArchiveWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetWorkspaceMembersQuery, Result<CursorPage<WorkspaceMemberDto>>>(services,

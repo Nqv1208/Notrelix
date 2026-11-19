@@ -144,7 +144,7 @@ Products compared and what was taken:
 | UC-WSP-B03 | List the workspaces of an Account | B | Account member with `ViewWorkspace` on the Account scope | yes | no | none | none | DONE | API-only for 0.1.0; the screen is I02. Membership filter built and proven. |
 | UC-WSP-B04 | List every workspace I belong to (user scope) | B | Any signed-in user | yes | yes | none | workspace-read-and-lists.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-C01 | Edit workspace name and description | C | Owner, Admin | yes | yes | none for workspace settings (`Final-Settings` is the Board settings page) | none | DONE | closed 2026-11-03, see the Evidence line |
-| UC-WSP-C02 | Change the workspace address (enterprise baseline) | C | Owner, Admin | no | no | none | none | DEFINED | Command, endpoint, event, settings field. |
+| UC-WSP-C02 | Change the workspace address (enterprise baseline) | C | Owner | yes | yes | Wsp-Settings, Wsp-Var-Settings-Taken | none | DONE | closed 2026-11-20, see the Evidence line |
 | UC-WSP-D01 | Archive a workspace | D | Owner | yes | yes | Final-Settings | none | DONE | Every state and rule of the row is covered by tests that ran in this PR, except the pause of automations and integration sync, which is deferred to the Automation/Integrations modules (neither has a live sync yet); see the State line. |
 | UC-WSP-D02 | Unarchive a workspace | D | Owner | yes | yes | Wsp-Var-Archived-Banner, Wsp-Var-Danger-Archived | none | DONE | Every state and rule of the row is covered by tests that ran in this PR; see the State line. |
 | UC-WSP-D03 | Delete a workspace | D | Owner | yes | yes | none (no workspace danger-zone artboard; built from the archive pattern of the same page) | workspace-delete-restore.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
@@ -365,17 +365,17 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 
 ### UC-WSP-C02 Change the workspace address (enterprise baseline)
 - Capability: C Workspace update
-- Actors and permission: Owner, Admin (`ManageWorkspace`)
+- Actors and permission: Owner only (`ManageWorkspace`, which the role baseline gives the Owner alone; stricter than the first draft, which also listed Admin)
 - Preconditions: Workspace Active; new address passes the address rule.
-- Input: `slug`, `expectedVersion`.
-- Output: New address, version +1, `WorkspaceSlugChanged`. Links by id keep working; the old address is released.
+- Input: `slug`, `expectedVersion` (`PATCH /api/v1/workspaces/{workspaceId}/slug`, `Workspaces.Workspaces.ChangeWorkspaceSlug`).
+- Output: New address (trimmed, lower-cased), version +1, `WorkspaceSlugChanged` (`workspaces.workspace-slug-changed`). Links by id keep working; the old address is released and is NOT redirected in 0.1.0 (links use ids; B02 is deferred).
 - Main flow: 1. Caller sends the new slug. 2. `WorkspaceSlugRules` validates it and the Account uniqueness index. 3. The Domain changes it and emits the fact. 4. Clients follow the id.
-- No-op / rejection / concurrency / retry: Taken: 409 `workspaces.workspace.slug-taken`. Same slug: no-op. Stale version: 409. Old address is not redirected in v1.
-- UI states: Settings field with live check (M03), conflict, pending, success.
+- No-op / rejection / concurrency / retry: Taken in the Account: 409 `workspaces.workspace.slug-taken` (unique per Account, never global: another Account's address does not collide). Rule break (length, format, reserved word): its rule code, nothing changes. Same address after trimming and lower-casing: no-op, no version bump, no event. Stale version: 412 `common.precondition-failed`, nothing changes. Archived workspace: `workspace.archived`. Admin, Member and Guest: Forbidden; outsider and another tenant: NotFound. Old address is not redirected in v1.
+- UI states: Settings field with live check (M03), conflict, pending, success. Built under Profile on the settings page: Owner edits, everyone else sees it read-only; checking, free, taken with suggestion, invalid, pending, saved, stale-version conflict, archived read-only. The board copy says the old link stops after 30 days and lets Admin edit; the built field follows this row instead (no redirect, Owner only).
 - Rules: [workspaces](../../product/workspaces.md) section 48.4 (no rename today; a rename must call the same rule); Part 4 LD-10.
 - Acceptance: Given a free address, When changed, Then resolve (B02) returns the id for it and not for the old one.
-- Evidence: BE none (`Rename` changes the name only) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Command, endpoint, event, settings field.
+- Evidence: BE `ChangeWorkspaceSlugCommand`, `Workspace.ChangeSlug`, `WorkspaceSlugChangedDomainEvent`, `PATCH /workspaces/{id}/slug` · FE `AddressForm` in `workspace-settings-surface.tsx`, `useWorkspaceSettingsMutations.changeSlug` · Design `Wsp-Settings` (base, dirty, taken, conflict, denied) on the Workspaces canvas · Tests `WorkspaceChangeSlugTests`, `ChangeWorkspaceSlugCommandHandlerTests`, `ChangeWorkspaceSlugIntegrationTests` (as the application role), `workspace-settings.address.component.test.tsx` · Real e2e none
+- State: DONE — closed 2026-11-20. Ran and passed: Domain `WorkspaceChangeSlugTests` (normalised change, version once, one event, same address no-op, rule codes, archived refused); Application `ChangeWorkspaceSlugCommandHandlerTests` (free, no-op, taken in the Account is 409 slug-taken, another Account's address is free, rule codes, NotFound, validator); Integration `ChangeWorkspaceSlugIntegrationTests` on PostgreSQL as the application role (Owner changes, Admin/Member/Guest Forbidden, outsider and other tenant NotFound, stale 412, same address no-op, taken 409 vs other Account free, rule codes, archived `workspace.archived`, the new address resolves and the old one does not); component tests `FUI[workspace.settings:address-*]` (owner edit, read-only, invalid, taken with suggestion, taken on save, pending, saved, conflict, archived). The old address does not redirect (B02 deferred).
 
 ## D. Workspace lifecycle transition
 

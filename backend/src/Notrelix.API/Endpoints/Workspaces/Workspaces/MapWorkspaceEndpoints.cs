@@ -21,6 +21,7 @@ public static class MapWorkspaceEndpoints
 
         byIdGroup.MapGetWorkspace();
         byIdGroup.MapUpdateWorkspaceProfile();
+        byIdGroup.MapChangeWorkspaceSlug();
         byIdGroup.MapArchiveWorkspace();
         byIdGroup.MapUnarchiveWorkspace();
         byIdGroup.MapRestoreWorkspace();

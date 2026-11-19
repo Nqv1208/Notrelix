@@ -8,6 +8,7 @@ public static class WorkspaceRuleCodes
     // ── Workspace ─────────────────────────────────────────────────────────
     public const string Workspaces_Workspace_NameTooLong = "Workspaces_Workspace_NameTooLong";
     public const string Workspaces_Workspace_CannotRenameArchived = "Workspaces_Workspace_CannotRenameArchived";
+    public const string Workspaces_Workspace_CannotChangeSlugArchived = "Workspaces_Workspace_CannotChangeSlugArchived";
     public const string Workspaces_Workspace_CannotUpdateDescriptionArchived = "Workspaces_Workspace_CannotUpdateDescriptionArchived";
     public const string Workspaces_Workspace_CannotUpdateSettingsArchived = "Workspaces_Workspace_CannotUpdateSettingsArchived";
     public const string Workspaces_Workspace_CannotUnarchiveNonArchived = "Workspaces_Workspace_CannotUnarchiveNonArchived";

@@ -539,6 +539,7 @@ describe("Producer adapters", () => {
     const service = createWorkspaceSettingsService(api, {
       workspaces: {
         profile: (id) => `/workspaces/${id}/profile`,
+        slug: (id) => `/workspaces/${id}/slug`,
         settings: (id) => `/workspaces/${id}/settings`,
         archive: (id) => `/workspaces/${id}/archive`,
         unarchive: (id) => `/workspaces/${id}/archive/unarchive`,

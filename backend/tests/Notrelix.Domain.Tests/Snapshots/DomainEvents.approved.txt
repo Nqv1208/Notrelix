@@ -1290,4 +1290,7 @@ workspaces.workspace-renamed|1|Notrelix.Domain.Workspaces.Workspaces.Events.Work
 workspaces.workspace-restored|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceRestoredDomainEvent|Workspace|RestoredBy|System.Guid|False
 workspaces.workspace-restored|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceRestoredDomainEvent|Workspace|Status|Notrelix.Domain.Workspaces.Workspaces.WorkspaceStatus|False
 workspaces.workspace-settings-updated|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceSettingsUpdatedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+workspaces.workspace-slug-changed|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceSlugChangedDomainEvent|Workspace|NewSlug|System.String|False
+workspaces.workspace-slug-changed|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceSlugChangedDomainEvent|Workspace|OldSlug|System.String|False
+workspaces.workspace-slug-changed|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceSlugChangedDomainEvent|Workspace|UpdatedBy|System.Guid|False
 workspaces.workspace-unarchived|1|Notrelix.Domain.Workspaces.Workspaces.Events.WorkspaceUnarchivedDomainEvent|Workspace|UnarchivedBy|System.Guid|False

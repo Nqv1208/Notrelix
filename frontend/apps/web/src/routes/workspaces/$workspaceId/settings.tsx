@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -30,6 +30,10 @@ import { sectionState } from "@/shell/workspace/section-state";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import { createOwnershipStepUp } from "@/shell/workspace/ownership-step-up";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
+import { useOnboardingApi } from "@/routes/onboarding/use-onboarding-api";
+
+/** The producer's code for an address another workspace of the Account holds. */
+const SLUG_TAKEN_CODE = "workspaces.workspace.slug-taken";
 
 /** Maps a failed write to the section's status (inline, never toast-only). */
 function failureStatus(
@@ -37,6 +41,7 @@ function failureStatus(
   copy: WorkspaceSettingsCopy,
 ): SaveStatus {
   const failure = describeWorkspaceFailure(error);
+  if (failure.errorCode === SLUG_TAKEN_CODE) return { state: "taken" };
   if (failure.kind === "conflict") return { state: "conflict" };
   const fieldMessage = Object.values(failure.fieldErrors).flat()[0] ?? null;
   const message =
@@ -108,6 +113,14 @@ export function SettingsPage() {
   const [defaultsStatus, setDefaultsStatus] = useState<SaveStatus>({
     state: "idle",
   });
+  const [addressStatus, setAddressStatus] = useState<SaveStatus>({
+    state: "idle",
+  });
+  const onboardingApi = useOnboardingApi();
+  const checkAddress = useCallback(
+    (slug: string) => onboardingApi.slugCheck(slug),
+    [onboardingApi],
+  );
 
   const version = workspace?.version;
   const profile = useMemo(
@@ -137,6 +150,21 @@ export function SettingsPage() {
           toast.success(copy.toasts.profileSaved);
         },
         onError: (error) => setProfileStatus(failureStatus(error, copy)),
+      },
+    );
+  };
+
+  const onSaveAddress = (slug: string) => {
+    if (version === undefined) return;
+    setAddressStatus({ state: "saving" });
+    mutations.changeSlug.mutate(
+      { slug, expectedVersion: version },
+      {
+        onSuccess: () => {
+          setAddressStatus({ state: "saved" });
+          toast.success(copy.toasts.addressSaved);
+        },
+        onError: (error) => setAddressStatus(failureStatus(error, copy)),
       },
     );
   };
@@ -299,6 +327,17 @@ export function SettingsPage() {
         defaults={sectionState(settings, settings.data)}
         profileStatus={profileStatus}
         defaultsStatus={defaultsStatus}
+        address={
+          workspace?.slug
+            ? {
+                slug: workspace.slug,
+                canChange: viewer.role === "owner",
+                status: addressStatus,
+                onCheck: checkAddress,
+                onSave: onSaveAddress,
+              }
+            : undefined
+        }
         archiving={mutations.archive.isPending}
         archived={workspace?.isArchived === true}
         canUnarchive={viewer.role === "owner"}
@@ -325,6 +364,7 @@ export function SettingsPage() {
         onReload={() => {
           setProfileStatus({ state: "idle" });
           setDefaultsStatus({ state: "idle" });
+          setAddressStatus({ state: "idle" });
           void refetch();
           void settings.refetch();
         }}

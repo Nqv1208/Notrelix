@@ -12950,6 +12950,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.ChangeWorkspaceSlug.ChangeWorkspaceSlugCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Workspaces.Commands.ChangeWorkspaceSlug.ChangeWorkspaceSlugCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace.CreateWorkspaceCommand",
     "kind": "Command",
     "principalMarkers": [
