@@ -5,6 +5,7 @@ import type {
   ChatAttachment,
   ChatChannel,
   ChatChannelDetail,
+  ChatDeletedChannel,
   ChatConversation,
   ChatLinkPreview,
   ChatLinkRef,
@@ -97,6 +98,8 @@ export interface ChatEndpoints {
     channels: (workspaceId: string) => string;
     channel: (workspaceId: string, channelId: string) => string;
     channelArchive: (workspaceId: string, channelId: string) => string;
+    channelsDeleted: (workspaceId: string) => string;
+    channelRestore: (workspaceId: string, channelId: string) => string;
     channelMembers: (workspaceId: string, channelId: string) => string;
     channelJoin: (workspaceId: string, channelId: string) => string;
     channelMember: (
@@ -262,6 +265,22 @@ export function createChatService(
         paths.channelArchive(workspaceId, channelId),
         input,
       );
+    },
+
+    /** `Chat.Channels.ListDeleted`: the deleted channels the caller may restore (30-day window), newest delete first. */
+    listDeletedChannels(workspaceId: string): Promise<ChatDeletedChannel[]> {
+      return api.get<ChatDeletedChannel[]>(paths.channelsDeleted(workspaceId));
+    },
+
+    /** `Chat.Channels.Restore`: 409 name-conflict when the name was taken, 409 restore-window-elapsed past 30 days. */
+    restoreChannel(
+      workspaceId: string,
+      channelId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      return api.post<void>(paths.channelRestore(workspaceId, channelId), {
+        expectedVersion,
+      });
     },
 
     /** `Chat.Channels.Delete`: the expected version travels in the query string. */

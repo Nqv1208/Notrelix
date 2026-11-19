@@ -137,6 +137,7 @@ import {
 import { ChatPermissionsDialog } from "./chat-permissions-dialog";
 import { ChatLinkDialog } from "./chat-resource-link";
 import { ChatAdminSettings } from "./chat-admin-settings-host";
+import { ChatDeletedChannels } from "./chat-deleted-channels";
 import { ChatBlockedPeopleDialog } from "./chat-blocked-people";
 import { ChatNewMessageDialog } from "./chat-new-message-dialog";
 import {
@@ -396,6 +397,12 @@ export function ChatWorkspace({
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
+  // The deleted-channels list takes the main pane while the route is the one it was opened from.
+  const [deletedFrom, setDeletedFrom] = useState<{
+    readonly at: string | null;
+  } | null>(null);
+  const deletedOpen =
+    deletedFrom !== null && deletedFrom.at === (channelId ?? null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchSeed, setSearchSeed] = useState("");
 
@@ -1539,7 +1546,16 @@ export function ChatWorkspace({
       groupNames={groupNames}
       channels={channels.data ?? []}
       status={channelsStatus}
-      activeChannelId={conversationId ? null : channelProp}
+      activeChannelId={conversationId || deletedOpen ? null : channelProp}
+      deletedActive={deletedOpen}
+      onOpenDeleted={
+        canBrowse
+          ? () => {
+              setListOpen(false);
+              setDeletedFrom({ at: channelId ?? null });
+            }
+          : undefined
+      }
       unreadBySpace={unreadBySpace}
       browse={browseView}
       canCreate={viewerRole !== null && !isGuest}
@@ -1548,6 +1564,7 @@ export function ChatWorkspace({
       joiningId={joiner.isPending ? ch : null}
       onSelect={(id) => {
         setListOpen(false);
+        setDeletedFrom(null);
         onOpenChannel(id);
       }}
       onOpenSettings={
@@ -1571,7 +1588,12 @@ export function ChatWorkspace({
         setCreateError(null);
         setCreateOpen(true);
       }}
-      onJoin={(id) => handleJoin(id, () => onOpenChannel(id))}
+      onJoin={(id) =>
+        handleJoin(id, () => {
+          setDeletedFrom(null);
+          onOpenChannel(id);
+        })
+      }
       onRetry={() => void channels.refetch()}
     />
   );
@@ -1623,9 +1645,18 @@ export function ChatWorkspace({
                 )}
                 aria-label={copy.page.title}
               >
-                {leftChannel !== null &&
-                leftChannel.id === channelId &&
-                !channel?.isMember ? (
+                {deletedOpen ? (
+                  <ChatDeletedChannels
+                    hooks={hooks}
+                    workspaceId={ws}
+                    copy={copy}
+                    nameOf={nameOf}
+                    locale={locale}
+                    onClose={() => setDeletedFrom(null)}
+                  />
+                ) : leftChannel !== null &&
+                  leftChannel.id === channelId &&
+                  !channel?.isMember ? (
                   <Empty className="flex-1">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
