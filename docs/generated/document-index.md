@@ -30,7 +30,7 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 101
+Document count: 102
 
 ## Documents by type
 
@@ -46,6 +46,7 @@ Document count: 101
 | `generated` | 3 |
 | `governance` | 5 |
 | `index-router` | 1 |
+| `infrastructure-runbook` | 1 |
 | `infrastructure-standard` | 3 |
 | `operations` | 3 |
 | `operations-standard` | 4 |
@@ -60,7 +61,7 @@ Document count: 101
 | Value | Count |
 |:---|---:|
 | `Accepted` | 17 |
-| `active` | 79 |
+| `active` | 80 |
 | `generated` | 3 |
 | `Superseded` | 2 |
 
@@ -131,6 +132,7 @@ Document count: 101
 | `INFRA-CONTAINERIZATION-LOCAL-SERVICES` | `infrastructure-standard` | `active` | `infrastructure` | `container-builds`, `container-images`, `docker-compose`, `local-services`, `local-networking`, `local-volumes`, `development-tooling`, `packaging-ci` | [`docs/infrastructure/containerization-and-local-services.md`](../infrastructure/containerization-and-local-services.md) |
 | `INFRA-DEPLOYMENT-RUNTIME` | `infrastructure-standard` | `active` | `infrastructure` | `deployment`, `runtime`, `processes`, `networking`, `persistence`, `cache`, `messaging`, `object-storage`, `external-providers`, `promotion` | [`docs/infrastructure/deployment-runtime.md`](../infrastructure/deployment-runtime.md) |
 | `INFRA-ENVIRONMENT-MODEL` | `infrastructure-standard` | `active` | `infrastructure` | `local`, `ci`, `staging`, `production`, `configuration`, `secrets`, `feature-flags`, `environment-data` | [`docs/infrastructure/environment-model.md`](../infrastructure/environment-model.md) |
+| `INFRA-ORACLE-VM-RUNBOOK` | `infrastructure-runbook` | `active` | `infrastructure` | `staging`, `deployment`, `single-host-runtime` | [`docs/infrastructure/oracle-vm-runbook.md`](../infrastructure/oracle-vm-runbook.md) |
 | `OPS-INCIDENT-READINESS` | `operations-standard` | `active` | `operations` | `runtime`, `incidents`, `production`, `security-events`, `data-integrity-events`, `release-failures`, `dependency-failures` | [`docs/operations/incident-readiness.md`](../operations/incident-readiness.md) |
 | `OPS-OBSERVABILITY` | `operations-standard` | `active` | `operations` | `runtime`, `api`, `background-processing`, `messaging`, `realtime`, `database`, `integrations`, `frontend`, `mobile` | [`docs/operations/observability.md`](../operations/observability.md) |
 | `OPS-RECOVERY-DATA-SAFETY` | `operations-standard` | `active` | `operations` | `production-data`, `database`, `migrations`, `background-processing`, `messaging`, `integrations`, `object-storage`, `projections`, `recovery` | [`docs/operations/recovery-and-data-safety.md`](../operations/recovery-and-data-safety.md) |
