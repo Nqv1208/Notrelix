@@ -644,6 +644,8 @@ export function createChatService(
         content: string;
         clientMessageId: string;
         alsoSendToChannel: boolean;
+        /** A voice reply carries no text; its audio is uploaded to it next (UC-CHT-I04). */
+        voiceMessage?: boolean;
       } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(

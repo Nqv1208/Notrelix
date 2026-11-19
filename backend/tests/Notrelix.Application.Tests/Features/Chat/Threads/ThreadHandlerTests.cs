@@ -165,6 +165,20 @@ public class ThreadHandlerTests
     }
 
     [Fact]
+    public async Task A_voice_reply_may_have_no_text_and_any_other_empty_reply_is_refused()
+    {
+        var validator = new ReplyInThreadCommandValidator();
+        var root = Root(Channel());
+        var voice = Command(_workspaceId, root.Id, "", "c-v") with { VoiceMessage = true };
+
+        validator.Validate(voice).IsValid.Should().BeTrue();
+        validator.Validate(voice with { VoiceMessage = false }).IsValid.Should().BeFalse();
+        var result = await ReplyHandler().Handle(voice, CancellationToken.None);
+        result.Data!.Message.ThreadRootId.Should().Be(root.Id);
+        result.Data.Message.Content.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Replies_number_their_thread_gap_free_and_each_one_bumps_the_count()
     {
         var space = Channel();

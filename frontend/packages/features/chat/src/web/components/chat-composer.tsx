@@ -99,7 +99,7 @@ export interface ChatComposerAttachments {
   readonly draftKey: string;
   /** The voice recorder port (UC-CHT-I04); the browser recorder when the host gives none. Tests pass a fake. */
   readonly voiceRecorder?: ChatVoiceRecorder;
-  /** False where a voice message cannot be sent (a thread reply): the composer shows no microphone. */
+  /** False where a voice message cannot be sent: the composer shows no microphone. */
   readonly voice?: boolean;
 }
 

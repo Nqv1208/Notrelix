@@ -24,6 +24,7 @@ namespace Notrelix.Application.Features.Chat.Threads.Commands.ReplyInThread;
 /// stored reply (200), and a deleted root with no replies is refused (409 message-deleted). A reply to a reply or to a
 /// system message is refused (409 thread-root-invalid). The reply takes the next space sequence and the next thread
 /// sequence under the space lock. It reopens an archived thread, and the replier and the root's author follow it.
+/// A voice reply (VoiceMessage, UC-CHT-I04) may have no text; its audio attachment follows, as for a send.
 /// With AlsoSendToChannel the reply also shows in the channel's main flow. Mentions are resolved as in a send (UC-CHT-G01 to G04).
 /// </summary>
 [IdempotencyOperation("chat.threads.reply-in-thread.v1")]
@@ -34,7 +35,8 @@ public record ReplyInThreadCommand(
     string ClientMessageId,
     bool AlsoSendToChannel,
     IReadOnlyList<MentionInput>? Mentions = null,
-    bool ConfirmBroadcast = false)
+    bool ConfirmBroadcast = false,
+    bool VoiceMessage = false)
     : ICommand<Result<SendMessageResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -143,7 +145,8 @@ public class ReplyInThreadCommandHandler(
             request.Content,
             clientMessageId,
             request.AlsoSendToChannel,
-            now);
+            now,
+            request.VoiceMessage);
         db.ChatMessages.Add(reply);
         await MessageMentions.ReplaceAsync(db, reply, resolution.Spans, hadBefore: false, cancellationToken);
         await readStates.AdvanceAuthorAsync(request.WorkspaceId, space.Id, userId, sequence, cancellationToken);
@@ -188,7 +191,8 @@ public class ReplyInThreadCommandValidator : AbstractValidator<ReplyInThreadComm
         RuleFor(x => x.RootMessageId).NotEmpty();
         RuleFor(x => x.Content)
             .NotNull()
-            .Must(content => content is not null && content.Trim().Length is >= 1 and <= ChatLimits.MessageMaxLength)
+            .Must((command, content) => content is not null
+                && (content.Trim().Length is >= 1 and <= ChatLimits.MessageMaxLength || (command.VoiceMessage && content.Trim().Length == 0)))
             .WithMessage($"A message has 1 to {ChatLimits.MessageMaxLength} characters after trim.");
         RuleFor(x => x.ClientMessageId)
             .NotNull()

@@ -80,7 +80,8 @@ public record ReplyInThreadRequest(
     string? ClientMessageId,
     bool? AlsoSendToChannel,
     IReadOnlyList<MentionRequest>? Mentions = null,
-    bool? ConfirmBroadcast = null);
+    bool? ConfirmBroadcast = null,
+    bool? VoiceMessage = null);
 
 /// <summary>The caller's follow state on a thread. following false removes the follow; muted with following silences it (UC-CHT-F04).</summary>
 public record FollowThreadRequest(bool? Following, bool? Muted);

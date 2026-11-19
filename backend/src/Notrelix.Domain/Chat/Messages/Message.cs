@@ -93,7 +93,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
         string content,
         string clientMessageId,
         bool alsoSentToChannel,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool voiceMessage = false)
     {
         Guard.NotEmpty(rootMessageId);
         if (threadSequence < 1)
@@ -103,7 +104,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
 
         return Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt,
-            clientMessageId.Trim(), replyToId: null, rootMessageId, threadSequence, alsoSentToChannel);
+            clientMessageId.Trim(), replyToId: null, rootMessageId, threadSequence, alsoSentToChannel, allowEmptyContent: voiceMessage);
     }
 
     /// <summary>A system message, attributed to the person whose change it announces (UC-CHT-B09).</summary>

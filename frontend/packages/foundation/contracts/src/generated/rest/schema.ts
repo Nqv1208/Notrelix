@@ -8456,6 +8456,7 @@ export interface components {
             alsoSendToChannel?: boolean | null;
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
+            voiceMessage?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest": {
             /** Format: int64 */

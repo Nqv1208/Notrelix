@@ -7,7 +7,9 @@ import {
   waitFor,
 } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { ChatVoiceRecorder } from "../core/api/chat-voice-recorder";
+import { voiceFactsOf } from "../core/model/voice-model";
 import { createNotrelixClient } from "@notrelix/contracts";
 import {
   MockStore,
@@ -58,7 +60,71 @@ async function rootOfGeneral(
   return root;
 }
 
+beforeAll(() => {
+  URL.createObjectURL = vi.fn(() => "blob:thread-voice");
+  URL.revokeObjectURL = vi.fn();
+});
+
 describe("ChatThreadPanel", () => {
+  it("records from the microphone and replies in the thread with the recording as a voice message (UC-CHT-I04)", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const mutate = vi.fn();
+    const stubbed = {
+      ...hooks,
+      useReplyInThread: () => ({ mutate, isPending: false }),
+    } as unknown as typeof hooks;
+    const recorder: ChatVoiceRecorder = {
+      isSupported: () => true,
+      start: vi.fn(async () => undefined),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => ({
+        blob: new Blob(["voice"], { type: "audio/webm" }),
+        durationMs: 4000,
+        waveform: [5, 250, 120],
+      })),
+      cancel: vi.fn(),
+    };
+    render(
+      <ChatThreadPanel
+        hooks={stubbed}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set<string>()}
+        voiceRecorder={recorder}
+        onClose={vi.fn()}
+        onReact={vi.fn()}
+        onTogglePin={vi.fn()}
+      />,
+      { wrapper },
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: en.voice.record }),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: en.voice.stop }));
+    fireEvent.click(await screen.findByRole("button", { name: en.voice.send }));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const input = mutate.mock.calls[0]![0] as {
+      content: string;
+      files: File[];
+    };
+    expect(input.content).toBe("");
+    expect(input.files).toHaveLength(1);
+    expect(voiceFactsOf(input.files[0]!)).toEqual({
+      durationMs: 4000,
+      waveform: [5, 250, 120],
+    });
+  });
+
   it("shows the root and its replies, and sends a reply that can also go to the channel", async () => {
     const { hooks, wrapper } = setup();
     const root = await rootOfGeneral(hooks);
