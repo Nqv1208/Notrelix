@@ -96,6 +96,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DeletedBoardPurger>();
         AddWorker<DeletedBoardPurgeService>();
 
+        // Chat: purge the channels deleted more than 30 days ago (restore is over by then). Off by default.
+        services.AddOptions<DeletedChatSpacePurgeOptions>()
+            .Bind(configuration.GetSection(DeletedChatSpacePurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedChatSpacePurgeOptions>, DeletedChatSpacePurgeOptionsValidator>();
+        services.AddScoped<DeletedChatSpacePurger>();
+        AddWorker<DeletedChatSpacePurgeService>();
+
         // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
         services.AddOptions<DueDateNotificationOptions>()
             .Bind(configuration.GetSection(DueDateNotificationOptions.SectionName))
