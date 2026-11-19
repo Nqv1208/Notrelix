@@ -19,6 +19,10 @@ export const CHAT_LIMITS = {
   clientMessageIdMaxLength: 128,
   channelNameMaxLength: 80,
   channelTopicMaxLength: 250,
+  /** A category name is 1 to this many characters (ChatLimits.ChannelGroupNameMaxLength). */
+  channelGroupNameMaxLength: 60,
+  /** One reorder request moves at most this many channels (ChatLimits.ReorderMax). */
+  reorderMax: 200,
   /** The longest slow mode in seconds (ChatLimits.SlowModeMaxSeconds). */
   slowModeMaxSeconds: 3600,
   /** The reason of a moderator delete (ChatLimits.ModerationReasonMaxLength). */
@@ -531,6 +535,27 @@ export interface ChatStartConversationResult {
 export interface ChatConversationVisibility {
   readonly conversationId: string;
   readonly hidden: boolean;
+}
+
+/** One channel's new place in the sidebar (`Chat.Channels.Reorder`): its category (null for none) and its position there. */
+export interface ChatChannelPlacement {
+  readonly channelId: string;
+  readonly groupId: string | null;
+  readonly position: number;
+  readonly expectedVersion: number;
+}
+
+/** `Chat.ChannelGroups.Create`: a category name (1 to 60) and an optional position (the end when left out). */
+export interface ChatCreateChannelGroupInput {
+  readonly name: string;
+  readonly position?: number;
+}
+
+/** `Chat.ChannelGroups.Update`: the name and the position are both sent; a stale expectedVersion is 412. */
+export interface ChatUpdateChannelGroupInput {
+  readonly name: string;
+  readonly position: number;
+  readonly expectedVersion: number;
 }
 
 /** ChannelGroupDto: a sidebar category with its name (`Chat.ChannelGroups.List`). */

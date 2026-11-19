@@ -121,6 +121,8 @@ import { ChatLinkAndRedialProvider } from "./chat-call-redial";
 import { ChatSearchPanel, type ChatSearchSpace } from "./chat-search-panel";
 import { ChatStatusBanner } from "./chat-status-banner";
 import { ChatRateLimitNotice } from "./chat-rate-limit";
+import { useCategoryManagement } from "./use-category-management";
+import type { ChatCollapseStore } from "./use-collapsed-groups";
 import {
   ChatSidebar,
   type ChannelListStatus,
@@ -215,6 +217,11 @@ export interface ChatWorkspaceProps {
    * never touches browser storage); without it a choice lasts one call. The device ids stay in the browser.
    */
   readonly callDeviceStore?: ChatCallDeviceStore;
+  /**
+   * Remembers which sidebar categories a person collapsed, per Workspace and category, in this browser only. The host owns
+   * the storage (the package never touches browser storage); without it every category shows open after a reload.
+   */
+  readonly collapseStore?: ChatCollapseStore;
   /** Narrow screens: returns to the channel list (the host's route). Without it the list opens as a sheet. */
   readonly onBackToList?: () => void;
   /** The realtime stream state; a reconnecting stream shows a banner above the messages. */
@@ -355,6 +362,7 @@ export function ChatWorkspace({
   linkedSequence = null,
   draftStore,
   callDeviceStore,
+  collapseStore,
   onBackToList,
   connection = "live",
   ephemeral,
@@ -421,6 +429,15 @@ export function ChatWorkspace({
     () => new Map((channelGroups.data ?? []).map((g) => [g.id, g.name])),
     [channelGroups.data],
   );
+  const categories = useCategoryManagement({
+    hooks,
+    workspaceId: ws,
+    copy,
+    groups: channelGroups.data,
+    canManageGroups: canManageWorkspace && !isGuest,
+    canManageChannels: viewerRole !== null && !isGuest,
+    collapseStore,
+  });
   const blockedQuery = hooks.useBlockedPeople(ws);
   const blockedPeople = blockedQuery.data;
   const channel: ChatChannel | null =
@@ -1545,6 +1562,7 @@ export function ChatWorkspace({
     <ChatSidebar
       conversations={conversationList}
       groupNames={groupNames}
+      {...categories.sidebar}
       channels={channels.data ?? []}
       status={channelsStatus}
       activeChannelId={conversationId || deletedOpen ? null : channelProp}
@@ -2384,6 +2402,7 @@ export function ChatWorkspace({
               </aside>
             ) : null}
 
+            {categories.dialogs}
             <CreateChannelDialog
               open={createOpen}
               busy={creator.isPending}
