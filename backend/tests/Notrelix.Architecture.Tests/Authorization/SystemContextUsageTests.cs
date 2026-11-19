@@ -64,6 +64,7 @@ public class SystemContextUsageTests
         "IdentityBootstrapReadAdapter.cs",
         "GetUserWorkspaces.cs",
         "GetMyWorkspaces.cs",
+        "GetAccountWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
         "InvitationTokenScope.cs",
         "InviteeInvitations.cs",

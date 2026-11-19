@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Domain.Workspaces.Rules;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetAccountWorkspaces;
 
@@ -24,10 +25,26 @@ public class GetAccountWorkspacesQueryHandler : IRequestHandler<GetAccountWorksp
     public async Task<Result<List<WorkspaceDto>>> Handle(GetAccountWorkspacesQuery request, CancellationToken ct)
     {
         var accountId = _requestContext.RequireAccountId();
+        var userId = _requestContext.UserId;
+
+        // Being an Account member does not show a workspace the person is not in (WSP-004): the subject is the
+        // caller's own active membership. An archived workspace stays out except for the people who administer it
+        // (the Domain's ActiveAdministrator rule), and a deleted one never appears. An Account request carries no
+        // Workspace, so the EF tenant filter of the workspace-scoped sets would hide every member row; the filters
+        // are lifted and each condition is explicit.
+        var own = _context.WorkspaceMembers
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(m => m.AccountId == accountId && m.UserId == userId && m.Status == WorkspaceMemberStatus.Active);
+        var administered = own.Where(WorkspaceMemberRules.ActiveAdministrator).Select(m => m.WorkspaceId);
 
         var workspaces = await _context.Workspaces
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(w => w.AccountId == accountId)
+            .Where(w => w.AccountId == accountId && w.DeletedAt == null)
+            .Where(w => own.Any(m => m.WorkspaceId == w.Id))
+            .Where(w => w.Status == WorkspaceStatus.Active
+                || (w.Status == WorkspaceStatus.Archived && administered.Contains(w.Id)))
             .OrderBy(w => w.Name)
             .ToListAsync(ct);
 
@@ -35,6 +52,7 @@ public class GetAccountWorkspacesQueryHandler : IRequestHandler<GetAccountWorksp
         var memberCounts = workspaceIds.Count == 0
             ? new Dictionary<Guid, int>()
             : await _context.WorkspaceMembers
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(m => workspaceIds.Contains(m.WorkspaceId) && m.Status != WorkspaceMemberStatus.Removed)
                 .GroupBy(m => m.WorkspaceId)
