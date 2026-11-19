@@ -21,20 +21,26 @@ describe("member job title write", () => {
   it("FUI[workspace.members:job-title-wire] puts the trimmed title with the member's version", async () => {
     const api = client();
     await createMembersService(api).updateJobTitle("w1", "u1", "  Lead ", 4);
-    expect(api.put).toHaveBeenCalledWith("/workspaces/w1/members/u1/job-title", {
-      jobTitle: "Lead",
-      expectedVersion: 4,
-    });
+    expect(api.put).toHaveBeenCalledWith(
+      "/workspaces/w1/members/u1/job-title",
+      {
+        jobTitle: "Lead",
+        expectedVersion: 4,
+      },
+    );
   });
 
   it("sends null for a blank title, and never writes a member whose version is unknown", async () => {
     const api = client();
     const service = createMembersService(api);
     await service.updateJobTitle("w1", "u1", "   ", 4);
-    expect(api.put).toHaveBeenCalledWith("/workspaces/w1/members/u1/job-title", {
-      jobTitle: null,
-      expectedVersion: 4,
-    });
+    expect(api.put).toHaveBeenCalledWith(
+      "/workspaces/w1/members/u1/job-title",
+      {
+        jobTitle: null,
+        expectedVersion: 4,
+      },
+    );
     await expect(
       service.updateJobTitle("w1", "u1", "Lead", undefined),
     ).rejects.toThrow("version is not known");
@@ -47,7 +53,8 @@ describe("invitation with initial entries", () => {
     workspaces: {
       members: (id: string) => `/workspaces/${id}/members`,
       invitations: (id: string) => `/workspaces/${id}/invitations`,
-      invitation: (id: string, inv: string) => `/workspaces/${id}/invitations/${inv}`,
+      invitation: (id: string, inv: string) =>
+        `/workspaces/${id}/invitations/${inv}`,
       invitationRole: (id: string, inv: string) =>
         `/workspaces/${id}/invitations/${inv}/role`,
       resendInvitation: (id: string, inv: string) =>

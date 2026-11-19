@@ -60,7 +60,6 @@ export function EditJobTitleDialog({
     setPending(false);
     setOutcome(null);
     // The form restarts only for another person, never when the same row is read again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   if (!member) return null;

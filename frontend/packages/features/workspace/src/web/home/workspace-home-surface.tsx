@@ -883,7 +883,8 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
     (agenda.status !== "ready" || agenda.data.entries.length > 0);
   const pinned = props.pinnedState;
   const showPinned =
-    pinned !== undefined && (pinned.status !== "ready" || pinned.data.length > 0);
+    pinned !== undefined &&
+    (pinned.status !== "ready" || pinned.data.length > 0);
   const showRight =
     showReplies ||
     showAgenda ||

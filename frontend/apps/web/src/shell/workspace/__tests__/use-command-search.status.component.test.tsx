@@ -31,7 +31,9 @@ describe("useCommandSearch status", () => {
     await act(async () => {
       root.render(
         <QueryClientProvider
-          client={new QueryClient({ defaultOptions: { queries: { gcTime: 0 } } })}
+          client={
+            new QueryClient({ defaultOptions: { queries: { gcTime: 0 } } })
+          }
         >
           <Probe />
         </QueryClientProvider>,
