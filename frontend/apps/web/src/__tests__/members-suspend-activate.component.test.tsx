@@ -198,7 +198,10 @@ describe("Members: suspend and activate through the producer", () => {
     expect(dialog?.textContent).toContain(
       "Alan Turing can't open Acme until an admin reactivates access. Nothing is deleted.",
     );
-    expect(post, "nothing is sent before the confirmation").not.toHaveBeenCalled();
+    expect(
+      post,
+      "nothing is sent before the confirmation",
+    ).not.toHaveBeenCalled();
 
     await confirmSuspend();
     await flush();
