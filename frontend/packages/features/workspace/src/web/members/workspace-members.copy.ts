@@ -67,6 +67,26 @@ export const en = {
     suspend: "Suspend access",
     activate: "Reactivate access",
     remove: "Remove from workspace",
+    editJobTitle: "Edit job title",
+  },
+  jobTitle: {
+    title: "Job title of {{name}}",
+    description:
+      "The title shows on their profile and in the member list. It changes no role or permission. At most {{max}} characters.",
+    label: "Job title",
+    placeholder: "For example, Engineering lead",
+    save: "Save",
+    saving: "Saving…",
+    cancel: "Cancel",
+    tooLong:
+      "A job title is at most {{max}} characters. Shorten it and save again.",
+    invalid: "That job title isn't valid. Remove line breaks and try again.",
+    conflict:
+      "This profile just changed. Reload to see the latest, then edit the title again.",
+    reload: "Reload",
+    denied:
+      "You don't have permission to edit this person's job title. Only owners and admins can.",
+    failed: "The job title wasn't saved. Nothing changed; try again.",
   },
   confirm: {
     removeTitle: "Remove {{name}}?",
@@ -88,6 +108,23 @@ export const en = {
     cancel: "Cancel",
   },
   invitations: {
+    entries: {
+      label: "Add on joining",
+      hint: "Optional. They join these Teams and Spaces when they accept.",
+      add: "Add a Team or Space",
+      addLabel: "Choose a Team or Space to add",
+      team: "Team",
+      space: "Space",
+      remove: "Remove {{name}}",
+      roleLabel: "Role in {{name}}",
+      teamRoles: { member: "Member", lead: "Lead" },
+      spaceRoles: { viewer: "Viewer", member: "Member", admin: "Admin" },
+      teamsDenied: "You can't add people to Teams, so none are offered.",
+      spacesDenied: "You can't add people to Spaces, so none are offered.",
+      guestNote: "A Guest can't be a Team lead or a Space admin.",
+      refused:
+        "A Team or Space you chose can't take this person. Remove it or ask an owner.",
+    },
     formTitle: "Invite by e-mail",
     emailLabel: "E-mail address",
     emailPlaceholder: "name@company.com",
@@ -134,6 +171,7 @@ export const en = {
   toasts: {
     roleChanged: "{{name}} is now {{role}}.",
     roleFailed: "{{name}}'s role wasn't changed.",
+    jobTitleSaved: "{{name}}'s job title was saved.",
     removed: "{{name}} was removed from the workspace.",
     removeFailed: "{{name}} wasn't removed.",
     suspended: "{{name}}'s access is suspended.",
@@ -229,6 +267,25 @@ export const vi: WorkspaceMembersCopy = {
     suspend: "Tạm ngưng truy cập",
     activate: "Kích hoạt lại truy cập",
     remove: "Xóa khỏi không gian làm việc",
+    editJobTitle: "Sửa chức danh",
+  },
+  jobTitle: {
+    title: "Chức danh của {{name}}",
+    description:
+      "Chức danh hiện ở hồ sơ và danh sách thành viên. Nó không đổi vai trò hay quyền. Tối đa {{max}} ký tự.",
+    label: "Chức danh",
+    placeholder: "Ví dụ: Kỹ sư trưởng",
+    save: "Lưu",
+    saving: "Đang lưu…",
+    cancel: "Huỷ",
+    tooLong: "Chức danh tối đa {{max}} ký tự. Rút gọn rồi lưu lại.",
+    invalid: "Chức danh không hợp lệ. Bỏ các dấu xuống dòng rồi thử lại.",
+    conflict:
+      "Hồ sơ vừa được người khác sửa. Tải lại để xem bản mới, rồi sửa lại chức danh.",
+    reload: "Tải lại",
+    denied:
+      "Bạn không có quyền sửa chức danh của người này. Chỉ chủ sở hữu và quản trị viên sửa được.",
+    failed: "Chưa lưu được chức danh. Chưa có gì thay đổi; hãy thử lại.",
   },
   confirm: {
     removeTitle: "Xóa {{name}}?",
@@ -250,6 +307,29 @@ export const vi: WorkspaceMembersCopy = {
     cancel: "Hủy",
   },
   invitations: {
+    entries: {
+      label: "Vào cùng",
+      hint: "Tuỳ chọn. Họ vào các nhóm và phòng ban này khi nhận lời mời.",
+      add: "Thêm nhóm hoặc phòng ban",
+      addLabel: "Chọn nhóm hoặc phòng ban để thêm",
+      team: "Nhóm",
+      space: "Phòng ban",
+      remove: "Bỏ {{name}}",
+      roleLabel: "Vai trò trong {{name}}",
+      teamRoles: { member: "Thành viên", lead: "Trưởng nhóm" },
+      spaceRoles: {
+        viewer: "Người xem",
+        member: "Thành viên",
+        admin: "Quản trị",
+      },
+      teamsDenied:
+        "Bạn không thêm người vào nhóm được nên không có nhóm nào để chọn.",
+      spacesDenied:
+        "Bạn không thêm người vào phòng ban được nên không có phòng ban nào để chọn.",
+      guestNote: "Khách không làm được trưởng nhóm hay quản trị phòng ban.",
+      refused:
+        "Nhóm hoặc phòng ban bạn chọn không nhận được người này. Bỏ mục đó hoặc nhờ chủ sở hữu.",
+    },
     formTitle: "Mời qua e-mail",
     emailLabel: "Địa chỉ e-mail",
     emailPlaceholder: "ten@congty.com",
@@ -297,6 +377,7 @@ export const vi: WorkspaceMembersCopy = {
   toasts: {
     roleChanged: "{{name}} giờ là {{role}}.",
     roleFailed: "Chưa đổi được vai trò của {{name}}.",
+    jobTitleSaved: "Đã lưu chức danh của {{name}}.",
     removed: "Đã xóa {{name}} khỏi không gian làm việc.",
     removeFailed: "Chưa xóa được {{name}}.",
     suspended: "Đã tạm ngưng truy cập của {{name}}.",

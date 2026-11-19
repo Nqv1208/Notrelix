@@ -158,6 +158,26 @@ export const en = {
     confirm: "Archive Team",
     confirming: "Archiving…",
   },
+  deleteDialog: {
+    action: "Delete Team",
+    title: "Delete {{team}}?",
+    text: "{{team}} is not used by any Space. Its people keep every other kind of access. You can restore the Team after deleting it.",
+    confirm: "Delete Team",
+    confirming: "Deleting…",
+    cancel: "Cancel",
+    refusedTitle: "{{team}} can't be deleted yet",
+    refusedText:
+      "The Team is still used by the Spaces below. Remove it from them first, then delete it.",
+    spaceKind: "Space",
+    others: "and others you cannot see",
+    understood: "Got it",
+    conflict:
+      "This Team just changed. Reload to see the latest, then delete it again.",
+    reload: "Reload",
+    denied:
+      "You don't have permission to delete this Team. Only owners and admins can.",
+    failed: "The Team wasn't deleted. Nothing changed; try again.",
+  },
   security: {
     title: "Sharing and security",
     description:
@@ -352,6 +372,10 @@ export const en = {
     memberAdded: "{{name}} was added to the Team.",
     memberRemoved: "{{name}} was removed from the Team.",
     roleChanged: "{{name}} is now {{role}}.",
+    deleted: "{{name}} was deleted.",
+    restore: "Restore",
+    restored: "{{name}} was restored.",
+    restoreFailed: "{{name}} wasn't restored.",
   },
 };
 
@@ -515,6 +539,25 @@ export const vi: WorkspaceTeamsCopy = {
     cancel: "Huỷ",
     confirm: "Lưu trữ nhóm",
     confirming: "Đang lưu trữ…",
+  },
+  deleteDialog: {
+    action: "Xoá nhóm",
+    title: "Xoá {{team}}?",
+    text: "{{team}} không còn được dùng ở phòng ban nào. Mọi người trong nhóm giữ nguyên các quyền khác. Bạn khôi phục được nhóm sau khi xoá.",
+    confirm: "Xoá nhóm",
+    confirming: "Đang xoá…",
+    cancel: "Huỷ",
+    refusedTitle: "Chưa xoá được {{team}}",
+    refusedText:
+      "Nhóm vẫn được dùng ở các phòng ban dưới đây. Gỡ nhóm khỏi chúng trước, rồi xoá lại.",
+    spaceKind: "Phòng ban",
+    others: "và các mục khác bạn không có quyền xem",
+    understood: "Đã hiểu",
+    conflict: "Nhóm vừa thay đổi. Tải lại để xem bản mới, rồi xoá lại.",
+    reload: "Tải lại",
+    denied:
+      "Bạn không có quyền xoá nhóm này. Chỉ chủ sở hữu và quản trị viên xoá được.",
+    failed: "Chưa xoá được nhóm. Chưa có gì thay đổi; hãy thử lại.",
   },
   security: {
     title: "Chia sẻ và bảo mật",
@@ -711,6 +754,10 @@ export const vi: WorkspaceTeamsCopy = {
     memberAdded: "Đã thêm {{name}} vào nhóm.",
     memberRemoved: "Đã xóa {{name}} khỏi nhóm.",
     roleChanged: "{{name}} giờ là {{role}}.",
+    deleted: "Đã xoá {{name}}.",
+    restore: "Khôi phục",
+    restored: "Đã khôi phục {{name}}.",
+    restoreFailed: "Chưa khôi phục được {{name}}.",
   },
 };
 

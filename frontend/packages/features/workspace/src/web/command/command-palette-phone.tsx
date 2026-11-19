@@ -11,6 +11,10 @@ import { DepartmentMark } from "../home/work-row-parts";
 import { formatCopy, IDENTITY_MARK_CLASS } from "../shell/shell-models";
 import type { PaletteRow, PaletteView } from "./command-build";
 import type { PaletteWorkspace } from "./command-models";
+import {
+  PaletteSearchStatus,
+  type PaletteSearchState,
+} from "./command-search-state";
 import type { WorkspaceCommandCopy } from "./workspace-command.copy";
 
 const STATUS_DOT = {
@@ -98,6 +102,8 @@ export interface PhoneSearchSheetProps {
     >
   >;
   readonly emptyTitle: string;
+  /** The server search is loading or failed (not "no match"). */
+  readonly search?: PaletteSearchState;
 }
 
 /**
@@ -258,7 +264,14 @@ export function PhoneSearchSheet(props: PhoneSearchSheetProps) {
             </button>
           </div>
         ) : null}
-        {view.state === "none" ? (
+        {props.search ? (
+          <PaletteSearchStatus
+            copy={copy}
+            search={props.search}
+            showLoading={view.state === "none"}
+          />
+        ) : null}
+        {view.state === "none" && !props.search ? (
           <p
             data-f="empty"
             className="m-0 py-6 text-center text-compact text-muted-foreground"

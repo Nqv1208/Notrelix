@@ -68,6 +68,10 @@ import type {
   PaletteWorkspace,
 } from "./command-models";
 import { PhoneSearchSheet } from "./command-palette-phone";
+import {
+  PaletteSearchStatus,
+  type PaletteSearchState,
+} from "./command-search-state";
 import type { WorkspaceCommandCopy } from "./workspace-command.copy";
 
 export interface WorkspaceCommandPaletteSurfaceProps {
@@ -97,6 +101,8 @@ export interface WorkspaceCommandPaletteSurfaceProps {
   readonly onQueryChange?: (query: string) => void;
   /** A command that is running: the result list gives way to its progress. */
   readonly running?: PaletteRunning | null;
+  /** The server search is loading or failed; absent when it answered or none applies. */
+  readonly search?: PaletteSearchState;
 }
 
 /** The Board glyph of the design (a frame with a long and a short column). */
@@ -356,6 +362,7 @@ export function WorkspaceCommandPaletteSurface({
   defaultFilter = "all",
   onQueryChange,
   running = null,
+  search,
 }: WorkspaceCommandPaletteSurfaceProps) {
   const [query, setQuery] = React.useState(defaultQuery);
   const [filter, setFilter] = React.useState<PaletteFilter>(defaultFilter);
@@ -502,7 +509,8 @@ export function WorkspaceCommandPaletteSurface({
   };
 
   const phone = phoneQuery && !running;
-  const none = view.state === "none";
+  // A search that is loading or failed is not "no match": its own state shows instead.
+  const none = view.state === "none" && !search;
   const listLabel =
     view.state === "recent"
       ? copy.listLabels.recent
@@ -568,6 +576,7 @@ export function WorkspaceCommandPaletteSurface({
             optionDomId={optionDomId}
             onChoose={choose}
             icons={ICONS}
+            search={search}
             emptyTitle={formatCopy(copy.empty.title, {
               query: term,
               workspace: workspace.name,
@@ -769,6 +778,14 @@ export function WorkspaceCommandPaletteSurface({
                   </div>
                 ) : null}
 
+                {search ? (
+                  <PaletteSearchStatus
+                    copy={copy}
+                    search={search}
+                    showLoading={view.state === "none"}
+                  />
+                ) : null}
+
                 {none ? (
                   <div
                     data-f="empty"
@@ -795,7 +812,7 @@ export function WorkspaceCommandPaletteSurface({
                   aria-label={listLabel}
                   className="box-border max-h-[min(534px,calc(100svh-251px))] overflow-auto px-2 pt-1.5 pb-2"
                 >
-                  {view.groups.length === 0 ? (
+                  {view.groups.length === 0 && !search ? (
                     <div className="px-2.5 py-6 text-center text-metadata text-meta-foreground">
                       {view.state === "recent"
                         ? copy.recentsEmpty

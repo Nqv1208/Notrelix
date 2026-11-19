@@ -32,6 +32,7 @@ import {
   TEAM_NAME_MAX,
   type TeamCandidate,
 } from "./create-team-dialog";
+import { DeleteTeamDialog, type TeamDeleteOutcome } from "./delete-team-dialog";
 import {
   TeamTile,
   WorkspaceSetupFrame,
@@ -73,6 +74,11 @@ export interface WorkspaceTeamSurfaceProps {
   readonly onDescribe: (description: string | null) => void;
   readonly onArchive: () => void;
   readonly onUnarchive: () => void;
+  /**
+   * Deletes the Team (restorable). A Team that Spaces still list is refused with those Spaces (LD-16);
+   * absent hides the action.
+   */
+  readonly onDelete?: () => Promise<TeamDeleteOutcome>;
   readonly onAddMember: (input: AddTeamMemberInput) => void;
   readonly onChangeRole: (userId: string, role: TeamRole) => void;
   readonly onRemove: (userId: string) => void;
@@ -89,6 +95,7 @@ export interface WorkspaceTeamSurfaceProps {
   readonly initialRoleMenuUserId?: string | null;
   readonly initialEditOpen?: boolean;
   readonly initialArchiveOpen?: boolean;
+  readonly initialDeleteOpen?: boolean;
 }
 
 const INPUT =
@@ -380,6 +387,9 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
   );
   const [archiveOpen, setArchiveOpen] = React.useState(
     props.initialArchiveOpen ?? false,
+  );
+  const [deleteOpen, setDeleteOpen] = React.useState(
+    props.initialDeleteOpen ?? false,
   );
   const [moreOpen, setMoreOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -961,6 +971,18 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
                 {d.archive}
               </button>
             ) : null}
+            {caps.canManage && props.onDelete ? (
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(true)}
+                className={cn(
+                  "inline-flex h-8 items-center gap-1.5 self-start rounded-[7px] border border-transparent bg-transparent px-3 text-compact font-medium text-danger-text hover:bg-state-hover-strong",
+                  FOCUS,
+                )}
+              >
+                {copy.deleteDialog.action}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -973,6 +995,16 @@ export function WorkspaceTeamSurface(props: WorkspaceTeamSurfaceProps) {
         onRename={props.onRename}
         onDescribe={props.onDescribe}
       />
+      {props.onDelete ? (
+        <DeleteTeamDialog
+          copy={copy}
+          open={deleteOpen}
+          teamName={t.name}
+          onDelete={props.onDelete}
+          onReload={props.onRetry}
+          onClose={() => setDeleteOpen(false)}
+        />
+      ) : null}
       <ArchiveTeamDialog
         copy={copy}
         open={archiveOpen}

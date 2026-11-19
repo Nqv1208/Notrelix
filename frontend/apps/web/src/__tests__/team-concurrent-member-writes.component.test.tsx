@@ -30,6 +30,7 @@ vi.mock("sonner", () => ({
 }));
 vi.mock("@tanstack/react-router", () => ({
   useParams: () => ({ teamId: "t1" }),
+  useNavigate: () => vi.fn(),
 }));
 vi.mock("@/providers/workspace-provider", () => ({
   useWorkspaceContext: () => ({ workspaceId: "ws-1", workspace: null }),

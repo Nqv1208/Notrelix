@@ -124,6 +124,29 @@ export function HomePage() {
     departmentsById,
   ]);
 
+  // Pins join the same authorized catalog as the recents: a pin of a Board or Doc the
+  // member can no longer read has no catalog match and is never drawn.
+  const pinnedState = useMemo<SectionState<readonly ContinueEntry[]>>(() => {
+    if (pins.isError || resources.failed) return { status: "error" };
+    if (!pins.data || !resources.ready) return { status: "loading" };
+    const docSpaces = new Map(
+      resources.docs.map((doc) => [doc.id, doc.spaceId]),
+    );
+    const entries = resolveNavigationEntries(
+      pins.data,
+      { boards: resources.boards, docs: resources.docs },
+      pins.data,
+    ).map((entry) => ({
+      ...entry,
+      location:
+        entry.kind === NAVIGATION_RESOURCE_KIND.doc
+          ? (departmentsById.get(docSpaces.get(entry.resourceId) ?? "")?.name ??
+            null)
+          : (departments.get(entry.resourceId)?.name ?? null),
+    }));
+    return { status: "ready", data: entries };
+  }, [pins.data, pins.isError, resources, departments, departmentsById]);
+
   const boardNames = useMemo(
     () => new Map(resources.boards.map((board) => [board.id, board.name])),
     [resources.boards],
@@ -299,6 +322,7 @@ export function HomePage() {
         workspaceName={workspace?.name ?? null}
         greetingName={greetingNameFor(user?.name)}
         continueState={continueState}
+        pinnedState={pinnedState}
         myWork={myWorkState}
         myWorkHasMore={false}
         completedToday={completedToday}
@@ -330,6 +354,7 @@ export function HomePage() {
         }
         onRetryContinue={() => {
           void recents.refetch();
+          void pins.refetch();
           resources.retry();
         }}
         onRetryMyWork={() => void myWorkQuery.refetch()}

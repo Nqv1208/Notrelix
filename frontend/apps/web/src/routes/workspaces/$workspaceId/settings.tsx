@@ -178,6 +178,26 @@ export function SettingsPage() {
     });
   };
 
+  const onUnarchive = () => {
+    if (version === undefined || !workspace) return;
+    const values = { workspace: workspace.name };
+    mutations.unarchive.mutate(version, {
+      onSuccess: () =>
+        toast.success(formatCopy(copy.toasts.unarchived, values)),
+      onError: (error) =>
+        toastFailure(
+          formatCopy(copy.toasts.unarchiveFailed, values),
+          error,
+          (failure) =>
+            failure.kind === "conflict"
+              ? formatCopy(copy.toasts.unarchiveConflict, values)
+              : failure.kind === "forbidden"
+                ? copy.toasts.forbidden
+                : copy.toasts.unknown,
+        ),
+    });
+  };
+
   const onDelete = async () => {
     if (version === undefined || !workspace) return;
     const values = { workspace: workspace.name };
@@ -279,6 +299,10 @@ export function SettingsPage() {
         profileStatus={profileStatus}
         defaultsStatus={defaultsStatus}
         archiving={mutations.archive.isPending}
+        archived={workspace?.isArchived === true}
+        canUnarchive={viewer.role === "owner"}
+        unarchiving={mutations.unarchive.isPending}
+        onUnarchive={onUnarchive}
         canDelete={viewer.role === "owner"}
         isPersonal={workspace?.isPersonal === true}
         deleting={mutations.remove.isPending}

@@ -102,3 +102,50 @@ export function describeWorkspaceFailure(error: unknown): WorkspaceFailure {
 
   return { kind, reason, errorCode, detail, fieldErrors };
 }
+
+/** The producer's stable code for deleting a Team that Spaces still list (LD-16). */
+export const TEAM_STILL_REFERENCED_CODE = "workspaces.team.still-referenced";
+
+/** A Space that still lists the Team, as the caller may see it. */
+export interface TeamReference {
+  readonly kind: "space";
+  readonly id: string;
+  readonly name: string;
+  readonly spaceType: string;
+}
+
+/**
+ * Why a Team could not be deleted: the Spaces still listing it that the caller can see, and whether others
+ * exist that they cannot (no number, so no count of hidden Spaces reaches the client).
+ */
+export interface TeamReferencesRefusal {
+  readonly references: readonly TeamReference[];
+  readonly moreHidden: boolean;
+}
+
+/** Reads the refusal of a Team delete; `null` for any other failure. */
+export function parseTeamReferencesRefusal(
+  error: unknown,
+): TeamReferencesRefusal | null {
+  const candidate = (asRecord(error) ?? {}) as ErrorLike;
+  const body = asRecord(candidate.details);
+  if (body?.errorCode !== TEAM_STILL_REFERENCED_CODE) return null;
+  const rows = Array.isArray(body.references) ? body.references : [];
+  const references = rows.flatMap((row): TeamReference[] => {
+    const record = asRecord(row);
+    return record &&
+      typeof record.id === "string" &&
+      typeof record.name === "string"
+      ? [
+          {
+            kind: "space",
+            id: record.id,
+            name: record.name,
+            spaceType:
+              typeof record.spaceType === "string" ? record.spaceType : "",
+          },
+        ]
+      : [];
+  });
+  return { references, moreHidden: body.moreReferencesHidden === true };
+}
