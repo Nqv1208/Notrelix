@@ -492,7 +492,8 @@ function InvitationEntries({
     entries.map((entry) => key(entry.kind, entry.targetId)),
   );
   const choices = [
-    ...(options.teams ?? []).map((target) => ({
+    // A Guest is not a Team member, so no Team is offered while Guest is selected.
+    ...(guest ? [] : (options.teams ?? [])).map((target) => ({
       kind: "team" as const,
       target,
     })),
@@ -760,17 +761,20 @@ function InviteForm({
     setEntries([]);
   }, [inviteResetKey]);
 
-  // A Guest never manages: a Team lead or Space admin entry falls back to the plain member role.
+  // A Guest is not a Team member (the Team entries are dropped) and never manages (a Space admin entry falls back
+  // to the plain member role).
   const entriesFor = (
     chosen: Extract<WorkspaceRole, "member" | "guest">,
     list: readonly InvitationEntryInput[],
   ) =>
     chosen === "guest"
-      ? list.map((entry) =>
-          entry.role === "lead" || entry.role === "admin"
-            ? { ...entry, role: "member" as const }
-            : entry,
-        )
+      ? list
+          .filter((entry) => entry.kind !== "team")
+          .map((entry) =>
+            entry.role === "admin"
+              ? { ...entry, role: "member" as const }
+              : entry,
+          )
       : list;
   const initialEntries = entriesFor(role, entries);
   const withEntries = <T extends CreateWorkspaceInvitationInput>(

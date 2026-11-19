@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   fireEvent,
@@ -12,6 +13,10 @@ import {
   membersDefaultScenario,
   membersInvitationsScenario,
 } from "../../../verification/workspace-members-fixtures";
+import {
+  parseInvitationEntryRefusals,
+  type InvitationEntryRefusalReason,
+} from "../../../core/model/errors";
 import type { JobTitleOutcome } from "../edit-job-title-dialog";
 import {
   WorkspaceMembersSurface,
@@ -280,19 +285,20 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     });
   });
 
-  it("FUI[workspace.members:invite-entries-guest] a Guest invitation is never sent with a Team lead or Space admin entry", () => {
+  it("FUI[workspace.members:invite-entries-guest] a Guest invitation is never sent with a Team entry or a Space admin entry", () => {
     const props = renderMembers(membersInvitationsScenario(), { entryOptions });
     pick("Nhóm Kỹ sư ERP");
+    pick("Công nghệ");
     fireEvent.keyDown(
-      screen.getByRole("combobox", { name: "Role in Nhóm Kỹ sư ERP" }),
+      screen.getByRole("combobox", { name: "Role in Công nghệ" }),
       { key: "Enter" },
     );
     fireEvent.click(
       screen.getByRole("option", {
-        name: copy.invitations.entries.teamRoles.lead,
+        name: copy.invitations.entries.spaceRoles.admin,
       }),
     );
-    // Switch the invitation to Guest: the lead entry falls back to Member.
+    // Switch the invitation to Guest: the Team entry is dropped and the admin entry falls back to Member.
     fireEvent.keyDown(
       screen.getByRole("combobox", { name: copy.invitations.roleLabel }),
       {
@@ -306,7 +312,7 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     expect(props.onInvite).toHaveBeenCalledWith({
       email: "khach@dtvina.vn",
       role: "guest",
-      initialEntries: [{ kind: "team", targetId: "team-erp", role: "member" }],
+      initialEntries: [{ kind: "space", targetId: "space-cn", role: "member" }],
     });
   });
 
@@ -369,19 +375,58 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     ).toBeNull();
   });
 
-  it("FUI[workspace.members:invite-entry-refused-guest-team] says a Guest cannot join a Team under the refused Team entry", () => {
-    renderMembers(membersInvitationsScenario(), {
-      entryOptions,
-      entryRefusals: new Map([
-        ["team:team-erp", "guest-cannot-join-team" as const],
-      ]),
-    });
+  // A stale or direct refusal: an old invitation or a direct API call can still name a Team for a Guest, and the
+  // server answers with the problem whose `entries` carries the Team with the reason. The form no longer produces
+  // that invitation (it hides Team choices for a Guest), so the Team is picked under Member and the mocked
+  // invite call answers the refusal, which the page parses exactly as the route does.
+  it("FUI[workspace.members:invite-entry-refused-guest-team] shows that a Guest cannot join a Team under the Team entry a server refusal names", () => {
+    const refusal = {
+      details: {
+        entries: [
+          {
+            index: 0,
+            kind: "team",
+            targetId: "team-erp",
+            reason: "guest-cannot-join-team",
+          },
+        ],
+      },
+    };
+    function Page() {
+      const [entryRefusals, setEntryRefusals] = useState<
+        ReadonlyMap<string, InvitationEntryRefusalReason>
+      >(() => new Map());
+      return (
+        <WorkspaceMembersSurface
+          {...membersInvitationsScenario()}
+          entryOptions={entryOptions}
+          entryRefusals={entryRefusals}
+          onTabChange={vi.fn()}
+          onChangeRole={vi.fn()}
+          onRemove={vi.fn()}
+          onSuspend={vi.fn()}
+          onActivate={vi.fn()}
+          onInvite={() =>
+            setEntryRefusals(
+              new Map(
+                parseInvitationEntryRefusals(refusal).map((entry) => [
+                  `${entry.kind}:${entry.targetId}`,
+                  entry.reason,
+                ]),
+              ),
+            )
+          }
+          onRevoke={vi.fn()}
+          onRetryMembers={vi.fn()}
+          onRetryInvitations={vi.fn()}
+        />
+      );
+    }
+    renderPureUi(<Page />);
     pick("Nhóm Kỹ sư ERP");
-    fireEvent.keyDown(
-      screen.getByRole("combobox", { name: copy.invitations.roleLabel }),
-      { key: "Enter" },
-    );
-    fireEvent.click(screen.getByRole("option", { name: copy.roles.guest }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.change(email(), { target: { value: "khach@dtvina.vn" } });
+    send();
 
     const refused = screen.getByRole("alert");
     expect(refused.textContent).toBe(
