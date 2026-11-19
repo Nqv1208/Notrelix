@@ -181,7 +181,10 @@ export {
   WorkspaceMembersSurface,
   type MembersTab,
   type WorkspaceMembersSurfaceProps,
+  type InvitationEntryOptions,
+  type InvitationEntryTarget,
 } from "./members/workspace-members-surface";
+export type { JobTitleOutcome } from "./members/edit-job-title-dialog";
 
 // ── Settings (WX-SET-001) ─────────────────────────────────────────
 export { workspaceSettingsCatalog } from "./settings/workspace-settings.catalog";

@@ -256,8 +256,20 @@ export function resolveTimeZone(value: string): string | null {
   }
 }
 
+/**
+ * A Team or Space the invitation puts the person into when they accept (WSP-026). Team roles are
+ * `member` and `lead`; Space roles are `viewer`, `member` and `admin`. A Guest never gets `lead` or `admin`.
+ */
+export interface InvitationEntryInput {
+  kind: "team" | "space";
+  targetId: string;
+  role: "member" | "lead" | "viewer" | "admin";
+}
+
 export interface CreateWorkspaceInvitationInput {
   email: string;
   /** Member or Guest only (WSP-026); Admin is granted after joining. */
   role: Extract<WorkspaceRole, "member" | "guest">;
+  /** Optional initial Team and Space entries, applied together with the membership on acceptance. */
+  initialEntries?: readonly InvitationEntryInput[];
 }
