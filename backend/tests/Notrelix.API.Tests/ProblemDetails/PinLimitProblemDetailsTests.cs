@@ -8,9 +8,9 @@ using DomainBusinessRuleException = Notrelix.Domain.Common.Exceptions.BusinessRu
 namespace Notrelix.API.Tests.ProblemDetails;
 
 /// <summary>
-/// The 51st pin of a member is refused with the stable code <c>workspaces.navigation.pin_limit_reached</c> (status
-/// unchanged, 400), so a client can show its own translated message instead of the producer's English text.
-/// Other Workspaces rules keep the generic business-rule mapping.
+/// The 51st pin of a member is refused as a business rule (400) that carries the stable <c>ruleCode</c>
+/// <c>Workspaces_Navigation_PinLimitReached</c>, so a client shows its own translated message instead of the
+/// producer's English text. Another navigation rule carries its own rule code.
 /// </summary>
 public class PinLimitProblemDetailsTests
 {
@@ -18,7 +18,7 @@ public class PinLimitProblemDetailsTests
         Mock.Of<ILogger<GlobalExceptionHandler>>(),
         Microsoft.Extensions.Options.Options.Create(new IdempotencyOptions()));
 
-    private async Task<(int Status, string? ErrorCode)> MapAsync(Exception exception)
+    private async Task<(int Status, JsonElement Body)> MapAsync(Exception exception)
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
@@ -27,27 +27,26 @@ public class PinLimitProblemDetailsTests
         await _handler.TryHandleAsync(context, exception, default);
 
         context.Response.Body.Position = 0;
-        var json = await JsonSerializer.DeserializeAsync<JsonElement>(context.Response.Body);
-        return (context.Response.StatusCode, json.GetProperty("errorCode").GetString());
+        return (context.Response.StatusCode, await JsonSerializer.DeserializeAsync<JsonElement>(context.Response.Body));
     }
 
     [Fact]
-    public async Task ThePinLimit_AnswersItsStableCode_WithTheUnchangedStatus()
+    public async Task ThePinLimit_IsABusinessRule_WithItsStableRuleCode()
     {
-        var (status, code) = await MapAsync(new DomainBusinessRuleException(
+        var (status, body) = await MapAsync(new DomainBusinessRuleException(
             WorkspaceRuleCodes.Workspaces_Navigation_PinLimitReached, "A member can pin at most 50 resources in a workspace."));
 
         status.Should().Be(StatusCodes.Status400BadRequest);
-        code.Should().Be("workspaces.navigation.pin_limit_reached");
+        body.GetProperty("errorCode").GetString().Should().Be("business_rule.violation");
+        body.GetProperty("ruleCode").GetString().Should().Be("Workspaces_Navigation_PinLimitReached");
     }
 
     [Fact]
-    public async Task AnotherNavigationRule_KeepsTheGenericBusinessRuleCode()
+    public async Task AnotherNavigationRule_CarriesItsOwnRuleCode()
     {
-        var (status, code) = await MapAsync(new DomainBusinessRuleException(
+        var (_, body) = await MapAsync(new DomainBusinessRuleException(
             WorkspaceRuleCodes.Workspaces_Navigation_UnsupportedResourceKind, "kind"));
 
-        status.Should().Be(StatusCodes.Status400BadRequest);
-        code.Should().Be("business_rule.violation");
+        body.GetProperty("ruleCode").GetString().Should().Be("Workspaces_Navigation_UnsupportedResourceKind");
     }
 }

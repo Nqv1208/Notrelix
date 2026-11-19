@@ -4,7 +4,6 @@ public static class ErrorCodes
 {
     public const string ValidationFailed = "validation.failed";
     public const string BusinessRuleViolation = "business_rule.violation";
-    public const string PinLimitReached = "workspaces.navigation.pin_limit_reached";
     public const string Unauthorized = "auth.unauthorized";
     public const string Forbidden = "auth.forbidden";
     public const string EmailNotConfirmed = Notrelix.Application.Common.Security.AccessDenialCodes.EmailNotConfirmed;

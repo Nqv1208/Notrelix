@@ -4,7 +4,8 @@ import {
   buildLibraryEntries,
   buildSpaceIndex,
   libraryEntryKey,
-  PIN_LIMIT_REACHED_CODE,
+  describeWorkspaceFailure,
+  PIN_LIMIT_REACHED_RULE,
   spacePathLabel,
   type LibraryEntry,
 } from "@notrelix/features-workspace/core";
@@ -154,11 +155,19 @@ export function LibraryPage() {
         return next;
       });
       if (failure) {
-        toastFailure(copy.toasts.pinFailed, failure, (refused) =>
-          refused.errorCode === PIN_LIMIT_REACHED_CODE
-            ? copy.toasts.pinLimitReached
-            : copy.toasts.pinFailedHint,
-        );
+        // The cap of 50 is said in the member's language, not in the producer's English text.
+        if (
+          describeWorkspaceFailure(failure).ruleCode === PIN_LIMIT_REACHED_RULE
+        )
+          toast.error(copy.toasts.pinFailed, {
+            description: copy.toasts.pinLimitReached,
+          });
+        else
+          toastFailure(
+            copy.toasts.pinFailed,
+            failure,
+            copy.toasts.pinFailedHint,
+          );
         return;
       }
       const forms = pinned

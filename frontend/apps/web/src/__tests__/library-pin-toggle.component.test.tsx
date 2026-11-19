@@ -197,7 +197,8 @@ const PIN_LIMIT = {
   status: 400,
   details: {
     status: 400,
-    errorCode: "workspaces.navigation.pin_limit_reached",
+    errorCode: "business_rule.violation",
+    ruleCode: "Workspaces_Navigation_PinLimitReached",
     detail: "A member can pin at most 50 resources in a workspace.",
   },
 };

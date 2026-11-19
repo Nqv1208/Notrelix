@@ -1252,11 +1252,12 @@ export const workspaceOperations = [
         return {
           status: 400,
           body: {
-            type: "https://docs.notrelix.com/problems/workspaces-navigation-pin_limit_reached",
-            title: "Pin limit reached",
+            type: "https://docs.notrelix.com/problems/business_rule-violation",
+            title: "Business rule violation",
             status: 400,
             detail: "A member can pin at most 50 resources in a workspace.",
-            errorCode: "workspaces.navigation.pin_limit_reached",
+            errorCode: "business_rule.violation",
+            ruleCode: "Workspaces_Navigation_PinLimitReached",
           },
         };
       }

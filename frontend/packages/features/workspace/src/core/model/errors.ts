@@ -21,8 +21,8 @@ export const EMAIL_NOT_CONFIRMED_CODE = "auth.email_not_confirmed";
 /** The producer's stable code for a Guest invitation refused because the workspace setting `AllowGuestInvites` is off. */
 export const GUEST_INVITES_OFF_CODE = "workspace.guest_invites_off";
 
-/** The producer's stable code for the 51st pin of a member in a workspace (the cap is 50). */
-export const PIN_LIMIT_REACHED_CODE = "workspaces.navigation.pin_limit_reached";
+/** The producer's `ruleCode` for the 51st pin of a member in a workspace (the cap is 50). */
+export const PIN_LIMIT_REACHED_RULE = "Workspaces_Navigation_PinLimitReached";
 
 /**
  * A reason that refines a failure without changing its kind: the request is
@@ -36,6 +36,8 @@ export interface WorkspaceFailure {
   readonly reason: WorkspaceFailureReason | null;
   /** The producer's `errorCode` extension, when present. */
   readonly errorCode: string | null;
+  /** The stable rule that refused the request (`ruleCode` extension), when the producer sent one. */
+  readonly ruleCode: string | null;
   /** The producer's human-readable `detail`, when present. */
   readonly detail: string | null;
   /** Field errors from a validation failure (`errors` extension). */
@@ -74,6 +76,7 @@ export function describeWorkspaceFailure(error: unknown): WorkspaceFailure {
   const candidate = (asRecord(error) ?? {}) as ErrorLike;
   const body = asRecord(candidate.details);
   const errorCode = typeof body?.errorCode === "string" ? body.errorCode : null;
+  const ruleCode = typeof body?.ruleCode === "string" ? body.ruleCode : null;
   const detail = typeof body?.detail === "string" ? body.detail : null;
   const fieldErrors = readFieldErrors(
     candidate.validationErrors ?? body?.errors,
@@ -103,7 +106,7 @@ export function describeWorkspaceFailure(error: unknown): WorkspaceFailure {
       ? "email-not-confirmed"
       : null;
 
-  return { kind, reason, errorCode, detail, fieldErrors };
+  return { kind, reason, errorCode, ruleCode, detail, fieldErrors };
 }
 
 /** The producer's stable code for deleting a Team that Spaces still list (LD-16). */
