@@ -1,12 +1,9 @@
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.CancelInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteGuestToResource;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.ResendResourceInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.RevokeResourceInvitation;
 using Notrelix.Application.Features.Workspaces.Public.Invitations;
-using Notrelix.Domain.Governance.Permissions;
-using Notrelix.Domain.Workspaces.Members;
 
 namespace Notrelix.Application.Tests.Features.Governance;
 

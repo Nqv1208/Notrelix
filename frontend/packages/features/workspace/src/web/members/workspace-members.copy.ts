@@ -96,6 +96,8 @@ export const en = {
       "An invitation to {{email}} is already waiting for an answer. Revoke it to send a new one.",
     alreadyMember:
       "{{email}} is already a member of this workspace, so no invitation was sent.",
+    guestInvitesOff:
+      "Guest invites are off in this workspace. Ask the Owner to turn them on.",
     roleLabel: "Role",
     send: "Send invitation",
     sending: "Sending…",
@@ -256,6 +258,8 @@ export const vi: WorkspaceMembersCopy = {
       "Đã có một lời mời tới {{email}} đang chờ trả lời. Thu hồi lời mời đó để gửi lời mời mới.",
     alreadyMember:
       "{{email}} đã là thành viên của không gian làm việc này nên chưa gửi lời mời.",
+    guestInvitesOff:
+      "Không gian làm việc này đang tắt lời mời khách. Hãy nhờ Chủ sở hữu bật lên.",
     roleLabel: "Vai trò",
     send: "Gửi lời mời",
     sending: "Đang gửi…",

@@ -29,7 +29,7 @@ public record InviteMemberCommand(
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
 ) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest, IGuestInvitationRequest
 {
-    bool IGuestInvitationRequest.IntroducesGuest => Role == WorkspaceRole.Guest;
+    bool IGuestInvitationRequest.IntroducesGuest => Role.IntroducesGuest();
 
     private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
         InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;

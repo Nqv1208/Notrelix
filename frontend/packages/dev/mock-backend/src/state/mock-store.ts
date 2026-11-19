@@ -4403,7 +4403,7 @@ export class MockStore {
       settings = {
         allowPublicSharing: false,
         enforceMfa: false,
-        allowGuestInvites: true,
+        allowGuestInvites: false,
         defaultMemberRole: "Member",
         invitationExpiryDays: 7,
         timeZone: "Asia/Ho_Chi_Minh",
