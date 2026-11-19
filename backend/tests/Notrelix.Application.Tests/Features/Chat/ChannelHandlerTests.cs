@@ -298,6 +298,82 @@ public class ChannelHandlerTests
     }
 
     [Fact]
+    public async Task RemoveChannelMember_AGuestWithAManagerRowCannotRemoveAnyone()
+    {
+        var general = PublicChannel();
+        var third = Guid.NewGuid();
+        general.AddMember(_guest, MembershipRole.Manager, Now);
+        general.AddMember(third, MembershipRole.Member, Now);
+        AsCaller(_guest);
+
+        var act = () => RemoveHandler().Handle(
+            new RemoveChannelMemberCommand(_workspaceId, general.Id, third), CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+        general.IsActiveMember(third).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RemoveChannelMember_AGuestMayLeaveOnTheirOwn_AndTheChannelSaysSo()
+    {
+        var general = PublicChannel();
+        general.AddMember(_guest, MembershipRole.Member, Now);
+        AsCaller(_guest);
+
+        var result = await RemoveHandler().Handle(
+            new RemoveChannelMemberCommand(_workspaceId, general.Id, _guest), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        general.IsActiveMember(_guest).Should().BeFalse();
+        _messages.Should().ContainSingle(m => m.SpaceId == general.Id && m.Content == ChatSystemMessages.MemberLeft);
+    }
+
+    [Fact]
+    public async Task RemoveChannelMember_AWorkspaceAdminOutsideTheChannelCannotRemoveTheOnlyManager()
+    {
+        var general = PublicChannel();
+        var admin = Guid.NewGuid();
+        SetCaller(admin, "Admin");
+
+        var act = () => RemoveHandler().Handle(
+            new RemoveChannelMemberCommand(_workspaceId, general.Id, _owner), CancellationToken.None);
+
+        var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.LastManager);
+        general.IsActiveManager(_owner).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RemoveChannelMember_APersonWhoIsNotAMemberChangesNothingAndWritesNoSystemMessage()
+    {
+        var general = PublicChannel();
+        var before = _messages.Count;
+        AsCaller(_owner);
+
+        var result = await RemoveHandler().Handle(
+            new RemoveChannelMemberCommand(_workspaceId, general.Id, _member), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        _messages.Count.Should().Be(before);
+    }
+
+    [Fact]
+    public async Task RemoveChannelMember_AMemberOutsideAPrivateChannelGetsNotFoundWhetherLeavingOrRemoving()
+    {
+        var secret = PrivateChannel();
+        secret.AddMember(_member, MembershipRole.Member, Now);
+        AsCaller(_outsider);
+
+        foreach (var target in new[] { _outsider, _member })
+        {
+            var act = () => RemoveHandler().Handle(
+                new RemoveChannelMemberCommand(_workspaceId, secret.Id, target), CancellationToken.None);
+            await act.Should().ThrowAsync<NotFoundException>();
+        }
+        secret.IsActiveMember(_member).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task SetChannelMemberRole_AManagerNamesASuccessorAndThenTheLastManagerMayLeave()
     {
         var general = PublicChannel();
