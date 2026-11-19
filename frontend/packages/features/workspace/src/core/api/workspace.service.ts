@@ -40,6 +40,7 @@ export interface WorkspaceSettingsEndpoints {
     profile: (workspaceId: string) => string;
     settings: (workspaceId: string) => string;
     archive: (workspaceId: string) => string;
+    unarchive: (workspaceId: string) => string;
     /** The delete write quotes the workspace version in the query (`DeleteWorkspace`). */
     remove: (workspaceId: string, expectedVersion: number) => string;
     transferOwnership: (workspaceId: string) => string;
@@ -52,6 +53,8 @@ type SettingsBody =
   OperationRequestBody<"Workspaces.Settings.UpdateWorkspaceSettings">;
 type ArchiveBody =
   OperationRequestBody<"Workspaces.Workspaces.ArchiveWorkspace">;
+type UnarchiveBody =
+  OperationRequestBody<"Workspaces.Workspaces.UnarchiveWorkspace">;
 type TransferOwnershipBody =
   OperationRequestBody<"Workspaces.Workspaces.TransferOwnership">;
 
@@ -203,6 +206,19 @@ export function createWorkspaceSettingsService(
     async archive(workspaceId: string, expectedVersion: number): Promise<void> {
       const body: ArchiveBody = { expectedVersion };
       await api.post<void>(endpoints.workspaces.archive(workspaceId), body);
+    },
+
+    /**
+     * Brings an archived workspace back (Owner only: lifecycle is not lent to an Admin). Quotes the
+     * workspace version the member last saw; answers 204, 412 when it moved meanwhile, 403 for anyone
+     * but the Owner.
+     */
+    async unarchive(
+      workspaceId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      const body: UnarchiveBody = { expectedVersion };
+      await api.post<void>(endpoints.workspaces.unarchive(workspaceId), body);
     },
 
     /**

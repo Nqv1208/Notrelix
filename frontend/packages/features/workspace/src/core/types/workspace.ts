@@ -101,6 +101,8 @@ export interface WorkspaceSummary {
   plan: "free" | "pro" | "business" | "enterprise";
   memberCount: number;
   isPersonal: boolean;
+  /** Read-only for every member until an owner unarchives it; as `GetWorkspace` and the lists report it. */
+  isArchived?: boolean;
   settings?: string;
 }
 

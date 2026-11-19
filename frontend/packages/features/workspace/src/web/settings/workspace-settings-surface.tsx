@@ -70,6 +70,12 @@ export interface WorkspaceSettingsSurfaceProps {
   readonly profileStatus: SaveStatus;
   readonly defaultsStatus: SaveStatus;
   readonly archiving: boolean;
+  /** The workspace is archived: the Danger zone offers Unarchive instead of Archive. */
+  readonly archived?: boolean;
+  /** Only the Owner unarchives (lifecycle is Owner-only, GOV-013). */
+  readonly canUnarchive?: boolean;
+  readonly unarchiving?: boolean;
+  readonly onUnarchive?: () => void;
   /** Only a workspace Owner deletes the workspace (`DeleteWorkspace`, owner decision 2026-11-01). */
   readonly canDelete: boolean;
   /** A personal workspace is never deleted: the action is explained and off. */
@@ -749,6 +755,87 @@ function DangerFlow({
 }
 
 /**
+ * The Danger zone of an archived workspace (`Wsp-Var-Danger-Archived`): the Archive card gives way to
+ * Unarchive, a plain confirmation without a typed name because nothing is lost by it. Only the Owner
+ * holds the action; an Admin reads why it is not theirs.
+ */
+function UnarchiveCard({
+  copy,
+  workspaceName,
+  canUnarchive,
+  disabled,
+  pending,
+  onConfirm,
+}: {
+  copy: WorkspaceSettingsCopy;
+  workspaceName: string;
+  canUnarchive: boolean;
+  disabled: boolean;
+  pending: boolean;
+  onConfirm: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const values = { workspace: workspaceName };
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h3 className="text-label text-foreground">
+          {copy.danger.unarchiveTitle}
+        </h3>
+        <p className="text-metadata text-muted-foreground">
+          {formatCopy(copy.danger.unarchiveDescription, values)}
+        </p>
+        {canUnarchive ? null : (
+          <p className="text-metadata text-muted-foreground">
+            {copy.danger.unarchiveOwnerOnly}
+          </p>
+        )}
+      </div>
+      {canUnarchive ? (
+        <>
+          <Button
+            size="sm"
+            disabled={disabled || pending}
+            aria-busy={pending || undefined}
+            onClick={() => setOpen(true)}
+            className="shrink-0 max-md:h-touch!"
+          >
+            {pending ? copy.danger.unarchiving : copy.danger.unarchiveAction}
+          </Button>
+          <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {formatCopy(copy.danger.unarchiveConfirmTitle, values)}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {copy.danger.unarchiveConfirmDescription}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel type="button" className="max-md:h-touch">
+                  {copy.danger.cancel}
+                </AlertDialogCancel>
+                <Button
+                  type="button"
+                  className="max-md:h-touch!"
+                  onClick={() => {
+                    setOpen(false);
+                    onConfirm();
+                  }}
+                >
+                  {copy.danger.unarchiveAction}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * Workspace settings (WX-SET-001) in grouped sections — Profile, Defaults,
  * Danger zone — each saved on its own with bound labels, inline validation
  * and conflict recovery. Archiving and deleting (Owner only) confirm by typing the workspace name.
@@ -763,6 +850,10 @@ export function WorkspaceSettingsSurface({
   profileStatus,
   defaultsStatus,
   archiving,
+  archived = false,
+  canUnarchive = false,
+  unarchiving = false,
+  onUnarchive,
   canDelete,
   isPersonal,
   deleting,
@@ -778,12 +869,14 @@ export function WorkspaceSettingsSurface({
   onReload,
   onRetryDefaults,
 }: WorkspaceSettingsSurfaceProps) {
-  const locked = !canManage || !versionAvailable;
+  const locked = !canManage || !versionAvailable || archived;
   const notice = !canManage
     ? copy.readOnly
-    : !versionAvailable
-      ? copy.versionUnavailable
-      : null;
+    : archived
+      ? copy.archivedReadOnly
+      : !versionAvailable
+        ? copy.versionUnavailable
+        : null;
 
   return (
     <div className="flex w-full max-w-5xl flex-col gap-6">
@@ -870,22 +963,33 @@ export function WorkspaceSettingsSurface({
             description={copy.danger.description}
             tone="danger"
           >
-            <DangerFlow
-              copy={copy}
-              texts={{
-                title: copy.danger.archiveTitle,
-                description: copy.danger.archiveDescription,
-                action: copy.danger.archiveAction,
-                pending: copy.danger.archiving,
-                confirmTitle: copy.danger.confirmTitle,
-                confirmDescription: copy.danger.confirmDescription,
-                confirmAction: copy.danger.confirmAction,
-              }}
-              workspaceName={workspaceName ?? ""}
-              disabled={!versionAvailable || !workspaceName}
-              pending={archiving}
-              onConfirm={onArchive}
-            />
+            {archived ? (
+              <UnarchiveCard
+                copy={copy}
+                workspaceName={workspaceName ?? ""}
+                canUnarchive={canUnarchive && !!onUnarchive}
+                disabled={!versionAvailable || !workspaceName}
+                pending={unarchiving}
+                onConfirm={() => onUnarchive?.()}
+              />
+            ) : (
+              <DangerFlow
+                copy={copy}
+                texts={{
+                  title: copy.danger.archiveTitle,
+                  description: copy.danger.archiveDescription,
+                  action: copy.danger.archiveAction,
+                  pending: copy.danger.archiving,
+                  confirmTitle: copy.danger.confirmTitle,
+                  confirmDescription: copy.danger.confirmDescription,
+                  confirmAction: copy.danger.confirmAction,
+                }}
+                workspaceName={workspaceName ?? ""}
+                disabled={!versionAvailable || !workspaceName}
+                pending={archiving}
+                onConfirm={onArchive}
+              />
+            )}
             {canTransfer ? (
               <TransferOwnershipFlow
                 copy={copy}

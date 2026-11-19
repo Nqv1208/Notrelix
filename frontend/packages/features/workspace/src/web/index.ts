@@ -89,6 +89,11 @@ export {
   type WorkspaceScopeState,
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
+export {
+  ArchivedWorkspaceBanner,
+  type ArchivedBannerState,
+  type ArchivedWorkspaceBannerProps,
+} from "./shell/archived-workspace-banner";
 
 // ── Inbox (Final-Inbox) ───────────────────────────────────────────
 export { workspaceInboxCatalog } from "./inbox/workspace-inbox.catalog";

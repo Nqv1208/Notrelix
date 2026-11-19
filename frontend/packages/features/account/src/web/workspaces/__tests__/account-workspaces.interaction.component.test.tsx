@@ -88,6 +88,7 @@ describe("AccountWorkspacesSurface", () => {
           workspaceFixture({
             id: "workspace-old",
             name: "Minh An Archive",
+            role: "owner",
             isDefault: false,
             isArchived: true,
           }),
@@ -115,6 +116,7 @@ describe("AccountWorkspacesSurface", () => {
           workspaceFixture({
             id: "workspace-old",
             name: "Minh An Archive",
+            role: "owner",
             isDefault: false,
             isArchived: true,
           }),
@@ -139,6 +141,37 @@ describe("AccountWorkspacesSurface", () => {
       }),
     );
     expect(props.onUnarchive).toHaveBeenCalledWith("workspace-old");
+  });
+
+  it("FUI[account.workspaces:archived-admin] an Admin sees an archived workspace with Open read-only and no Unarchive, because lifecycle is Owner-only", () => {
+    const copy = workspacesCopyFixture("en");
+    const { props } = renderWorkspaces({
+      ...workspacesDefaultScenario("en"),
+      workspaces: {
+        status: "ready",
+        data: [
+          workspaceFixture({
+            id: "workspace-old",
+            name: "Minh An Archive",
+            role: "admin",
+            isDefault: false,
+            isArchived: true,
+          }),
+        ],
+      },
+    });
+    const name = "Minh An Archive";
+    expect(
+      screen.queryByRole("button", {
+        name: copy.unarchiveLabel.replace("{{name}}", name),
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("link", {
+        name: copy.openLabel.replace("{{name}}", name),
+      }),
+    ).toBeTruthy();
+    expect(props.onUnarchive).not.toHaveBeenCalled();
   });
 
   it("FUI[account.workspaces:leave] asks first and leaves only after the confirmation", () => {

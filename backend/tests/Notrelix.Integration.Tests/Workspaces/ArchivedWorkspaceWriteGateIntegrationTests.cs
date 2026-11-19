@@ -190,6 +190,51 @@ public sealed class ArchivedWorkspaceWriteGateIntegrationTests : IAsyncLifetime
         (await StatusAsync(stack)).Should().Be(WorkspaceStatus.Archived);
     }
 
+    [Theory]
+    [InlineData("Member")]
+    [InlineData("Guest")]
+    public async Task AMemberOrGuest_CannotUnarchive_SoTheWorkspaceStaysArchivedAndUnchanged(string role)
+    {
+        var (stack, people) = await SeedAsync();
+        await ArchiveAsync(stack, stack.OwnerId);
+        var version = await VersionAsync(stack);
+        using var asPerson = As(stack, people[role]);
+
+        var refused = async () => await OrgTreeTestHost.SendAsync(asPerson, new UnarchiveWorkspaceCommand(stack.WorkspaceId, version));
+
+        await refused.Should().ThrowAsync<AppForbidden>();
+        (await StatusAsync(stack)).Should().Be(WorkspaceStatus.Archived);
+        (await VersionAsync(stack)).Should().Be(version);
+    }
+
+    [Fact]
+    public async Task AStaleVersion_RefusesTheUnarchive_AndTheWorkspaceStaysArchived()
+    {
+        var (stack, _) = await SeedAsync();
+        await ArchiveAsync(stack, stack.OwnerId);
+        var version = await VersionAsync(stack);
+        using var asOwner = As(stack, stack.OwnerId);
+
+        var stale = async () => await OrgTreeTestHost.SendAsync(asOwner, new UnarchiveWorkspaceCommand(stack.WorkspaceId, version - 1));
+
+        await stale.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>();
+        (await StatusAsync(stack)).Should().Be(WorkspaceStatus.Archived);
+        (await VersionAsync(stack)).Should().Be(version);
+    }
+
+    [Fact]
+    public async Task UnarchivingAnActiveWorkspace_IsASuccessfulNoOp_AndTheVersionIsUnchanged()
+    {
+        var (stack, _) = await SeedAsync();
+        var version = await VersionAsync(stack);
+        using var asOwner = As(stack, stack.OwnerId);
+
+        await OrgTreeTestHost.SendAsync(asOwner, new UnarchiveWorkspaceCommand(stack.WorkspaceId, version));
+
+        (await StatusAsync(stack)).Should().Be(WorkspaceStatus.Active);
+        (await VersionAsync(stack)).Should().Be(version);
+    }
+
     [Fact]
     public async Task Unarchiving_LetsTheSameWriteSucceedAgain()
     {
