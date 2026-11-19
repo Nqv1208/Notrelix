@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 
 from .model import load_authorities
-from .planner import FRONTEND_FULL_BASELINE
 from .runtime import ROOT
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -27,11 +26,7 @@ def jobs_missing_local_action_checkout(text: str) -> list[str]:
             offenders.append(match.group(1))
     return offenders
 PROVIDERS = {
-    "backend-ci.yml",
-    "frontend-ci.yml",
     "container-ci.yml",
-    "infra-ci.yml",
-    "docs-ci.yml",
     "security-ci.yml",
     "stack-smoke.yml",
 }
@@ -102,7 +97,7 @@ def check(root: Path = ROOT) -> None:
                     # standalone lanes; any second occurrence or use outside a
                     # transitional fallback stays forbidden.
                     transitional_fallback = (
-                        path.name in {"backend-ci.yml", "container-ci.yml", "infra-ci.yml"}
+                        path.name == "container-ci.yml"
                         and text.count(ref) == 1
                         and re.search(r"FALLBACK_[A-Z_]+:", text) is not None
                     )
@@ -120,170 +115,17 @@ def check(root: Path = ROOT) -> None:
         ci_text = ci_path.read_text(encoding="utf-8")
         if not re.search(r"^name:\s*Notrelix CI\s*$", ci_text, re.MULTILINE):
             errors.append("ci.yml must be named Notrelix CI")
-        if "python3 -m tools.deliveryctl plan" not in ci_text:
-            errors.append("ci.yml must invoke canonical deliveryctl plan")
-        for forbidden in (
-            "dotnet test",
-            "pnpm test",
-            "pnpm e2e",
-            "docker build",
-            "docker compose build",
-            "make docs-check",
-        ):
-            if forbidden in ci_text:
-                errors.append(f"ci.yml must not implement domain checks ({forbidden})")
+        if not re.search(r"^  ci-gate:\s*$", ci_text, re.MULTILINE):
+            errors.append("ci.yml must define the ci-gate closure job")
 
-    developer_workflows = (
-        "backend-ci.yml",
-        "frontend-ci.yml",
-        "docs-ci.yml",
-        "infra-ci.yml",
-        "container-ci.yml",
-    )
-    domain_workflows = developer_workflows + ("ci-definition.yml",)
-    for name in developer_workflows:
-        if "python3 -m tools.deliveryctl plan" in (workflows / name).read_text(encoding="utf-8"):
-            errors.append(f"{name}: canonical deliveryctl planner forbidden in domain workflow")
-    reusable_domain = domain_workflows + ("security-ci.yml",)
-    for name in reusable_domain:
+    for name in ("container-ci.yml", "security-ci.yml"):
         text = (workflows / name).read_text(encoding="utf-8")
         if "uses: ./.github/actions/emit-evidence" in text and "workflow_call:" not in text:
             errors.append(f"{name}: domain evidence requires reusable workflow_call entry")
         if "workflow_call:" in text and not re.search(r"inputs\.", text):
             errors.append(f"{name}: workflow_call entry must consume resolved inputs")
 
-    frontend = (workflows / "frontend-ci.yml").read_text(encoding="utf-8")
-    if re.search(r"has [^\n]+&&\s*require [^\n]+\|\|\s*true", frontend):
-        errors.append("frontend gate contains fail-open require/|| true pattern")
-    if "check:production-mock-isolation" not in frontend:
-        errors.append("frontend must verify production/mock artifact isolation")
-    if "restore-host-artifact.mjs" not in frontend:
-        errors.append("frontend exact-artifact restore contract missing")
-    if re.search(r"pnpm\s+audit", frontend):
-        errors.append("frontend provider must not duplicate dependency audit; security-ci.yml is the single owner")
-
-    # Frontend CI process reorganization v1.1 guards (SC-FE-001..014).
-    if re.search(r"^\s*(persona|state):\s*\[", frontend, re.MULTILINE):
-        errors.append("frontend workflow must not expose persona/state combinations as a GitHub matrix (SC-FE-010)")
-    if re.search(r"^\s*shard_index:\s*\[[^\]]+\]", frontend, re.MULTILINE):
-        errors.append("frontend mock shards must expand from four include cells, not an array cross product (SC-FE-004)")
-    shard_cells = re.findall(r"- \{shard_index: (\d+), shard_label: \"\d/4\"\}", frontend)
-    if sorted(shard_cells) != ["0", "1", "2", "3"]:
-        errors.append(f"frontend mock shard expansion must be exactly 4 cells (0..3), got {sorted(shard_cells)} (SC-FE-004)")
-    if "e2e:real" in frontend:
-        errors.append("frontend workflow must not introduce mandatory real-backend E2E (SC-FE-012)")
-    host_runtime_start = frontend.find("\n  host-runtime:\n")
-    if host_runtime_start < 0:
-        errors.append("frontend workflow must define a host-runtime semantic stage (SC-FE-007)")
-    else:
-        host_tail = frontend[host_runtime_start + 1:]
-        next_job = re.search(r"\n  [a-z][a-z0-9-]*:\n", host_tail)
-        host_block = host_tail[: next_job.start()] if next_job else host_tail
-        if re.search(r"(pnpm --filter [^\n]* build|pnpm build|npm run build|docker build)", host_block):
-            errors.append("host runtime must consume the exact artifact and never rebuild (SC-FE-007)")
-    gate_match = re.search(r"^  frontend-gate:\n((?:  .*\n|\n)*)", frontend, re.MULTILINE)
-    if not gate_match:
-        errors.append("frontend workflow must define the frontend-gate final closure job (SC-FE-009)")
-    else:
-        gate_block = gate_match.group(1)
-        for required_stage in (
-            "repository-integrity",
-            "workspace-tests",
-            "application-build",
-            "host-runtime",
-            "ui-system",
-            "mock-system",
-        ):
-            if required_stage not in gate_block:
-                errors.append(f"frontend gate must require the {required_stage} semantic stage (SC-FE-009)")
-    profile_sources = re.findall(r'FALLBACK_PROFILE_JSON: \'([^\']+)\'', frontend)
-    if not profile_sources:
-        errors.append("frontend workflow must carry the frontend-full-baseline fallback profile (SC-FE-002)")
-    else:
-        try:
-            import json as _json
-
-            fallback_profile = _json.loads(profile_sources[0])
-            if fallback_profile != FRONTEND_FULL_BASELINE:
-                errors.append("frontend fallback profile must be the full migration profile (SC-FE-002)")
-        except ValueError:
-            errors.append("frontend fallback profile JSON is malformed (SC-FE-002)")
-
-    # v1.1 closure guards (SC-FE-015..017): the profile is an executable contract —
-    # no dynamic matrix relay, bounded full-baseline topology, explicit step-output contracts.
-    if "application_build_matrix_json" in frontend or "host_runtime_matrix_json" in frontend:
-        errors.append("frontend workflow must not relay dynamic build/runtime matrices through select outputs (SC-FE-015)")
-    app_build_start = frontend.find("\n  application-build:\n")
-    if app_build_start < 0:
-        errors.append("frontend workflow must define the application-build semantic stage (SC-FE-016)")
-    else:
-        app_tail = frontend[app_build_start + 1:]
-        next_app_job = re.search(r"\n  [a-z][a-z0-9-]*:\n", app_tail)
-        app_block = app_tail[: next_app_job.start()] if next_app_job else app_tail
-        build_cells = re.findall(r"- \{component_id: ([a-z]+)\}", app_block)
-        if sorted(build_cells) != ["marketing", "mobile", "web"]:
-            errors.append(
-                f"application-build must schedule exactly the full-baseline build topology web/marketing/mobile, got {build_cells} (SC-FE-016)"
-            )
-    if host_runtime_start >= 0:
-        runtime_cells = re.findall(r"- \{component_id: ([a-z]+)\}", host_block)
-        if sorted(runtime_cells) != ["marketing", "web"]:
-            errors.append(
-                f"host-runtime must schedule exactly the full-baseline runtime topology web/marketing, got {runtime_cells} (SC-FE-016)"
-            )
-    if "resolve-frontend-ci-contract.mjs" not in frontend:
-        errors.append("frontend workflow must resolve planner contracts via resolve-frontend-ci-contract.mjs (SC-FE-017)")
-    if "steps.contract.outputs" not in frontend:
-        errors.append("frontend contract resolution must flow through explicit step outputs (SC-FE-017)")
-
-    backend = (workflows / "backend-ci.yml").read_text(encoding="utf-8")
-    critical_backend_fqns = (
-        "Notrelix.Architecture.Tests.DomainPurity.DomainBoundedContextSignatureTests",
-        "Notrelix.Architecture.Tests.DomainPurity.DomainReferenceGraphTests",
-        "Notrelix.Architecture.Tests.ApplicationLayer.HandlerDataPortGateTests",
-        "Notrelix.Architecture.Tests.ApplicationLayer.HandlerConstructorPortGateTests",
-        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_CanonicalDocs_MatchFrozenSevenStageTopology",
-        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_LegacyGapCount_IsZero",
-        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.IntentionalAllowlistEntries_MustDescribePermanentArchitectureExceptions",
-        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllowlistEntries_AreNotStale",
-        "Notrelix.Architecture.Tests.Pipeline.PipelineClosureArchitectureTests.PipelineClosure_AllProductionRequests_HaveValidDescriptors",
-        "Notrelix.Architecture.Tests.CrossContextPersistenceBoundaryTests",
-        "Notrelix.Architecture.Tests.CrossContextApplicationDependencyTests",
-        "Notrelix.Architecture.Tests.DataAccess.CrossContextCascadeArchitectureTests",
-        "Notrelix.Architecture.Tests.Contracts.PublicSemanticContractArchitectureTests",
-        "Notrelix.Architecture.Tests.ApplicationLayer.ApplicationTransportBoundaryTests",
-        "Notrelix.Architecture.Tests.Events.IntegrationEventOwnershipArchitectureTests",
-        "Notrelix.Architecture.Tests.LayerRules.CommonEntitlementsAntiRegressionTests",
-        "Notrelix.Architecture.Tests.FeatureStructureArchitectureTests",
-        "Notrelix.Infrastructure.Tests.Data.Rls.RlsPolicyVerificationTests",
-        "Notrelix.Infrastructure.Tests.Data.DomainEventInterceptorTests",
-        "Notrelix.Platform.Tests.Messaging.Reliability.OrderingEnforcerTests",
-        "Notrelix.Platform.Tests.Messaging.Reliability.PoisonDetectorTests",
-        "Notrelix.Platform.Tests.Messaging.Consumers.ConsumerHostDeliveryContractTests",
-        "Notrelix.API.Tests.Idempotency.IdempotencyEndpointContractTests",
-        "Notrelix.Integration.Tests.Data.Ops.IdempotencyStoreIntegrationTests",
-        "Notrelix.Integration.Tests.Integration.TenantIsolationTests",
-        "Notrelix.Integration.Tests.Integration.CrossTenantIsolationTests",
-        "Notrelix.Integration.Tests.Integration.RlsRuntimeEnforcementTests",
-        "Notrelix.Integration.Tests.Auth.ApiTokenFlowTests",
-        "Notrelix.Integration.Tests.Auth.ApiTokenHttpFlowTests",
-        "Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterIntegrationTests",
-        "Notrelix.Integration.Tests.Messaging.DeduplicationConsumeFilterFullIntegrationTests",
-        "Notrelix.Integration.Tests.Data.OutboxDispatchContractTests",
-        "Notrelix.Integration.Tests.Data.OutboxClaimReclaimTests",
-        "Notrelix.Integration.Tests.Data.OutboxAtomicityTests",
-        "Notrelix.Integration.Tests.Data.MigrationSmokeTests",
-        "Notrelix.Integration.Tests.Integration.ProductionCompositionTests",
-        "Notrelix.Integration.Tests.Integration.Production.ProductionGraphTests",
-        "Notrelix.Integration.Tests.Messaging.RealtimeResourceChangedConsumerIntegrationTests",
-    )
-    for fqn in critical_backend_fqns:
-        if fqn in backend:
-            errors.append(f"backend workflow retains critical FQN; move to backend/tests/ci-proofs.json: {fqn}")
-    if "verify-required-proofs-trx.py" not in backend:
-        errors.append("backend provider must verify registry proof profiles via verify-required-proofs-trx.py")
-    if "backend/tests/ci-proofs.json" not in backend:
-        errors.append("backend provider must consume the backend-owned proof registry")
+    backend = (workflows / "ci.yml").read_text(encoding="utf-8")
     if not (root / "backend/tests/ci-proofs.json").exists():
         errors.append("backend internal proof registry backend/tests/ci-proofs.json missing")
     if re.search(r"redis:7-alpine", backend):
@@ -357,22 +199,6 @@ def check(root: Path = ROOT) -> None:
     for forbidden in ("publish_candidate", "docker push", "attest"):
         if forbidden in outside_publish:
             errors.append(f"container provider must not publish/attest outside the trusted publish job ({forbidden})")
-
-    docs = (workflows / "docs-ci.yml").read_text(encoding="utf-8")
-    if "make docs-check" not in docs:
-        errors.append("docs provider must execute repository documentation governance")
-
-    infra_workflow = (workflows / "infra-ci.yml").read_text(encoding="utf-8")
-    if "python3 scripts/ci/validate-infra.py" not in infra_workflow:
-        errors.append("infra provider must execute validate-infra.py")
-    if "--runtime-images" in infra_workflow:
-        errors.append("infra provider must not consume planner runtime contract")
-    if "nginx_ref" not in infra_workflow:
-        errors.append("infra provider must validate nginx syntax with the locked nginx_ref")
-    if re.search(r"nginx:1\.27-alpine", infra_workflow):
-        errors.append("infra workflow must use the immutable locked nginx ref (@sha256:), not a mutable tag")
-    if "write-test-env.sh" not in infra_workflow or "deploy_env_var" not in infra_workflow:
-        errors.append("infra provider must combine credentials env with resolved NOTRELIX_* runtime image env")
 
     infra_helper = (root / "scripts/ci/validate-infra.py").read_text(encoding="utf-8")
     if (
