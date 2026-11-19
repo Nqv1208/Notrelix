@@ -70,6 +70,13 @@ public static class ProblemDetailsMapper
                 ex.Message,
                 null
             ),
+            Notrelix.Domain.Common.Exceptions.BusinessRuleException { RuleCode: Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Navigation_PinLimitReached } ex => (
+                StatusCodes.Status400BadRequest,
+                ErrorCodes.PinLimitReached,
+                "Pin limit reached",
+                ex.Message,
+                null
+            ),
             AppBusinessRuleException ex => (
                 StatusCodes.Status400BadRequest,
                 ErrorCodes.BusinessRuleViolation,

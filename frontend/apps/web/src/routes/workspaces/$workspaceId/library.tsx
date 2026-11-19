@@ -4,6 +4,7 @@ import {
   buildLibraryEntries,
   buildSpaceIndex,
   libraryEntryKey,
+  PIN_LIMIT_REACHED_CODE,
   spacePathLabel,
   type LibraryEntry,
 } from "@notrelix/features-workspace/core";
@@ -153,7 +154,11 @@ export function LibraryPage() {
         return next;
       });
       if (failure) {
-        toastFailure(copy.toasts.pinFailed, failure, copy.toasts.pinFailedHint);
+        toastFailure(copy.toasts.pinFailed, failure, (refused) =>
+          refused.errorCode === PIN_LIMIT_REACHED_CODE
+            ? copy.toasts.pinLimitReached
+            : copy.toasts.pinFailedHint,
+        );
         return;
       }
       const forms = pinned

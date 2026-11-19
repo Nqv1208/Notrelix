@@ -21,6 +21,9 @@ export const EMAIL_NOT_CONFIRMED_CODE = "auth.email_not_confirmed";
 /** The producer's stable code for a Guest invitation refused because the workspace setting `AllowGuestInvites` is off. */
 export const GUEST_INVITES_OFF_CODE = "workspace.guest_invites_off";
 
+/** The producer's stable code for the 51st pin of a member in a workspace (the cap is 50). */
+export const PIN_LIMIT_REACHED_CODE = "workspaces.navigation.pin_limit_reached";
+
 /**
  * A reason that refines a failure without changing its kind: the request is
  * `forbidden`, and the recovery is not "ask an owner" but "confirm your email".
