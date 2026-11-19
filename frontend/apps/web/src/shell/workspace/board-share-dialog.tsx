@@ -23,6 +23,7 @@ import {
   buildSharingRows,
   fillBoardShareCopy,
   guestInviteConflict,
+  guestInviteFailureHint,
   SHARING_LEVEL_OF,
   shareToneFor,
   type ShareCandidate,
@@ -477,7 +478,10 @@ export function BoardShareDialog({
                   copy,
                 );
                 if (conflict) setGuestConflict(conflict);
-                else toastFailure(copy.add.inviteFailed, error, "");
+                else
+                  toastFailure(copy.add.inviteFailed, error, (failure) =>
+                    guestInviteFailureHint(failure.errorCode, copy),
+                  );
                 return false;
               }
             }

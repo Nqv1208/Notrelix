@@ -65,3 +65,14 @@ export function formatInviteDate(iso: string): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
 }
+
+/** The producer's code for a Guest invitation refused because the workspace setting AllowGuestInvites is off. */
+const GUEST_INVITES_OFF = "workspace.guest_invites_off";
+
+/** The recovery line for a refused invitation: who can switch guest invites on; "" for any other refusal. */
+export function guestInviteFailureHint(
+  errorCode: string | null,
+  copy: BoardShareCopy,
+): string {
+  return errorCode === GUEST_INVITES_OFF ? copy.add.guestInvitesOff : "";
+}
