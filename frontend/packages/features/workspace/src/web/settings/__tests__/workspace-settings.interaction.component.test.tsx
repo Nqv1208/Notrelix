@@ -183,6 +183,24 @@ describe("WorkspaceSettingsSurface", () => {
     expect(within(form(copy.profile.title)).getByText(copy.saved)).toBeTruthy();
   });
 
+  it("FUI[workspace.settings:saving] holds both Save buttons and says it is saving while a write is in flight", () => {
+    renderSettings({
+      ...settingsDefaultScenario(),
+      profileStatus: { state: "saving" },
+      defaultsStatus: { state: "saving" },
+    });
+    for (const title of [copy.profile.title, copy.defaults.title]) {
+      const save = within(form(title)).getByRole("button", {
+        name: copy.saving,
+      }) as HTMLButtonElement;
+      expect(save.disabled).toBe(true);
+    }
+    expect(
+      screen.queryByRole("button", { name: copy.save }),
+      "no live Save while a write is open",
+    ).toBeNull();
+  });
+
   it("FUI[workspace.settings:archive] archives only after typing the workspace name", () => {
     const props = renderSettings();
     fireEvent.click(
