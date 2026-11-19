@@ -38,6 +38,35 @@ public static class NavigationResourceReference
         }
     }
 
+    /// <summary>
+    /// Of the stored references, the ones the caller can still read, decided by the same visibility as
+    /// <see cref="EnsureInWorkspaceAsync"/>; the rest are gone or no longer shared with the caller.
+    /// </summary>
+    public static async Task<IReadOnlySet<(string Kind, Guid ResourceId)>> ReadableAsync(
+        IResourceVisibility visibility,
+        Guid workspaceId,
+        Guid userId,
+        IReadOnlyCollection<(string Kind, Guid ResourceId)> references,
+        CancellationToken cancellationToken)
+    {
+        var readable = new HashSet<(string Kind, Guid ResourceId)>();
+        if (references.Any(r => r.Kind == NavigationResourceKinds.Board))
+        {
+            var boards = (await visibility.VisibleBoardIdsAsync(workspaceId, userId, cancellationToken))
+                .Concat(await visibility.VisibleArchivedBoardIdsAsync(workspaceId, userId, cancellationToken))
+                .ToHashSet();
+            readable.UnionWith(references.Where(r => r.Kind == NavigationResourceKinds.Board && boards.Contains(r.ResourceId)));
+        }
+        if (references.Any(r => r.Kind == NavigationResourceKinds.Page))
+        {
+            var pages = (await visibility.VisiblePageIdsAsync(workspaceId, userId, cancellationToken))
+                .Concat(await visibility.VisibleTrashedPageIdsAsync(workspaceId, userId, cancellationToken))
+                .ToHashSet();
+            readable.UnionWith(references.Where(r => r.Kind == NavigationResourceKinds.Page && pages.Contains(r.ResourceId)));
+        }
+        return readable;
+    }
+
     // The same collection visibility the lists apply; an archived Board or trashed Page is still read by the same
     // decision as an active one, so opening one keeps working.
     private static async Task<bool> CanReadAsync(

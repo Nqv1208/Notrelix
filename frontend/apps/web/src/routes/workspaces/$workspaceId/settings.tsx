@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  canManageWorkspace,
   describeWorkspaceFailure,
   isWorkspaceAdmin,
   type WorkspaceFailure,
@@ -291,7 +292,7 @@ export function SettingsPage() {
       <WorkspaceSettingsSurface
         copy={copy}
         workspaceName={workspace?.name ?? null}
-        canManage={isWorkspaceAdmin(viewer.role)}
+        canManage={canManageWorkspace(viewer.role)}
         versionAvailable={version !== undefined}
         profile={profile}
         defaults={sectionState(settings, settings.data)}

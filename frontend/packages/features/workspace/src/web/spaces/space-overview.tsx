@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@notrelix/ui-web";
 import type { WorkspaceDestination } from "../../core/model/navigation";
 import { formatCopy, type ShellNavigation } from "../shell/shell-models";
@@ -160,9 +160,9 @@ function BoardRow({
       data-f="br"
       destination={{ section: "board", boardId: row.id }}
       navigation={navigation}
-      style={{ gridTemplateColumns: boardGrid(shows) }}
+      style={{ "--board-cols": boardGrid(shows) } as CSSProperties}
       className={cn(
-        "box-content grid min-h-[58px] items-center gap-3.5 border-t border-line px-4 first:border-t-0 hover:bg-background",
+        "box-content grid min-h-[58px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-1 border-t border-line px-4 first:border-t-0 hover:bg-background max-md:py-2 md:grid-cols-[var(--board-cols)]",
         FOCUS,
         "focus-visible:ring-inset",
       )}
@@ -194,33 +194,39 @@ function BoardRow({
           ) : null}
         </span>
       </span>
-      {shows.progress ? <BoardProgress row={row} /> : null}
+      {shows.progress ? (
+        <span className="max-md:hidden md:contents">
+          <BoardProgress row={row} />
+        </span>
+      ) : null}
       {shows.attention ? (
         row.attention ? (
           <span
             data-f="att"
             className={cn(
-              "text-crumb leading-[1.45]",
+              "text-crumb leading-[1.45] max-md:order-last max-md:col-span-2",
               ATTENTION_CLASS[row.attention.tone],
             )}
           >
             {row.attention.text}
           </span>
         ) : (
-          <span />
+          <span className="max-md:hidden" />
         )
       ) : null}
       {shows.people ? (
-        row.people ? (
-          <AvatarStack
-            dataF="bstack"
-            people={row.people}
-            ringClass="ring-2 ring-popover dark:ring-card"
-            avatarClass="size-[22px] text-avatar-sm"
-          />
-        ) : (
-          <span />
-        )
+        <span className="max-md:hidden md:contents">
+          {row.people ? (
+            <AvatarStack
+              dataF="bstack"
+              people={row.people}
+              ringClass="ring-2 ring-popover dark:ring-card"
+              avatarClass="size-[22px] text-avatar-sm"
+            />
+          ) : (
+            <span />
+          )}
+        </span>
       ) : null}
       <span
         data-f="when"
@@ -291,14 +297,14 @@ export function BoardsSection({
           data-f="list"
           className={cn(
             LIST,
-            "max-xl:overflow-x-auto max-xl:[&>*]:min-w-[760px]",
+            "md:max-xl:overflow-x-auto md:max-xl:[&>*]:min-w-[760px]",
           )}
         >
           <div
             data-f="lh"
             aria-hidden="true"
-            style={{ gridTemplateColumns: boardGrid(shows) }}
-            className="box-content grid h-[34px] items-center gap-3.5 border-b border-line bg-background px-4 text-micro leading-[1.45] font-semibold text-meta-foreground"
+            style={{ "--board-cols": boardGrid(shows) } as CSSProperties}
+            className="box-content grid h-[34px] items-center gap-3.5 border-b border-line bg-background px-4 text-micro leading-[1.45] font-semibold text-meta-foreground max-md:hidden md:grid-cols-[var(--board-cols)]"
           >
             {head(o.listHead.board)}
             {shows.progress ? head(o.listHead.progress) : null}

@@ -59,7 +59,11 @@ import type {
   TeamPersonView,
   TypedToken,
 } from "./space-members-models";
-import { SpaceMembersView, type MemberMenuState } from "./space-members-view";
+import {
+  SpaceMembersView,
+  type MemberMenuState,
+  type SpaceMembersViewProps,
+} from "./space-members-view";
 import {
   SpaceSettingsPanel,
   type SpaceDetailsValues,
@@ -95,6 +99,12 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly viewAs: { readonly onExit: () => void } | null;
   /** Members tab (the members panel). */
   readonly members: SectionState<readonly SpaceMemberEntry[]>;
+  /**
+   * The people the members tab lists when they come from a server-paged read (the role and kind
+   * filters run on the producer). `members` stays the whole roster for the dialogs.
+   */
+  readonly membersTab?: SectionState<readonly SpaceMemberEntry[]>;
+  readonly membersPaging?: SpaceMembersViewProps["paging"];
   readonly candidateUsers: SectionState<readonly SpaceMemberCandidate[]>;
   readonly candidateTeams: SectionState<readonly SpaceTeam[]>;
   /** Workspace members by user id: email and role for the second line. */
@@ -487,7 +497,8 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
             copy={copy}
             navigation={navigation}
             spaceName={node.name}
-            members={props.members}
+            members={props.membersTab ?? props.members}
+            paging={props.membersPaging}
             directory={props.directory}
             teams={
               props.candidateTeams.status === "ready"

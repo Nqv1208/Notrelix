@@ -55,10 +55,11 @@ internal sealed class InMemoryWorkspaceNavigationStore : IWorkspaceNavigationSto
             p.WorkspaceId == workspaceId && p.UserId == userId && p.ResourceKind == resourceKind && p.ResourceId == resourceId));
     }
 
-    public Task<int> CountPinsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<PinnedResource>> LoadPinsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
     {
         TrackRead(workspaceId, userId);
-        return Task.FromResult(Pins.Count(p => p.WorkspaceId == workspaceId && p.UserId == userId));
+        IReadOnlyList<PinnedResource> result = Pins.Where(p => p.WorkspaceId == workspaceId && p.UserId == userId).ToList();
+        return Task.FromResult(result);
     }
 
     public void AddPin(PinnedResource pin) => Pins.Add(pin);

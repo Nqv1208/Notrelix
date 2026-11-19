@@ -226,6 +226,7 @@ export {
 export { useWorkspaceSpacesCopy } from "./spaces/use-workspace-spaces-copy";
 export {
   createUseSpaceMembers,
+  createUseSpaceMembersPage,
   createUseSpaceTree,
   createUseSpace,
   createUseDeletedSpaces,

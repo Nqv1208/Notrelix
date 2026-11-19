@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  canManageWorkspace,
   describeWorkspaceFailure,
-  isWorkspaceAdmin,
 } from "@notrelix/features-workspace/core";
 import {
   createUseWorkspaceSettings,
@@ -97,7 +97,7 @@ export function SecurityPage() {
       copy={copy}
       frame={frame}
       view={view}
-      canManage={isWorkspaceAdmin(viewer.role)}
+      canManage={canManageWorkspace(viewer.role)}
       saving={mutations.updateSettings.isPending}
       error={error}
       onToggleLinks={onToggle}

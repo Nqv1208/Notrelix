@@ -9,7 +9,7 @@ export const en = {
   descriptionLoading:
     "How this workspace is named, set up for new people, and retired.",
   readOnly:
-    "Only workspace admins and owners can change these settings. You can see them here.",
+    "Only the workspace owner can change these settings. You can see them here.",
   archivedReadOnly:
     "This workspace is archived, so its settings are read-only until the owner unarchives it.",
   versionUnavailable:
@@ -188,7 +188,7 @@ export const vi: WorkspaceSettingsCopy = {
   descriptionLoading:
     "Tên, thiết lập cho người mới và việc lưu trữ không gian làm việc này.",
   readOnly:
-    "Chỉ quản trị viên và chủ sở hữu mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
+    "Chỉ chủ sở hữu workspace mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
   archivedReadOnly:
     "Không gian làm việc này đang được lưu trữ nên cài đặt chỉ xem được cho đến khi chủ sở hữu bỏ lưu trữ.",
   versionUnavailable:

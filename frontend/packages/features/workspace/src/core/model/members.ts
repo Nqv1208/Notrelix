@@ -69,6 +69,11 @@ export function isWorkspaceAdmin(role: WorkspaceRole | null): boolean {
   return role === "owner" || role === "admin";
 }
 
+/** `ManageWorkspace` (settings, sharing switch, archive, handover) is the Owner's alone; the role baseline gives an Admin no write here. */
+export function canManageWorkspace(role: WorkspaceRole | null): boolean {
+  return role === "owner";
+}
+
 /** Owners who still hold the role actively (suspended owners do not count). */
 export function countOwners(members: readonly WorkspaceMember[]): number {
   return members.filter(
