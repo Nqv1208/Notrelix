@@ -23,6 +23,9 @@ public sealed class ChatDigestOptions
     /// <summary>The length of one digest window; a person gets at most one digest per window. Default 24 hours (a UTC day).</summary>
     public TimeSpan Window { get; init; } = TimeSpan.FromHours(24);
 
+    /// <summary>How many completed windows before the latest one a pass also sends when they were missed (the job was down). Default 3; 0 is the latest window only.</summary>
+    public int CatchUpWindows { get; init; } = 3;
+
     /// <summary>The most message lines one digest shows; the rest read "and N more". Default 10.</summary>
     public int MaxItems { get; init; } = 10;
 
@@ -35,6 +38,7 @@ public sealed class ChatDigestOptionsValidator : IValidateOptions<ChatDigestOpti
     public static readonly TimeSpan MinInterval = TimeSpan.FromSeconds(10);
     public static readonly TimeSpan MaxInterval = TimeSpan.FromDays(1);
     public const int MaxLines = 50;
+    public const int MaxCatchUpWindows = 30;
     public const int MaxBatch = 5_000;
 
     public ValidateOptionsResult Validate(string? name, ChatDigestOptions options)
@@ -45,6 +49,8 @@ public sealed class ChatDigestOptionsValidator : IValidateOptions<ChatDigestOpti
             failures.Add($"{section}:Interval must be between {MinInterval} and {MaxInterval}.");
         if (options.Window < ChatDigestWindow.MinLength || options.Window > ChatDigestWindow.MaxLength)
             failures.Add($"{section}:Window must be between {ChatDigestWindow.MinLength} and {ChatDigestWindow.MaxLength}.");
+        if (options.CatchUpWindows is < 0 or > MaxCatchUpWindows)
+            failures.Add($"{section}:CatchUpWindows must be between 0 and {MaxCatchUpWindows}.");
         if (options.MaxItems is < 1 or > MaxLines)
             failures.Add($"{section}:MaxItems must be between 1 and {MaxLines}.");
         if (options.BatchSize is < 1 or > MaxBatch)
@@ -74,16 +80,21 @@ internal sealed class ChatDigestRunner(
     public async Task<ChatDigestRunResult> RunOnceAsync(CancellationToken cancellationToken)
     {
         var now = clock.UtcNow;
-        var window = ChatDigestWindow.Latest(now, options.Value.Window);
+        var windows = ChatDigestWindow.Recent(now, options.Value.Window, options.Value.CatchUpWindows);
 
         using var system = new SystemContextScope(tenant, logger, "chat-digest.run", Reason);
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         await rls.ApplyAsync(cancellationToken);
-        var result = await composer.RunAsync(window, options.Value.MaxItems, options.Value.BatchSize, now, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        var result = ChatDigestRunResult.Empty;
+        foreach (var window in windows)
+        {
+            var one = await composer.RunAsync(window, options.Value.MaxItems, options.Value.BatchSize, now, cancellationToken);
+            if (one.Queued > 0)
+                logger.LogInformation("Chat digest of window {Window} queued {Queued} emails ({AlreadyQueued} already queued)", window.Key, one.Queued, one.AlreadyQueued);
+            result = result.Plus(one);
+        }
 
-        if (result.Queued > 0)
-            logger.LogInformation("Chat digest of window {Window} queued {Queued} emails ({AlreadyQueued} already queued)", window.Key, result.Queued, result.AlreadyQueued);
+        await transaction.CommitAsync(cancellationToken);
         return result;
     }
 }

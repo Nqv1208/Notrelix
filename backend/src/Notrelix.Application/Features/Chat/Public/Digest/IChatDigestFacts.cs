@@ -6,7 +6,7 @@ public sealed record ChatDigestCandidate(Guid NotificationId, Guid SpaceId, Guid
 /// <summary>
 /// What Chat lets a digest say about one candidate, decided now from Chat's own rows (UC-CHT-H09). <see cref="Preview"/> is the current
 /// message text, at most <see cref="IChatDigestFacts.PreviewMaxLength"/> characters, which the recipient may see; Collaboration shortens it.
-/// <see cref="SpaceName"/> is null for a direct or group conversation. <see cref="Path"/> is the product path that opens the space.
+/// <see cref="SpaceName"/> is null for a direct or group conversation. <see cref="Path"/> is the product path that opens the message in its space (`?m=` is its sequence; a thread reply opens the message that started the thread).
 /// </summary>
 public sealed record ChatDigestFact(
     Guid NotificationId,
