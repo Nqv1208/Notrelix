@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.ReadStates;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.Threads.Commands.MarkThreadRead;
 
@@ -16,7 +17,7 @@ namespace Notrelix.Application.Features.Chat.Threads.Commands.MarkThreadRead;
 /// has no pointer, so nothing moves and the unread count stays 0.
 /// </summary>
 public record MarkThreadReadCommand(Guid WorkspaceId, Guid ThreadId, long UpToReplySequence)
-    : ICommand<Result<ThreadReadDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<ThreadReadDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

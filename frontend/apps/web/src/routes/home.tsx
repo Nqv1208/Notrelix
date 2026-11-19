@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { Navigate, useRouter } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Navigate, useRouter, useSearch } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   WorkspacesHomeSurface,
@@ -42,6 +42,8 @@ function initialsOf(name: string): string {
  * a launcher outside any workspace: a card opens one workspace, the default is
  * marked, and archived and recently deleted ones can be brought back from
  * here. A person with no workspace and nothing to restore starts onboarding.
+ * Straight after sign-in (`?open=default`) the default workspace opens first when
+ * there is an active one; any other visit shows the launcher.
  */
 function HomeLanding() {
   const copy = useWorkspacesHomeCopy();
@@ -68,6 +70,16 @@ function HomeLanding() {
   );
   const list = useAccountWorkspaces();
   const { profile } = useProfile();
+  // Decided once from the landing flag: a later "Make default" on the launcher must not open it.
+  const search = useSearch({ strict: false }) as { open?: string };
+  const [openDefault, setOpenDefault] = useState(search.open === "default");
+  const defaultTarget = list.workspaces?.find(
+    (workspace) => workspace.isDefault && !workspace.isArchived,
+  );
+  const listed = list.workspaces !== undefined;
+  useEffect(() => {
+    if (listed && !defaultTarget) setOpenDefault(false);
+  }, [listed, defaultTarget]);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<"failed" | "restore" | null>(
     null,
@@ -158,6 +170,10 @@ function HomeLanding() {
   const settled = list.deleted !== undefined || list.deletedIsError;
   if (list.workspaces?.length === 0 && settled && !list.deleted?.length) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  if (openDefault && defaultTarget) {
+    return <Navigate to={`/workspaces/${defaultTarget.id}`} replace />;
   }
 
   const account = {

@@ -3,6 +3,7 @@ using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Identity.Public.DefaultWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 using Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;
@@ -16,7 +17,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspa
 /// to the person.
 /// </summary>
 public record LeaveWorkspaceCommand(Guid WorkspaceId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IWorkspaceLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
@@ -65,7 +66,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
         var userId = _requestContext.UserId;
 
         // Serializes owner-affecting changes so the active-owner count below cannot be stale.
-        var workspace = await _locker.LockWorkspaceAsync(request.WorkspaceId, ct)
+        var workspace = await _locker.LockWorkspaceIncludingArchivedAsync(request.WorkspaceId, ct)
             ?? throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var member = await _context.WorkspaceMembers

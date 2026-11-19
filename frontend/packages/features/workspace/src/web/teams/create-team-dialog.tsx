@@ -491,7 +491,7 @@ export function ArchiveTeamDialog({
             </ul>
           ) : null}
           <p className="m-0 text-crumb leading-normal text-meta-foreground">
-            {a.footnote}
+            {formatCopy(a.footnote, { workspace: workspaceName })}
           </p>
         </div>
         <div className="flex items-center gap-2 border-t border-line bg-background px-5 py-3.5">

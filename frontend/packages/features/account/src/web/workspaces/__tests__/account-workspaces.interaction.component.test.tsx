@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
+  workspaceFixture,
+  workspaceListFixture,
   workspacesCopyFixture,
   workspacesDefaultScenario,
   workspacesEdgeDataScenario,
@@ -71,6 +73,72 @@ describe("AccountWorkspacesSurface", () => {
     );
     expect(props.onSetDefault).toHaveBeenCalledWith("workspace-danang");
     view.unmount();
+  });
+
+  it("FUI[account.workspaces:default] disables make-default and unarchive while a change is in flight", () => {
+    const copy = workspacesCopyFixture("en");
+    const list = workspaceListFixture();
+    renderWorkspaces({
+      ...workspacesDefaultScenario("en"),
+      busy: true,
+      workspaces: {
+        status: "ready",
+        data: [
+          ...list,
+          workspaceFixture({
+            id: "workspace-old",
+            name: "Minh An Archive",
+            isDefault: false,
+            isArchived: true,
+          }),
+        ],
+      },
+    });
+    const disabled = (name: string) =>
+      (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
+    expect(
+      disabled(copy.makeDefaultLabel.replace("{{name}}", "Minh An Đà Nẵng")),
+    ).toBe(true);
+    expect(
+      disabled(copy.unarchiveLabel.replace("{{name}}", "Minh An Archive")),
+    ).toBe(true);
+  });
+
+  it("FUI[account.workspaces:archived] offers Unarchive and never make-default or leave on an archived workspace", () => {
+    const copy = workspacesCopyFixture("en");
+    const { props } = renderWorkspaces({
+      ...workspacesDefaultScenario("en"),
+      workspaces: {
+        status: "ready",
+        data: [
+          workspaceFixture(),
+          workspaceFixture({
+            id: "workspace-old",
+            name: "Minh An Archive",
+            isDefault: false,
+            isArchived: true,
+          }),
+        ],
+      },
+    });
+    const name = "Minh An Archive";
+    expect(
+      screen.queryByRole("button", {
+        name: copy.makeDefaultLabel.replace("{{name}}", name),
+      }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", {
+        name: copy.leaveLabel.replace("{{name}}", name),
+      }),
+    ).toBeNull();
+    expect(screen.getByText(copy.archivedTag)).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.unarchiveLabel.replace("{{name}}", name),
+      }),
+    );
+    expect(props.onUnarchive).toHaveBeenCalledWith("workspace-old");
   });
 
   it("FUI[account.workspaces:leave] asks first and leaves only after the confirmation", () => {

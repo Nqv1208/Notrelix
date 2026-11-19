@@ -160,12 +160,16 @@ describe("sign-in flow: second step after a provider sign-in", () => {
     });
   });
 
-  it("goes home when the return path is not an internal one", async () => {
+  it("goes home, asking to open the default workspace, when the return path is not an internal one", async () => {
     const service = { verifyMfa: vi.fn(async () => session) };
     const nav = renderSecondStep(service, "//evil.com");
     enterCode();
     await waitFor(() =>
-      expect(nav.navigate).toHaveBeenCalledWith({ to: "/home", replace: true }),
+      expect(nav.navigate).toHaveBeenCalledWith({
+        to: "/home",
+        search: { open: "default" },
+        replace: true,
+      }),
     );
   });
 
@@ -763,5 +767,95 @@ describe("register flow", () => {
     expect(
       (screen.getByLabelText(copy.register.email) as HTMLInputElement).value,
     ).toBe("");
+  });
+});
+
+describe("invite flow: declining from the link", () => {
+  const declineButton = () =>
+    screen.getByRole("button", { name: copy.invite.decline });
+
+  it("shows the declining state with both buttons waiting, then the done page naming who to ask and the way back", async () => {
+    let finish!: () => void;
+    const service = {
+      getInvite: vi.fn(async () => preview),
+      declineInvite: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      ),
+    };
+    const nav = renderInvite(service);
+    await screen.findByLabelText(copy.invite.nameLabel);
+
+    fireEvent.click(declineButton());
+    const waiting = await screen.findByRole("button", {
+      name: copy.invite.declining,
+    });
+    expect((waiting as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: copy.invite.accept,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(service.declineInvite).toHaveBeenCalledTimes(1);
+
+    finish();
+    expect(await screen.findByText(copy.invite.declined.title)).toBeTruthy();
+    expect(
+      screen.getByText(
+        copy.invite.declined.body.replace("{{inviter}}", "Nguyễn Thu Hà"),
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.gone.toSignIn }));
+    expect(nav.navigate).toHaveBeenCalledWith({ to: "/sign-in" });
+  });
+
+  it("reads a link the producer no longer knows (404) as gone", async () => {
+    renderInvite({
+      getInvite: vi.fn(async () => preview),
+      declineInvite: vi.fn(async () => {
+        throw { status: 404 };
+      }),
+    });
+    await screen.findByLabelText(copy.invite.nameLabel);
+    fireEvent.click(declineButton());
+    expect(await screen.findByText(copy.gone.missingTitle)).toBeTruthy();
+  });
+
+  it("re-reads the invitation when the decline is refused (400) and shows what it became", async () => {
+    const getInvite = vi
+      .fn()
+      .mockResolvedValueOnce(preview)
+      .mockResolvedValueOnce({ ...preview, state: "used" });
+    renderInvite({
+      getInvite,
+      declineInvite: vi.fn(async () => {
+        throw { status: 400 };
+      }),
+    });
+    await screen.findByLabelText(copy.invite.nameLabel);
+    fireEvent.click(declineButton());
+    expect(await screen.findByText(copy.gone.usedTitle)).toBeTruthy();
+    expect(getInvite).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the invitation open and says it could not reach Notrelix when the decline fails on the network", async () => {
+    renderInvite({
+      getInvite: vi.fn(async () => preview),
+      declineInvite: vi.fn(async () => {
+        throw { status: 503, details: {} };
+      }),
+    });
+    await screen.findByLabelText(copy.invite.nameLabel);
+    fireEvent.click(declineButton());
+    expect(await screen.findByText(copy.invite.unreachable)).toBeTruthy();
+    expect(screen.queryByText(copy.invite.declined.title)).toBeNull();
+    expect(
+      (declineButton() as HTMLButtonElement).disabled,
+      "the person can try again",
+    ).toBe(false);
   });
 });

@@ -653,6 +653,8 @@ describe("WorkspaceSpaceSurface", () => {
     const dialog = screen.getByRole("alertdialog", {
       name: "Lưu trữ Phòng Công nghệ?",
     });
+    // The workspace the department sits in is named in the confirmation.
+    expect(dialog.textContent).toContain("Minh An Group");
     fireEvent.click(
       within(dialog).getByRole("button", {
         name: copy.settings.archiveConfirmAction,

@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Collaboration.Notifications.Commands.SnoozeInboxEntry;
 
@@ -11,7 +12,7 @@ namespace Notrelix.Application.Features.Collaboration.Notifications.Commands.Sno
 /// (<c>ViewWorkspace</c>).
 /// </summary>
 public record SnoozeInboxEntryCommand(Guid WorkspaceId, Guid NotificationId, DateTimeOffset Until)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public const int MaxSnoozeDays = 365;
 

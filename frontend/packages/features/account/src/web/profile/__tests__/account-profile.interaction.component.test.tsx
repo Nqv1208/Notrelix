@@ -239,6 +239,39 @@ describe("AccountProfileSurface", () => {
     }
   });
 
+  it("FUI[account.profile:job-title-validation] refuses a job title over 100 characters with an inline error and saves exactly 100 trimmed", () => {
+    for (const locale of LOCALES) {
+      const copy = profileCopyFixture(locale);
+      const { props, view } = renderProfile(profileDefaultScenario(locale));
+      const title = screen.getByLabelText(copy.jobTitleLabel);
+      const form = title.closest("form") as HTMLFormElement;
+      const message = copy.jobTitleTooLong.replace("{{count}}", "100");
+
+      fireEvent.change(title, { target: { value: "x".repeat(101) } });
+      const error = screen.getByText(message);
+      expect(title.getAttribute("aria-invalid")).toBe("true");
+      expect(title.getAttribute("aria-describedby")).toContain(error.id);
+      expect(
+        (screen.getByRole("button", { name: copy.save }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+      fireEvent.submit(form);
+      expect(props.onSave).not.toHaveBeenCalled();
+
+      // Spaces around the title do not count toward the limit.
+      fireEvent.change(title, {
+        target: { value: `  ${"x".repeat(100)}  ` },
+      });
+      expect(screen.queryByText(message)).toBeNull();
+      expect(title.getAttribute("aria-invalid")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: copy.save }));
+      expect(props.onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ jobTitle: "x".repeat(100) }),
+      );
+      view.unmount();
+    }
+  });
+
   it("FUI[account.profile:phone] sends the phone as E.164 and asks for the country code on a national number", () => {
     for (const locale of LOCALES) {
       const copy = profileCopyFixture(locale);

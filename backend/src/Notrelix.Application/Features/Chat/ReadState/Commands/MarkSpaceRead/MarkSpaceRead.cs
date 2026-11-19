@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Chat.ReadState.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.ReadStates;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.ReadState.Commands.MarkSpaceRead;
 
@@ -15,7 +16,7 @@ namespace Notrelix.Application.Features.Chat.ReadState.Commands.MarkSpaceRead;
 /// not an active member of is the same NotFound as a missing one.
 /// </summary>
 public record MarkSpaceReadCommand(Guid WorkspaceId, Guid SpaceId, long UpToSequence)
-    : ICommand<Result<ReadBoundaryDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<ReadBoundaryDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

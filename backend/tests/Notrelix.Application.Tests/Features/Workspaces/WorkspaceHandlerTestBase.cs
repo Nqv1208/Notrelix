@@ -44,6 +44,10 @@ public abstract class WorkspaceHandlerTestBase
             .ReturnsAsync(
                 (Guid workspaceId, CancellationToken _) =>
                     workspaces.SingleOrDefault(w => w.Id == workspaceId));
+        LockerMock.Setup(l => l.LockWorkspaceIncludingArchivedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                (Guid workspaceId, CancellationToken _) =>
+                    workspaces.SingleOrDefault(w => w.Id == workspaceId));
     }
 
     protected void SetupMembers(params WorkspaceMember[] members) =>
