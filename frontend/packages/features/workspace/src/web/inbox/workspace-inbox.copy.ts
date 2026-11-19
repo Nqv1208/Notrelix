@@ -160,6 +160,7 @@ export const en = {
     chatThreadPlain: "{{actor}} replied in a thread you follow in {{title}}",
     chatBroadcast: "{{actor}} wrote to everyone in {{title}}: “{{excerpt}}”",
     chatBroadcastPlain: "{{actor}} wrote to everyone in {{title}}",
+    chatRemoved: "A moderator ({{actor}}) removed your message in {{title}}",
     bundle: "{{changes}} in {{board}} from {{names}}",
     bundleChanges: "{{count}} changes",
     bundleMore: " and {{count}} others",
@@ -379,6 +380,8 @@ export const vi: WorkspaceInboxCopy = {
     chatThreadPlain: "{{actor}} trả lời trong chuỗi bạn theo dõi ở {{title}}",
     chatBroadcast: "{{actor}} gửi cho mọi người trong {{title}}: “{{excerpt}}”",
     chatBroadcastPlain: "{{actor}} gửi cho mọi người trong {{title}}",
+    chatRemoved:
+      "Người kiểm duyệt ({{actor}}) đã gỡ tin nhắn của bạn trong {{title}}",
     bundle: "{{changes}} trong {{board}} từ {{names}}",
     bundleChanges: "{{count}} thay đổi",
     bundleMore: " và {{count}} người khác",

@@ -121,6 +121,9 @@ public static class ChatRuleCodes
     /// <summary>The media state asks for something the call kind does not carry, such as video in a voice call (400).</summary>
     public const string CallMediaNotAllowed = "call-media-not-allowed";
 
+    /// <summary>Someone else is already sharing a screen in the call and the caller did not ask to replace them (409).</summary>
+    public const string CallScreenShareTaken = "call-screen-share-taken";
+
     /// <summary>The media plane cannot be reached, or calls are switched off (503, SPEC-CHAT-MEDIA-CALLS section 10).</summary>
     public const string CallsUnavailable = "chat.calls.unavailable";
 }

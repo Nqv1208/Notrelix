@@ -287,6 +287,14 @@ describe("chat message notifications (UC-CHT-G09)", () => {
       ?.segments.map((s) => s.text)
       .join("");
 
+  it("draws a message a moderator removed with the channel and no text (UC-CHT-H03)", () => {
+    const removed = chat("chat.message-removed", "general", null);
+    expect(removed.items[0]?.type).toBe("chat_removed");
+    expect(text(removed)).toBe(
+      "Người kiểm duyệt (Lan) đã gỡ tin nhắn của bạn trong general",
+    );
+  });
+
   it("draws a mention, a direct message, a thread reply and a broadcast with the channel and a short preview", () => {
     const mention = chat("chat.mention", "general", "xin chào");
     expect(mention.items[0]?.type).toBe("chat_mention");

@@ -447,6 +447,8 @@ export function createChatRealtimeAdapter(
       uploadedBy: frame.uploadedBy!,
       createdAt: frame.createdAt!,
       downloadPath: frame.downloadPath!,
+      width: frame.width,
+      height: frame.height,
     };
     patchAll((message) => {
       const next = mergeAttachment(message.attachments, attachment);

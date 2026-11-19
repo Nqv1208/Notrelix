@@ -67,6 +67,9 @@ export interface ChatAttachmentFramePayload {
   readonly uploadedBy: string | null;
   readonly createdAt: string | null;
   readonly downloadPath: string | null;
+  /** An added image's pixel size, so a reader reserves its box before the bytes load. */
+  readonly width: number | null;
+  readonly height: number | null;
 }
 
 /**
@@ -108,6 +111,9 @@ const isNonEmpty = (value: unknown): value is string =>
 /** The server leaves a null field out of the frame, so an absent field reads as null. */
 const isNullableString = (value: unknown): value is string | null | undefined =>
   value === null || value === undefined || typeof value === "string";
+
+const isPositiveInt = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value > 0;
 
 const isCount = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0;
@@ -214,6 +220,8 @@ export function parseChatAttachmentFrame(
     uploadedBy: isNonEmpty(uploadedBy) ? uploadedBy : null,
     createdAt: isNonEmpty(createdAt) ? createdAt : null,
     downloadPath: isNonEmpty(downloadPath) ? downloadPath : null,
+    width: isPositiveInt(payload.width) ? payload.width : null,
+    height: isPositiveInt(payload.height) ? payload.height : null,
   };
 }
 

@@ -18,5 +18,7 @@ public sealed record MessageAttachmentChangedDomainEvent(
     string? ContentType,
     Guid? UploadedBy,
     DateTimeOffset? AttachmentCreatedAt,
-    DateTimeOffset OccurredAt
+    DateTimeOffset OccurredAt,
+    int? Width = null,
+    int? Height = null
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

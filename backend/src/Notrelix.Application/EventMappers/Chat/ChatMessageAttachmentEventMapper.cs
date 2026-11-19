@@ -27,7 +27,9 @@ public sealed class ChatMessageAttachmentEventMapper : IntegrationEventMapperBas
             CorrelationId: domainEvent.EventId,
             ActorUserId: domainEvent.ActorId,
             CausationId: null,
-            OccurredAt: domainEvent.OccurredAt
+            OccurredAt: domainEvent.OccurredAt,
+            Width: domainEvent.Width,
+            Height: domainEvent.Height
         );
     }
 }

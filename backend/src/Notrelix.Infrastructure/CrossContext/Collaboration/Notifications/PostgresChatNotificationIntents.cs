@@ -139,6 +139,7 @@ public sealed class PostgresChatNotificationIntents : IChatNotificationIntents
         ChatNotificationReasons.DirectMessage => NotificationTypes.ChatDirectMessageProducedType,
         ChatNotificationReasons.ThreadReply => NotificationTypes.ChatThreadReplyProducedType,
         ChatNotificationReasons.Broadcast => NotificationTypes.ChatBroadcastProducedType,
+        ChatNotificationReasons.MessageRemoved => NotificationTypes.ChatMessageRemovedProducedType,
         _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, "Unknown chat notification reason."),
     };
 
@@ -147,6 +148,7 @@ public sealed class PostgresChatNotificationIntents : IChatNotificationIntents
         ChatNotificationReasons.Mention => "You were mentioned in chat",
         ChatNotificationReasons.DirectMessage => "New message in chat",
         ChatNotificationReasons.ThreadReply => "New reply in a thread you follow",
+        ChatNotificationReasons.MessageRemoved => "A moderator removed your message",
         _ => "Message to everyone in a channel",
     };
 

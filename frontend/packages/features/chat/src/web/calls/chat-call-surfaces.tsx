@@ -11,6 +11,7 @@ import {
   ChevronDownIcon,
   InfoIcon,
   MessageSquareIcon,
+  MonitorUpIcon,
   Maximize2,
   Mic,
   MicOff,
@@ -33,6 +34,7 @@ import {
   formatCallTimer,
   type ChatCallPhase,
 } from "../../core/model/call-model";
+import { screenSharerOf } from "../../core/model/call-share-model";
 import type { ChatCall } from "../../core/types/call";
 import type { ChatCopy } from "../components/chat.copy";
 import { avatarToneOf, initialsOf } from "../components/chat-initials";
@@ -44,6 +46,12 @@ import {
   ChatCallPeoplePanel,
 } from "./chat-call-participants";
 import { ChatCallDevicesDialog } from "./chat-call-devices-dialog";
+import {
+  ChatCallShareNotice,
+  ChatCallShareOwn,
+  ChatCallShareReplaceDialog,
+  ChatCallShareTile,
+} from "./chat-call-share";
 import type { ChatCallsController, ChatCurrentCall } from "./use-chat-calls";
 
 export interface ChatCallPeople {
@@ -288,6 +296,16 @@ export function ChatCallStage({
   const showMic = !ended;
   const showCamera = !ended && isVideo;
 
+  // The screen share: who shares, and whether this person's own share is on. The tiles stay mounted, so the pictures keep playing.
+  const sharerId = screenSharerOf(call);
+  const iShare = held.screen === "on";
+  const otherSharer =
+    sharerId && sharerId !== people.viewerId ? sharerId : null;
+  const sharing = isVideo && inCall && (iShare || otherSharer !== null);
+  const showShare =
+    !ended && isVideo && Boolean(held.screenSupported) && phase === "connected";
+  const [replaceOpen, setReplaceOpen] = useState(false);
+
   // Devices are listed once the room is live (the browser shows their names only after it let the call use them).
   const [devicesOpen, setDevicesOpen] = useState(false);
   const [unplugged, setUnplugged] = useState<string | null>(null);
@@ -314,6 +332,16 @@ export function ChatCallStage({
         visible ? "flex" : "hidden",
       )}
     >
+      {ended ? null : (
+        <ChatCallShareNotice
+          held={held}
+          controller={controller}
+          nameOf={people.nameOf}
+          sharerId={sharerId}
+          copy={copy}
+        />
+      )}
+
       {stageVideo ? null : (
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-inverse-foreground/10 px-5">
           <h2 className="truncate text-lg leading-[1.45] font-semibold">
@@ -346,13 +374,32 @@ export function ChatCallStage({
           className="flex min-h-0 flex-1 flex-col md:flex-row"
           data-testid="chat-call-group"
         >
-          <ChatCallParticipantGrid
-            controller={controller}
-            held={held}
-            viewerId={people.viewerId}
-            nameOf={people.nameOf}
-            copy={copy}
-          />
+          <div
+            className={cn(
+              "flex min-h-0 min-w-0 flex-1 flex-col gap-2.5",
+              sharing && "p-3",
+            )}
+          >
+            {sharing ? (
+              iShare ? (
+                <ChatCallShareOwn controller={controller} copy={copy} />
+              ) : (
+                <ChatCallShareTile
+                  controller={controller}
+                  name={people.nameOf(otherSharer ?? "")}
+                  copy={copy}
+                />
+              )
+            ) : null}
+            <ChatCallParticipantGrid
+              controller={controller}
+              held={held}
+              viewerId={people.viewerId}
+              nameOf={people.nameOf}
+              copy={copy}
+              strip={sharing}
+            />
+          </div>
           {peopleOpen ? (
             <ChatCallPeoplePanel
               controller={controller}
@@ -364,34 +411,97 @@ export function ChatCallStage({
           ) : null}
         </div>
       ) : stageVideo ? (
-        <div className="relative min-h-0 flex-1" data-testid="chat-call-video">
-          <video
-            ref={controller.remoteVideoRef}
-            autoPlay
-            playsInline
-            aria-label={fillCopy(c.remoteVideo, { name })}
-            className={cn(
-              "absolute inset-0 size-full object-cover transition-opacity duration-200 motion-reduce:transition-none",
-              remoteVideoOn ? "opacity-100" : "opacity-0",
-            )}
-          />
-          {remoteVideoOn ? null : (
-            <div
-              className="absolute inset-0 grid place-items-center bg-inverse-foreground/10"
-              data-testid="chat-call-remote-tile"
-            >
-              <div className="flex flex-col items-center gap-2">
-                <PersonAvatar
-                  id={otherId}
-                  name={name}
-                  className="size-24 text-3xl"
-                />
-                <p className="text-sm text-inverse-muted">
-                  {fillCopy(c.cameraOffTile, { name })}
-                </p>
-              </div>
-            </div>
+        <div
+          className={cn(
+            "relative min-h-0 flex-1",
+            sharing && "flex flex-col gap-2.5 p-3.5",
           )}
+          data-testid="chat-call-video"
+        >
+          {sharing ? (
+            iShare ? (
+              <ChatCallShareOwn controller={controller} copy={copy} />
+            ) : (
+              <ChatCallShareTile
+                controller={controller}
+                name={people.nameOf(otherSharer ?? "")}
+                copy={copy}
+              />
+            )
+          ) : null}
+          <div
+            role={sharing ? "group" : undefined}
+            aria-label={sharing ? c.shareStrip : undefined}
+            data-testid={sharing ? "chat-call-strip" : undefined}
+            className={sharing ? "flex h-[104px] shrink-0 gap-2.5" : "contents"}
+          >
+            <div
+              className={
+                sharing
+                  ? "relative h-full w-44 shrink-0 overflow-hidden rounded-xl bg-inverse-foreground/10"
+                  : "absolute inset-0"
+              }
+            >
+              <video
+                ref={controller.remoteVideoRef}
+                autoPlay
+                playsInline
+                aria-label={fillCopy(c.remoteVideo, { name })}
+                className={cn(
+                  "absolute inset-0 size-full object-cover transition-opacity duration-200 motion-reduce:transition-none",
+                  remoteVideoOn ? "opacity-100" : "opacity-0",
+                )}
+              />
+              {remoteVideoOn ? null : (
+                <div
+                  className="absolute inset-0 grid place-items-center bg-inverse-foreground/10"
+                  data-testid="chat-call-remote-tile"
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <PersonAvatar
+                      id={otherId}
+                      name={name}
+                      className={
+                        sharing ? "size-12 text-lg" : "size-24 text-3xl"
+                      }
+                    />
+                    {sharing ? null : (
+                      <p className="text-sm text-inverse-muted">
+                        {fillCopy(c.cameraOffTile, { name })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              <span className="absolute start-2 bottom-2 inline-flex items-center rounded-lg bg-black/70 px-2 py-[3px] text-xs text-white">
+                {name}
+              </span>
+            </div>
+            <div
+              data-testid="chat-call-self"
+              className={cn(
+                "overflow-hidden border-2 border-white/70 bg-inverse-foreground/10",
+                sharing
+                  ? "relative h-full w-44 shrink-0 rounded-xl"
+                  : "absolute end-4 bottom-4 h-[210px] w-40 rounded-[14px]",
+              )}
+            >
+              <video
+                ref={controller.localVideoRef}
+                autoPlay
+                muted
+                playsInline
+                aria-label={c.localVideo}
+                className={cn(
+                  "size-full object-cover transition-opacity duration-200 motion-reduce:transition-none",
+                  held.videoOn ? "opacity-100" : "opacity-0",
+                )}
+              />
+              <span className="absolute start-1.5 bottom-1.5 inline-flex items-center rounded-lg bg-black/70 px-2 py-[3px] text-xs text-white">
+                {c.you}
+              </span>
+            </div>
+          </div>
           <span
             role="timer"
             aria-label={c.timerLabel}
@@ -408,28 +518,6 @@ export function ChatCallStage({
           >
             <ChevronDownIcon aria-hidden="true" className="size-5" />
           </button>
-          <span className="absolute start-2 bottom-2 inline-flex items-center rounded-lg bg-black/70 px-2 py-[3px] text-xs text-white">
-            {name}
-          </span>
-          <div
-            data-testid="chat-call-self"
-            className="absolute end-4 bottom-4 h-[210px] w-40 overflow-hidden rounded-[14px] border-2 border-white/70 bg-inverse-foreground/10"
-          >
-            <video
-              ref={controller.localVideoRef}
-              autoPlay
-              muted
-              playsInline
-              aria-label={c.localVideo}
-              className={cn(
-                "size-full object-cover transition-opacity duration-200 motion-reduce:transition-none",
-                held.videoOn ? "opacity-100" : "opacity-0",
-              )}
-            />
-            <span className="absolute start-1.5 bottom-1.5 inline-flex items-center rounded-lg bg-black/70 px-2 py-[3px] text-xs text-white">
-              {c.you}
-            </span>
-          </div>
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 p-6 text-center">
@@ -614,6 +702,23 @@ export function ChatCallStage({
               )}
             </RoundButton>
           ) : null}
+          {showShare ? (
+            <RoundButton
+              label={iShare ? c.shareStop : c.shareStart}
+              caption={c.shareShort}
+              showLabel={!stageVideo}
+              aria-pressed={iShare}
+              disabled={held.screen === "starting"}
+              className={iShare ? ROUND_ON : undefined}
+              onClick={() => {
+                if (iShare) controller.stopScreenShare();
+                else if (otherSharer) setReplaceOpen(true);
+                else controller.startScreenShare(false);
+              }}
+            >
+              <MonitorUpIcon aria-hidden="true" />
+            </RoundButton>
+          ) : null}
           <RoundButton
             label={c.devicesOpen}
             caption={c.devicesShort}
@@ -703,6 +808,15 @@ export function ChatCallStage({
           </div>
         </section>
       ) : null}
+      {ended ? null : (
+        <ChatCallShareReplaceDialog
+          open={replaceOpen}
+          onOpenChange={setReplaceOpen}
+          name={people.nameOf(otherSharer ?? "")}
+          onConfirm={() => controller.startScreenShare(true)}
+          copy={copy}
+        />
+      )}
       {ended ? null : (
         <ChatCallDevicesDialog
           open={devicesOpen}

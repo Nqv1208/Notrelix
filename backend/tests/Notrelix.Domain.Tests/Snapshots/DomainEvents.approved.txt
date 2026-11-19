@@ -291,10 +291,12 @@ chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAt
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|AttachmentId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|ContentType|System.String|True
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|FileName|System.String|True
+chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|Height|System.Int32|True
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|MessageId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|SizeBytes|System.Int64|True
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|SpaceId|System.Guid|False
 chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|UploadedBy|System.Guid|True
+chat.message-attachment-changed|1|Notrelix.Domain.Chat.Messages.Events.MessageAttachmentChangedDomainEvent|Workspace|Width|System.Int32|True
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|AuthorId|System.Guid|False
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|ClientMessageId|System.String|True
 chat.message-created|1|Notrelix.Domain.Chat.Messages.Events.MessageCreatedDomainEvent|Workspace|Content|System.String|True
