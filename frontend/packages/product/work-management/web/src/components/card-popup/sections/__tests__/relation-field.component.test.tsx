@@ -7,6 +7,7 @@ import {
   CardPopupProvider,
   type CardPopupModel,
 } from "../../card-popup-context";
+import { WmUiPortsProvider, type WmUiPorts } from "../../../shared/wm-ui-ports";
 import { RelationChips, RelationPickerPanel } from "../relation-field";
 import { FieldControl } from "../field-editors";
 
@@ -19,10 +20,10 @@ const target = vi.hoisted(() => ({
     refetch: () => void;
   },
 }));
-vi.mock("@notrelix/work-management-state", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@notrelix/work-management-state")>()),
-  useFullBoard: () => target.state,
-}));
+const ports: WmUiPorts = {
+  useCardImageUrl: () => null,
+  useRelationTarget: () => target.state as never,
+};
 
 const visible = (id: string, key: string, title: string): RelationLink => ({
   itemId: id,
@@ -75,7 +76,9 @@ function wrap(node: React.ReactNode, extra: Partial<CardPopupModel> = {}) {
   } as unknown as CardPopupModel;
   renderPureUi(
     <I18nProvider catalogs={[]} initialLocale="en">
-      <CardPopupProvider value={model}>{node}</CardPopupProvider>
+      <WmUiPortsProvider ports={ports}>
+        <CardPopupProvider value={model}>{node}</CardPopupProvider>
+      </WmUiPortsProvider>
     </I18nProvider>,
   );
   return model;

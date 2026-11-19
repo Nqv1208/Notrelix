@@ -5,7 +5,7 @@ import {
   RELATION_LINK_LIMIT,
   type RelationLink,
 } from "@notrelix/work-management-core";
-import { useFullBoard } from "@notrelix/work-management-state";
+import { useWmUiPorts } from "../../shared/wm-ui-ports";
 import { foldForSearch } from "../../item-page/item-pickers";
 import { fillPopupCopy } from "../card-popup.copy";
 import { useCardPopup } from "../card-popup-context";
@@ -71,7 +71,10 @@ export function RelationPickerPanel({
 }) {
   const { card, board, copy } = useCardPopup();
   const t = copy.sections.relation;
-  const target = useFullBoard(targetBoardId, board.workspaceId);
+  const target = useWmUiPorts().useRelationTarget(
+    targetBoardId,
+    board.workspaceId,
+  );
   const locked = links.filter((link) => link.locked);
   const [ticked, setTicked] = useState<readonly string[]>(
     links.filter((link) => !link.locked).map((link) => link.itemId),
