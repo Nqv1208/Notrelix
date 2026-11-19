@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
 using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Workspaces.Invitations;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Integration.Tests.Containers;
@@ -123,6 +124,31 @@ public sealed class InvitationMixedEntriesAuthorizationIntegrationTests : IAsync
 
         await spaceOnly.Should().ThrowAsync<AppForbidden>();
         (await InvitationCountAsync(stack)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AnInvitation_NamingATeamAndASpaceThatAreGone_NamesEachRefusedEntry_AndPersistsNothing()
+    {
+        var (stack, _, teamId, spaceId) = await SeedAsync();
+        var goneTeam = Guid.CreateVersion7();
+        var otherWorkspaceSpace = Guid.CreateVersion7();
+        using var asOwner = _host.CreateProvider(stack.AccountId, stack.OwnerId, RegisterInvitationServices);
+
+        var act = () => OrgTreeTestHost.SendAsync(asOwner, new InviteMemberCommand(
+            stack.WorkspaceId, "gone@example.com", WorkspaceRole.Member,
+            [
+                new InvitationInitialEntryInput("Team", teamId, "Member"),
+                new InvitationInitialEntryInput("Team", goneTeam, "Lead"),
+                new InvitationInitialEntryInput("Space", spaceId, "Viewer"),
+                new InvitationInitialEntryInput("Space", otherWorkspaceSpace, "Member"),
+            ]));
+
+        var refusal = (await act.Should().ThrowAsync<DomainBusinessRuleException>()).Which;
+        refusal.RuleCode.Should().Be("Workspaces_Invitation_EntryTargetNotActive");
+        ((IReadOnlyList<InvitationEntryRefusal>)refusal.Details["entries"]!).Should().Equal(
+            new InvitationEntryRefusal(1, "team", goneTeam, "not-active"),
+            new InvitationEntryRefusal(3, "space", otherWorkspaceSpace, "not-active"));
+        (await InvitationCountAsync(stack)).Should().Be(0);
     }
 
     [Fact]

@@ -1861,6 +1861,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createTeamsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.GetDeletedTeams",
+    operationId: "Workspaces.Teams.GetDeletedTeams",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
     capability: "Workspaces.Teams.GetTeam",
     operationId: "Workspaces.Teams.GetTeam",
     mutation: false,

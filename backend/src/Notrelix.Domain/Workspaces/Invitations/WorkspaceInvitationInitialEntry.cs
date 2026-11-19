@@ -70,3 +70,17 @@ public sealed record WorkspaceInvitationInitialEntry
         return canonical;
     }
 }
+
+/// <summary>
+/// One initial entry an invitation was refused for, named so a client can show the refusal next to that entry
+/// (<c>entries</c> on the problem response). <paramref name="Index"/> is the position in the request, <paramref name="Kind"/>
+/// is <c>team</c> or <c>space</c> and <paramref name="Reason"/> is one of the constants below.
+/// </summary>
+public sealed record InvitationEntryRefusal(int Index, string Kind, Guid TargetId, string Reason)
+{
+    /// <summary>The Team or Space is not an active one of this Workspace (made-up, archived, deleted or elsewhere).</summary>
+    public const string NotActive = "not-active";
+
+    /// <summary>A Guest invitation cannot name a Team lead or a Space admin.</summary>
+    public const string GuestTooPrivileged = "guest-too-privileged";
+}

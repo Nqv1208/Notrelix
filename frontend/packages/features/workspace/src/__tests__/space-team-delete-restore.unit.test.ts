@@ -49,6 +49,7 @@ const teamEndpoints: TeamsEndpoints = {
     teamDescription: (w, t) => `/workspaces/${w}/teams/${t}/description`,
     teamArchive: (w, t) => `/workspaces/${w}/teams/${t}/archive`,
     teamUnarchive: (w, t) => `/workspaces/${w}/teams/${t}/unarchive`,
+    teamsDeleted: (w) => `/workspaces/${w}/teams/deleted`,
     teamRestore: (w, t) => `/workspaces/${w}/teams/${t}/restore`,
     teamMembers: (w, t) => `/workspaces/${w}/teams/${t}/members`,
     teamMember: (w, t, u) => `/workspaces/${w}/teams/${t}/members/${u}`,

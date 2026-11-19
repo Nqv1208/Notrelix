@@ -21,24 +21,35 @@ public sealed class InvitationInitialEntries
     }
 
     /// <summary>
-    /// True when every named Team is an active Team and every named Space an
-    /// active Space of the Workspace. Pure read, no mutation.
+    /// The entries whose Team is not an active Team, or whose Space is not an active Space, of the Workspace, each
+    /// with its position in <paramref name="entries"/>. Empty when every target is eligible. Pure read, no mutation.
     /// </summary>
-    public async Task<bool> AllTargetsEligibleAsync(
+    public async Task<IReadOnlyList<InvitationEntryRefusal>> IneligibleEntriesAsync(
         Guid workspaceId,
         IReadOnlyList<WorkspaceInvitationInitialEntry> entries,
         CancellationToken ct)
     {
-        foreach (var entry in entries)
+        var refused = new List<InvitationEntryRefusal>();
+        for (var index = 0; index < entries.Count; index++)
         {
+            var entry = entries[index];
             var eligible = entry.Kind == WorkspaceInvitationEntryKind.Team
                 ? await _spaces.IsActiveTeamAsync(workspaceId, entry.TargetId, ct)
                 : await IsActiveSpaceAsync(workspaceId, entry.TargetId, ct);
-            if (!eligible) return false;
+            if (!eligible)
+                refused.Add(new InvitationEntryRefusal(
+                    index, entry.Kind.ToString().ToLowerInvariant(), entry.TargetId, InvitationEntryRefusal.NotActive));
         }
 
-        return true;
+        return refused;
     }
+
+    /// <summary>True when every named Team is an active Team and every named Space an active Space of the Workspace.</summary>
+    public async Task<bool> AllTargetsEligibleAsync(
+        Guid workspaceId,
+        IReadOnlyList<WorkspaceInvitationInitialEntry> entries,
+        CancellationToken ct) =>
+        (await IneligibleEntriesAsync(workspaceId, entries, ct)).Count == 0;
 
     /// <summary>
     /// Applies every entry for the (already active) workspace member. Subjects

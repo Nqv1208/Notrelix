@@ -1250,10 +1250,14 @@ export const workspaceOperations = [
       }
       if (!store.pinResource(params.workspaceId, kind, params.resourceId)) {
         return {
-          status: 422,
+          status: 400,
           body: {
-            message: "Pin limit reached",
-            code: "Workspaces_Navigation_PinLimitReached",
+            type: "https://docs.notrelix.com/problems/business_rule-violation",
+            title: "Business rule violation",
+            status: 400,
+            detail: "A member can pin at most 50 resources in a workspace.",
+            errorCode: "business_rule.violation",
+            ruleCode: "Workspaces_Navigation_PinLimitReached",
           },
         };
       }

@@ -60,9 +60,10 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         var foreign = Space.Create(TestAccountId, Guid.CreateVersion7(), "Foreign", SpaceVisibility.Workspace, TestUserId, TestNow, SpaceType.Folder);
         SetupSpaces(foreign);
 
-        var result = await Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Space", foreign.Id, "Member"));
+        var act = () => Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Space", foreign.Id, "Member"));
 
-        result.Succeeded.Should().BeFalse();
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive);
         NothingStoredOrSent();
     }
 
@@ -73,9 +74,10 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         archived.Archive(TestUserId, TestNow, SpaceContentFact.Empty);
         SetupSpaces(archived);
 
-        var result = await Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Space", archived.Id, "Member"));
+        var act = () => Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Space", archived.Id, "Member"));
 
-        result.Succeeded.Should().BeFalse();
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive);
         NothingStoredOrSent();
     }
 
@@ -85,9 +87,10 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         var teamId = Guid.CreateVersion7();
         _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Team", teamId, "Member"));
+        var act = () => Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Team", teamId, "Member"));
 
-        result.Succeeded.Should().BeFalse();
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive);
         NothingStoredOrSent();
     }
 
@@ -106,6 +109,53 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
 
         (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged);
+        NothingStoredOrSent();
+    }
+
+    private static IReadOnlyList<InvitationEntryRefusal> Refusals(Notrelix.Domain.Common.Exceptions.BusinessRuleException ex) =>
+        (IReadOnlyList<InvitationEntryRefusal>)ex.Details["entries"]!;
+
+    [Fact]
+    public async Task OnlyTheEntriesThatAreRefused_AreNamed_EachWithItsPositionKindAndTarget()
+    {
+        var open = CreateSpace();
+        var archived = CreateSpace();
+        archived.Archive(TestUserId, TestNow, SpaceContentFact.Empty);
+        SetupSpaces(open, archived);
+        var activeTeam = Guid.CreateVersion7();
+        var goneTeam = Guid.CreateVersion7();
+        _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, activeTeam, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, goneTeam, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var act = () => Invite(
+            WorkspaceRole.Member,
+            new InvitationInitialEntryInput("Team", activeTeam, "Member"),
+            new InvitationInitialEntryInput("Team", goneTeam, "Lead"),
+            new InvitationInitialEntryInput("Space", open.Id, "Viewer"),
+            new InvitationInitialEntryInput("Space", archived.Id, "Member"));
+
+        var refused = Refusals((await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which);
+        refused.Should().Equal(
+            new InvitationEntryRefusal(1, "team", goneTeam, InvitationEntryRefusal.NotActive),
+            new InvitationEntryRefusal(3, "space", archived.Id, InvitationEntryRefusal.NotActive));
+        NothingStoredOrSent();
+    }
+
+    [Fact]
+    public async Task AGuestInvitation_NamesEachEntryThatIsTooPrivileged()
+    {
+        var space = CreateSpace();
+        SetupSpaces(space);
+        var teamId = Guid.CreateVersion7();
+        _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var act = () => Invite(
+            WorkspaceRole.Guest,
+            new InvitationInitialEntryInput("Team", teamId, "Lead"),
+            new InvitationInitialEntryInput("Space", space.Id, "Viewer"));
+
+        var refused = Refusals((await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which);
+        refused.Should().Equal(new InvitationEntryRefusal(0, "team", teamId, InvitationEntryRefusal.GuestTooPrivileged));
         NothingStoredOrSent();
     }
 

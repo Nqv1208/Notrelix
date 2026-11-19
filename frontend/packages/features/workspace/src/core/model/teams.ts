@@ -70,6 +70,38 @@ export function parseTeam(raw: unknown): Team {
   };
 }
 
+/** A Team deleted from the Workspace, restorable by an Owner or Admin with its members. */
+export interface DeletedTeam {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  /** Members who return with the Team. */
+  readonly memberCount: number;
+  readonly deletedAt: string;
+  /** Who deleted it, when still known. */
+  readonly deletedByName: string | null;
+}
+
+/** Callers drop rows without an id; this maps one row that has it. */
+export function parseDeletedTeam(raw: unknown): DeletedTeam {
+  const row = (raw ?? {}) as {
+    id?: string;
+    name?: string | null;
+    description?: string | null;
+    memberCount?: number;
+    deletedAt?: string;
+    deletedByName?: string | null;
+  };
+  return {
+    id: row.id ?? "",
+    name: row.name ?? "",
+    description: row.description ?? null,
+    memberCount: typeof row.memberCount === "number" ? row.memberCount : 0,
+    deletedAt: row.deletedAt ?? "",
+    deletedByName: row.deletedByName ?? null,
+  };
+}
+
 /** An unknown role degrades to the least-privileged one, never to Lead. */
 export function parseTeamMember(raw: unknown): TeamMember {
   const row = (raw ?? {}) as RawTeamMember;

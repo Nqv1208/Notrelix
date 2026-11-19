@@ -151,10 +151,17 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
     {
         if (role != WorkspaceRole.Guest) return;
 
-        if (entries.Any(e => e.Role is nameof(Teams.TeamMemberRole.Lead) or nameof(Spaces.SpaceRole.Admin)))
+        var tooPrivileged = entries
+            .Select((e, index) => (Entry: e, Index: index))
+            .Where(x => x.Entry.Role is nameof(Teams.TeamMemberRole.Lead) or nameof(Spaces.SpaceRole.Admin))
+            .Select(x => new InvitationEntryRefusal(
+                x.Index, x.Entry.Kind.ToString().ToLowerInvariant(), x.Entry.TargetId, InvitationEntryRefusal.GuestTooPrivileged))
+            .ToList();
+        if (tooPrivileged.Count > 0)
             throw new BusinessRuleException(
                 WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged,
-                "A Guest invitation cannot name a Team lead or Space admin entry.");
+                "A Guest invitation cannot name a Team lead or Space admin entry.",
+                new Dictionary<string, object?> { ["entries"] = tooPrivileged });
     }
 
     public void Accept(Guid acceptedUserId, DateTimeOffset acceptedAt)
