@@ -23,6 +23,7 @@ export function workspaceSettingsFixture(
     allowGuestInvites: true,
     allowPublicSharing: false,
     enforceMfa: false,
+    guestDefaultExpiryDays: null,
     timeZone: "Asia/Ho_Chi_Minh",
     weekStart: "monday",
     ...overrides,

@@ -31,7 +31,7 @@ export function useTeamsExt(
 export interface SecurityExtDto {
   readonly guestCount: number;
   readonly guestExpiryDays: number | null;
-  readonly companyDomain: string;
+  readonly companyDomain: string | null;
   readonly linksOffSince: string | null;
 }
 

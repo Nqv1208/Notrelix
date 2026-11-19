@@ -163,7 +163,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         {
             return AccessDecision.Deny(
                 AccessDecisionKind.Forbidden,
-                "This workspace is archived. It is read-only until an owner or admin unarchives it.",
+                "This workspace is archived. It is read-only until an owner unarchives it.",
                 AccessDenialCodes.WorkspaceArchived);
         }
 

@@ -209,6 +209,11 @@ export interface WorkspaceSettings {
   readonly allowGuestInvites: boolean;
   readonly allowPublicSharing: boolean;
   readonly enforceMfa: boolean;
+  /**
+   * Days a new Guest's access lasts by default (30, 90 or 180); `null` = no end. It is read and sent back with
+   * every save because the producer reads a missing value as "none".
+   */
+  readonly guestDefaultExpiryDays: 30 | 90 | 180 | null;
   /** IANA time zone the workspace's boards inherit. */
   readonly timeZone: string;
   /** First day of the week the workspace's boards inherit. */

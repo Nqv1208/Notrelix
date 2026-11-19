@@ -65,4 +65,21 @@ describe("toastFailure", () => {
       description: "Ask a workspace owner.",
     });
   });
+
+  it("FUI[workspace.navigation:pin-limit] says why the 51st pin was refused, in the producer's own words", () => {
+    const limit = {
+      kind: "unknown",
+      status: 400,
+      details: {
+        errorCode: "business_rule.violation",
+        detail: "A member can pin at most 50 resources in a workspace.",
+      },
+    };
+
+    toastFailure("Some pins couldn't be updated.", limit, "Try again.");
+
+    expect(toastError).toHaveBeenCalledWith("Some pins couldn't be updated.", {
+      description: "A member can pin at most 50 resources in a workspace.",
+    });
+  });
 });

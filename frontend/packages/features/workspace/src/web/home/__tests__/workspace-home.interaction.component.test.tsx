@@ -215,6 +215,19 @@ describe("WorkspaceHomeSurface", () => {
     expect(screen.queryByRole("region", { name: /Lịch hôm nay/ })).toBeNull();
   });
 
+  it("FUI[workspace.home:continue-empty] shows no Continue card when the member has opened nothing yet, and keeps the rest", () => {
+    renderHome({
+      ...homeDefaultScenario(),
+      continueState: { status: "ready", data: [] },
+    });
+    expect(
+      screen.queryByRole("heading", { name: viCopy.home.continue.title }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Chào buổi sáng, Hà" }),
+    ).toBeTruthy();
+  });
+
   it("FUI[workspace.home:all-done] says nothing else is due today and when the next item is", () => {
     renderHome(homeAllDoneScenario());
     const today = screen.getByRole("region", { name: /Hôm nay/ });

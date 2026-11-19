@@ -23,7 +23,7 @@ public static class AccessDenialCodes
     /// <summary>The account is suspended or closed by the platform operator: its people read, nobody writes.</summary>
     public const string AccountSuspended = "account.suspended";
 
-    /// <summary>The workspace is archived: its members read, nobody writes, until an owner or admin unarchives it.</summary>
+    /// <summary>The workspace is archived: its members read, nobody writes, until an owner unarchives it.</summary>
     public const string WorkspaceArchived = "workspace.archived";
 }
 
