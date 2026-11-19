@@ -264,13 +264,42 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
             "an already-member acceptance must not sync a second workspace grant");
     }
 
+    [Fact]
+    public async Task Handle_WhenAGuestInvitationIsAcceptedWhileGuestInvitesAreOff_IsRefusedWithTheStableCode_AndAdmitsNobody()
+    {
+        SetupInvitations(CreateInvitation(role: WorkspaceRole.Guest));
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers();
+
+        var act = () => CreateSut().Handle(Command(), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be("workspace.guest_invites_off");
+        DbContextMock.Object.WorkspaceInvitations.Single().Status.Should().Be(WorkspaceInvitationStatus.Pending);
+        DbContextMock.Object.WorkspaceMembers.Should().BeEmpty();
+        SeatGateMock.Verify(
+            g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAGuestInvitationIsAcceptedWhileGuestInvitesAreOn_IsAdmitted()
+    {
+        SetupInvitations(CreateInvitation(role: WorkspaceRole.Guest));
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId, guestInvites: true));
+        SetupMembers();
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
+    }
+
     [Theory]
     [InlineData(WorkspaceRole.Member, "member limit")]
     [InlineData(WorkspaceRole.Guest, "guest limit")]
     public async Task Handle_WhenThePlanHasNoFreeSeat_FailsWithThePlanLimitMessage_AndAdmitsNobody(WorkspaceRole role, string limit)
     {
         SetupInvitations(CreateInvitation(role: role));
-        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId, guestInvites: true));
         SetupMembers();
         SeatGateMock
             .Setup(g => g.CanAdmitAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))

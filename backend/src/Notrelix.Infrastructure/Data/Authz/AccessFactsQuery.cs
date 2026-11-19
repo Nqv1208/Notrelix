@@ -12,7 +12,7 @@ namespace Notrelix.Infrastructure.Data.Authz;
 /// Page's Space supplied as <c>@page_space_id</c> from the Documents-published
 /// page fact); <c>space_path</c> is its ancestor-or-self path from the closure
 /// index. Columns 14..17 expose the Space facts, column 18 the target user's
-/// board role, column 19 whether the Board is archived, column 21 the custom role the person holds in the Workspace (owner decision 2026-10-31), column 22 whether the Account is suspended or closed, column 23 whether the Workspace is archived (the policy then refuses writes in it, except the workspace lifecycle requests); every role→level meaning stays
+/// board role, column 19 whether the Board is archived, column 21 the custom role the person holds in the Workspace (owner decision 2026-10-31), column 22 whether the Account is suspended or closed, column 23 whether the Workspace is archived (the policy then refuses writes in it, except the workspace lifecycle requests), column 24 whether the Workspace setting AllowGuestInvites is on (false when unreadable: the policy then refuses a request that introduces a Guest); every role→level meaning stays
 /// in AccessPolicyEngine. GOV-033: <c>@board_id</c> is the Board the request is
 /// decided on — the Board itself, or the parent Board of a Board child resource
 /// (<c>@board_child</c>) supplied from the Work Management-published relation;
@@ -190,6 +190,8 @@ public static class AccessFactsQuery
           COALESCE((SELECT a.status IN ('Suspended', 'Closed') FROM account.accounts a
                      WHERE a.id = @account_id AND a.deleted_at IS NULL), false),
           COALESCE((SELECT w.status = 'Archived' FROM workspace.workspaces w
+                     WHERE w.id = @workspace_id AND w.deleted_at IS NULL), false),
+          COALESCE((SELECT w.settings_allow_guest_invites FROM workspace.workspaces w
                      WHERE w.id = @workspace_id AND w.deleted_at IS NULL), false)
     """;
 }

@@ -868,6 +868,22 @@ export const workspaceOperations = [
           "A workspace invitation offers Member or Guest only; promote the member after they join.",
         );
       }
+      // The workspace setting AllowGuestInvites (off by default): the producer refuses a Guest invitation with 403.
+      if (
+        role === "guest" &&
+        !store.getWorkspaceSettings(params.workspaceId).allowGuestInvites
+      ) {
+        return {
+          status: 403,
+          body: {
+            type: "https://docs.notrelix.com/problems/workspace-guest_invites_off",
+            title: "Forbidden",
+            status: 403,
+            detail: "Guest invitations are turned off for this workspace.",
+            errorCode: "workspace.guest_invites_off",
+          },
+        };
+      }
       if (store.isActiveMemberEmail(params.workspaceId, email)) {
         return {
           status: 409,

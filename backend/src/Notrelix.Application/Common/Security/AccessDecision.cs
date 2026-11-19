@@ -25,6 +25,9 @@ public static class AccessDenialCodes
 
     /// <summary>The workspace is archived: its members read, nobody writes, until an owner unarchives it.</summary>
     public const string WorkspaceArchived = "workspace.archived";
+
+    /// <summary>The workspace setting AllowGuestInvites is off: nobody introduces a Guest by invitation, and an invitation issued earlier cannot be accepted.</summary>
+    public const string GuestInvitesOff = "workspace.guest_invites_off";
 }
 
 public sealed record AccessDecision(AccessDecisionKind Kind, string? Message = null, string? Code = null)

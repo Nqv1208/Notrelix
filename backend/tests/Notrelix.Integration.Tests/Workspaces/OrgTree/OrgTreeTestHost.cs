@@ -306,6 +306,14 @@ internal sealed class OrgTreeTestHost
         return new OrgStack(account.Id, workspace.Id, owner.Id, workspace.Slug);
     }
 
+    /// <summary>Sets the workspace setting <c>AllowGuestInvites</c> (new workspaces start with guest invitations off).</summary>
+    public Task SetGuestInvitesAsync(OrgStack stack, bool allow) =>
+        WithSystemContextAsync(async seed =>
+        {
+            var workspace = await seed.Workspaces.SingleAsync(w => w.Id == stack.WorkspaceId);
+            workspace.UpdateSettings(WorkspaceSettings.Create(allowGuestInvites: allow), stack.OwnerId, BaseTime);
+        });
+
     /// <summary>Adds an active Workspace member with exactly the stated role.</summary>
     public async Task<Guid> AddMemberAsync(OrgStack stack, WorkspaceRole role, string name = "Member")
     {

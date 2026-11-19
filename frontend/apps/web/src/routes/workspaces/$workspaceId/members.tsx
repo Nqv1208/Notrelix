@@ -30,6 +30,7 @@ import {
 } from "@notrelix/features-workspace/web";
 import {
   describeWorkspaceFailure,
+  GUEST_INVITES_OFF_CODE,
   PENDING_INVITATION_EXISTS_CODE,
 } from "@notrelix/features-workspace/core";
 import { useFormatters } from "@notrelix/i18n";
@@ -232,6 +233,11 @@ export function MembersPage() {
                 email: input.email,
               }),
             );
+            return;
+          }
+          // Guest invitations are switched off in the workspace settings: say who can switch them on.
+          if (failure.errorCode === GUEST_INVITES_OFF_CODE) {
+            setInviteError(copy.invitations.guestInvitesOff);
             return;
           }
           const fieldMessage =

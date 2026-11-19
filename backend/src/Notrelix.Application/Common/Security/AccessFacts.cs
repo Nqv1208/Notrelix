@@ -99,6 +99,13 @@ public sealed record AccessFacts(
     /// normal decision is Allow, except the workspace lifecycle requests (<see cref="IWorkspaceLifecycleRequest"/>).
     /// </summary>
     public bool WorkspaceArchived { get; init; }
+
+    /// <summary>
+    /// The workspace setting <c>AllowGuestInvites</c> is on. Fails closed: false when the workspace row cannot be read
+    /// (and for facts built without it), so an <see cref="Notrelix.Application.Features.Workspaces.Public.Invitations.IGuestInvitationRequest"/>
+    /// is refused rather than waved through.
+    /// </summary>
+    public bool GuestInvitesAllowed { get; init; }
 }
 
 /// <summary>A custom role as access facts: its fixed built-in base and the actions it adds and removes.</summary>

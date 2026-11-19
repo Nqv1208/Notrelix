@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Public.Authorization;
+using Notrelix.Application.Features.Workspaces.Public.Invitations;
 using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
@@ -165,6 +166,16 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 AccessDecisionKind.Forbidden,
                 "This workspace is archived. It is read-only until an owner unarchives it.",
                 AccessDenialCodes.WorkspaceArchived);
+        }
+
+        // The workspace setting AllowGuestInvites: while off, no one introduces a Guest by invitation, Owner and Admin
+        // included. Decided after the permission rules, so a caller who could not make the request never learns the setting.
+        if (request is IWriteRequest and IGuestInvitationRequest { IntroducesGuest: true } && !facts.GuestInvitesAllowed)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "Guest invitations are turned off for this workspace.",
+                AccessDenialCodes.GuestInvitesOff);
         }
 
         if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)

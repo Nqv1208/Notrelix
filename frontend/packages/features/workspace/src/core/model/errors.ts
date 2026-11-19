@@ -18,6 +18,9 @@ export type WorkspaceFailureKind =
 /** The producer's stable code for a denial because the member's email is not confirmed. */
 export const EMAIL_NOT_CONFIRMED_CODE = "auth.email_not_confirmed";
 
+/** The producer's stable code for a Guest invitation refused because the workspace setting `AllowGuestInvites` is off. */
+export const GUEST_INVITES_OFF_CODE = "workspace.guest_invites_off";
+
 /**
  * A reason that refines a failure without changing its kind: the request is
  * `forbidden`, and the recovery is not "ask an owner" but "confirm your email".
