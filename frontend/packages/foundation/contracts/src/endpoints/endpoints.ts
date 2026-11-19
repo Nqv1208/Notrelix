@@ -60,6 +60,8 @@ export const endpoints = {
     apiToken: (workspaceId: string, tokenId: string) =>
       `/workspaces/${workspaceId}/api-tokens/${tokenId}`,
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
+    // Workspaces.Workspaces.GetWorkspaceDashboard: the figures for Owner and Admin.
+    dashboard: (workspaceId: string) => `/workspaces/${workspaceId}/dashboard`,
     invitationByToken: (token: string) =>
       `/workspaces/invitations/by-token/${token}`,
     // The signed-in person's own invitations (Workspaces.Invitations.GetUserPendingInvitations,

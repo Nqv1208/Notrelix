@@ -26,6 +26,7 @@ export type {
   CreateWorkspaceInput,
   UpdateWorkspaceInput,
   UpdateWorkspaceProfileInput,
+  WorkspaceFigures,
   WorkspaceSettings,
   CreateWorkspaceInvitationInput,
 } from "./types/workspace";

@@ -8175,6 +8175,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the workspace figures
+         * @description Owner or Admin. Active members only (suspended and removed people are not counted), the Spaces the caller can see, Teams and pending invitations, and whether the workspace is archived. A Member or Guest is forbidden; a person outside the workspace is told it does not exist. Read-only, so an archived workspace still answers.
+         */
+        get: operations["Workspaces.Workspaces.GetWorkspaceDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/profile": {
         parameters: {
             query?: never;
@@ -12703,6 +12723,20 @@ export interface components {
             teams?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto"][] | null;
             admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto": {
+            /** Format: uuid */
+            workspaceId?: string;
+            workspaceName?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int32 */
+            spaceCount?: number;
+            /** Format: int32 */
+            teamCount?: number;
+            /** Format: int32 */
+            invitationCount?: number;
+            isArchived?: boolean;
         };
         /** @enum {string} */
         "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
@@ -33551,6 +33585,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Workspaces.GetWorkspaceDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto"];
                 };
             };
         };

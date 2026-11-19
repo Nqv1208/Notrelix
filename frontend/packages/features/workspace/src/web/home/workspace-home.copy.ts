@@ -114,6 +114,16 @@ export const en = {
     calendarUnavailable: "A personal calendar is not available yet.",
     addItem: "Add item",
     addItemUnavailable: "Add items from My work or from a Board.",
+    figures: {
+      label: "Workspace figures",
+      members: "Members",
+      spaces: "Spaces",
+      invitations: "Pending invitations",
+      loading: "Loading the workspace figures",
+      error: "The workspace figures did not load.",
+      retry: "Try again",
+      forbidden: "Only an Owner or Admin sees the workspace figures.",
+    },
     chipsLabel: "Quick filters for what needs attention",
     chips: {
       overdue: "overdue",
@@ -515,6 +525,16 @@ export const vi: WorkspaceHomeCopy = {
     calendarUnavailable: "Lịch cá nhân chưa có.",
     addItem: "Thêm công việc",
     addItemUnavailable: "Thêm việc từ Việc của tôi hoặc từ một Bảng.",
+    figures: {
+      label: "Số liệu không gian làm việc",
+      members: "Thành viên",
+      spaces: "Phòng ban",
+      invitations: "Lời mời đang chờ",
+      loading: "Đang tải số liệu không gian làm việc",
+      error: "Không tải được số liệu không gian làm việc.",
+      retry: "Thử lại",
+      forbidden: "Chỉ Chủ sở hữu hoặc Quản trị xem được số liệu này.",
+    },
     chipsLabel: "Lọc nhanh việc cần chú ý",
     chips: {
       overdue: "quá hạn",

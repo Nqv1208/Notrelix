@@ -20,6 +20,7 @@ public static class MapWorkspaceEndpoints
             .WithOpenApi();
 
         byIdGroup.MapGetWorkspace();
+        byIdGroup.MapGetWorkspaceDashboard();
         byIdGroup.MapUpdateWorkspaceProfile();
         byIdGroup.MapChangeWorkspaceSlug();
         byIdGroup.MapArchiveWorkspace();

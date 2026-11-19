@@ -204,6 +204,17 @@ export interface UpdateWorkspaceProfileInput {
   readonly expectedVersion: number;
 }
 
+/** The workspace figures Owner and Admin see (`GetWorkspaceDashboard`). */
+export interface WorkspaceFigures {
+  /** Active members only: suspended and removed people are not counted. */
+  readonly members: number;
+  /** The Spaces the caller can see. */
+  readonly spaces: number;
+  readonly teams: number;
+  readonly invitations: number;
+  readonly archived: boolean;
+}
+
 /** Workspace defaults (`Workspaces.Settings.*`). */
 export interface WorkspaceSettings {
   readonly defaultMemberRole: Exclude<WorkspaceRole, "owner">;

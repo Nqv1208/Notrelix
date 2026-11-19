@@ -381,6 +381,40 @@ export const workspaceOperations = [
     },
   }),
 
+  // The workspace figures (Workspaces.Workspaces.GetWorkspaceDashboard): Owner and Admin only, active members only.
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.dashboard.get",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/dashboard",
+    async handle({ params, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner" && role !== "admin") return forbidden();
+      const workspace = store.getWorkspace(params.workspaceId);
+      if (!workspace) return notFound();
+      return ok({
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        memberCount: store
+          .getWorkspaceMembers(params.workspaceId)
+          .filter((member) => !store.isMembershipSuspended(member.id)).length,
+        spaceCount: store.spaces.visibleTree(
+          params.workspaceId,
+          store.spaceViewer(params.workspaceId),
+        ).length,
+        teamCount: store.spaces.teamsOf(params.workspaceId).length,
+        invitationCount: store
+          .getInvitations(params.workspaceId)
+          .filter((invitation) => invitation.status === "pending").length,
+        isArchived: store.isWorkspaceArchived(params.workspaceId),
+      });
+    },
+  }),
+
   // ─── Profile, defaults and archive (WX-SET-001) ────────────────────────────
   // Versioned like the producer: each write carries `expectedVersion`; a stale
   // one is a 412 and changes nothing; success advances the workspace version.

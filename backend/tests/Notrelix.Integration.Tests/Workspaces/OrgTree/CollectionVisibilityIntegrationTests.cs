@@ -261,8 +261,11 @@ public sealed class CollectionVisibilityIntegrationTests : IAsyncLifetime
             }
 
             single.Should().BeEquivalentTo(visible, "a single Space read hides what the list hides (NotFound)");
-            (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceDashboardQuery(stack.WorkspaceId)))
-                .SpaceCount.Should().Be(visible.Length, "the dashboard does not count hidden Spaces");
+            // The figures are for Owner and Admin only: a Member or Guest is forbidden, so the count is read
+            // where it is allowed.
+            if (principal == stack.OwnerId || principal == admin)
+                (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceDashboardQuery(stack.WorkspaceId)))
+                    .SpaceCount.Should().Be(visible.Length, "the dashboard does not count hidden Spaces");
         }
     }
 

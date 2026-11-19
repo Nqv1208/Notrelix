@@ -7,6 +7,7 @@ import { rememberMarkTone } from "../model/navigation";
 import type {
   CreateWorkspaceInput,
   UpdateWorkspaceProfileInput,
+  WorkspaceFigures,
   WorkspaceSettings,
   WorkspaceSummary,
 } from "../types/workspace";
@@ -27,6 +28,8 @@ export interface WorkspaceEndpoints {
   workspaces: {
     list: string;
     detail: (workspaceId: string) => string;
+    /** `Workspaces.Workspaces.GetWorkspaceDashboard` (GET, Owner and Admin). */
+    dashboard: (workspaceId: string) => string;
   };
   /** A workspace is created inside an Account (`Workspaces.Workspaces.CreateWorkspace`). */
   accounts: {
@@ -64,6 +67,10 @@ type TransferOwnershipBody =
 /** `Workspaces.Workspaces.GetWorkspace` (and each row of the workspace lists). */
 type WorkspaceDto = OperationResponse<
   "Workspaces.Workspaces.GetWorkspace",
+  200
+>;
+type WorkspaceDashboardDto = OperationResponse<
+  "Workspaces.Workspaces.GetWorkspaceDashboard",
   200
 >;
 type WorkspaceSettingsDto = OperationResponse<
@@ -128,6 +135,26 @@ export function createWorkspaceService(
     async getList(): Promise<WorkspaceSummary[]> {
       const rows = await api.get<unknown>(endpoints.workspaces.list);
       return Array.isArray(rows) ? rows.map(parseWorkspaceSummary) : [];
+    },
+
+    /**
+     * The workspace figures for Owner and Admin (`GetWorkspaceDashboard`): active members, the Spaces the caller
+     * can see, Teams and pending invitations. A Member or Guest is refused with 403; a count the producer does
+     * not send reads as 0.
+     */
+    async getFigures(id: string): Promise<WorkspaceFigures> {
+      const raw = (await api.get<unknown>(endpoints.workspaces.dashboard(id), {
+        skipGlobalErrorToast: true,
+      })) as Partial<Record<keyof WorkspaceDashboardDto, unknown>> | null;
+      const count = (value: unknown) =>
+        typeof value === "number" && value >= 0 ? value : 0;
+      return {
+        members: count(raw?.memberCount),
+        spaces: count(raw?.spaceCount),
+        teams: count(raw?.teamCount),
+        invitations: count(raw?.invitationCount),
+        archived: raw?.isArchived === true,
+      };
     },
 
     async getDetail(id: string): Promise<WorkspaceSummary> {

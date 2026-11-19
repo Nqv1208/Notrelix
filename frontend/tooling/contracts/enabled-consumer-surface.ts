@@ -808,6 +808,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    operationId: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createWorkspaceSettingsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
