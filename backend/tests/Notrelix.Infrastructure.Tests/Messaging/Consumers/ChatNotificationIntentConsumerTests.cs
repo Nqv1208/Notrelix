@@ -36,7 +36,7 @@ public class ChatNotificationIntentConsumerTests
         var db = new Mock<IChatDbContext>();
         var intents = new Mock<IChatNotificationIntents>();
         var consumer = new ChatMessageRemovedNotificationConsumer(
-            new ChatNotificationHandoff(db.Object, intents.Object, NullLogger<ChatNotificationHandoff>.Instance),
+            new ChatNotificationHandoff(db.Object, intents.Object, new Notrelix.Application.Common.Realtime.Gateway.RealtimePresenceRegistry(), Mock.Of<Notrelix.Application.Features.Workspaces.Public.Members.IWorkspaceMemberFacts>(), NullLogger<ChatNotificationHandoff>.Instance),
             NullLogger<ChatMessageRemovedNotificationConsumer>.Instance);
         var author = Guid.NewGuid();
         var message = new ChatMessageDeletedIntegrationEvent(
