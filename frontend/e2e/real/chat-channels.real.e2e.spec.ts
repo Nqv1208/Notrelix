@@ -138,7 +138,7 @@ test("a channel is created, renamed and given a topic, a private channel stays h
   await privateDialog
     .getByRole("textbox", { name: "Name", exact: true })
     .fill(secretName);
-  await privateDialog.getByRole("switch", { name: "Private channel" }).click();
+  await privateDialog.getByRole("radio", { name: /^Private/ }).click();
   await privateDialog.getByRole("button", { name: "Create channel" }).click();
   await expect(
     page.getByRole("heading", {
