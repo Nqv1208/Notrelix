@@ -70,7 +70,7 @@ Current Compose/SSH adapter expects values such as deployment host/user/key/know
 
 ## 6. Release lifecycle
 
-Dormant until `ci.yml` produces the release-candidate input `release.yml` waits for. Intended flow for a releaseable `main` push:
+Active: the `release-*` jobs of `ci.yml` produce the release-candidate input `release.yml` waits for. Flow for a releaseable `main` push:
 
 ```text
 CI gate
