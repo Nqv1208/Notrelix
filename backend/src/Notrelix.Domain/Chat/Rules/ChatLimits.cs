@@ -30,6 +30,9 @@ public static class ChatLimits
     /// <summary>The longest client message id, in characters. The client picks it; the server only keeps it.</summary>
     public const int ClientMessageIdMaxLength = 128;
 
+    /// <summary>The longest sticker id stored on a message (UC-CHT-I06).</summary>
+    public const int StickerIdMaxLength = 40;
+
     /// <summary>The longest reason a moderator gives for removing a message, in characters after trim (UC-CHT-H03).</summary>
     public const int ModerationReasonMaxLength = 500;
 

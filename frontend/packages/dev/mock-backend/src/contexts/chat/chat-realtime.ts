@@ -82,6 +82,7 @@ function fullMessagePayload(
     version: message.version,
     threadRootId: message.threadRootId,
     threadSequence: message.threadSequence,
+    ...(message.stickerId ? { stickerId: message.stickerId } : {}),
   };
   if (eventType === "chat.message.created") {
     // The sender's key travels with the created frame so the sender swaps its pending bubble in place.

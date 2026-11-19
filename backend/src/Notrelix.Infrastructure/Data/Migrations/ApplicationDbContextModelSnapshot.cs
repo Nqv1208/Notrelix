@@ -2907,6 +2907,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("space_id");
 
+                    b.Property<string>("StickerId")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("sticker_id");
+
                     b.Property<Guid?>("ThreadRootId")
                         .HasColumnType("uuid")
                         .HasColumnName("thread_root_id");

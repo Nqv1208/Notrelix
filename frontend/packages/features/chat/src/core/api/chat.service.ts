@@ -366,6 +366,8 @@ export function createChatService(
         replyToId?: string | null;
         /** A voice message carries no text; its audio is uploaded to it next (UC-CHT-I04). */
         voiceMessage?: boolean;
+        /** A Notrelix sticker sent alone: no text (UC-CHT-I06). */
+        stickerId?: string | null;
       } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(

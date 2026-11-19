@@ -690,6 +690,13 @@ export function ChatWorkspace({
     timeline.afterSend();
   }
 
+  function handleSendSticker(stickerId: string) {
+    if (!channelId) return;
+    sender.sendSticker(stickerId, replyTo?.id ?? null);
+    setReplyTo(null);
+    timeline.afterSend();
+  }
+
   function handleReact(message: ChatMessage, emoji: string, add: boolean) {
     reactor.mutate(
       { messageId: message.id, kind: emoji, add },
@@ -2102,6 +2109,7 @@ export function ChatWorkspace({
                         onTyping={ephemeral ? typingSignal.start : undefined}
                         onTypingStop={ephemeral ? typingSignal.stop : undefined}
                         onSend={handleSend}
+                        onSendSticker={handleSendSticker}
                         mentions={composerMentions}
                         attachments={{ draftKey: ch }}
                         slowModeSeconds={channel?.slowModeSeconds ?? 0}

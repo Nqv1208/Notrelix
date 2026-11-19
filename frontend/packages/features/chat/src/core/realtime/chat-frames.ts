@@ -42,6 +42,8 @@ export interface ChatMessageFramePayload {
   readonly threadRootId: string | null;
   /** The reply's thread sequence (null for the main flow). */
   readonly threadSequence: number | null;
+  /** The Notrelix sticker of a sticker message (null for any other message). */
+  readonly stickerId?: string | null;
 }
 
 /** chat.reaction.v1: one reaction of a message was added or removed (compact: no counts). */
@@ -163,6 +165,7 @@ export function parseChatMessageFrame(
       isCount(payload.threadSequence) && payload.threadSequence >= 1
         ? payload.threadSequence
         : null,
+    stickerId: isNonEmpty(payload.stickerId) ? payload.stickerId : null,
   };
 }
 

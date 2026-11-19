@@ -43,6 +43,9 @@ public class Message : AggregateRoot, IWorkspaceScoped
     /// <summary>The call a call system message reports; null for every other message. One message per (space, call) (SPEC-CHAT-MEDIA-CALLS invariant 6).</summary>
     public Guid? CallId { get; private set; }
 
+    /// <summary>The Notrelix sticker this message is (UC-CHT-I06); null for every other message. A sticker message has no typed text: its content is the catalog preview text.</summary>
+    public string? StickerId { get; private set; }
+
     public DateTimeOffset? EditedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
@@ -75,6 +78,32 @@ public class Message : AggregateRoot, IWorkspaceScoped
         return Create(
             accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt, clientMessageId.Trim(), replyToId,
             allowEmptyContent: voiceMessage);
+    }
+
+    /// <summary>
+    /// A sticker a person sent (UC-CHT-I06). The id must be in the Notrelix catalog; the content is the catalog preview text, never typed
+    /// text, so a sticker is never edited and never carries mentions.
+    /// </summary>
+    public static Message CreateStickerMessage(
+        Guid accountId,
+        Guid workspaceId,
+        Guid spaceId,
+        long sequence,
+        Guid authorId,
+        string stickerId,
+        string clientMessageId,
+        Guid? replyToId,
+        DateTimeOffset createdAt)
+    {
+        if (!StickerCatalog.Exists(stickerId))
+            throw new BusinessRuleException(ChatRuleCodes.StickerInvalid, "This sticker does not exist.");
+        Guard.NotNullOrWhiteSpace(clientMessageId);
+        if (clientMessageId.Trim().Length > ChatLimits.ClientMessageIdMaxLength)
+            throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
+
+        return Create(
+            accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, StickerCatalog.PreviewText(stickerId), createdAt,
+            clientMessageId.Trim(), replyToId, stickerId: stickerId);
     }
 
     /// <summary>
@@ -152,7 +181,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
         Guid? threadRootId = null,
         long? threadSequence = null,
         bool alsoSentToChannel = false,
-        bool allowEmptyContent = false)
+        bool allowEmptyContent = false,
+        string? stickerId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -176,6 +206,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
             ThreadRootId = threadRootId,
             ThreadSequence = threadSequence,
             AlsoSentToChannel = alsoSentToChannel,
+            StickerId = stickerId,
         };
 
         message.SetAuditOnCreate(authorId, createdAt);
@@ -193,7 +224,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
             createdAt,
             replyToId,
             threadRootId,
-            threadSequence));
+            threadSequence,
+            stickerId));
 
         return message;
     }
@@ -350,6 +382,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.SystemMessageImmutable, "A system message cannot be edited.");
         if (IsDeleted)
             throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot be edited.");
+        if (StickerId is not null)
+            throw new BusinessRuleException(ChatRuleCodes.StickerInvalid, "A sticker cannot be edited.");
         if (editedBy != AuthorId)
             throw new BusinessRuleException(ChatRuleCodes.MessageNotAuthor, "Only the author can edit this message.");
     }

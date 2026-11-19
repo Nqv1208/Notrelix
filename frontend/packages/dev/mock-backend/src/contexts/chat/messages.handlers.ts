@@ -55,6 +55,7 @@ type MessageParams = {
 };
 
 interface SendBody {
+  stickerId?: string | null;
   content?: string | null;
   clientMessageId?: string | null;
   replyToId?: string | null;
@@ -202,11 +203,25 @@ export const messagesOperations = [
         const caller = callerIn(store, params.workspaceId);
         requireIdempotencyKey(request.headers);
         requireAction(caller, "messagePost");
-        const content = requiredText(
-          body?.content,
-          "content",
-          CHAT_LIMITS.messageMaxLength,
-        );
+        // A sticker is one of the Notrelix catalog, alone: no text (UC-CHT-I06).
+        const stickerId =
+          typeof body?.stickerId === "string" ? body.stickerId : null;
+        if (stickerId !== null) {
+          if (!(stickerId in CHAT_LIMITS.stickers)) {
+            validationProblem("This sticker does not exist.");
+          }
+          if ((body?.content ?? "").trim().length > 0) {
+            validationProblem("A sticker is sent without text.");
+          }
+        }
+        const content =
+          stickerId !== null
+            ? `Sticker: ${CHAT_LIMITS.stickers[stickerId]}`
+            : requiredText(
+                body?.content,
+                "content",
+                CHAT_LIMITS.messageMaxLength,
+              );
         const clientMessageId = requiredText(
           body?.clientMessageId,
           "clientMessageId",
@@ -250,14 +265,17 @@ export const messagesOperations = [
         ) {
           notFoundProblem();
         }
-        const resolution = resolveMentions(
-          state,
-          caller,
-          space,
-          body?.content ?? "",
-          body?.mentions,
-          body?.confirmBroadcast === true,
-        );
+        const resolution =
+          stickerId !== null
+            ? { spans: [], notices: [] }
+            : resolveMentions(
+                state,
+                caller,
+                space,
+                body?.content ?? "",
+                body?.mentions,
+                body?.confirmBroadcast === true,
+              );
         if (
           resolution.spans.some(
             (span) =>
@@ -275,6 +293,7 @@ export const messagesOperations = [
           clientMessageId,
           replyToId,
           resolution.spans,
+          stickerId,
         );
         return {
           status: 201,
@@ -313,6 +332,14 @@ export const messagesOperations = [
             CHAT_ERROR.systemMessageImmutable,
             "System message",
             "A system message cannot be edited.",
+          );
+        }
+        if (message.stickerId) {
+          fail(
+            409,
+            CHAT_ERROR.stickerInvalid,
+            "Sticker",
+            "A sticker cannot be edited.",
           );
         }
         if (message.deletedAt !== null) {
