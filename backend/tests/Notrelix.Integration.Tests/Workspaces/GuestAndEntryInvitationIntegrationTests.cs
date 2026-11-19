@@ -103,6 +103,19 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
             w.AccountId, w.WorkspaceId, InviteeEmail, role, hash, v, w.OwnerId,
             createdAt ?? Now.AddHours(-1), initialEntries: entries));
 
+    /// <summary>
+    /// A Guest invitation that names Team entries was possible before a Guest invitation could not name a Team: the domain
+    /// now refuses to create one, so an invitation already in flight is stored as a Member invitation and its role set to
+    /// Guest directly.
+    /// </summary>
+    private async Task<string> SeedInFlightGuestInvitationAsync(World w, IReadOnlyList<WorkspaceInvitationInitialEntry> entries)
+    {
+        var token = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Member, entries);
+        await using var ctx = _db.CreateOwnerContext(SystemTenant());
+        await ctx.Database.ExecuteSqlRawAsync("UPDATE workspace.workspace_invitations SET role = 'Guest' WHERE workspace_id = {0}", w.WorkspaceId);
+        return token;
+    }
+
     private Task<string> SeedResourceInvitationAsync(World w, Guid boardId, string level) =>
         SeedInvitationAsync(w, (hash, v) => WorkspaceInvitation.CreateForResource(
             w.AccountId, w.WorkspaceId, InviteeEmail,
@@ -170,7 +183,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     public async Task WorkspaceInvitation_AppliesMembershipAndInitialEntriesAtomically()
     {
         var w = await SeedWorldAsync();
-        var token = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Guest, Entries(w));
+        var token = await SeedInFlightGuestInvitationAsync(w, Entries(w));
 
         var (result, _) = await AcceptAsync(w.UserId, token);
 
@@ -178,8 +191,10 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.SingleAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId))
             .Role.Should().Be(WorkspaceRole.Guest, "guest is the membership fact the invitation names");
-        (await probe.TeamMembers.CountAsync(m => m.TeamId == w.TeamId && m.UserId == w.UserId && m.Status == TeamMemberStatus.Active))
-            .Should().Be(1);
+        // A Guest is not a Team member (Workspaces_Team_GuestCannotJoin, workspaces.md section 46): the Team entry of an
+        // invitation already in flight is skipped, the Space entry is applied.
+        (await probe.TeamMembers.CountAsync(m => m.TeamId == w.TeamId && m.UserId == w.UserId))
+            .Should().Be(0);
         (await probe.SpaceMembers.CountAsync(m => m.SpaceId == w.SpaceId && m.SubjectId == w.UserId && m.Role == SpaceRole.Viewer))
             .Should().Be(1);
     }

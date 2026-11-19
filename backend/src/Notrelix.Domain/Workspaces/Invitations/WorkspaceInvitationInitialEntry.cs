@@ -83,4 +83,7 @@ public sealed record InvitationEntryRefusal(int Index, string Kind, Guid TargetI
 
     /// <summary>A Guest invitation cannot name a Team lead or a Space admin.</summary>
     public const string GuestTooPrivileged = "guest-too-privileged";
+
+    /// <summary>A Guest is not a Team member, so a Guest invitation cannot name any Team entry (Workspaces_Team_GuestCannotJoin).</summary>
+    public const string GuestCannotJoinTeam = "guest-cannot-join-team";
 }

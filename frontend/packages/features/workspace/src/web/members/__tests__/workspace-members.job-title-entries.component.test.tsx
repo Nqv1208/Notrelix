@@ -370,6 +370,27 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     ).toBeNull();
   });
 
+  it("FUI[workspace.members:invite-entry-refused-guest-team] says a Guest cannot join a Team under the refused Team entry", () => {
+    renderMembers(membersInvitationsScenario(), {
+      entryOptions,
+      entryRefusals: new Map([
+        ["team:team-erp", "guest-cannot-join-team" as const],
+      ]),
+    });
+    pick("Nhóm Kỹ sư ERP");
+    fireEvent.keyDown(
+      screen.getByRole("combobox", { name: copy.invitations.roleLabel }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getByRole("option", { name: copy.roles.guest }));
+
+    const refused = screen.getByRole("alert");
+    expect(refused.textContent).toBe(
+      "A Guest can't join a Team, so Nhóm Kỹ sư ERP can't take this person. Remove it.",
+    );
+    expect(refused.closest("li")?.textContent).toContain("Nhóm Kỹ sư ERP");
+  });
+
   it("FUI[workspace.members:invite-entry-refused-guest] says a Guest cannot hold the role of a refused entry", () => {
     renderMembers(membersInvitationsScenario(), {
       entryOptions,

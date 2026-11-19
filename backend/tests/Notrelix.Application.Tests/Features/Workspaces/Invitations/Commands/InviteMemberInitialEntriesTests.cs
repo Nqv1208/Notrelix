@@ -112,6 +112,25 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         NothingStoredOrSent();
     }
 
+    [Fact]
+    public async Task AGuestInvitation_NamingATeamMember_IsRefusedPerEntry_AndNothingIsStoredOrSent()
+    {
+        var space = CreateSpace();
+        SetupSpaces(space);
+        var teamId = Guid.CreateVersion7();
+        _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var act = () => Invite(
+            WorkspaceRole.Guest,
+            new InvitationInitialEntryInput("Space", space.Id, "Viewer"),
+            new InvitationInitialEntryInput("Team", teamId, "Member"));
+
+        var thrown = (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which;
+        thrown.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged);
+        Refusals(thrown).Should().Equal(new InvitationEntryRefusal(1, "team", teamId, InvitationEntryRefusal.GuestCannotJoinTeam));
+        NothingStoredOrSent();
+    }
+
     private static IReadOnlyList<InvitationEntryRefusal> Refusals(Notrelix.Domain.Common.Exceptions.BusinessRuleException ex) =>
         (IReadOnlyList<InvitationEntryRefusal>)ex.Details["entries"]!;
 
