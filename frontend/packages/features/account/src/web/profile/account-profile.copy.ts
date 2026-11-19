@@ -29,6 +29,7 @@ export const en = {
   nameRequired: "Enter your name.",
   nameTooLong: "Use at most {{count}} characters.",
   jobTitleLabel: "Job title",
+  jobTitleTooLong: "A job title is at most {{count}} characters.",
   emailLabel: "Email",
   emailManaged:
     "Managed by {{workspace}} through {{provider}}. It can't be changed here.",
@@ -99,6 +100,7 @@ export const vi: AccountProfileCopy = {
   nameRequired: "Hãy nhập tên của bạn.",
   nameTooLong: "Chỉ dùng tối đa {{count}} ký tự.",
   jobTitleLabel: "Chức danh",
+  jobTitleTooLong: "Chức danh dài tối đa {{count}} ký tự.",
   emailLabel: "Email",
   emailManaged:
     "Do {{workspace}} quản lý qua {{provider}}. Không đổi được ở đây.",
