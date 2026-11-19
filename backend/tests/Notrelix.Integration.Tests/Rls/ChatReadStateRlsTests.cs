@@ -119,4 +119,41 @@ public sealed class ChatReadStateRlsTests : IAsyncLifetime
 
         moved.Should().BeFalse("the membership is in another Workspace, so the store finds no row to move");
     }
+
+    [Fact]
+    public async Task TheStoreRefusesToRewindABoundaryFromAnotherWorkspace()
+    {
+        await AsAppNonQueryAsync(_a, $"UPDATE chat.memberships SET read_sequence = 5 WHERE space_id = '{_spaceId}'");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(_b.AccountId, _b.WorkspaceId, _b.User.Id);
+
+        await using var db = _fixture.CreateAppContext(tenant);
+        var moved = await new ChatReadStateStore(db).RewindAsync(_b.WorkspaceId, _spaceId, _a.User.Id, 1, CancellationToken.None);
+        var value = await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'");
+
+        moved.Should().BeFalse("the membership is in another Workspace, so the store finds no row to rewind");
+        value.Should().Be("5", "the owning Workspace's boundary is untouched");
+    }
+
+    [Fact]
+    public async Task TheOwningWorkspaceRewindsItsOwnBoundaryUnderTheAppRole_AndNeverForward()
+    {
+        await AsAppNonQueryAsync(_a, $"UPDATE chat.memberships SET read_sequence = 5 WHERE space_id = '{_spaceId}'");
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetWorkspace(_a.AccountId, _a.WorkspaceId, _a.User.Id);
+
+        await using (var db = _fixture.CreateAppContext(tenant))
+        {
+            var store = new ChatReadStateStore(db);
+            (await store.RewindAsync(_a.WorkspaceId, _spaceId, _a.User.Id, 2, CancellationToken.None)).Should().BeTrue();
+        }
+        (await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'")).Should().Be("2");
+
+        await using (var db = _fixture.CreateAppContext(tenant))
+        {
+            await new ChatReadStateStore(db).RewindAsync(_a.WorkspaceId, _spaceId, _a.User.Id, 4, CancellationToken.None);
+        }
+        (await AsAppScalarAsync(_a, $"SELECT read_sequence FROM chat.memberships WHERE space_id = '{_spaceId}'"))
+            .Should().Be("2", "a target ahead of the boundary never reads anything forward");
+    }
 }

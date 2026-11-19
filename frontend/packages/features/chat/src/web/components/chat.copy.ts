@@ -701,6 +701,9 @@ export const en = {
     copyText: "Copy text",
     copyLink: "Copy link",
     copied: "Copied to clipboard",
+    markUnread: "Mark unread from here",
+    markedUnread: "Marked unread from this message",
+    markUnreadFailed: "Could not mark the channel unread. Try again.",
     sheetLabel: "Message actions",
   },
   reactions: {
@@ -1795,6 +1798,9 @@ export const vi: ChatCopy = {
     copyText: "Sao chép nội dung",
     copyLink: "Sao chép liên kết",
     copied: "Đã sao chép",
+    markUnread: "Đánh dấu chưa đọc từ đây",
+    markedUnread: "Đã đánh dấu chưa đọc từ tin nhắn này",
+    markUnreadFailed: "Không thể đánh dấu kênh chưa đọc. Hãy thử lại.",
     sheetLabel: "Thao tác với tin nhắn",
   },
   reactions: {

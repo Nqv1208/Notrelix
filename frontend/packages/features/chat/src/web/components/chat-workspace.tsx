@@ -697,6 +697,17 @@ export function ChatWorkspace({
     );
   }
 
+  function handleMarkUnread(message: ChatMessage) {
+    timeline
+      .markUnreadFrom(message.sequence)
+      .then(() =>
+        toast.success(copy.toolbar.markedUnread, { id: "chat-mark-unread" }),
+      )
+      .catch(() =>
+        toast.error(copy.toolbar.markUnreadFailed, { id: "chat-mark-unread" }),
+      );
+  }
+
   function handleTogglePin(message: ChatMessage, pinned: boolean) {
     // Unpinning is announced to everyone, so it asks first (Chat-Pins boards).
     if (!pinned) {
@@ -2010,6 +2021,7 @@ export function ChatWorkspace({
                       }
                       onOpenThread={handleOpenThread}
                       onTogglePin={grants.pin ? handleTogglePin : undefined}
+                      onMarkUnread={handleMarkUnread}
                       attachmentsReadOnly={channel?.isArchived === true}
                       bottomInset={dockHeight}
                       showNames={conversation?.kind !== "direct"}
