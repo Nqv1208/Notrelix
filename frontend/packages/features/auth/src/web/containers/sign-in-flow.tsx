@@ -155,7 +155,11 @@ export function SignInFlow({
   const signedIn = useMemo(
     () => (session: SessionResult) => {
       queryClient.setQueryData(authQueryKeys.profile, session.user);
-      navigation.navigate({ to: returnTo ?? "/home", replace: true });
+      navigation.navigate(
+        returnTo
+          ? { to: returnTo, replace: true }
+          : { to: "/home", search: { open: "default" }, replace: true },
+      );
     },
     [navigation, queryClient, returnTo],
   );

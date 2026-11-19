@@ -160,12 +160,16 @@ describe("sign-in flow: second step after a provider sign-in", () => {
     });
   });
 
-  it("goes home when the return path is not an internal one", async () => {
+  it("goes home, asking to open the default workspace, when the return path is not an internal one", async () => {
     const service = { verifyMfa: vi.fn(async () => session) };
     const nav = renderSecondStep(service, "//evil.com");
     enterCode();
     await waitFor(() =>
-      expect(nav.navigate).toHaveBeenCalledWith({ to: "/home", replace: true }),
+      expect(nav.navigate).toHaveBeenCalledWith({
+        to: "/home",
+        search: { open: "default" },
+        replace: true,
+      }),
     );
   });
 
