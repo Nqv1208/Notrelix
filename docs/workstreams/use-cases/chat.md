@@ -49,12 +49,12 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | E      | CHT-005 Direct and group conversations                            | 7         | 0       | 0            | 0           | 0         | 7    | 0       |
 | F      | CHT-006 Threads, replies and pins                                 | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
 | G      | CHT-007 Mentions, reactions, attachments and notification handoff | 9         | 0       | 0            | 0           | 1         | 8    | 0       |
-| H      | CHT-008 Access, moderation, retention, search and hardening       | 10        | 0       | 0            | 0           | 5         | 5    | 0       |
-| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 3         | 1    | 0       |
+| H      | CHT-008 Access, moderation, retention, search and hardening       | 11        | 0       | 0            | 0           | 2         | 8    | 1       |
+| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 0         | 4    | 0       |
 | J      | CHT-010 Calls                                                     | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
-|        | Total                                                             | 84        | 8       | 0            | 0           | 9         | 67   | 0       |
+|        | Total                                                             | 85        | 8       | 0            | 0           | 3         | 73   | 1       |
 
-The counts are those of the index below (section 2), counted by State on 2026-11-19: 67 DONE, 9 HARDENING, 8 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 (screen share, Phase 6, SYS-ADR-002). HARDENING rows: G03, H03, H04, H05, H09, H10, I01, I04 and I05; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
+The counts are those of the index below (section 2), counted by State on 2026-11-19: 73 DONE, 3 HARDENING, 8 DEFINED, 1 BLOCKED (H11, waiting for the Governance Team visibility fact). DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 (screen share, Phase 6, SYS-ADR-002). HARDENING rows: G03, H05 and H09; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
 
 ### 1.2 Gaps
 
