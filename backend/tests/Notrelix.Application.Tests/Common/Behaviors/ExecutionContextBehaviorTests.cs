@@ -7,6 +7,8 @@ public sealed class ExecutionContextBehaviorTests
     private sealed record WorkspaceRequest(Guid WorkspaceId)
         : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IReadRequest;
 
+    private sealed record PersonRequest : IRequest<string>, IAuthenticatedRequest, IGlobalRequest, IReadRequest;
+
     private sealed record ResourceRequest(ResourceRef Resource)
         : IRequest<string>, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest;
 
@@ -137,7 +139,78 @@ public sealed class ExecutionContextBehaviorTests
             "the foreign tenant must never be adopted");
     }
 
-    private static Fixture<TRequest> CreateFixture<TRequest>() where TRequest : IRequest<string>
+    [Fact]
+    public async Task Api_token_cannot_reach_a_resource_outside_its_bound_workspace()
+    {
+        var boundAccount = Guid.NewGuid();
+        var fixture = CreateFixture<ResourceRequest>(CredentialKind.ApiToken, boundAccount, Guid.NewGuid());
+        var resource = ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
+        // The issuing user also belongs to a second workspace of the same account: still not the token's.
+        fixture.Locator
+            .Setup(locator => locator.LocateAsync(resource, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceLocation(resource.Kind, resource.ResourceId, boundAccount, Guid.NewGuid()));
+        var nextCalled = false;
+
+        var act = () => fixture.Behavior.Handle(
+            new ResourceRequest(resource), _ => { nextCalled = true; return Task.FromResult("ok"); }, CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>("a resource of another workspace is as missing as a made-up id");
+        nextCalled.Should().BeFalse();
+        fixture.ExecutionContext.Snapshot.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Api_token_cannot_reach_a_resource_of_another_account()
+    {
+        var fixture = CreateFixture<ResourceRequest>(CredentialKind.ApiToken, Guid.NewGuid(), Guid.NewGuid());
+        var resource = ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
+        fixture.Locator
+            .Setup(locator => locator.LocateAsync(resource, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceLocation(resource.Kind, resource.ResourceId, Guid.NewGuid(), Guid.NewGuid()));
+
+        var act = () => fixture.Behavior.Handle(
+            new ResourceRequest(resource), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task Api_token_reaches_a_resource_of_its_bound_workspace()
+    {
+        var boundAccount = Guid.NewGuid();
+        var boundWorkspace = Guid.NewGuid();
+        var fixture = CreateFixture<ResourceRequest>(CredentialKind.ApiToken, boundAccount, boundWorkspace);
+        var resource = ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
+        fixture.Locator
+            .Setup(locator => locator.LocateAsync(resource, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceLocation(resource.Kind, resource.ResourceId, boundAccount, boundWorkspace));
+
+        var result = await fixture.Behavior.Handle(
+            new ResourceRequest(resource), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        result.Should().Be("ok");
+    }
+
+    [Fact]
+    public async Task Api_token_cannot_reach_a_person_level_request_or_another_workspace()
+    {
+        var boundAccount = Guid.NewGuid();
+        var boundWorkspace = Guid.NewGuid();
+
+        var person = CreateFixture<PersonRequest>(CredentialKind.ApiToken, boundAccount, boundWorkspace);
+        var asPerson = () => person.Behavior.Handle(new PersonRequest(), _ => Task.FromResult("ok"), CancellationToken.None);
+        await asPerson.Should().ThrowAsync<ForbiddenException>("an authenticated global request is a person, not a workspace");
+
+        var elsewhere = CreateFixture<WorkspaceRequest>(CredentialKind.ApiToken, boundAccount, boundWorkspace);
+        var otherWorkspace = () => elsewhere.Behavior.Handle(
+            new WorkspaceRequest(Guid.NewGuid()), _ => Task.FromResult("ok"), CancellationToken.None);
+        await otherWorkspace.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    private static Fixture<TRequest> CreateFixture<TRequest>(
+        CredentialKind kind = CredentialKind.UserSession,
+        Guid? boundAccountId = null,
+        Guid? boundWorkspaceId = null) where TRequest : IRequest<string>
     {
         var userId = Guid.NewGuid();
         var executionContext = new Notrelix.Application.Common.Context.ExecutionContext();
@@ -145,7 +218,9 @@ public sealed class ExecutionContextBehaviorTests
         var tenant = new Mock<ICurrentTenantContext>();
         tenant.SetupGet(context => context.UserId).Returns(userId);
         var credential = new Mock<ICurrentCredentialContext>();
-        credential.SetupGet(context => context.Kind).Returns(CredentialKind.UserSession);
+        credential.SetupGet(context => context.Kind).Returns(kind);
+        credential.SetupGet(context => context.BoundAccountId).Returns(boundAccountId);
+        credential.SetupGet(context => context.BoundWorkspaceId).Returns(boundWorkspaceId);
         var locator = new Mock<IResourceLocator>();
         var descriptor = RequestDescriptorValidator.Create(typeof(TRequest));
         var descriptors = new Mock<IRequestDescriptorRegistry>();
