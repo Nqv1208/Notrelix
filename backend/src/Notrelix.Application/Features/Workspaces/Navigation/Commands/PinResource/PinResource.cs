@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Navigation.Services;
 using Notrelix.Domain.Workspaces.Navigation;
 
@@ -24,17 +25,20 @@ public class PinResourceCommandHandler : IRequestHandler<PinResourceCommand, Res
 {
     private readonly IWorkspaceNavigationStore _store;
     private readonly IResourceLocator _resourceLocator;
+    private readonly IResourceVisibility _visibility;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public PinResourceCommandHandler(
         IWorkspaceNavigationStore store,
         IResourceLocator resourceLocator,
+        IResourceVisibility visibility,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider)
     {
         _store = store;
         _resourceLocator = resourceLocator;
+        _visibility = visibility;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -42,7 +46,7 @@ public class PinResourceCommandHandler : IRequestHandler<PinResourceCommand, Res
     public async Task<Result> Handle(PinResourceCommand request, CancellationToken ct)
     {
         await NavigationResourceReference.EnsureInWorkspaceAsync(
-            _resourceLocator, _requestContext, request.WorkspaceId, request.Kind, request.ResourceId, ct);
+            _resourceLocator, _visibility, _requestContext, request.WorkspaceId, request.Kind, request.ResourceId, ct);
 
         var userId = _requestContext.UserId;
 
