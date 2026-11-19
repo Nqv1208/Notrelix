@@ -429,6 +429,7 @@ export interface ChatCreateChannelInput {
   readonly name: string;
   readonly topic?: string | null;
   readonly isPrivate: boolean;
+  readonly groupId?: string | null;
 }
 
 export interface ChatUpdateChannelInput {
