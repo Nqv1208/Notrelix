@@ -49,7 +49,7 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | E      | CHT-005 Direct and group conversations                            | 7         | 0       | 0            | 0           | 0         | 7    | 0       |
 | F      | CHT-006 Threads, replies and pins                                 | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
 | G      | CHT-007 Mentions, reactions, attachments and notification handoff | 9         | 0       | 0            | 0           | 1         | 8    | 0       |
-| H      | CHT-008 Access, moderation, retention, search and hardening       | 10        | 0       | 0            | 0           | 4         | 6    | 0       |
+| H      | CHT-008 Access, moderation, retention, search and hardening       | 10        | 0       | 0            | 0           | 5         | 5    | 0       |
 | I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 3         | 1    | 0       |
 | J      | CHT-010 Calls                                                     | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
 |        | Total                                                             | 84        | 8       | 0            | 0           | 9         | 67   | 0       |
