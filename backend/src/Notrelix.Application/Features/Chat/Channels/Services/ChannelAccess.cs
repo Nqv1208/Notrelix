@@ -44,6 +44,22 @@ public static class ChannelAccess
         return space;
     }
 
+    /// <summary>A deleted channel of the Workspace (never a conversation) with its memberships loaded, or the same NotFound as a missing one.</summary>
+    public static async Task<Space> LoadDeletedChannelAsync(IChatDbContext db, Guid accountId, Guid workspaceId, Guid channelId, CancellationToken ct)
+    {
+        // The context hides soft-deleted rows by default, and bypassing its filter also drops its tenant predicate (EF Core 9),
+        // so the account and the Workspace are applied here.
+        var space = await db.ChatSpaces.IgnoreQueryFilters().FirstOrDefaultAsync(
+            s => s.Id == channelId && s.AccountId == accountId && s.WorkspaceId == workspaceId && s.DeletedAt != null, ct)
+            ?? throw new NotFoundException(nameof(Space), channelId);
+        if (space.IsConversation)
+            throw new NotFoundException(nameof(Space), channelId);
+
+        await db.ChatMemberships.Where(m => m.SpaceId == channelId).ToListAsync(ct);
+        await db.ChatPermissionOverrides.Where(o => o.SpaceId == channelId).ToListAsync(ct);
+        return space;
+    }
+
     /// <summary>
     /// A live channel of the Workspace (not a direct or group conversation): the channel-only commands load through here, so a
     /// conversation is the same NotFound as a missing channel. Messages, pins and reactions load through <see cref="LoadLiveAsync"/>,
@@ -63,9 +79,15 @@ public static class ChannelAccess
     /// </summary>
     public static void RequireVisible(Space space, WorkspaceMemberFact caller, Guid userId)
     {
-        var mustBeMember = !space.IsPublic || string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
-        if (mustBeMember && !space.IsActiveMember(userId))
+        if (!CanSee(space, caller, userId))
             throw new NotFoundException(nameof(Space), space.Id);
+    }
+
+    /// <summary>The rule <see cref="RequireVisible"/> enforces, as a yes or no.</summary>
+    public static bool CanSee(Space space, WorkspaceMemberFact caller, Guid userId)
+    {
+        var mustBeMember = !space.IsPublic || string.Equals(caller.Role, GuestRole, StringComparison.Ordinal);
+        return !mustBeMember || space.IsActiveMember(userId);
     }
 
     /// <summary>
@@ -100,12 +122,13 @@ public static class ChannelAccess
     /// <summary>Renaming, archiving, moving and removing others belong to a channel manager, a Workspace Owner or Admin.</summary>
     public static void RequireManager(Space space, WorkspaceMemberFact caller, Guid userId)
     {
-        // A Guest never manages a channel, whatever role a row holds.
-        if (!IsGuest(caller) && space.IsActiveManager(userId)) return;
-        if (caller.Role is "Owner" or "Admin") return;
-
-        throw new ForbiddenException("Only a channel manager, a Workspace Owner or Admin can change this channel.");
+        if (!CanManage(space, caller, userId))
+            throw new ForbiddenException("Only a channel manager, a Workspace Owner or Admin can change this channel.");
     }
+
+    /// <summary>The rule <see cref="RequireManager"/> enforces, as a yes or no. A Guest never manages a channel, whatever role a row holds.</summary>
+    public static bool CanManage(Space space, WorkspaceMemberFact caller, Guid userId) =>
+        (!IsGuest(caller) && space.IsActiveManager(userId)) || caller.Role is "Owner" or "Admin";
 
     /// <summary>Channel names are unique per Workspace among active (not archived, not deleted) channels, ignoring case.</summary>
     public static async Task RequireUniqueNameAsync(IChatDbContext db, Guid workspaceId, string name, Guid? exceptChannelId, CancellationToken ct)

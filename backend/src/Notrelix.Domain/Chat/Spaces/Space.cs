@@ -245,7 +245,24 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         return true;
     }
 
-    /// <summary>Soft delete. The recovery window and the purge are a later rule (CHT-018).</summary>
+    /// <summary>How long after a delete a channel can be restored (CHT-018). The purge that removes it after this is a separate rule.</summary>
+    public static readonly TimeSpan RestoreWindow = TimeSpan.FromDays(30);
+
+    /// <summary>True when the space is deleted and its restore window has run out at <paramref name="now"/>.</summary>
+    public bool IsPastRestoreWindow(DateTimeOffset now) => DeletedAt is { } at && now - at > RestoreWindow;
+
+    /// <summary>Brings a deleted space back as it was: its members, roles and settings are untouched. A live space is left as it is.</summary>
+    public void Restore(Guid restoredBy, DateTimeOffset restoredAt)
+    {
+        Guard.NotEmpty(restoredBy);
+        if (!IsDeleted) return;
+
+        var pending = PrepareRestore(restoredBy, restoredAt);
+        ApplyRestore(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>Soft delete. A channel can be restored for <see cref="RestoreWindow"/> (CHT-018).</summary>
     public void Delete(Guid deletedBy, DateTimeOffset deletedAt)
     {
         Guard.NotEmpty(deletedBy);

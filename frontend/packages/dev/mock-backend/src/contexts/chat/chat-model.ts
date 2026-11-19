@@ -25,6 +25,8 @@ export interface ChatSpaceRecord {
   position: number;
   archivedAt: string | null;
   deletedAt: string | null;
+  /** Who deleted the channel; absent on a seeded space or one that is not deleted. */
+  deletedBy?: string | null;
   /** The least seconds between two messages of one person (UC-CHT-H08); absent or 0 is off. */
   slowModeSeconds?: number;
   /** The Board or Page this channel is linked to (UC-CHT-H10); absent or null when not linked. */

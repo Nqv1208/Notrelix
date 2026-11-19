@@ -4082,6 +4082,53 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/chat/channels/deleted": {
+      "get": {
+        "tags": [
+          "Chat.Channels"
+        ],
+        "summary": "List the deleted channels the caller can restore",
+        "description": "Only channels deleted in the last 30 days that the caller could delete (a channel manager, a Workspace Owner or Admin, and a member of a private channel). A private channel's name never reaches anyone else; a Member or Guest gets an empty list.",
+        "operationId": "Chat.Channels.ListDeleted",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}": {
       "get": {
         "tags": [
@@ -4652,6 +4699,112 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.ArchiveChannelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/restore": {
+      "post": {
+        "tags": [
+          "Chat.Channels"
+        ],
+        "summary": "Restore a deleted channel",
+        "description": "Allowed for whoever may delete the channel, inside 30 days of the delete; the channel comes back with its members and roles as they were. A name taken meanwhile is 409 name-conflict; past the window it is 409 restore-window-elapsed; a channel that is not deleted, or that the caller could not have deleted, is 404. A stale expectedVersion is 412.",
+        "operationId": "Chat.Channels.Restore",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channelId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest"
               }
             }
           },
@@ -36338,6 +36491,17 @@
           },
           "confirmBroadcast": {
             "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           }
         },

@@ -277,6 +277,49 @@ export function requireManager(
   );
 }
 
+/** The days a deleted channel can be restored (backend Space.RestoreWindow). */
+export const RESTORE_WINDOW_DAYS = 30;
+export const RESTORE_WINDOW_MS = RESTORE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+/** The mock's current instant in ms: the clock plus the virtual seconds the writes and a test moved forward. Never the wall clock. */
+export function chatNowMs(state: MockChatState): number {
+  return state.nowDate().getTime() + state.virtualSeconds() * 1000;
+}
+
+/** A deleted channel (not a conversation) of the Workspace; anything else is the same NotFound as a missing one. */
+export function deletedChannel(
+  state: MockChatState,
+  workspaceId: string,
+  spaceId: string,
+): ChatSpaceRecord {
+  const space = state.spaces.get(spaceId);
+  if (
+    !space ||
+    space.workspaceId !== workspaceId ||
+    space.deletedAt === null ||
+    isConversationKind(space.kind)
+  ) {
+    notFoundProblem();
+  }
+  return space;
+}
+
+/** Whether the caller may delete (so restore) the channel: see it, and be its manager or a Workspace Owner or Admin. */
+export function canRestore(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  caller: ChatCaller,
+): boolean {
+  if (caller.role === "Guest") return false;
+  const member = state.activeMembershipOf(space.id, caller.userId);
+  if (space.kind !== "channel_public" && !member) return false;
+  return (
+    member?.role === "manager" ||
+    caller.role === "Owner" ||
+    caller.role === "Admin"
+  );
+}
+
 /** Channel names are unique per Workspace among live, unarchived channels, ignoring case. */
 export function requireUniqueChannelName(
   state: MockChatState,

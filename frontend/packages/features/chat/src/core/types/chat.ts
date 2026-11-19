@@ -155,6 +155,17 @@ export interface ChatChannel {
   readonly link?: ChatChannelLink | null;
 }
 
+/** DeletedChannelDto (`Chat.Channels.ListDeleted`): a deleted channel the caller may restore, with the last day it can be. */
+export interface ChatDeletedChannel {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: ChatChannelKind;
+  readonly deletedAt: string;
+  readonly deletedBy: string | null;
+  readonly restorableUntil: string;
+  readonly version: number;
+}
+
 /**
  * ChannelLinkDto: where a channel is discussed from. `title` is there only when the viewer can view the resource now;
  * `accessible` false is the generic chip (hidden, deleted and missing look the same).

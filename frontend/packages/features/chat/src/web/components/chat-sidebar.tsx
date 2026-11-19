@@ -8,6 +8,7 @@ import {
   RotateCw,
   Search,
   Settings,
+  Trash2,
   X,
 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
@@ -56,6 +57,9 @@ export interface ChatSidebarProps {
   readonly onMarkAllRead?: () => void;
   readonly markingAllRead?: boolean;
   readonly onJoin: (channelId: string) => void;
+  /** Opens the deleted channels the caller may restore (UC-CHT-A08); the entry shows only when it is given. */
+  readonly onOpenDeleted?: () => void;
+  readonly deletedActive?: boolean;
   readonly onRetry: () => void;
   readonly joiningId: string | null;
   /** The direct and group conversations section; left out when the host does not offer conversations. */
@@ -143,6 +147,8 @@ export function ChatSidebar({
   onSelect,
   onCreate,
   onOpenSettings,
+  onOpenDeleted,
+  deletedActive = false,
   onSearch,
   onMarkAllRead,
   markingAllRead = false,
@@ -491,6 +497,23 @@ export function ChatSidebar({
               </ul>
             )}
           </section>
+        ) : null}
+
+        {onOpenDeleted && !searching ? (
+          <div className="flex flex-col gap-0.5 pt-2">
+            <button
+              type="button"
+              aria-current={deletedActive ? "page" : undefined}
+              className={cn(
+                "flex h-8 items-center gap-[9px] rounded-md px-2.5 text-start text-sm text-muted-foreground hover:bg-accent max-md:-mx-2 max-md:min-h-12 max-md:gap-3 max-md:px-4",
+                deletedActive && "bg-accent font-medium text-foreground",
+              )}
+              onClick={onOpenDeleted}
+            >
+              <Trash2 className="size-3.5 shrink-0" aria-hidden="true" />
+              {copy.deleted.entry}
+            </button>
+          </div>
         ) : null}
       </div>
     </nav>

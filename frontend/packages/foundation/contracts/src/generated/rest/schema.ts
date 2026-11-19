@@ -813,6 +813,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the deleted channels the caller can restore
+         * @description Only channels deleted in the last 30 days that the caller could delete (a channel manager, a Workspace Owner or Admin, and a member of a private channel). A private channel's name never reaches anyone else; a Member or Guest gets an empty list.
+         */
+        get: operations["Chat.Channels.ListDeleted"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}": {
         parameters: {
             query?: never;
@@ -899,6 +919,26 @@ export interface paths {
          * @description An archived channel is read-only. Unarchiving checks the name again: a name taken meanwhile is 409 name-conflict.
          */
         post: operations["Chat.Channels.Archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore a deleted channel
+         * @description Allowed for whoever may delete the channel, inside 30 days of the delete; the channel comes back with its members and roles as they were. A name taken meanwhile is 409 name-conflict; past the window it is 409 restore-window-elapsed; a channel that is not deleted, or that the caller could not have deleted, is 404. A stale expectedVersion is 412.
+         */
+        post: operations["Chat.Channels.Restore"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8417,6 +8457,10 @@ export interface components {
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest": {
+            /** Format: int64 */
+            expectedVersion?: number | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.SendMessageRequest": {
             content?: string | null;
             clientMessageId?: string | null;
@@ -15060,6 +15104,37 @@ export interface operations {
             };
         };
     };
+    "Chat.Channels.ListDeleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Chat.Channels.Get": {
         parameters: {
             query?: never;
@@ -15433,6 +15508,78 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ArchiveChannelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Channels.Restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest"];
             };
         };
         responses: {

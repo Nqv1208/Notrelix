@@ -6,15 +6,20 @@
  */
 
 import { defineMockOperation } from "../../operations/types";
+import { addDays } from "../../state/clock";
 import { ok } from "../../transport/create-response";
 import {
   archivedProblem,
   callerIn,
+  canRestore,
+  chatNowMs,
+  deletedChannel,
   groupIn,
   guarded,
   isConversationKind,
   liveChannel,
   nextChannelPosition,
+  notFoundProblem,
   optionalInteger,
   optionalText,
   parseVersion,
@@ -24,6 +29,9 @@ import {
   requireUniqueChannelName,
   requireVersion,
   requireVisible,
+  RESTORE_WINDOW_DAYS,
+  RESTORE_WINDOW_MS,
+  fail,
   requiredPosition,
   requiredText,
   validationProblem,
@@ -233,6 +241,44 @@ export const channelsOperations = [
     },
   }),
 
+  // ─── GET /channels/deleted ────────────────────────────────────────────────
+
+  defineMockOperation<WorkspaceParams>({
+    id: "chat.channels.listDeleted",
+    contract: { kind: "openapi", operationId: "Chat.Channels.ListDeleted" },
+    method: "GET",
+    route: `${WS}/deleted`,
+    async handle({ params, store }) {
+      return guarded(async () => {
+        const state = store.chat;
+        const caller = callerIn(store, params.workspaceId);
+        requireAction(caller, "viewWorkspace");
+        const floor = chatNowMs(state) - RESTORE_WINDOW_MS;
+        const rows = state
+          .spacesOfWorkspace(params.workspaceId)
+          .filter(
+            (space) =>
+              space.deletedAt !== null &&
+              !isConversationKind(space.kind) &&
+              Date.parse(space.deletedAt) >= floor &&
+              canRestore(state, space, caller),
+          )
+          .sort((a, b) => Date.parse(b.deletedAt!) - Date.parse(a.deletedAt!));
+        return ok(
+          rows.map((space) => ({
+            id: space.id,
+            name: space.name,
+            kind: space.kind,
+            deletedAt: space.deletedAt,
+            deletedBy: space.deletedBy ?? null,
+            restorableUntil: addDays(space.deletedAt!, RESTORE_WINDOW_DAYS),
+            version: space.version,
+          })),
+        );
+      });
+    },
+  }),
+
   // ─── GET /channels/:channelId ─────────────────────────────────────────────
 
   defineMockOperation<ChannelParams>({
@@ -428,6 +474,54 @@ export const channelsOperations = [
     },
   }),
 
+  // ─── POST /channels/:channelId/restore ────────────────────────────────────
+
+  defineMockOperation<ChannelParams, { expectedVersion?: number | null }>({
+    id: "chat.channels.restore",
+    contract: { kind: "openapi", operationId: "Chat.Channels.Restore" },
+    method: "POST",
+    route: `${WS}/:channelId/restore`,
+    async handle({ params, body, store }) {
+      return guarded(async () => {
+        const state = store.chat;
+        const caller = callerIn(store, params.workspaceId);
+        requireAction(caller, "channelManage");
+        const expected = parseVersion(body?.expectedVersion, "expectedVersion");
+        const space = deletedChannel(
+          state,
+          params.workspaceId,
+          params.channelId,
+        );
+        // A channel the caller could not have deleted is the same NotFound as a missing one.
+        if (!canRestore(state, space, caller)) notFoundProblem();
+        if (
+          chatNowMs(state) - Date.parse(space.deletedAt!) >
+          RESTORE_WINDOW_MS
+        ) {
+          fail(
+            409,
+            "restore-window-elapsed",
+            "Restore window elapsed",
+            "The 30-day window to restore this channel has passed.",
+          );
+        }
+        // An archived channel gives its name up; only a live name can clash.
+        if (space.archivedAt === null)
+          requireUniqueChannelName(
+            state,
+            params.workspaceId,
+            space.name,
+            space.id,
+          );
+        requireVersion(expected, space.version);
+        space.deletedAt = null;
+        space.deletedBy = null;
+        space.version += 1;
+        return { status: 204 };
+      });
+    },
+  }),
+
   // ─── DELETE /channels/:channelId ──────────────────────────────────────────
 
   defineMockOperation<ChannelParams>({
@@ -450,6 +544,7 @@ export const channelsOperations = [
         requireVersion(expected, space.version);
         // Soft delete: the row stays, the name is released (the live checks skip it).
         space.deletedAt = state.stampWrite();
+        space.deletedBy = caller.userId;
         space.version += 1;
         return { status: 204 };
       });
