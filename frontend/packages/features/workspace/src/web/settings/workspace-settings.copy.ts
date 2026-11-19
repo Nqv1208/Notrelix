@@ -117,6 +117,30 @@ export const en = {
     transferReload: "Reload the list",
     transferRoleAdmin: "Admin",
     transferRoleMember: "Member",
+    stepUpTitle: "Confirm it's you",
+    stepUpText:
+      "Handing {{workspace}} to {{name}} needs you to confirm it's you, even though you're signed in.",
+    stepUpCodeLabel: "6-digit code from your authenticator app",
+    stepUpUseRecovery: "Use a recovery code",
+    stepUpUseCode: "Use the authenticator code",
+    stepUpRecoveryLabel: "Recovery code",
+    stepUpPasswordLabel: "Current password",
+    stepUpConfirm: "Confirm and transfer",
+    stepUpChecking: "Confirming…",
+    stepUpWrongCode: "That code isn't right. Check it and try again.",
+    stepUpWrongPassword: "That password isn't right. Try again.",
+    stepUpWait: "Too many tries. Wait {{seconds}} seconds, then try again.",
+    stepUpExpiredTitle: "The confirmation expired.",
+    stepUpExpiredBody:
+      "A confirmation lasts 5 minutes. Start again to hand the workspace over.",
+    stepUpRestart: "Start again",
+    stepUpClose: "Close",
+    stepUpRefusedTitle: "Ownership was not transferred.",
+    stepUpRefusedBody:
+      "The confirmation expired or was already used. Confirm again to transfer ownership.",
+    stepUpProviderTitle: "Add a way to confirm first",
+    stepUpProviderBody:
+      "You sign in with a provider and have no password or two-factor yet. Add one in Account settings, Security, then come back to hand the workspace over.",
   },
   toasts: {
     profileSaved: "Profile saved.",
@@ -258,6 +282,30 @@ export const vi: WorkspaceSettingsCopy = {
     transferReload: "Tải lại danh sách",
     transferRoleAdmin: "Quản trị",
     transferRoleMember: "Thành viên",
+    stepUpTitle: "Xác nhận lại danh tính",
+    stepUpText:
+      "Chuyển quyền sở hữu {{workspace}} cho {{name}} cần xác nhận lại danh tính, dù bạn đã đăng nhập.",
+    stepUpCodeLabel: "Mã 6 số từ ứng dụng xác thực",
+    stepUpUseRecovery: "Dùng mã khôi phục",
+    stepUpUseCode: "Dùng mã từ ứng dụng xác thực",
+    stepUpRecoveryLabel: "Mã khôi phục",
+    stepUpPasswordLabel: "Mật khẩu hiện tại",
+    stepUpConfirm: "Xác nhận và chuyển quyền",
+    stepUpChecking: "Đang xác nhận…",
+    stepUpWrongCode: "Mã chưa đúng. Kiểm tra lại rồi thử tiếp.",
+    stepUpWrongPassword: "Mật khẩu chưa đúng. Hãy thử lại.",
+    stepUpWait: "Thử quá nhiều lần. Đợi {{seconds}} giây rồi thử lại.",
+    stepUpExpiredTitle: "Yêu cầu xác nhận đã hết hạn.",
+    stepUpExpiredBody:
+      "Phiên xác nhận chỉ có hiệu lực 5 phút. Bắt đầu lại để chuyển quyền.",
+    stepUpRestart: "Bắt đầu lại",
+    stepUpClose: "Đóng",
+    stepUpRefusedTitle: "Chưa chuyển quyền.",
+    stepUpRefusedBody:
+      "Xác nhận đã hết hạn hoặc đã được dùng. Hãy xác nhận lại để chuyển quyền.",
+    stepUpProviderTitle: "Thêm cách xác nhận trước",
+    stepUpProviderBody:
+      "Bạn đăng nhập bằng nhà cung cấp và chưa có mật khẩu hay xác thực hai bước. Hãy thêm một trong hai ở Cài đặt tài khoản, mục Bảo mật, rồi quay lại để chuyển quyền.",
   },
   toasts: {
     profileSaved: "Đã lưu hồ sơ.",

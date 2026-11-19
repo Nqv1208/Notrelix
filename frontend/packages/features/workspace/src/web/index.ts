@@ -196,6 +196,12 @@ export {
   type TransferCandidate,
   type TransferFailure,
 } from "./settings/transfer-ownership-flow";
+export type {
+  OwnershipProofFactor,
+  OwnershipProofRefusal,
+  OwnershipProofRequest,
+  OwnershipStepUp,
+} from "./settings/ownership-step-up";
 
 // ── Space org tree (OT-5) ─────────────────────────────────────────
 export { workspaceSpacesCatalog } from "./spaces/workspace-spaces.catalog";

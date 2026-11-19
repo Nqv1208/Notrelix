@@ -12,7 +12,8 @@ public enum MfaChallengePurpose
     StepUpChangeSecurityIdentity,
     StepUpChangePassword,
     StepUpRevokeOtherSessions,
-    StepUpEnrollMfa
+    StepUpEnrollMfa,
+    StepUpTransferWorkspaceOwnership
 }
 
 /// <summary>

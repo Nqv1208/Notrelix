@@ -117,7 +117,8 @@ export type StepUpPurpose =
   | "LinkOAuth"
   | "UnlinkOAuth"
   | "ChangeSecurityIdentity"
-  | "IssueApiToken";
+  | "IssueApiToken"
+  | "TransferWorkspaceOwnership";
 
 /** One API token of a workspace; never the secret, only the last characters. */
 export interface AccountApiToken {
