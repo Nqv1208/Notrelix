@@ -29,6 +29,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Invitation_InitialEntriesRequireMemberOrGuest = "Workspaces_Invitation_InitialEntriesRequireMemberOrGuest";
     public const string Workspaces_Invitation_InitialEntryInvalid = "Workspaces_Invitation_InitialEntryInvalid";
     public const string Workspaces_Invitation_GuestEntryRoleTooPrivileged = "Workspaces_Invitation_GuestEntryRoleTooPrivileged";
+    public const string Workspaces_Invitation_EntryTargetNotActive = "Workspaces_Invitation_EntryTargetNotActive";
     public const string Workspaces_Invitation_InitialEntryDuplicate = "Workspaces_Invitation_InitialEntryDuplicate";
     public const string Workspaces_Invitation_TooManyInitialEntries = "Workspaces_Invitation_TooManyInitialEntries";
     public const string Workspaces_Invitation_ResourceKindNotInvitable = "Workspaces_Invitation_ResourceKindNotInvitable";

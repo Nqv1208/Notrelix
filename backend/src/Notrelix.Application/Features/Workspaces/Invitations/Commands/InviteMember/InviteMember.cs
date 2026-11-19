@@ -101,8 +101,13 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var entries = ToDomainEntries(request.InitialEntries);
         if (entries.Count > 0)
         {
-            if (!await _initialEntries.AllTargetsEligibleAsync(request.WorkspaceId, entries, ct))
-                return Result<Guid>.Failure("Every initial team or space must be an active team or space of this workspace.");
+            // Every refused entry is named (additive `entries` extension of the problem), so the form can show each one.
+            var refused = await _initialEntries.IneligibleEntriesAsync(request.WorkspaceId, entries, ct);
+            if (refused.Count > 0)
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive,
+                    "Every initial team or space must be an active team or space of this workspace.",
+                    new Dictionary<string, object?> { ["entries"] = refused });
         }
 
         if (await IsActiveMemberAsync(request.WorkspaceId, cleanEmail, ct))

@@ -124,6 +124,10 @@ export const en = {
       guestNote: "A Guest can't be a Team lead or a Space admin.",
       refused:
         "A Team or Space you chose can't take this person. Remove it or ask an owner.",
+      notActive:
+        "{{name}} isn't active any more, so it can't take this person. Remove it or choose another.",
+      guestTooPrivileged:
+        "A Guest can't have this role in {{name}}. Choose a lower role or remove it.",
     },
     formTitle: "Invite by e-mail",
     emailLabel: "E-mail address",
@@ -329,6 +333,10 @@ export const vi: WorkspaceMembersCopy = {
       guestNote: "Khách không làm được trưởng nhóm hay quản trị phòng ban.",
       refused:
         "Nhóm hoặc phòng ban bạn chọn không nhận được người này. Bỏ mục đó hoặc nhờ chủ sở hữu.",
+      notActive:
+        "{{name}} không còn hoạt động nên không nhận được người này. Bỏ mục đó hoặc chọn mục khác.",
+      guestTooPrivileged:
+        "Khách không giữ được vai trò này trong {{name}}. Chọn vai trò thấp hơn hoặc bỏ mục đó.",
     },
     formTitle: "Mời qua e-mail",
     emailLabel: "Địa chỉ e-mail",

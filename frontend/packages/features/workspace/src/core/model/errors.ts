@@ -155,3 +155,36 @@ export function parseTeamReferencesRefusal(
   });
   return { references, moreHidden: body.moreReferencesHidden === true };
 }
+
+/** Why an initial Team or Space entry of an invitation was refused (the producer's `entries` extension). */
+export type InvitationEntryRefusalReason =
+  "not-active" | "guest-too-privileged";
+
+export interface InvitationEntryRefusal {
+  readonly kind: "team" | "space";
+  readonly targetId: string;
+  readonly reason: InvitationEntryRefusalReason;
+}
+
+/** Reads the refused entries of an invitation (additive `entries` on the problem); empty for any other failure. */
+export function parseInvitationEntryRefusals(
+  error: unknown,
+): readonly InvitationEntryRefusal[] {
+  const candidate = (asRecord(error) ?? {}) as ErrorLike;
+  const body = asRecord(candidate.details);
+  const rows = Array.isArray(body?.entries) ? body.entries : [];
+  return rows.flatMap((row): InvitationEntryRefusal[] => {
+    const record = asRecord(row);
+    if (
+      !record ||
+      (record.kind !== "team" && record.kind !== "space") ||
+      typeof record.targetId !== "string" ||
+      (record.reason !== "not-active" &&
+        record.reason !== "guest-too-privileged")
+    )
+      return [];
+    return [
+      { kind: record.kind, targetId: record.targetId, reason: record.reason },
+    ];
+  });
+}

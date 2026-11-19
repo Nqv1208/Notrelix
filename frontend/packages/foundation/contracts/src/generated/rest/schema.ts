@@ -7213,7 +7213,7 @@ export interface paths {
         put?: never;
         /**
          * Invite a member to workspace
-         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.
+         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again. An invitation whose initial Team or Space entries are refused answers 400 with a ruleCode (Workspaces_Invitation_EntryTargetNotActive when a Team or Space is not an active one of the workspace, Workspaces_Invitation_GuestEntryRoleTooPrivileged when a Guest invitation names a Team lead or Space admin) and an entries list in the problem: each refused entry with its index in the request, its kind (team or space), its targetId and a reason (not-active or guest-too-privileged); nothing is stored and no email is sent.
          */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
