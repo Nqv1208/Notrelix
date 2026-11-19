@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -20,7 +20,6 @@ import {
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight, Ban, ArrowRight } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
-import { useHoldRealtimeRefetch } from "@notrelix/work-management-state";
 import {
   planLaneDrop,
   type Card,
@@ -62,6 +61,8 @@ export interface SwimlaneRefusal {
 }
 
 export interface KanbanSwimlaneBoardProps {
+  /** Tells the host a card is lifted (true) or dropped (false). */
+  onDraggingChange?: (dragging: boolean) => void;
   copy: FiltersCopy;
   cardCopy: KanbanCardCopy;
   now: Date;
@@ -120,7 +121,12 @@ export function KanbanSwimlaneBoard(props: KanbanSwimlaneBoardProps) {
     lane: string | null;
   } | null>(null);
   const dragId = drag?.cardId ?? null;
-  useHoldRealtimeRefetch(dragId !== null);
+  const { onDraggingChange } = props;
+  // The host holds realtime refetches while a card is lifted (it owns the state package).
+  useEffect(
+    () => onDraggingChange?.(dragId !== null),
+    [dragId, onDraggingChange],
+  );
   const [overCell, setOverCell] = useState<string | null>(null);
   const [live, setLive] = useState("");
   const sensors = useSensors(

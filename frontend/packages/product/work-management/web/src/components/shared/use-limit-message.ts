@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { limitOf } from "@notrelix/work-management-state";
+import { limitOf } from "@notrelix/work-management-core";
 import { limitCopy } from "../board-settings/board-settings-format";
 import { useBoardSettingsCopy } from "../board-settings/use-board-settings-copy";
 

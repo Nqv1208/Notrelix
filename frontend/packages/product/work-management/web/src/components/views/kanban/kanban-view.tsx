@@ -1365,6 +1365,7 @@ export function KanbanView({
             ) : laneField ? (
               <>
                 <KanbanSwimlaneBoard
+                  onDraggingChange={setDragging}
                   initialCollapsed={collapsedSwimlanes.initial}
                   onCollapsedChange={collapsedSwimlanes.onChange}
                   copy={filtersCopy}

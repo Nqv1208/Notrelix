@@ -151,6 +151,13 @@ export {
 } from "./components/views/calendar/calendar.copy";
 export { useCalendarCopy } from "./components/views/calendar/use-calendar-copy";
 
+// Data the pure surfaces read through the host
+export { WorkManagementUiPortsHost } from "./components/shared/wm-ui-ports-host";
+export {
+  WmUiPortsProvider,
+  type WmUiPorts,
+} from "./components/shared/wm-ui-ports";
+
 // Card detail
 export {
   BoardItemSheetHost,
