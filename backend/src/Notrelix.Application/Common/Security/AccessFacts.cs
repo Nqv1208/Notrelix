@@ -93,6 +93,12 @@ public sealed record AccessFacts(
     /// refuses every write once the normal decision is Allow, so a caller without access still gets NotFound.
     /// </summary>
     public bool AccountSuspended { get; init; }
+
+    /// <summary>
+    /// The request's Workspace is Archived (and not deleted). Reads stay open; the policy refuses every write once the
+    /// normal decision is Allow, except the workspace lifecycle requests (<see cref="IWorkspaceLifecycleRequest"/>).
+    /// </summary>
+    public bool WorkspaceArchived { get; init; }
 }
 
 /// <summary>A custom role as access facts: its fixed built-in base and the actions it adds and removes.</summary>
