@@ -76,6 +76,9 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
 
         member.Remove(activeOwnerCount, _requestContext.UserId, _dateTimeProvider.UtcNow);
 
+        await MemberDepartureCleanup.RunAsync(
+            _context, workspace, request.UserId, _requestContext.UserId, _dateTimeProvider.UtcNow, ct);
+
         await _grantProjection.RevokeWorkspaceMemberGrantAsync(
             workspace.AccountId,
             workspace.Id,

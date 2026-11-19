@@ -91,6 +91,10 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
                 "The last owner cannot leave; hand the workspace over first.", LastOwnerErrorCode);
         }
 
+        // Before the grant ends: the leaver's own grant is what lets them write these rows.
+        await MemberDepartureCleanup.RunAsync(
+            _context, workspace, userId, userId, _dateTimeProvider.UtcNow, ct);
+
         await _grantProjection.RevokeLeavingMemberGrantAsync(
             workspace.AccountId,
             workspace.Id,
