@@ -8192,7 +8192,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Transfer workspace ownership to another member */
+        /**
+         * Transfer workspace ownership to another member
+         * @description Needs a single-use step-up proof for the TransferWorkspaceOwnership purpose, bound to the caller, the session and the purpose. Without one it answers 412 identity.security.step-up-required; a stale, spent or foreign proof answers 400 identity.security.step-up-invalid. Ownership never changes on a refusal.
+         */
         post: operations["Workspaces.Workspaces.TransferOwnership"];
         delete?: never;
         options?: never;
@@ -9549,6 +9552,7 @@ export interface components {
             newOwnerId?: string;
             /** Format: int64 */
             expectedVersion?: number;
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.UpdateWorkspaceProfileRequest": {
             name?: string | null;

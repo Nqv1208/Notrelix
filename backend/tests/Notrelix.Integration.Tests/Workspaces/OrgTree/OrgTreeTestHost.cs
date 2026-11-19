@@ -77,13 +77,14 @@ internal sealed class OrgTreeTestHost
 
     // ── Pipeline ──────────────────────────────────────────────────────────
 
-    public ServiceProvider CreateProvider(Guid accountId, Guid userId, Action<IServiceCollection>? configure = null)
+    public ServiceProvider CreateProvider(Guid accountId, Guid userId, Action<IServiceCollection>? configure = null, Guid? sessionId = null)
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetAccount(accountId, userId);
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
+        requestContextMock.Setup(r => r.SessionId).Returns(sessionId);
         requestContextMock.Setup(r => r.RequireAccountId()).Returns(accountId);
         requestContextMock.Setup(r => r.RequireWorkspaceId()).Returns(() => tenant.WorkspaceId ?? Guid.Empty);
 

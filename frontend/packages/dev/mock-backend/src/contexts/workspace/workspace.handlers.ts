@@ -21,6 +21,7 @@ import type {
   WorkspaceView,
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
+import { spendStepUpProof } from "../account/account-security.handlers";
 import { spacesOperations } from "./spaces.handlers";
 import { onboardingOperations } from "./onboarding.handlers";
 import {
@@ -528,7 +529,7 @@ export const workspaceOperations = [
 
   defineMockOperation<
     { workspaceId: string },
-    { newOwnerId?: string; expectedVersion?: number },
+    { newOwnerId?: string; expectedVersion?: number; stepUpToken?: string },
     void
   >({
     id: "workspace.transferOwnership",
@@ -542,6 +543,13 @@ export const workspaceOperations = [
       const role = store.getCurrentMemberRole(params.workspaceId);
       if (role === null) return notFound();
       if (role !== "owner") return forbidden();
+      // The most sensitive account action: a fresh single-use proof for this purpose, like the producer.
+      const unproven = spendStepUpProof(
+        store,
+        body?.stepUpToken,
+        "TransferWorkspaceOwnership",
+      );
+      if (unproven) return unproven;
       const outcome = store.transferOwnership(
         params.workspaceId,
         body?.newOwnerId ?? "",

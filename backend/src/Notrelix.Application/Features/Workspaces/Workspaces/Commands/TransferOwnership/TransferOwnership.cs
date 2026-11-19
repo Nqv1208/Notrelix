@@ -1,13 +1,21 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
 
+/// <summary>
+/// Hands the workspace to another active, non-Guest member. The most sensitive account action: it needs a
+/// single-use step-up proof for the TransferWorkspaceOwnership purpose, spent only once the caller is
+/// proven to be the active Owner and the target exists, so a non-Owner still gets the identical NotFound.
+/// </summary>
 public record TransferOwnershipCommand(
     Guid WorkspaceId,
     Guid NewOwnerId,
-    long ExpectedVersion
+    long ExpectedVersion,
+    string StepUpToken
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
@@ -23,14 +31,17 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IWorkspaceGrantProjectionService _grantProjection;
     private readonly IWorkspaceOwnerUpdateLocker _locker;
+    private readonly ISecurityStepUpService _stepUp;
 
     public TransferOwnershipCommandHandler(
         IWorkspaceDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
-        IWorkspaceOwnerUpdateLocker locker)
+        IWorkspaceOwnerUpdateLocker locker,
+        ISecurityStepUpService stepUp)
     {
+        _stepUp = stepUp;
         _locker = locker;
         _context = context;
         _requestContext = requestContext;
@@ -72,6 +83,10 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
         if (newOwner is null)
             throw new NotFoundException(nameof(WorkspaceMember), request.NewOwnerId);
 
+        var stepUp = await ConsumeStepUpAsync(currentOwnerId, request.StepUpToken, ct);
+        if (!stepUp.Succeeded)
+            return stepUp;
+
         var now = _dateTimeProvider.UtcNow;
 
         newOwner.PromoteToOwner(currentOwnerId, now);
@@ -94,5 +109,18 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
             ct);
 
         return Result.Success();
+    }
+
+    private async Task<Result> ConsumeStepUpAsync(Guid userId, string stepUpToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(stepUpToken) || _requestContext.SessionId is not { } sessionId)
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.security.step-up-required",
+                "Strong verification is required for this action.",
+                ApplicationErrorType.PreconditionFailed));
+        }
+
+        return await _stepUp.ConsumeAsync(stepUpToken, userId, sessionId, StepUpPurpose.TransferWorkspaceOwnership, ct);
     }
 }

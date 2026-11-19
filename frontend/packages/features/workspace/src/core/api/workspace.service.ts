@@ -211,18 +211,27 @@ export function createWorkspaceSettingsService(
 
     /**
      * Hands the workspace to another member (`TransferOwnership`): the person becomes Owner and the caller
-     * Admin. Answers 204; a version that moved meanwhile answers 412, a Guest or a person who is not an
+     * Admin. Needs a fresh single-use step-up proof for `TransferWorkspaceOwnership`: none answers 412
+     * `identity.security.step-up-required`, a stale, spent or foreign one 400 `identity.security.step-up-invalid`.
+     * Answers 204; a version that moved meanwhile answers 412, a Guest or a person who is not an
      * active member is refused, and only an Owner may ask.
      */
     async transferOwnership(
       workspaceId: string,
       newOwnerId: string,
       expectedVersion: number,
+      stepUpToken: string,
     ): Promise<void> {
-      const body: TransferOwnershipBody = { newOwnerId, expectedVersion };
+      const body: TransferOwnershipBody = {
+        newOwnerId,
+        expectedVersion,
+        stepUpToken,
+      };
       await api.post<void>(
         endpoints.workspaces.transferOwnership(workspaceId),
         body,
+        // Every refusal is said in the dialog, a stale or missing proof included.
+        { skipGlobalErrorToast: true },
       );
     },
   };

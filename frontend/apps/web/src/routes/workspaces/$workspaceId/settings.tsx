@@ -27,6 +27,7 @@ import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
+import { createOwnershipStepUp } from "@/shell/workspace/ownership-step-up";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 
 /** Maps a failed write to the section's status (inline, never toast-only). */
@@ -51,7 +52,15 @@ function failureStatus(
 }
 
 /** What the handover dialog says about a refused write: a stale list or a person who is gone is one case. */
-function transferFailure(failure: WorkspaceFailure): TransferFailure {
+function transferFailure(
+  failure: WorkspaceFailure,
+  code: string | undefined,
+): TransferFailure {
+  // The producer's two step-up refusals share statuses with a stale version (412) and a rule (400): the code decides.
+  if (code === "identity.security.step-up-required")
+    return { kind: "step-up-required" };
+  if (code === "identity.security.step-up-invalid")
+    return { kind: "step-up-invalid" };
   switch (failure.kind) {
     case "conflict":
     case "not-found":
@@ -221,17 +230,27 @@ export function SettingsPage() {
     [viewer.members.data, viewer.userId],
   );
 
+  const ownershipStepUp = useMemo(
+    () => createOwnershipStepUp(runtimeClient.api, runtimeClient.endpoints),
+    [runtimeClient],
+  );
+
   const onTransfer = async (
     userId: string,
+    stepUpToken: string,
   ): Promise<TransferFailure | null> => {
     if (version === undefined || !workspace) return { kind: "conflict" };
     try {
       await mutations.transferOwnership.mutateAsync({
         newOwnerId: userId,
         expectedVersion: version,
+        stepUpToken,
       });
     } catch (error) {
-      return transferFailure(describeWorkspaceFailure(error));
+      return transferFailure(
+        describeWorkspaceFailure(error),
+        (error as { code?: string }).code,
+      );
     }
     const name =
       transferCandidates.find((person) => person.userId === userId)?.name ?? "";
@@ -262,6 +281,7 @@ export function SettingsPage() {
         deleting={mutations.remove.isPending}
         canTransfer={viewer.role === "owner"}
         transferCandidates={transferCandidates}
+        ownershipStepUp={ownershipStepUp}
         onTransfer={onTransfer}
         onInviteForTransfer={() =>
           void navigate({

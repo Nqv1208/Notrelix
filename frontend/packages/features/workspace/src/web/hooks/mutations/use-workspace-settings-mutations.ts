@@ -100,10 +100,18 @@ export function createUseWorkspaceSettingsMutations({
       mutationFn: ({
         newOwnerId,
         expectedVersion,
+        stepUpToken,
       }: {
         newOwnerId: string;
         expectedVersion: number;
-      }) => service.transferOwnership(workspaceId, newOwnerId, expectedVersion),
+        stepUpToken: string;
+      }) =>
+        service.transferOwnership(
+          workspaceId,
+          newOwnerId,
+          expectedVersion,
+          stepUpToken,
+        ),
       retry: false,
       onSettled: async () => {
         await queryClient.invalidateQueries({

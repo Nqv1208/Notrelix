@@ -39,6 +39,7 @@ import {
   type TransferCandidate,
   type TransferFailure,
 } from "./transfer-ownership-flow";
+import type { OwnershipStepUp } from "./ownership-step-up";
 
 export interface WorkspaceProfileValues {
   readonly name: string;
@@ -78,7 +79,12 @@ export interface WorkspaceSettingsSurfaceProps {
   readonly canTransfer: boolean;
   /** Active members who are not Guests and not yet Owners; empty offers the invite path. */
   readonly transferCandidates: readonly TransferCandidate[];
-  readonly onTransfer: (userId: string) => Promise<TransferFailure | null>;
+  /** The host's proof of presence the handover asks for after the Owner confirms the choice. */
+  readonly ownershipStepUp: OwnershipStepUp;
+  readonly onTransfer: (
+    userId: string,
+    stepUpToken: string,
+  ) => Promise<TransferFailure | null>;
   readonly onInviteForTransfer: () => void;
   readonly onSaveProfile: (values: WorkspaceProfileValues) => void;
   readonly onSaveDefaults: (settings: WorkspaceSettings) => void;
@@ -762,6 +768,7 @@ export function WorkspaceSettingsSurface({
   deleting,
   canTransfer,
   transferCandidates,
+  ownershipStepUp,
   onTransfer,
   onInviteForTransfer,
   onSaveProfile,
@@ -885,6 +892,7 @@ export function WorkspaceSettingsSurface({
                 workspaceName={workspaceName ?? ""}
                 candidates={transferCandidates}
                 disabled={!versionAvailable || !workspaceName}
+                stepUp={ownershipStepUp}
                 onTransfer={onTransfer}
                 onReload={onReload}
                 onInvite={onInviteForTransfer}
