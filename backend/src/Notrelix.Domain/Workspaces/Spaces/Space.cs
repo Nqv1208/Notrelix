@@ -348,6 +348,26 @@ public class Space : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new SpaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, subjectType, subjectId, removedBy, removedAt));
     }
 
+    /// <summary>
+    /// The person left the Workspace: their User entry goes with them. The last-Admin rule and the archived-Space
+    /// rule do not apply, because Owners and Admins still manage every Space (LD-12). False when there is no entry.
+    /// </summary>
+    public bool RemoveDepartedUser(Guid userId, Guid removedBy, DateTimeOffset removedAt)
+    {
+        Guard.NotEmpty(userId);
+        Guard.NotEmpty(removedBy);
+
+        var member = FindMember(SpaceMemberSubjectType.User, userId);
+        if (member is null) return false;
+
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
+        _members.Remove(member);
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new SpaceMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, SpaceMemberSubjectType.User, userId, removedBy, removedAt));
+        return true;
+    }
+
     public void ChangeMemberRole(SpaceMemberSubjectType subjectType, Guid subjectId, SpaceRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

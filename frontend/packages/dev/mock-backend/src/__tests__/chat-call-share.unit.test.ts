@@ -48,14 +48,24 @@ const sharers = (body: {
 }) => body.participants.filter((p) => p.sharingScreen).map((p) => p.personId);
 
 describe("MFB-CHAT-CALLS: one screen share at a time in the mock", () => {
-  it("refuses a share in a voice call with the server's code", async () => {
+  it("accepts a share in a voice call, and still refuses a camera there with the server's code", async () => {
     const store = storeAs("owner");
     const { id, version } = await activeCall(store, "voice", "voice");
 
-    const refused = await share(store, id, version, true);
+    const shared = await share(store, id, version, true);
+    expect(shared.status).toBe(200);
+    expect(sharers(shared.body)).toEqual([USERS.member]);
 
-    expect(refused.status).toBe(400);
-    expect(refused.body.errorCode).toBe("call-media-not-allowed");
+    const camera = await chat(store, "PUT", `/calls/${id}/participants/me`, {
+      body: {
+        audioOn: true,
+        videoOn: true,
+        sharingScreen: false,
+        expectedVersion: shared.body.version,
+      },
+    });
+    expect(camera.status).toBe(400);
+    expect(camera.body.errorCode).toBe("call-media-not-allowed");
   });
 
   it("shares, refuses a second share with 409, and replaces only when the caller confirms", async () => {

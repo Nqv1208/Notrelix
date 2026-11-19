@@ -23,7 +23,7 @@ namespace Notrelix.Integration.Tests.Chat;
 
 /// <summary>
 /// Sharing a screen in a call through the real request pipeline: who may start a share (a Guest and a member the channel keeps from posting
-/// are 403, an outsider is NotFound), a voice call carries no screen, one share at a time with an explicit replace, and the person who
+/// are 403, an outsider is NotFound), a voice call takes a screen but never a camera, one share at a time with an explicit replace, and the person who
 /// stops, leaves or is removed shares nothing. The media plane is the in-memory gateway. Needs Docker locally.
 /// </summary>
 [Collection("Database")]
@@ -161,7 +161,7 @@ public sealed class ChatCallScreenShareIntegrationTests
     }
 
     [Fact]
-    public async Task AVoiceCallRefusesAScreenShare()
+    public async Task AVoiceCallAcceptsAScreenShareFromAParticipant()
     {
         var stack = await _host.SeedWorkspaceAsync();
         var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "VoiceSharer");
@@ -169,9 +169,46 @@ public sealed class ChatCallScreenShareIntegrationTests
         var call = await SeedCallAsync(stack, channel, CallKind.Voice, member);
 
         using var asMember = ProviderFor(stack, member);
-        var refused = await RefusedAsync(() => ShareAsync(asMember, stack, call, sharing: true));
+        var shared = await ShareAsync(asMember, stack, call, sharing: true);
+
+        shared.Participants.Single(p => p.PersonId == member).SharingScreen.Should().BeTrue();
+        (await LoadAsync(call.Id)).Participants.Single(p => p.PersonId == member).SharingScreen.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AVoiceCallStillRefusesACamera_EvenWithAShare()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "VoiceCamera");
+        var channel = await SeedChannelAsync(stack, [member]);
+        var call = await SeedCallAsync(stack, channel, CallKind.Voice, member);
+
+        using var asMember = ProviderFor(stack, member);
+        var refused = await RefusedAsync(() => ShareAsync(asMember, stack, call, sharing: true, videoOn: true));
 
         CodeOf(refused).Should().Be(ChatRuleCodes.CallMediaNotAllowed);
+        (await LoadAsync(call.Id)).Participants.Should().OnlyContain(p => !p.SharingScreen && !p.VideoOn);
+    }
+
+    // Regression guard: the right to take part is checked before the call kind, so a voice call is no looser than a video call.
+    [Fact]
+    public async Task InAVoiceCallAGuestAndAMemberTheChannelKeepsFromPostingStillCannotShare()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "VoiceGuest");
+        var readOnly = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "VoiceReadOnly");
+        var channel = await SeedChannelAsync(
+            stack, [guest, readOnly],
+            new ChannelPermissionEntry(ChannelPermissionSubject.Member, ChannelAction.Post, ChannelPermissionEffect.Deny));
+        var call = await SeedCallAsync(stack, channel, CallKind.Voice, guest, readOnly);
+
+        foreach (var person in new[] { guest, readOnly })
+        {
+            using var provider = ProviderFor(stack, person);
+            (await RefusedAsync(() => ShareAsync(provider, stack, call, sharing: true)))
+                .Should().BeOfType<Notrelix.Application.Common.Exceptions.ForbiddenException>();
+        }
+
         (await LoadAsync(call.Id)).Participants.Should().OnlyContain(p => !p.SharingScreen);
     }
 

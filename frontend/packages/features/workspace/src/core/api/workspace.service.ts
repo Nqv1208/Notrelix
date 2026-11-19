@@ -42,6 +42,7 @@ export interface WorkspaceSettingsEndpoints {
     archive: (workspaceId: string) => string;
     /** The delete write quotes the workspace version in the query (`DeleteWorkspace`). */
     remove: (workspaceId: string, expectedVersion: number) => string;
+    transferOwnership: (workspaceId: string) => string;
   };
 }
 
@@ -51,6 +52,8 @@ type SettingsBody =
   OperationRequestBody<"Workspaces.Settings.UpdateWorkspaceSettings">;
 type ArchiveBody =
   OperationRequestBody<"Workspaces.Workspaces.ArchiveWorkspace">;
+type TransferOwnershipBody =
+  OperationRequestBody<"Workspaces.Workspaces.TransferOwnership">;
 
 /** `Workspaces.Workspaces.GetWorkspace` (and each row of the workspace lists). */
 type WorkspaceDto = OperationResponse<
@@ -203,6 +206,23 @@ export function createWorkspaceSettingsService(
     async remove(workspaceId: string, expectedVersion: number): Promise<void> {
       await api.delete<void>(
         endpoints.workspaces.remove(workspaceId, expectedVersion),
+      );
+    },
+
+    /**
+     * Hands the workspace to another member (`TransferOwnership`): the person becomes Owner and the caller
+     * Admin. Answers 204; a version that moved meanwhile answers 412, a Guest or a person who is not an
+     * active member is refused, and only an Owner may ask.
+     */
+    async transferOwnership(
+      workspaceId: string,
+      newOwnerId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      const body: TransferOwnershipBody = { newOwnerId, expectedVersion };
+      await api.post<void>(
+        endpoints.workspaces.transferOwnership(workspaceId),
+        body,
       );
     },
   };

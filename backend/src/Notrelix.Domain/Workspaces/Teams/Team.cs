@@ -189,6 +189,26 @@ public class Team : SoftDeletableAggregateRoot, IWorkspaceScoped
         RaiseDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
     }
 
+    /// <summary>
+    /// The person left the Workspace: their Team membership ends. The last-Lead rule and the archived-Team rule do not
+    /// apply; a Team left without a Lead is flagged "needs a lead" by readers (LD-12). False when there is no active entry.
+    /// </summary>
+    public bool RemoveDepartedMember(Guid userId, Guid removedBy, DateTimeOffset removedAt)
+    {
+        Guard.NotEmpty(userId);
+        Guard.NotEmpty(removedBy);
+
+        var member = _members.FirstOrDefault(m => m.UserId == userId && m.Status == TeamMemberStatus.Active);
+        if (member == null) return false;
+
+        member.Remove(removedBy, removedAt);
+        var audit = PrepareAuditUpdate(removedBy, removedAt);
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new TeamMemberRemovedDomainEvent(AccountId, WorkspaceId, Id, userId, removedBy, removedAt));
+        return true;
+    }
+
     public void ChangeMemberRole(Guid userId, TeamMemberRole newRole, Guid updatedBy, DateTimeOffset updatedAt)
     {
         EnsureNotDeleted();

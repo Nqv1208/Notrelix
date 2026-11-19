@@ -35,6 +35,8 @@ export const en = {
     },
     peopleCount: "{{count}} people",
     unused: "Not used anywhere yet",
+    needsLead: "Needs a Team lead",
+    needsLeadSummary: "{{count}} without a Team lead",
     archivedSection: "Archived {{count}}",
     archivedNote:
       "The Team's access is paused; restore it and the access comes back",
@@ -112,6 +114,8 @@ export const en = {
     archive: "Archive Team",
     archivedBanner:
       "This Team is archived. Restore it to change its people or details.",
+    needsLeadBanner:
+      "This Team needs a Team lead: its last lead left the workspace. Make someone in the Team its lead.",
     restore: "Restore Team",
     editTitle: "Edit name and description",
     editName: "Team name",
@@ -383,6 +387,8 @@ export const vi: WorkspaceTeamsCopy = {
     },
     peopleCount: "{{count}} người",
     unused: "Chưa dùng ở đâu",
+    needsLead: "Chưa có trưởng nhóm",
+    needsLeadSummary: "{{count}} nhóm chưa có trưởng nhóm",
     archivedSection: "Đã lưu trữ {{count}}",
     archivedNote: "Quyền của nhóm tạm ngừng; khôi phục thì quyền quay lại",
     archivedLine: "Lưu trữ {{date}} · {{name}}",
@@ -463,6 +469,8 @@ export const vi: WorkspaceTeamsCopy = {
     archive: "Lưu trữ nhóm",
     archivedBanner:
       "Nhóm này đã lưu trữ. Khôi phục để đổi người hoặc thông tin của nhóm.",
+    needsLeadBanner:
+      "Nhóm cần một trưởng nhóm: trưởng nhóm cuối cùng đã rời workspace. Hãy chọn một người trong nhóm làm trưởng nhóm.",
     restore: "Khôi phục nhóm",
     editTitle: "Sửa tên và mô tả",
     editName: "Tên nhóm",

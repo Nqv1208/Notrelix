@@ -542,6 +542,7 @@ describe("Producer adapters", () => {
         settings: (id) => `/workspaces/${id}/settings`,
         archive: (id) => `/workspaces/${id}/archive`,
         remove: (id, version) => `/workspaces/${id}?expectedVersion=${version}`,
+        transferOwnership: (id) => `/workspaces/${id}/transfer-ownership`,
       },
     });
     await service.updateProfile("ws", {

@@ -191,6 +191,11 @@ export {
   type WorkspaceProfileValues,
   type WorkspaceSettingsSurfaceProps,
 } from "./settings/workspace-settings-surface";
+export {
+  TransferOwnershipFlow,
+  type TransferCandidate,
+  type TransferFailure,
+} from "./settings/transfer-ownership-flow";
 
 // ── Space org tree (OT-5) ─────────────────────────────────────────
 export { workspaceSpacesCatalog } from "./spaces/workspace-spaces.catalog";
