@@ -27,6 +27,8 @@ public static class ChatRuleCodes
 
     /// <summary>A message's text is empty or longer than the limit after trim.</summary>
     public const string MessageContentInvalid = "message-content-invalid";
+    /// <summary>A sticker message names a sticker that is not in the Notrelix catalog, or is edited (UC-CHT-I06).</summary>
+    public const string StickerInvalid = "sticker-invalid";
 
     /// <summary>A message sequence must start at 1; the store assigns it.</summary>
     public const string MessageSequenceInvalid = "message-sequence-invalid";

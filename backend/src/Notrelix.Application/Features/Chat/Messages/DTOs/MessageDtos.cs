@@ -31,7 +31,8 @@ public sealed record MessageDto(
     IReadOnlyList<MentionNoticeDto>? MentionNotices = null,
     IReadOnlyList<MessageAttachmentDto>? Attachments = null,
     long ThreadReplyCount = 0,
-    DateTimeOffset? ThreadLastReplyAt = null)
+    DateTimeOffset? ThreadLastReplyAt = null,
+    string? StickerId = null)
 {
     /// <summary>
     /// The message as readers see it. <paramref name="replyPreview"/> is the live quote of <see cref="ReplyToId"/>, read by the
@@ -74,7 +75,8 @@ public sealed record MessageDto(
         mentionNotices ?? [],
         attachments ?? [],
         thread?.ReplyCount ?? 0,
-        thread is { ReplyCount: > 0 } ? thread.LastReplyAt : null);
+        thread is { ReplyCount: > 0 } ? thread.LastReplyAt : null,
+        message.StickerId);
 }
 
 /// <summary>

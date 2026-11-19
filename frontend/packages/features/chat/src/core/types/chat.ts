@@ -276,6 +276,8 @@ export interface ChatMessage {
   readonly content: string | null;
   readonly clientMessageId: string | null;
   readonly replyToId: string | null;
+  /** A Notrelix sticker (UC-CHT-I06): the message is that sticker alone, and `content` is its preview text, never typed text. */
+  readonly stickerId?: string | null;
   /** The root of the thread this reply belongs to; null for a message of the main flow. */
   readonly threadRootId?: string | null;
   /** The reply's place in its thread (gap-free per thread); null outside a thread. */

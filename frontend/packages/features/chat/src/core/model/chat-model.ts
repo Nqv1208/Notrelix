@@ -79,6 +79,8 @@ export interface PendingMessage {
   /** The quoted message and the voice flag of the send, kept so a retry sends the same target and kind. */
   readonly replyToId?: string | null;
   readonly voiceMessage?: boolean;
+  /** A sticker send (UC-CHT-I06): kept so a retry sends the same sticker. */
+  readonly stickerId?: string | null;
   /** Set once the server stored the send: the bubble waits for that message in a window, then goes. */
   readonly storedMessageId?: string;
 }

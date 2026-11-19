@@ -2379,6 +2379,11 @@
           "nullable": true
         },
         {
+          "name": "stickerId",
+          "type": "string",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false

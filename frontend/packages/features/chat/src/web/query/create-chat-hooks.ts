@@ -298,6 +298,7 @@ export function createChatHooks(deps: ChatHookDeps) {
         mentions?: readonly ChatMentionInput[];
         confirmBroadcast?: boolean;
         voiceMessage?: boolean;
+        stickerId?: string | null;
       }) =>
         service.sendMessage(workspaceId, channelId, {
           content: input.content,
@@ -306,6 +307,7 @@ export function createChatHooks(deps: ChatHookDeps) {
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
           voiceMessage: input.voiceMessage ?? false,
+          stickerId: input.stickerId ?? null,
         }),
       onMutate: async (input) => {
         // The bubble goes in before anything is awaited, so it renders in the render of the keypress.
@@ -325,6 +327,7 @@ export function createChatHooks(deps: ChatHookDeps) {
           confirmBroadcast: input.confirmBroadcast,
           replyToId: input.replyToId,
           voiceMessage: input.voiceMessage,
+          stickerId: input.stickerId ?? null,
         };
         queryClient.setQueryData<PendingMessage[]>(
           pendingKey,
@@ -429,6 +432,18 @@ export function createChatHooks(deps: ChatHookDeps) {
       return clientMessageId;
     }
 
+    /** Sends a Notrelix sticker alone (UC-CHT-I06); returns the clientMessageId so a retry can reuse it. */
+    function sendSticker(stickerId: string, replyToId?: string | null): string {
+      const clientMessageId = newClientMessageId();
+      mutation.mutate({
+        clientMessageId,
+        content: "",
+        replyToId,
+        stickerId,
+      });
+      return clientMessageId;
+    }
+
     /** Sends again the failed entry with the same clientMessageId. */
     function retry(entry: PendingMessage): void {
       mutation.mutate({
@@ -438,6 +453,7 @@ export function createChatHooks(deps: ChatHookDeps) {
         mentions: entry.mentions,
         confirmBroadcast: entry.confirmBroadcast,
         voiceMessage: entry.voiceMessage,
+        stickerId: entry.stickerId,
       });
     }
 
@@ -467,6 +483,7 @@ export function createChatHooks(deps: ChatHookDeps) {
 
     return {
       send,
+      sendSticker,
       retry,
       discard,
       discardStored,

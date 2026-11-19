@@ -37,6 +37,7 @@ import type { PendingMessage } from "../../core/model/chat-model";
 import { emojiOnlyCount } from "../../core/model/message-display-model";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
+import { ChatSticker } from "./chat-sticker";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
@@ -366,9 +367,10 @@ function ChatMessageRowBase({
         copy,
         isOwn,
         pinned,
-        content,
+        // A sticker has no typed text to copy or edit (UC-CHT-I06).
+        content: message.stickerId ? "" : content,
         messageLink,
-        onEdit,
+        onEdit: message.stickerId ? undefined : onEdit,
         onDelete,
         onModerate,
         onOpenThread,
@@ -537,6 +539,18 @@ function ChatMessageRowBase({
           ? copy.list.removedByModerator
           : copy.list.deleted}
       </p>
+    );
+  } else if (message.stickerId) {
+    bubble = (
+      <div className="flex flex-col">
+        <span className="sr-only">{srWho}: </span>
+        <ChatSticker
+          stickerId={message.stickerId}
+          copy={copy}
+          previewText={message.content}
+          highlighted={highlighted}
+        />
+      </div>
     );
   } else if (emojiCount > 0) {
     bubble = (
@@ -1142,20 +1156,37 @@ export function ChatPendingRow({
       data-own="true"
     >
       <div className="flex min-w-0 max-w-[min(75%,36rem)] flex-col items-end">
-        <p
-          className={cn(
-            "min-w-0 max-w-full whitespace-pre-wrap break-words wrap-anywhere bg-primary px-3 py-2 text-sm leading-[1.45] text-primary-foreground",
-            bubbleShape(true, continued, groupEnd),
-            failed &&
-              "ring-2 ring-destructive ring-offset-2 ring-offset-background",
-          )}
-          data-bubble="own"
-        >
-          <span className="sr-only">
-            {fillCopy(copy.list.messageBy, { name: copy.list.you, time })}:{" "}
-          </span>
-          {pending.content}
-        </p>
+        {pending.stickerId ? (
+          <div
+            className={cn(
+              "rounded-2xl",
+              failed &&
+                "ring-2 ring-destructive ring-offset-2 ring-offset-background",
+            )}
+          >
+            <span className="sr-only">
+              {fillCopy(copy.list.messageBy, { name: copy.list.you, time })}
+              :{" "}
+            </span>
+            <ChatSticker stickerId={pending.stickerId} copy={copy} />
+          </div>
+        ) : (
+          <p
+            className={cn(
+              "min-w-0 max-w-full whitespace-pre-wrap break-words wrap-anywhere bg-primary px-3 py-2 text-sm leading-[1.45] text-primary-foreground",
+              bubbleShape(true, continued, groupEnd),
+              failed &&
+                "ring-2 ring-destructive ring-offset-2 ring-offset-background",
+            )}
+            data-bubble="own"
+          >
+            <span className="sr-only">
+              {fillCopy(copy.list.messageBy, { name: copy.list.you, time })}
+              :{" "}
+            </span>
+            {pending.content}
+          </p>
+        )}
         <p
           className={cn(
             "mt-0.5 flex items-center gap-1.5 pe-1 text-xs font-medium leading-[1.45]",

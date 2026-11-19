@@ -102,6 +102,7 @@ export function messageFromCreatedFrame(
     content: frame.content,
     clientMessageId: frame.clientMessageId,
     replyToId: frame.replyToId,
+    stickerId: frame.stickerId,
     edited: frame.editedAt !== null,
     deleted: frame.deleted,
     createdAt: frame.createdAt ?? occurredAt,

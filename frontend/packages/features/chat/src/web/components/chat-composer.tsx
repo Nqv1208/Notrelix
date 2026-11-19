@@ -62,6 +62,7 @@ import type { EmojiEntry } from "../../core/model/emoji-data";
 import type { ChatCopy } from "./chat.copy";
 import { rememberEmoji } from "./chat-emoji-recent";
 import { EmojiPickerButton } from "./chat-emoji-picker";
+import { StickerPickerButton } from "./chat-sticker-picker";
 import { AttachmentGlyphIcon } from "./chat-attachments";
 import { fillCopy } from "./use-chat-copy";
 import { useObjectUrl } from "./use-object-url";
@@ -137,6 +138,8 @@ export interface ChatComposerProps {
   readonly onTyping?: () => void;
   /** The channel's slow mode in seconds (UC-CHT-H08); above 0 the hint line says so. */
   readonly slowModeSeconds?: number;
+  /** Sends a Notrelix sticker alone (UC-CHT-I06); without it the composer shows no sticker button (a thread or an edit has none). */
+  readonly onSendSticker?: (stickerId: string) => void;
 }
 
 /**
@@ -160,6 +163,7 @@ export function ChatComposer({
   onTyping,
   attachments,
   slowModeSeconds = 0,
+  onSendSticker,
 }: ChatComposerProps) {
   const hintId = useId();
   const listId = useId();
@@ -646,6 +650,14 @@ export function ChatComposer({
                 onPick={insertEmoji}
                 onClosed={() => textareaRef.current?.focus()}
               />
+              {onSendSticker ? (
+                <StickerPickerButton
+                  copy={copy}
+                  disabled={disabled}
+                  onPick={onSendSticker}
+                  onClosed={() => textareaRef.current?.focus()}
+                />
+              ) : null}
               <Textarea
                 ref={textareaRef}
                 role={mentions ? "combobox" : undefined}

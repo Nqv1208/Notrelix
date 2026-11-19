@@ -30,7 +30,8 @@ public sealed class ChatMessageEventMapper :
             OccurredAt: domainEvent.OccurredAt,
             ReplyToId: domainEvent.ReplyToId,
             ThreadRootId: domainEvent.ThreadRootId,
-            ThreadSequence: domainEvent.ThreadSequence
+            ThreadSequence: domainEvent.ThreadSequence,
+            StickerId: domainEvent.StickerId
         );
     }
 
