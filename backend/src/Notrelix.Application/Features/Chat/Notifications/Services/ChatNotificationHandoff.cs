@@ -1,6 +1,9 @@
+using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Features.Chat.Abstractions;
+using Notrelix.Application.Features.Chat.Channels.Services;
 using Notrelix.Application.Features.Chat.Realtime;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
@@ -19,13 +22,16 @@ namespace Notrelix.Application.Features.Chat.Notifications.Services;
 /// </summary>
 /// <remarks>
 /// Fan-out is bounded by <see cref="MaxRecipients"/> (the unread fan-out bound): a broadcast or conversation above it reaches the first
-/// ones by user id and logs the cut, and a mention or a followed thread always reaches the person named. @here is for members who are
-/// present, and presence is not a fact this side holds yet, so @here gives no Inbox notification; the unread badge still counts it.
+/// ones by user id and logs the cut, and a mention or a followed thread always reaches the person named. @here reaches the channel members who
+/// are in the realtime presence set when the message is handed off (online, not idle), never a Guest and never a person who is not a
+/// member; the unread badge counts it for everyone.
 /// The preview is the message text (Collaboration shortens it); only a recipient who is a member sees it.
 /// </remarks>
 public sealed class ChatNotificationHandoff(
     IChatDbContext db,
     IChatNotificationIntents intents,
+    IRealtimePresenceRegistry presence,
+    IWorkspaceMemberFacts workspaceMembers,
     ILogger<ChatNotificationHandoff> logger)
 {
     public const int MaxRecipients = ChatRealtime.MaxUnreadRecipients;
@@ -53,6 +59,10 @@ public sealed class ChatNotificationHandoff(
             .Distinct()
             .ToList();
         var broadcast = mentions.Any(x => x.Kind == MentionKind.BroadcastChannel);
+        // @here reaches the members who are online now (the realtime presence set at hand-off); a Guest is never one of them.
+        var here = !broadcast && mentions.Any(x => x.Kind == MentionKind.BroadcastHere)
+            ? await OnlineNonGuestsAsync(workspaceId, message.AuthorId, cancellationToken)
+            : [];
 
         var followers = message.ThreadRootId is { } rootId
             ? await db.ChatThreadFollowers.AsNoTracking()
@@ -73,7 +83,7 @@ public sealed class ChatNotificationHandoff(
 
         var members = await db.ChatMemberships.AsNoTracking()
             .Where(m => m.SpaceId == space.Id && m.LeftAt == null && m.UserId != message.AuthorId)
-            .Where(m => everyone || mentioned.Contains(m.UserId) || followers.Contains(m.UserId))
+            .Where(m => everyone || mentioned.Contains(m.UserId) || followers.Contains(m.UserId) || here.Contains(m.UserId))
             .OrderBy(m => m.UserId)
             .Take(MaxRecipients + 1)
             .Select(m => new { m.UserId, m.NotificationLevel, m.MutedUntil })
@@ -95,7 +105,7 @@ public sealed class ChatNotificationHandoff(
                 mentionedSet.Contains(member.UserId),
                 followerSet.Contains(member.UserId),
                 sendsToConversation,
-                broadcast);
+                broadcast || here.Contains(member.UserId));
             if (reason is not null)
                 intentsToHand.Add(new ChatNotificationIntent(member.UserId, reason));
         }
@@ -135,6 +145,19 @@ public sealed class ChatNotificationHandoff(
         if (broadcast)
             return ChatNotificationReasons.Broadcast;
         return null;
+    }
+
+    private async Task<List<Guid>> OnlineNonGuestsAsync(Guid workspaceId, Guid authorId, CancellationToken cancellationToken)
+    {
+        var online = new List<Guid>();
+        foreach (var userId in presence.OnlineUserIds(workspaceId).Where(u => u != authorId).Order().Take(MaxRecipients))
+        {
+            var fact = await workspaceMembers.FindAsync(workspaceId, userId, cancellationToken);
+            if (fact is { IsActive: true } && !ChannelAccess.IsGuest(fact))
+                online.Add(userId);
+        }
+
+        return online;
     }
 
     private static string? SpaceName(Space space) => space.IsConversation ? null : space.Name;
