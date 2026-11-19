@@ -601,15 +601,7 @@ function DefaultsForm({
             setDraft((current) => ({ ...current, allowPublicSharing: checked }))
           }
         />
-        <SwitchField
-          label={copy.defaults.mfaLabel}
-          help={copy.defaults.mfaHelp}
-          checked={draft.enforceMfa}
-          disabled={disabled}
-          onCheckedChange={(checked) =>
-            setDraft((current) => ({ ...current, enforceMfa: checked }))
-          }
-        />
+        {/* The enforceMfa switch stays hidden until Account policy decides who enforces it; the stored value still travels in the save payload. */}
       </div>
       {locked ? null : (
         <SaveBar

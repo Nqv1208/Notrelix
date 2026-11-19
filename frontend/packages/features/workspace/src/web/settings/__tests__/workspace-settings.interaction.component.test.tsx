@@ -10,6 +10,7 @@ import {
   settingsReadOnlyScenario,
   settingsSuccessScenario,
   settingsVersionUnavailableScenario,
+  workspaceSettingsFixture,
 } from "../../../verification/workspace-settings-fixtures";
 import {
   WorkspaceSettingsSurface,
@@ -131,8 +132,48 @@ describe("WorkspaceSettingsSurface", () => {
   it("FUI[workspace.settings:defaults] saves defaults from their own section", () => {
     const props = renderSettings();
     fireEvent.click(
-      screen.getByRole("switch", { name: copy.defaults.mfaLabel }),
+      screen.getByRole("switch", { name: copy.defaults.sharingLabel }),
     );
+    fireEvent.change(screen.getByLabelText(copy.defaults.expiryLabel), {
+      target: { value: "14" },
+    });
+    fireEvent.click(
+      within(form(copy.defaults.title)).getByRole("button", {
+        name: copy.save,
+      }),
+    );
+    expect(props.onSaveDefaults).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowPublicSharing: true,
+        invitationExpiryDays: 14,
+      }),
+    );
+  });
+
+  it.each([
+    ["Owner", settingsDefaultScenario],
+    ["Admin", settingsAdminScenario],
+    ["Member", settingsReadOnlyScenario],
+  ])(
+    "FUI[workspace.settings:mfa-hidden] hides the enforce-MFA switch for the %s",
+    (_role, scenario) => {
+      renderSettings(scenario());
+      expect(
+        screen.queryByRole("switch", { name: copy.defaults.mfaLabel }),
+      ).toBeNull();
+      expect(screen.queryByText(copy.defaults.mfaHelp)).toBeNull();
+    },
+  );
+
+  it("FUI[workspace.settings:mfa-hidden] still sends the stored enforceMfa value unchanged on save", () => {
+    const base = settingsDefaultScenario();
+    const props = renderSettings({
+      ...base,
+      defaults: {
+        status: "ready",
+        data: workspaceSettingsFixture({ enforceMfa: true }),
+      },
+    });
     fireEvent.change(screen.getByLabelText(copy.defaults.expiryLabel), {
       target: { value: "14" },
     });

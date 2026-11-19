@@ -989,11 +989,11 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Output: A decision on who owns MFA enforcement.
 - Main flow: 1. The settings write accepts and stores `enforceMfa`. 2. Nothing in Workspaces or Identity enforces it.
 - No-op / rejection / concurrency / retry: BLOCKED: WSP-012 forbids Account-wide security policy in workspace settings, yet the field exists in Domain, command and API. Decide: move it to Accounts or Identity, or keep it as a workspace policy with a named enforcer. Security-policy choice.
-- UI states: Hide the control until decided.
+- UI states: Hide the control until decided. Done on the web settings surface: the enforce-MFA switch is not rendered for any role; the stored field, the API and the save payload are unchanged.
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 40; WSP-012.
 - Acceptance: Not testable until the owner is decided.
 - Evidence: BE `WorkspaceSettings.EnforceMfa`, `UpdateWorkspaceSettingsCommand.EnforceMfa` · FE not shown · Design none · Tests `WorkspaceSettingsTests` · Real e2e none
-- State: BLOCKED — Deferred to 0.2 (lead ruling 2026-11-19): needs the Accounts or Governance Account-policy fact for required MFA, the same fact UC-IDN-J05 waits on. No Account policy read exists, and nothing outside the workspace settings write and read touches `EnforceMfa`, so the setting stays stored and unenforced until the fact exists. Decision: owner and enforcement of the MFA policy.
+- State: BLOCKED — Deferred to 0.2 (lead ruling 2026-11-19): needs the Accounts or Governance Account-policy fact for required MFA, the same fact UC-IDN-J05 waits on. No Account policy read exists, and nothing outside the workspace settings write and read touches `EnforceMfa`, so the setting stays stored and unenforced until the fact exists. The false-security control is hidden for Owner, Admin and Member on the web settings surface (component tests `FUI[workspace.settings:mfa-hidden]` hides the enforce-MFA switch for the Owner, Admin and Member; still sends the stored enforceMfa value unchanged on save), while the field, API and payload stay. Decision: owner and enforcement of the MFA policy.
 
 ## K. Spaces (added by this catalog)
 
