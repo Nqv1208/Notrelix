@@ -62,8 +62,8 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
     private ServiceProvider As(OrgStack stack, Guid userId) =>
         _host.CreateProvider(stack.AccountId, userId, RegisterServices, SessionOf(userId));
 
-    private Task<string> ProofOf(Guid userId, StepUpPurpose purpose = StepUpPurpose.TransferWorkspaceOwnership) =>
-        _stepUp.ProofAsync(userId, SessionOf(userId), purpose);
+    private Task<string> ProofOf(Guid userId, Guid workspaceId, Guid newOwnerId, StepUpPurpose purpose = StepUpPurpose.TransferWorkspaceOwnership) =>
+        _stepUp.ProofAsync(userId, SessionOf(userId), workspaceId, newOwnerId, purpose);
 
     /// <summary>Sends through the real pipeline and hands back the failed Result instead of failing the test.</summary>
     private static async Task<Result> TrySendAsync(ServiceProvider provider, TransferOwnershipCommand command)
@@ -102,7 +102,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
 
     /// <summary>A handover command from <paramref name="caller"/> carrying a fresh proof of that caller, unless another is given.</summary>
     private async Task<TransferOwnershipCommand> TransferAsync(OrgStack stack, Guid to, Guid caller, string? proof = null) =>
-        new(stack.WorkspaceId, to, await WorkspaceVersionAsync(stack), proof ?? await ProofOf(caller));
+        new(stack.WorkspaceId, to, await WorkspaceVersionAsync(stack), proof ?? await ProofOf(caller, stack.WorkspaceId, to));
 
     // ── The handover ──────────────────────────────────────────────────────
 
@@ -155,7 +155,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         var self = role == WorkspaceRole.Admin ? admin : member;
         using var asSelf = As(stack, self);
 
-        var act = async () => await OrgTreeTestHost.SendAsync(asSelf, new TransferOwnershipCommand(stack.WorkspaceId, self, 1, await ProofOf(self)));
+        var act = async () => await OrgTreeTestHost.SendAsync(asSelf, new TransferOwnershipCommand(stack.WorkspaceId, self, 1, await ProofOf(self, stack.WorkspaceId, self)));
 
         await act.Should().ThrowAsync<Exception>();
         (await MemberRowAsync(stack, self)).Role.Should().Be(role);
@@ -200,7 +200,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         using var asOwner = As(stack, stack.OwnerId);
         var version = await WorkspaceVersionAsync(stack);
 
-        var act = async () => await OrgTreeTestHost.SendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version + 7, await ProofOf(stack.OwnerId)));
+        var act = async () => await OrgTreeTestHost.SendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version + 7, await ProofOf(stack.OwnerId, stack.WorkspaceId, admin)));
 
         await act.Should().ThrowAsync<PreconditionFailedException>();
         (await MemberRowAsync(stack, admin)).Role.Should().Be(WorkspaceRole.Admin);
@@ -213,7 +213,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         var other = await _host.SeedWorkspaceAsync();
         using var asForeignOwner = As(other, other.OwnerId);
 
-        var act = async () => await OrgTreeTestHost.SendAsync(asForeignOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, 1, await ProofOf(other.OwnerId)));
+        var act = async () => await OrgTreeTestHost.SendAsync(asForeignOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, 1, await ProofOf(other.OwnerId, stack.WorkspaceId, admin)));
 
         await act.Should().ThrowAsync<Exception>("another workspace's id answers as if it did not exist");
         (await MemberRowAsync(stack, admin)).Role.Should().Be(WorkspaceRole.Admin);
@@ -245,7 +245,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         var (stack, admin) = await SeedOwnerAndAdminAsync();
         var version = await WorkspaceVersionAsync(stack);
         using var asOwner = As(stack, stack.OwnerId);
-        var stale = await ProofOf(stack.OwnerId);
+        var stale = await ProofOf(stack.OwnerId, stack.WorkspaceId, admin);
         _host.Now = _host.Now.Add(SecurityStepUpPolicy.ProofTtl).AddSeconds(1);
 
         var refused = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version, stale));
@@ -253,7 +253,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         refused.TypedErrors.Should().ContainSingle().Which.Code.Should().Be("identity.security.step-up-invalid");
         await AssertOwnershipUnchangedAsync(stack, admin, version);
 
-        var accepted = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version, await ProofOf(stack.OwnerId)));
+        var accepted = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version, await ProofOf(stack.OwnerId, stack.WorkspaceId, admin)));
 
         accepted.Succeeded.Should().BeTrue();
         (await MemberRowAsync(stack, admin)).Role.Should().Be(WorkspaceRole.Owner);
@@ -267,7 +267,41 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         using var asOwner = As(stack, stack.OwnerId);
 
         var result = await TrySendAsync(asOwner, new TransferOwnershipCommand(
-            stack.WorkspaceId, admin, version, await ProofOf(stack.OwnerId, StepUpPurpose.RevokeOtherSessions)));
+            stack.WorkspaceId, admin, version, await ProofOf(stack.OwnerId, stack.WorkspaceId, admin, StepUpPurpose.RevokeOtherSessions)));
+
+        result.TypedErrors.Should().ContainSingle().Which.Code.Should().Be("identity.security.step-up-invalid");
+        await AssertOwnershipUnchangedAsync(stack, admin, version);
+    }
+
+    /// <summary>A proof given while looking at one person is no licence to hand the workspace to another (a crafted return link names the person).</summary>
+    [Fact]
+    public async Task AProofGivenForOnePerson_CannotHandTheWorkspaceToAnother_AndIsSpentByTheTry()
+    {
+        var (stack, admin, member, _) = await SeedAsync();
+        var version = await WorkspaceVersionAsync(stack);
+        using var asOwner = As(stack, stack.OwnerId);
+        var proofForAdmin = await ProofOf(stack.OwnerId, stack.WorkspaceId, admin);
+
+        var toMember = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, member, version, proofForAdmin));
+
+        toMember.TypedErrors.Should().ContainSingle().Which.Code.Should().Be("identity.security.step-up-invalid");
+        await AssertOwnershipUnchangedAsync(stack, admin, version);
+
+        var toAdmin = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version, proofForAdmin));
+
+        toAdmin.TypedErrors.Should().ContainSingle().Which.Code.Should().Be("identity.security.step-up-invalid");
+        await AssertOwnershipUnchangedAsync(stack, admin, version);
+    }
+
+    [Fact]
+    public async Task AProofGivenForAnotherWorkspace_CannotHandThisOneOver()
+    {
+        var (stack, admin) = await SeedOwnerAndAdminAsync();
+        var version = await WorkspaceVersionAsync(stack);
+        using var asOwner = As(stack, stack.OwnerId);
+        var proofForElsewhere = await ProofOf(stack.OwnerId, Guid.CreateVersion7(), admin);
+
+        var result = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, version, proofForElsewhere));
 
         result.TypedErrors.Should().ContainSingle().Which.Code.Should().Be("identity.security.step-up-invalid");
         await AssertOwnershipUnchangedAsync(stack, admin, version);
@@ -279,8 +313,8 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
         var (stack, admin) = await SeedOwnerAndAdminAsync();
         var version = await WorkspaceVersionAsync(stack);
         using var asOwner = As(stack, stack.OwnerId);
-        var adminsProof = await ProofOf(admin);
-        var ownersOtherSession = await _stepUp.ProofAsync(stack.OwnerId, Guid.CreateVersion7());
+        var adminsProof = await ProofOf(admin, stack.WorkspaceId, admin);
+        var ownersOtherSession = await _stepUp.ProofAsync(stack.OwnerId, Guid.CreateVersion7(), stack.WorkspaceId, admin);
 
         foreach (var foreign in new[] { adminsProof, ownersOtherSession })
         {
@@ -296,7 +330,7 @@ public sealed class WorkspaceLeaveAndHandoverIntegrationTests : IAsyncLifetime
     {
         var (stack, admin) = await SeedOwnerAndAdminAsync();
         using var asOwner = As(stack, stack.OwnerId);
-        var proof = await ProofOf(stack.OwnerId);
+        var proof = await ProofOf(stack.OwnerId, stack.WorkspaceId, admin);
         var first = await TrySendAsync(asOwner, new TransferOwnershipCommand(stack.WorkspaceId, admin, await WorkspaceVersionAsync(stack), proof));
         first.Succeeded.Should().BeTrue();
         var version = await WorkspaceVersionAsync(stack);

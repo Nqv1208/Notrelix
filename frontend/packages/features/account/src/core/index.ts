@@ -24,6 +24,7 @@ export type {
   MyMemberProfile,
   StepUpFactor,
   StepUpPurpose,
+  StepUpTarget,
   StepUpRequirement,
   TwoFactorActivation,
   TwoFactorEnrollment,

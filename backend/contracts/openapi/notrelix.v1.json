@@ -15134,13 +15134,13 @@
       }
     },
     "/api/v1/auth/oauth/{provider}/step-up/start": {
-      "get": {
+      "post": {
         "tags": [
           "Identity.Auth",
           "Identity.Auth"
         ],
         "summary": "Start OAuth step-up (re-authentication) flow",
-        "description": "Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.",
+        "description": "Answers the provider URL the browser must go to, to re-authenticate for a security purpose; the provider is asked for a fresh sign-in (prompt=login, max_age=0). returnUrl, when given, must be an internal root-relative path (anything else answers 400). TransferWorkspaceOwnership also needs workspaceId and newOwnerId: the proof is bound to them and is refused for any other. Completion grants a purpose-bound step-up proof; no new session is issued.",
         "operationId": "Identity.Auth.OAuth.StepUpStart",
         "parameters": [
           {
@@ -15150,31 +15150,28 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "purpose",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "returnUrl",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult"
+                }
+              }
             }
-          },
-          "302": {
-            "description": "Found"
           },
           "400": {
             "description": "Bad Request",
@@ -39868,6 +39865,16 @@
           "code": {
             "type": "string",
             "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "newOwnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -39881,6 +39888,16 @@
           },
           "password": {
             "type": "string",
+            "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "newOwnerId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
@@ -39997,6 +40014,30 @@
         "properties": {
           "stepUpToken": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "returnUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "newOwnerId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
@@ -43402,6 +43443,16 @@
           "recoveryCodesRemaining": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult": {
+        "type": "object",
+        "properties": {
+          "authorizationUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -83,17 +83,56 @@ public class OidcIdTokenValidatorTests
         OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
     }
 
+    [Fact]
+    public void ASignInOlderThanTheStepUpWindow_IsRefused() =>
+        Refused(
+            Signed(Payload(authTime: Now.AddMinutes(-30)), TrustedKey),
+            "authentication too old",
+            maxAuthenticationAge: TimeSpan.FromMinutes(5));
+
+    [Fact]
+    public void AFreshSignIn_IsAcceptedForAStepUp()
+    {
+        using var claims = Validate(
+            Signed(Payload(authTime: Now.AddSeconds(-20)), TrustedKey),
+            TimeSpan.FromMinutes(5));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
+    [Fact]
+    public void ATokenWithoutAuthTime_IsAcceptedForAStepUp_BecauseTheProviderWasAskedToSignInAgain()
+    {
+        using var claims = Validate(Signed(Payload(), TrustedKey), TimeSpan.FromMinutes(5));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
+    [Fact]
+    public void AnOldSignIn_IsAcceptedWhenNoStepUpWindowIsAsked()
+    {
+        using var claims = Validate(Signed(Payload(authTime: Now.AddDays(-3)), TrustedKey));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
     private static readonly RSA TrustedKey = RSA.Create(2048);
 
-    private static string Payload() => JsonSerializer.Serialize(new Dictionary<string, object?>
+    private static string Payload(DateTimeOffset? authTime = null)
     {
-        ["iss"] = Issuer,
-        ["aud"] = ClientId,
-        ["sub"] = "subject-1",
-        ["nonce"] = Nonce,
-        ["iat"] = Now.AddMinutes(-1).ToUnixTimeSeconds(),
-        ["exp"] = Now.AddMinutes(5).ToUnixTimeSeconds(),
-    });
+        var claims = new Dictionary<string, object?>
+        {
+            ["iss"] = Issuer,
+            ["aud"] = ClientId,
+            ["sub"] = "subject-1",
+            ["nonce"] = Nonce,
+            ["iat"] = Now.AddMinutes(-1).ToUnixTimeSeconds(),
+            ["exp"] = Now.AddMinutes(5).ToUnixTimeSeconds(),
+        };
+        if (authTime is { } at)
+            claims["auth_time"] = at.ToUnixTimeSeconds();
+        return JsonSerializer.Serialize(claims);
+    }
 
     private static string Signed(string payload, RSA key)
     {
@@ -102,15 +141,15 @@ public class OidcIdTokenValidatorTests
         return $"{signingInput}.{Convert.ToBase64String(signature).TrimEnd('=').Replace('+', '-').Replace('/', '_')}";
     }
 
-    private static void Refused(string token, string reason)
+    private static void Refused(string token, string reason, TimeSpan? maxAuthenticationAge = null)
     {
-        var act = () => Validate(token);
+        var act = () => Validate(token, maxAuthenticationAge);
 
         act.Should().Throw<OidcIdTokenException>().WithMessage(reason);
     }
 
-    private static JsonDocument Validate(string token) =>
-        OidcIdTokenValidator.Validate(token, [new RsaSecurityKey(TrustedKey) { KeyId = "k1" }], Issuers, ClientId, Nonce, Now);
+    private static JsonDocument Validate(string token, TimeSpan? maxAuthenticationAge = null) =>
+        OidcIdTokenValidator.Validate(token, [new RsaSecurityKey(TrustedKey) { KeyId = "k1" }], Issuers, ClientId, Nonce, Now, maxAuthenticationAge);
 
     private static string Token(
         string iss = Issuer,

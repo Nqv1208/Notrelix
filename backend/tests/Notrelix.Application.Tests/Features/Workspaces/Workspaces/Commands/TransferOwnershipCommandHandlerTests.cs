@@ -14,15 +14,22 @@ public class TransferOwnershipCommandHandlerTests : WorkspaceHandlerTestBase
     public TransferOwnershipCommandHandlerTests()
     {
         RequestContextMock.Setup(c => c.SessionId).Returns(_sessionId);
-        // Only the proof of this caller, this session and this purpose spends; anything else is refused like the real service.
+        // Only the proof of this caller, this session and this purpose spends, and only for the target it was
+        // given for; anything else is refused like the real service.
         _stepUp
-            .Setup(s => s.ConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.ConsumeBoundAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure(new ApplicationError(
                 "identity.security.step-up-invalid", "Invalid.", ApplicationErrorType.Validation)));
         _stepUp
-            .Setup(s => s.ConsumeAsync(Proof, TestUserId, _sessionId, StepUpPurpose.TransferWorkspaceOwnership, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .Setup(s => s.ConsumeBoundAsync(Proof, TestUserId, _sessionId, StepUpPurpose.TransferWorkspaceOwnership, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string _, Guid _, Guid _, StepUpPurpose _, string target, CancellationToken _) =>
+                _proofGivenFor is null || _proofGivenFor == target
+                    ? Result.Success()
+                    : Result.Failure(new ApplicationError("identity.security.step-up-invalid", "Invalid.", ApplicationErrorType.Validation)));
     }
+
+    /// <summary>The target the proof was given for; null leaves the proof good for whatever the handler asks.</summary>
+    private string? _proofGivenFor;
 
     private TransferOwnershipCommandHandler CreateSut() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, GrantProjectionMock.Object, LockerMock.Object, _stepUp.Object);
@@ -92,9 +99,35 @@ public class TransferOwnershipCommandHandlerTests : WorkspaceHandlerTestBase
         var result = await CreateSut().Handle(new TransferOwnershipCommand(TestWorkspaceId, adminId, 1, Proof), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        _stepUp.Verify(s => s.ConsumeAsync(
-            Proof, TestUserId, _sessionId, StepUpPurpose.TransferWorkspaceOwnership, It.IsAny<CancellationToken>()), Times.Once);
+        _stepUp.Verify(s => s.ConsumeBoundAsync(
+            Proof, TestUserId, _sessionId, StepUpPurpose.TransferWorkspaceOwnership,
+            StepUpTarget.OwnershipTransfer(TestWorkspaceId, adminId), It.IsAny<CancellationToken>()), Times.Once);
         DbContextMock.Object.WorkspaceMembers.Single(m => m.UserId == adminId).Role.Should().Be(WorkspaceRole.Owner);
+    }
+
+    [Fact]
+    public async Task Handle_WithAProofGivenForAnotherPerson_IsRefusedWith400_AndOwnershipDoesNotChange()
+    {
+        SeedOwnerAndAdmin(out var adminId);
+        _proofGivenFor = StepUpTarget.OwnershipTransfer(TestWorkspaceId, Guid.CreateVersion7());
+
+        var result = await CreateSut().Handle(new TransferOwnershipCommand(TestWorkspaceId, adminId, 1, Proof), CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e =>
+            e.Code == "identity.security.step-up-invalid" && e.Type == ApplicationErrorType.Validation);
+        OwnershipMustNotHaveChanged(adminId);
+    }
+
+    [Fact]
+    public async Task Handle_WithAProofGivenForAnotherWorkspace_IsRefusedWith400_AndOwnershipDoesNotChange()
+    {
+        SeedOwnerAndAdmin(out var adminId);
+        _proofGivenFor = StepUpTarget.OwnershipTransfer(Guid.CreateVersion7(), adminId);
+
+        var result = await CreateSut().Handle(new TransferOwnershipCommand(TestWorkspaceId, adminId, 1, Proof), CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.security.step-up-invalid");
+        OwnershipMustNotHaveChanged(adminId);
     }
 
     [Fact]
@@ -107,8 +140,8 @@ public class TransferOwnershipCommandHandlerTests : WorkspaceHandlerTestBase
         var act = () => CreateSut().Handle(new TransferOwnershipCommand(TestWorkspaceId, targetId, 1, ""), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
-        _stepUp.Verify(s => s.ConsumeAsync(
-            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()), Times.Never);
+        _stepUp.Verify(s => s.ConsumeBoundAsync(
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

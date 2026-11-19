@@ -41,7 +41,7 @@ public class StartOAuthLinkCommandHandlerTests
     private static async Task<string> IssueStepUpProof(ISecurityStepUpService stepUp)
     {
         var proof = await stepUp.GrantOAuthProofAsync(
-            CurrentUserId, CurrentSessionId, StepUpPurpose.LinkOAuth, CancellationToken.None);
+            CurrentUserId, CurrentSessionId, StepUpPurpose.LinkOAuth, null, CancellationToken.None);
         proof.Succeeded.Should().BeTrue();
         return proof.Data!.ProofToken;
     }

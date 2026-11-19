@@ -18,6 +18,7 @@ import type {
   StepUpFactor,
   StepUpPurpose,
   StepUpRequirement,
+  StepUpTarget,
   TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
@@ -700,16 +701,24 @@ export function createAccountService(
     },
 
     /**
-     * Where the browser goes to confirm with a linked provider (a path under the API base). The
-     * provider's page and the way back are the backend's: it keeps the proof in an httpOnly cookie
-     * and returns to `returnUrl` (an internal path), adding `stepUpResult=failed` when it could not.
+     * Starts confirming with a linked provider and answers where the browser goes next (the provider's page).
+     * A POST behind the CSRF check, so no link or form on another site can start it. The way back is the
+     * backend's: it keeps the proof in an httpOnly cookie and returns to `returnUrl` (an internal path),
+     * adding `stepUpResult=failed` when it could not. A handover names its `target`: the proof is refused
+     * for any other workspace or person.
      */
-    providerStepUpPath(
+    async startProviderStepUp(
       provider: string,
       purpose: StepUpPurpose,
       returnUrl: string,
-    ): string {
-      return `${endpoints.auth.oauthStepUpStart(provider)}?purpose=${encodeURIComponent(purpose)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+      target?: StepUpTarget,
+    ): Promise<string> {
+      const wire = await api.post<{ authorizationUrl?: string | null }>(
+        endpoints.auth.oauthStepUpStart(provider),
+        { purpose, returnUrl, ...target },
+        QUIET,
+      );
+      return wire.authorizationUrl ?? "";
     },
 
     /**
@@ -754,10 +763,11 @@ export function createAccountService(
       purpose: StepUpPurpose,
       challengeToken: string,
       code: string,
+      target?: StepUpTarget,
     ): Promise<string> {
       const wire = await api.post<{ proofToken?: string | null }>(
         endpoints.auth.stepUpCompleteMfa,
-        { purpose, challengeToken, code },
+        { purpose, challengeToken, code, ...target },
         QUIET,
       );
       return wire.proofToken ?? "";
@@ -766,10 +776,11 @@ export function createAccountService(
     async completeStepUpWithPassword(
       purpose: StepUpPurpose,
       password: string,
+      target?: StepUpTarget,
     ): Promise<string> {
       const wire = await api.post<{ proofToken?: string | null }>(
         endpoints.auth.stepUpCompletePassword,
-        { purpose, password },
+        { purpose, password, ...target },
         QUIET,
       );
       return wire.proofToken ?? "";

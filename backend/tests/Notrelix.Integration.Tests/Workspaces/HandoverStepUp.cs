@@ -29,10 +29,13 @@ internal sealed class HandoverStepUp
 
     public ISecurityStepUpService Service { get; }
 
+    /// <summary>A proof for the handover of <paramref name="workspaceId"/> to <paramref name="newOwnerId"/>; spent only for exactly that.</summary>
     public async Task<string> ProofAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose = StepUpPurpose.TransferWorkspaceOwnership)
+        Guid userId, Guid sessionId, Guid workspaceId, Guid newOwnerId,
+        StepUpPurpose purpose = StepUpPurpose.TransferWorkspaceOwnership)
     {
-        var granted = await Service.GrantOAuthProofAsync(userId, sessionId, purpose, CancellationToken.None);
+        var granted = await Service.GrantOAuthProofAsync(
+            userId, sessionId, purpose, StepUpTarget.OwnershipTransfer(workspaceId, newOwnerId), CancellationToken.None);
         granted.Succeeded.Should().BeTrue();
         return granted.Data!.ProofToken;
     }

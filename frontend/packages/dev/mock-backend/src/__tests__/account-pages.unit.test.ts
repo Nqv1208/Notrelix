@@ -520,11 +520,14 @@ describe("a person who signs in with a provider (the mock's Google account)", ()
   it("gets one proof from the provider, two for turning two-factor on, and claims them once", async () => {
     const { api } = await signedInWithGoogle();
     const start = (purpose: string, provider = "Google") =>
-      api.get(
-        `/auth/oauth/${provider}/step-up/start?purpose=${purpose}&returnUrl=${encodeURIComponent("/x?stepUp=y")}`,
-      ) as Promise<{ redirectTo: string }>;
+      api.post(`/auth/oauth/${provider}/step-up/start`, {
+        purpose,
+        returnUrl: "/x?stepUp=y",
+      }) as Promise<{ authorizationUrl: string }>;
 
-    expect((await start("RevokeOtherSessions")).redirectTo).toBe("/x?stepUp=y");
+    expect((await start("RevokeOtherSessions")).authorizationUrl).toBe(
+      "/x?stepUp=y",
+    );
     expect(
       await api.post("/auth/security/step-up/claim-provider", {}),
     ).toMatchObject({ spareProofToken: null });
@@ -547,14 +550,59 @@ describe("a person who signs in with a provider (the mock's Google account)", ()
     ).toMatchObject({ mfaMethodId: expect.any(String) });
   });
 
-  it("returns to the page with the failure marker for a provider that is not the person's", async () => {
+  it("refuses a provider that is not the person's, and leaves no proof", async () => {
     const { api } = await signedInWithGoogle();
-    const answer = (await api.get(
-      `/auth/oauth/Microsoft/step-up/start?purpose=EnrollMfa&returnUrl=${encodeURIComponent("/x?stepUp=enroll")}`,
-    )) as { redirectTo: string };
-    expect(answer.redirectTo).toBe("/x?stepUp=enroll&stepUpResult=failed");
+    await expect(
+      api.post("/auth/oauth/Microsoft/step-up/start", {
+        purpose: "EnrollMfa",
+        returnUrl: "/x?stepUp=enroll",
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "identity.oauth.provider-not-linked",
+    });
     await expect(
       api.post("/auth/security/step-up/claim-provider", {}),
     ).rejects.toMatchObject({ code: "identity.security.step-up-invalid" });
+  });
+
+  it.each([
+    "https://evil.example/steal",
+    "//evil.example",
+    "/\\evil.example",
+    "settings",
+  ])(
+    "refuses a return address that is not an internal path (%s)",
+    async (returnUrl) => {
+      const { api } = await signedInWithGoogle();
+      await expect(
+        api.post("/auth/oauth/Google/step-up/start", {
+          purpose: "RevokeOtherSessions",
+          returnUrl,
+        }),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(
+        api.post("/auth/security/step-up/claim-provider", {}),
+      ).rejects.toMatchObject({ code: "identity.security.step-up-invalid" });
+    },
+  );
+
+  it("will not start a handover that names no workspace and person", async () => {
+    const { api } = await signedInWithGoogle();
+    await expect(
+      api.post("/auth/oauth/Google/step-up/start", {
+        purpose: "TransferWorkspaceOwnership",
+        returnUrl: "/x",
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("is no longer a GET that a link could trigger", async () => {
+    const { api } = await signedInWithGoogle();
+    await expect(
+      api.get(
+        "/auth/oauth/Google/step-up/start?purpose=RevokeOtherSessions&returnUrl=%2Fx",
+      ),
+    ).rejects.toBeDefined();
   });
 });

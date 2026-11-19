@@ -17,11 +17,14 @@ export interface OwnershipStepUpEnv {
  * feature never imports another feature. A person with an authenticator answers a code, one with only a
  * password answers the password, one who signs in only through a provider confirms with that provider: the
  * browser leaves for it and returns to the settings page with the chosen person in the address, the
- * single-use proof (bound to the person, the session and this purpose) waiting in an httpOnly cookie.
+ * single-use proof (bound to the person, the session, this purpose, this workspace and the chosen person)
+ * waiting in an httpOnly cookie. The address only says who was chosen: the producer refuses a proof for
+ * anyone else, and the settings page asks for one more click before anything is handed over.
  */
 export function createOwnershipStepUp(
   api: AccountDeps[0],
   endpoints: AccountDeps[1],
+  workspaceId: string,
   env?: OwnershipStepUpEnv,
 ): OwnershipStepUp {
   const account = createAccountService(api, endpoints);
@@ -38,26 +41,30 @@ export function createOwnershipStepUp(
         challengeToken: requirement.challengeToken,
       };
     },
-    withCode: (challengeToken, code) =>
-      account.completeStepUpWithCode(PURPOSE, challengeToken, code),
-    withPassword: (password) =>
-      account.completeStepUpWithPassword(PURPOSE, password),
+    withCode: (challengeToken, code, newOwnerId) =>
+      account.completeStepUpWithCode(PURPOSE, challengeToken, code, {
+        workspaceId,
+        newOwnerId,
+      }),
+    withPassword: (password, newOwnerId) =>
+      account.completeStepUpWithPassword(PURPOSE, password, {
+        workspaceId,
+        newOwnerId,
+      }),
     provider: env
       ? {
           providers: async () =>
             (await account.getSecuritySummary()).linkedProviders,
           async start(provider, newOwnerId) {
             const back = `${window.location.pathname}?stepUp=${PURPOSE}&newOwner=${encodeURIComponent(newOwnerId)}`;
-            const path = account.providerStepUpPath(provider, PURPOSE, back);
-            if (!env.mockApi) {
-              window.location.assign(`${env.apiUrl}${path}`);
-              return;
-            }
-            const answer = await api.get<{ redirectTo?: string }>(path, {
-              skipGlobalErrorToast: true,
-            });
+            const url = await account.startProviderStepUp(
+              provider,
+              PURPOSE,
+              back,
+              { workspaceId, newOwnerId },
+            );
             window.location.assign(
-              new URL(answer.redirectTo ?? "/", window.location.origin).href,
+              env.mockApi ? new URL(url, window.location.origin).href : url,
             );
           },
           resume() {

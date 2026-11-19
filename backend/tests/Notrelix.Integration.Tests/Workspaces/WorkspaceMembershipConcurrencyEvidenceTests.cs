@@ -277,7 +277,7 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
             new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object,
             new Notrelix.Application.Features.Identity.ApiTokens.Services.IdentityApiTokensProvider(contextB, Clock()));
 
-        (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1, await stepUp.ProofAsync(ownerId, sessionId)), CancellationToken.None))
+        (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1, await stepUp.ProofAsync(ownerId, sessionId, workspace.Id, newOwnerId)), CancellationToken.None))
             .Succeeded.Should().BeTrue();
 
         var removeTask = remove.Handle(new RemoveMemberCommand(workspace.Id, newOwnerId, 1), CancellationToken.None);

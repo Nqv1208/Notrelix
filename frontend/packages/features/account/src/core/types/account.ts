@@ -120,6 +120,12 @@ export type StepUpPurpose =
   | "IssueApiToken"
   | "TransferWorkspaceOwnership";
 
+/** What a handover proof is for: the workspace and the person who becomes Owner. The producer refuses the proof for any other. */
+export interface StepUpTarget {
+  readonly workspaceId: string;
+  readonly newOwnerId: string;
+}
+
 /** One API token of a workspace; never the secret, only the last characters. */
 export interface AccountApiToken {
   readonly id: string;

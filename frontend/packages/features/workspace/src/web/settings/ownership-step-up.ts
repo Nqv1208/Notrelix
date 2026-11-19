@@ -27,11 +27,15 @@ export interface OwnershipProviderReturn {
 export interface OwnershipProviderStepUp {
   /** The linked providers the person can confirm with, by display name. */
   providers(): Promise<readonly string[]>;
-  /** Leaves for `provider`, to come back with `newOwnerId` in the address. */
+  /** Leaves for `provider` (the proof is given for `newOwnerId` only), to come back with `newOwnerId` in the address. */
   start(provider: string, newOwnerId: string): Promise<void>;
-  /** Reads the return address once (and clears it, so a reload spends nothing); `null` when this is not a return. */
+  /**
+   * Reads the return address once (and clears it, so a reload spends nothing); `null` when this is not a return.
+   * The address is only a hint of who was chosen, never an instruction: nothing is claimed or handed over
+   * until the person presses the button.
+   */
   resume(): OwnershipProviderReturn | null;
-  /** Takes the single-use proof the provider return left; rejects with the host's error when there is none. */
+  /** Takes the single-use proof the provider return left, once the person pressed Transfer; rejects with the host's error when there is none. */
   claim(): Promise<string>;
 }
 
@@ -39,10 +43,14 @@ export interface OwnershipStepUp {
   readonly provider?: OwnershipProviderStepUp;
   /** Asks which factor to satisfy; rejects when the host cannot be reached. */
   request(): Promise<OwnershipProofRequest>;
-  /** Resolves the single-use proof of a code answer; rejects with the host's error when it is refused. */
-  withCode(challengeToken: string, code: string): Promise<string>;
-  /** Resolves the single-use proof of a password answer. */
-  withPassword(password: string): Promise<string>;
+  /** Resolves the single-use proof of a code answer, given for handing over to `newOwnerId` only; rejects with the host's error when it is refused. */
+  withCode(
+    challengeToken: string,
+    code: string,
+    newOwnerId: string,
+  ): Promise<string>;
+  /** Resolves the single-use proof of a password answer, given for handing over to `newOwnerId` only. */
+  withPassword(password: string, newOwnerId: string): Promise<string>;
 }
 
 /** Why a proof was not given. */

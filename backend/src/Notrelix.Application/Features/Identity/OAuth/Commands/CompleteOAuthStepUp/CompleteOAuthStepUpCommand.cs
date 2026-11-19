@@ -107,7 +107,8 @@ public sealed class CompleteOAuthStepUpCommandHandler
 
         var redirectUri = _optionsProvider.GetRedirectUri(request.Provider);
         var redemptionRequest = new OAuthCodeRedemptionRequest(
-            request.Code, storedState.CodeVerifier, storedState.Nonce, redirectUri);
+            request.Code, storedState.CodeVerifier, storedState.Nonce, redirectUri,
+            MaxAuthenticationAge: SecurityStepUpPolicy.ProofTtl);
 
         ExternalOAuthProfile profile;
         try
@@ -138,7 +139,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         }
 
         var purpose = StepUpPurposeMapping.FromChallengePurpose(stepUpPurpose);
-        var proof = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, cancellationToken);
+        var proof = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, storedState.StepUpTarget, cancellationToken);
         if (!proof.Succeeded)
         {
             return Result<OAuthStepUpResult>.Failure(proof.TypedErrors);
@@ -149,7 +150,7 @@ public sealed class CompleteOAuthStepUpCommandHandler
         StepUpProofResult? spare = null;
         if (purpose == StepUpPurpose.EnrollMfa)
         {
-            var second = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, cancellationToken);
+            var second = await _stepUpService.GrantOAuthProofAsync(userId, sessionId, purpose, storedState.StepUpTarget, cancellationToken);
             if (!second.Succeeded)
             {
                 return Result<OAuthStepUpResult>.Failure(second.TypedErrors);

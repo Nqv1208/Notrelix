@@ -3284,13 +3284,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
          * Start OAuth step-up (re-authentication) flow
-         * @description Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.
+         * @description Answers the provider URL the browser must go to, to re-authenticate for a security purpose; the provider is asked for a fresh sign-in (prompt=login, max_age=0). returnUrl, when given, must be an internal root-relative path (anything else answers 400). TransferWorkspaceOwnership also needs workspaceId and newOwnerId: the proof is bound to them and is refused for any other. Completion grants a purpose-bound step-up proof; no new session is issued.
          */
-        get: operations["Identity.Auth.OAuth.StepUpStart"];
-        put?: never;
-        post?: never;
+        post: operations["Identity.Auth.OAuth.StepUpStart"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9582,10 +9582,18 @@ export interface components {
             purpose?: string | null;
             challengeToken?: string | null;
             code?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest": {
             purpose?: string | null;
             password?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest": {
             stepUpToken?: string | null;
@@ -9620,6 +9628,14 @@ export interface components {
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
             stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest": {
+            purpose?: string | null;
+            returnUrl?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
@@ -10731,6 +10747,9 @@ export interface components {
             hasRecoveryCodes?: boolean;
             /** Format: int32 */
             recoveryCodesRemaining?: number;
+        };
+        "Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult": {
+            authorizationUrl?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
             email?: string | null;
@@ -21895,17 +21914,18 @@ export interface operations {
     };
     "Identity.Auth.OAuth.StepUpStart": {
         parameters: {
-            query?: {
-                purpose?: string;
-                returnUrl?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 provider: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -21913,15 +21933,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult"];
                 };
-            };
-            /** @description Found */
-            302: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Bad Request */
             400: {

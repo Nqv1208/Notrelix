@@ -76,11 +76,11 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
 
     /// <summary>A real fresh step-up proof in the host's own proof store, bound to the person, the session and the purpose.</summary>
     private static async Task<string> ProofAsync(
-        WebApplicationFactory<Program> factory, User user, Guid sessionId, StepUpPurpose purpose)
+        WebApplicationFactory<Program> factory, User user, Guid sessionId, StepUpPurpose purpose, string? target = null)
     {
         using var scope = factory.Services.CreateScope();
         var granted = await scope.ServiceProvider.GetRequiredService<ISecurityStepUpService>()
-            .GrantOAuthProofAsync(user.Id, sessionId, purpose, CancellationToken.None);
+            .GrantOAuthProofAsync(user.Id, sessionId, purpose, target, CancellationToken.None);
         granted.Succeeded.Should().BeTrue();
         return granted.Data!.ProofToken;
     }
@@ -218,7 +218,7 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
         var sessionId = Guid.CreateVersion7();
         using var client = ClientFor(factory, _a.User, sessionId);
         var version = await OwnerScalarAsync("SELECT version FROM workspace.workspaces WHERE id = @w", ("w", _a.WorkspaceId));
-        var proof = await ProofAsync(factory, _a.User, sessionId, StepUpPurpose.TransferWorkspaceOwnership);
+        var proof = await ProofAsync(factory, _a.User, sessionId, StepUpPurpose.TransferWorkspaceOwnership, StepUpTarget.OwnershipTransfer(_a.WorkspaceId, bob.Id));
 
         var response = await client.PostAsJsonAsync($"/api/v1/workspaces/{_a.WorkspaceId}/transfer-ownership",
             new { newOwnerId = bob.Id, expectedVersion = long.Parse(version), stepUpToken = proof });

@@ -21,6 +21,9 @@ public sealed record StartOAuthStepUpCommand
     public required OAuthProvider Provider { get; init; }
     public required StepUpPurpose Purpose { get; init; }
     public string? ReturnUrl { get; init; }
+
+    /// <summary>What the proof is for, when the purpose acts on one thing (see <see cref="StepUpTarget"/>).</summary>
+    public string? Target { get; init; }
 }
 
 public sealed class StartOAuthStepUpCommandHandler
@@ -95,7 +98,7 @@ public sealed class StartOAuthStepUpCommandHandler
         var redirectUri = _optionsProvider.GetRedirectUri(request.Provider);
 
         var authRequest = new OAuthAuthorizationRequest(
-            redirectUri, state, nonce, codeChallenge, "S256");
+            redirectUri, state, nonce, codeChallenge, "S256", FreshAuthentication: true);
 
         var urlResult = await _providerClient.BuildAuthorizationUrlAsync(
             request.Provider, authRequest, cancellationToken);
@@ -104,7 +107,7 @@ public sealed class StartOAuthStepUpCommandHandler
         var stepUpState = new OAuthLoginState(
             state, nonce, codeVerifier, request.Provider, SafeReturnPath.OrNull(request.ReturnUrl), expiresAt,
             OAuthFlowKind.StepUp, userId, sessionId,
-            StepUpPurposeMapping.ToChallengePurpose(request.Purpose));
+            StepUpPurposeMapping.ToChallengePurpose(request.Purpose), request.Target);
 
         await _stateStore.StoreAsync(stepUpState, TimeSpan.FromMinutes(10), cancellationToken);
 

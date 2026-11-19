@@ -877,7 +877,9 @@ describe("AccountSecurityPage container", () => {
       runtime.post = vi.fn((url: string) =>
         url === "/auth/security/step-up/requirement"
           ? { requiredFactor: "OAuth", challengeToken: null }
-          : undefined,
+          : url === "/auth/oauth/Google/step-up/start"
+            ? { authorizationUrl: "https://accounts.google.test/authorize?s=1" }
+            : undefined,
       );
       await mount(<AccountSecurityPage />, "en");
       await until(() =>
@@ -893,8 +895,18 @@ describe("AccountSecurityPage container", () => {
       expect(text()).toContain("there is no password to enter");
 
       await clickButton("Confirm with Google");
-      expect(assign).toHaveBeenCalledWith(
-        "https://api.test/auth/oauth/Google/step-up/start?purpose=EnrollMfa&returnUrl=%2Fworkspaces%2Fw-1%2Faccount%2Fsecurity%3FstepUp%3Denroll",
+      // A POST (no link can start it); the browser then leaves for the URL it answered.
+      await until(() =>
+        expect(assign).toHaveBeenCalledWith(
+          "https://accounts.google.test/authorize?s=1",
+        ),
+      );
+      expect(runtime.post).toHaveBeenCalledWith(
+        "/auth/oauth/Google/step-up/start",
+        {
+          purpose: "EnrollMfa",
+          returnUrl: "/workspaces/w-1/account/security?stepUp=enroll",
+        },
       );
       vi.unstubAllGlobals();
     });
