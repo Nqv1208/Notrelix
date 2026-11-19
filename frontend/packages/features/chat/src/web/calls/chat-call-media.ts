@@ -31,6 +31,13 @@ export interface ChatCallMediaSession {
     kind: ChatCallDeviceKind,
     deviceId: string,
   ): Promise<ChatCallDeviceFailure | null>;
+  /**
+   * Shares the screen (the browser opens its own picker) or stops the share; resolves with the failure when nothing was shared
+   * (`denied` is a refused permission or a closed picker). Absent where the browser has no screen picker (a phone).
+   */
+  setScreenShare?(on: boolean): Promise<ChatCallDeviceFailure | null>;
+  /** Puts the shared screen of the other person on a tile that mounted after its track arrived. */
+  attachScreen?(element: HTMLVideoElement | null): void;
   disconnect(): void;
 }
 
@@ -40,6 +47,10 @@ export interface ChatCallMediaOptions {
   /** The tile elements, read when a track arrives so a remount does not lose the picture. */
   readonly remoteVideo: () => HTMLVideoElement | null;
   readonly localVideo: () => HTMLVideoElement | null;
+  /** The tile that shows the other person's shared screen, read when its track arrives. */
+  readonly screenVideo?: () => HTMLVideoElement | null;
+  /** The browser (its own "Stop sharing" bar) or the media plane ended this person's own share. */
+  readonly onScreenEnded?: () => void;
   readonly onState: (state: ChatCallMediaState) => void;
   /** Called with the number (from 1) of each reconnect try, so the screen can say "try 2 of 5". */
   readonly onAttempt?: (attempt: number) => void;
@@ -60,6 +71,7 @@ function connectMock(
     setMicrophone: () => Promise.resolve(null),
     setCamera: () => Promise.resolve(null),
     switchDevice: () => Promise.resolve(null),
+    setScreenShare: () => Promise.resolve(null),
     disconnect: () => options.onState("disconnected"),
   });
 }

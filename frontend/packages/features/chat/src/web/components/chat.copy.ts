@@ -119,6 +119,28 @@ export const en = {
       "{{label}} was unplugged. The call now uses the system default.",
     deviceSwitchFailed:
       "That device could not be used. The call kept the last one.",
+    shareStart: "Share screen",
+    shareStop: "Stop sharing",
+    shareShort: "Share",
+    shareYouTitle: "You are sharing your screen",
+    shareYouBody: "Everyone in the call can see what you picked.",
+    shareChip: "{{name}} is sharing their screen",
+    shareVideo: "{{name}}'s shared screen",
+    shareStrip: "People in the call",
+    shareDenied:
+      "Screen sharing did not start. You refused it or closed the picker.",
+    shareUnavailable: "Screen sharing is not available right now.",
+    shareTaken: "Someone else started sharing first.",
+    shareEnded:
+      "Your screen share stopped because the browser ended the sharing.",
+    shareReplaced: "{{name}} replaced your screen share.",
+    shareRetry: "Try again",
+    shareAgain: "Share again",
+    shareReplaceTitle: "Replace the screen share in progress?",
+    shareReplaceBody:
+      "{{name}} is sharing their screen. If you share, their share stops.",
+    shareReplaceConfirm: "Share instead",
+    shareReplaceCancel: "Cancel",
   },
   search: {
     open: "Search messages",
@@ -1177,6 +1199,28 @@ export const vi: ChatCopy = {
       "{{label}} đã bị rút. Cuộc gọi đang dùng thiết bị mặc định của hệ thống.",
     deviceSwitchFailed:
       "Không dùng được thiết bị đó. Cuộc gọi vẫn giữ thiết bị trước.",
+    shareStart: "Chia sẻ màn hình",
+    shareStop: "Dừng chia sẻ",
+    shareShort: "Chia sẻ",
+    shareYouTitle: "Bạn đang chia sẻ màn hình",
+    shareYouBody: "Mọi người trong cuộc gọi đang xem nội dung bạn đã chọn.",
+    shareChip: "{{name}} đang chia sẻ màn hình",
+    shareVideo: "Màn hình {{name}} đang chia sẻ",
+    shareStrip: "Người trong cuộc gọi",
+    shareDenied:
+      "Không bắt đầu được chia sẻ màn hình. Bạn đã từ chối quyền hoặc hủy bước chọn nội dung.",
+    shareUnavailable: "Hiện chưa chia sẻ được màn hình.",
+    shareTaken: "Có người khác đã bắt đầu chia sẻ trước.",
+    shareEnded:
+      "Phần chia sẻ màn hình của bạn đã dừng vì trình duyệt đã kết thúc việc chia sẻ.",
+    shareReplaced: "{{name}} đã thay phần chia sẻ của bạn.",
+    shareRetry: "Thử lại",
+    shareAgain: "Chia sẻ lại",
+    shareReplaceTitle: "Thay thế phần chia sẻ đang diễn ra?",
+    shareReplaceBody:
+      "{{name}} đang chia sẻ màn hình. Nếu bạn chia sẻ, phần chia sẻ của {{name}} sẽ dừng lại.",
+    shareReplaceConfirm: "Chia sẻ thay thế",
+    shareReplaceCancel: "Hủy",
   },
   search: {
     open: "Tìm tin nhắn",

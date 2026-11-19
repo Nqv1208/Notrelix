@@ -167,6 +167,7 @@ export const callsOperations = [
       videoOn?: boolean;
       sharingScreen?: boolean;
       expectedVersion?: number | null;
+      replaceShare?: boolean | null;
     }
   >({
     id: "chat.calls.updateMediaState",
@@ -188,6 +189,7 @@ export const callsOperations = [
             audioOn: body?.audioOn ?? false,
             videoOn: body?.videoOn ?? false,
             sharingScreen: body?.sharingScreen ?? false,
+            replaceShare: body?.replaceShare ?? false,
           },
         );
         return { status: result.status, body: result.body };

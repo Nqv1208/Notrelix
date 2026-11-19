@@ -373,6 +373,7 @@ export function ChatWorkspace({
   const calls = useChatCalls({
     deps,
     workspaceId,
+    viewerId,
     deviceStore: callDeviceStore,
   });
   const offersConversations = onOpenConversation !== undefined;

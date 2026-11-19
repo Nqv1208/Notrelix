@@ -57,6 +57,7 @@ export const CALL_RULE = {
   busy: "call-busy",
   notParticipant: "call-not-participant",
   mediaNotAllowed: "call-media-not-allowed",
+  screenShareTaken: "call-screen-share-taken",
 } as const;
 
 const CALL_CAP = { voice: 25, video: 12 } as const;
@@ -255,7 +256,10 @@ function finish(
   call.endReason = reason;
   call.endedAt = now;
   call.version += 1;
-  for (const p of call.participants) p.leftAt ??= now;
+  for (const p of call.participants) {
+    p.leftAt ??= now;
+    p.sharingScreen = false;
+  }
   appendSystemMessage(state, space, actorId, lineOf(call));
   announceCall(state, space, call, false);
 }
@@ -326,6 +330,7 @@ function seat(call: MockCallRecord, personId: string, now: string): void {
   const known = call.participants.find((p) => p.personId === personId);
   if (known) {
     known.leftAt = null;
+    known.sharingScreen = false;
     return;
   }
   call.participants.push({
@@ -578,6 +583,7 @@ export function leaveCall(
   } else {
     const me = call.participants.find((p) => p.personId === userId)!;
     me.leftAt = state.stampWrite();
+    me.sharingScreen = false;
     call.version += 1;
     announceCall(state, space, call, false);
   }
@@ -590,7 +596,12 @@ export function updateCallMedia(
   callId: string,
   userId: string,
   expectedVersion: number,
-  media: { audioOn: boolean; videoOn: boolean; sharingScreen: boolean },
+  media: {
+    audioOn: boolean;
+    videoOn: boolean;
+    sharingScreen: boolean;
+    replaceShare?: boolean;
+  },
 ): { status: number; body: unknown } {
   const state = store.chat;
   const { call, space } = callIn(state, workspaceId, callId, userId);
@@ -612,10 +623,31 @@ export function updateCallMedia(
       400,
       CALL_RULE.mediaNotAllowed,
       "Media not allowed",
-      "A voice call carries no camera.",
+      "A voice call carries no camera and no screen share.",
     );
   }
+  // Starting a share needs the right to take part, as the server asks (a Guest or an archived channel is refused).
+  if (media.sharingScreen && !me.sharingScreen)
+    requireMayTakePart(store, state, space, userId);
+  // One share at a time: a second needs the caller's confirmation, and then the first share ends in the same change.
+  const sharers = call.participants.filter(
+    (p) => p.leftAt === null && p.sharingScreen && p !== me,
+  );
+  let replaced = false;
+  if (media.sharingScreen && !me.sharingScreen && sharers.length > 0) {
+    if (!media.replaceShare) {
+      fail(
+        409,
+        CALL_RULE.screenShareTaken,
+        "Screen share taken",
+        "Someone else is already sharing a screen.",
+      );
+    }
+    for (const other of sharers) other.sharingScreen = false;
+    replaced = true;
+  }
   if (
+    replaced ||
     me.audioOn !== media.audioOn ||
     me.videoOn !== media.videoOn ||
     me.sharingScreen !== media.sharingScreen

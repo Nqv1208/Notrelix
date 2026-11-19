@@ -312,6 +312,10 @@ function controller(current: ChatCurrentCall): ChatCallsController {
     dismiss: vi.fn(),
     remoteVideoRef: vi.fn(),
     localVideoRef: vi.fn(),
+    screenVideoRef: vi.fn(),
+    startScreenShare: vi.fn(),
+    stopScreenShare: vi.fn(),
+    dismissScreenNotice: vi.fn(),
   };
 }
 
