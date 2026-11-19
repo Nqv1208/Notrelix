@@ -47,7 +47,7 @@ const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
  * supplies the transport, the caller and the Workspace member names.
  */
 export function ChatPage() {
-  const { workspaceId } = useWorkspaceContext();
+  const { workspaceId, workspace } = useWorkspaceContext();
   const { channelId: rawChannelId, conversationId: rawConversationId } =
     useParams({ strict: false }) as {
       channelId?: string;
@@ -193,6 +193,7 @@ export function ChatPage() {
         connection={connection}
         ephemeral={ephemeral}
         onCreateTask={setTaskDraft}
+        workspaceArchived={workspace?.isArchived === true}
         onOpenChannel={(id) =>
           void navigate({
             to: "/workspaces/$workspaceId/chat/$channelId",
