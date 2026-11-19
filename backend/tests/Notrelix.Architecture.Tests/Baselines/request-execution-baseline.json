@@ -1375,6 +1375,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Chat.Channels.Commands.RestoreChannel.RestoreChannelCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": true,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Channels.Commands.RestoreChannel.RestoreChannelCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel.UnlinkChannelCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -1497,6 +1522,31 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Chat.Channels.Queries.ListChannels.ListChannelsQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Chat.Channels.Queries.ListDeletedChannels.ListDeletedChannelsQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Chat.Channels.Queries.ListDeletedChannels.ListDeletedChannelsQueryHandler"
     ]
   },
   {

@@ -357,6 +357,10 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}`,
     channelOrder: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/order`,
+    channelsDeleted: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/deleted`,
+    channelRestore: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/restore`,
     channelArchive: (workspaceId: string, channelId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/archive`,
     channelMembers: (workspaceId: string, channelId: string) =>

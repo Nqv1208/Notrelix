@@ -7,8 +7,8 @@ using Notrelix.Application.Features.Workspaces.Public.Members;
 namespace Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
 
 /// <summary>
-/// Soft-deletes a channel (UC-CHT-A08, CHT-018). The name is released at once; the recovery window and the purge
-/// are a later rule. Needs a channel manager, a Workspace Owner or Admin.
+/// Soft-deletes a channel (UC-CHT-A08, CHT-018). The name is released at once; a manager restores the channel
+/// within 30 days (<c>RestoreChannelCommand</c>); the purge after the window is a later rule. Needs a channel manager, a Workspace Owner or Admin.
 /// </summary>
 public record DeleteChannelCommand(Guid WorkspaceId, Guid ChannelId, long ExpectedVersion)
     : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest

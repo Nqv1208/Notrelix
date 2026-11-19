@@ -15,6 +15,9 @@ public record LinkChannelRequest(string Kind, Guid ResourceId, long? ExpectedVer
 /// <summary>Archives (true) or unarchives (false) a channel, with the version the client read.</summary>
 public record ArchiveChannelRequest(bool? Archived, long? ExpectedVersion);
 
+/// <summary>Restores a deleted channel, with the version the client read.</summary>
+public record RestoreChannelRequest(long? ExpectedVersion);
+
 /// <summary>One channel's sidebar place, with the version the client read for that channel.</summary>
 public record ChannelPlacementRequest(Guid ChannelId, Guid? GroupId, double Position, long? ExpectedVersion);
 
