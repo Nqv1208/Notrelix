@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.AddTeamMember;
 using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
