@@ -240,7 +240,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-B29 | Import tabular data into a board | B | Editor-level (CreateItem) | yes | yes | yes | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e pending; owner question: the person-matching rule built for the Assignee column (exact e-mail, Owner or Admin importer); import into a new board later (decision 11) |
 | UC-WM-B30 | Map import columns to fields | B | Editor | yes | yes | yes | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e pending |
 | UC-WM-B31 | Export a board or view | B | Anyone who can view, except Guests | yes | yes | yes | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e pending |
-| UC-WM-B32 | Provider/migration import | B | Integrations | no | no | none | none | DEFINED | Integrations-owned migration path; no WM work scheduled |
+| UC-WM-B32 | Provider/migration import | B | Integrations | no | no | none | none | DEFINED | Integrations-owned migration path; no WM work scheduled; deferred to 0.2: needs the Integrations provider connectors |
 | UC-WM-B33 | Handle a stale-version write conflict | B | Editor | partial | yes | complete | none | DONE | in-cell choice on the table rows, bottom sheet with both values on the phone list (lead decision 2026-11-14 (b)); `main-table-view.component.test.tsx`, `design-fidelity-phone-conflict` 2 of 2, `table-item-writes.real.e2e.spec.ts` 9 of 9 |
 | UC-WM-B34 | Item deleted or archived by someone else while open | B | Any viewer (see UC-) | partial | yes | complete | none | DONE | Restore on the deleted notice for the editor and manager level (the restore command needs UpdateItem); see the State line. |
 | UC-WM-B35 | Recover from a target lost during commit | B | System | partial | not applicable | not applicable | none | DONE | closed 2026-11-03, see the Evidence line |
@@ -327,10 +327,10 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-N03 | Publish, close, delete or restore a form | N | Manager | yes | yes | complete | none | DONE | lines 1–4 hold, see the State line |
 | UC-WM-N04 | Submit a form as an authenticated member | N | Member who can create items | partial | yes | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: lines 1, 2 and 4 PASS; line 3 GAP: the "Tạo việc từ phản hồi" dialog of WM-Forms-Inbox (owner decision), the undo toast, the conflict difference table and the builder drag, error, closed and preview frames |
 | UC-WM-N05 | Process, reject or mark spam on a submission | N | Editor (UpdateItem) | yes | yes | complete | none | DONE | lines 1–4 hold, see the State line |
-| UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal and abuse controls |
+| UC-WM-N06 | Submit a public (anonymous) form | N | Public (anonymous) | no | no | none | none | BLOCKED | Owner decision 67: execution principal (the abuse controls are built; no anonymous endpoint until the owner decides) |
 | UC-WM-O01 | Read item activity / history | O | Viewer and above | yes | yes | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e; the page cap of 100 not driven in the browser; action-to-fact uniqueness proven at the fact level only (one consumer per fact, one line per delivery); owner check |
 | UC-WM-O02 | Provide first-work-item facts for getting-started | O | System | partial | not applicable | not applicable | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: the adapter exists in Infrastructure (FirstWorkItemFactsAdapter); no test of it was found; add one. |
-| UC-WM-O03 | Expose events and projections to Analytics | O | Analytics (consumer) | partial | not applicable | not applicable | none | INTEGRATING | 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13). |
+| UC-WM-O03 | Expose events and projections to Analytics | O | Analytics (consumer) | partial | not applicable | not applicable | none | INTEGRATING | 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13); deferred to 0.2: needs the Analytics consumers |
 | UC-WM-O04 | Publish stable Work Management facts | O | System | partial | not applicable | not applicable | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: Single-logical-event proof under retry |
 | UC-WM-P01 | See a colleague's change live | P | Any viewer | yes | yes | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e spec for two users on one board and card, tests of the notifier and the adapter, and owner check. |
 | UC-WM-P02 | Keep editing safe while others edit | P | Editor | not applicable | yes | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e spec, tests that an unsaved draft and a drag survive a frame, the table cell choice driven live, and owner check. |
@@ -338,7 +338,7 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-P04 | Lose access or role while the board is open | P | Any viewer | yes | yes | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: real e2e spec, a test of the 60 s re-check, and owner check. |
 | UC-WM-Q01 | Let an Automation rule act on items | Q | Rule executor identity | yes | yes | complete | automation | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: Loop-guard and executor-lost tests |
 | UC-WM-Q02 | Show automation-caused changes on the board | Q | Any viewer | partial | no (open PR #193) | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: live refresh is in open PR #193, not on develop; test that history shows the rule or executor as actor. |
-| UC-WM-Q03 | Sync items with an external provider | Q | Integrations | no | no | not applicable | none | DEFINED | Integrations-owned; idempotent replay test when built |
+| UC-WM-Q03 | Sync items with an external provider | Q | Integrations | no | no | not applicable | none | DEFINED | Integrations-owned; idempotent replay test when built; deferred to 0.2: needs the Integrations provider connectors |
 | UC-WM-R01 | Comment on an item | R | Commenter and above | yes | yes | partial | none | DONE | Built: comments-read failure state (alert, Thử lại); real e2e; dark time-link ink is the shared popup link token (rgb 144,194,253 vs drawn 125,187,255); owner check |
 | UC-WM-R02 | Reply, edit or delete a comment | R | Author; moderator separate | yes | yes | complete | none | DONE | Built: Board manager may delete others' comments (owner question on moderator scope); real e2e; edit, delete confirm, edited mark and deleted placeholder are undrawn, built from drawn parts (owner design check) |
 | UC-WM-R03 | Mention a person in an item comment | R | Commenter and above | yes | yes | complete | none | DONE | built: no mention for a person without board access (integration); Guest lists the board members |
@@ -347,11 +347,11 @@ Column values: BE and FE say `yes`, `partial`, `no`, or `not applicable` (no ser
 | UC-WM-R06 | Watch or unwatch an item | R | Any viewer | yes | yes | partial | following, follow-notifications | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: menu row geometry not measured (the popup menu rows are not the artboard's 32 px icon rows for any entry); Owner question: auto-follow on comment or mention, and re-follow after Unwatch on re-assignment |
 | UC-WM-R07 | Notify and attend (assignment, mention, approval, overdue, watching) | R | Collaboration | partial | yes | complete | follow-notifications | DONE | built: form response producer; inbox rows for nudge, due reminder, form. Owner questions: who manages a form; which preference |
 | UC-WM-R08 | Reference items from Documents | R | Documents | partial | partial | not applicable | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: Private-board embed test |
-| UC-WM-S01 | Apply billing entitlements | S | Billing decides | partial | not applicable | not applicable | none | DEFINED | no Work Management command implements IRequireFeature (verified); entitlement checks stay behind the port and allow. |
+| UC-WM-S01 | Apply billing entitlements | S | Billing decides | partial | not applicable | not applicable | none | DEFINED | no Work Management command implements IRequireFeature (verified); entitlement checks stay behind the port and allow; deferred to 0.2: needs Billing entitlements |
 | UC-WM-T01 | Use the view on a large (paged) board | T | Any viewer | no | no | complete | none | DONE | Lane wm-finish-0-1 (2026-11-15, third pass): all four lines hold. `design-fidelity-large-board` within 1 px, light and dark: 18 of 18 in the normal world (1440 table, Kanban lane foot, 768 foot, 320 foot and "Lên đầu", 768 and 320 Kanban lane foot), 12 of 12 with the lane faulted (1440, 768 and 320 error banners, Kanban lane errors at the three widths) and the loading frames 4 of 4 (1440 grid, 320 cards); the windowed frame is not built by lead decision f. Response tab counts come from server totals (`form-responses-paged` 1 of 1 on the real stack). |
 | UC-WM-T02 | Use the view at 1440 / 1280 / 1024 / 768 / 320 px | T | Any viewer | not applicable | partial | complete | none | DONE | Done under the 2026-11-07 rule: UI and behaviour meet the use case; what remains is notes (tests, real e2e, measuring, owner check, undrawn states, owner questions, later roadmap). Notes: 1-px box-tree diff at 1440, 1024 and 390 px in light and dark; 44 px targets. |
 | UC-WM-T03 | Published limits and limit-reached states | T | System; any viewer | yes | yes | none | none | DONE | Built: the D78.8 limits enforced on every write path with `work-management.limit.*` codes and published at `GET /api/v1/work-management/limits`; board settings names the field, group and view limit. Built: the item create, bulk edit and import surfaces name the limit and its max in vi and en, not the generic error. Note: the limit-reached states are not drawn; the view, restore and unarchive counts are not serialized. |
-| UC-WM-T04 | Work with boards on the native mobile app | T | Any member on native app | not applicable | no | partial | none | DEFINED | the mobile package is placeholder screens; web slices come first (D78.14). |
+| UC-WM-T04 | Work with boards on the native mobile app | T | Any member on native app | not applicable | no | partial | none | DEFINED | the mobile package is placeholder screens; web slices come first (D78.14); deferred: needs the native mobile app (release 1.0) |
 | UC-WM-T05 | Rebuild derived and materialized projections | T | System | no | not applicable | not applicable | none | DEFINED | no projection exists; per-read evaluation is accepted until a board at the limit misses the performance budget (D78.8). Deferred: outside release 0.1.0 (scope decision 2026-11-04). |
 
 # 3. Use cases
@@ -1208,6 +1208,7 @@ Team capability WM-002.
 - Acceptance: Given a provider event replayed twice, when it is processed, then one item exists. Given an item the provider cannot map, then the failure is recorded and nothing partial is stored.
 - Evidence: BE none: no code · FE none · Design not applicable (no screen) · Tests none found · Real e2e none
 - State: DEFINED — Integrations-owned migration path; no WM work scheduled
+- Deferred to 0.2 (lead ruling 2026-11-19): needs the Integrations provider connectors (the governed migration path is Integrations-owned); the tabular import and export (UC-WM-B30, UC-WM-B31) are built.
 
 ### UC-WM-B33 Handle a stale-version write conflict
 - Capability: B BoardItem lifecycle (WM-002)
@@ -2475,6 +2476,7 @@ Team capability WM-014.
 - Acceptance: Given a public form link, when the visitor requests the board, then refused.
 - Evidence: BE none: no anonymous submit endpoint · FE none; no unauthenticated route · Design none; needs public form page, spam/rate-limit/closed · Tests none found · Real e2e none
 - State: BLOCKED — Owner decision 67: execution principal and abuse controls
+- Left BLOCKED (module owner 2026-11-19): the only open part is the execution principal of an unauthenticated submission, an owner-only security decision (DEL-001); the abuse controls are built (honeypot, per-address and per-form rate limit, inbox spam marking). Nothing is built for it, so no anonymous write path exists; submitting stays signed-in only.
 
 ## O. Activity and event production
 
@@ -2521,6 +2523,7 @@ Team capability WM-015.
 - Acceptance: Given a duplicate delivery of one ItemCreated, then no double count.
 - Evidence: BE 38 integration events; 3 consumers implemented, rest Stub · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
 - State: INTEGRATING — 38 integration events; three consumers implemented and the rest are logging stubs (defect B-13). Scope 2026-11-04: outside release 0.1.0 (roadmap section 3.1 puts it in release 0.2); the 0.1.0 forms, activity and realtime lane did not work it.
+- Deferred to 0.2 (lead ruling 2026-11-19): needs the Analytics module's consumers; the Work Management side (the published events) is built, the remaining consumers are Analytics-owned.
 
 ### UC-WM-O04 Publish stable Work Management facts
 - Capability: O Activity and event production (WM-015)
@@ -2641,6 +2644,7 @@ Team capability WM-017.
 - Acceptance: Given the same provider update twice, then one Item change.
 - Evidence: BE none: no WM-side work · FE none · Design not applicable (no screen) · Tests none found · Real e2e none
 - State: DEFINED — Integrations-owned; idempotent replay test when built
+- Deferred to 0.2 (lead ruling 2026-11-19): needs the Integrations provider connectors and the sync contract; there is no Work Management side to build before them.
 
 ## R. Collaboration handoff
 
@@ -2775,6 +2779,7 @@ Team capability WM-019.
 - Acceptance: Given a plan without a premium view type, when creating it, then rejected with an entitlement reason.
 - Evidence: BE entitlement port allows (D76.2); unverified · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
 - State: DEFINED — no Work Management command implements IRequireFeature (verified); entitlement checks stay behind the port and allow.
+- Deferred to 0.2 (lead ruling 2026-11-19): needs the Billing module (plans, entitlements and the feature catalog); until then the port allows every command.
 
 ## T. Performance and hardening
 
@@ -2835,6 +2840,7 @@ Team capability WM-020.
 - Acceptance: Given a member on mobile, when they open a board, then they see the same items as web. Given offline, then cached boards are readable and writes are blocked with a reason.
 - Evidence: BE not applicable (same API) · FE none; mobile package is placeholder screens · Design Final-M-Board, Final-M-Calendar, Final-M-Detail, Final-M-MyWork · Tests none found · Real e2e none
 - State: DEFINED — the mobile package is placeholder screens; web slices come first (D78.14). Scope 2026-11-04: outside release 0.1.0 (roadmap section 3.1 puts it in release 1.0); the 0.1.0 forms, activity and realtime lane did not work it.
+- Deferred (lead ruling 2026-11-19): needs the native mobile app; the web phone layouts (Final-M-*) are the 0.1.0 mobile experience.
 
 ### UC-WM-T05 Rebuild derived and materialized projections
 - Capability: T Performance and hardening (WM-020)
@@ -2849,6 +2855,7 @@ Team capability WM-020.
 - Acceptance: Given a rebuild, then values equal source-derived values and no Item version changes.
 - Evidence: BE none: derived per request; no materialized projection (WM-013) · FE not applicable · Design not applicable (no screen) · Tests none found · Real e2e none
 - State: DEFINED — no projection exists; per-read evaluation is accepted until a board at the limit misses the performance budget (D78.8). Scope 2026-11-04: outside release 0.1.0 (roadmap section 3.1 puts it in release 1.0); the 0.1.0 forms, activity and realtime lane did not work it. Deferred: outside release 0.1.0 (scope decision 2026-11-04).
+- Deferred (lead ruling 2026-11-19): needs a measured performance-budget miss on a board at the limit (D78.8); no projection is built until then.
 
 # 4. Product decisions applied
 
