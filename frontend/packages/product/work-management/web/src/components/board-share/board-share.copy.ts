@@ -20,6 +20,8 @@ export const en = {
     guestInvited: "Invitation sent to {{email}}",
     guestHint: "Outside the company · can only view this Board",
     inviteFailed: "Couldn't send the invitation",
+    guestInvitesOff:
+      "Guest invites are off in this workspace. Ask the Owner to turn them on.",
     inviteConflict:
       "{{name}} already invited {{email}}. The pending invitations are up to date.",
     someoneElse: "Someone else",
@@ -268,6 +270,8 @@ export const vi: BoardShareCopy = {
     guestInvited: "Đã gửi lời mời tới {{email}}",
     guestHint: "Ngoài công ty · chỉ xem board này",
     inviteFailed: "Chưa gửi được lời mời",
+    guestInvitesOff:
+      "Workspace này đang tắt lời mời khách. Hãy nhờ Chủ sở hữu bật lại.",
     inviteConflict:
       "{{name}} đã mời {{email}} rồi. Danh sách lời mời đã được cập nhật.",
     someoneElse: "Một người khác",
