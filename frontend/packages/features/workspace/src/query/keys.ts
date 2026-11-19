@@ -19,6 +19,8 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "views"),
   activeView: (workspaceId: string, view: string) =>
     workspaceQueryKey(workspaceId, "workspace", "views", "active", view),
+  figures: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "figures"),
   invitations: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "invitations"),
   invitationByToken: (token: string) =>

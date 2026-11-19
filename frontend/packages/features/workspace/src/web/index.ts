@@ -10,6 +10,7 @@ export {
 export {
   createUseChangeInvitationRole,
   createUseCreateInvitation,
+  createUseInviteMembers,
   createUseResendInvitation,
   createUseRevokeInvitation,
 } from "./hooks/mutations/use-create-invitation";
@@ -18,6 +19,7 @@ export { createUseAcceptInvitation } from "./hooks/mutations/use-accept-invitati
 export { createUseDeclineInvitation } from "./hooks/mutations/use-decline-invitation";
 export { createUseWorkspaceList } from "./query/hooks/use-workspace-list";
 export { createUseWorkspace } from "./query/hooks/use-workspace";
+export { createUseWorkspaceFigures } from "./query/hooks/use-workspace-figures";
 export {
   createUseMyWorkspaceMembership,
   createUseWorkspaceMembers,
@@ -195,7 +197,9 @@ export {
 export { useWorkspaceSettingsCopy } from "./settings/use-workspace-settings-copy";
 export {
   WorkspaceSettingsSurface,
+  type AddressCheckResult,
   type SaveStatus,
+  type WorkspaceAddressProps,
   type WorkspaceProfileValues,
   type WorkspaceSettingsSurfaceProps,
 } from "./settings/workspace-settings-surface";

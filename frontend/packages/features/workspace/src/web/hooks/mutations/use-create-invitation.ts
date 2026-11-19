@@ -51,6 +51,50 @@ export function createUseCreateInvitation({
   };
 }
 
+/**
+ * Invites many addresses in one request (`Workspaces.Members.InviteMembers`). One key per batch the person
+ * asked for: sending the same list again after a failure reuses it, so nothing is sent twice.
+ */
+export function createUseInviteMembers({
+  api,
+  endpoints,
+}: InvitationMutationDeps) {
+  const service = createWorkspaceInvitationsService(api, endpoints);
+
+  return function useInviteMembers(workspaceId: string) {
+    const queryClient = useQueryClient();
+    const attempt = useRef<{ signature: string; key: string } | null>(null);
+
+    return useMutation({
+      mutationFn: (
+        entries: readonly {
+          email: string;
+          role: CreateWorkspaceInvitationInput["role"];
+        }[],
+      ) => {
+        const signature = JSON.stringify([
+          workspaceId,
+          entries.map((entry) => [
+            entry.email.trim().toLowerCase(),
+            entry.role,
+          ]),
+        ]);
+        if (attempt.current?.signature !== signature)
+          attempt.current = { signature, key: crypto.randomUUID() };
+        return service.createMany(workspaceId, entries, attempt.current.key);
+      },
+      retry: false,
+      onSuccess: () => {
+        attempt.current = null;
+      },
+      onSettled: () =>
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.invitations(workspaceId),
+        }),
+    });
+  };
+}
+
 /** Changes the role a waiting invitation offers (`Workspaces.Invitations.ChangeInvitationRole`). */
 export function createUseChangeInvitationRole({
   api,

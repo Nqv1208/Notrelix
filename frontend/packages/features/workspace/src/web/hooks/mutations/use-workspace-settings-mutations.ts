@@ -46,6 +46,18 @@ export function createUseWorkspaceSettingsMutations({
       onSettled: refreshWorkspace,
     });
 
+    const changeSlug = useMutation({
+      mutationFn: ({
+        slug,
+        expectedVersion,
+      }: {
+        slug: string;
+        expectedVersion: number;
+      }) => service.changeSlug(workspaceId, slug, expectedVersion),
+      retry: false,
+      onSettled: refreshWorkspace,
+    });
+
     const updateSettings = useMutation({
       mutationFn: ({
         settings,
@@ -132,6 +144,7 @@ export function createUseWorkspaceSettingsMutations({
 
     return {
       updateProfile,
+      changeSlug,
       updateSettings,
       archive,
       unarchive,

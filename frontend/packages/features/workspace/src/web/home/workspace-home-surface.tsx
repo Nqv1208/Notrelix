@@ -16,7 +16,9 @@ import {
   type IdentityTone,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
+import type { WorkspaceFigures } from "../../core/types/workspace";
 import { ShellLink } from "../shell/shell-link";
+import { WorkspaceFiguresStrip } from "./workspace-figures";
 import {
   formatCopy,
   IDENTITY_MARK_CLASS,
@@ -137,6 +139,12 @@ export interface WorkspaceHomeSurfaceProps {
   readonly onCreateBoard: () => void;
   readonly onCreateDoc: () => void;
   readonly onInvite: () => void;
+  /**
+   * The workspace figures for Owner and Admin (`Final-Home` figures row); `undefined`: the row stays out
+   * (a Member or Guest never sees it).
+   */
+  readonly figures?: SectionState<WorkspaceFigures>;
+  readonly onRetryFigures?: () => void;
   readonly onRetryContinue: () => void;
   readonly onRetryMyWork: () => void;
   /** The getting-started list of a workspace made through onboarding. */
@@ -938,6 +946,14 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
       </div>
 
       {props.gettingStarted ?? null}
+
+      {props.figures ? (
+        <WorkspaceFiguresStrip
+          copy={copy}
+          state={props.figures}
+          onRetry={props.onRetryFigures ?? (() => undefined)}
+        />
+      ) : null}
 
       {props.onboarding ? (
         <WorkspaceOnboardingSurface

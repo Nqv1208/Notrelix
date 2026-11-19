@@ -52,6 +52,7 @@ describe("invitation with initial entries", () => {
   const endpoints = {
     workspaces: {
       members: (id: string) => `/workspaces/${id}/members`,
+      inviteMembers: (id: string) => `/workspaces/${id}/members/bulk`,
       invitations: (id: string) => `/workspaces/${id}/invitations`,
       invitation: (id: string, inv: string) =>
         `/workspaces/${id}/invitations/${inv}`,
@@ -84,6 +85,51 @@ describe("invitation with initial entries", () => {
       },
       undefined,
     );
+  });
+
+  it("FUI[workspace.members:invite-many-wire] sends the list in one request under the batch's key and reads each outcome", async () => {
+    const api = client();
+    api.post.mockResolvedValue({
+      outcomes: [
+        { email: "a@b.vn", outcome: "sent", code: null, invitationId: "i1" },
+        {
+          email: "g@b.vn",
+          outcome: "refused",
+          code: "workspace.guest_invites_off",
+        },
+        { email: "x@b.vn", outcome: "surprise" },
+      ],
+    });
+    const outcomes = await createWorkspaceInvitationsService(
+      api,
+      endpoints,
+    ).createMany(
+      "w1",
+      [
+        { email: " a@b.vn ", role: "member" },
+        { email: "g@b.vn", role: "guest" },
+      ],
+      "key-1",
+    );
+    expect(api.post).toHaveBeenCalledWith(
+      "/workspaces/w1/members/bulk",
+      {
+        entries: [
+          { email: "a@b.vn", role: "Member" },
+          { email: "g@b.vn", role: "Guest" },
+        ],
+      },
+      { idempotencyKey: "key-1" },
+    );
+    expect(outcomes).toEqual([
+      { email: "a@b.vn", outcome: "sent", code: null },
+      {
+        email: "g@b.vn",
+        outcome: "refused",
+        code: "workspace.guest_invites_off",
+      },
+      { email: "x@b.vn", outcome: "refused", code: null },
+    ]);
   });
 
   it("sends no entries field for a plain invitation", async () => {

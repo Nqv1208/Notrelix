@@ -126,6 +126,33 @@ public sealed class Workspace :
             RaiseDomainEvent(new WorkspaceDescriptionUpdatedDomainEvent(AccountId, Id, oldDescription, Description, updatedBy, updatedAt));
     }
 
+    /// <summary>
+    /// Moves the workspace to a new address. The address rule applies to the new value; the same address
+    /// (after trimming and lower-casing) changes nothing, bumps no version and raises no event. Uniqueness in
+    /// the Account is the caller's check (and the data layer's index); the old address is simply released.
+    /// </summary>
+    public void ChangeSlug(string newSlug, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(newSlug);
+
+        if (Status == WorkspaceStatus.Archived)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Workspace_CannotChangeSlugArchived, "Cannot change the address of an archived workspace.");
+
+        var normalized = WorkspaceSlugRules.Normalize(newSlug);
+        if (normalized == Slug) return;
+
+        WorkspaceSlugRules.Validate(normalized);
+
+        var audit = PrepareAuditUpdate(updatedBy, updatedAt);
+        var oldSlug = Slug;
+        Slug = SharedKernel.Slug.Create(normalized).Value;
+        ApplyAuditUpdate(audit);
+        IncrementVersion();
+        RaiseDomainEvent(new WorkspaceSlugChangedDomainEvent(AccountId, Id, oldSlug, Slug, updatedBy, updatedAt));
+    }
+
     public void Archive(Guid archivedBy, DateTimeOffset archivedAt)
     {
         EnsureNotDeleted();

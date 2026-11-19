@@ -32209,6 +32209,83 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/members/bulk": {
+      "post": {
+        "tags": [
+          "Workspaces.Members",
+          "Workspaces.Members"
+        ],
+        "summary": "Invite many people at once",
+        "description": "Owner or Admin, like a single invitation. Needs an Idempotency-Key: a retry with the same key returns the first result and sends no second email. Send 1 to 50 entries (email and role Member or Guest); more answers 400. An address repeated in the list is invited once. The batch is not all-or-nothing: the answer lists one outcome per address (sent, already-member, already-pending, invalid, refused). While the workspace has guest invitations off, the Guest entries are refused one by one with the code workspace.guest_invites_off and the Member entries still go out. No seat is checked, as for a single invitation. An archived workspace refuses the whole request.",
+        "operationId": "Workspaces.Members.InviteMembers",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409.",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "true when this response is a replay of a stored result",
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationBatchResultDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency key reused with a different payload"
+          },
+          "503": {
+            "description": "Operation still being processed; retry after the indicated delay"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/members/add": {
       "post": {
         "tags": [
@@ -35575,6 +35652,48 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/dashboard": {
+      "get": {
+        "tags": [
+          "Workspaces.Workspaces",
+          "Workspaces.Workspaces"
+        ],
+        "summary": "Get the workspace figures",
+        "description": "Owner or Admin. Active members only (suspended and removed people are not counted), the Spaces the caller can see, Teams and pending invitations, and whether the workspace is archived. A Member or Guest is forbidden; a person outside the workspace is told it does not exist. Read-only, so an archived workspace still answers.",
+        "operationId": "Workspaces.Workspaces.GetWorkspaceDashboard",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces/{workspaceId}/profile": {
       "patch": {
         "tags": [
@@ -35600,6 +35719,58 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Workspaces.Requests.UpdateWorkspaceProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/slug": {
+      "patch": {
+        "tags": [
+          "Workspaces.Workspaces",
+          "Workspaces.Workspaces"
+        ],
+        "summary": "Change the workspace address",
+        "description": "Owner only. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. The address follows the same rule as creation (3 to 63 characters, lowercase letters, numbers and single hyphens, not reserved) and is unique within the Account: a taken one answers 409 workspaces.workspace.slug-taken. The same address is a no-op: no version bump, no event. Links use ids, so the old address is released and does not redirect. An archived workspace refuses the change.",
+        "operationId": "Workspaces.Workspaces.ChangeWorkspaceSlug",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest"
               }
             }
           },
@@ -39496,6 +39667,33 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersEntryRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersRequest": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersEntryRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Workspaces.Members.Requests.MemberVersionRequest": {
         "type": "object",
         "properties": {
@@ -39864,6 +40062,20 @@
       "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ArchiveWorkspaceRequest": {
         "type": "object",
         "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "nullable": true
+          },
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
@@ -47843,6 +48055,46 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationBatchResultDto": {
+        "type": "object",
+        "properties": {
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationOutcomeDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "invitationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
         "type": "object",
         "properties": {
@@ -49100,6 +49352,39 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspaceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "spaceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "teamCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "invitationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isArchived": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

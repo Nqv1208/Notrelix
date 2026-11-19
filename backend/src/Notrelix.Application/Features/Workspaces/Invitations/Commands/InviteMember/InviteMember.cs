@@ -111,7 +111,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         }
 
         if (await IsActiveMemberAsync(request.WorkspaceId, cleanEmail, ct))
-            throw new ConflictException("This person is already a member of this workspace.", AlreadyMemberCode);
+            throw new ConflictException("This person is already a member of this workspace.", AlreadyMemberErrorCode);
 
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
@@ -182,7 +182,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         return emails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase));
     }
 
-    private const string AlreadyMemberCode = "workspaces.invitation.already-member";
+    /// <summary>The stable public code of the refusal when the person is already an Active member.</summary>
+    public const string AlreadyMemberErrorCode = "workspaces.invitation.already-member";
 
     private static IReadOnlyList<WorkspaceInvitationInitialEntry> ToDomainEntries(
         IReadOnlyList<InvitationInitialEntryInput>? inputs)

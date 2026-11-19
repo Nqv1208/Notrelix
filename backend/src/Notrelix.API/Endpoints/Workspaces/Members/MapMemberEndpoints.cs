@@ -15,6 +15,7 @@ public static class MapMemberEndpoints
         group.MapListMembers();
         group.MapGetMyMembership();
         group.MapInviteMember();
+        group.MapInviteMembers();
         group.MapAddMember();
         group.MapUpdateMemberRole();
         group.MapUpdateMemberJobTitle();

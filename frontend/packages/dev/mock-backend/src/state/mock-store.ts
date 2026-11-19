@@ -4540,6 +4540,29 @@ export class MockStore {
     });
   }
 
+  /**
+   * Changes the address: the same address is a no-op (no version step), another workspace's address in
+   * the Account is `taken`, nothing redirects from the old one.
+   */
+  changeWorkspaceSlug(
+    workspaceId: string,
+    expectedVersion: unknown,
+    slug: string,
+  ): MockVersionedWrite | "taken" {
+    const workspace = this.getWorkspace(workspaceId);
+    if (!workspace) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    if (workspace.slug === slug) return "ok";
+    if (
+      this.getWorkspaces().some((w) => w.id !== workspaceId && w.slug === slug)
+    )
+      return "taken";
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      workspace.slug = slug;
+    });
+  }
+
   updateWorkspaceSettings(
     workspaceId: string,
     expectedVersion: unknown,

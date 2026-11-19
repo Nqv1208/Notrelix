@@ -122,6 +122,7 @@ using Notrelix.Application.Features.Integrations.Connections.Commands.Regenerate
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ChangeWorkspaceSlug;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
@@ -370,6 +371,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(TransferOwnershipCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
+        [typeof(ChangeWorkspaceSlugCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
         // Integrations — regenerating a webhook secret is protected by the connection's version
         [typeof(RegenerateWebhookSecretCommand)] = new(IntegrationConnectionKind, typeof(IntegrationConnection)),

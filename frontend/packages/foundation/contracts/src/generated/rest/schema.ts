@@ -7262,6 +7262,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/members/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite many people at once
+         * @description Owner or Admin, like a single invitation. Needs an Idempotency-Key: a retry with the same key returns the first result and sends no second email. Send 1 to 50 entries (email and role Member or Guest); more answers 400. An address repeated in the list is invited once. The batch is not all-or-nothing: the answer lists one outcome per address (sent, already-member, already-pending, invalid, refused). While the workspace has guest invitations off, the Guest entries are refused one by one with the code workspace.guest_invites_off and the Member entries still go out. No seat is checked, as for a single invitation. An archived workspace refuses the whole request.
+         */
+        post: operations["Workspaces.Members.InviteMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/members/add": {
         parameters: {
             query?: never;
@@ -8155,6 +8175,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the workspace figures
+         * @description Owner or Admin. Active members only (suspended and removed people are not counted), the Spaces the caller can see, Teams and pending invitations, and whether the workspace is archived. A Member or Guest is forbidden; a person outside the workspace is told it does not exist. Read-only, so an archived workspace still answers.
+         */
+        get: operations["Workspaces.Workspaces.GetWorkspaceDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/profile": {
         parameters: {
             query?: never;
@@ -8173,6 +8213,26 @@ export interface paths {
          * @description Owner or Admin. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. An omitted field is left alone; an empty description clears it. A value that does not change bumps no version and raises no event; a name and a description that both change advance the version once. An archived workspace refuses the edit.
          */
         patch: operations["Workspaces.Workspaces.UpdateWorkspaceProfile"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the workspace address
+         * @description Owner only. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. The address follows the same rule as creation (3 to 63 characters, lowercase letters, numbers and single hyphens, not reserved) and is unique within the Account: a taken one answers 409 workspaces.workspace.slug-taken. The same address is a no-op: no version bump, no event. Links use ids, so the old address is released and does not redirect. An archived workspace refuses the change.
+         */
+        patch: operations["Workspaces.Workspaces.ChangeWorkspaceSlug"];
         trace?: never;
     };
     "/api/v1/workspaces/{workspaceId}/archive": {
@@ -9449,6 +9509,13 @@ export interface components {
             role?: string | null;
             initialEntries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"][] | null;
         };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersEntryRequest": {
+            email?: string | null;
+            role?: string | null;
+        };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersRequest": {
+            entries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersEntryRequest"][] | null;
+        };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.MemberVersionRequest": {
             /** Format: int64 */
             expectedVersion?: number;
@@ -9580,6 +9647,11 @@ export interface components {
             expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ArchiveWorkspaceRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest": {
+            slug?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
         };
@@ -12248,6 +12320,17 @@ export interface components {
             issuedByYou?: boolean;
             canManage?: boolean;
         };
+        "Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationBatchResultDto": {
+            outcomes?: components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationOutcomeDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationOutcomeDto": {
+            email?: string | null;
+            role?: string | null;
+            outcome?: string | null;
+            code?: string | null;
+            /** Format: uuid */
+            invitationId?: string | null;
+        };
         "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
             kind?: string | null;
             /** Format: uuid */
@@ -12660,6 +12743,20 @@ export interface components {
             teams?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto"][] | null;
             admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto": {
+            /** Format: uuid */
+            workspaceId?: string;
+            workspaceName?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int32 */
+            spaceCount?: number;
+            /** Format: int32 */
+            teamCount?: number;
+            /** Format: int32 */
+            invitationCount?: number;
+            isArchived?: boolean;
         };
         /** @enum {string} */
         "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
@@ -31799,6 +31896,51 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Members.InviteMembers": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationBatchResultDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Workspaces.Members.AddMember": {
         parameters: {
             query?: never;
@@ -33461,6 +33603,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Workspaces.GetWorkspaceDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto"];
+                };
+            };
+        };
+    };
     "Workspaces.Workspaces.UpdateWorkspaceProfile": {
         parameters: {
             query?: never;
@@ -33473,6 +33637,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Workspaces.Requests.UpdateWorkspaceProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Workspaces.ChangeWorkspaceSlug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest"];
             };
         };
         responses: {

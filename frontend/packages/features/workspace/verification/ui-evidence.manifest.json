@@ -63,27 +63,27 @@
           {
             "state": "Loading",
             "reason": "Invitations render resolved data passed by its parent; query loading presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "Error",
             "reason": "Invitations render resolved data passed by its parent; query error presentation is owned by the workspace shell.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "HighDensity",
             "reason": "Invitations render a bounded popover list; high-density input is exercised by the EdgeData story.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "ReadOnly",
             "reason": "No product-authoritative read-only contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "PermissionLimited",
             "reason": "No product-authoritative permission-limited capability contract exists for pending invitations at this baseline.",
-            "authority": "frontend-ui-readiness.spec.md \u00a79.3"
+            "authority": "frontend-ui-readiness.spec.md §9.3"
           },
           {
             "state": "EdgeData",
@@ -307,7 +307,7 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "navigation",
       "pureEntry": "src/web/shell/workspace-topbar-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": ["src/web/shell/archived-workspace-banner.tsx"],
       "stories": [
         {
           "id": "workspace-shell--topbar-default",
@@ -388,7 +388,9 @@
       "pureEntry": "src/web/command/command-palette-surface.tsx",
       "coveredSources": [
         "src/web/command/command-build.ts",
-        "src/web/command/command-models.ts"
+        "src/web/command/command-models.ts",
+        "src/web/command/command-palette-phone.tsx",
+        "src/web/command/command-search-state.tsx"
       ],
       "stories": [
         {
@@ -855,7 +857,10 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "composition",
       "pureEntry": "src/web/home/workspace-home-surface.tsx",
-      "coveredSources": ["src/web/home/work-row-parts.tsx"],
+      "coveredSources": [
+        "src/web/home/work-row-parts.tsx",
+        "src/web/home/workspace-figures.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-home--home-default",
@@ -1167,7 +1172,8 @@
       "coveredSources": [
         "src/web/home/my-work-row.tsx",
         "src/web/home/my-work-chrome.tsx",
-        "src/web/home/my-work-side.tsx"
+        "src/web/home/my-work-side.tsx",
+        "src/web/home/my-work-touch.tsx"
       ],
       "stories": [
         {
@@ -1682,7 +1688,7 @@
         "notApplicable": [
           {
             "state": "ReadOnly",
-            "reason": "Reading is the only mode: every write (\u0110\u00e3 x\u1eed l\u00fd, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
+            "reason": "Reading is the only mode: every write (Đã xử lý, mark all read) is a host callback and is drawn inert without one, covered by the handled-inert and mark-all interaction cases rather than a separate visual state.",
             "authority": "docs/product/collaboration.md"
           },
           {
@@ -1963,7 +1969,7 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "data",
       "pureEntry": "src/web/members/workspace-members-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": ["src/web/members/edit-job-title-dialog.tsx"],
       "stories": [
         {
           "id": "workspace-members--default",
@@ -2177,7 +2183,7 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "form",
       "pureEntry": "src/web/settings/workspace-settings-surface.tsx",
-      "coveredSources": [],
+      "coveredSources": ["src/web/settings/transfer-ownership-flow.tsx"],
       "stories": [
         {
           "id": "workspace-settings--default",
@@ -2482,7 +2488,8 @@
         "src/web/spaces/space-page-models.ts",
         "src/web/spaces/space-members-view.tsx",
         "src/web/spaces/space-members-dialogs.tsx",
-        "src/web/spaces/space-members-models.ts"
+        "src/web/spaces/space-members-models.ts",
+        "src/web/spaces/space-trash-surface.tsx"
       ],
       "stories": [
         {
@@ -3189,7 +3196,10 @@
       "owner": "@notrelix/features-workspace",
       "surfaceKind": "data",
       "pureEntry": "src/web/teams/workspace-teams-surface.tsx",
-      "coveredSources": ["src/web/teams/workspace-setup-frame.tsx"],
+      "coveredSources": [
+        "src/web/teams/workspace-setup-frame.tsx",
+        "src/web/teams/delete-team-dialog.tsx"
+      ],
       "stories": [
         {
           "id": "workspace-teams--list-default",

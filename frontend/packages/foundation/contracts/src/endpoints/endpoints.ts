@@ -60,6 +60,8 @@ export const endpoints = {
     apiToken: (workspaceId: string, tokenId: string) =>
       `/workspaces/${workspaceId}/api-tokens/${tokenId}`,
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
+    // Workspaces.Workspaces.GetWorkspaceDashboard: the figures for Owner and Admin.
+    dashboard: (workspaceId: string) => `/workspaces/${workspaceId}/dashboard`,
     invitationByToken: (token: string) =>
       `/workspaces/invitations/by-token/${token}`,
     // The signed-in person's own invitations (Workspaces.Invitations.GetUserPendingInvitations,
@@ -76,6 +78,8 @@ export const endpoints = {
       `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
     // Workspace profile, settings and lifecycle (producer: Workspaces.Workspaces.*).
     profile: (workspaceId: string) => `/workspaces/${workspaceId}/profile`,
+    // Workspaces.Workspaces.ChangeWorkspaceSlug (Owner only, expectedVersion in the body).
+    slug: (workspaceId: string) => `/workspaces/${workspaceId}/slug`,
     // The signed-in member's own job title (Workspaces.Members.UpdateMyJobTitle).
     myJobTitle: (workspaceId: string) =>
       `/workspaces/${workspaceId}/members/me/job-title`,
@@ -96,6 +100,9 @@ export const endpoints = {
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,
+    // Workspaces.Members.InviteMembers: one to 50 addresses, one outcome each.
+    inviteMembers: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/bulk`,
     member: (workspaceId: string, userId: string) =>
       `/workspaces/${workspaceId}/members/${userId}`,
     suspendMember: (workspaceId: string, userId: string) =>

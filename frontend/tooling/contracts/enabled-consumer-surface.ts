@@ -731,6 +731,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createWorkspaceInvitationsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Members.InviteMembers",
+    operationId: "Workspaces.Members.InviteMembers",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
     capability: "Workspaces.Invitations.ListWorkspaceInvitations",
     operationId: "Workspaces.Invitations.ListWorkspaceInvitations",
     mutation: false,
@@ -793,6 +803,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
     capability: "Workspaces.Workspaces.UpdateWorkspaceProfile",
     operationId: "Workspaces.Workspaces.UpdateWorkspaceProfile",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    operationId: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    operationId: "Workspaces.Workspaces.ChangeWorkspaceSlug",
     mutation: true,
   },
   {

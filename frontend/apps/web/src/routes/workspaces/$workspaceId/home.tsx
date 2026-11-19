@@ -7,6 +7,7 @@ import {
   NAVIGATION_RESOURCE_KIND,
 } from "@notrelix/features-workspace/core";
 import {
+  createUseWorkspaceFigures,
   createUseWorkspacePins,
   createUseWorkspaceRecents,
   useWorkspaceHomeCopy,
@@ -73,6 +74,7 @@ export function HomePage() {
     return {
       useRecents: createUseWorkspaceRecents(deps),
       usePins: createUseWorkspacePins(deps),
+      useFigures: createUseWorkspaceFigures(deps),
     };
   }, [runtimeClient]);
 
@@ -82,6 +84,11 @@ export function HomePage() {
   const departments = useBoardDepartments(workspaceId);
   const recents = hooks.useRecents(workspaceId);
   const pins = hooks.usePins(workspaceId);
+  // The figures are for Owner and Admin: nobody else asks for them.
+  const figuresQuery = hooks.useFigures(workspaceId, isAdmin);
+  const figuresState = isAdmin
+    ? sectionState(figuresQuery, figuresQuery.data)
+    : undefined;
   const myWorkQuery = useMyWorkExtended(workspaceId);
   const feedQuery = useHomeFeed(workspaceId);
   const departmentsById = useDepartmentsById(workspaceId);
@@ -315,6 +322,8 @@ export function HomePage() {
             workspaceName={workspace?.name ?? ""}
           />
         }
+        figures={figuresState}
+        onRetryFigures={() => void figuresQuery.refetch()}
         copy={copy}
         navigation={navigation}
         formatters={formatters}

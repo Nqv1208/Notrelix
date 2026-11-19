@@ -381,6 +381,40 @@ export const workspaceOperations = [
     },
   }),
 
+  // The workspace figures (Workspaces.Workspaces.GetWorkspaceDashboard): Owner and Admin only, active members only.
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.dashboard.get",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/dashboard",
+    async handle({ params, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner" && role !== "admin") return forbidden();
+      const workspace = store.getWorkspace(params.workspaceId);
+      if (!workspace) return notFound();
+      return ok({
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        memberCount: store
+          .getWorkspaceMembers(params.workspaceId)
+          .filter((member) => !store.isMembershipSuspended(member.id)).length,
+        spaceCount: store.spaces.visibleTree(
+          params.workspaceId,
+          store.spaceViewer(params.workspaceId),
+        ).length,
+        teamCount: store.spaces.teamsOf(params.workspaceId).length,
+        invitationCount: store
+          .getInvitations(params.workspaceId)
+          .filter((invitation) => invitation.status === "pending").length,
+        isArchived: store.isWorkspaceArchived(params.workspaceId),
+      });
+    },
+  }),
+
   // ─── Profile, defaults and archive (WX-SET-001) ────────────────────────────
   // Versioned like the producer: each write carries `expectedVersion`; a stale
   // one is a 412 and changes nothing; success advances the workspace version.
@@ -417,6 +451,50 @@ export const workspaceOperations = [
           },
         ),
       );
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { slug?: string; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.slug.change",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/slug",
+    async handle({ params, body, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner") return forbidden();
+      const slug = (body?.slug ?? "").trim().toLowerCase();
+      if (!slug) return validationError({ Slug: ["Slug must not be empty."] });
+      if (
+        slug.length < 3 ||
+        slug.length > 63 ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+      )
+        return ruleViolation("The workspace address is not valid.");
+      const written = store.changeWorkspaceSlug(
+        params.workspaceId,
+        body?.expectedVersion,
+        slug,
+      );
+      if (written === "taken")
+        return {
+          status: 409,
+          body: {
+            type: "https://docs.notrelix.com/problems/conflict",
+            title: "Conflict",
+            status: 409,
+            detail: "The workspace address is already taken in this account.",
+            errorCode: "workspaces.workspace.slug-taken",
+          },
+        } as MockHttpResult<unknown>;
+      return versionedWriteResult(written);
     },
   }),
 
@@ -908,6 +986,76 @@ export const workspaceOperations = [
       made.set(key, id);
       invitedUnderKey.set(store, made);
       return created(id);
+    },
+  }),
+
+  // Many addresses at once (Workspaces.Members.InviteMembers): one outcome per address, not all-or-nothing.
+  defineMockOperation<
+    { workspaceId: string },
+    { entries?: { email?: string; role?: string }[] },
+    unknown
+  >({
+    id: "workspace.members.inviteMany",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.InviteMembers",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/bulk",
+    async handle({ params, body, store, request }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      if (!request.headers.get("Idempotency-Key"))
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      const entries = body?.entries ?? [];
+      if (entries.length < 1 || entries.length > 50)
+        return validationError({
+          Entries: ["Invite between 1 and 50 people at a time."],
+        });
+      const guestsAllowed = store.getWorkspaceSettings(
+        params.workspaceId,
+      ).allowGuestInvites;
+      const seen = new Set<string>();
+      const outcomes: {
+        email: string;
+        role: string;
+        outcome: string;
+        code: string | null;
+        invitationId: string | null;
+      }[] = [];
+      for (const entry of entries) {
+        const email = (entry.email ?? "").trim().toLowerCase();
+        if (email && seen.has(email)) continue;
+        seen.add(email);
+        const role = parseRole(entry.role);
+        const row = (
+          outcome: string,
+          code: string | null = null,
+          id: string | null = null,
+        ) =>
+          outcomes.push({
+            email,
+            role: entry.role ?? "",
+            outcome,
+            code,
+            invitationId: id,
+          });
+        if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email) || !role)
+          row("invalid");
+        else if (role === "owner" || role === "admin")
+          row("refused", "Workspaces_Invitation_CannotInviteAsAdmin");
+        else if (role === "guest" && !guestsAllowed)
+          row("refused", "workspace.guest_invites_off");
+        else if (store.isActiveMemberEmail(params.workspaceId, email))
+          row("already-member", "workspaces.invitation.already-member");
+        else {
+          const id = store.createInvitation(params.workspaceId, email, role);
+          if (id) row("sent", null, id);
+          else row("already-pending", "workspaces.invitation.pending-exists");
+        }
+      }
+      return ok({ outcomes });
     },
   }),
 

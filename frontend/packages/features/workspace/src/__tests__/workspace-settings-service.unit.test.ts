@@ -14,6 +14,7 @@ import {
 const endpoints: WorkspaceSettingsEndpoints = {
   workspaces: {
     profile: (id) => `/workspaces/${id}/profile`,
+    slug: (id) => `/workspaces/${id}/slug`,
     settings: (id) => `/workspaces/${id}/settings`,
     archive: (id) => `/workspaces/${id}/archive`,
     unarchive: (id) => `/workspaces/${id}/archive/unarchive`,
@@ -107,6 +108,18 @@ describe("workspace settings service", () => {
     await service.unarchive("w1", 7);
 
     expect(api.post).toHaveBeenCalledWith("/workspaces/w1/archive/unarchive", {
+      expectedVersion: 7,
+    });
+  });
+
+  it("FUI[workspace.settings:address-write] patches the normalised address with the version it read", async () => {
+    const api = client(stored);
+    const service = createWorkspaceSettingsService(api, endpoints);
+
+    await service.changeSlug("w1", "  Acme-Team ", 7);
+
+    expect(api.patch).toHaveBeenCalledWith("/workspaces/w1/slug", {
+      slug: "acme-team",
       expectedVersion: 7,
     });
   });

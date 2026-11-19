@@ -65,6 +65,7 @@ const WORKSPACE_ENDPOINTS = {
   workspaces: {
     list: "/workspaces",
     detail: (id: string) => `/workspaces/${id}`,
+    dashboard: (id: string) => `/workspaces/${id}/dashboard`,
   },
   accounts: { workspaces: (id: string) => `/accounts/${id}/workspaces` },
 };
@@ -322,6 +323,7 @@ describe("Invitations", () => {
     const service = createWorkspaceInvitationsService(api, {
       workspaces: {
         members: (id) => `/workspaces/${id}/members`,
+        inviteMembers: (id) => `/workspaces/${id}/members/bulk`,
         invitations: (id) => `/workspaces/${id}/invitations`,
         invitation: (id, inv) => `/workspaces/${id}/invitations/${inv}`,
         invitationRole: (id, inv) =>
@@ -542,6 +544,7 @@ describe("Producer adapters", () => {
     const service = createWorkspaceSettingsService(api, {
       workspaces: {
         profile: (id) => `/workspaces/${id}/profile`,
+        slug: (id) => `/workspaces/${id}/slug`,
         settings: (id) => `/workspaces/${id}/settings`,
         archive: (id) => `/workspaces/${id}/archive`,
         unarchive: (id) => `/workspaces/${id}/archive/unarchive`,
@@ -596,6 +599,33 @@ describe("Producer adapters", () => {
     expect(list.map((workspace) => workspace.version)).toEqual([3, undefined]);
     api.get.mockResolvedValueOnce(null);
     await expect(service.getList()).resolves.toEqual([]);
+  });
+
+  it("FUI[workspace.home:figures-read] reads the workspace figures and turns a missing count into 0", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({
+        workspaceId: "w1",
+        memberCount: 12,
+        spaceCount: 3,
+        invitationCount: 4,
+        isArchived: true,
+      }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+    const service = createWorkspaceService(api, WORKSPACE_ENDPOINTS);
+    await expect(service.getFigures("w1")).resolves.toEqual({
+      members: 12,
+      spaces: 3,
+      teams: 0,
+      invitations: 4,
+      archived: true,
+    });
+    expect(api.get).toHaveBeenCalledWith("/workspaces/w1/dashboard", {
+      skipGlobalErrorToast: true,
+    });
   });
 
   it("creates a workspace in the Account and reads it back by the id the producer answers", async () => {

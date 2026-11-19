@@ -36,6 +36,19 @@ export const en = {
     descriptionTooLong: "Use 1,024 characters or fewer.",
     counter: "{{count}} / {{max}}",
   },
+  address: {
+    title: "Address",
+    label: "Address",
+    prefix: "notrelix.app/",
+    help: "3 to 63 characters: lowercase letters, numbers and single hyphens. Links inside Notrelix keep working; the old address is not redirected.",
+    ownerOnly: "Only the Owner changes the workspace address.",
+    invalid:
+      "Use 3 to 63 lowercase letters, numbers and single hyphens, and not a reserved word.",
+    checking: "Checking the address...",
+    free: "This address is free.",
+    taken: "The address {{slug}} is already used by another workspace.",
+    suggestion: "Try",
+  },
   defaults: {
     title: "Defaults",
     description: "What new members and invitations start with.",
@@ -163,6 +176,7 @@ export const en = {
   },
   toasts: {
     profileSaved: "Profile saved.",
+    addressSaved: "Address changed.",
     defaultsSaved: "Defaults saved.",
     saveFailed: "Your changes weren't saved.",
     archived: "{{workspace}} was archived.",
@@ -223,6 +237,19 @@ export const vi: WorkspaceSettingsCopy = {
     descriptionPlaceholder: "VD: Lập kế hoạch và triển khai cho nhóm sản phẩm",
     descriptionTooLong: "Dùng tối đa 1.024 ký tự.",
     counter: "{{count}} / {{max}}",
+  },
+  address: {
+    title: "Địa chỉ",
+    label: "Địa chỉ",
+    prefix: "notrelix.app/",
+    help: "3 đến 63 ký tự: chữ thường, số và dấu gạch ngang đơn. Liên kết trong Notrelix vẫn hoạt động; địa chỉ cũ không được chuyển hướng.",
+    ownerOnly: "Chỉ Chủ sở hữu đổi được địa chỉ không gian làm việc.",
+    invalid:
+      "Dùng 3 đến 63 chữ thường, số và dấu gạch ngang đơn, không phải từ dành riêng.",
+    checking: "Đang kiểm tra địa chỉ...",
+    free: "Địa chỉ này còn trống.",
+    taken: "Địa chỉ {{slug}} đã có không gian làm việc khác dùng.",
+    suggestion: "Thử",
   },
   defaults: {
     title: "Mặc định",
@@ -354,6 +381,7 @@ export const vi: WorkspaceSettingsCopy = {
   },
   toasts: {
     profileSaved: "Đã lưu hồ sơ.",
+    addressSaved: "Đã đổi địa chỉ.",
     defaultsSaved: "Đã lưu mặc định.",
     saveFailed: "Chưa lưu được thay đổi.",
     archived: "Đã lưu trữ {{workspace}}.",
