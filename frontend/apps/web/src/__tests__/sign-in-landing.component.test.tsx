@@ -1,6 +1,14 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const state = vi.hoisted(() => ({
   navigated: [] as unknown[],
@@ -40,14 +48,31 @@ vi.mock("../routes/auth-layout", () => ({
 let root: Root | undefined;
 let host: HTMLElement | undefined;
 
-afterEach(() => {
-  act(() => root?.unmount());
-  host?.remove();
+// Each test re-imports its route after vi.resetModules (sign-in keeps module state),
+// so the first cold transform of the router and auth packages is paid here, once, with
+// its own budget, rather than inside a 5s test timeout on a loaded runner.
+beforeAll(async () => {
+  await import("../routes/sign-in");
+  await import("../routes/auth-callback");
+  await import("../routes/index");
+}, 60_000);
+
+function reset() {
   state.navigated = [];
   state.navigateProps = [];
   state.replaced = [];
   state.searchStr = "";
   window.history.pushState({}, "", "/");
+}
+
+beforeEach(reset);
+
+afterEach(() => {
+  act(() => root?.unmount());
+  host?.remove();
+  root = undefined;
+  host = undefined;
+  reset();
 });
 
 async function mount(element: React.ReactElement) {
@@ -57,7 +82,7 @@ async function mount(element: React.ReactElement) {
   await act(async () => root?.render(element));
 }
 
-describe("Where a sign-in lands", () => {
+describe("Where a sign-in lands", { timeout: 30_000 }, () => {
   it("opens the default workspace first when a signed-in person opens the sign-in address with no return address", async () => {
     window.history.pushState({}, "", "/sign-in");
     vi.resetModules();
