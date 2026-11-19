@@ -32,6 +32,7 @@ import {
   Hash,
   Info,
   Lock,
+  LogOut,
   MessageSquareText,
   Phone,
   PhoneOff,
@@ -512,6 +513,11 @@ export function ChatWorkspace({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [leaveChannelOpen, setLeaveChannelOpen] = useState(false);
+  // The channel the caller just left: its pane says so until they go elsewhere or join again.
+  const [leftChannel, setLeftChannel] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -1000,12 +1006,10 @@ export function ChatWorkspace({
 
   function handleLeaveChannel() {
     if (!channel) return;
-    const wasPrivate = channel.kind === "channel_private";
     memberRemover.mutate(viewerId, {
       onSuccess: () => {
         setLeaveChannelOpen(false);
-        // A public channel stays readable (the header offers Join again); a private one is gone for the caller.
-        if (wasPrivate) closeChannel();
+        setLeftChannel({ id: channel.id, name: channel.name });
       },
       onError: (error) => {
         setLeaveChannelOpen(false);
@@ -1328,6 +1332,11 @@ export function ChatWorkspace({
             ? "error"
             : "ready";
   const canManage = canManageWorkspace || channel?.role === "manager";
+  const managerCount = members.filter(
+    (member) => member.role === "manager",
+  ).length;
+  // The only manager cannot leave (422 last-manager): the dialog says so before asking anything.
+  const soleManager = channel?.role === "manager" && managerCount <= 1;
 
   function handleAddMember(userId: string) {
     setAddMemberFailed(null);
@@ -1585,7 +1594,32 @@ export function ChatWorkspace({
                 )}
                 aria-label={copy.page.title}
               >
-                {!channelId ? (
+                {leftChannel !== null &&
+                leftChannel.id === channelId &&
+                !channel?.isMember ? (
+                  <Empty className="flex-1">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <LogOut aria-hidden="true" />
+                      </EmptyMedia>
+                      <EmptyTitle>
+                        {fillCopy(copy.membership.leftTitle, {
+                          channel: leftChannel.name,
+                        })}
+                      </EmptyTitle>
+                      <EmptyDescription>
+                        {copy.membership.leftBody}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    {canBrowse ? (
+                      <Button
+                        onClick={() => (onCloseConversation ?? openList)()}
+                      >
+                        {copy.membership.leftBrowse}
+                      </Button>
+                    ) : null}
+                  </Empty>
+                ) : !channelId ? (
                   <div className="flex flex-1 items-center justify-center p-6">
                     {channels.data && channels.data.length === 0 ? (
                       <Empty>
@@ -2314,13 +2348,36 @@ export function ChatWorkspace({
             {channel ? (
               <>
                 <ConfirmDialog
-                  open={leaveChannelOpen}
-                  title={copy.membership.leaveTitle}
-                  body={
+                  open={leaveChannelOpen && soleManager}
+                  title={fillCopy(copy.membership.lastTitle, {
+                    channel: channel.name,
+                  })}
+                  body={copy.membership.lastBody}
+                  confirmLabel={copy.membership.lastAssign}
+                  cancelLabel={copy.membership.lastClose}
+                  onOpenChange={setLeaveChannelOpen}
+                  onConfirm={() => {
+                    setLeaveChannelOpen(false);
+                    setPanel({ kind: "details" });
+                  }}
+                />
+                <ConfirmDialog
+                  open={leaveChannelOpen && !soleManager}
+                  title={fillCopy(copy.membership.leaveTitle, {
+                    channel: channel.name,
+                  })}
+                  body={[
                     channel.kind === "channel_private"
                       ? copy.membership.leaveBodyPrivate
-                      : copy.membership.leaveBodyPublic
-                  }
+                      : copy.membership.leaveBodyPublic,
+                    managerCount > 1 && channel.role === "manager"
+                      ? fillCopy(copy.membership.leaveManagers, {
+                          count: managerCount,
+                        })
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   confirmLabel={copy.membership.leaveConfirm}
                   cancelLabel={copy.membership.cancel}
                   destructive
@@ -2332,8 +2389,12 @@ export function ChatWorkspace({
                   open={removeTarget !== null}
                   title={fillCopy(copy.membership.removeTitle, {
                     name: removeTarget ? authorName(removeTarget) : "",
+                    channel: channel.name,
                   })}
-                  body={copy.membership.removeBody}
+                  body={fillCopy(copy.membership.removeBody, {
+                    name: removeTarget ? authorName(removeTarget) : "",
+                    actor: authorName(viewerId),
+                  })}
                   confirmLabel={copy.membership.removeConfirm}
                   cancelLabel={copy.membership.cancel}
                   destructive
