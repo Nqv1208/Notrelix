@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Chat.Threads.DTOs;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.Threads.Commands.FollowThread;
 
@@ -15,7 +16,7 @@ namespace Notrelix.Application.Features.Chat.Threads.Commands.FollowThread;
 /// posted read, so only later replies count as unread.
 /// </summary>
 public record FollowThreadCommand(Guid WorkspaceId, Guid ThreadId, bool Following, bool Muted)
-    : ICommand<Result<ThreadFollowDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<ThreadFollowDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

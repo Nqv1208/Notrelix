@@ -109,6 +109,8 @@ describe("WorkspaceTeamsSurface", () => {
       within(dialog).getByText(/3 người sẽ mất quyền vào Phòng Công nghệ/),
     ).toBeTruthy();
     expect(within(dialog).getByText(/Trần Minh Quân vẫn còn/)).toBeTruthy();
+    // The workspace the Team belongs to is named in the confirmation.
+    expect(dialog.textContent).toContain("Minh An Group");
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Lưu trữ nhóm" }),
     );

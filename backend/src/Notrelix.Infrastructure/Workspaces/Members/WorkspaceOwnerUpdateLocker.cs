@@ -39,4 +39,22 @@ public sealed class WorkspaceOwnerUpdateLocker : IWorkspaceOwnerUpdateLocker
             .ToListAsync(cancellationToken))
             .SingleOrDefault();
     }
+
+    public async Task<Workspace?> LockWorkspaceIncludingArchivedAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return (await _context.Workspaces
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM workspace.workspaces
+                WHERE id = {workspaceId}
+                  AND status IN ('Active', 'Archived')
+                  AND deleted_at IS NULL
+                FOR UPDATE
+                """)
+            .IgnoreQueryFilters()
+            .ToListAsync(cancellationToken))
+            .SingleOrDefault();
+    }
 }

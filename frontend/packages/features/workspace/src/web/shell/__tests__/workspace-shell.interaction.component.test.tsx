@@ -411,6 +411,12 @@ describe("WorkspaceSidebarSurface", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  it("FUI[workspace.sidebar:workspace-mark] the workspace chip carries the workspace mark next to its name", () => {
+    renderSidebar({}, sidebarMockupScenario());
+    const chip = screen.getByRole("button", { name: /^Minh An Group/ });
+    expect(chip.querySelector('[aria-hidden="true"]')?.textContent).toBe("MA");
+  });
+
   it("FUI[workspace.sidebar:collapse] collapses to the icon column and opens again from the edge arrow, in vi and en", () => {
     for (const locale of LOCALES) {
       const text = locale === "vi" ? viCopy : copy;

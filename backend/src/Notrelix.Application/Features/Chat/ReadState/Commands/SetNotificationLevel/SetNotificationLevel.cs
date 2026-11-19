@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Spaces;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.ReadState.Commands.SetNotificationLevel;
 
@@ -14,7 +15,7 @@ namespace Notrelix.Application.Features.Chat.ReadState.Commands.SetNotificationL
 /// last write wins: the membership row has no version. A space the caller is not an active member of is NotFound.
 /// </summary>
 public record SetNotificationLevelCommand(Guid WorkspaceId, Guid SpaceId, string? Level, DateTimeOffset? MutedUntil)
-    : ICommand<Result<NotificationSettingsDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<NotificationSettingsDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

@@ -1,12 +1,13 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.UnarchiveWorkspace;
 
 public record UnarchiveWorkspaceCommand(
     Guid WorkspaceId,
     long ExpectedVersion
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest, IWorkspaceLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

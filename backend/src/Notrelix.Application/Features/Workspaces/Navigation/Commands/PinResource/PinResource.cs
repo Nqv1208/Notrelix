@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Navigation.Services;
 using Notrelix.Domain.Workspaces.Navigation;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Workspaces.Navigation.Commands.PinResource;
 
@@ -14,7 +15,7 @@ public record PinResourceCommand(
     Guid WorkspaceId,
     string Kind,
     Guid ResourceId
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

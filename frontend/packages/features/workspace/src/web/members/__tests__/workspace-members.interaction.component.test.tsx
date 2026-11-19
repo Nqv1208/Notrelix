@@ -174,6 +174,70 @@ describe("WorkspaceMembersSurface", () => {
     );
   });
 
+  it("FUI[workspace.members:workspace-named] names the workspace in the remove, suspend, demote and revoke confirmations", () => {
+    const named = (description: string) => {
+      expect(description).toContain("Product");
+      expect(description).not.toContain("{{");
+    };
+    const first = renderMembers();
+    openMenu(
+      within(rowOf("Grace Hopper")).getByRole("button", {
+        name: "Actions for Grace Hopper",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.actions.remove }),
+    );
+    named(
+      within(
+        screen.getByRole("alertdialog", { name: "Remove Grace Hopper?" }),
+      ).getByText(/Their work stays/).textContent ?? "",
+    );
+    first.view.unmount();
+
+    const second = renderMembers();
+    openMenu(
+      within(rowOf("Alan Turing")).getByRole("button", {
+        name: "Actions for Alan Turing",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.actions.suspend }),
+    );
+    named(
+      within(
+        screen.getByRole("alertdialog", { name: "Suspend Alan Turing?" }),
+      ).getByText(/Nothing is deleted/).textContent ?? "",
+    );
+    second.view.unmount();
+
+    const third = renderMembers();
+    fireEvent.keyDown(within(rowOf("Alan Turing")).getByRole("combobox"), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("option", { name: /Member/ }));
+    named(
+      within(
+        screen.getByRole("alertdialog", {
+          name: "Change Alan Turing to Member?",
+        }),
+      ).getByText(/fewer permissions/).textContent ?? "",
+    );
+    third.view.unmount();
+
+    const fourth = renderMembers(membersInvitationsScenario());
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Revoke invitation to minh.tran@example.com",
+      }),
+    );
+    named(
+      within(screen.getByRole("alertdialog")).getByText(/stops working/)
+        .textContent ?? "",
+    );
+    fourth.view.unmount();
+  });
+
   it("FUI[workspace.members:permission] is read-only for members and hides invitations", () => {
     renderMembers(membersReadOnlyScenario());
     expect(screen.getByText(copy.readOnly)).toBeTruthy();

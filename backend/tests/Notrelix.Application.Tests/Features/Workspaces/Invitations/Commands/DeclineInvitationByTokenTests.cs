@@ -80,6 +80,20 @@ public class DeclineInvitationByTokenTests : AcceptInvitationHandlerTestBase
     }
 
     [Fact]
+    public async Task RevokedInvitation_CannotBeDeclined_AndStaysRevoked()
+    {
+        var invitation = CreateInvitation();
+        invitation.Revoke(TestUserId, TestNow);
+        SetupInvitations(invitation);
+
+        var result = await Decline();
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain("This invitation is no longer valid.");
+        invitation.Status.Should().Be(WorkspaceInvitationStatus.Revoked);
+    }
+
+    [Fact]
     public async Task ExpiredInvitation_CannotBeDeclined()
     {
         SetupInvitations(CreateInvitation(createdAt: TestNow.AddDays(-30)));

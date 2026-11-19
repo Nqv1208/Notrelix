@@ -68,6 +68,9 @@ export const verifyEmailRoute = createRoute({
 export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/home",
+  // `open=default` is set only by a finished sign-in: the launcher then opens the default workspace.
+  validateSearch: (search: Record<string, unknown>): { open?: "default" } =>
+    search.open === "default" ? { open: "default" } : {},
   component: HomePage,
 });
 
