@@ -56,13 +56,16 @@ public sealed class ChatDigestIntegrationTests
         await scope.ServiceProvider.GetRequiredService<ChatDigestRunner>().RunOnceAsync(CancellationToken.None);
     }
 
-    private async Task<(Space Channel, List<Message> Messages)> SeedChatAsync(OrgStack stack, params Guid[] members)
+    private Task<(Space Channel, List<Message> Messages)> SeedChatAsync(OrgStack stack, params Guid[] members) =>
+        SeedChatAsync(stack, Window0, members);
+
+    private async Task<(Space Channel, List<Message> Messages)> SeedChatAsync(OrgStack stack, DateTimeOffset day, params Guid[] members)
     {
         var channel = Space.CreateChannel(stack.AccountId, stack.WorkspaceId, SpaceKind.ChannelPublic, "general", null, null, 1, stack.OwnerId, Window0);
         foreach (var member in members)
             channel.AddMember(member, MembershipRole.Member, Window0);
         var messages = Enumerable.Range(1, 3)
-            .Select(i => Message.CreateUserMessage(stack.AccountId, stack.WorkspaceId, channel.Id, i, stack.OwnerId, $"please look at item {i}", $"c-{i}", null, Window0.AddHours(8 + i)))
+            .Select(i => Message.CreateUserMessage(stack.AccountId, stack.WorkspaceId, channel.Id, i, stack.OwnerId, $"please look at item {i}", $"c-{i}", null, day.AddHours(8 + i)))
             .ToList();
         await _host.WithSystemContextAsync(seed =>
         {
@@ -125,7 +128,24 @@ public sealed class ChatDigestIntegrationTests
         mail.SourceContext.Should().Be("chat");
         mail.Subject.Should().Be("You missed 3 chat messages");
         mail.BodyText.Should().Contain("and 1 more", "the cap of this run is 2 lines");
-        mail.BodyText.Should().Contain($"https://app.test/workspaces/{stack.WorkspaceId}/chat/{channel.Id}");
+        mail.BodyText.Should().Contain($"https://app.test/workspaces/{stack.WorkspaceId}/chat/{channel.Id}?m=3", "the link opens the newest missed message");
+    }
+
+    [Fact]
+    public async Task AWindowTheJobMissedIsSentOnTheNextPass_AndOnlyOnce()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var ana = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Ana");
+        var (channel, messages) = await SeedChatAsync(stack, Window0.AddDays(-1), ana);
+        await NotifyAsync(stack, channel, messages, ana);
+        await DigestOnAsync(stack, ana);
+
+        using var provider = ProviderFor(stack);
+        await RunAsync(provider);
+        await RunAsync(provider);
+
+        var mail = (await MailsAsync(stack)).Should().ContainSingle("the window before the latest is caught up once").Subject;
+        mail.DeduplicationKey.Should().Contain("202611110000");
     }
 
     [Fact]
