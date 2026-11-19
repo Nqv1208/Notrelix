@@ -106,12 +106,13 @@ for (const mode of ["light", "dark"] as const) {
       near(boxes[1]!.x - (boxes[0]!.x + 32), 4, "gap search/info");
       near(boxes[2]!.x - (boxes[1]!.x + 32), 4, "gap info/more");
       near(head.x + head.w - (boxes[2]!.x + 32), 20, "right padding");
-      // No call button while calls are off, and no key hint on any button.
+      // A member of a channel has the voice call button in front of these three (a group call starts from the channel), and
+      // no key hint on any button.
       await expect(
         page
           .locator(HEADER)
           .getByRole("button", { name: copy.panel.voiceCall }),
-      ).toHaveCount(0);
+      ).toHaveCount(1);
       await expect(page.locator(`${HEADER} kbd`)).toHaveCount(0);
     });
 
