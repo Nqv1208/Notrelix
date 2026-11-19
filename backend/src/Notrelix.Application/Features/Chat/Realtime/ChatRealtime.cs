@@ -180,7 +180,9 @@ public static class ChatRealtime
             added ? e.UploadedBy : null,
             added ? e.AttachmentCreatedAt : null,
             added && e.WorkspaceId is { } workspaceId ? MessageAttachments.DownloadPath(workspaceId, e.MessageId, e.AttachmentId) : null,
-            DetailsOmitted: false);
+            DetailsOmitted: false,
+            Width: added ? e.Width : null,
+            Height: added ? e.Height : null);
         var payload = Serialize(frame);
         if (Encoding.UTF8.GetByteCount(payload.GetRawText()) > MaxPayloadBytes)
             payload = Serialize(new AttachmentChangedFrame(e.MessageId, e.ChangeKind, e.AttachmentId, null, null, null, null, null, null, DetailsOmitted: true));
@@ -200,7 +202,9 @@ public static class ChatRealtime
         Guid? UploadedBy,
         DateTimeOffset? CreatedAt,
         string? DownloadPath,
-        bool DetailsOmitted);
+        bool DetailsOmitted,
+        int? Width = null,
+        int? Height = null);
 
     /// <summary>
     /// A call changed (SPEC-CHAT-MEDIA-CALLS section 7): the compact state of the call on the channel stream of its space. A roster too

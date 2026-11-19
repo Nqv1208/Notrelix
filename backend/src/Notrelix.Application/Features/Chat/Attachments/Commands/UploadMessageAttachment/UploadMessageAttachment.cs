@@ -122,7 +122,7 @@ public class UploadMessageAttachmentCommandHandler(
         current.EnsureAttachable();
 
         message.RecordAttachmentAdded(
-            userId, stored.Id, stored.FileName, stored.SizeBytes, stored.ContentType, stored.UploadedBy, stored.CreatedAt, clock.UtcNow);
+            userId, stored.Id, stored.FileName, stored.SizeBytes, stored.ContentType, stored.UploadedBy, stored.CreatedAt, clock.UtcNow, stored.Width, stored.Height);
 
         return Result<MessageAttachmentDto>.Success(MessageAttachments.ToDto(request.WorkspaceId, stored));
     }

@@ -2239,6 +2239,16 @@
           "nullable": true
         },
         {
+          "name": "width",
+          "type": "int?",
+          "nullable": true
+        },
+        {
+          "name": "height",
+          "type": "int?",
+          "nullable": true
+        },
+        {
           "name": "eventId",
           "type": "Guid",
           "nullable": false
