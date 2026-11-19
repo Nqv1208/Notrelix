@@ -18,6 +18,7 @@ import {
   WorkspaceSettingsSurface,
   type WorkspaceSettingsSurfaceProps,
 } from "../workspace-settings-surface";
+import type { OwnershipStepUp } from "../ownership-step-up";
 import type { TransferFailure } from "../transfer-ownership-flow";
 import { workspaceSettingsCopy } from "../workspace-settings.copy";
 
@@ -30,12 +31,25 @@ beforeAll(() => {
 const copy = settingsCopyFixture();
 const d = copy.danger;
 
+function stepUpPort(over: Partial<OwnershipStepUp> = {}): OwnershipStepUp {
+  return {
+    request: vi.fn(async () => ({
+      factor: "code" as const,
+      challengeToken: "challenge-1",
+    })),
+    withCode: vi.fn(async () => "proof-1"),
+    withPassword: vi.fn(async () => "proof-pw"),
+    ...over,
+  };
+}
+
 function renderSettings(
   scenario = settingsDefaultScenario(),
   overrides: Partial<WorkspaceSettingsSurfaceProps> = {},
 ) {
   const props: WorkspaceSettingsSurfaceProps = {
     ...scenario,
+    ownershipStepUp: stepUpPort(),
     onSaveProfile: vi.fn(),
     onSaveDefaults: vi.fn(),
     onArchive: vi.fn(),
@@ -55,6 +69,37 @@ function open() {
   return screen.getByRole("alertdialog", {
     name: "Transfer ownership of Product",
   });
+}
+
+/** Confirms the chosen person; the dialog then asks the host which factor proves presence. */
+async function confirmChoice(dialog: HTMLElement, name = "Nguyễn Thu Hà") {
+  await act(async () => {
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: `Transfer to ${name}` }),
+    );
+  });
+}
+
+function typeCode(dialog: HTMLElement, code = "123456") {
+  fireEvent.change(within(dialog).getByLabelText(d.stepUpCodeLabel), {
+    target: { value: code },
+  });
+}
+
+/** Answers the proof step with a 6-digit code and sends it. */
+async function proveWithCode(dialog: HTMLElement, code = "123456") {
+  typeCode(dialog, code);
+  await act(async () => {
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: d.stepUpConfirm }),
+    );
+  });
+}
+
+/** The whole confirm-then-prove path: choose, confirm, answer with a code. */
+async function handOver(dialog: HTMLElement, name?: string) {
+  await confirmChoice(dialog, name);
+  await proveWithCode(dialog);
 }
 
 describe("Transfer ownership (hand the workspace over)", () => {
@@ -83,13 +128,16 @@ describe("Transfer ownership (hand the workspace over)", () => {
     ).toBeTruthy();
 
     fireEvent.click(radios[2]!);
-    const confirm = within(dialog).getByRole("button", {
-      name: "Transfer to Lê Minh Khoa",
-    });
-    await act(async () => {
-      fireEvent.click(confirm);
-    });
-    expect(props.onTransfer).toHaveBeenCalledWith("u-khoa");
+    await confirmChoice(dialog, "Lê Minh Khoa");
+    // Confirming the choice sends nothing yet: the proof of presence comes first.
+    expect(props.ownershipStepUp.request).toHaveBeenCalledTimes(1);
+    expect(props.onTransfer).not.toHaveBeenCalled();
+    await proveWithCode(dialog);
+    expect(props.ownershipStepUp.withCode).toHaveBeenCalledWith(
+      "challenge-1",
+      "123456",
+    );
+    expect(props.onTransfer).toHaveBeenCalledWith("u-khoa", "proof-1");
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
   });
 
@@ -104,15 +152,9 @@ describe("Transfer ownership (hand the workspace over)", () => {
       ),
     });
     const dialog = open();
-    await act(async () => {
-      fireEvent.click(
-        within(dialog).getByRole("button", {
-          name: "Transfer to Nguyễn Thu Hà",
-        }),
-      );
-    });
+    await handOver(dialog);
     const pending = within(dialog).getByRole("button", {
-      name: d.transferPending,
+      name: d.stepUpChecking,
     }) as HTMLButtonElement;
     expect(pending.disabled).toBe(true);
     // A second press while pending sends nothing more.
@@ -143,19 +185,13 @@ describe("Transfer ownership (hand the workspace over)", () => {
       onTransfer: vi.fn(async () => ({ kind: "conflict" }) as const),
     });
     const dialog = open();
-    await act(async () => {
-      fireEvent.click(
-        within(dialog).getByRole("button", {
-          name: "Transfer to Nguyễn Thu Hà",
-        }),
-      );
-    });
+    await handOver(dialog);
     const alert = within(dialog).getByRole("alert");
     expect(alert.textContent).toContain(d.transferConflictTitle);
     expect(alert.textContent).toContain(d.transferConflictBody);
     // The destructive button is gone, so the same stale choice cannot be sent again.
     expect(
-      within(dialog).queryByRole("button", { name: /^Transfer to/ }),
+      within(dialog).queryByRole("button", { name: d.stepUpConfirm }),
     ).toBeNull();
     fireEvent.click(
       within(dialog).getByRole("button", { name: d.transferReload }),
@@ -185,21 +221,11 @@ describe("Transfer ownership (hand the workspace over)", () => {
         onTransfer: vi.fn(async () => failure),
       });
       const dialog = open();
-      await act(async () => {
-        fireEvent.click(
-          within(dialog).getByRole("button", {
-            name: "Transfer to Nguyễn Thu Hà",
-          }),
-        );
-      });
+      await handOver(dialog);
       expect(within(dialog).getByRole("alert").textContent).toContain(text);
-      const retry = within(dialog).getByRole("button", {
-        name: "Transfer to Nguyễn Thu Hà",
-      }) as HTMLButtonElement;
-      expect(retry.disabled).toBe(false);
-      await act(async () => {
-        fireEvent.click(retry);
-      });
+      // The proof was spent, so a fresh challenge waits and the field is empty again.
+      expect(props.ownershipStepUp.request).toHaveBeenCalledTimes(2);
+      await proveWithCode(dialog);
       expect(props.onTransfer).toHaveBeenCalledTimes(2);
     },
   );
@@ -228,6 +254,306 @@ describe("Transfer ownership (hand the workspace over)", () => {
       within(dialog).getByRole("button", { name: "Transfer to Nguyễn Thu Hà" })
         .className,
     ).toContain("max-md:h-touch");
+  });
+
+  it("FUI[workspace.settings:transfer-ownership] the proof step's buttons are touch size on a phone", async () => {
+    renderSettings();
+    const dialog = open();
+    await confirmChoice(dialog);
+    for (const name of [d.cancel, d.stepUpConfirm]) {
+      expect(within(dialog).getByRole("button", { name }).className).toContain(
+        "max-md:h-touch",
+      );
+    }
+    expect(
+      within(dialog).getByRole("button", { name: d.stepUpUseRecovery })
+        .className,
+    ).toContain("max-md:min-h-touch");
+  });
+
+  describe("the step-up proof (confirm it's you)", () => {
+    it("FUI[workspace.settings:transfer-ownership-stepup] asks the proof after Confirm, names the person and sends nothing before the code", async () => {
+      const props = renderSettings();
+      const dialog = open();
+      await confirmChoice(dialog);
+
+      expect(within(dialog).getByText(d.stepUpTitle)).toBeTruthy();
+      expect(
+        within(dialog).getByText(
+          "Handing Product to Nguyễn Thu Hà needs you to confirm it's you, even though you're signed in.",
+        ),
+      ).toBeTruthy();
+      // The person cannot send an unfinished code.
+      typeCode(dialog, "48");
+      expect(
+        (
+          within(dialog).getByRole("button", {
+            name: d.stepUpConfirm,
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] a wrong code is said in place and the person can try again", async () => {
+      const port = stepUpPort({
+        withCode: vi
+          .fn<OwnershipStepUp["withCode"]>()
+          .mockRejectedValueOnce({
+            status: 400,
+            code: "identity.security.step-up-invalid-code",
+          })
+          .mockResolvedValueOnce("proof-2"),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+      const dialog = open();
+      await handOver(dialog);
+
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        d.stepUpWrongCode,
+      );
+      expect(props.onTransfer).not.toHaveBeenCalled();
+      expect(port.request).toHaveBeenCalledTimes(1);
+      await proveWithCode(dialog, "654321");
+      expect(props.onTransfer).toHaveBeenCalledWith("u-ha", "proof-2");
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] a person without two-factor confirms with the password", async () => {
+      const port = stepUpPort({
+        request: vi.fn(async () => ({
+          factor: "password" as const,
+          challengeToken: null,
+        })),
+        withPassword: vi
+          .fn<OwnershipStepUp["withPassword"]>()
+          .mockRejectedValueOnce({
+            status: 400,
+            code: "identity.security.step-up-invalid-password",
+          })
+          .mockResolvedValueOnce("proof-pw"),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+      const dialog = open();
+      await confirmChoice(dialog);
+
+      const field = within(dialog).getByLabelText(d.stepUpPasswordLabel);
+      expect(field.getAttribute("type")).toBe("password");
+      fireEvent.change(field, { target: { value: "wrong-password" } });
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: d.stepUpConfirm }),
+        );
+      });
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        d.stepUpWrongPassword,
+      );
+      fireEvent.change(within(dialog).getByLabelText(d.stepUpPasswordLabel), {
+        target: { value: "right-password" },
+      });
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: d.stepUpConfirm }),
+        );
+      });
+      expect(port.withPassword).toHaveBeenLastCalledWith("right-password");
+      expect(props.onTransfer).toHaveBeenCalledWith("u-ha", "proof-pw");
+      expect(port.withCode).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] a recovery code can stand in for the authenticator code", async () => {
+      const port = stepUpPort();
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+      const dialog = open();
+      await confirmChoice(dialog);
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: d.stepUpUseRecovery }),
+      );
+      fireEvent.change(within(dialog).getByLabelText(d.stepUpRecoveryLabel), {
+        target: { value: " RC01-MOCK-1000 " },
+      });
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: d.stepUpConfirm }),
+        );
+      });
+      expect(port.withCode).toHaveBeenCalledWith(
+        "challenge-1",
+        "RC01-MOCK-1000",
+      );
+      expect(props.onTransfer).toHaveBeenCalledWith("u-ha", "proof-1");
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] a person who signs in with a provider only is told to add a way to confirm first", async () => {
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: stepUpPort({
+          request: vi.fn(async () => ({
+            factor: "provider" as const,
+            challengeToken: null,
+          })),
+        }),
+      });
+      const dialog = open();
+      await confirmChoice(dialog);
+      expect(within(dialog).getByText(d.stepUpProviderTitle)).toBeTruthy();
+      expect(within(dialog).getByText(d.stepUpProviderBody)).toBeTruthy();
+      expect(
+        within(dialog).queryByRole("button", { name: d.stepUpConfirm }),
+      ).toBeNull();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] an expired confirmation locks the field and starts again on request", async () => {
+      const port = stepUpPort({
+        withCode: vi.fn(async () => {
+          throw { status: 400, code: "identity.security.step-up-invalid" };
+        }),
+      });
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: port,
+      });
+      const dialog = open();
+      await handOver(dialog);
+
+      expect(within(dialog).getByText(d.stepUpExpiredTitle)).toBeTruthy();
+      expect(within(dialog).getByText(d.stepUpExpiredBody)).toBeTruthy();
+      expect(
+        (within(dialog).getByLabelText(d.stepUpCodeLabel) as HTMLInputElement)
+          .disabled,
+      ).toBe(true);
+      expect(
+        within(dialog).queryByRole("button", { name: d.stepUpConfirm }),
+      ).toBeNull();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: d.stepUpRestart }),
+        );
+      });
+      expect(port.request).toHaveBeenCalledTimes(2);
+      expect(within(dialog).queryByText(d.stepUpExpiredTitle)).toBeNull();
+      expect(
+        (within(dialog).getByLabelText(d.stepUpCodeLabel) as HTMLInputElement)
+          .disabled,
+      ).toBe(false);
+    });
+
+    it.each([
+      ["step-up-required", "no proof reached the producer"],
+      ["step-up-invalid", "a stale, spent or foreign proof"],
+    ] as const)(
+      "FUI[workspace.settings:transfer-ownership-stepup] when the producer refuses the handover for %s (%s), nothing changes and a fresh confirmation is asked",
+      async (kind, _why) => {
+        const props = renderSettings(settingsDefaultScenario(), {
+          onTransfer: vi
+            .fn<WorkspaceSettingsSurfaceProps["onTransfer"]>()
+            .mockResolvedValueOnce({ kind })
+            .mockResolvedValueOnce(null),
+        });
+        const dialog = open();
+        await handOver(dialog);
+
+        const alert = within(dialog).getByRole("alert");
+        expect(alert.textContent).toContain(d.stepUpRefusedTitle);
+        expect(alert.textContent).toContain(d.stepUpRefusedBody);
+        // A new challenge, an empty field, and the dialog is still open.
+        expect(props.ownershipStepUp.request).toHaveBeenCalledTimes(2);
+        expect(
+          (within(dialog).getByLabelText(d.stepUpCodeLabel) as HTMLInputElement)
+            .value,
+        ).toBe("");
+        await proveWithCode(dialog, "111222");
+        expect(props.onTransfer).toHaveBeenCalledTimes(2);
+        await waitFor(() =>
+          expect(screen.queryByRole("alertdialog")).toBeNull(),
+        );
+      },
+    );
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] too many tries says how long to wait and holds the button", async () => {
+      renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: stepUpPort({
+          withCode: vi.fn(async () => {
+            throw { status: 429, details: { retryAfterSeconds: 60 } };
+          }),
+        }),
+      });
+      const dialog = open();
+      await handOver(dialog);
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        "Wait 60 seconds",
+      );
+      typeCode(dialog, "222333");
+      expect(
+        (
+          within(dialog).getByRole("button", {
+            name: d.stepUpConfirm,
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] offline while asking for the proof stays on the choice and says so", async () => {
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: stepUpPort({
+          request: vi.fn(async () => {
+            throw { kind: "network" };
+          }),
+        }),
+      });
+      const dialog = open();
+      await confirmChoice(dialog);
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        copy.toasts.network,
+      );
+      expect(
+        within(dialog).getByRole("button", {
+          name: "Transfer to Nguyễn Thu Hà",
+        }),
+      ).toBeTruthy();
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] offline while answering says so and keeps the dialog", async () => {
+      const props = renderSettings(settingsDefaultScenario(), {
+        ownershipStepUp: stepUpPort({
+          withCode: vi.fn(async () => {
+            throw { kind: "network" };
+          }),
+        }),
+      });
+      const dialog = open();
+      await handOver(dialog);
+      expect(within(dialog).getByRole("alert").textContent).toContain(
+        copy.toasts.network,
+      );
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] cancel closes the dialog and sends nothing", async () => {
+      const props = renderSettings();
+      const dialog = open();
+      await confirmChoice(dialog);
+      fireEvent.click(within(dialog).getByRole("button", { name: d.cancel }));
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+      expect(props.onTransfer).not.toHaveBeenCalled();
+    });
+
+    it("FUI[workspace.settings:transfer-ownership-stepup] reopening starts from the choice again", async () => {
+      renderSettings();
+      let dialog = open();
+      await confirmChoice(dialog);
+      fireEvent.click(within(dialog).getByRole("button", { name: d.cancel }));
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+      dialog = open();
+      expect(within(dialog).getByRole("radiogroup")).toBeTruthy();
+      expect(within(dialog).queryByText(d.stepUpTitle)).toBeNull();
+    });
   });
 
   it("FUI[workspace.settings:transfer-ownership] has a Vietnamese copy for every string", () => {

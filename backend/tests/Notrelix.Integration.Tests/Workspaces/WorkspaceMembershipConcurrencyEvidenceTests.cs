@@ -268,14 +268,16 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
         await using var txA = await contextA.Database.BeginTransactionAsync();
         await using var txB = await contextB.Database.BeginTransactionAsync();
 
+        var sessionId = Guid.CreateVersion7();
+        var stepUp = new HandoverStepUp(Clock());
         var transfer = new TransferOwnershipCommandHandler(
-            contextA, RequestContext(ownerId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA));
+            contextA, RequestContext(ownerId, sessionId), Clock(), GrantProjection(contextA), new WorkspaceOwnerUpdateLocker(contextA), stepUp.Service);
         var remove = new RemoveMemberCommandHandler(
             contextB, RequestContext(ownerId), Clock(), GrantProjection(contextB), new WorkspaceOwnerUpdateLocker(contextB),
             new Moq.Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal>().Object,
             new Notrelix.Application.Features.Identity.ApiTokens.Services.IdentityApiTokensProvider(contextB, Clock()));
 
-        (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1), CancellationToken.None))
+        (await transfer.Handle(new TransferOwnershipCommand(workspace.Id, newOwnerId, 1, await stepUp.ProofAsync(ownerId, sessionId)), CancellationToken.None))
             .Succeeded.Should().BeTrue();
 
         var removeTask = remove.Handle(new RemoveMemberCommand(workspace.Id, newOwnerId, 1), CancellationToken.None);
@@ -293,10 +295,11 @@ public sealed class WorkspaceMembershipConcurrencyEvidenceTests : IAsyncLifetime
             .Should().Be(1);
     }
 
-    private static ICurrentRequestContext RequestContext(Guid userId)
+    private static ICurrentRequestContext RequestContext(Guid userId, Guid? sessionId = null)
     {
         var requestContext = new Mock<ICurrentRequestContext>();
         requestContext.Setup(r => r.UserId).Returns(userId);
+        requestContext.Setup(r => r.SessionId).Returns(sessionId);
         return requestContext.Object;
     }
 

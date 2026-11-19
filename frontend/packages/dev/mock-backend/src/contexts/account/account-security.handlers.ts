@@ -36,6 +36,7 @@ const PURPOSES = [
   "UnlinkOAuth",
   "ChangeSecurityIdentity",
   "IssueApiToken",
+  "TransferWorkspaceOwnership",
 ];
 
 function securityOf(store: MockStore): SecurityDetails {
@@ -110,6 +111,23 @@ function invalidProof(
         "identity.security.step-up-invalid",
         "Step-up verification is invalid or expired.",
       );
+}
+
+/**
+ * Spends the proof an action outside this file carries (the ownership handover): none sent is 412, one that is
+ * missing, spent or issued for another purpose is 400. Proofs live per person, so another person's never matches.
+ */
+export function spendStepUpProof(
+  store: MockStore,
+  token: string | undefined,
+  purpose: string,
+) {
+  if (!token) return proofRequired();
+  const security = securityOf(store);
+  const refused = invalidProof(security, token, purpose);
+  if (refused) return refused;
+  security.proofs.delete(token);
+  return null;
 }
 
 /** The path the browser lands on after a provider re-authentication; `failed` is how the backend says it could not. */

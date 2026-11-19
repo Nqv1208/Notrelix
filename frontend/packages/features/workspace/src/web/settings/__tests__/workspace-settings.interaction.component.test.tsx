@@ -37,6 +37,14 @@ function renderSettings(
     onReload: vi.fn(),
     onRetryDefaults: vi.fn(),
     onTransfer: vi.fn(async () => null),
+    ownershipStepUp: {
+      request: vi.fn(async () => ({
+        factor: "code" as const,
+        challengeToken: "challenge",
+      })),
+      withCode: vi.fn(async () => "proof"),
+      withPassword: vi.fn(async () => "proof"),
+    },
     onInviteForTransfer: vi.fn(),
     ...overrides,
   };

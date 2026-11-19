@@ -38,6 +38,7 @@ type SettingsScenario = Omit<
   | "onReload"
   | "onRetryDefaults"
   | "onTransfer"
+  | "ownershipStepUp"
   | "onInviteForTransfer"
 >;
 

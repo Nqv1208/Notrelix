@@ -35634,6 +35634,7 @@
           "Workspaces.Workspaces"
         ],
         "summary": "Transfer workspace ownership to another member",
+        "description": "Needs a single-use step-up proof for the TransferWorkspaceOwnership purpose, bound to the caller, the session and the purpose. Without one it answers 412 identity.security.step-up-required; a stale, spent or foreign proof answers 400 identity.security.step-up-invalid. Ownership never changes on a refusal.",
         "operationId": "Workspaces.Workspaces.TransferOwnership",
         "parameters": [
           {
@@ -39751,6 +39752,10 @@
           "expectedVersion": {
             "type": "integer",
             "format": "int64"
+          },
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
