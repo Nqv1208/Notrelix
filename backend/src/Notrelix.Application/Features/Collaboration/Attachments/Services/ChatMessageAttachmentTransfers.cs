@@ -215,6 +215,16 @@ public sealed class ChatMessageAttachmentTransfers(
         a.Metadata.DurationMs,
         a.Metadata.Waveform);
 
+    /// <summary>An Ogg file carries its duration on its last page, so the rest of the object is read once for its trailing bytes.</summary>
+    private static async Task<byte[]> OggTailAsync(Stream stream, ReadOnlyMemory<byte> header, string contentType, CancellationToken cancellationToken)
+    {
+        if (contentType != "audio/ogg")
+            return [];
+        var trailing = new TrailingBytesCaptureStream(new PrefixedReadStream(header, stream), 66 * 1024);
+        await trailing.CopyToAsync(Stream.Null, cancellationToken);
+        return trailing.Captured.ToArray();
+    }
+
     private sealed record PolicyFacts(
         AttachmentType? Type,
         string ContentType,
@@ -237,6 +247,7 @@ public sealed class ChatMessageAttachmentTransfers(
 
         var header = new byte[HeaderCapacity];
         var length = await stream.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, cancellationToken);
+        var oggTail = length >= 4 && header.AsSpan(0, 4).SequenceEqual("OggS"u8) ? await OggTailAsync(stream, header.AsMemory(0, length), "audio/ogg", cancellationToken) : [];
         var span = header.AsSpan(0, length);
 
         if (length == 0)
@@ -250,7 +261,7 @@ public sealed class ChatMessageAttachmentTransfers(
 
         var image = ImageDimensionReader.TryRead(span, classified.ContentType);
         var isAudio = classified.Type == AttachmentType.Audio;
-        var verified = isAudio ? AudioMetadataReader.TryReadDurationMs(span, classified.ContentType) : null;
+        var verified = isAudio ? AudioMetadataReader.TryReadDurationMs(span, classified.ContentType, oggTail) : null;
         var voice = isAudio && pending.Voice;
         var durationMs = voice
             ? Math.Min(verified ?? Math.Clamp(pending.DurationHintMs ?? 0, 0, DurationMaxMs), DurationMaxMs)

@@ -739,9 +739,10 @@ public class AttachmentHandlerTests
         [.. Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.WebM(durationMs, 2), .. new byte[padding]];
 
     private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto>> UploadVoice(
-        Message message, byte[] bytes, int? hintMs = null, int[]? waveform = null, ChatVoiceOptions? voice = null, IChatMessageAttachments? attachments = null) =>
+        Message message, byte[] bytes, int? hintMs = null, int[]? waveform = null, ChatVoiceOptions? voice = null, IChatMessageAttachments? attachments = null,
+        string fileName = "voice.webm") =>
         UploadHandler(attachments ?? RealFlow(), voice).Handle(
-            new UploadMessageAttachmentCommand(_workspaceId, message.Id, "voice.webm", new MemoryStream(bytes), true, hintMs, waveform),
+            new UploadMessageAttachmentCommand(_workspaceId, message.Id, fileName, new MemoryStream(bytes), true, hintMs, waveform),
             CancellationToken.None);
 
     [Fact]
@@ -777,6 +778,29 @@ public class AttachmentHandlerTests
 
         // The row is added to the request unit of work, which a refused request never commits; the stored object is removed by the
         // compensation. The unit test checks the refusal itself.
+        var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceTooLong);
+    }
+
+    [Fact]
+    public async Task An_ogg_voice_message_keeps_the_duration_read_from_its_last_page()
+    {
+        var message = Text(Channel());
+
+        var result = await UploadVoice(message, Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.OggOpus(2_500), hintMs: 9_000, fileName: "voice.ogg");
+
+        result.Data!.ContentType.Should().Be("audio/ogg");
+        result.Data.DurationMs.Should().Be(2_500);
+    }
+
+    [Fact]
+    public async Task An_ogg_voice_message_cannot_claim_a_short_duration_to_pass_the_limit()
+    {
+        // The file is 10 minutes long; the client claims 5 seconds. The last page decides.
+        var message = Text(Channel());
+
+        var act = () => UploadVoice(message, Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.OggOpus(600_000), hintMs: 5_000, fileName: "voice.ogg");
+
         var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
         error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceTooLong);
     }

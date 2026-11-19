@@ -56,7 +56,7 @@ public static class MapThreadEndpoints
     {
         var result = await sender.Send(new ReplyInThreadCommand(
             workspaceId, rootId, body.Content ?? string.Empty, body.ClientMessageId ?? string.Empty, body.AlsoSendToChannel ?? false,
-            body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false));
+            body.Mentions?.Select(m => m.ToInput()).ToList(), body.ConfirmBroadcast ?? false, body.VoiceMessage ?? false));
         if (!result.Succeeded)
             return result.ToApiResult();
 

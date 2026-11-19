@@ -9,6 +9,7 @@ import { ChatMessageRow } from "./chat-message-row";
 import { ChatPanelHeader } from "./chat-panel-header";
 import { ThreadMoreMenu } from "./chat-thread-menu";
 import { chatFailureOf } from "../../core/api/chat-failure";
+import type { ChatVoiceRecorder } from "../../core/api/chat-voice-recorder";
 import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
 import {
   RowActivityProvider,
@@ -43,6 +44,8 @@ export interface ChatThreadPanelProps {
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
+  /** The voice recorder port (UC-CHT-I04); the browser recorder when the host gives none. Tests pass a fake. */
+  readonly voiceRecorder?: ChatVoiceRecorder;
 }
 
 /**
@@ -66,6 +69,7 @@ export function ChatThreadPanel({
   onReact,
   onTogglePin,
   attachmentsReadOnly = false,
+  voiceRecorder,
 }: ChatThreadPanelProps) {
   const thread = hooks.useThreadReplies(workspaceId, rootId);
   const replier = hooks.useReplyInThread(workspaceId, rootId);
@@ -361,7 +365,7 @@ export function ChatThreadPanel({
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}
-        attachments={{ draftKey: `thread-${rootId}`, voice: false }}
+        attachments={{ draftKey: `thread-${rootId}`, voiceRecorder }}
         mentions={
           mentionBase
             ? {

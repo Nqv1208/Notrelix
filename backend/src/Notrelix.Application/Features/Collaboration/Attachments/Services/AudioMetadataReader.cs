@@ -12,7 +12,7 @@ public readonly record struct ContainerTracks(bool HasAudio, bool HasVideo);
 /// Reads the duration of an audio file from its container header, from the leading bytes only (no decoding, no package). The result is
 /// advisory: a truncated, garbage or unsupported header yields null, never an error. Covered: WebM (Segment Info Duration), MP4 and M4A
 /// (mvhd, when the movie header is in the window), WAV (fmt byte rate and data size) and MPEG audio with a Xing or Info frame count.
-/// Ogg Opus needs the last page, which is not in the leading bytes, so it yields null and the client hint is used instead.
+/// Ogg (Opus or Vorbis) needs the last page, which is not in the leading bytes: the caller passes the trailing bytes of the file too.
 /// </summary>
 public static class AudioMetadataReader
 {
@@ -31,7 +31,7 @@ public static class AudioMetadataReader
     /// The duration in milliseconds read from the header, or null when it is absent, garbage or not a positive whole number. A value above the
     /// stored bound is returned as read: the voice policy refuses it, and the stored value is clamped by the caller.
     /// </summary>
-    public static int? TryReadDurationMs(ReadOnlySpan<byte> header, string contentType)
+    public static int? TryReadDurationMs(ReadOnlySpan<byte> header, string contentType, ReadOnlySpan<byte> trailer = default)
     {
         var ms = contentType switch
         {
@@ -39,6 +39,7 @@ public static class AudioMetadataReader
             "audio/mp4" => Mp4DurationMs(header),
             "audio/wav" => WavDurationMs(header),
             "audio/mpeg" => MpegDurationMs(header),
+            "audio/ogg" => OggDurationMs(header, trailer),
             _ => null,
         };
 
@@ -59,6 +60,51 @@ public static class AudioMetadataReader
         if (handlers.Count == 0)
             return null;
         return new ContainerTracks(handlers.Contains("soun"), handlers.Contains("vide"));
+    }
+
+    // ── Ogg (Opus, Vorbis) ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+    private const int OggPageHeaderLength = 27;
+
+    // Duration = (granule position of the last page less the Opus pre-skip) / sample rate. The last page is the one that ends exactly at
+    // the end of the trailing bytes, so a page marker inside the audio cannot stand in for it.
+    private static long? OggDurationMs(ReadOnlySpan<byte> head, ReadOnlySpan<byte> tail)
+    {
+        long rate;
+        long preSkip = 0;
+        var opus = head.IndexOf("OpusHead"u8);
+        var vorbis = head.IndexOf("\u0001vorbis"u8);
+        if (opus >= 0 && head.Length >= opus + 12)
+        {
+            rate = 48_000;
+            preSkip = BinaryPrimitives.ReadUInt16LittleEndian(head[(opus + 10)..]);
+        }
+        else if (vorbis >= 0 && head.Length >= vorbis + 16)
+        {
+            rate = BinaryPrimitives.ReadUInt32LittleEndian(head[(vorbis + 12)..]);
+        }
+        else
+        {
+            return null;
+        }
+
+        for (var i = tail.Length - OggPageHeaderLength; i >= 0; i--)
+        {
+            if (!tail[i..].StartsWith("OggS"u8) || tail[i + 4] != 0)
+                continue;
+            var segments = tail[i + 26];
+            if (tail.Length < i + OggPageHeaderLength + segments)
+                continue;
+            var body = 0;
+            for (var s = 0; s < segments; s++)
+                body += tail[i + OggPageHeaderLength + s];
+            if (i + OggPageHeaderLength + segments + body != tail.Length)
+                continue;
+            var granule = BinaryPrimitives.ReadInt64LittleEndian(tail[(i + 6)..]);
+            return granule > preSkip && rate > 0 ? (granule - preSkip) * 1000 / rate : null;
+        }
+
+        return null;
     }
 
     // ── WebM / Matroska (EBML) ─────────────────────────────────────────────────────────────────────────────────────────────

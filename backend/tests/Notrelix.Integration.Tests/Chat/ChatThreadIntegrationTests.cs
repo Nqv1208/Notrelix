@@ -94,7 +94,7 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
     }
 
     /// <summary>One reply, in its own transaction, the way the pipeline runs a write request.</summary>
-    private async Task<Result<Notrelix.Application.Features.Chat.Messages.DTOs.SendMessageResultDto>> ReplyInOwnTransactionAsync(string content, string clientMessageId)
+    private async Task<Result<Notrelix.Application.Features.Chat.Messages.DTOs.SendMessageResultDto>> ReplyInOwnTransactionAsync(string content, string clientMessageId, bool voice = false)
     {
         await using var context = _db.CreateOwnerContext(SystemTenant());
         await using var transaction = await context.Database.BeginTransactionAsync();
@@ -109,7 +109,7 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
             new InMemoryChatMessageAttachments(), Moq.Mock.Of<Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter>(), new Notrelix.Infrastructure.Data.Chat.ChatReadStateStore(context));
 
         var result = await handler.Handle(
-            new ReplyInThreadCommand(_workspaceId, _rootId, content, clientMessageId, AlsoSendToChannel: false),
+            new ReplyInThreadCommand(_workspaceId, _rootId, content, clientMessageId, AlsoSendToChannel: false, VoiceMessage: voice),
             CancellationToken.None);
 
         await context.SaveChangesAsync();
@@ -141,6 +141,17 @@ public sealed class ChatThreadIntegrationTests : IAsyncLifetime
             .ToListAsync();
         spaceSequences.Order().Should().Equal(Enumerable.Range(1, Racers + 1).Select(i => (long)i),
             "the replies share the space sequence with the root, gap-free");
+    }
+
+    [Fact]
+    public async Task AVoiceReply_WithNoText_IsStoredInTheThread()
+    {
+        var result = await ReplyInOwnTransactionAsync("", "reply-voice", voice: true);
+
+        result.Succeeded.Should().BeTrue();
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var stored = await probe.ChatMessages.IgnoreQueryFilters().SingleAsync(m => m.ThreadRootId == _rootId);
+        stored.Content.Should().BeEmpty();
     }
 
     [Fact]

@@ -18,6 +18,9 @@ internal static class AttachmentTargetOperations
     /// <summary>Leading bytes kept for an image header. Covers the frame header of a JPEG behind its EXIF and ICC segments.</summary>
     private const int ImageHeaderCapacity = 64 * 1024;
 
+    /// <summary>An Ogg page is at most 65307 bytes, so this holds the whole last page.</summary>
+    private const int OggLastPageCapacity = 66 * 1024;
+
     public static async Task<List<AttachmentDto>> ListAsync(
         ICollaborationDbContext context,
         IActorLookupService actorLookup,
@@ -199,7 +202,8 @@ internal static class AttachmentTargetOperations
 
         // The leading bytes of the body are kept while they are copied to storage (one read, no second pass), so an image's pixel
         // size can be read from its header. The header reader decides which types have one; everything else keeps no size.
-        var leading = new LeadingBytesCaptureStream(new PrefixedReadStream(head.AsMemory(0, headLength), body), ImageHeaderCapacity);
+        var trailing = new TrailingBytesCaptureStream(new PrefixedReadStream(head.AsMemory(0, headLength), body), OggLastPageCapacity);
+        var leading = new LeadingBytesCaptureStream(trailing, ImageHeaderCapacity);
         var ceiling = audio is null ? options.MaxFileSizeBytes : Math.Min(options.MaxFileSizeBytes, audio.MaxBytes);
         using var limited = new SizeLimitedReadStream(leading, ceiling);
         await storage.WriteAsync(storageKey, limited, classified.ContentType, ct);
@@ -207,7 +211,7 @@ internal static class AttachmentTargetOperations
 
         // The duration comes from the stored header when it carries one; the client hint is the fallback, clamped, and is only a hint.
         var isAudio = classified.Type == AttachmentType.Audio;
-        var verifiedDuration = isAudio ? AudioMetadataReader.TryReadDurationMs(leading.Captured, classified.ContentType) : null;
+        var verifiedDuration = isAudio ? AudioMetadataReader.TryReadDurationMs(leading.Captured, classified.ContentType, trailing.Captured) : null;
         var durationMs = isAudio && audio is not null
             ? Math.Min(verifiedDuration ?? Math.Clamp(audio.DurationHintMs ?? 0, 0, DurationMaxMs), DurationMaxMs)
             : (int?)null;

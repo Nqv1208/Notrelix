@@ -199,6 +199,31 @@ internal static class AudioHeaderBuilder
     /// <summary>A header that is only an Ogg page marker (the duration of Ogg is not in the leading bytes).</summary>
     public static byte[] Ogg() => [.. "OggS"u8.ToArray(), 0, 2, .. new byte[20]];
 
+    /// <summary>
+    /// An Ogg Opus file: an OpusHead page, then one last page whose granule position is the pre-skip plus the duration at 48 kHz.
+    /// The leading bytes carry no duration; the last page does.
+    /// </summary>
+    public static byte[] OggOpus(double durationMs, ushort preSkip = 312, int bodyAfterLastPageStart = 0)
+    {
+        var head = new List<byte>("OpusHead"u8.ToArray()) { 1, 1 };
+        head.AddRange(BitConverter.GetBytes(preSkip));
+        head.AddRange(BitConverter.GetBytes(48_000u));
+        head.AddRange([0, 0, 0]);
+        var granule = (long)(durationMs * 48) + preSkip;
+        return Concat(OggPage(0, head.ToArray(), 2), OggPage(granule, new byte[200 + bodyAfterLastPageStart], 4));
+    }
+
+    private static byte[] OggPage(long granule, byte[] body, byte headerType)
+    {
+        var page = new List<byte>("OggS"u8.ToArray()) { 0, headerType };
+        page.AddRange(BitConverter.GetBytes(granule));
+        page.AddRange(new byte[12]);
+        page.Add(1);
+        page.Add((byte)body.Length);
+        page.AddRange(body);
+        return page.ToArray();
+    }
+
     public static byte[] Concat(params byte[][] parts)
     {
         var list = new List<byte>();

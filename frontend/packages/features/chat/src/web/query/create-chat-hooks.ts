@@ -1123,6 +1123,9 @@ export function createChatHooks(deps: ChatHookDeps) {
           alsoSendToChannel: input.alsoSendToChannel,
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
+          voiceMessage: (input.files ?? []).some(
+            (file) => voiceFactsOf(file) !== null,
+          ),
         }),
       onSuccess: (reply: ChatMessage, input) => {
         applyStoredReply(queryClient, workspaceId, reply);

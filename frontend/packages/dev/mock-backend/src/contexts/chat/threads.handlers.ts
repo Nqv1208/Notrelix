@@ -50,6 +50,7 @@ interface ReplyBody {
   alsoSendToChannel?: boolean | null;
   mentions?: MentionInputBody[] | null;
   confirmBroadcast?: boolean | null;
+  voiceMessage?: boolean | null;
 }
 
 interface FollowBody {
@@ -83,11 +84,15 @@ export const threadsOperations = [
         const caller = callerIn(store, params.workspaceId);
         const key = requireIdempotencyKey(request.headers);
         requireAction(caller, "messagePost");
-        const content = requiredText(
-          body?.content,
-          "content",
-          CHAT_LIMITS.messageMaxLength,
-        );
+        // A voice reply carries no text; its audio is uploaded to it next (UC-CHT-I04).
+        const content =
+          body?.voiceMessage === true && !body.content?.trim()
+            ? ""
+            : requiredText(
+                body?.content,
+                "content",
+                CHAT_LIMITS.messageMaxLength,
+              );
         const clientMessageId = requiredText(
           body?.clientMessageId,
           "clientMessageId",

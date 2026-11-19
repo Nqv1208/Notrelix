@@ -36492,6 +36492,10 @@
           "confirmBroadcast": {
             "type": "boolean",
             "nullable": true
+          },
+          "voiceMessage": {
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false
