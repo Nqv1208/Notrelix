@@ -159,9 +159,11 @@ export function SettingsPage() {
           formatCopy(copy.toasts.archiveFailed, values),
           error,
           (failure) =>
-            failure.kind === "forbidden"
-              ? copy.toasts.forbidden
-              : copy.toasts.unknown,
+            failure.kind === "conflict"
+              ? formatCopy(copy.toasts.archiveConflict, values)
+              : failure.kind === "forbidden"
+                ? copy.toasts.forbidden
+                : copy.toasts.unknown,
         ),
     });
   };

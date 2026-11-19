@@ -124,6 +124,8 @@ export const en = {
     saveFailed: "Your changes weren't saved.",
     archived: "{{workspace}} was archived.",
     archiveFailed: "{{workspace}} wasn't archived.",
+    archiveConflict:
+      "{{workspace}} changed since you opened this page. Reload and try again.",
     deleted:
       "{{workspace}} was deleted. You can restore it from Recently deleted for 30 days.",
     deleteFailed: "{{workspace}} wasn't deleted.",
@@ -265,6 +267,8 @@ export const vi: WorkspaceSettingsCopy = {
     saveFailed: "Chưa lưu được thay đổi.",
     archived: "Đã lưu trữ {{workspace}}.",
     archiveFailed: "Chưa lưu trữ được {{workspace}}.",
+    archiveConflict:
+      "{{workspace}} đã thay đổi từ khi bạn mở trang này. Hãy tải lại rồi thử lại.",
     deleted:
       "Đã xóa {{workspace}}. Bạn có thể khôi phục trong mục Đã xóa gần đây trong 30 ngày.",
     deleteFailed: "Chưa xóa được {{workspace}}.",
