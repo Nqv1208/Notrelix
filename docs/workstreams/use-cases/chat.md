@@ -50,11 +50,11 @@ The product rules are in `docs/product/chat.md` (CHT-001 to CHT-024). The capabi
 | F      | CHT-006 Threads, replies and pins                                 | 8         | 1       | 0            | 0           | 0         | 7    | 0       |
 | G      | CHT-007 Mentions, reactions, attachments and notification handoff | 9         | 0       | 0            | 0           | 1         | 8    | 0       |
 | H      | CHT-008 Access, moderation, retention, search and hardening       | 10        | 0       | 0            | 0           | 5         | 5    | 0       |
-| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 3         | 1    | 0       |
+| I      | CHT-009 Rich media                                                | 8         | 4       | 0            | 0           | 2         | 2    | 0       |
 | J      | CHT-010 Calls                                                     | 8         | 2       | 0            | 0           | 0         | 6    | 0       |
-|        | Total                                                             | 84        | 9       | 0            | 0           | 9         | 66   | 0       |
+|        | Total                                                             | 84        | 9       | 0            | 0           | 8         | 67   | 0       |
 
-The counts are those of the index below (section 2), counted by State on 2026-11-19: 66 DONE, 9 HARDENING, 9 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 and J07 (screen share and group calls, Phase 6, SYS-ADR-002). HARDENING rows: G03, H03, H04, H05, H09, H10, I01, I04 and I05; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
+The counts are those of the index below (section 2), counted by State on 2026-11-19: 67 DONE, 8 HARDENING, 9 DEFINED. DEFINED rows: A02 (no UI to create, rename or delete a category), A04 (no reorder or collapse UI), F05 (no persisted sweep and no archived chip), I02, I06, I07 and I08 (Phase 4, SYS-ADR-002, not built) and J06 and J07 (screen share and group calls, Phase 6, SYS-ADR-002). HARDENING rows: G03, H03, H04, H05, H09, H10, I01 and I05; each names in the index what it still lacks. Capabilities B, C, D and E are all DONE.
 
 ### 1.2 Gaps
 
@@ -148,7 +148,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 | UC-CHT-I01 | Send several images as a gallery | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. The live attachment frame does not carry width and height yet; image loaders do not read through signed URLs yet. |
 | UC-CHT-I02 | Show upload progress, cancel and retry | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I03 | View images in a full-screen viewer | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | DONE | Zoom (wheel, double click, pinch, + - 0 keys) and swipe built; tests chat-attachments.component.test.tsx, image-zoom-model.unit.test.ts. |
-| UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. Not in threads yet; the Ogg duration comes from the client. |
+| UC-CHT-I04 | Record and send a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | DONE | Voice in threads is built, and the server verifies the Ogg duration from the last page. Tests: chat-thread-panel.component.test.tsx, AudioMetadataReaderTests, AttachmentHandlerTests. |
 | UC-CHT-I05 | Play a voice message | I | Workspace Owner, Admin, Member | yes | yes | yes (canvas) | no | HARDENING | No real e2e, owner check or axe record. No playback speed. |
 | UC-CHT-I06 | Send a sticker or GIF | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
 | UC-CHT-I07 | Copy a message link and mark unread from here | I | Workspace Owner, Admin, Member | no | no | yes (canvas) | no | DEFINED | Phase 4; documented in SYS-ADR-002, not built. |
@@ -1268,7 +1268,7 @@ A team chat is expected to provide ordered, idempotent delivery, unread state ac
 - Rules: Product CHT-025, CHT-026, CHT-027 and SYS-ADR-002.
 - Acceptance: See docs/workstreams/specs/chat-media-and-calls.md, scenarios in section 13.
 - Evidence: BE the voice fields of the attachment upload (backend/src/Notrelix.API/Endpoints/Chat/Attachments/ChatVoiceUploadFields.cs: durationMs and waveform), ChatVoiceOptions `Chat:Voice` (MaxDurationSeconds 300, MaxBytesPerSecond, backend/src/Notrelix.Application/Features/Chat/Voice), migration 20261113124451_AddChatVoiceMessage (expand-only); an empty voice-only message is cleaned up · FE the recorder port (frontend/packages/features/chat/src/core/api/chat-voice-recorder.ts), BrowserVoiceRecorder (web/voice/browser-voice-recorder.ts), ChatVoiceRecorder (web/components/chat-voice-recorder.tsx), voice-model.ts · Design: the system design canvas (claude.ai artifact 18L4jUXGfdXh7Wn9YQvA2x), board Chat-Media · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/VoiceFileMetadataTests.cs; `frontend/packages/features/chat/src/__tests__/chat-voice-recorder.component.test.tsx`, chat-composer.voice.component.test.tsx, voice-model.unit.test.ts · Real e2e none yet
-- State: HARDENING — Built to the use case. Not done: real e2e, owner check, axe record; voice in threads; the duration of an Ogg file is taken from the client.
+- State: DONE (2026-11-19) — Built to the use case, including voice in threads: the thread composer offers the recorder and a voice reply may have no text (tests: `frontend/packages/features/chat/src/__tests__/chat-thread-panel.component.test.tsx`, ThreadHandlerTests, ChatThreadIntegrationTests). The server reads the duration of an Ogg file from its last page, so a wrong client claim cannot pass the limit (tests: AudioMetadataReaderTests, AttachmentHandlerTests An_ogg_voice_message_cannot_claim_a_short_duration_to_pass_the_limit).
 
 ### UC-CHT-I05 Play a voice message
 
