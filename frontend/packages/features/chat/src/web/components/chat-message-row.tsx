@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  Archive,
   Ban,
   Copy,
   Link2,
@@ -79,6 +80,8 @@ export interface ThreadChipView {
   readonly replyCount: number;
   readonly lastReplyAt: string | null;
   readonly participantIds?: readonly string[];
+  /** Inactive for the configured days: the chip carries an Archived mark until a reply reopens it. */
+  readonly archived?: boolean;
 }
 
 export interface ChatMessageRowProps {
@@ -992,7 +995,7 @@ function ThreadChip({
       type="button"
       onClick={onOpen}
       className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-link shadow-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
-      aria-label={`${replies}, ${copy.thread.openThread}`}
+      aria-label={`${replies}, ${copy.thread.openThread}${thread.archived ? `, ${copy.thread.archivedChip}` : ""}`}
       data-testid="chat-thread-chip"
     >
       {faces.length > 0 ? (
@@ -1019,6 +1022,15 @@ function ThreadChip({
             time: formatClock(thread.lastReplyAt, locale, timeZone),
           })}
         </time>
+      ) : null}
+      {thread.archived ? (
+        <span
+          data-testid="chat-thread-chip-archived"
+          className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 text-micro font-semibold text-muted-foreground"
+        >
+          <Archive className="size-3" aria-hidden="true" />
+          {copy.thread.archivedChip}
+        </span>
       ) : null}
     </button>
   );

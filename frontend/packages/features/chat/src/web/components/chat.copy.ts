@@ -553,6 +553,10 @@ export const en = {
     retryFile: "Retry uploading {{name}}",
     dismiss: "Dismiss",
     dismissFile: "Dismiss {{name}}",
+    cancel: "Cancel",
+    cancelFile: "Cancel uploading {{name}}",
+    refusedRemove: "Remove {{name}}",
+    previewOfPending: "Preview of {{name}}",
     failure: {
       tooLarge: "{{name}} was not uploaded: a file can be up to {{max}}.",
       blocked:
@@ -758,7 +762,7 @@ export const en = {
     followedTitle: "Threads you follow",
     followedError: "Your threads could not load.",
     openThread: "Open thread",
-    archived: "archived after 14 days without a reply",
+    archived: "archived after 7 days without a reply",
     archivedChip: "Archived",
     followedCount: "{{count}} threads",
     followedArchivedTab: "Archived",
@@ -767,9 +771,9 @@ export const en = {
     followedEmptyBody:
       "Reply in a thread or get mentioned in one and it will show up here.",
     followedArchivedEmpty: "No thread is archived.",
-    archivedMeta: "Archived · 14 days without a reply",
+    archivedMeta: "Archived · 7 days without a reply",
     archivedReopenMeta:
-      "Archived after 14 days without a reply · reply to reopen",
+      "Archived after 7 days without a reply · reply to reopen",
     reopen: "Reopen",
     rootOf: "Thread started by {{name}}",
     notFollowing: "Not following",
@@ -1652,6 +1656,10 @@ export const vi: ChatCopy = {
     retryFile: "Thử tải lên lại {{name}}",
     dismiss: "Bỏ qua",
     dismissFile: "Bỏ qua {{name}}",
+    cancel: "Hủy",
+    cancelFile: "Hủy tải {{name}} lên",
+    refusedRemove: "Bỏ {{name}}",
+    previewOfPending: "Xem trước {{name}}",
     failure: {
       tooLarge: "Chưa tải lên {{name}}: mỗi tệp tối đa {{max}}.",
       blocked: "Chưa tải lên {{name}}: không đính kèm được loại tệp này.",
@@ -1861,9 +1869,9 @@ export const vi: ChatCopy = {
     followedEmptyBody:
       "Trả lời hoặc được nhắc đến trong một luồng, nó sẽ hiện ở đây.",
     followedArchivedEmpty: "Chưa có luồng nào được lưu trữ.",
-    archivedMeta: "Đã lưu trữ · 14 ngày không có phản hồi",
+    archivedMeta: "Đã lưu trữ · 7 ngày không có phản hồi",
     archivedReopenMeta:
-      "Lưu trữ sau 14 ngày không có phản hồi · trả lời để mở lại",
+      "Lưu trữ sau 7 ngày không có phản hồi · trả lời để mở lại",
     reopen: "Mở lại",
     rootOf: "Luồng do {{name}} bắt đầu",
     notFollowing: "Tắt theo dõi",

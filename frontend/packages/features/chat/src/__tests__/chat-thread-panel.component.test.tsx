@@ -320,6 +320,80 @@ describe("an archived thread", () => {
   });
 });
 
+describe("a thread inactive for 7 days", () => {
+  it("shows the archived banner, and a reply reopens it: the banner goes at once", async () => {
+    const { hooks, wrapper, store } = setup();
+    const root = await rootOfGeneral(hooks);
+    await hooks.service.replyInThread(WORKSPACE, root.id, {
+      content: "Phản hồi đầu",
+      clientMessageId: crypto.randomUUID(),
+      alsoSendToChannel: false,
+    });
+    store.chat.threads.get(root.id)!.lastReplyAt = new Date(
+      store.getClock().now().getTime() - 8 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    render(
+      <ChatThreadPanel
+        hooks={hooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    expect(
+      (await screen.findByTestId("chat-thread-archived")).textContent,
+    ).toBe(en.thread.archivedBanner);
+    fireEvent.change(
+      screen.getByRole("textbox", { name: en.thread.reopenLabel }),
+      { target: { value: "Mở lại nhé" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.getByText("Mở lại nhé")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.queryByTestId("chat-thread-archived")).toBeNull(),
+    );
+    expect(
+      screen.getByRole("textbox", { name: en.thread.composerLabel }),
+    ).toBeTruthy();
+  });
+
+  it("shows no banner on a thread with a recent reply", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    await hooks.service.replyInThread(WORKSPACE, root.id, {
+      content: "Phản hồi mới",
+      clientMessageId: crypto.randomUUID(),
+      alsoSendToChannel: false,
+    });
+    render(
+      <ChatThreadPanel
+        hooks={hooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    await screen.findByTestId("chat-thread-replies");
+    expect(screen.queryByTestId("chat-thread-archived")).toBeNull();
+  });
+});
+
 describe("threads I follow", () => {
   it("lists the followed threads through the hook (the empty state when none)", async () => {
     const { hooks, wrapper } = setup();

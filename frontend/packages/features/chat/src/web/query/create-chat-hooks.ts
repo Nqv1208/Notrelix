@@ -70,6 +70,7 @@ import {
 import { applyStoredReply, seedThreadCount } from "./thread-writes";
 import {
   detachFromCachedMessage,
+  cancelUpload,
   dismissUpload,
   enqueueUploads,
   retryUpload,
@@ -1426,6 +1427,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     return {
       retry: (uploadId: string) => retryUpload(ctx, uploadId),
       dismiss: (uploadId: string) => dismissUpload(ctx, uploadId),
+      cancel: (uploadId: string) => cancelUpload(ctx, uploadId),
       remove,
     };
   }

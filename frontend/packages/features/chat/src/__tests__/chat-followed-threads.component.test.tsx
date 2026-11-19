@@ -31,7 +31,7 @@ function setup() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  return { hooks, wrapper };
+  return { hooks, wrapper, store };
 }
 
 function panel(hooks: ReturnType<typeof setup>["hooks"], onOpen = vi.fn()) {
@@ -91,5 +91,68 @@ describe("FollowedThreadsPanel", () => {
     // A new follow starts read, so no unread badge shows.
     expect(screen.queryByTestId("chat-followed-unread")).toBeNull();
     expect(row.getAttribute("data-unread")).toBe("false");
+  });
+
+  it("marks a thread that was inactive for 7 days with the Archived chip, dimmed, and the Archived tab lists it with Reopen", async () => {
+    const { hooks, wrapper, store } = setup();
+    const channels = await hooks.service.listChannels(WORKSPACE);
+    const general = channels.find((c) => c.name === "general")!;
+    const page = await hooks.service.listMessages(
+      WORKSPACE,
+      general.id,
+      {},
+      50,
+    );
+    const root = flattenPages({ pageParams: [{}], pages: [page] }).find(
+      (m) => m.kind === "user" && !m.deleted && m.threadRootId == null,
+    )!;
+    await hooks.service.replyInThread(WORKSPACE, root.id, {
+      content: "Phản hồi cũ",
+      clientMessageId: crypto.randomUUID(),
+      alsoSendToChannel: false,
+    });
+    await hooks.service.setThreadFollow(WORKSPACE, root.id, {
+      following: true,
+      muted: false,
+    });
+    store.chat.threads.get(root.id)!.lastReplyAt = new Date(
+      store.getClock().now().getTime() - 8 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const onOpen = vi.fn();
+    render(panel(hooks, onOpen), { wrapper });
+    const row = await screen.findByTestId("chat-followed-item");
+    expect(row.textContent).toContain(en.thread.archivedChip);
+    fireEvent.click(screen.getByRole("tab", { name: /Archived/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: en.thread.reopen }),
+    );
+    expect(onOpen).toHaveBeenCalledWith(root.id);
+  });
+
+  it("shows no Archived chip on a thread with a recent reply", async () => {
+    const { hooks, wrapper } = setup();
+    const channels = await hooks.service.listChannels(WORKSPACE);
+    const general = channels.find((c) => c.name === "general")!;
+    const page = await hooks.service.listMessages(
+      WORKSPACE,
+      general.id,
+      {},
+      50,
+    );
+    const root = flattenPages({ pageParams: [{}], pages: [page] }).find(
+      (m) => m.kind === "user" && !m.deleted && m.threadRootId == null,
+    )!;
+    await hooks.service.replyInThread(WORKSPACE, root.id, {
+      content: "Phản hồi mới",
+      clientMessageId: crypto.randomUUID(),
+      alsoSendToChannel: false,
+    });
+    await hooks.service.setThreadFollow(WORKSPACE, root.id, {
+      following: true,
+      muted: false,
+    });
+    render(panel(hooks), { wrapper });
+    const row = await screen.findByTestId("chat-followed-item");
+    expect(row.textContent).not.toContain(en.thread.archivedChip);
   });
 });

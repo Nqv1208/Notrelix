@@ -33,7 +33,21 @@ export const CHAT_LIMITS = {
   attachmentsPerMessageMax: 10,
   /** The size cap of one file in bytes (AttachmentUploadOptions.MaxFileSizeBytes, 100 MB). */
   attachmentMaxBytes: 100 * 1024 * 1024,
+  /** Days without a reply after which a thread reads as archived (ChatLimits.ThreadInactivityDays). */
+  threadInactivityDays: 7,
 } as const;
+
+/** The derived archive rule of a thread, as the server applies it: inactive for the configured days. */
+export function isThreadInactive(
+  lastReplyAt: string | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  if (!lastReplyAt) return false;
+  return (
+    now - Date.parse(lastReplyAt) >=
+    CHAT_LIMITS.threadInactivityDays * 24 * 60 * 60 * 1000
+  );
+}
 
 export type ChatChannelKind = "channel_public" | "channel_private";
 export type ChatMemberRole = "manager" | "member";

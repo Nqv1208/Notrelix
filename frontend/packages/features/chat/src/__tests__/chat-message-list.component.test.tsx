@@ -424,6 +424,59 @@ describe("ChatMessageList: the thread chip of a root", () => {
   });
 });
 
+describe("ChatMessageList: the Archived mark on the thread chip", () => {
+  const daysAgo = (days: number) =>
+    new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  it("marks a thread inactive for 7 days, and not one with a reply inside the week", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          onOpenThread: vi.fn(),
+          messages: [
+            message(1, {
+              threadReplyCount: 2,
+              threadLastReplyAt: daysAgo(8),
+            }),
+            message(2, {
+              threadReplyCount: 1,
+              threadLastReplyAt: daysAgo(2),
+            }),
+          ],
+        })}
+      />,
+    );
+    const chips = screen.getAllByTestId("chat-thread-chip");
+    expect(chips[0]!.textContent).toContain(en.thread.archivedChip);
+    expect(chips[0]!.getAttribute("aria-label")).toContain(
+      en.thread.archivedChip,
+    );
+    expect(chips[1]!.textContent).not.toContain(en.thread.archivedChip);
+  });
+
+  it("drops the mark when a live reply moves the last reply time (a reply reopens the thread)", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          onOpenThread: vi.fn(),
+          messages: [
+            message(1, {
+              threadReplyCount: 2,
+              threadLastReplyAt: daysAgo(9),
+            }),
+          ],
+          threadCounts: {
+            "m-1": { replyCount: 3, lastReplyAt: new Date().toISOString() },
+          },
+        })}
+      />,
+    );
+    const chip = screen.getByTestId("chat-thread-chip");
+    expect(chip.textContent).toContain("3 replies");
+    expect(chip.textContent).not.toContain(en.thread.archivedChip);
+  });
+});
+
 describe("ChatMessageList jump to latest", () => {
   function scrolledUp(top: number) {
     const log = screen.getByRole("log");
