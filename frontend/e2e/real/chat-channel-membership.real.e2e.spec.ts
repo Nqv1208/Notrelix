@@ -89,10 +89,11 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
   if ((await membersSection.getAttribute("aria-expanded")) !== "true")
     await membersSection.click();
   expect(await serious(page)).toEqual([]);
-  await page.getByRole("button", { name: /^Remove / }).click();
+  await page.getByRole("button", { name: /^Member actions for / }).click();
+  await page.getByRole("menuitem", { name: /^Remove / }).click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Remove" })
+    .getByRole("button", { name: "Remove from channel" })
     .click();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect
@@ -126,11 +127,11 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
   expect(await serious(admin)).toEqual([]);
   await admin
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Leave" })
+    .getByRole("button", { name: "Leave channel" })
     .click();
-  await expect(admin.getByRole("button", { name: "Join channel" })).toBeVisible(
-    { timeout: 20_000 },
-  );
+  await expect(admin.getByText(/^You left #/)).toBeVisible({
+    timeout: 20_000,
+  });
   expect(
     (await apiRead<Channel[]>(admin, `${channelsPath}?browse=true`)).map(
       (c) => c.id,
@@ -142,13 +143,13 @@ test("a manager removes a member, a member leaves, the last manager cannot, and 
   await page.goto(`${ws}/chat/${pub.id}`);
   await page.getByRole("button", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Leave channel" }).click();
+  await expect(
+    page.getByRole("alertdialog").getByText(/^Cannot leave #/),
+  ).toBeVisible({ timeout: 20_000 });
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Leave" })
+    .getByRole("button", { name: "Close" })
     .click();
-  await expect(
-    page.getByText("You are the last manager of this channel"),
-  ).toBeVisible({ timeout: 20_000 });
   expect(
     (await apiRead<Detail>(page, `${channelsPath}/${pub.id}`)).channel.isMember,
   ).toBe(true);

@@ -232,7 +232,7 @@ test("a manager invites a Workspace admin into a private channel from the member
   // The manager invites the admin from the Members section of the channel info.
   await page.goto(`${ws}/chat/${priv.id}`);
   await page.getByRole("button", { name: "Channel info" }).click();
-  await page.getByRole("button", { name: "Invite people" }).click();
+  await page.getByRole("button", { name: "Invite more people" }).click();
   const dialog = page.getByRole("dialog");
   await expect(
     dialog.getByText(`Invite people to #${privateName}`),
