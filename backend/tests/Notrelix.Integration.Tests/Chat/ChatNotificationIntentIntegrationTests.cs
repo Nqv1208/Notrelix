@@ -114,6 +114,59 @@ public sealed class ChatNotificationIntentIntegrationTests : IAsyncLifetime
         });
     }
 
+    private long _nextSequence = 10;
+
+    private async Task<Message> SeedRemovedAsync(Guid author, Guid removedBy)
+    {
+        var message = Message.CreateUserMessage(_accountId, _workspaceId, _channel.Id, _nextSequence++, author, "oops", $"c-{Guid.NewGuid():N}", null, Now);
+        if (removedBy == author)
+            message.Delete(removedBy, Now.AddMinutes(1));
+        else
+            message.DeleteAsModerator(removedBy, Now.AddMinutes(1));
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.ChatMessages.Add(message);
+        await seed.SaveChangesAsync();
+        return message;
+    }
+
+    private async Task<ChatNotificationDelivery> HandOffRemovalAsync(Message message)
+    {
+        await using var context = _db.CreateOwnerContext(WorkspaceTenant());
+        var handoff = new ChatNotificationHandoff(
+            context, new PostgresChatNotificationIntents(context, NullLogger<PostgresChatNotificationIntents>.Instance),
+            NullLogger<ChatNotificationHandoff>.Instance);
+        return await handoff.HandOffRemovalAsync(_workspaceId, message.SpaceId, message.Id, Guid.NewGuid(), Now, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task The_author_of_a_message_a_moderator_removed_gets_one_notice_with_no_text()
+    {
+        var removed = await SeedRemovedAsync(_ana, removedBy: _author);
+
+        (await HandOffRemovalAsync(removed)).Delivered.Should().Be(1);
+        (await HandOffRemovalAsync(removed)).Should().Be(new ChatNotificationDelivery(0, 1, 0));
+
+        (await InboxAsync()).Should().Equal([(_ana, NotificationTypes.ChatMessageRemovedProducedType)]);
+        await using var read = _db.CreateOwnerContext(SystemTenant());
+        (await read.NotificationItems.AsNoTracking().SingleAsync()).Body.Should().BeNull("the removed text is never copied");
+    }
+
+    [Fact]
+    public async Task Nobody_is_told_when_the_author_deleted_their_own_message_or_left_before_the_notice()
+    {
+        (await HandOffRemovalAsync(await SeedRemovedAsync(_ana, removedBy: _ana))).Should().Be(ChatNotificationDelivery.None);
+
+        var removed = await SeedRemovedAsync(_bao, removedBy: _author);
+        await using (var leave = _db.CreateOwnerContext(SystemTenant()))
+        {
+            (await leave.ChatMemberships.SingleAsync(m => m.SpaceId == _channel.Id && m.UserId == _bao)).EndWorkspaceExit(Now.AddMinutes(2));
+            await leave.SaveChangesAsync();
+        }
+
+        (await HandOffRemovalAsync(removed)).Should().Be(ChatNotificationDelivery.None);
+        (await InboxAsync()).Should().BeEmpty();
+    }
+
     [Fact]
     public async Task A_redelivered_fact_adds_nothing_because_the_deduplication_index_holds()
     {

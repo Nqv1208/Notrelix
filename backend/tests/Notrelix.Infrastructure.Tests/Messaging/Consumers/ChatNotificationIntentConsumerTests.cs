@@ -29,4 +29,25 @@ public class ChatNotificationIntentConsumerTests
         db.VerifyGet(d => d.ChatMessages, Times.Never);
         intents.VerifyNoOtherCalls();
     }
+
+    [Fact]
+    public async Task A_delete_by_the_author_is_not_a_removal_and_reads_nothing()
+    {
+        var db = new Mock<IChatDbContext>();
+        var intents = new Mock<IChatNotificationIntents>();
+        var consumer = new ChatMessageRemovedNotificationConsumer(
+            new ChatNotificationHandoff(db.Object, intents.Object, NullLogger<ChatNotificationHandoff>.Instance),
+            NullLogger<ChatMessageRemovedNotificationConsumer>.Instance);
+        var author = Guid.NewGuid();
+        var message = new ChatMessageDeletedIntegrationEvent(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 1, author, author, 2, Guid.NewGuid());
+        var context = new Mock<ConsumeContext<ChatMessageDeletedIntegrationEvent>>();
+        context.SetupGet(c => c.Message).Returns(message);
+        context.SetupGet(c => c.CancellationToken).Returns(CancellationToken.None);
+
+        await consumer.Consume(context.Object);
+
+        db.VerifyGet(d => d.ChatMessages, Times.Never);
+        intents.VerifyNoOtherCalls();
+    }
 }

@@ -111,6 +111,7 @@ const CHAT_NOTIFICATION_TYPES: Readonly<Record<string, string>> = {
   chat_direct: "chat.direct-message",
   chat_thread: "chat.thread-reply",
   chat_broadcast: "chat.broadcast",
+  chat_removed: "chat.message-removed",
 };
 
 export const workFeedOperations = [
