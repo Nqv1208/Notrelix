@@ -157,6 +157,9 @@ export const endpoints = {
       `/workspaces/${workspaceId}/teams/${teamId}/archive`,
     teamUnarchive: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/unarchive`,
+    // Workspaces.Teams.GetDeletedTeams (Owner or Admin): the Teams deleted from the Workspace, newest first.
+    teamsDeleted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/teams/deleted`,
     // Workspaces.Teams.RestoreTeam (POST, no expected version; DELETE on `team` takes expectedVersion in the query).
     teamRestore: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/restore`,

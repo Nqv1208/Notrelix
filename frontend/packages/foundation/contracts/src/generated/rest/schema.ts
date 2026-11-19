@@ -7901,6 +7901,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/teams/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the deleted teams of a workspace
+         * @description For Owners and Admins only (ManageTeams, the right to restore): a Member or Guest is refused with 403 and a person outside the workspace gets 404. Newest deletion first, at most 200. Restore a Team with POST .../teams/{teamId}/restore; its members return with it.
+         */
+        get: operations["Workspaces.Teams.GetDeletedTeams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/teams-ext": {
         parameters: {
             query?: never;
@@ -12499,6 +12519,19 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
             accessLevel?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: uuid */
+            deletedBy?: string | null;
+            deletedByName?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto": {
             /** Format: uuid */
@@ -32923,6 +32956,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Workspaces.Teams.GetDeletedTeams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto"][];
+                };
             };
         };
     };

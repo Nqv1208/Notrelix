@@ -13,6 +13,7 @@ public static class MapTeamEndpoints
             .WithOpenApi();
 
         group.MapGetWorkspaceTeams();
+        group.MapGetDeletedTeams();
         group.MapCreateTeam();
 
         var extGroup = app

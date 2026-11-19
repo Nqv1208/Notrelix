@@ -1,5 +1,4 @@
 import { act } from "react";
-import { fireEvent } from "@notrelix/testing";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -175,14 +174,16 @@ describe("Invite with a Team entry the producer refuses", () => {
     );
     expect(picker, "the entry picker").not.toBeNull();
     await act(async () => {
-      fireEvent.keyDown(picker!, { key: "Enter" });
+      picker!.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
     });
     await act(async () => {
       const option = Array.from(
         document.body.querySelectorAll<HTMLElement>('[role="option"]'),
       ).find((candidate) => candidate.textContent?.includes("ERP Engineers"));
       expect(option, "the Team option").toBeDefined();
-      fireEvent.click(option!);
+      option!.click();
     });
     await act(async () => {
       setText(host!.querySelector("textarea")!, "an.do@example.com");

@@ -764,6 +764,20 @@ export const spacesOperations = [
     },
   }),
 
+  // Registered before `teams/:teamId`, so "deleted" is never read as a Team id. The mock deletes no Team, so none is listed.
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.teams.deleted",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Teams.GetDeletedTeams",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/teams/deleted",
+    async handle({ params, store }) {
+      return guard(store, params.workspaceId) ?? ok([]);
+    },
+  }),
+
   defineMockOperation<{ workspaceId: string; teamId: string }, never, unknown>({
     id: "workspace.teams.get",
     contract: { kind: "openapi", operationId: "Workspaces.Teams.GetTeam" },

@@ -117,15 +117,16 @@ async function flush() {
 }
 
 function mount(locale: "en" | "vi" = "en") {
-  queryClient = new QueryClient({
+  const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  queryClient = client;
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
   act(() => {
     root?.render(
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={client}>
         <AccountScopeProvider accountId="acc-test">
           <I18nProvider catalogs={webCatalogs} initialLocale={locale}>
             <ThemeProvider target={null}>

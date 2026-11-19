@@ -49,6 +49,8 @@ export function TeamsPage() {
   const mutations = hooks.useTeamMutations(workspaceId);
   const viewer = useWorkspaceViewer(workspaceId);
   const canManage = isWorkspaceAdmin(viewer.role);
+  // Only an Owner or Admin may read what was deleted; the producer refuses everyone else.
+  const deletedTeams = hooks.useDeletedTeams(workspaceId, canManage);
   const pending = useIdSet();
 
   const revision = (teams.data ?? [])
@@ -201,6 +203,20 @@ export function TeamsPage() {
         )
       }
       onRetry={() => void teams.refetch()}
+      deleted={
+        canManage ? sectionState(deletedTeams, deletedTeams.data) : undefined
+      }
+      onRestoreDeleted={(teamId) =>
+        write(
+          teamId,
+          () => mutations.restore.mutateAsync({ teamId }),
+          formatCopy(copy.toasts.restored, {
+            name:
+              deletedTeams.data?.find((team) => team.id === teamId)?.name ?? "",
+          }),
+        )
+      }
+      onRetryDeleted={() => void deletedTeams.refetch()}
     />
   );
 }
