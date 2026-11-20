@@ -25,6 +25,56 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Accounts.Security.Commands.SetAccountMfaPolicy.SetAccountMfaPolicyCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Security.Commands.SetAccountMfaPolicy.SetAccountMfaPolicyCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Security.Queries.GetAccountSecurityPolicy.GetAccountSecurityPolicyQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Security.Queries.GetAccountSecurityPolicy.GetAccountSecurityPolicyQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard.ArchiveDashboardCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -5072,6 +5122,56 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Identity.Mfa.Commands.RegenerateRecoveryCodes.RegenerateRecoveryCodesCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Identity.Mfa.Commands.RequiredEnrollment.CompleteRequiredMfaEnrollmentCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Mfa.Commands.RequiredEnrollment.CompleteRequiredMfaEnrollmentCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Identity.Mfa.Commands.RequiredEnrollment.StartRequiredMfaEnrollmentCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Mfa.Commands.RequiredEnrollment.StartRequiredMfaEnrollmentCommandHandler"
     ]
   },
   {

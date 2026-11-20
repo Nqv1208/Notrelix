@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Accounts.Public.Security;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
@@ -28,6 +29,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     private readonly IPasswordHasher _passwordHasher;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
+    private readonly IAccountSecurityPolicyFacts _securityPolicy;
     private readonly ILoginThrottle _throttle;
     private readonly ISecurityActivityRecorder _activity;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -39,6 +41,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         IPasswordHasher passwordHasher,
         IAuthSessionIssuer sessionIssuer,
         IMfaChallengeStore challengeStore,
+        IAccountSecurityPolicyFacts securityPolicy,
         ILoginThrottle throttle,
         ISecurityActivityRecorder activity,
         IDateTimeProvider dateTimeProvider,
@@ -50,6 +53,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         _passwordHasher = passwordHasher;
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
+        _securityPolicy = securityPolicy;
         _throttle = throttle;
         _activity = activity;
         _dateTimeProvider = dateTimeProvider;
@@ -123,6 +127,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
                 MfaMethod = nameof(MfaMethodType.AuthenticatorApp),
                 MfaExpiresAt = payload.ExpiresAt.UtcDateTime
             });
+        }
+
+        // An Account that requires MFA does not admit a person without a factor: no session, only the step
+        // that enrols one.
+        if (await _securityPolicy.IsMfaRequiredForPersonAsync(user.Id, cancellationToken))
+        {
+            _logger.LogInformation("Login requires MFA enrollment for {UserId}", user.Id);
+            return Result<AuthResult>.Success(
+                await RequiredMfaEnrollment.ChallengeAsync(_challengeStore, user.Id, now, cancellationToken));
         }
 
         user.RecordLogin(now);

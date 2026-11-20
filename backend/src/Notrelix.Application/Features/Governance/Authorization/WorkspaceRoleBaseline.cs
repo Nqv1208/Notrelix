@@ -44,6 +44,7 @@ public static class WorkspaceRoleBaseline
         // workspace-request default (never requested against a workspace today).
         [PermissionAction.CreateWorkspace] = new(A, D, D, D),
         [PermissionAction.ManageAccount] = new(A, D, D, D),
+        [PermissionAction.ManageAccountSecurity] = new(A, D, D, D),
 
         // Workspace shell and membership.
         [PermissionAction.ViewWorkspace] = new(A, A, A, A),

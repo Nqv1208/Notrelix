@@ -23,7 +23,6 @@ public static class UpdateWorkspaceSettingsEndpoint
         var result = await sender.Send(new UpdateWorkspaceSettingsCommand(
             workspaceId,
             request.AllowPublicSharing,
-            request.EnforceMfa,
             request.AllowGuestInvites,
             request.DefaultMemberRole,
             request.InvitationExpiryDays,

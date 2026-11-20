@@ -18,9 +18,12 @@ public class DisableMfaTests : IdentityHandlerTestBase
             .ReturnsAsync(Result.Success());
     }
 
+    private readonly Mock<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts> _policy = new();
+
     private DisableMfaCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
         RequestContextMock.Object,
+        _policy.Object,
         JwtBlacklistMock.Object,
         StepUpServiceMock.Object,
         DateTimeProviderMock.Object,
@@ -71,6 +74,26 @@ public class DisableMfaTests : IdentityHandlerTestBase
         result.TypedErrors.Should().ContainSingle(e =>
             e.Code == "identity.security.step-up-required" && e.Type == ApplicationErrorType.PreconditionFailed);
         method.Status.Should().Be(MfaMethodStatus.Active);
+        NoteActivity(Times.Never());
+    }
+
+    [Fact]
+    public async Task WhenAnAccountRequiresMfa_TurningItOffIsRefused_TheProofIsKept_AndTheFactorStays()
+    {
+        var method = ActiveMethod(TestUserId);
+        var session = CreateSession();
+        SetupUserMfaMethods(method);
+        SetupSessions(session);
+        _policy.Setup(p => p.IsMfaRequiredForPersonAsync(TestUserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await CreateSut().Handle(Disable(), CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e =>
+            e.Code == "identity.mfa.required-by-account" && e.Type == ApplicationErrorType.Conflict);
+        method.Status.Should().Be(MfaMethodStatus.Active);
+        session.Status.Should().Be(SessionStatus.Active);
+        StepUpServiceMock.Verify(s => s.ConsumeAsync(
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<CancellationToken>()), Times.Never);
         NoteActivity(Times.Never());
     }
 

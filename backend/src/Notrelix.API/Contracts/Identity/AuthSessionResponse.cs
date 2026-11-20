@@ -27,6 +27,18 @@ public sealed record AuthSessionResponse
 
     public DateTime? MfaExpiresAt { get; init; }
 
+    /// <summary>
+    /// True when the person's Account requires MFA and they have no factor: no session exists yet and the
+    /// client must run the required-enrollment operations with <see cref="MfaEnrollmentToken"/>.
+    /// </summary>
+    public bool MfaEnrollmentRequired { get; init; }
+
+    /// <summary>Single-use token accepted only by the required-enrollment operations.</summary>
+    public string? MfaEnrollmentToken { get; init; }
+
+    /// <summary>One-time recovery codes, present only on the answer that finished required enrollment.</summary>
+    public IReadOnlyList<string>? RecoveryCodes { get; init; }
+
     public static AuthSessionResponse From(AuthResult result) => new()
     {
         ExpiresAt = result.ExpiresAt,
@@ -35,6 +47,9 @@ public sealed record AuthSessionResponse
         MfaRequired = result.MfaRequired,
         MfaChallengeToken = result.MfaChallengeToken,
         MfaMethod = result.MfaMethod,
-        MfaExpiresAt = result.MfaExpiresAt
+        MfaExpiresAt = result.MfaExpiresAt,
+        MfaEnrollmentRequired = result.MfaEnrollmentRequired,
+        MfaEnrollmentToken = result.MfaEnrollmentToken,
+        RecoveryCodes = result.RecoveryCodes
     };
 }

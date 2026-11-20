@@ -11,6 +11,7 @@ public static class MapAccountEndpoints
             .WithTags("Accounts");
 
         group.MapRenameAccount();
+        group.MapAccountSecurityPolicy();
 
         return app;
     }

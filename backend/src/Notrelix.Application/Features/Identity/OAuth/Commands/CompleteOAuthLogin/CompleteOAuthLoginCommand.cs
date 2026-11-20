@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
+using Notrelix.Application.Features.Accounts.Public.Security;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Registration.Ports;
@@ -38,6 +39,7 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IAccountProvisioningActions _provisioningActions;
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
+    private readonly IAccountSecurityPolicyFacts _securityPolicy;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
@@ -54,6 +56,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         IAccountProvisioningActions provisioningActions,
         IAuthSessionIssuer sessionIssuer,
         IMfaChallengeStore challengeStore,
+        IAccountSecurityPolicyFacts securityPolicy,
         IPasswordHasher passwordHasher,
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector,
@@ -72,6 +75,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _provisioningActions = provisioningActions;
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
+        _securityPolicy = securityPolicy;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
@@ -208,6 +212,13 @@ public sealed class CompleteOAuthLoginCommandHandler
                 MfaMethod = nameof(MfaMethodType.AuthenticatorApp),
                 MfaExpiresAt = payload.ExpiresAt.UtcDateTime
             });
+        }
+
+        if (await _securityPolicy.IsMfaRequiredForPersonAsync(user.Id, cancellationToken))
+        {
+            _logger.LogInformation("OAuth login requires MFA enrollment for {UserId}", user.Id);
+            return Result<AuthResult>.Success(
+                await RequiredMfaEnrollment.ChallengeAsync(_challengeStore, user.Id, now, cancellationToken));
         }
 
         user.RecordLogin(now);

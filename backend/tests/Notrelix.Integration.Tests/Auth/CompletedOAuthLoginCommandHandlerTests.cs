@@ -81,6 +81,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             provisioningService ?? new AccountProvisioningService(context, new AccountGrantProjectionServiceAdapter(new AccessGrantProjectionService(context))),
             sessionIssuer.Object,
             Mock.Of<IMfaChallengeStore>(),
+            new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context),
             passwordHasher.Object,
             dateTimeProvider.Object,
             eventCollector.Object,

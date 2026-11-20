@@ -62,7 +62,6 @@ describe("workspace settings service", () => {
 
     expect(api.put).toHaveBeenCalledWith("/workspaces/w1/settings", {
       allowPublicSharing: true,
-      enforceMfa: false,
       allowGuestInvites: true,
       defaultMemberRole: "Guest",
       invitationExpiryDays: 14,

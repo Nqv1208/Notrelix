@@ -48,8 +48,8 @@ public sealed class WorkspaceRoleBaselineTests
         var all = Enum.GetValues<PermissionAction>();
 
         WorkspaceRoleBaseline.ClassifiedActions.Should().BeEquivalentTo(all, "a new PermissionAction must be classified in the baseline table");
-        // 42 workspace actions before the Chat slice, plus the ten chat.* actions added in S1.1.
-        all.Should().HaveCount(53);
+        // 42 workspace actions before the Chat slice, plus the ten chat.* actions added in S1.1, plus ManageAccountSecurity.
+        all.Should().HaveCount(54);
     }
 
     [Theory]

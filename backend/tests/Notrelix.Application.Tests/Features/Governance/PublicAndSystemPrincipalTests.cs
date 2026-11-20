@@ -65,10 +65,10 @@ public sealed class PublicAndSystemPrincipalTests
         // added here on purpose (it is public, or it is raised by the system itself).
         requests.Select(t => t.Name).Order().Should().Equal(
             "AcceptInvitationWithRegistrationCommand", "CompleteMfaChallengeCommand", "CompleteOAuthLoginCommand",
-            "CompleteOAuthStepUpCommand", "ConfirmEmailCommand", "DeclineInvitationByTokenCommand",
+            "CompleteOAuthStepUpCommand", "CompleteRequiredMfaEnrollmentCommand", "ConfirmEmailCommand", "DeclineInvitationByTokenCommand",
             "ForgotPasswordCommand", "GetInvitationByTokenQuery", "HandleCalendarWebhookCommand", "HandleCallMediaWebhookCommand",
             "IdentifySignInQuery", "LoginCommand", "ProvisionPersonalWorkspaceCommand", "RefreshTokenCommand",
             "RegisterCommand", "ResendEmailVerificationCommand", "ResetPasswordCommand", "ResolveSlugQuery",
-            "SendWelcomeEmailCommand", "StartOAuthLoginCommand");
+            "SendWelcomeEmailCommand", "StartOAuthLoginCommand", "StartRequiredMfaEnrollmentCommand");
     }
 }
