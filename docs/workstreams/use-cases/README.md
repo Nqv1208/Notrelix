@@ -140,7 +140,7 @@ These block use cases in several contexts. They are security-principal, tenant o
 | 6 | API token scope vocabulary and whether a token may call person-level routes | UC-IDN-L05 |
 | 7 | Account suspension effect on its workspaces. Decided 2026-11-01: a suspended account is read-only end to end; automation runs and outbound webhooks are skipped and recorded with reason account.suspended, public forms and share-link writes refuse, reads stay open, nothing is deleted. Not built | none now; was UC-WSP-D06, now DEFINED |
 
-Also needs the owner: the plan tier list (artboard shows four tiers, catalog has three) and where job title lives (owner decision of 2026-10-27 puts it in the Identity profile; product docs and code keep it in Workspaces).
+Also needs the owner: the plan tier list (artboard shows four tiers, catalog has three). Job title is closed by lead decision 2026-11-20: it stays a Workspaces fact as built (UC-WSP-F07 and UC-WSP-F08 are DONE) and owner decision 48 is superseded by the shipped model.
 
 Architecture decisions that wait for a real consumer: ordered message delivery (UC-PLT-H04), live co-editing (UC-DCT-K03, UC-COL-E04), integration execution principal (UC-COL-H07).
 
