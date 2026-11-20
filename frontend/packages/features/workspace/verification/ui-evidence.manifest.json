@@ -859,7 +859,8 @@
       "pureEntry": "src/web/home/workspace-home-surface.tsx",
       "coveredSources": [
         "src/web/home/work-row-parts.tsx",
-        "src/web/home/workspace-figures.tsx"
+        "src/web/home/workspace-figures.tsx",
+        "src/web/home/workspace-activity.tsx"
       ],
       "stories": [
         {

@@ -141,6 +141,10 @@ export {
 export { useWorkspaceHomeCopy } from "./home/use-workspace-home-copy";
 export * from "./home/home-models";
 export {
+  describeActivity,
+  type HomeActivityView,
+} from "./home/workspace-activity";
+export {
   WorkspaceHomeSurface,
   type HomeAgenda,
   type HomeAgendaEntry,

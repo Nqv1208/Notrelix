@@ -31180,6 +31180,7 @@
           "Workspaces.Activity"
         ],
         "summary": "Get workspace activity log",
+        "description": "Cursor-paginated (default 20, max 50), newest first. A Guest is forbidden. Facts about a Board or Page the caller cannot read are left out. Pass nextCursor back as cursor for the next page.",
         "operationId": "Workspaces.Activity.GetWorkspaceActivity",
         "parameters": [
           {
@@ -31192,21 +31193,18 @@
             }
           },
           {
-            "name": "page",
+            "name": "cursor",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 1
+              "type": "string"
             }
           },
           {
-            "name": "pageSize",
+            "name": "limit",
             "in": "query",
             "schema": {
               "type": "integer",
-              "format": "int32",
-              "default": 20
+              "format": "int32"
             }
           }
         ],
@@ -31216,7 +31214,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/System.Void"
+                  "$ref": "#/components/schemas/Notrelix.Application.Common.Models.CursorPageOfWorkspaceActivityEntryDto"
                 }
               }
             }
@@ -40901,6 +40899,27 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.Application.Common.Models.CursorPageOfWorkspaceActivityEntryDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.WorkspaceActivityEntryDto"
+            },
+            "nullable": true
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto": {
         "type": "object",
         "properties": {
@@ -49359,6 +49378,53 @@
               "$ref": "#/components/schemas/Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.WorkspaceActivityEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorAvatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "subjectType": {
+            "type": "string",
+            "nullable": true
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectName": {
+            "type": "string",
+            "nullable": true
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
