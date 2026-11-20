@@ -20,6 +20,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   Badge,
   Button,
   DropdownMenu,
@@ -655,6 +659,13 @@ function InvitationEntries({
  * Each address of a batch invitation with what became of it (`Wsp-Var-Invites-Bulk`): the batch is not
  * all-or-nothing, so some are sent while others are skipped or refused, each for its own reason.
  */
+// The rule codes a refused initial entry answers with (a Team or Space that is not active, a Guest naming a Team).
+const ENTRY_REFUSAL_CODES = new Set([
+  "Workspaces_Invitation_EntryTargetNotActive",
+  "Workspaces_Invitation_GuestEntryRoleTooPrivileged",
+  "Workspaces_Invitation_InitialEntryInvalid",
+]);
+
 function InviteResultsDialog({
   copy,
   results,
@@ -678,7 +689,9 @@ function InviteResultsDialog({
             ? labels.invalid
             : row.code === "workspace.guest_invites_off"
               ? labels.guestInvitesOff
-              : labels.refused;
+              : row.code && ENTRY_REFUSAL_CODES.has(row.code)
+                ? labels.entryRefused
+                : labels.refused;
   return (
     <AlertDialog
       open={results !== null}
@@ -733,6 +746,7 @@ function InviteForm({
   onInviteMany,
   entryOptions,
   entryRefusals,
+  onCancel,
 }: Pick<
   WorkspaceMembersSurfaceProps,
   | "copy"
@@ -743,7 +757,7 @@ function InviteForm({
   | "onInviteMany"
   | "entryOptions"
   | "entryRefusals"
->) {
+> & { onCancel: () => void }) {
   const [email, setEmail] = React.useState("");
   const [role, setRole] =
     React.useState<CreateWorkspaceInvitationInput["role"]>("member");
@@ -815,14 +829,17 @@ function InviteForm({
           parsed.valid.map((address) => withEntries({ email: address, role })),
         );
       }}
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface-panel p-4"
+      className="flex flex-col gap-4"
       aria-label={copy.invitations.formTitle}
     >
-      <h2 className="text-subheading text-foreground">
-        {copy.invitations.formTitle}
-      </h2>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <Field data-invalid={message ? true : undefined} className="sm:flex-1">
+      <div className="flex flex-col gap-1">
+        <DialogTitle>{copy.invitations.formTitle}</DialogTitle>
+        <DialogDescription>
+          {copy.invitations.dialogDescription}
+        </DialogDescription>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Field data-invalid={message ? true : undefined}>
           <FieldLabel htmlFor={emailId}>
             {copy.invitations.emailLabel}
           </FieldLabel>
@@ -860,7 +877,7 @@ function InviteForm({
             </p>
           ) : null}
         </Field>
-        <Field className="sm:w-40">
+        <Field className="sm:w-48">
           <FieldLabel htmlFor={roleId}>{copy.invitations.roleLabel}</FieldLabel>
           <Select
             value={role}
@@ -882,14 +899,6 @@ function InviteForm({
             </SelectContent>
           </Select>
         </Field>
-        <Button
-          type="submit"
-          disabled={inviting}
-          className="hover:bg-primary/90 max-md:h-touch sm:mt-8"
-        >
-          <Mail aria-hidden="true" />
-          {inviting ? copy.invitations.sending : copy.invitations.send}
-        </Button>
       </div>
       {entryOptions ? (
         <InvitationEntries
@@ -901,6 +910,24 @@ function InviteForm({
           onChange={setEntries}
         />
       ) : null}
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="max-md:h-touch"
+          onClick={onCancel}
+        >
+          {copy.invitations.cancel}
+        </Button>
+        <Button
+          type="submit"
+          disabled={inviting}
+          className="hover:bg-primary/90 max-md:h-touch"
+        >
+          <Mail aria-hidden="true" />
+          {inviting ? copy.invitations.sending : copy.invitations.send}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -925,6 +952,14 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
   } = props;
   const [filter, setFilter] = React.useState("");
   const [jobTitleFor, setJobTitleFor] = React.useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = React.useState(false);
+  // The dialog closes when the host clears the form after a send; a failed or partial send leaves it open.
+  const lastResetKey = React.useRef(props.inviteResetKey);
+  React.useEffect(() => {
+    if (lastResetKey.current === props.inviteResetKey) return;
+    lastResetKey.current = props.inviteResetKey;
+    setInviteOpen(false);
+  }, [props.inviteResetKey]);
   const [confirmation, setConfirmation] = React.useState<Confirmation | null>(
     null,
   );
@@ -1129,16 +1164,31 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
 
   const invitationsPanel = invitations ? (
     <div className="flex flex-col gap-6">
-      <InviteForm
-        copy={copy}
-        inviting={props.inviting}
-        inviteError={props.inviteError}
-        inviteResetKey={props.inviteResetKey}
-        onInvite={props.onInvite}
-        onInviteMany={props.onInviteMany}
-        entryOptions={props.entryOptions}
-        entryRefusals={props.entryRefusals}
-      />
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          className="max-md:h-touch"
+          onClick={() => setInviteOpen(true)}
+        >
+          <Mail aria-hidden="true" />
+          {copy.invitations.invitePeople}
+        </Button>
+      </div>
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <InviteForm
+            copy={copy}
+            inviting={props.inviting}
+            inviteError={props.inviteError}
+            inviteResetKey={props.inviteResetKey}
+            onInvite={props.onInvite}
+            onInviteMany={props.onInviteMany}
+            entryOptions={props.entryOptions}
+            entryRefusals={props.entryRefusals}
+            onCancel={() => setInviteOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
       <section
         aria-labelledby="pending-invitations"
         className="flex flex-col gap-3"

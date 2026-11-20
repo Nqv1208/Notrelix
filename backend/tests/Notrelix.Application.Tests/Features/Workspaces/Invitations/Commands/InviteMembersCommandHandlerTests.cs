@@ -2,6 +2,7 @@ using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMembers;
 using Notrelix.Application.Common.Models;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces;
 using DomainRuleException = Notrelix.Domain.Common.Exceptions.BusinessRuleException;
 
@@ -121,5 +122,45 @@ public class InviteMembersCommandHandlerTests
 
         result.Data!.Outcomes.Should().ContainSingle().Which.Outcome.Should().Be(MemberInvitationOutcomes.Invalid);
         _single.Verify(h => h.Handle(It.IsAny<InviteMemberCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task InitialEntriesAreForwardedPerAddress_AndAGuestNamingATeamIsRefusedOnItsOwn()
+    {
+        var teamId = Guid.NewGuid();
+        var spaceId = Guid.NewGuid();
+        _single.Setup(h => h.Handle(It.IsAny<InviteMemberCommand>(), It.IsAny<CancellationToken>()))
+            .Returns((InviteMemberCommand c, CancellationToken _) => c.Role == WorkspaceRole.Guest && c.InitialEntries?.Any(e => e.Kind == "Team") == true
+                ? throw new DomainRuleException(WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged, "no")
+                : Task.FromResult(Result<Guid>.Success(Guid.NewGuid())));
+        InvitationInitialEntryInput[] team = [new("Team", teamId, "Member")];
+        InvitationInitialEntryInput[] space = [new("Space", spaceId, "Viewer")];
+
+        var result = await Sut(AccessDecision.Allow()).Handle(new InviteMembersCommand(_workspaceId,
+            [new("m@x.com", "Member", team), new("g1@x.com", "Guest", team), new("g2@x.com", "Guest", space), new("plain@x.com", "Member")]),
+            CancellationToken.None);
+
+        var rows = result.Data!.Outcomes.ToDictionary(o => o.Email);
+        rows["m@x.com"].Outcome.Should().Be(MemberInvitationOutcomes.Sent);
+        rows["g1@x.com"].Should().Match<MemberInvitationOutcomeDto>(o => o.Outcome == MemberInvitationOutcomes.Refused && o.Code == WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged);
+        rows["g2@x.com"].Outcome.Should().Be(MemberInvitationOutcomes.Sent);
+        rows["plain@x.com"].Outcome.Should().Be(MemberInvitationOutcomes.Sent);
+        _single.Verify(h => h.Handle(It.Is<InviteMemberCommand>(c => c.Email == "m@x.com" && c.InitialEntries!.Single().TargetId == teamId), It.IsAny<CancellationToken>()), Times.Once);
+        _single.Verify(h => h.Handle(It.Is<InviteMemberCommand>(c => c.Email == "plain@x.com" && c.InitialEntries == null), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public void TheBatchIsAuthorizedLikeASingleInvitation_ByTheKindsOfEntryItNames()
+    {
+        InvitationInitialEntryInput[] team = [new("team", Guid.NewGuid(), "Member")];
+        InvitationInitialEntryInput[] space = [new("Space", Guid.NewGuid(), "Viewer")];
+        static IRequirePermission Cmd(Guid w, MemberInvitationEntry[] e) => new InviteMembersCommand(w, e);
+        static IRequireAdditionalPermission Extra(Guid w, MemberInvitationEntry[] e) => new InviteMembersCommand(w, e);
+
+        Cmd(_workspaceId, [new("a@x.com", "Member")]).Action.Should().Be(PermissionAction.InviteMember);
+        Cmd(_workspaceId, [new("a@x.com", "Member", space)]).Action.Should().Be(PermissionAction.ManageSpaces);
+        Cmd(_workspaceId, [new("a@x.com", "Member"), new("b@x.com", "Member", team)]).Action.Should().Be(PermissionAction.ManageTeams);
+        Extra(_workspaceId, [new("a@x.com", "Member", team), new("b@x.com", "Member", space)]).AdditionalActionNames.Should().Equal(nameof(PermissionAction.ManageSpaces));
+        Extra(_workspaceId, [new("a@x.com", "Member", team)]).AdditionalActionNames.Should().BeEmpty();
     }
 }

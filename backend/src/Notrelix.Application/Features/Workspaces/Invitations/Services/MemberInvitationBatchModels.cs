@@ -1,7 +1,8 @@
 namespace Notrelix.Application.Features.Workspaces.Invitations.Services;
 
 /// <param name="Role"><c>Member</c> or <c>Guest</c>, as the single invitation takes it.</param>
-public record MemberInvitationEntry(string Email, string Role);
+/// <param name="InitialEntries">Optional Team/Space entries for this address, checked as a single invitation checks them.</param>
+public record MemberInvitationEntry(string Email, string Role, IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null);
 
 /// <summary>What happened to one address of the batch.</summary>
 /// <param name="Outcome"><c>sent</c>, <c>already-member</c>, <c>already-pending</c>, <c>invalid</c> or <c>refused</c>.</param>

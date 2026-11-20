@@ -38,6 +38,10 @@ function renderMembers(overrides: Partial<WorkspaceMembersSurfaceProps> = {}) {
     ...overrides,
   };
   renderPureUi(<WorkspaceMembersSurface {...props} />);
+  if (props.invitations)
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
   return props;
 }
 

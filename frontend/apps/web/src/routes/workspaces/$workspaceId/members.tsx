@@ -301,46 +301,11 @@ export function MembersPage() {
     [copy, createInvitation, hint, invitations.data, now],
   );
 
-  // Sent one after the other, each decided by the producer; what was not sent stays in the field to be fixed.
-  const inviteOneByOne = useCallback(
-    async (inputs: readonly CreateWorkspaceInvitationInput[]) => {
-      setInviteError(null);
-      const failed: string[] = [];
-      let sent = 0;
-      for (const input of inputs) {
-        if (pendingInvitationFor(invitations.data ?? [], input.email, now)) {
-          failed.push(input.email);
-          continue;
-        }
-        try {
-          await createInvitation.mutateAsync(input);
-          sent += 1;
-        } catch {
-          failed.push(input.email);
-        }
-      }
-      if (failed.length === 0) {
-        setInviteResetKey((key) => key + 1);
-        toast.success(formatCopy(copy.toasts.invitedMany, { count: sent }));
-        return;
-      }
-      const emails = failed.join(", ");
-      if (sent > 0)
-        toast.success(
-          formatCopy(copy.toasts.invitedSome, { count: sent, emails }),
-        );
-      setInviteError(formatCopy(copy.invitations.emailInvalidMany, { emails }));
-    },
-    [copy, createInvitation, invitations.data, now],
-  );
-
-  // Several addresses typed at once go in one request: the producer decides each address on its own and
-  // the dialog lists every outcome. A list that names Teams or Spaces to join keeps the one-by-one path,
-  // because the batch takes address and role only.
+  // Several addresses typed at once go in one request, with their initial Team and Space entries: the producer
+  // decides each address on its own and the dialog lists every outcome. A caller who may not name one of the
+  // entries is refused for the whole request, like a single invitation.
   const onInviteMany = useCallback(
     async (inputs: readonly CreateWorkspaceInvitationInput[]) => {
-      if (inputs.some((input) => input.initialEntries?.length))
-        return inviteOneByOne(inputs);
       setInviteError(null);
       try {
         const outcomes = await inviteMembers.mutateAsync(inputs);
@@ -348,6 +313,13 @@ export function MembersPage() {
         if (outcomes.every((row) => row.outcome === "sent"))
           setInviteResetKey((key) => key + 1);
       } catch (error) {
+        if (
+          describeWorkspaceFailure(error).kind === "forbidden" &&
+          inputs.some((input) => input.initialEntries?.length)
+        ) {
+          setInviteError(copy.invitations.entries.refused);
+          return;
+        }
         toastFailure(
           formatCopy(copy.toasts.inviteFailed, {
             email: inputs[0]?.email ?? "",
@@ -357,7 +329,7 @@ export function MembersPage() {
         );
       }
     },
-    [copy, hint, inviteMembers, inviteOneByOne],
+    [copy, hint, inviteMembers],
   );
 
   const onChangeInvitationRole = useCallback(

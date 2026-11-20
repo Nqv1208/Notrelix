@@ -168,8 +168,14 @@ describe("Invite with a Team entry the producer refuses", () => {
     };
     mount();
     await flush();
+    // The invite form lives in a dialog the "Invite people" button opens.
+    await act(async () =>
+      Array.from(document.body.querySelectorAll("button"))
+        .find((candidate) => candidate.textContent?.trim() === "Invite people")
+        ?.click(),
+    );
 
-    const picker = host!.querySelector<HTMLElement>(
+    const picker = document.body.querySelector<HTMLElement>(
       '[aria-label="Choose a Team or Space to add"]',
     );
     expect(picker, "the entry picker").not.toBeNull();
@@ -186,23 +192,23 @@ describe("Invite with a Team entry the producer refuses", () => {
       option!.click();
     });
     await act(async () => {
-      setText(host!.querySelector("textarea")!, "an.do@example.com");
+      setText(document.body.querySelector("textarea")!, "an.do@example.com");
     });
-    const send = Array.from(host!.querySelectorAll("button")).find(
+    const send = Array.from(document.body.querySelectorAll("button")).find(
       (candidate) => candidate.textContent?.trim() === "Send invitation",
     );
     await act(async () => send?.click());
     await flush();
 
     expect((h.api as { post: unknown }).post).toHaveBeenCalledTimes(1);
-    const alerts = Array.from(host!.querySelectorAll('[role="alert"]')).map(
-      (node) => node.textContent,
-    );
+    const alerts = Array.from(
+      document.body.querySelectorAll('[role="alert"]'),
+    ).map((node) => node.textContent);
     expect(alerts).toContain(
       "ERP Engineers isn't active any more, so it can't take this person. Remove it or choose another.",
     );
     expect(
-      host?.textContent,
+      document.body.textContent,
       "the producer's one-line text is not shown",
     ).not.toContain("Every initial team or space must be");
     expect(h.toasts.filter((t) => t.startsWith("err:"))).toEqual([]);

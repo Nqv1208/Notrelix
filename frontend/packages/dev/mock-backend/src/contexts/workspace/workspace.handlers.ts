@@ -992,7 +992,13 @@ export const workspaceOperations = [
   // Many addresses at once (Workspaces.Members.InviteMembers): one outcome per address, not all-or-nothing.
   defineMockOperation<
     { workspaceId: string },
-    { entries?: { email?: string; role?: string }[] },
+    {
+      entries?: {
+        email?: string;
+        role?: string;
+        initialEntries?: { kind?: string }[];
+      }[];
+    },
     unknown
   >({
     id: "workspace.members.inviteMany",
@@ -1047,6 +1053,12 @@ export const workspaceOperations = [
           row("refused", "Workspaces_Invitation_CannotInviteAsAdmin");
         else if (role === "guest" && !guestsAllowed)
           row("refused", "workspace.guest_invites_off");
+        // A Guest is not a Team member: that address is refused on its own, the others still go out.
+        else if (
+          role === "guest" &&
+          entry.initialEntries?.some((e) => e.kind?.toLowerCase() === "team")
+        )
+          row("refused", "Workspaces_Invitation_GuestEntryRoleTooPrivileged");
         else if (store.isActiveMemberEmail(params.workspaceId, email))
           row("already-member", "workspaces.invitation.already-member");
         else {

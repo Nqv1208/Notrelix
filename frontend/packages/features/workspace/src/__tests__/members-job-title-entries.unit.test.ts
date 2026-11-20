@@ -87,6 +87,53 @@ describe("invitation with initial entries", () => {
     );
   });
 
+  it("FUI[workspace.members:invite-many-entries-wire] each address of the batch carries its own initial Team and Space entries", async () => {
+    const api = client();
+    api.post.mockResolvedValue({ outcomes: [] });
+    await createWorkspaceInvitationsService(api, endpoints).createMany(
+      "w1",
+      [
+        {
+          email: "a@b.vn",
+          role: "member",
+          initialEntries: [
+            { kind: "team", targetId: "t1", role: "lead" },
+            { kind: "space", targetId: "s1", role: "viewer" },
+          ],
+        },
+        {
+          email: "g@b.vn",
+          role: "guest",
+          initialEntries: [{ kind: "space", targetId: "s1", role: "viewer" }],
+        },
+        { email: "p@b.vn", role: "member" },
+      ],
+      "key-2",
+    );
+    expect(api.post).toHaveBeenCalledWith(
+      "/workspaces/w1/members/bulk",
+      {
+        entries: [
+          {
+            email: "a@b.vn",
+            role: "Member",
+            initialEntries: [
+              { kind: "Team", targetId: "t1", role: "Lead" },
+              { kind: "Space", targetId: "s1", role: "Viewer" },
+            ],
+          },
+          {
+            email: "g@b.vn",
+            role: "Guest",
+            initialEntries: [{ kind: "Space", targetId: "s1", role: "Viewer" }],
+          },
+          { email: "p@b.vn", role: "Member" },
+        ],
+      },
+      { idempotencyKey: "key-2" },
+    );
+  });
+
   it("FUI[workspace.members:invite-many-wire] sends the list in one request under the batch's key and reads each outcome", async () => {
     const api = client();
     api.post.mockResolvedValue({
