@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Exceptions;
-using Notrelix.Application.Common.RateLimiting;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Services;
 

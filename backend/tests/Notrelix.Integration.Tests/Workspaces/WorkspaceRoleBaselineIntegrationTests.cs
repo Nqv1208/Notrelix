@@ -82,6 +82,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
         services.AddSingleton(encryptor.Object);
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<InvitationInitialEntries>();
+        services.AddSingleton(Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
         services.AddSingleton(AlwaysAdmitSeatGate);
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Membership.IAccountMembershipFacts, Notrelix.Application.Features.Accounts.Members.AccountMembershipFactsProvider>();
     }
