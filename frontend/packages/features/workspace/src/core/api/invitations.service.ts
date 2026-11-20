@@ -145,6 +145,21 @@ const ROLE_NAME = {
   guest: "Guest",
 } as const;
 
+/** The wire shape of the initial Team and Space entries, shared by the single and the batch invitation. */
+function wireEntries(
+  entries: CreateWorkspaceInvitationInput["initialEntries"],
+) {
+  return entries && entries.length > 0
+    ? {
+        initialEntries: entries.map((entry) => ({
+          kind: entry.kind === "team" ? "Team" : "Space",
+          targetId: entry.targetId,
+          role: entry.role.charAt(0).toUpperCase() + entry.role.slice(1),
+        })),
+      }
+    : {};
+}
+
 type InviteManyBody = OperationRequestBody<"Workspaces.Members.InviteMembers">;
 
 const INVITE_OUTCOMES = [
@@ -274,15 +289,7 @@ export function createWorkspaceInvitationsService(
       const body: InviteBody = {
         email: input.email.trim(),
         role: ROLE_NAME[input.role],
-        ...(input.initialEntries && input.initialEntries.length > 0
-          ? {
-              initialEntries: input.initialEntries.map((entry) => ({
-                kind: entry.kind === "team" ? "Team" : "Space",
-                targetId: entry.targetId,
-                role: entry.role.charAt(0).toUpperCase() + entry.role.slice(1),
-              })),
-            }
-          : {}),
+        ...wireEntries(input.initialEntries),
       };
       const id = await api.post<unknown>(
         endpoints.workspaces.members(workspaceId),
@@ -299,16 +306,17 @@ export function createWorkspaceInvitationsService(
      */
     async createMany(
       workspaceId: string,
-      entries: readonly {
-        email: string;
-        role: CreateWorkspaceInvitationInput["role"];
-      }[],
+      entries: readonly Pick<
+        CreateWorkspaceInvitationInput,
+        "email" | "role" | "initialEntries"
+      >[],
       idempotencyKey?: string,
     ): Promise<InviteManyOutcome[]> {
       const body: InviteManyBody = {
         entries: entries.map((entry) => ({
           email: entry.email.trim(),
           role: ROLE_NAME[entry.role],
+          ...wireEntries(entry.initialEntries),
         })),
       };
       const wire = await api.post<{ outcomes?: unknown } | null>(

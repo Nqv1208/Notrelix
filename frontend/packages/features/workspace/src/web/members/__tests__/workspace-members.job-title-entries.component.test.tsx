@@ -49,6 +49,10 @@ function renderMembers(
     ...overrides,
   };
   renderPureUi(<WorkspaceMembersSurface {...props} />);
+  if (props.invitations)
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
   return props;
 }
 
@@ -423,6 +427,9 @@ describe("Invite with initial Team and Space entries (G02)", () => {
       );
     }
     renderPureUi(<Page />);
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     pick("Nhóm Kỹ sư ERP");
     expect(screen.queryByRole("alert")).toBeNull();
     fireEvent.change(email(), { target: { value: "khach@dtvina.vn" } });
@@ -447,5 +454,58 @@ describe("Invite with initial Team and Space entries (G02)", () => {
     expect(screen.getByRole("alert").textContent).toBe(
       "A Guest can't have this role in Công nghệ. Choose a lower role or remove it.",
     );
+  });
+
+  it("FUI[workspace.members:invite-many-entries] a batch sends the chosen entries with every address, and a Guest address never carries a Team", () => {
+    const onInviteMany = vi.fn();
+    renderMembers(membersInvitationsScenario(), { entryOptions, onInviteMany });
+    pick("Nhóm Kỹ sư ERP");
+    pick("Công nghệ");
+    fireEvent.change(email(), {
+      target: { value: "a@example.com, b@example.com" },
+    });
+    send();
+    const both = [
+      { kind: "team", targetId: "team-erp", role: "member" },
+      { kind: "space", targetId: "space-cn", role: "member" },
+    ];
+    expect(onInviteMany).toHaveBeenCalledWith([
+      { email: "a@example.com", role: "member", initialEntries: both },
+      { email: "b@example.com", role: "member", initialEntries: both },
+    ]);
+    fireEvent.keyDown(
+      screen.getByRole("combobox", { name: copy.invitations.roleLabel }),
+      { key: "Enter" },
+    );
+    fireEvent.click(screen.getByRole("option", { name: copy.roles.guest }));
+    send();
+    expect(onInviteMany).toHaveBeenLastCalledWith([
+      {
+        email: "a@example.com",
+        role: "guest",
+        initialEntries: [
+          { kind: "space", targetId: "space-cn", role: "member" },
+        ],
+      },
+      {
+        email: "b@example.com",
+        role: "guest",
+        initialEntries: [
+          { kind: "space", targetId: "space-cn", role: "member" },
+        ],
+      },
+    ]);
+  });
+
+  it("FUI[workspace.members:invite-dialog] the form opens in a dialog from Invite people and Cancel closes it", () => {
+    renderMembers(membersInvitationsScenario(), { entryOptions });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.cancel }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    ).toBeTruthy();
   });
 });

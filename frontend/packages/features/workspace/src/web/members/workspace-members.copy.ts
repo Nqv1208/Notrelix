@@ -132,6 +132,10 @@ export const en = {
         "A Guest can't join a Team, so {{name}} can't take this person. Remove it.",
     },
     formTitle: "Invite by e-mail",
+    invitePeople: "Invite people",
+    cancel: "Cancel",
+    dialogDescription:
+      "They get an e-mail with a link to join. Paste up to 50 addresses, separated by commas or new lines.",
     emailLabel: "E-mail address",
     emailPlaceholder: "name@company.com",
     emailInvalid: "Enter an e-mail address like name@company.com.",
@@ -171,6 +175,8 @@ export const en = {
       alreadyPending: "Already has a pending invitation",
       invalid: "Not a valid address or role",
       guestInvitesOff: "Guest invitations are off",
+      entryRefused:
+        "A Team or Space chosen for this address can't take them. Invite them on their own.",
       refused: "Refused",
       done: "Done",
     },
@@ -205,8 +211,6 @@ export const en = {
       "The role in the invitation to {{email}} wasn't changed.",
     resent: "Invitation sent again to {{email}}.",
     resendFailed: "The invitation to {{email}} wasn't sent again.",
-    invitedMany: "{{count}} invitations sent.",
-    invitedSome: "{{count}} invitations sent. These were not sent: {{emails}}.",
     forbidden: "You don't have permission to do this. Ask a workspace owner.",
     conflict:
       "Someone else changed this just now. The list was refreshed; review it and try again.",
@@ -355,6 +359,10 @@ export const vi: WorkspaceMembersCopy = {
         "Khách không tham gia được nhóm nên {{name}} không nhận được người này. Bỏ mục đó.",
     },
     formTitle: "Mời qua e-mail",
+    invitePeople: "Mời người",
+    cancel: "Hủy",
+    dialogDescription:
+      "Người nhận được e-mail có liên kết tham gia. Dán tối đa 50 địa chỉ, cách nhau bằng dấu phẩy hoặc xuống dòng.",
     emailLabel: "Địa chỉ e-mail",
     emailPlaceholder: "ten@congty.com",
     emailInvalid: "Nhập địa chỉ e-mail dạng ten@congty.com.",
@@ -394,6 +402,8 @@ export const vi: WorkspaceMembersCopy = {
       alreadyPending: "Đã có lời mời đang chờ",
       invalid: "Địa chỉ hoặc vai trò không hợp lệ",
       guestInvitesOff: "Lời mời khách đang tắt",
+      entryRefused:
+        "Nhóm hoặc phòng ban chọn cho địa chỉ này không nhận được họ. Hãy mời riêng.",
       refused: "Bị từ chối",
       done: "Xong",
     },
@@ -429,8 +439,6 @@ export const vi: WorkspaceMembersCopy = {
     invitationRoleFailed: "Chưa đổi được vai trò trong lời mời gửi {{email}}.",
     resent: "Đã gửi lại lời mời tới {{email}}.",
     resendFailed: "Chưa gửi lại được lời mời tới {{email}}.",
-    invitedMany: "Đã gửi {{count}} lời mời.",
-    invitedSome: "Đã gửi {{count}} lời mời. Chưa gửi được tới: {{emails}}.",
     forbidden:
       "Bạn không có quyền làm việc này. Hãy nhờ chủ sở hữu không gian làm việc.",
     conflict:

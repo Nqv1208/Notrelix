@@ -10,9 +10,12 @@ using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMembers;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Application.Features.Workspaces.Teams.Commands.CreateTeam;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.Workspaces;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Infrastructure;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Infrastructure.Data.Authz;
@@ -275,5 +278,60 @@ public sealed class InviteMembersBulkIntegrationTests : IAsyncLifetime
 
         (await send.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be("workspace.archived");
         (await InvitedEmailsAsync(stack)).Should().BeEmpty();
+    }
+
+    private async Task<(Guid TeamId, Guid SpaceId)> SeedTeamAndSpaceAsync(OrgStack stack)
+    {
+        using var owner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+        var teamId = ((Result<Guid>)(await OrgTreeTestHost.SendAsync(owner, new CreateTeamCommand(stack.WorkspaceId, "Platform", null)))!).Data;
+        var spaceId = await _host.SeedSpaceAsync(stack, "Engineering", SpaceVisibility.Workspace, stack.OwnerId);
+        return (teamId, spaceId);
+    }
+
+    [Fact]
+    public async Task InitialEntries_AreStoredPerAddress_AGuestNamingATeamIsRefusedOnItsOwn_AndTheRestGoOut()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var (teamId, spaceId) = await SeedTeamAndSpaceAsync(stack);
+        await _host.SetGuestInvitesAsync(stack, true);
+        using var asOwner = As(stack, stack.OwnerId);
+        InvitationInitialEntryInput[] both = [new("Team", teamId, "Member"), new("Space", spaceId, "Viewer")];
+        InvitationInitialEntryInput[] team = [new("Team", teamId, "Member")];
+        InvitationInitialEntryInput[] space = [new("Space", spaceId, "Viewer")];
+
+        var result = await SendAsync(asOwner, new InviteMembersCommand(stack.WorkspaceId,
+        [
+            new("ana@example.com", "Member", both), new("guest-team@example.com", "Guest", team),
+            new("guest-space@example.com", "Guest", space), new("plain@example.com", "Member"),
+        ]));
+
+        Outcome(result, "ana@example.com").Should().Be(MemberInvitationOutcomes.Sent, Dump(result));
+        Outcome(result, "guest-team@example.com").Should().Be(MemberInvitationOutcomes.Refused, Dump(result));
+        result.Outcomes.Single(o => o.Email == "guest-team@example.com").Code.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged);
+        Outcome(result, "guest-space@example.com").Should().Be(MemberInvitationOutcomes.Sent, Dump(result));
+        Outcome(result, "plain@example.com").Should().Be(MemberInvitationOutcomes.Sent, Dump(result));
+        (await InvitedEmailsAsync(stack)).Should().Equal("ana@example.com", "guest-space@example.com", "plain@example.com");
+        var stored = await _host.ReadAsync(c => c.WorkspaceInvitations.Where(i => i.WorkspaceId == stack.WorkspaceId)
+            .ToDictionaryAsync(i => i.Email, i => i.InitialEntries.Count));
+        stored["ana@example.com"].Should().Be(2);
+        stored["guest-space@example.com"].Should().Be(1);
+        stored["plain@example.com"].Should().Be(0);
+    }
+
+    [Fact]
+    public async Task InitialEntriesInABatch_NeedTheEntryActions_LikeASingleInvitation_AndNothingIsStoredWhenDenied()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var (teamId, spaceId) = await SeedTeamAndSpaceAsync(stack);
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        await _host.SeedRuleAsync(stack, PermissionSubjectType.User, member, PermissionAction.ManageTeams, PermissionEffect.Allow);
+        using var asMember = As(stack, member);
+
+        var mixed = () => OrgTreeTestHost.SendAsync(asMember, new InviteMembersCommand(stack.WorkspaceId,
+            [new("ana@example.com", "Member", [new("Team", teamId, "Member"), new("Space", spaceId, "Viewer")])]));
+
+        await mixed.Should().ThrowAsync<AppForbidden>("the Space entry also needs ManageSpaces");
+        (await InvitedEmailsAsync(stack)).Should().BeEmpty();
+        (await InvitationDeliveriesAsync(stack)).Should().Be(0);
     }
 }

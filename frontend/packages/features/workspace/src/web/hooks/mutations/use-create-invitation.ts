@@ -67,16 +67,17 @@ export function createUseInviteMembers({
 
     return useMutation({
       mutationFn: (
-        entries: readonly {
-          email: string;
-          role: CreateWorkspaceInvitationInput["role"];
-        }[],
+        entries: readonly Pick<
+          CreateWorkspaceInvitationInput,
+          "email" | "role" | "initialEntries"
+        >[],
       ) => {
         const signature = JSON.stringify([
           workspaceId,
           entries.map((entry) => [
             entry.email.trim().toLowerCase(),
             entry.role,
+            entry.initialEntries ?? [],
           ]),
         ]);
         if (attempt.current?.signature !== signature)

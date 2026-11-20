@@ -31,6 +31,11 @@ const results: readonly InviteManyOutcome[] = [
     code: "workspace.guest_invites_off",
   },
   { email: "fay@example.com", outcome: "refused", code: "Workspaces_X" },
+  {
+    email: "gus@example.com",
+    outcome: "refused",
+    code: "Workspaces_Invitation_GuestEntryRoleTooPrivileged",
+  },
 ];
 
 function renderResults(inviteResults: readonly InviteManyOutcome[] | null) {
@@ -61,7 +66,7 @@ describe("invite-many results", () => {
     expect(within(dialog).getByText(labels.title)).toBeTruthy();
     expect(
       within(dialog).getByText(
-        labels.summary.replace("{{sent}}", "1").replace("{{total}}", "6"),
+        labels.summary.replace("{{sent}}", "1").replace("{{total}}", "7"),
       ),
     ).toBeTruthy();
     const row = (email: string) =>
@@ -81,6 +86,9 @@ describe("invite-many results", () => {
     ).toBeTruthy();
     expect(
       within(row("fay@example.com")).getByText(labels.refused),
+    ).toBeTruthy();
+    expect(
+      within(row("gus@example.com")).getByText(labels.entryRefused),
     ).toBeTruthy();
   });
 

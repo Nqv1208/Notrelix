@@ -21,11 +21,25 @@ namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMe
 public record InviteMembersCommand(
     Guid WorkspaceId,
     IReadOnlyList<MemberInvitationEntry> Entries
-) : ICommand<Result<MemberInvitationBatchResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail, IIdempotentRequest
+) : ICommand<Result<MemberInvitationBatchResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireVerifiedEmail, IIdempotentRequest, IRequireAdditionalPermission
 {
     public const int MaxEntries = 50;
 
-    PermissionAction IRequirePermission.Action => PermissionAction.InviteMember;
+    // Initial entries are authorized as a single invitation does: ManageTeams for Team entries, ManageSpaces for
+    // Space entries, both when the batch names both kinds. The union over all addresses decides, so one
+    // unauthorized entry refuses the whole request (nothing is sent) instead of leaking per-address outcomes.
+    private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
+        Entries?.Any(e => e.InitialEntries?.Any(i => string.Equals(i.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true) == true;
+
+    PermissionAction IRequirePermission.Action =>
+        NamesKind(WorkspaceInvitationEntryKind.Team) ? PermissionAction.ManageTeams
+        : NamesKind(WorkspaceInvitationEntryKind.Space) ? PermissionAction.ManageSpaces
+        : PermissionAction.InviteMember;
+
+    IReadOnlyList<string> IRequireAdditionalPermission.AdditionalActionNames =>
+        NamesKind(WorkspaceInvitationEntryKind.Team) && NamesKind(WorkspaceInvitationEntryKind.Space)
+            ? [nameof(PermissionAction.ManageSpaces)]
+            : [];
 
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
@@ -95,17 +109,17 @@ public class InviteMembersCommandHandler : IRequestHandler<InviteMembersCommand,
                 }
             }
 
-            outcomes.Add(await InviteOneAsync(request.WorkspaceId, email, role, ct));
+            outcomes.Add(await InviteOneAsync(request.WorkspaceId, email, role, entry.InitialEntries, ct));
         }
 
         return Result<MemberInvitationBatchResultDto>.Success(new MemberInvitationBatchResultDto(outcomes));
     }
 
-    private async Task<MemberInvitationOutcomeDto> InviteOneAsync(Guid workspaceId, string email, WorkspaceRole role, CancellationToken ct)
+    private async Task<MemberInvitationOutcomeDto> InviteOneAsync(Guid workspaceId, string email, WorkspaceRole role, IReadOnlyList<InvitationInitialEntryInput>? initialEntries, CancellationToken ct)
     {
         try
         {
-            var result = await _single.Handle(new InviteMemberCommand(workspaceId, email, role), ct);
+            var result = await _single.Handle(new InviteMemberCommand(workspaceId, email, role, initialEntries), ct);
             return result.Succeeded
                 ? new MemberInvitationOutcomeDto(email, role.ToString(), MemberInvitationOutcomes.Sent, null, result.Data)
                 : new MemberInvitationOutcomeDto(email, role.ToString(), MemberInvitationOutcomes.Refused, null, null);

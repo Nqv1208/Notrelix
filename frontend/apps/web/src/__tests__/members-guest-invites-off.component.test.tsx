@@ -138,8 +138,14 @@ describe("Invite by e-mail when the workspace has guest invites switched off", (
     };
     mount();
     await flush();
+    // The invite form lives in a dialog the "Invite people" button opens.
+    await act(async () =>
+      Array.from(document.body.querySelectorAll("button"))
+        .find((candidate) => candidate.textContent?.trim() === "Invite people")
+        ?.click(),
+    );
 
-    const input = host?.querySelector<HTMLTextAreaElement>("textarea");
+    const input = document.body.querySelector<HTMLTextAreaElement>("textarea");
     expect(input, "the e-mail field").not.toBeNull();
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(
@@ -149,14 +155,14 @@ describe("Invite by e-mail when the workspace has guest invites switched off", (
       setter.call(input, "guest@example.com");
       input!.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    const send = Array.from(host!.querySelectorAll("button")).find(
+    const send = Array.from(document.body.querySelectorAll("button")).find(
       (candidate) => candidate.textContent?.trim() === "Send invitation",
     );
     await act(async () => send?.click());
     await flush();
 
     expect((h.api as { post: unknown }).post).toHaveBeenCalledTimes(1);
-    expect(host?.textContent).toContain(
+    expect(document.body.textContent).toContain(
       "Guest invites are off in this workspace. Ask the Owner to turn them on.",
     );
     expect(h.toasts.filter((t) => t.startsWith("err:"))).toEqual([]);

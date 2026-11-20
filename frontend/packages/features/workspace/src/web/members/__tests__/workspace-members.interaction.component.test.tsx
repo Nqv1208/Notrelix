@@ -340,6 +340,9 @@ describe("WorkspaceMembersSurface", () => {
 describe("WorkspaceMembersSurface invitations", () => {
   it("FUI[workspace.members:invite] validates the address and invites with the chosen role", () => {
     const { props } = renderMembers(membersInvitationsScenario());
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     fireEvent.change(email, { target: { value: "not-an-email" } });
     fireEvent.click(
@@ -363,6 +366,9 @@ describe("WorkspaceMembersSurface invitations", () => {
     const { props } = renderMembers(membersInvitationsScenario(), {
       onInviteMany,
     });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     fireEvent.change(email, {
       target: { value: "a@example.com, b@example.com\nA@example.com nope" },
@@ -455,6 +461,9 @@ describe("WorkspaceMembersSurface invitations", () => {
 
   it("FUI[workspace.members:invite-error] shows the producer's invite failure next to the field", () => {
     renderMembers(membersInvitationsEmptyScenario());
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     expect(email.getAttribute("aria-invalid")).toBe("true");
     expect(
