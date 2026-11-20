@@ -20,9 +20,11 @@ public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCo
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessChangeSignal _access;
 
-    public ArchiveWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public ArchiveWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -37,6 +39,8 @@ public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCo
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         workspace.Archive(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        // Live typing and presence subscriptions learn the new state now, not at the next periodic pass.
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

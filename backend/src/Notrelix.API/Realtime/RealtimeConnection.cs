@@ -402,7 +402,10 @@ public sealed class RealtimeConnection
         RealtimeProtocol.SubscribeMessage message, RealtimeSubscriptionGrant grant, CancellationToken token)
     {
         await EnsureAccessSignalAsync(grant.WorkspaceId, token).ConfigureAwait(false);
-        var subscription = new Subscription(message.SubscriptionId, message.Scope, grant.WorkspaceId);
+        var subscription = new Subscription(message.SubscriptionId, message.Scope, grant.WorkspaceId)
+        {
+            WorkspaceArchived = grant.WorkspaceArchived,
+        };
         subscription.Handle = await _source.SubscribeAsync(
             message.Scope, notification => OnNotification(subscription, notification), token).ConfigureAwait(false);
 
@@ -633,7 +636,7 @@ public sealed class RealtimeConnection
             _subscriptions.TryGetValue(message.SubscriptionId, out subscription);
         }
 
-        if (subscription is null || subscription.Scope.Kind != RealtimeScopeKind.Channel || subscription.Cancelled)
+        if (subscription is null || subscription.Scope.Kind != RealtimeScopeKind.Channel || subscription.Cancelled || subscription.WorkspaceArchived)
         {
             return;
         }
@@ -683,6 +686,13 @@ public sealed class RealtimeConnection
             return;
         }
 
+        // The grant just read is fresher than the flag kept on the subscription: an archive since the last pass ends typing now.
+        if (grant.WorkspaceArchived)
+        {
+            subscription.WorkspaceArchived = true;
+            return;
+        }
+
         PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
             RealtimeEphemeralKinds.Typing, subscription.WorkspaceId, _principal.UserId, message.Stopped ? RealtimeEphemeralStates.TypingStop : null));
     }
@@ -718,13 +728,13 @@ public sealed class RealtimeConnection
     {
         lock (_subscriptions)
         {
-            return [.. _subscriptions.Values.Where(s => s.EphemeralHandle is not null && !s.Cancelled)];
+            return [.. _subscriptions.Values.Where(s => s.EphemeralHandle is not null && !s.Cancelled && !s.WorkspaceArchived)];
         }
     }
 
     private void AnnouncePresenceTo(Subscription subscription, string? state, Guid? to = null)
     {
-        if (state is null)
+        if (state is null || subscription.WorkspaceArchived)
         {
             return;
         }
@@ -929,6 +939,7 @@ public sealed class RealtimeConnection
                     && grant.WorkspaceId == subscription.WorkspaceId;
                 if (stillGranted)
                 {
+                    subscription.WorkspaceArchived = result.Grant!.WorkspaceArchived;
                     continue;
                 }
 
@@ -963,5 +974,6 @@ public sealed class RealtimeConnection
         public int TypingWindowCount { get; set; }
         public volatile bool Acknowledged;
         public volatile bool Cancelled;
+        public volatile bool WorkspaceArchived;
     }
 }

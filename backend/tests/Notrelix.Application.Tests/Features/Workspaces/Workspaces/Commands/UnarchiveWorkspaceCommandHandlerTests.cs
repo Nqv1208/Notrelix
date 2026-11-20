@@ -4,8 +4,10 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Workspaces.Commands;
 
 public class UnarchiveWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
 {
+    private readonly Mock<Notrelix.Application.Common.Realtime.IAccessChangeSignal> _access = new();
+
     private UnarchiveWorkspaceCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object);
+        DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _access.Object);
 
     [Fact]
     public async Task Handle_WhenWorkspaceExists_Archived_UnarchivesSuccessfully()
@@ -16,6 +18,7 @@ public class UnarchiveWorkspaceCommandHandlerTests : WorkspaceHandlerTestBase
         var sut = CreateSut();
         var result = await sut.Handle(new UnarchiveWorkspaceCommand(TestWorkspaceId, 1), CancellationToken.None);
         result.Succeeded.Should().BeTrue();
+        _access.Verify(a => a.Workspace(TestWorkspaceId), Times.Once);
     }
 
     [Fact]

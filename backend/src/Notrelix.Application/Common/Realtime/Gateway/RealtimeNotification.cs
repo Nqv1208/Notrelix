@@ -50,6 +50,9 @@ public interface IRealtimeNotificationSource
 /// <summary>Resolved tenant binding of an authorized subscription.</summary>
 public sealed record RealtimeSubscriptionGrant(Guid AccountId, Guid WorkspaceId)
 {
+    /// <summary>The workspace is Archived: reads stay open but the gateway takes no typing or presence for it.</summary>
+    public bool WorkspaceArchived { get; init; }
+
     /// <summary>
     /// The grant of a per-user stream: it spans the person's workspaces, so it is bound to none. The gateway checks
     /// such a subscription against the person named in each notification, not against a workspace.
