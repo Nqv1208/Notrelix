@@ -24,18 +24,23 @@ const GUID = LINK_ID;
 
 export type LinkTarget = { kind: string; id: string };
 
-/** The kinds the resolver previews (a Team has no preview yet). */
+/** The kinds the resolver previews. */
 export function isSupportedKind(kind: string | undefined): boolean {
   return (
     kind === LINK_KIND.boardItem ||
     kind === LINK_KIND.board ||
-    kind === LINK_KIND.page
+    kind === LINK_KIND.page ||
+    kind === LINK_KIND.team
   );
 }
 
-/** The kinds a channel can be linked to by the app (a Team is not linkable yet). */
+/** The kinds a channel can be linked to by the app. */
 export function isLinkableKind(kind: string | undefined): boolean {
-  return kind === LINK_KIND.board || kind === LINK_KIND.page;
+  return (
+    kind === LINK_KIND.board ||
+    kind === LINK_KIND.page ||
+    kind === LINK_KIND.team
+  );
 }
 
 /** The reference a product URL of this Workspace names, or null (another Workspace, a Board without an item, another site). */
@@ -78,6 +83,7 @@ export function targetOfUrl(
     return null;
   }
   if (route === "docs") return { kind: LINK_KIND.page, id: routeId };
+  if (route === "teams") return { kind: LINK_KIND.team, id: routeId };
   if (route === "boards") {
     const item = new URLSearchParams(query).get("item");
     return item && GUID.test(item)
@@ -119,6 +125,13 @@ export function viewableTitle(
     if (board.visibility === "private" && !member) return null;
     return spaceVisible(board.spaceId) ? board.title : null;
   }
+  if (target.kind === LINK_KIND.team) {
+    // A Team is visible to whoever may read the member list: an active non-Guest member (Governance `VisibleTeamsAsync`).
+    const team = store.spaces.getTeam(target.id);
+    if (!team || team.workspaceId !== workspaceId) return null;
+    const role = viewer.workspaceRole;
+    return role && role !== "guest" ? team.name : null;
+  }
   if (target.kind !== LINK_KIND.page) return null;
   const page = store.getPage(target.id);
   if (!page || page.workspaceId !== workspaceId || page.trashedAt) return null;
@@ -127,7 +140,7 @@ export function viewableTitle(
 
 /**
  * ChannelLinkDto as the signed-in person sees it (backend ChatResourceViews): the title only when they can view the resource now,
- * otherwise the generic `accessible: false`; a Team (no visibility fact yet) is always generic. Null when the channel has no link.
+ * otherwise the generic `accessible: false`. Null when the channel has no link.
  */
 export function linkViewOf(state: MockChatState, space: ChatSpaceRecord) {
   if (!space.link) return null;

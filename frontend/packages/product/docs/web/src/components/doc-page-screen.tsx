@@ -1818,6 +1818,7 @@ export function createDocPageScreen({
           active: activeTocId ? entry.id === activeTocId : undefined,
         }))}
         stats={summary?.stats}
+        headerAction={host.headerAction}
         comments={commentViews}
         pendingQuote={pendingAnchor?.quote ?? null}
         panelTab={panelTab}

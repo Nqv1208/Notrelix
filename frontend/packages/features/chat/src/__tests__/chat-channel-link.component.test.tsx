@@ -107,25 +107,48 @@ describe("ChatLinkChip (UC-CHT-H10)", () => {
     ).toBe("no-access");
   });
 
-  it("is generic and unavailable for a kind with no route here (a Team), in Vietnamese too", () => {
-    const { container } = render(
+  it("opens a linked Team with its name for a viewer of that Team, in Vietnamese too", () => {
+    render(
       <ChatLinkChip
         link={link({
           kind: "governance.team",
-          accessible: true,
+          resourceId: "t-1",
           title: "Platform",
         })}
         workspaceId={WORKSPACE}
         copy={viCopy}
       />,
     );
+    const chip = screen.getByRole("link", {
+      name: "Mở Nhóm đã liên kết Platform",
+    });
+    expect(chip.getAttribute("href")).toBe(
+      `/workspaces/${WORKSPACE}/teams/t-1`,
+    );
+    expect(chip.getAttribute("data-channel-link")).toBe("resolved");
+  });
+
+  it("shows no Team name and no link to a viewer who cannot view the Team", () => {
+    const { container } = render(
+      <ChatLinkChip
+        link={link({
+          kind: "governance.team",
+          resourceId: "t-1",
+          accessible: false,
+          title: null,
+        })}
+        workspaceId={WORKSPACE}
+        copy={en}
+      />,
+    );
     expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByText("Platform")).toBeNull();
+    expect(screen.getByText("Team you cannot view")).toBeTruthy();
     expect(
       container
         .querySelector("[data-channel-link]")
         ?.getAttribute("data-channel-link"),
-    ).toBe("unavailable");
-    expect(screen.getByText("Nhóm đã liên kết")).toBeTruthy();
+    ).toBe("no-access");
   });
 });
 

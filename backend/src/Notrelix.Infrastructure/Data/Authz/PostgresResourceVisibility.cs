@@ -57,6 +57,17 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
                 .Where(s => s.WorkspaceId == workspaceId && s.DeletedAt == null && spaceIds.Contains(s.Id))
                 .ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
 
+    public async Task<IReadOnlyList<VisibleTeam>> VisibleTeamsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    {
+        var rows = new List<VisibleTeam>();
+        await ReadAsync(
+            ResourceVisibilityQuery.VisibleTeamsSql, workspaceId, userId,
+            ResourceVisibilityQuery.TeamReadResource, ResourceVisibilityQuery.TeamReadAction,
+            reader => rows.Add(new VisibleTeam(reader.GetGuid(0), reader.GetString(1))),
+            cancellationToken);
+        return rows;
+    }
+
     public async Task<IReadOnlyList<TeamBoardGrant>> TeamBoardGrantsAsync(
         Guid workspaceId, Guid userId, IReadOnlyCollection<Guid> teamIds, CancellationToken cancellationToken)
     {

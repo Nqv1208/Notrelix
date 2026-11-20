@@ -9,10 +9,10 @@ using Notrelix.Application.Features.Workspaces.Public.Members;
 namespace Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
 
 /// <summary>
-/// Links a channel to a Board or a Page by ResourceRef (UC-CHT-H10, CHT-023). Needs a channel manager, a Workspace Owner or Admin who can
+/// Links a channel to a Board, a Page or a Team by ResourceRef (UC-CHT-H10, UC-CHT-H11, CHT-023). Needs a channel manager, a Workspace Owner or Admin who can
 /// also view the resource now (403 otherwise, the same answer for a hidden, trashed or missing resource). The resource is never changed:
-/// the link is stored on the channel only. A channel has one link; a second one replaces it. A stale expectedVersion is 412. A Team is
-/// not linkable yet (Governance publishes no Team visibility fact).
+/// the link is stored on the channel only. A channel has one link; a second one replaces it. A stale expectedVersion is 412. A Team must
+/// be visible to the manager through the Governance Team visibility (a Guest never sees one).
 /// </summary>
 public record LinkChannelCommand(Guid WorkspaceId, Guid ChannelId, string Kind, Guid ResourceId, long ExpectedVersion)
     : ICommand<Result<ChannelDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
@@ -62,7 +62,7 @@ public class LinkChannelCommandValidator : AbstractValidator<LinkChannelCommand>
         RuleFor(x => x.ChannelId).NotEmpty();
         RuleFor(x => x.ResourceId).NotEmpty();
         RuleFor(x => x.Kind).Must(ChatResourceViews.IsLinkable)
-            .WithMessage("kind must be work-management.board or documents.page; a Team cannot be linked yet.");
+            .WithMessage("kind must be work-management.board, documents.page or governance.team.");
         RuleFor(x => x.ExpectedVersion).MustBeAnAuthoritativeVersion();
     }
 }

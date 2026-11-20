@@ -424,13 +424,14 @@ export const en = {
     dialog: {
       title: "Link a resource",
       description:
-        "Link this channel to a Board or a Page you can view. The resource is not changed, and people who cannot view it see a generic link.",
+        "Link this channel to a Board, a Page or a Team you can view. The resource is not changed, and people who cannot view it see a generic link.",
       inputLabel: "Address or id of the resource",
-      inputHelp: "Paste the address of a Board or Page of this Workspace.",
+      inputHelp:
+        "Paste the address of a Board, Page or Team of this Workspace.",
       kindLabel: "What the id is",
       check: "Check",
       checking: "Checking the resource",
-      invalid: "This is not a Board or Page of this Workspace.",
+      invalid: "This is not a Board, Page or Team of this Workspace.",
       previewLabel: "Resource to link",
       previewNoAccess:
         "You cannot view this resource, so you cannot link a channel to it.",
@@ -1593,14 +1594,15 @@ export const vi: ChatCopy = {
     dialog: {
       title: "Liên kết tài nguyên",
       description:
-        "Liên kết kênh này với một Bảng hoặc một Trang bạn xem được. Tài nguyên không bị thay đổi, và người không xem được nó chỉ thấy một liên kết chung.",
+        "Liên kết kênh này với một Bảng, một Trang hoặc một Nhóm bạn xem được. Tài nguyên không bị thay đổi, và người không xem được nó chỉ thấy một liên kết chung.",
       inputLabel: "Địa chỉ hoặc mã của tài nguyên",
       inputHelp:
-        "Dán địa chỉ của một Bảng hoặc Trang trong Không gian làm việc này.",
+        "Dán địa chỉ của một Bảng, Trang hoặc Nhóm trong Không gian làm việc này.",
       kindLabel: "Mã này là của",
       check: "Kiểm tra",
       checking: "Đang kiểm tra tài nguyên",
-      invalid: "Đây không phải Bảng hoặc Trang của Không gian làm việc này.",
+      invalid:
+        "Đây không phải Bảng, Trang hoặc Nhóm của Không gian làm việc này.",
       previewLabel: "Tài nguyên sẽ liên kết",
       previewNoAccess:
         "Bạn không xem được tài nguyên này nên không thể liên kết kênh với nó.",
