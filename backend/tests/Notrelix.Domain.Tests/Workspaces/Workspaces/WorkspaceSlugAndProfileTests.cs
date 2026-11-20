@@ -14,7 +14,8 @@ public class WorkspaceSlugAndProfileTests
     public void ReservedList_IsExactlyTheAcceptedWords() =>
         WorkspaceSlugRules.Reserved.Should().BeEquivalentTo(
             "admin", "api", "app", "www", "settings", "login", "signup", "billing", "support", "help",
-            "new", "invite", "join", "onboarding", "workspaces");
+            "new", "invite", "join", "onboarding", "workspaces",
+            "sign-in", "sign-up", "auth", "forgot-password", "reset-password", "verify-email", "home", "welcome", "account");
 
     [Theory]
     [InlineData("admin")]
@@ -32,6 +33,15 @@ public class WorkspaceSlugAndProfileTests
     [InlineData("join")]
     [InlineData("onboarding")]
     [InlineData("workspaces")]
+    [InlineData("sign-in")]
+    [InlineData("sign-up")]
+    [InlineData("auth")]
+    [InlineData("forgot-password")]
+    [InlineData("reset-password")]
+    [InlineData("verify-email")]
+    [InlineData("home")]
+    [InlineData("welcome")]
+    [InlineData("account")]
     [InlineData("  Admin ")]
     public void Create_ReservedSlug_IsRejectedWithItsRuleCode(string slug)
     {

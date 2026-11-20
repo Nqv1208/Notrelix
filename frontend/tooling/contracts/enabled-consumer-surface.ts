@@ -818,6 +818,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceAddressService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace-address.service.ts",
+    capability: "Workspaces.Workspaces.ResolveSlug",
+    operationId: "Workspaces.Workspaces.ResolveSlug",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createWorkspaceSettingsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
