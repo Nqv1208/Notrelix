@@ -18,6 +18,7 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Invitations.Commands;
 public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
 {
     private readonly Mock<ISpaceStore> _store = new();
+    private readonly Notrelix.Testing.Application.Fakes.FakeResourceVisibility _visibility = new();
     private readonly Mock<IOneTimeTokenService> _tokens = new();
     private readonly Mock<IIntegrationEventCollector> _events = new();
     private readonly List<IIntegrationEvent> _published = [];
@@ -42,11 +43,18 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         DbContextMock.Object, new Mock<IActorLookupService>().Object, RequestContextMock.Object, DateTimeProviderMock.Object,
         _tokens.Object, _encryptor.Object, _events.Object,
         new InvitationInitialEntries(DbContextMock.Object, _store.Object),
-        _memberEmails.Object, Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
+        _memberEmails.Object, Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>(),
+        _visibility);
 
     private Task<Notrelix.Application.Common.Models.Result<Guid>> Invite(
         WorkspaceRole role, params InvitationInitialEntryInput[] entries) =>
         Handler().Handle(new InviteMemberCommand(TestWorkspaceId, "new.person@example.com", role, entries), CancellationToken.None);
+
+    private void SetupSpacesAndSee(params Space[] spaces)
+    {
+        SetupSpaces(spaces);
+        _visibility.Spaces.AddRange(spaces.Select(s => s.Id));
+    }
 
     private void NothingStoredOrSent()
     {
@@ -58,7 +66,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
     public async Task ASpaceOfAnotherWorkspace_IsRefused_AndNothingIsStoredOrSent()
     {
         var foreign = Space.Create(TestAccountId, Guid.CreateVersion7(), "Foreign", SpaceVisibility.Workspace, TestUserId, TestNow, SpaceType.Folder);
-        SetupSpaces(foreign);
+        SetupSpacesAndSee(foreign);
 
         var act = () => Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Space", foreign.Id, "Member"));
 
@@ -68,11 +76,30 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
     }
 
     [Fact]
+    public async Task AnActiveSpaceTheInviterCannotSee_IsRefusedLikeAMissingOne_AndNothingIsStoredOrSent()
+    {
+        var hidden = CreateSpace();
+        var visible = CreateSpace();
+        SetupSpaces(hidden, visible); // both active in the Workspace; the inviter sees only one
+        _visibility.Spaces.Add(visible.Id);
+
+        var act = () => Invite(
+            WorkspaceRole.Member,
+            new InvitationInitialEntryInput("Space", visible.Id, "Member"),
+            new InvitationInitialEntryInput("Space", hidden.Id, "Member"));
+
+        var thrown = (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which;
+        thrown.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive);
+        Refusals(thrown).Should().Equal(new InvitationEntryRefusal(1, "space", hidden.Id, InvitationEntryRefusal.NotActive));
+        NothingStoredOrSent();
+    }
+
+    [Fact]
     public async Task AnArchivedSpace_IsRefused_AndNothingIsStoredOrSent()
     {
         var archived = CreateSpace();
         archived.Archive(TestUserId, TestNow, SpaceContentFact.Empty);
-        SetupSpaces(archived);
+        SetupSpacesAndSee(archived);
 
         var act = () => Invite(WorkspaceRole.Member, new InvitationInitialEntryInput("Space", archived.Id, "Member"));
 
@@ -100,7 +127,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
     public async Task AGuestInvitation_CannotNameATeamLeadOrASpaceAdmin_AndNothingIsStoredOrSent(string kind, string role)
     {
         var space = CreateSpace();
-        SetupSpaces(space);
+        SetupSpacesAndSee(space);
         var teamId = Guid.CreateVersion7();
         _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var target = kind == "Team" ? teamId : space.Id;
@@ -116,7 +143,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
     public async Task AGuestInvitation_NamingATeamMember_IsRefusedPerEntry_AndNothingIsStoredOrSent()
     {
         var space = CreateSpace();
-        SetupSpaces(space);
+        SetupSpacesAndSee(space);
         var teamId = Guid.CreateVersion7();
         _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
@@ -140,7 +167,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         var open = CreateSpace();
         var archived = CreateSpace();
         archived.Archive(TestUserId, TestNow, SpaceContentFact.Empty);
-        SetupSpaces(open, archived);
+        SetupSpacesAndSee(open, archived);
         var activeTeam = Guid.CreateVersion7();
         var goneTeam = Guid.CreateVersion7();
         _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, activeTeam, It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -164,7 +191,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
     public async Task AGuestInvitation_NamesEachEntryThatIsTooPrivileged()
     {
         var space = CreateSpace();
-        SetupSpaces(space);
+        SetupSpacesAndSee(space);
         var teamId = Guid.CreateVersion7();
         _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
@@ -182,7 +209,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
     public async Task ActiveTargets_AreStoredWithTheInvitation_AndTheInvitationIsSent()
     {
         var space = CreateSpace();
-        SetupSpaces(space);
+        SetupSpacesAndSee(space);
         var teamId = Guid.CreateVersion7();
         _store.Setup(s => s.IsActiveTeamAsync(TestWorkspaceId, teamId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         WorkspaceInvitation? stored = null;

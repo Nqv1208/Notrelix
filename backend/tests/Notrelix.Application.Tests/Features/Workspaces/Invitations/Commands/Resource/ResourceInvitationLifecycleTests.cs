@@ -255,7 +255,7 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
             DbContextMock.Object, _actors.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
             _tokens.Object, _encryptor.Object, _events.Object,
             new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
-            _memberEmails.Object, DeniedLimiter().Object);
+            _memberEmails.Object, DeniedLimiter().Object, new Notrelix.Testing.Application.Fakes.FakeResourceVisibility());
 
         var act = () => handler.Handle(new InviteMemberCommand(TestWorkspaceId, "a@example.com", WorkspaceRole.Member), CancellationToken.None);
 
@@ -372,7 +372,8 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
             _tokens.Object, _encryptor.Object, _events.Object,
             new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
             _memberEmails.Object,
-            Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
+            Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>(),
+            new Notrelix.Testing.Application.Fakes.FakeResourceVisibility());
 
         var act = () => handler.Handle(
             new InviteMemberCommand(TestWorkspaceId, "a@example.com", WorkspaceRole.Admin), CancellationToken.None);
