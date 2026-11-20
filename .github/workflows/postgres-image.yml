@@ -101,7 +101,7 @@ jobs:
           [[ "$ready" == true ]]
           version="$(docker exec notrelix-ci-postgres psql -U postgres -d notrelix -Atc 'show server_version')"
           echo "server_version=$version"
-          [[ "$version" == 16.15* ]]
+          [[ "$version" == 16.16* ]]
       - name: Save validated image for trusted publish
         if: github.event_name != 'pull_request'
         run: docker save -o "$GITHUB_WORKSPACE/release-image-postgres-${{ matrix.arch }}.tar" "$IMAGE"
