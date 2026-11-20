@@ -19,9 +19,9 @@ public record TeamsExtTeamPersonDto(Guid UserId, string Name, string? Email, str
 /// <param name="Role">The direct entry's Space role: <c>Admin</c>, <c>Member</c> or <c>Viewer</c>.</param>
 public record TeamsExtDirectEntryDto(Guid UserId, string Role);
 
-/// <param name="Kind"><c>space</c> for a Space entry. A Board grant (<c>board</c>) is not listed yet: its read belongs to the Governance resource-access contract.</param>
-/// <param name="SpaceType">The Space type name (<c>Department</c>, <c>Folder</c>, <c>Portfolio</c>, <c>ProjectArea</c>).</param>
-/// <param name="Grant">The Space role the Team holds: <c>Admin</c>, <c>Member</c> or <c>Viewer</c>.</param>
+/// <param name="Kind"><c>space</c> for a Space entry, <c>board</c> for a Board grant of the Team (only Boards the caller can see).</param>
+/// <param name="SpaceType">The Space type name (<c>Department</c>, <c>Folder</c>, <c>Portfolio</c>, <c>ProjectArea</c>); null for a Board.</param>
+/// <param name="Grant">The Space role the Team holds (<c>Admin</c>, <c>Member</c>, <c>Viewer</c>), or for a Board the level (<c>manager</c>, <c>editor</c>, <c>commenter</c>, <c>viewer</c>).</param>
 /// <param name="Direct">Team people who also hold a direct entry in the Space, so they keep access if the Team stops granting.</param>
 public record TeamsExtUsageDto(
     string Kind,
@@ -135,6 +135,9 @@ public class GetWorkspaceTeamsExtQueryHandler : IRequestHandler<GetWorkspaceTeam
                 })
                 .ToListAsync(ct);
 
+        // One Governance read for every Team's Board grants, limited to the Boards the caller can see (GOV-029).
+        var boardGrants = (await _visibility.TeamBoardGrantsAsync(workspaceId, _requestContext.UserId, teamIds, ct)).ToLookup(g => g.TeamId);
+
         var userIds = new HashSet<Guid>(colleagues.Select(m => m.UserId));
         userIds.UnionWith(teamMembers.Select(m => m.UserId));
         userIds.UnionWith(teams.Where(t => t.CreatedBy.HasValue).Select(t => t.CreatedBy!.Value));
@@ -177,6 +180,9 @@ public class GetWorkspaceTeamsExtQueryHandler : IRequestHandler<GetWorkspaceTeam
                             .ToList())))
                 .OrderBy(u => u.Name)
                 .ToList();
+            usage.AddRange(boardGrants[t.Id]
+                .OrderBy(g => g.BoardName)
+                .Select(g => new TeamsExtUsageDto("board", g.BoardId, g.BoardName, null, g.Level.ToLowerInvariant(), g.GrantedAt, [])));
 
             var archived = t.Status == TeamStatus.Archived;
             return new TeamsExtTeamDto(
