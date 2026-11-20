@@ -155,36 +155,26 @@ describe("WorkspaceSettingsSurface", () => {
     ["Admin", settingsAdminScenario],
     ["Member", settingsReadOnlyScenario],
   ])(
-    "FUI[workspace.settings:mfa-hidden] hides the enforce-MFA switch for the %s",
+    "FUI[workspace.settings:mfa-account-note] shows the Account fact read-only, with no switch, for the %s",
     (_role, scenario) => {
-      renderSettings(scenario());
+      const base = scenario();
+      renderSettings({
+        ...base,
+        defaults: {
+          status: "ready",
+          data: workspaceSettingsFixture({ enforceMfa: true }),
+        },
+      });
+      expect(screen.getByText(copy.defaults.mfaOn)).toBeTruthy();
       expect(
         screen.queryByRole("switch", { name: copy.defaults.mfaLabel }),
       ).toBeNull();
-      expect(screen.queryByText(copy.defaults.mfaHelp)).toBeNull();
     },
   );
 
-  it("FUI[workspace.settings:mfa-hidden] still sends the stored enforceMfa value unchanged on save", () => {
-    const base = settingsDefaultScenario();
-    const props = renderSettings({
-      ...base,
-      defaults: {
-        status: "ready",
-        data: workspaceSettingsFixture({ enforceMfa: true }),
-      },
-    });
-    fireEvent.change(screen.getByLabelText(copy.defaults.expiryLabel), {
-      target: { value: "14" },
-    });
-    fireEvent.click(
-      within(form(copy.defaults.title)).getByRole("button", {
-        name: copy.save,
-      }),
-    );
-    expect(props.onSaveDefaults).toHaveBeenCalledWith(
-      expect.objectContaining({ enforceMfa: true, invitationExpiryDays: 14 }),
-    );
+  it("FUI[workspace.settings:mfa-account-note] says the Account does not require it when the fact is false", () => {
+    renderSettings();
+    expect(screen.getByText(copy.defaults.mfaOff)).toBeTruthy();
   });
 
   it("FUI[workspace.settings:timezone] takes any IANA time zone and refuses an unknown one", () => {

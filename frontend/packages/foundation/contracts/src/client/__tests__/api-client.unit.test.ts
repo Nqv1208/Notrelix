@@ -246,6 +246,25 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     return { client, sessionExpiredSpy };
   }
 
+  it("tells the session-expired listener when the refresh was refused because the Account now requires two-step verification", async () => {
+    const { client, sessionExpiredSpy } = refreshWith(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            errorCode: "identity.auth.mfa-enrollment-required",
+          }),
+          { status: 401 },
+        ),
+      ),
+    );
+
+    await expect(client.api.get("/resource")).rejects.toThrow();
+    expect(sessionExpiredSpy).toHaveBeenCalledTimes(1);
+    expect(sessionExpiredSpy.mock.calls[0]![0].reason).toBe(
+      "mfa-enrollment-required",
+    );
+  });
+
   it("keeps the session when the connection drops during the refresh: offline failure, no session-expired event", async () => {
     const { client, sessionExpiredSpy } = refreshWith(() =>
       Promise.reject(new TypeError("Failed to fetch")),

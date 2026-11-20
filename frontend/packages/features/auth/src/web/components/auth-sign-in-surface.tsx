@@ -10,6 +10,7 @@ import { Clock, Loader2, Lock, Mail, Timer } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
+import { AuthQrCode } from "./auth-qr-code";
 import { GoogleMark } from "./google-mark";
 import { MicrosoftMark } from "./microsoft-mark";
 import {
@@ -50,6 +51,8 @@ export type AuthSignInStep =
         | "session-ended"
         /** A password reset just finished: sign in with the new password. */
         | "password-reset"
+        /** The Account now requires two-step verification and this person has none: the session was ended until they sign in and set it up. */
+        | "mfa-enrollment"
         | null;
     }
   | {
@@ -69,6 +72,8 @@ export type AuthSignInStep =
         readonly domain: string;
       };
     }
+  | AuthEnrollStep
+  | AuthCodesStep
   | {
       readonly kind: "otp";
       readonly email: string;
@@ -79,6 +84,24 @@ export type AuthSignInStep =
       /** Asking for a backup code instead of the app's six digits. */
       readonly backup?: boolean;
     };
+
+/**
+ * Required enrolment, in place of the sign-in form: the Account asks for two-step verification
+ * and the person has none. `secret` is null while the authenticator is being prepared.
+ */
+export type AuthEnrollStep = {
+  readonly kind: "enroll";
+  readonly secret: string | null;
+  readonly otpAuthUri: string | null;
+  readonly error?: "wrong" | "expired" | "locked" | "unreachable" | null;
+  readonly lockedSeconds?: number;
+};
+
+/** The recovery codes, shown once, before the person continues into the app. */
+export type AuthCodesStep = {
+  readonly kind: "codes";
+  readonly codes: readonly string[];
+};
 
 export interface AuthSignInSurfaceProps {
   readonly copy: AuthCopy;
@@ -98,6 +121,10 @@ export interface AuthSignInSurfaceProps {
   readonly onVerify: (input: { code: string }) => void;
   readonly onToggleBackup: () => void;
   readonly onBack: () => void;
+  /** The first code of the required enrolment. */
+  readonly onEnroll?: (input: { code: string }) => void;
+  /** The recovery codes were saved: continue into the app. */
+  readonly onCodesDone?: () => void;
 }
 
 /** The sentence for each way a provider sign-in can end on this page. */
@@ -133,6 +160,10 @@ export function AuthSignInSurface(props: AuthSignInSurfaceProps) {
       return (
         <OtpStep key={step.backup ? "backup" : "otp"} {...props} step={step} />
       );
+    case "enroll":
+      return <EnrollStep key="enroll" {...props} step={step} />;
+    case "codes":
+      return <CodesStep key="codes" {...props} step={step} />;
   }
 }
 
@@ -277,6 +308,14 @@ function CredentialsStep({
                 className="m-0 text-item-small text-success-text"
               >
                 {te.passwordReset}
+              </p>
+            ) : null}
+            {emailError === "mfa-enrollment" ? (
+              <p
+                role="status"
+                className="m-0 text-item-small text-muted-foreground"
+              >
+                {te.mfaEnrollmentRequired}
               </p>
             ) : null}
             {emailError === "session-ended" ? (
@@ -755,6 +794,159 @@ function OtpStep({
           {t.back}
         </button>
       </div>
+    </>
+  );
+}
+
+/**
+ * The Account requires a second step and the person has none: the authenticator is added here,
+ * in place, and the first code finishes the sign-in. The enrolment token never reaches this
+ * component; it lives in the flow's memory.
+ */
+function EnrollStep({
+  copy,
+  step,
+  pending,
+  onEnroll,
+  onBack,
+}: AuthSignInSurfaceProps & {
+  step: AuthEnrollStep;
+}) {
+  const t = copy.enroll;
+  const [code, setCode] = useState("");
+  const ready = step.secret !== null && code.replace(/\s+/g, "").length === 6;
+  const dead = step.error === "expired";
+  // A wrong code is not kept: the field starts empty for the next try.
+  const wrongCode = step.error === "wrong";
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (wrongCode && !pending) {
+      setCode("");
+      inputRef.current?.focus();
+    }
+  }, [wrongCode, pending]);
+  // The code field takes focus once the authenticator is ready.
+  useEffect(() => {
+    if (step.secret !== null) inputRef.current?.focus();
+  }, [step.secret]);
+
+  const failure =
+    step.error === "expired"
+      ? t.expired
+      : step.error === "locked"
+        ? fillAuthCopy(t.locked, { seconds: step.lockedSeconds ?? 0 })
+        : step.error === "wrong"
+          ? t.wrong
+          : step.error === "unreachable"
+            ? t.unreachable
+            : null;
+
+  return (
+    <>
+      <AuthHeading title={t.title} lead={t.lead} />
+      <form
+        noValidate
+        className="flex flex-col gap-4.5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (ready) onEnroll?.({ code });
+        }}
+      >
+        <div
+          aria-live="polite"
+          className="flex flex-col gap-3 rounded-[10px] border border-line bg-popover p-4"
+        >
+          {step.secret === null ? (
+            <p className="m-0 text-item-ui text-muted-foreground">
+              {dead ? t.expired : t.preparing}
+            </p>
+          ) : (
+            <>
+              {step.otpAuthUri ? (
+                <AuthQrCode
+                  value={step.otpAuthUri}
+                  label={t.qrLabel}
+                  className="size-[168px] rounded-[8px] border border-line"
+                />
+              ) : null}
+              <p className="m-0 text-crumb text-meta-foreground">
+                {t.secretLabel}
+              </p>
+              <p
+                data-f="secret"
+                className="m-0 font-mono text-item-ui break-all select-all"
+              >
+                {step.secret}
+              </p>
+            </>
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="auth-enroll-code" className={LABEL_CLASS}>
+            {t.codeLabel}
+          </label>
+          <input
+            ref={inputRef}
+            id="auth-enroll-code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            disabled={step.secret === null || dead}
+            value={code}
+            aria-invalid={failure ? true : undefined}
+            onChange={(event) => setCode(event.target.value)}
+            className={cn(INPUT_CLASS, "font-mono tracking-wider")}
+          />
+        </div>
+        {failure ? <FieldError>{failure}</FieldError> : null}
+        <button
+          type="submit"
+          disabled={!ready || pending || dead}
+          className={BUTTON_CLASS.primary}
+        >
+          {pending ? t.verifying : t.verify}
+        </button>
+      </form>
+      <div>
+        <button type="button" onClick={onBack} className={LINK_BUTTON_CLASS}>
+          {t.back}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** The recovery codes of a just-finished enrolment, shown once. */
+function CodesStep({
+  copy,
+  step,
+  onCodesDone,
+}: AuthSignInSurfaceProps & { step: AuthCodesStep }) {
+  const t = copy.enroll;
+  const doneRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    doneRef.current?.focus();
+  }, []);
+  return (
+    <>
+      <AuthHeading title={t.codesTitle} lead={t.codesLead} />
+      <ul
+        aria-label={t.codesTitle}
+        className="m-0 grid list-none grid-cols-2 gap-1.5 rounded-[10px] border border-line bg-popover p-4 font-mono text-item-ui"
+      >
+        {step.codes.map((code) => (
+          <li key={code}>{code}</li>
+        ))}
+      </ul>
+      <button
+        ref={doneRef}
+        type="button"
+        onClick={onCodesDone}
+        className={BUTTON_CLASS.primary}
+      >
+        {t.codesContinue}
+      </button>
     </>
   );
 }

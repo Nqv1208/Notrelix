@@ -37,7 +37,9 @@ export type ApiRequestOptions = {
 export interface SessionExpiredEvent {
   readonly eventId: string;
   readonly occurredAt: string;
-  readonly reason: "refresh-rejected" | "session-revoked";
+  /** `mfa-enrollment-required`: the Account now requires two-step verification and the person has none (sign in to set it up). */
+  readonly reason:
+    "refresh-rejected" | "session-revoked" | "mfa-enrollment-required";
   readonly error: AppError;
 }
 
@@ -159,6 +161,16 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
           // Only the server's 401 (invalid, expired or replayed token) ends the
           // session. A limit (429) or a server fault keeps it.
           const rejected = refreshResponse.status === 401;
+          const mustEnroll =
+            rejected &&
+            (await refreshResponse
+              .clone()
+              .json()
+              .then(
+                (body: { errorCode?: unknown }) =>
+                  body?.errorCode === "identity.auth.mfa-enrollment-required",
+                () => false,
+              ));
           const appErr = new AppError({
             kind: rejected ? "auth" : "server",
             status: refreshResponse.status,
@@ -171,7 +183,9 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
             onSessionExpired({
               eventId: createCorrelationId(),
               occurredAt: clock.now().toISOString(),
-              reason: "refresh-rejected",
+              reason: mustEnroll
+                ? "mfa-enrollment-required"
+                : "refresh-rejected",
               error: appErr,
             });
           }

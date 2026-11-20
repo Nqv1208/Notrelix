@@ -89,12 +89,18 @@ export function AccountSecurityPage() {
   const [notice, showNotice] = useToast();
   const [step, setStep] = useState<Step | null>(null);
   const [stepError, setStepError] = useState<{
-    error: "wrong" | "wait" | "failed" | "expired";
+    error: "wrong" | "wait" | "failed" | "expired" | "requiredByAccount";
     wait?: number;
   } | null>(null);
   const [passwordError, setPasswordError] = useState<{
     error: "wrongCurrent" | "wrongCode" | "rejected" | "wait" | "failed";
     wait?: number;
+  } | null>(null);
+  // The Account's requirement: `null` until read (or when it cannot be read: no block is drawn).
+  // The read does not say who the Owner is, so the control shows until a write answers 403.
+  const [policy, setPolicy] = useState<{
+    required: boolean;
+    canChange: boolean;
   } | null>(null);
   const [activityPages, setActivityPages] = useState<
     { items: AccountSecurityData["activity"]; next: string | null }[]
@@ -108,6 +114,45 @@ export function AccountSecurityPage() {
   const useSecurity = useMemo(() => createUseSecurity(deps), [deps]);
   const { profile } = useProfile();
   const { service, summary, sessions, activity, invalidate } = useSecurity();
+
+  useEffect(() => {
+    let live = true;
+    service
+      .getAccountMfaPolicy()
+      .then(({ required }) => {
+        if (live)
+          setPolicy((current) => ({
+            required,
+            canChange: current?.canChange ?? true,
+          }));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [service]);
+
+  const setAccountMfaPolicy = useCallback(
+    async (required: boolean) => {
+      setActionError(false);
+      setBusy(true);
+      try {
+        await service.setAccountMfaPolicy(required);
+        setPolicy({ required, canChange: true });
+        showNotice(required ? copy.policy.savedOn : copy.policy.savedOff);
+      } catch (error) {
+        // Not the Owner: the requirement stays as it is and the control goes away.
+        if ((error as { status?: number }).status === 403)
+          setPolicy((current) =>
+            current ? { ...current, canChange: false } : current,
+          );
+        else setActionError(true);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [copy.policy.savedOff, copy.policy.savedOn, service, showNotice],
+  );
 
   const activeSessions = useMemo(
     () => (sessions.data ?? []).filter((s) => s.status === "active"),
@@ -155,6 +200,7 @@ export function AccountSecurityPage() {
                 ipAddress: l.ipAddress,
               })),
               activityHasMore: nextCursor !== null,
+              accountMfaPolicy: policy ?? undefined,
             },
           }
         : summary.isError || sessions.isError
@@ -168,6 +214,7 @@ export function AccountSecurityPage() {
       activeSessions,
       lines,
       nextCursor,
+      policy,
       profile?.email,
       workspaceName,
     ],
@@ -276,6 +323,10 @@ export function AccountSecurityPage() {
   const fail = (error: unknown, wrongStatus: boolean) => {
     const wait = waitOf(error);
     if (wait !== null) setStepError({ error: "wait", wait });
+    else if (
+      (error as { code?: string }).code === "identity.mfa.required-by-account"
+    )
+      setStepError({ error: "requiredByAccount" });
     else
       setStepError({
         error:
@@ -687,6 +738,7 @@ export function AccountSecurityPage() {
       onSubmitNewPassword={(submission) => void submitNewPassword(submission)}
       onPasswordChangedContinue={() => void signOutThisDevice()}
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}
+      onSetAccountMfaPolicy={(required) => void setAccountMfaPolicy(required)}
       onSubmitCode={(code) => void submitCode(code)}
       onSubmitPassword={(password) => void submitPassword(password)}
       onStartProviderStepUp={startProviderStepUp}

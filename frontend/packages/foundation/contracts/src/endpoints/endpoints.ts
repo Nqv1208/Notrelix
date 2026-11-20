@@ -308,6 +308,9 @@ export const endpoints = {
     // Workspaces.Workspaces.GetDeletedWorkspaces: the "Recently deleted" list of the Owner.
     deletedWorkspaces: (accountId: string) =>
       `/accounts/${accountId}/workspaces/deleted`,
+    // Accounts.GetSecurityPolicy / Accounts.SetMfaPolicy: the Account's MFA requirement (the X-Account-Id header names it).
+    securityPolicy: "/accounts/security-policy",
+    mfaPolicy: "/accounts/security-policy/mfa",
   },
   onboarding: {
     draft: "/workspaces/onboarding-draft",

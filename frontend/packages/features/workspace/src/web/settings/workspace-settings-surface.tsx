@@ -653,7 +653,6 @@ function DefaultsForm({
     next.invitationExpiryDays !== values.invitationExpiryDays ||
     next.allowGuestInvites !== values.allowGuestInvites ||
     next.allowPublicSharing !== values.allowPublicSharing ||
-    next.enforceMfa !== values.enforceMfa ||
     next.timeZone !== values.timeZone ||
     next.weekStart !== values.weekStart ||
     expiryText.trim() !== String(values.invitationExpiryDays);
@@ -803,7 +802,23 @@ function DefaultsForm({
             setDraft((current) => ({ ...current, allowPublicSharing: checked }))
           }
         />
-        {/* The enforceMfa switch stays hidden until Account policy decides who enforces it; the stored value still travels in the save payload. */}
+        {/* The Account owns the requirement: this is its fact, read-only (the Owner changes it in Account settings). */}
+        <Field
+          orientation="horizontal"
+          data-f="account-mfa"
+          className="items-start justify-between gap-4 max-md:min-h-touch"
+        >
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <FieldLabel>{copy.defaults.mfaLabel}</FieldLabel>
+            <FieldDescription>{copy.defaults.mfaHelp}</FieldDescription>
+          </div>
+          <span
+            role="status"
+            className="shrink-0 text-item-small font-medium text-muted-foreground"
+          >
+            {values.enforceMfa ? copy.defaults.mfaOn : copy.defaults.mfaOff}
+          </span>
+        </Field>
       </div>
       {locked ? null : (
         <SaveBar

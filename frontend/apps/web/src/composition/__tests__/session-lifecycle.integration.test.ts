@@ -68,6 +68,24 @@ describe("application lifecycle — session invalidation", () => {
     lifecycle.dispose();
   });
 
+  it("LIFE-005b a refresh refused for required two-step verification sends the person to sign-in with that reason", () => {
+    const sessionEvents = createSessionEventBus();
+    const navigateToSignedOut = vi.fn();
+    const lifecycle = createApplicationLifecycle({
+      queryClient: createQueryClient(),
+      realtime: createFakeRealtime(),
+      sessionEvents,
+      navigateToSignedOut,
+    });
+
+    sessionEvents.publish({
+      ...createTerminalEvent("evt-mfa"),
+      reason: "mfa-enrollment-required",
+    });
+    expect(navigateToSignedOut).toHaveBeenCalledWith("mfa-enrollment-required");
+    lifecycle.dispose();
+  });
+
   it("LIFE-005 terminal event navigates to existing signed-out route", () => {
     const queryClient = createQueryClient();
     const sessionEvents = createSessionEventBus();
