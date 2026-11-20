@@ -24,9 +24,15 @@ public sealed class InvitationInitialEntries
     /// The entries whose Team is not an active Team, or whose Space is not an active Space, of the Workspace, each
     /// with its position in <paramref name="entries"/>. Empty when every target is eligible. Pure read, no mutation.
     /// </summary>
+    /// <param name="inviterVisibleSpaceIds">
+    /// The Spaces the inviter may see (Governance visibility). A Space outside it is refused with the same reason as a
+    /// missing one, so an inviter learns nothing about a Space they cannot see. Null at acceptance: the invitation was
+    /// checked against its issuer when it was issued, and the invitee's own visibility is not the question there.
+    /// </param>
     public async Task<IReadOnlyList<InvitationEntryRefusal>> IneligibleEntriesAsync(
         Guid workspaceId,
         IReadOnlyList<WorkspaceInvitationInitialEntry> entries,
+        IReadOnlySet<Guid>? inviterVisibleSpaceIds,
         CancellationToken ct)
     {
         var refused = new List<InvitationEntryRefusal>();
@@ -35,7 +41,8 @@ public sealed class InvitationInitialEntries
             var entry = entries[index];
             var eligible = entry.Kind == WorkspaceInvitationEntryKind.Team
                 ? await _spaces.IsActiveTeamAsync(workspaceId, entry.TargetId, ct)
-                : await IsActiveSpaceAsync(workspaceId, entry.TargetId, ct);
+                : (inviterVisibleSpaceIds is null || inviterVisibleSpaceIds.Contains(entry.TargetId))
+                  && await IsActiveSpaceAsync(workspaceId, entry.TargetId, ct);
             if (!eligible)
                 refused.Add(new InvitationEntryRefusal(
                     index, entry.Kind.ToString().ToLowerInvariant(), entry.TargetId, InvitationEntryRefusal.NotActive));
@@ -49,7 +56,7 @@ public sealed class InvitationInitialEntries
         Guid workspaceId,
         IReadOnlyList<WorkspaceInvitationInitialEntry> entries,
         CancellationToken ct) =>
-        (await IneligibleEntriesAsync(workspaceId, entries, ct)).Count == 0;
+        (await IneligibleEntriesAsync(workspaceId, entries, null, ct)).Count == 0;
 
     /// <summary>
     /// Applies every entry for the (already active) workspace member. Subjects

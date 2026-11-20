@@ -1,6 +1,7 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Public.Invitations;
@@ -64,6 +65,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     private readonly InvitationInitialEntries _initialEntries;
     private readonly IMemberEmailDisclosure _memberEmails;
     private readonly IInvitationRateLimiter _rateLimiter;
+    private readonly IResourceVisibility _visibility;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -75,8 +77,10 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         IIntegrationEventCollector integrationEventCollector,
         InvitationInitialEntries initialEntries,
         IMemberEmailDisclosure memberEmails,
-        IInvitationRateLimiter rateLimiter)
+        IInvitationRateLimiter rateLimiter,
+        IResourceVisibility visibility)
     {
+        _visibility = visibility;
         _rateLimiter = rateLimiter;
         _memberEmails = memberEmails;
         _initialEntries = initialEntries;
@@ -107,7 +111,11 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         if (entries.Count > 0)
         {
             // Every refused entry is named (additive `entries` extension of the problem), so the form can show each one.
-            var refused = await _initialEntries.IneligibleEntriesAsync(request.WorkspaceId, entries, ct);
+            // A Space the inviter cannot see is refused like a missing one (GOV-029), whatever their actions allow.
+            var visibleSpaces = entries.Any(e => e.Kind == WorkspaceInvitationEntryKind.Space)
+                ? (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet()
+                : new HashSet<Guid>();
+            var refused = await _initialEntries.IneligibleEntriesAsync(request.WorkspaceId, entries, visibleSpaces, ct);
             if (refused.Count > 0)
                 throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
                     Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive,

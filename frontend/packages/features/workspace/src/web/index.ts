@@ -92,6 +92,10 @@ export {
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
 export {
+  WorkspaceAddressGate,
+  type WorkspaceAddressGateProps,
+} from "./address/workspace-address-gate";
+export {
   ArchivedWorkspaceBanner,
   type ArchivedBannerState,
   type ArchivedWorkspaceBannerProps,

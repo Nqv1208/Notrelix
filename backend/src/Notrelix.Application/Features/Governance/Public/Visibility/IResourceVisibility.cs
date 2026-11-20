@@ -53,7 +53,18 @@ public interface IResourceVisibility
     /// denied by an applicable permission rule. Anyone else sees no Team, and a hidden, deleted or missing Team look the same.
     /// </summary>
     Task<IReadOnlyList<VisibleTeam>> VisibleTeamsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The Board grants the given Teams hold, limited to the active Boards the principal may see (the same rules as
+    /// <see cref="VisibleBoardIdsAsync"/>): a grant on a Board the principal cannot see is never listed, so the Teams
+    /// administration view cannot disclose it. One read for all Teams, never one per Board.
+    /// </summary>
+    Task<IReadOnlyList<TeamBoardGrant>> TeamBoardGrantsAsync(Guid workspaceId, Guid userId, IReadOnlyCollection<Guid> teamIds, CancellationToken cancellationToken);
 }
+
+/// <param name="Level"><c>Viewer</c>, <c>Commenter</c>, <c>Editor</c> or <c>Manager</c> (an Owner grant reads as Manager).</param>
+/// <param name="GrantedAt">When the grant was made.</param>
+public sealed record TeamBoardGrant(Guid TeamId, Guid BoardId, string BoardName, string Level, DateTimeOffset GrantedAt);
 
 public sealed record VisibleTeam(Guid TeamId, string Name);
 
