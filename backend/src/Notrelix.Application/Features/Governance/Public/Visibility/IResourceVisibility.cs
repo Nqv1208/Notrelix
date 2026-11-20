@@ -45,6 +45,17 @@ public interface IResourceVisibility
 
     /// <summary>The names of the given Spaces of the Workspace (non-deleted ones only). Callers pass ids they already filtered by visibility; an id the caller may not see is never disclosed through this.</summary>
     Task<IReadOnlyDictionary<Guid, string>> SpaceNamesAsync(Guid workspaceId, IReadOnlyCollection<Guid> spaceIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The Board grants the given Teams hold, limited to the active Boards the principal may see (the same rules as
+    /// <see cref="VisibleBoardIdsAsync"/>): a grant on a Board the principal cannot see is never listed, so the Teams
+    /// administration view cannot disclose it. One read for all Teams, never one per Board.
+    /// </summary>
+    Task<IReadOnlyList<TeamBoardGrant>> TeamBoardGrantsAsync(Guid workspaceId, Guid userId, IReadOnlyCollection<Guid> teamIds, CancellationToken cancellationToken);
 }
+
+/// <param name="Level"><c>Viewer</c>, <c>Commenter</c>, <c>Editor</c> or <c>Manager</c> (an Owner grant reads as Manager).</param>
+/// <param name="GrantedAt">When the grant was made.</param>
+public sealed record TeamBoardGrant(Guid TeamId, Guid BoardId, string BoardName, string Level, DateTimeOffset GrantedAt);
 
 public sealed record SpaceAccessEntry(Guid SpaceId, string Level);
