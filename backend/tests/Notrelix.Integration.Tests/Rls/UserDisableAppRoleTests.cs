@@ -104,7 +104,8 @@ public sealed class UserDisableAppRoleTests : IAsyncLifetime
         await enterScope(rls);
 
         var provider = new IdentityUserAccessProvider(
-            context, new JwtBlacklistService(Redis), FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow));
+            context, new JwtBlacklistService(Redis), FakeDateTimeProvider.WithFixedTime(DateTimeOffset.UtcNow),
+            activity: null!, notice: null!); // EndAccess records no activity and sends no notice
         var found = await provider.EndAccessAsync(target, Guid.CreateVersion7(), kind, "left the company", CancellationToken.None);
         await context.SaveChangesAsync();
         await tx.CommitAsync();

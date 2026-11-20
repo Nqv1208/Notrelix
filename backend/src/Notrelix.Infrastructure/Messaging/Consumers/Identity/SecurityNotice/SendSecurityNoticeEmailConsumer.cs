@@ -75,6 +75,9 @@ public sealed class SendSecurityNoticeEmailConsumer : IConsumer<SecurityNoticeRe
         SecurityNoticeKind.MfaDisabled => (
             "Two-step verification turned off",
             "Two-step verification was turned off for your account."),
+        SecurityNoticeKind.MfaReset => (
+            "Two-step verification was reset",
+            "The Owner of your workspace reset your two-step verification and signed you out everywhere. Set it up again the next time you sign in; if you did not expect this, contact your Owner."),
         SecurityNoticeKind.ProviderLinked => (
             "Sign-in provider linked",
             "A sign-in provider was linked to your account."),
