@@ -26,7 +26,7 @@ stateful = false
 
 [images.postgres]
 class = "runtime"
-source = "derived from postgres:16.15-bookworm with a rebuilt gosu (infra/postgres/Dockerfile)"
+source = "derived from postgres:16.16-bookworm with a rebuilt gosu (infra/postgres/Dockerfile)"
 ref = "ghcr.io/nqv1208/notrelix-postgres@sha256:6d7fa4cd052227fcd8a5917819e9dc4df1f622852c56249166d801b5cf4db679"
 compose_service = "postgres"
 deploy_env_var = "NOTRELIX_POSTGRES_IMAGE"
