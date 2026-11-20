@@ -366,10 +366,16 @@ describe("required two-step enrolment and the Account policy", () => {
     const { call, store } = world();
     store.auth.accountOwner = false;
     expect(
+      (await call("GET", "/accounts/security-policy")).body?.canManage,
+    ).toBe(false);
+    expect(
       (await call("PUT", "/accounts/security-policy/mfa", { required: true }))
         .status,
     ).toBe(403);
     store.auth.accountOwner = true;
+    expect(
+      (await call("GET", "/accounts/security-policy")).body?.canManage,
+    ).toBe(true);
     await call("PUT", "/accounts/security-policy/mfa", { required: true });
     const workspace = store.getWorkspaces()[0]!;
     const settings = await call("GET", `/workspaces/${workspace.id}/settings`);
