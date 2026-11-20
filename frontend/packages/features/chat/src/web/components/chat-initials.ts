@@ -1,14 +1,23 @@
+/** Replaces each "(...)" group with a space; an unclosed "(" stays. Linear, unlike a regex. */
+function withoutBrackets(text: string): string {
+  let out = "";
+  let from = 0;
+  for (;;) {
+    const open = text.indexOf("(", from);
+    const close = open < 0 ? -1 : text.indexOf(")", open + 1);
+    if (close < 0) return out + text.slice(from);
+    out += `${text.slice(from, open)} `;
+    from = close + 1;
+  }
+}
+
 /**
  * The initials of a person for an avatar: the first letter of the last two
  * words of the name. A role in brackets, such as "(Admin)", is not part of the
  * name and is left out.
  */
 export function initialsOf(name: string): string {
-  const words = name
-    .replace(/\([^)]*\)/g, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const words = withoutBrackets(name).trim().split(/\s+/).filter(Boolean);
   const letters = words.slice(-2).map((word) => Array.from(word)[0] ?? "");
   return letters.join("").toUpperCase() || "?";
 }

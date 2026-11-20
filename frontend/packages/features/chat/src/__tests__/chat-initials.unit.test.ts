@@ -14,6 +14,29 @@ describe("initialsOf", () => {
   it("falls back to a question mark for an empty name", () => {
     expect(initialsOf("   ")).toBe("?");
   });
+
+  it.each([
+    ["(Admin) Ada Lovelace", "AL"],
+    ["Ada (a) Love (b) lace", "LL"],
+    ["Ada (open Lovelace", "(L"],
+    ["Ada ) Lovelace", ")L"],
+    ["(Admin)", "?"],
+    ["Ada()Lovelace", "AL"],
+  ])("handles brackets in %j", (input, expected) => {
+    expect(initialsOf(input)).toBe(expected);
+  });
+
+  it("answers 50k adversarial inputs quickly", () => {
+    const started = performance.now();
+    for (const input of [
+      "(".repeat(50_000),
+      `a${"(a".repeat(25_000)}`,
+      ")".repeat(50_000),
+    ]) {
+      initialsOf(input);
+    }
+    expect(performance.now() - started).toBeLessThan(200);
+  });
 });
 
 describe("avatarToneOf", () => {

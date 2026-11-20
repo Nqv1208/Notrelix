@@ -11,6 +11,7 @@ import {
   Toast,
 } from "../shared/account-parts";
 import { fillCopy } from "../shared/account-surface-model";
+import { looksLikeEmail } from "./looks-like-email";
 import type { AccountSecurityCopy } from "../security/account-security.copy";
 import {
   FlowPanel,
@@ -24,8 +25,6 @@ export type AccountEmailError = "wait" | "failed";
 export type AccountEmailFlow =
   | Extract<AccountSecurityFlow, { kind: "stepUp" }>
   | { readonly kind: "emailSent"; readonly email: string };
-
-const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface AccountEmailSurfaceProps {
   readonly copy: AccountSecurityCopy;
@@ -57,7 +56,7 @@ export function AccountEmailSurface(props: AccountEmailSurfaceProps) {
   const [value, setValue] = React.useState(props.pendingEmail ?? "");
   const [tried, setTried] = React.useState(false);
   const email = value.trim();
-  const problem = !LOOKS_LIKE_EMAIL.test(email)
+  const problem = !looksLikeEmail(email)
     ? t.invalid
     : email.toLowerCase() === props.currentEmail.toLowerCase()
       ? t.sameAsCurrent
