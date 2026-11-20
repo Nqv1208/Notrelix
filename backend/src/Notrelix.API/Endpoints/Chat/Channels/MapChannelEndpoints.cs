@@ -65,7 +65,7 @@ public static class MapChannelEndpoints
         group.MapWorkspacePut("/{channelId:guid}/link", LinkAsync)
             .WithName("Chat.Channels.Link")
             .WithSummary("Link a channel to a Board or a Page")
-            .WithDescription("Needs a channel manager, a Workspace Owner or Admin who can also view the resource now: kind is work-management.board or documents.page (a Team cannot be linked yet) and resourceId its id. A resource the caller cannot view, trashed or missing is 403. The resource is never changed. A channel has one link; a second replaces it, and the same link is a no-op. The change is announced to the channel as chat.space.changed with the change link. A stale expectedVersion is 412; an archived channel is 409 channel-archived.")
+            .WithDescription("Needs a channel manager, a Workspace Owner or Admin who can also view the resource now: kind is work-management.board, documents.page or governance.team (a Team the caller may view: an active non-Guest member of the workspace) and resourceId its id. A resource the caller cannot view, trashed or missing is 403. The resource is never changed. A channel has one link; a second replaces it, and the same link is a no-op. The change is announced to the channel as chat.space.changed with the change link. A stale expectedVersion is 412; an archived channel is 409 channel-archived.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status409Conflict, StatusCodes.Status412PreconditionFailed);
 
         group.MapWorkspaceDelete("/{channelId:guid}/link", UnlinkAsync)

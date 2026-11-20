@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   createActivityService,
   type ActivityEndpoints,
@@ -11,19 +11,30 @@ interface UseWorkspaceActivityDeps {
   endpoints: ActivityEndpoints;
 }
 
-/** The first page of workspace activity (`Workspaces.Activity.GetWorkspaceActivity`). */
+/**
+ * The workspace feed, a page at a time (`Workspaces.Activity.GetWorkspaceActivity`). A Guest is refused the read,
+ * so the host turns the query on for members alone; a refusal is not retried.
+ */
 export function createUseWorkspaceActivity({
   api,
   endpoints,
 }: UseWorkspaceActivityDeps) {
   const service = createActivityService(api, endpoints);
 
-  return function useWorkspaceActivity(workspaceId: string, pageSize = 10) {
-    return useQuery({
+  return function useWorkspaceActivity(
+    workspaceId: string,
+    enabled: boolean,
+    pageSize = 10,
+  ) {
+    return useInfiniteQuery({
       queryKey: [...workspaceQueryKeys.activity(workspaceId), pageSize],
-      queryFn: () => service.getPage(workspaceId, 1, pageSize),
-      enabled: !!workspaceId,
+      queryFn: ({ pageParam }) =>
+        service.getPage(workspaceId, pageParam, pageSize),
+      initialPageParam: null as string | null,
+      getNextPageParam: (last) => last.nextCursor,
+      enabled: !!workspaceId && enabled,
       staleTime: 30_000,
+      retry: false,
     });
   };
 }

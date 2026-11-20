@@ -133,6 +133,9 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Infrastructure.Data.Abstractions.IActivityProjectionDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Public.WorkspaceActivity.IWorkspaceActivityFeed,
+            Notrelix.Infrastructure.Data.Collaboration.WorkspaceActivityFeed>();
 
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {

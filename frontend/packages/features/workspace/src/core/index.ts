@@ -70,6 +70,7 @@ export {
   createActivityService,
   parseActivityPage,
   type ActivityEndpoints,
+  type WorkspaceActivityEntry,
   type WorkspaceActivityPage,
 } from "./api/activity.service";
 export {

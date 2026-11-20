@@ -36,6 +36,12 @@ public static class ResourceVisibilityQuery
     /// <summary>The action a single Page read is authorized with (GetPageQuery).</summary>
     public const string PageReadAction = "ViewPage";
 
+    /// <summary>The action a Team is read with: the member list of the Workspace (the Teams administration read).</summary>
+    public const string TeamReadAction = "ViewMembers";
+
+    /// <summary>The resource a Team read is authorized against: the Workspace itself.</summary>
+    public const string TeamReadResource = "workspaces.workspace";
+
     private const string Principal = """
         WITH ws AS MATERIALIZED (
           SELECT w.account_id FROM workspace.workspaces w
@@ -196,5 +202,34 @@ public static class ResourceVisibilityQuery
         SELECT sl.space_id, sl.level
           FROM space_level sl
          WHERE sl.level > 0
+        """;
+
+    /// <summary>
+    /// Non-deleted Teams of the Workspace for a principal who may read the member list (<c>ViewMembers</c>): an active,
+    /// non-Guest member (a custom role counts by its base role) who is not denied by the first-priority applicable
+    /// rule for <c>ViewMembers</c>. Workspace Owners skip rules (GOV-025 step 2). Run with action
+    /// <see cref="TeamReadAction"/> and resource type <see cref="TeamReadResource"/>; the rules are matched against the
+    /// Workspace resource, as the single read of the member list does. A Guest and a non-member get no row.
+    /// </summary>
+    public const string VisibleTeamsSql = Principal + "\n" + """
+
+        SELECT t.id, t.name
+          FROM workspace.teams t
+          CROSS JOIN member m
+         WHERE t.workspace_id = @workspace_id AND t.deleted_at IS NULL
+           AND m.role <> 'Guest'
+           AND (m.role = 'Owner'
+                OR NOT COALESCE((
+                  SELECT bool_or(r.effect = 'deny')
+                    FROM user_rules r
+                   WHERE (r.scope_type = 'Workspace'
+                          OR ((r.resource_type IS NULL OR r.resource_type = @resource_type)
+                              AND (r.resource_id IS NULL OR r.resource_id = @workspace_id)))
+                     AND r.priority = (
+                       SELECT min(r2.priority) FROM user_rules r2
+                        WHERE r2.scope_type = 'Workspace'
+                           OR ((r2.resource_type IS NULL OR r2.resource_type = @resource_type)
+                               AND (r2.resource_id IS NULL OR r2.resource_id = @workspace_id)))), false))
+         ORDER BY t.name
         """;
 }

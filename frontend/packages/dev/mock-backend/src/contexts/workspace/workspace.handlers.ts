@@ -454,6 +454,29 @@ export const workspaceOperations = [
     },
   }),
 
+  // Anonymous. The mock has one account, so the path's account id is not matched; an unknown or
+  // deleted address is the producer's 400 refusal.
+  defineMockOperation<{ accountId: string }, never, unknown>({
+    id: "workspace.slug.resolve",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.ResolveSlug",
+    },
+    method: "GET",
+    route: "/accounts/:accountId/resolve",
+    async handle({ store, request }) {
+      const slug = (request.searchParams.get("slug") ?? "")
+        .trim()
+        .toLowerCase();
+      const found = store
+        .getWorkspaces()
+        .find((w) => w.slug === slug && !store.isWorkspaceDeleted(w.id));
+      return found
+        ? ok(workspaceDto(store, found.id))
+        : ruleViolation("Workspace not found.");
+    },
+  }),
+
   defineMockOperation<
     { workspaceId: string },
     { slug?: string; expectedVersion?: number },
@@ -1281,16 +1304,12 @@ export const workspaceOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/activity",
-    async handle({ params, store, request }) {
+    async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      const query = request.searchParams;
-      // The producer records no activity entries yet; mirror its envelope.
-      return ok({
-        data: [],
-        total: 0,
-        page: Number(query.get("page") ?? 1),
-        pageSize: Number(query.get("pageSize") ?? 20),
-      });
+      // A Guest is forbidden (the feed names people); the mock records no activity facts, so it mirrors the empty envelope.
+      if (store.getCurrentMemberRole(params.workspaceId) === "guest")
+        return forbidden();
+      return ok({ items: [], nextCursor: null });
     },
   }),
 

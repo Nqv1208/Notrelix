@@ -7,6 +7,7 @@ import {
   NAVIGATION_RESOURCE_KIND,
 } from "@notrelix/features-workspace/core";
 import {
+  createUseWorkspaceActivity,
   createUseWorkspaceFigures,
   createUseWorkspacePins,
   createUseWorkspaceRecents,
@@ -14,6 +15,7 @@ import {
   WorkspaceHomeSurface,
   formatCopy,
   type ContinueEntry,
+  type HomeActivityView,
   type HomeAgenda,
   type HomeReplyActions,
   type HomeReplyView,
@@ -75,6 +77,7 @@ export function HomePage() {
       useRecents: createUseWorkspaceRecents(deps),
       usePins: createUseWorkspacePins(deps),
       useFigures: createUseWorkspaceFigures(deps),
+      useActivity: createUseWorkspaceActivity(deps),
     };
   }, [runtimeClient]);
 
@@ -89,6 +92,24 @@ export function HomePage() {
   const figuresState = isAdmin
     ? sectionState(figuresQuery, figuresQuery.data)
     : undefined;
+  // The activity feed is for members: a Guest is refused it, so a Guest never asks.
+  const canReadActivity = viewer.role !== null && viewer.role !== "guest";
+  const activityQuery = hooks.useActivity(workspaceId, canReadActivity);
+  const activityView = useMemo<HomeActivityView | undefined>(() => {
+    if (!canReadActivity) return undefined;
+    const pages = activityQuery.data?.pages;
+    return {
+      state: sectionState(
+        activityQuery,
+        pages?.flatMap((page) => page.entries),
+      ),
+      hasMore: activityQuery.hasNextPage,
+      loadingMore: activityQuery.isFetchingNextPage,
+      loadMoreFailed: activityQuery.isFetchNextPageError,
+      onLoadMore: () => void activityQuery.fetchNextPage(),
+      onRetry: () => void activityQuery.refetch(),
+    };
+  }, [canReadActivity, activityQuery]);
   const myWorkQuery = useMyWorkExtended(workspaceId);
   const feedQuery = useHomeFeed(workspaceId);
   const departmentsById = useDepartmentsById(workspaceId);
@@ -323,6 +344,7 @@ export function HomePage() {
           />
         }
         figures={figuresState}
+        activity={activityView}
         onRetryFigures={() => void figuresQuery.refetch()}
         copy={copy}
         navigation={navigation}

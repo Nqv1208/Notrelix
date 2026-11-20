@@ -152,6 +152,28 @@ public sealed class InvitationMixedEntriesAuthorizationIntegrationTests : IAsync
     }
 
     [Fact]
+    public async Task ASpaceTheInviterCannotSee_IsRefusedLikeAMissingOne_EvenWithManageSpaces()
+    {
+        var (stack, member, _, openSpaceId) = await SeedAsync();
+        var privateSpaceId = await _host.SeedSpaceAsync(stack, "Leadership", SpaceVisibility.Private, stack.OwnerId);
+        await _host.SeedRuleAsync(stack, PermissionSubjectType.User, member, PermissionAction.ManageSpaces, PermissionEffect.Allow);
+        using var asMember = _host.CreateProvider(stack.AccountId, member, RegisterInvitationServices);
+
+        var act = () => OrgTreeTestHost.SendAsync(asMember, new InviteMemberCommand(
+            stack.WorkspaceId, "hidden@example.com", WorkspaceRole.Member,
+            [
+                new InvitationInitialEntryInput("Space", openSpaceId, "Viewer"),
+                new InvitationInitialEntryInput("Space", privateSpaceId, "Viewer"),
+            ]));
+
+        var refusal = (await act.Should().ThrowAsync<DomainBusinessRuleException>()).Which;
+        refusal.RuleCode.Should().Be("Workspaces_Invitation_EntryTargetNotActive");
+        ((IReadOnlyList<InvitationEntryRefusal>)refusal.Details["entries"]!).Should().Equal(
+            new InvitationEntryRefusal(1, "space", privateSpaceId, "not-active"));
+        (await InvitationCountAsync(stack)).Should().Be(0);
+    }
+
+    [Fact]
     public async Task DenyRuleOnManageSpaces_BlocksAnAdminsMixedInvitation()
     {
         var (stack, _, teamId, spaceId) = await SeedAsync();

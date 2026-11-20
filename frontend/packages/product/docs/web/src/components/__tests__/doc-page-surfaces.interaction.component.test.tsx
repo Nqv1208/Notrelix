@@ -325,6 +325,34 @@ describe("docs web pure surfaces", () => {
     expect(screen.queryByText(docsCopy.header.saved)).toBeNull();
   });
 
+  it("FUI[docs.page.bar:host-action] shows a host action before Share, and nothing extra without one", () => {
+    const withAction = renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="saved"
+        canShare
+        headerAction={<button type="button">Discuss</button>}
+      />,
+    );
+    const discuss = screen.getByRole("button", { name: "Discuss" });
+    const share = screen.getByRole("button", { name: docsCopy.header.share });
+    expect(
+      discuss.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    withAction.unmount();
+
+    renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="saved"
+        canShare
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Discuss" })).toBeNull();
+  });
+
   it("FUI[docs.page.bar:saving] shows a spinner while saving and a check only once saved", () => {
     const saving = renderPureUi(
       <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saving" />,

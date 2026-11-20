@@ -20,6 +20,10 @@ import type { WorkspaceFigures } from "../../core/types/workspace";
 import { ShellLink } from "../shell/shell-link";
 import { WorkspaceFiguresStrip } from "./workspace-figures";
 import {
+  WorkspaceActivitySection,
+  type HomeActivityView,
+} from "./workspace-activity";
+import {
   formatCopy,
   IDENTITY_MARK_CLASS,
   type ShellNavigation,
@@ -145,6 +149,11 @@ export interface WorkspaceHomeSurfaceProps {
    */
   readonly figures?: SectionState<WorkspaceFigures>;
   readonly onRetryFigures?: () => void;
+  /**
+   * Recent workspace activity (a member, never a Guest); `undefined`: the section stays out. A workspace still being
+   * set up shows onboarding instead.
+   */
+  readonly activity?: HomeActivityView;
   readonly onRetryContinue: () => void;
   readonly onRetryMyWork: () => void;
   /** The getting-started list of a workspace made through onboarding. */
@@ -1324,6 +1333,14 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
               </div>
             ) : null}
           </div>
+          {props.activity ? (
+            <WorkspaceActivitySection
+              copy={copy}
+              formatters={formatters}
+              now={now}
+              view={props.activity}
+            />
+          ) : null}
         </>
       )}
     </div>

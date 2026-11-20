@@ -9,6 +9,7 @@ using Notrelix.Application.Features.Chat.Links.Queries.ListLinkedChannels;
 using Notrelix.Application.Features.Chat.Links.Services;
 using Notrelix.Application.Features.Documents.Public.PageTitles;
 using Notrelix.Application.Features.Documents.Public.PageViewAccess;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.WorkManagement.Public.BoardTitles;
 using Notrelix.Application.Tests.Features.Collaboration;
@@ -18,7 +19,7 @@ using Space = Notrelix.Domain.Chat.Spaces.Space;
 
 namespace Notrelix.Application.Tests.Features.Chat.Links;
 
-/// <summary>UC-CHT-H10: a channel manager links a channel to a Board or Page they can view; the reverse lookup and the views degrade, never fail.</summary>
+/// <summary>UC-CHT-H10: a channel manager links a channel to a Board, Page or Team they can view (UC-CHT-H11); the reverse lookup and the views degrade, never fail.</summary>
 public class ChannelLinkHandlerTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
@@ -32,6 +33,7 @@ public class ChannelLinkHandlerTests
     private readonly Guid _outsider = Guid.NewGuid();
     private readonly Guid _boardId = Guid.NewGuid();
     private readonly Guid _pageId = Guid.NewGuid();
+    private readonly Guid _teamId = Guid.NewGuid();
 
     private readonly Mock<ICurrentRequestContext> _context = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
@@ -240,25 +242,66 @@ public class ChannelLinkHandlerTests
     }
 
     [Fact]
-    public async Task ATeamLinkThatExistsDegradesToGeneric_AndANewOneIsNotLinkable()
+    public async Task AManagerWhoCanViewATeamLinksIt_TheViewCarriesTheTeamName()
     {
-        ChatResourceViews.IsLinkable(ChannelLinkKinds.Team).Should().BeFalse("Governance publishes no Team visibility fact yet");
         var channel = Channel();
-        channel.SetLink(ChannelLinkKinds.Team, Guid.NewGuid(), _manager, Now);
+        _visibility.Teams.Add(new VisibleTeam(_teamId, "Platform"));
 
-        var get = await new GetChannelQueryHandler(_db.Object, _context.Object, _members.Object, Views())
-            .Handle(new GetChannelQuery(_workspaceId, channel.Id), CancellationToken.None);
+        var result = await Link(channel, ChannelLinkKinds.Team, _teamId);
 
-        get.Data!.Channel.Link!.Accessible.Should().BeFalse();
-        get.Data.Channel.Link.Title.Should().BeNull();
+        result.Succeeded.Should().BeTrue();
+        result.Data!.Link.Should().BeEquivalentTo(new { Kind = ChannelLinkKinds.Team, ResourceId = _teamId, Accessible = true, Title = "Platform" });
+        channel.LinkKind.Should().Be(ChannelLinkKinds.Team);
+        VerifyAudit(ChatAuditFacts.LinkSet, Times.Once());
     }
 
     [Fact]
-    public void TheValidatorRefusesATeamAndAnUnknownKind()
+    public async Task ATeamTheManagerCannotView_IsForbiddenLikeAMissingOne_AndNothingIsStored()
+    {
+        var channel = Channel(); // Governance lists no Team for the manager (a Guest, a deny rule, another Workspace, a deleted Team)
+
+        await FluentActions.Awaiting(() => Link(channel, ChannelLinkKinds.Team, _teamId)).Should().ThrowAsync<ForbiddenException>();
+
+        channel.HasLink.Should().BeFalse();
+        VerifyAudit(ChatAuditFacts.LinkSet, Times.Never());
+    }
+
+    [Fact]
+    public async Task ATeamLinkShowsTheNameOnlyToViewersOfThatTeam()
+    {
+        var channel = Channel();
+        channel.SetLink(ChannelLinkKinds.Team, _teamId, _manager, Now);
+        _visibility.Teams.Add(new VisibleTeam(_teamId, "Platform"));
+
+        var seen = await new GetChannelQueryHandler(_db.Object, _context.Object, _members.Object, Views())
+            .Handle(new GetChannelQuery(_workspaceId, channel.Id), CancellationToken.None);
+        _visibility.Teams.Clear();
+        var hidden = await new GetChannelQueryHandler(_db.Object, _context.Object, _members.Object, Views())
+            .Handle(new GetChannelQuery(_workspaceId, channel.Id), CancellationToken.None);
+
+        seen.Data!.Channel.Link!.Title.Should().Be("Platform");
+        hidden.Data!.Channel.Link!.Accessible.Should().BeFalse();
+        hidden.Data.Channel.Link.Title.Should().BeNull("the Team name is never disclosed to someone who cannot view the Team");
+    }
+
+    [Fact]
+    public async Task ListLinked_ForATeam_IsEmptyForACallerWhoCannotViewTheTeam()
+    {
+        var open = Channel(SpaceKind.ChannelPublic, "platform-talk");
+        open.SetLink(ChannelLinkKinds.Team, _teamId, _manager, Now);
+
+        (await ListLinked(ChannelLinkKinds.Team, _teamId)).Data.Should().BeEmpty();
+
+        _visibility.Teams.Add(new VisibleTeam(_teamId, "Platform"));
+        (await ListLinked(ChannelLinkKinds.Team, _teamId)).Data!.Select(c => c.Name).Should().Equal("platform-talk");
+    }
+
+    [Fact]
+    public void TheValidatorAcceptsABoardPageAndTeam_AndRefusesAnItemAndAnUnknownKind()
     {
         var validator = new LinkChannelCommandValidator();
 
-        validator.Validate(new LinkChannelCommand(_workspaceId, Guid.NewGuid(), ChannelLinkKinds.Team, _boardId, 1)).IsValid.Should().BeFalse();
+        validator.Validate(new LinkChannelCommand(_workspaceId, Guid.NewGuid(), ChannelLinkKinds.Team, _teamId, 1)).IsValid.Should().BeTrue();
         validator.Validate(new LinkChannelCommand(_workspaceId, Guid.NewGuid(), "work-management.board-item", _boardId, 1)).IsValid.Should().BeFalse();
         validator.Validate(new LinkChannelCommand(_workspaceId, Guid.NewGuid(), ChannelLinkKinds.Board, _boardId, 1)).IsValid.Should().BeTrue();
     }
