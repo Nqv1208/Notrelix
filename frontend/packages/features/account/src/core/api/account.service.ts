@@ -842,13 +842,19 @@ export function createAccountService(
       return { pendingEmail: wire.pendingEmail ?? null };
     },
 
-    /** The Account's MFA requirement; every member reads it. */
-    async getAccountMfaPolicy(): Promise<{ required: boolean }> {
-      const wire = await api.get<{ requireMfa?: boolean }>(
+    /** The Account's MFA requirement (every member reads it) and whether the caller is the Account Owner who may change it. */
+    async getAccountMfaPolicy(): Promise<{
+      required: boolean;
+      canManage: boolean;
+    }> {
+      const wire = await api.get<{ requireMfa?: boolean; canManage?: boolean }>(
         endpoints.accounts.securityPolicy,
         { ...PAGE_QUIET, headers: await accountHeader() },
       );
-      return { required: wire?.requireMfa === true };
+      return {
+        required: wire?.requireMfa === true,
+        canManage: wire?.canManage === true,
+      };
     },
 
     /** Only the Account Owner may: Admin and Member answer 403. */

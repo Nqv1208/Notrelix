@@ -35,7 +35,10 @@ const accountPolicyOperations = [
     method: "GET",
     route: "/accounts/security-policy",
     async handle({ store }) {
-      return ok({ requireMfa: store.auth.accountMfaRequired });
+      return ok({
+        requireMfa: store.auth.accountMfaRequired,
+        canManage: store.auth.accountOwner,
+      });
     },
   }),
   defineMockOperation<Record<string, never>, { required?: boolean }, unknown>({

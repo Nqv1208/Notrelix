@@ -97,7 +97,7 @@ export function AccountSecurityPage() {
     wait?: number;
   } | null>(null);
   // The Account's requirement: `null` until read (or when it cannot be read: no block is drawn).
-  // The read does not say who the Owner is, so the control shows until a write answers 403.
+  // The read says whether the person is the Account Owner; a 403 on the write still turns the control read-only.
   const [policy, setPolicy] = useState<{
     required: boolean;
     canChange: boolean;
@@ -119,12 +119,8 @@ export function AccountSecurityPage() {
     let live = true;
     service
       .getAccountMfaPolicy()
-      .then(({ required }) => {
-        if (live)
-          setPolicy((current) => ({
-            required,
-            canChange: current?.canChange ?? true,
-          }));
+      .then(({ required, canManage }) => {
+        if (live) setPolicy({ required, canChange: canManage });
       })
       .catch(() => undefined);
     return () => {
