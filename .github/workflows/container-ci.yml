@@ -13,8 +13,8 @@ permissions:
 
 env:
   TRIVY_SEVERITY: CRITICAL,HIGH
-  # New upstream CVEs in base images block main and manual runs only; other runs print the findings.
-  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
+  # New upstream CVEs in base images block main, release/** and manual runs only; other runs print the findings.
+  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'workflow_dispatch') && '1' || '0' }}
   FALLBACK_BACKEND_IMAGE_NAME: notrelix-backend
   FALLBACK_WEB_IMAGE_NAME: notrelix-web
   FALLBACK_MARKETING_IMAGE_NAME: notrelix-marketing
@@ -419,9 +419,9 @@ jobs:
           source_sha: ${{ inputs.source_sha }}
 
   publish:
-    name: Trusted-main image publication
+    name: Trusted release-branch image publication
     needs: [changes, backend-image, web-image, marketing-image]
-    if: always() && needs.changes.outputs.publish_mode == 'true' && inputs.source_sha != '' && github.ref == 'refs/heads/main'
+    if: always() && needs.changes.outputs.publish_mode == 'true' && inputs.source_sha != '' && startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

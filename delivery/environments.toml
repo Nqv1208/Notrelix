@@ -8,7 +8,7 @@ smoke_profile = "critical"
 
 [environments.staging]
 compose_overlay = "docker-compose.staging.yml"
-promotion_mode = "automatic-after-main-ci"
+promotion_mode = "automatic-after-release-ci"
 run_migrations = true
 rollout_strategy = "rolling"
 concurrency_group = "notrelix-deploy-staging"

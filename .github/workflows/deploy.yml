@@ -29,7 +29,7 @@ jobs:
       - name: Verify application provenance
         env: {GH_TOKEN: '${{ github.token }}', SHA: '${{ steps.identity.outputs.sha }}'}
         run: |
-          jq -r '.images[]|select(.kind=="application")|.ref' artifacts/input/release.json | while read -r image; do gh attestation verify "oci://$image" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/container-ci.yml" --source-digest "$SHA" --source-ref refs/heads/main; done
+          branch="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$(jq -er .ci_run_id artifacts/input/release.json)" --jq .head_branch)"; [[ "$branch" == release/* ]]; jq -r '.images[]|select(.kind=="application")|.ref' artifacts/input/release.json | while read -r image; do gh attestation verify "oci://$image" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/container-ci.yml" --source-digest "$SHA" --source-ref "refs/heads/$branch"; done
       - name: Configure SSH trust
         env: {HOST: '${{ vars.DEPLOY_HOST }}', KEY: '${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}', KNOWN: '${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}'}
         run: |
