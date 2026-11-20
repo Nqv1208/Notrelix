@@ -6948,7 +6948,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workspace activity log */
+        /**
+         * Get workspace activity log
+         * @description Cursor-paginated (default 20, max 50), newest first. A Guest is forbidden. Facts about a Board or Page the caller cannot read are left out. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Activity.GetWorkspaceActivity"];
         put?: never;
         post?: never;
@@ -9887,6 +9890,11 @@ export interface components {
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkspaceActivityEntryDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.WorkspaceActivityEntryDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
         "Notrelix.Application.Common.Models.CursorPageOfWorkspaceInvitationDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto"][] | null;
             nextCursor?: string | null;
@@ -12744,6 +12752,22 @@ export interface components {
             teams?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtTeamDto"][] | null;
             admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.WorkspaceActivityEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            type?: string | null;
+            /** Format: uuid */
+            actorUserId?: string | null;
+            actorName?: string | null;
+            actorAvatarUrl?: string | null;
+            title?: string | null;
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            subjectName?: string | null;
+            /** Format: date-time */
+            occurredAt?: string;
         };
         "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto": {
             /** Format: uuid */
@@ -31337,8 +31361,8 @@ export interface operations {
     "Workspaces.Activity.GetWorkspaceActivity": {
         parameters: {
             query?: {
-                page?: number;
-                pageSize?: number;
+                cursor?: string;
+                limit?: number;
             };
             header?: never;
             path: {
@@ -31354,7 +31378,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkspaceActivityEntryDto"];
                 };
             };
         };

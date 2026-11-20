@@ -1,3 +1,5 @@
+using Notrelix.Application.Features.Collaboration.Public.WorkspaceActivity;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity;
@@ -55,7 +57,10 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
             .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None);
         var invitations = await new GetWorkspaceInvitationsQueryHandler(DbContextMock.Object, DateTimeProviderMock.Object)
             .Handle(new GetWorkspaceInvitationsQuery(TestWorkspaceId), CancellationToken.None);
-        var activity = await new GetWorkspaceActivityQueryHandler(DbContextMock.Object)
+        var feed = new Mock<IWorkspaceActivityFeed>();
+        feed.Setup(f => f.ListAsync(TestWorkspaceId, null, It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var activity = await new GetWorkspaceActivityQueryHandler(
+                DbContextMock.Object, feed.Object, new Mock<IResourceVisibility>().Object, _actors.Object, RequestContextMock.Object)
             .Handle(new GetWorkspaceActivityQuery(TestWorkspaceId), CancellationToken.None);
 
         workspace.Data!.IsArchived.Should().BeTrue();
