@@ -1,6 +1,7 @@
 import {
   createRoute,
   createRootRouteWithContext,
+  notFound,
 } from "@tanstack/react-router";
 import type { AppRouterContext } from "../context";
 import { requireWorkspaceId } from "../guards/require-workspace-membership";
@@ -17,6 +18,7 @@ import { InvitePage } from "../../routes/invite/$token";
 import { InviteLinkPage } from "../../routes/invite";
 import { OnboardingPage } from "../../routes/onboarding/onboarding-page";
 import { WelcomePage } from "../../routes/onboarding/welcome-page";
+import { WorkspaceAddressPage } from "../../routes/workspace-address";
 import { WorkspaceLayout } from "../../routes/workspaces/$workspaceId/route";
 
 export const rootRoute = createRootRouteWithContext<AppRouterContext>()({
@@ -106,4 +108,25 @@ export const workspaceRoute = createRoute({
     const workspaceId = requireWorkspaceId(params);
     context?.services?.lifecycle?.prepareWorkspaceTransition(workspaceId);
   },
+});
+
+const ACCOUNT_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A workspace address at the root. TanStack ranks every static route above this one, so
+ * `/invite`, `/onboarding`, `/workspaces/...` and the other product routes (the reserved
+ * addresses of the Workspaces rules) keep their pages. A path without an Account id is
+ * not an address, so any other unknown path keeps the router's page-not-found screen.
+ */
+export const workspaceAddressRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/$slug",
+  validateSearch: (search: Record<string, unknown>): { account: string } => ({
+    account: typeof search.account === "string" ? search.account : "",
+  }),
+  beforeLoad: ({ search }) => {
+    if (!ACCOUNT_ID_PATTERN.test(search.account)) throw notFound();
+  },
+  component: WorkspaceAddressPage,
 });
