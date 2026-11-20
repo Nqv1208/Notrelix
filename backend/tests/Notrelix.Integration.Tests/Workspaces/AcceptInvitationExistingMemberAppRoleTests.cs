@@ -74,12 +74,22 @@ public sealed class AcceptInvitationExistingMemberAppRoleTests : IAsyncLifetime
         var issued = new OneTimeTokenService().Generate(TokenPurpose.WorkspaceInvitation);
         var system = new FakeCurrentTenantContext();
         system.SetSystem();
-        await using var ctx = _fixture.CreateOwnerContext(system);
-        ctx.WorkspaceInvitations.Add(WorkspaceInvitation.Create(
-            _a.AccountId, _a.WorkspaceId, person.NormalizedEmail.ToLowerInvariant(), role,
-            InvitationTokenHash.Create(issued.TokenHash), issued.HashVersion, _a.User.Id,
-            DateTimeOffset.UtcNow.AddMinutes(-5), initialEntries: entries));
-        await ctx.SaveChangesAsync();
+        // The domain refuses a Guest invitation that names a Team, so a legacy one is created as Member and
+        // then flipped to Guest directly in the table, the way the invitation looked before that refusal.
+        var legacyGuest = role == WorkspaceRole.Guest && entries is not null;
+        await using (var ctx = _fixture.CreateOwnerContext(system))
+        {
+            ctx.WorkspaceInvitations.Add(WorkspaceInvitation.Create(
+                _a.AccountId, _a.WorkspaceId, person.NormalizedEmail.ToLowerInvariant(), legacyGuest ? WorkspaceRole.Member : role,
+                InvitationTokenHash.Create(issued.TokenHash), issued.HashVersion, _a.User.Id,
+                DateTimeOffset.UtcNow.AddMinutes(-5), initialEntries: entries));
+            await ctx.SaveChangesAsync();
+        }
+
+        if (legacyGuest)
+            await ScalarAsync(
+                "UPDATE workspace.workspace_invitations SET role = 'Guest' WHERE workspace_id = @w AND email = @e",
+                ("w", _a.WorkspaceId), ("e", person.NormalizedEmail.ToLowerInvariant()));
         return issued.RawToken;
     }
 
