@@ -160,6 +160,8 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker,
             Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberOtherAccountFacts,
+            Notrelix.Infrastructure.Workspaces.Members.MemberOtherAccountFacts>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Navigation.Services.IWorkspaceNavigationStore,
             Notrelix.Infrastructure.Workspaces.Navigation.WorkspaceNavigationStore>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore,

@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Public.Access;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ResetMemberMfa;
 
 namespace Notrelix.Application.Tests.Features.Workspaces.Workspaces.Commands;
@@ -13,6 +14,7 @@ public class ResetMemberMfaCommandHandlerTests : WorkspaceHandlerTestBase
     private readonly Guid _memberId = Guid.CreateVersion7();
     private readonly Mock<ISecurityStepUpService> _stepUp = new();
     private readonly Mock<IIdentityUserAccess> _access = new();
+    private readonly Mock<IMemberOtherAccountFacts> _otherAccounts = new();
 
     /// <summary>The target the proof was given for; the real service refuses any other.</summary>
     private string? _proofGivenFor;
@@ -34,7 +36,7 @@ public class ResetMemberMfaCommandHandlerTests : WorkspaceHandlerTestBase
         "identity.security.step-up-invalid", "Invalid.", ApplicationErrorType.Validation));
 
     private ResetMemberMfaCommandHandler CreateSut() => new(
-        DbContextMock.Object, RequestContextMock.Object, _stepUp.Object, _access.Object);
+        DbContextMock.Object, RequestContextMock.Object, _stepUp.Object, _access.Object, _otherAccounts.Object);
 
     private ResetMemberMfaCommand Reset(string proof = Proof) => new(TestWorkspaceId, _memberId, proof);
 
@@ -140,6 +142,37 @@ public class ResetMemberMfaCommandHandlerTests : WorkspaceHandlerTestBase
         var act = () => CreateSut().Handle(Reset(), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+        NothingMayHaveBeenReset();
+    }
+
+    private void NoProofMayHaveBeenSpent() =>
+        _stepUp.Verify(s => s.ConsumeBoundAsync(
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<StepUpPurpose>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    [Fact]
+    public async Task APersonAlsoActiveInAnotherAccount_IsRefused_BeforeTheProofIsSpent()
+    {
+        SeedOwnerAndMember();
+        _otherAccounts
+            .Setup(f => f.IsActiveInAnotherAccountAsync(It.IsAny<Guid>(), TestWorkspaceId, _memberId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var act = () => CreateSut().Handle(Reset(), CancellationToken.None);
+
+        await act.Should().ThrowAsync<BusinessRuleException>();
+        NoProofMayHaveBeenSpent();
+        NothingMayHaveBeenReset();
+    }
+
+    [Fact]
+    public async Task AGuest_IsRefused_BeforeTheProofIsSpent()
+    {
+        SetupMembers(CreateMember(WorkspaceRole.Owner), CreateMember(WorkspaceRole.Guest, _memberId));
+
+        var act = () => CreateSut().Handle(Reset(), CancellationToken.None);
+
+        await act.Should().ThrowAsync<BusinessRuleException>();
+        NoProofMayHaveBeenSpent();
         NothingMayHaveBeenReset();
     }
 }

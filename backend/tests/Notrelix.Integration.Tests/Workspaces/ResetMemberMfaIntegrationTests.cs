@@ -50,6 +50,8 @@ public sealed class ResetMemberMfaIntegrationTests : IAsyncLifetime
         services.AddSingleton(new Mock<ISecurityNotice>().Object);
         services.AddSingleton(new Mock<IJwtBlacklistService>().Object);
         services.AddScoped<IIdentityUserAccess, IdentityUserAccessProvider>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberOtherAccountFacts,
+            Notrelix.Infrastructure.Workspaces.Members.MemberOtherAccountFacts>();
     }
 
     private Guid SessionOf(Guid userId) => _sessions.TryGetValue(userId, out var id) ? id : _sessions[userId] = Guid.CreateVersion7();
@@ -170,5 +172,70 @@ public sealed class ResetMemberMfaIntegrationTests : IAsyncLifetime
 
         await act.Should().ThrowAsync<Exception>();
         await AssertUntouchedAsync(otherOwner);
+    }
+
+    [Fact]
+    public async Task APersonAlsoActiveInAnotherAccount_IsRefused_WithTheProofUnspent_AndResettableOnceTheyLeaveIt()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await SeedEnrolledMemberAsync(stack, WorkspaceRole.Member);
+        var attackersOtherAccount = await _host.SeedWorkspaceAsync();
+        await _host.WithSystemContextAsync(c =>
+        {
+            c.WorkspaceMembers.Add(WorkspaceMember.Create(
+                attackersOtherAccount.AccountId, attackersOtherAccount.WorkspaceId, member, WorkspaceRole.Member,
+                attackersOtherAccount.OwnerId, OrgTreeTestHost.BaseTime));
+            return Task.CompletedTask;
+        });
+        using var asOwner = As(stack, stack.OwnerId);
+        var command = new ResetMemberMfaCommand(stack.WorkspaceId, member, await ProofAsync(stack.OwnerId, stack.WorkspaceId, member));
+
+        var act = () => TrySendAsync(asOwner, command);
+
+        await act.Should().ThrowAsync<Exception>();
+        await AssertUntouchedAsync(member);
+
+        // The proof was not spent by the refusal: it works as soon as the person is only in this Account.
+        await _host.WithSystemContextAsync(c => c.WorkspaceMembers
+            .Where(m => m.WorkspaceId == attackersOtherAccount.WorkspaceId && m.UserId == member)
+            .ExecuteDeleteAsync());
+        var result = await TrySendAsync(asOwner, command);
+        result.Succeeded.Should().BeTrue(string.Join("; ", result.Errors));
+    }
+
+    [Fact]
+    public async Task AGuest_IsRefused_AndNothingChanges()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var guest = await SeedEnrolledMemberAsync(stack, WorkspaceRole.Guest);
+        using var asOwner = As(stack, stack.OwnerId);
+        var command = new ResetMemberMfaCommand(stack.WorkspaceId, guest, await ProofAsync(stack.OwnerId, stack.WorkspaceId, guest));
+
+        var act = () => TrySendAsync(asOwner, command);
+
+        await act.Should().ThrowAsync<Exception>();
+        await AssertUntouchedAsync(guest);
+    }
+
+    [Fact]
+    public async Task AMemberOnlyInThisAccountsWorkspaces_CanBeReset_EvenWhenAlsoInASiblingWorkspace()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await SeedEnrolledMemberAsync(stack, WorkspaceRole.Member);
+        var sibling = Notrelix.Domain.Workspaces.Workspaces.Workspace.Create(
+            stack.AccountId, stack.OwnerId, "Sibling", $"sib-{Guid.NewGuid():N}", OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(c =>
+        {
+            c.Workspaces.Add(sibling);
+            c.WorkspaceMembers.Add(WorkspaceMember.Create(stack.AccountId, sibling.Id, member, WorkspaceRole.Member, stack.OwnerId, OrgTreeTestHost.BaseTime));
+            return Task.CompletedTask;
+        });
+        using var asOwner = As(stack, stack.OwnerId);
+
+        var result = await TrySendAsync(asOwner, new ResetMemberMfaCommand(
+            stack.WorkspaceId, member, await ProofAsync(stack.OwnerId, stack.WorkspaceId, member)));
+
+        result.Succeeded.Should().BeTrue(string.Join("; ", result.Errors));
+        (await _host.ReadAsync(c => c.UserMfaMethods.CountAsync(m => m.UserId == member && m.Status == MfaMethodStatus.Active))).Should().Be(0);
     }
 }
