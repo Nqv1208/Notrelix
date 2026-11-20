@@ -25,6 +25,9 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "invitations"),
   invitationByToken: (token: string) =>
     globalQueryKey("workspace-invitation", "token", token),
+  /** One address resolved in one Account (anonymous read; never cached past the page). */
+  address: (accountId: string, slug: string) =>
+    globalQueryKey("workspace-address", accountId, slug),
   pendingInvitations: (accountId: string) =>
     accountQueryKey(accountId, "workspace-invitations", "pending"),
   activity: (workspaceId: string) =>
