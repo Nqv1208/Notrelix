@@ -183,6 +183,51 @@ public sealed class RealtimeTypingPresenceTests
         (await NothingArrivesAsync(alice, "typing")).Should().BeTrue("an archived or left space ignores typing");
     }
 
+    private static RealtimeAuthorizationResult ArchivedGrant() => RealtimeAuthorizationResult.Granted(
+        new RealtimeSubscriptionGrant(RealtimeGatewayHarness.AccountId, RealtimeGatewayHarness.WorkspaceId) { WorkspaceArchived = true });
+
+    [Fact]
+    public async Task Typing_is_dropped_once_the_workspace_is_archived()
+    {
+        var bus = NewBus();
+        var authorizer = new FakeAuthorizer();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, Options(o => o.ReauthorizationInterval = TimeSpan.FromMinutes(10)), authorizer);
+
+        authorizer.Set(new RealtimeScope(RealtimeScopeKind.Channel, SpaceId), ArchivedGrant());
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
+
+        (await NothingArrivesAsync(alice, "typing")).Should().BeTrue("an archived workspace takes no typing");
+    }
+
+    [Fact]
+    public async Task Presence_is_dropped_for_a_subscription_made_in_an_archived_workspace()
+    {
+        var bus = NewBus();
+        var authorizer = new FakeAuthorizer { Default = ArchivedGrant() };
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, authorizer: authorizer);
+
+        await bob.SendAsync(new { type = "presence", state = "online" });
+
+        (await NothingArrivesAsync(alice, "presence")).Should().BeTrue("an archived workspace takes no presence");
+    }
+
+    [Fact]
+    public async Task Presence_is_dropped_after_a_reauthorization_pass_finds_the_workspace_archived()
+    {
+        var bus = NewBus();
+        var authorizer = new FakeAuthorizer();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, Options(o => o.ReauthorizationInterval = TimeSpan.FromMilliseconds(100)), authorizer);
+
+        authorizer.Set(new RealtimeScope(RealtimeScopeKind.Channel, SpaceId), ArchivedGrant());
+        await Task.Delay(600);
+        await bob.SendAsync(new { type = "presence", state = "online" });
+
+        (await NothingArrivesAsync(alice, "presence")).Should().BeTrue("the pass refreshed the archived flag");
+    }
+
     [Fact]
     public async Task Malformed_typing_and_presence_frames_are_rejected_as_invalid()
     {

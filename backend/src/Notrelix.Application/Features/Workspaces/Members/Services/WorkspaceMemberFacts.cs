@@ -22,6 +22,10 @@ public sealed class WorkspaceMemberFacts : IWorkspaceMemberFacts
             : new WorkspaceMemberFact(userId, member.Role.ToString(), member.Status == WorkspaceMemberStatus.Active);
     }
 
+    public Task<bool> IsArchivedAsync(Guid workspaceId, CancellationToken cancellationToken) =>
+        _context.Workspaces.AsNoTracking().AnyAsync(
+            w => w.Id == workspaceId && w.Status == WorkspaceStatus.Archived && w.DeletedAt == null, cancellationToken);
+
     public async Task<IReadOnlyList<Guid>> ListActiveColleagueIdsAsync(Guid workspaceId, CancellationToken cancellationToken) =>
         await _context.WorkspaceMembers
             .AsNoTracking()

@@ -11,6 +11,9 @@ public interface IWorkspaceMemberFacts
 {
     Task<WorkspaceMemberFact?> FindAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>Whether the Workspace is Archived (and not deleted).</summary>
+    Task<bool> IsArchivedAsync(Guid workspaceId, CancellationToken cancellationToken);
+
     /// <summary>The active, non-Guest members of the Workspace: the colleagues a person may be given work.</summary>
     Task<IReadOnlyList<Guid>> ListActiveColleagueIdsAsync(Guid workspaceId, CancellationToken cancellationToken);
 }

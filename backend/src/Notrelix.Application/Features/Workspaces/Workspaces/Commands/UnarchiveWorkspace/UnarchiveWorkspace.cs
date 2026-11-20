@@ -20,9 +20,11 @@ public class UnarchiveWorkspaceCommandHandler : IRequestHandler<UnarchiveWorkspa
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessChangeSignal _access;
 
-    public UnarchiveWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public UnarchiveWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -37,6 +39,8 @@ public class UnarchiveWorkspaceCommandHandler : IRequestHandler<UnarchiveWorkspa
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         workspace.Unarchive(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        // Live typing and presence subscriptions learn the new state now, not at the next periodic pass.
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

@@ -62,6 +62,9 @@ public sealed class AuthorizeChannelRealtimeSubscriptionQueryHandler
         if (!member)
             throw new NotFoundException(nameof(Space), request.ChannelId);
 
-        return Result<RealtimeSubscriptionGrant>.Success(new RealtimeSubscriptionGrant(accountId, workspaceId));
+        return Result<RealtimeSubscriptionGrant>.Success(new RealtimeSubscriptionGrant(accountId, workspaceId)
+            {
+                WorkspaceArchived = await _members.IsArchivedAsync(workspaceId, cancellationToken),
+            });
     }
 }
