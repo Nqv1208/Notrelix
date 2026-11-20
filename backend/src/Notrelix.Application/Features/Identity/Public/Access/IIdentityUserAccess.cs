@@ -26,4 +26,12 @@ public interface IIdentityUserAccess
         UserAccessEnd kind,
         string? reason,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes every second factor and recovery code of the person, ends every session (so a remembered device
+    /// cannot refresh), cuts off issued access tokens, records one activity line and mails the person. The
+    /// caller (the workspace Owner path) has already decided who may do this and spent the step-up proof.
+    /// Returns false when no such person exists.
+    /// </summary>
+    Task<bool> ResetMfaAsync(Guid userId, Guid resetBy, CancellationToken cancellationToken);
 }

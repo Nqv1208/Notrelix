@@ -13,7 +13,7 @@ public class IdentityUserAccessProviderTests : IdentityHandlerTestBase
     private static readonly Guid AccountId = Guid.CreateVersion7();
 
     private IdentityUserAccessProvider Sut() =>
-        new(IdentityContextMock.Object, JwtBlacklistMock.Object, DateTimeProviderMock.Object);
+        new(IdentityContextMock.Object, JwtBlacklistMock.Object, DateTimeProviderMock.Object, ActivityMock.Object, SecurityNoticeMock.Object);
 
     private ApiToken Token(Guid userId, Guid workspaceId, string hash) =>
         ApiToken.Create(AccountId, workspaceId, userId, "Token", hash, null, userId, TestNow, TestNow.AddDays(30));

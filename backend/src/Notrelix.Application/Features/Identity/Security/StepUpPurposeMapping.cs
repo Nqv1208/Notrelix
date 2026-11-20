@@ -17,6 +17,7 @@ internal static class StepUpPurposeMapping
         StepUpPurpose.RevokeOtherSessions => MfaChallengePurpose.StepUpRevokeOtherSessions,
         StepUpPurpose.EnrollMfa => MfaChallengePurpose.StepUpEnrollMfa,
         StepUpPurpose.TransferWorkspaceOwnership => MfaChallengePurpose.StepUpTransferWorkspaceOwnership,
+        StepUpPurpose.ResetMemberMfa => MfaChallengePurpose.StepUpResetMemberMfa,
         _ => throw new ArgumentOutOfRangeException(nameof(purpose), purpose, "Unknown step-up purpose")
     };
 
@@ -32,6 +33,7 @@ internal static class StepUpPurposeMapping
         MfaChallengePurpose.StepUpRevokeOtherSessions => StepUpPurpose.RevokeOtherSessions,
         MfaChallengePurpose.StepUpEnrollMfa => StepUpPurpose.EnrollMfa,
         MfaChallengePurpose.StepUpTransferWorkspaceOwnership => StepUpPurpose.TransferWorkspaceOwnership,
+        MfaChallengePurpose.StepUpResetMemberMfa => StepUpPurpose.ResetMemberMfa,
         _ => throw new ArgumentOutOfRangeException(nameof(purpose), purpose, "Not a step-up purpose")
     };
 }

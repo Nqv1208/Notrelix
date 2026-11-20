@@ -36001,6 +36001,67 @@
         ]
       }
     },
+    "/api/v1/workspaces/{workspaceId}/members/{memberId}/reset-mfa": {
+      "post": {
+        "tags": [
+          "Workspaces.Workspaces",
+          "Workspaces.Workspaces"
+        ],
+        "summary": "Reset a member's second factor (Owner only)",
+        "description": "Only the workspace Owner may. Needs a single-use ResetMemberMfa step-up proof bound to this workspace and this member (412 identity.security.step-up-required without one; 400 identity.security.step-up-invalid when stale, spent or given for another member). Removes the member's factors and recovery codes, ends their sessions, records an activity line and mails them. An Owner's factors cannot be reset; a non-Owner caller gets 404.",
+        "operationId": "Workspaces.Workspaces.ResetMemberMfa",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Workspaces.Workspaces.Commands.ResetMemberMfaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/accounts/{accountId}/workspaces": {
       "post": {
         "tags": [
@@ -40238,6 +40299,11 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "memberId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -40259,6 +40325,11 @@
             "nullable": true
           },
           "newOwnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "memberId": {
             "type": "string",
             "format": "uuid",
             "nullable": true
@@ -40399,6 +40470,11 @@
             "nullable": true
           },
           "newOwnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "memberId": {
             "type": "string",
             "format": "uuid",
             "nullable": true
@@ -40559,6 +40635,16 @@
           "workspaceId": {
             "type": "string",
             "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Workspaces.Workspaces.Commands.ResetMemberMfaRequest": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -49484,7 +49570,8 @@
           "SessionRevoked",
           "OtherSessionsRevoked",
           "ProviderLinked",
-          "ProviderUnlinked"
+          "ProviderUnlinked",
+          "MfaReset"
         ],
         "type": "string"
       },

@@ -28,6 +28,7 @@ public static class MapWorkspaceEndpoints
         byIdGroup.MapRestoreWorkspace();
         byIdGroup.MapDeleteWorkspace();
         byIdGroup.MapTransferOwnership();
+        byIdGroup.MapResetMemberMfa();
 
         var accountGroup = app
             .MapGroup("/api/v1/accounts/{accountId:guid}/workspaces")

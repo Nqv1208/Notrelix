@@ -11,7 +11,8 @@ public enum SecurityNoticeKind
     ProviderUnlinked,
     SessionRevoked,
     OtherSessionsRevoked,
-    ApiTokenIssued
+    ApiTokenIssued,
+    MfaReset
 }
 
 /// <summary>

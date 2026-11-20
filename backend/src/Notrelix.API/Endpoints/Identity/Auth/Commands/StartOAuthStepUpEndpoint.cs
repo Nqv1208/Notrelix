@@ -48,7 +48,7 @@ public static class StartOAuthStepUpEndpoint
             return EndpointExtensions.InvalidInput("returnUrl must be an internal path.");
         }
 
-        if (!StepUpTargetInput.TryResolve(stepUpPurpose, request.WorkspaceId, request.NewOwnerId, out var target))
+        if (!StepUpTargetInput.TryResolve(stepUpPurpose, request.WorkspaceId, request.NewOwnerId, request.MemberId, out var target))
         {
             return EndpointExtensions.InvalidInput(StepUpTargetInput.Missing);
         }
@@ -75,4 +75,7 @@ public sealed record StartOAuthStepUpRequest
 
     /// <summary>The incoming Owner of a handover proof (TransferWorkspaceOwnership only).</summary>
     public Guid? NewOwnerId { get; init; }
+
+    /// <summary>The member whose factors a reset proof is for (ResetMemberMfa only).</summary>
+    public Guid? MemberId { get; init; }
 }
