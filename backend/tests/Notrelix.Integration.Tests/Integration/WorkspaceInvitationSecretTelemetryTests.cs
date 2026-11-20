@@ -95,7 +95,8 @@ public sealed class WorkspaceInvitationSecretTelemetryTests : IAsyncLifetime
             Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure>(m =>
                 m.ResolveAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>())
                     == Task.FromResult<IReadOnlyDictionary<Guid, string>>(new Dictionary<Guid, string>())),
-            Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
+            Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>(),
+            new Notrelix.Testing.Application.Fakes.FakeResourceVisibility());
 
         var command = new InviteMemberCommand(workspaceId, "invitee@example.com", WorkspaceRole.Member);
         var result = await handler.Handle(command, CancellationToken.None);
