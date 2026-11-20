@@ -2,7 +2,7 @@ schema_version = 5
 
 [repository]
 trunk_branch = "main"
-release_branch = "main"
+release_branch = "release/*"
 frontend_root = "frontend"
 
 [components.backend-api]

@@ -2,9 +2,9 @@ name: Notrelix CI
 
 # One pull-request gate, jobs in parallel, only the side that changed.
 # Slow or flaky suites (visual, image scans, CodeQL) run on schedule, never here.
-# On a push to main that follows a green CI gate and touches deployable code, the release-* jobs at the
+# On a push to a release/** branch that follows a green CI gate and touches deployable code, the release-* jobs at the
 # end publish the images, run the full stack on those exact digests and attest the release candidate
-# that release.yml deploys to staging. They never run on pull requests.
+# that release.yml deploys to staging. A push to main runs the gate only. They never run on pull requests.
 
 on:
   pull_request:
@@ -200,11 +200,11 @@ jobs:
           ok frontend "${{ needs.frontend.result }}"
           ok dependencies "${{ needs.dependencies.result }}"
 
-  # ---- Release candidate: main only, after the gate is green and only when the plan says release ----
+  # ---- Release candidate: release/** only, after the gate is green and only when the plan says release ----
   release-plan:
     name: Release plan
     needs: ci-gate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci-gate.result == 'success'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:

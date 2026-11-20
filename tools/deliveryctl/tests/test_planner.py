@@ -11,8 +11,8 @@ def _make_repo(tmp):
 class T(unittest.TestCase):
  def test_full(self):
   p=build_plan(root=ROOT,event_name='workflow_dispatch',ref='refs/heads/main',source_sha='a'*40,explicit_changed=[],force_full=True);self.assertTrue(p['matrices']['containers']);self.assertIn('@sha256:',p['renderer']['ref']);self.assertTrue(p['expected_proofs']);self.assertEqual(p['infra_modes'],['assembled','topology']);self.assertTrue(p['delivery_platform_required']);self.assertIn('delivery:platform',p['ci_expected_proofs']);self.assertIn('docs:gate',p['ci_expected_proofs']);self.assertIn('infra:gate',p['ci_expected_proofs'])
- def test_main_release(self):
-  p=build_plan(root=ROOT,event_name='push',ref='refs/heads/main',source_sha='b'*40,explicit_changed=['frontend/apps/web/src/a.ts']);self.assertTrue(p['release_candidate']);self.assertEqual(set(p['package_components']),{'backend-api','web','marketing'})
+ def test_release_branch_release(self):
+  p=build_plan(root=ROOT,event_name='push',ref='refs/heads/release/0.1',source_sha='b'*40,explicit_changed=['frontend/apps/web/src/a.ts']);self.assertTrue(p['release_candidate']);self.assertEqual(set(p['package_components']),{'backend-api','web','marketing'})
  def test_unknown(self):
   p=build_plan(root=ROOT,event_name='pull_request',ref='refs/pull/1/merge',source_sha='c'*40,explicit_changed=['new/unknown.file']);self.assertTrue(p['full_ci']);self.assertTrue(p['warnings']);self.assertIn('delivery:platform',p['ci_expected_proofs']);self.assertIn('docs:gate',p['ci_expected_proofs']);self.assertIn('infra:gate',p['ci_expected_proofs'])
  def _plan(self,*changed):
@@ -136,7 +136,7 @@ class T(unittest.TestCase):
  def test_w1_pset_pr_no_release_proof(self):
   p=self._plan('backend/Notrelix.Api/Program.cs');self.assertNotIn('stack:release-candidate',p['ci_expected_proofs']);self.assertEqual(p['release_expected_proofs'],[])
  def test_w1_pset_release_proof_split(self):
-  p=build_plan(root=ROOT,event_name='push',ref='refs/heads/main',source_sha='b'*40,explicit_changed=['backend/Notrelix.Api/Program.cs']);self.assertTrue(p['release_candidate']);self.assertNotIn('stack:release-candidate',p['ci_expected_proofs']);self.assertIn('stack:release-candidate',p['release_expected_proofs']);self.assertEqual(p['expected_proofs'],p['ci_expected_proofs'])
+  p=build_plan(root=ROOT,event_name='push',ref='refs/heads/release/0.1',source_sha='b'*40,explicit_changed=['backend/Notrelix.Api/Program.cs']);self.assertTrue(p['release_candidate']);self.assertNotIn('stack:release-candidate',p['ci_expected_proofs']);self.assertIn('stack:release-candidate',p['release_expected_proofs']);self.assertEqual(p['expected_proofs'],p['ci_expected_proofs'])
  def test_w1_planhash_deterministic(self):
   kw=dict(root=ROOT,event_name='pull_request',ref='refs/pull/1/merge',source_sha='d'*40,explicit_changed=['frontend/apps/web/src/a.ts'])
   self.assertEqual(build_plan(**kw)['plan_sha256'],build_plan(**kw)['plan_sha256'])

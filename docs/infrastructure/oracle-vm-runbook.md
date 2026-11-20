@@ -26,7 +26,7 @@ Mục tiêu: chạy bản staging của Notrelix trên một VM Ubuntu 24.04 aar
 
 ## 1. Luồng tổng thể
 
-1. Merge vào `main`. `Notrelix CI` chạy xong; nếu thay đổi có mã triển khai được thì các job `release-*` build image amd64 và arm64, chạy stack thử trên đúng các digest đó và ký manifest ứng viên.
+1. Cắt nhánh `release/X.Y` từ `main` rồi push. Push vào `main` chỉ chạy CI, không deploy. `Notrelix CI` trên nhánh release chạy xong; nếu thay đổi có mã triển khai được thì các job `release-*` build image amd64 và arm64, chạy stack thử trên đúng các digest đó và ký manifest ứng viên.
 2. `release.yml` tải ứng viên, kiểm chữ ký rồi gọi `deploy.yml` với Environment `staging`.
 3. `deploy.yml` đăng nhập SSH bằng user `deploy`, kéo image theo digest, sao lưu Postgres vào `backups/pre-migrate/`, chạy `--migrate` và `--rls-apply`, bật stack, kiểm `/health/live`. Lỗi trước khi đổi schema thì tự rollback về digest trước. Mỗi lần deploy ghi một dòng vào `deploy.log`.
 4. Caddy trên VM giữ TLS (Let's Encrypt) và proxy vào nginx của stack ở `127.0.0.1:8080`.
@@ -87,7 +87,7 @@ Sau lần publish image đầu tiên, vào GitHub Packages và đặt các packa
 
 ### 2.5. Lần deploy đầu
 
-Merge vào `main` một thay đổi có mã triển khai được (ví dụ merge develop sang main cho 0.1.0). Theo dõi `Notrelix CI` rồi `Release Candidate`. Nếu cần chạy lại: `release.yml` có `workflow_dispatch` nhận id của run `Notrelix CI` đã thành công.
+Cắt `release/0.1` từ `main` và push để kích hoạt staging: `git switch main && git pull && git switch -c release/0.1 && git push -u origin release/0.1`. Theo dõi `Notrelix CI` rồi `Release Candidate`. Nếu cần chạy lại: `release.yml` có `workflow_dispatch` nhận id của run `Notrelix CI` đã thành công trên nhánh `release/**`. Production chỉ qua `promote-release.yml` chạy tay, có người duyệt của Environment `production`.
 
 Sau deploy thành công: `https://demo.<domain>/health/live` trả 200; đăng nhập, tạo workspace và board, chat văn bản. Chạy `docker stats --no-stream` để đo RAM thật và chỉnh `mem_limit` trong `docker-compose.staging.yml` nếu cần (tổng giới hạn hiện khoảng 6 GB, là ước lượng).
 
