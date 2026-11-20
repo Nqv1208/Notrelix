@@ -305,6 +305,7 @@ describe("required two-step enrolment and the Account policy", () => {
     ).toBe(204);
     expect((await call("GET", "/accounts/security-policy")).body).toEqual({
       requireMfa: true,
+      canManage: true,
     });
 
     const login = await call("POST", "/auth/login", { email, password });
