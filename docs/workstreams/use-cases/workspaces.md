@@ -48,21 +48,21 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 |---|---|---|---|---|---|---|---|---|
 | A | Workspace create | 4 | 1 | 0 | 0 | 0 | 3 | 0 |
 | B | Workspace read / resolve | 4 | 0 | 1 | 0 | 0 | 3 | 0 |
-| C | Workspace update | 2 | 1 | 0 | 0 | 0 | 1 | 0 |
+| C | Workspace update | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
 | D | Workspace lifecycle transition | 6 | 1 | 0 | 0 | 0 | 5 | 0 |
 | E | Membership read | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
 | F | Membership add / remove / change | 10 | 0 | 0 | 0 | 0 | 9 | 1 |
-| G | Invitation create | 9 | 1 | 2 | 0 | 1 | 5 | 0 |
+| G | Invitation create | 9 | 0 | 0 | 0 | 1 | 8 | 0 |
 | H | Invitation accept / reject / revoke | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
 | I | Workspace selection / switch integration | 6 | 0 | 1 | 0 | 0 | 5 | 0 |
-| J | Workspace settings | 4 | 0 | 0 | 0 | 2 | 1 | 1 |
+| J | Workspace settings | 4 | 0 | 0 | 0 | 0 | 3 | 1 |
 | K | Spaces (added by this catalog) | 15 | 0 | 0 | 0 | 0 | 15 | 0 |
-| L | Teams (added by this catalog) | 10 | 0 | 0 | 1 | 1 | 8 | 0 |
+| L | Teams (added by this catalog) | 10 | 0 | 0 | 1 | 0 | 9 | 0 |
 | M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 0 | 0 | 7 | 0 |
-| N | Home, navigation, search and activity (added by this catalog) | 6 | 1 | 1 | 0 | 2 | 2 | 0 |
-|  | Total | 91 | 2 | 3 | 1 | 2 | 81 | 2 |
+| N | Home, navigation, search and activity (added by this catalog) | 6 | 0 | 1 | 0 | 0 | 5 | 0 |
+|  | Total | 91 | 2 | 3 | 1 | 1 | 82 | 2 |
 
-Eighty-one use cases are DONE in the index; the other ten are DEFINED (2: A03, D06), IMPLEMENTING (3: B02, I05, N03), INTEGRATING (1: L10), HARDENING (2: G02, G09) and BLOCKED (2: F10, J04) (`make uc-counts` prints the live numbers). Four of the DONE rows (F05, G01, I04 and K01) were accepted 2026-11-02 by an independent acceptance agent (see their Evidence lines). The rest of this section predates the current index rows; the index rows and State lines are the state of record. The Real e2e column of the index names a real spec for 41 use cases, in 14 files under `frontend/e2e/real`: `workspace-read-and-lists` (B01, B04, I02, I04), `workspace-delete-restore` (D03, D04), `workspace-members` (E01, E02), `workspace-member-changes` (F02, F05), `workspace-invitations-manage` (G01, G03 to G06), `workspace-invitation-link` (H01, H03), `workspace-invitations-answer` (H02, H05, H06), `workspace-isolation` (I01), `workspace-spaces` (K01, K02, K15), `workspace-space-read` (K03), `workspace-space-manage` (K04, K06, K08, K11 to K13), `workspace-space-move` (K07), `workspace-space-trash` (K09) and `workspace-teams` (L01 to L08). The other rows name none: real e2e is not required by the 0.1.0 DoD (2026-11-19), and their proof is the tests on their State lines, with mock end-to-end specs under `frontend/e2e/mock` exercising the screens. The use cases with a producer and no frontend caller are listed in 1.3.
+Eighty-two use cases are DONE in the index; the other nine are DEFINED (2: A03, D06), IMPLEMENTING (3: B02, I05, N03), INTEGRATING (1: L10), HARDENING (1: G02) and BLOCKED (2: F10, J04) (`make uc-counts` prints the live numbers). Four of the DONE rows (F05, G01, I04 and K01) were accepted 2026-11-02 by an independent acceptance agent (see their Evidence lines). The rest of this section predates the current index rows; the index rows and State lines are the state of record. The Real e2e column of the index names a real spec for 41 use cases, in 14 files under `frontend/e2e/real`: `workspace-read-and-lists` (B01, B04, I02, I04), `workspace-delete-restore` (D03, D04), `workspace-members` (E01, E02), `workspace-member-changes` (F02, F05), `workspace-invitations-manage` (G01, G03 to G06), `workspace-invitation-link` (H01, H03), `workspace-invitations-answer` (H02, H05, H06), `workspace-isolation` (I01), `workspace-spaces` (K01, K02, K15), `workspace-space-read` (K03), `workspace-space-manage` (K04, K06, K08, K11 to K13), `workspace-space-move` (K07), `workspace-space-trash` (K09) and `workspace-teams` (L01 to L08). The other rows name none: real e2e is not required by the 0.1.0 DoD (2026-11-19), and their proof is the tests on their State lines, with mock end-to-end specs under `frontend/e2e/mock` exercising the screens. The use cases with a producer and no frontend caller are listed in 1.3.
 
 The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Members, Space and Command at 1440 px and some narrower sizes. The canvas draws no Workspaces screen at 1440, 1024 and 390 px in both themes, so line 3 is met by a measured diff where an artboard exists (Shell, Space) and by reviewed screenshots at all three widths in both themes where it does not.
 

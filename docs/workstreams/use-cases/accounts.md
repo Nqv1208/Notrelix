@@ -771,7 +771,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 
 # 4. Product decisions applied
 
-Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 was BLOCKED on this; the delete rule is decided 2026-11-01, README §9 decision 3, and not built); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (job title, device as session, IP and user agent, accent and sidebar) belong to Identity.
+Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 was BLOCKED on this; the delete rule is decided 2026-11-01, README §9 decision 3, and not built); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (device as session, IP and user agent, accent and sidebar) belong to Identity; job title stays a Workspaces fact (lead decision 2026-11-20).
 
 Lead decision (2026-10-30): A new Account permission set is defined. `ManageAccount` (exists): Owner and Admin. `ManageAccountSecurity` (new): Owner and SecurityAdmin, for domains, SSO and SCIM. `ManageAccountLifecycle` (new): Owner only, for close, reopen and ownership transfer. `ViewAccountAudit` (new): Owner and SecurityAdmin. `BillingAdmin` keeps only Billing-owned actions (see [billing.md](billing.md)); it gets no other Account action.
 
