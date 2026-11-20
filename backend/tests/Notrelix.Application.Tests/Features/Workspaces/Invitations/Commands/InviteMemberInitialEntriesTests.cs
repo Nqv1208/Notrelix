@@ -42,7 +42,7 @@ public class InviteMemberInitialEntriesTests : WorkspaceHandlerTestBase
         DbContextMock.Object, new Mock<IActorLookupService>().Object, RequestContextMock.Object, DateTimeProviderMock.Object,
         _tokens.Object, _encryptor.Object, _events.Object,
         new InvitationInitialEntries(DbContextMock.Object, _store.Object),
-        _memberEmails.Object);
+        _memberEmails.Object, Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
 
     private Task<Notrelix.Application.Common.Models.Result<Guid>> Invite(
         WorkspaceRole role, params InvitationInitialEntryInput[] entries) =>
