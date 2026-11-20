@@ -50,7 +50,6 @@ public sealed class InvitationMixedEntriesAuthorizationIntegrationTests : IAsync
         services.AddSingleton(encryptor.Object);
         services.AddScoped<IIntegrationEventCollector, IntegrationEventCollector>();
         services.AddScoped<InvitationInitialEntries>();
-        services.AddSingleton(Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
     }
 
     private async Task<(OrgStack Stack, Guid MemberId, Guid TeamId, Guid SpaceId)> SeedAsync()

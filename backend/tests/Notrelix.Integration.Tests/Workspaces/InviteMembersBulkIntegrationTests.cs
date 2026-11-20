@@ -67,7 +67,6 @@ public sealed class InviteMembersBulkIntegrationTests : IAsyncLifetime
         services.AddSingleton(encryptor.Object);
         services.AddSingleton(new Mock<IAuditService>().Object);
         services.AddScoped<InvitationInitialEntries>();
-        services.AddSingleton(Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
         // The production pipeline validates every request; the host registers no validators on its own.
         services.AddValidatorsFromAssembly(typeof(InviteMembersCommand).Assembly);
 

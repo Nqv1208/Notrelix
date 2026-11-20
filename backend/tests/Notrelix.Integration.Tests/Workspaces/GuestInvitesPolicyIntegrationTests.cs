@@ -61,7 +61,6 @@ public sealed class GuestInvitesPolicyIntegrationTests : IAsyncLifetime
         services.AddScoped<IGuestResourceInvitationFacts, GuestResourceInvitationFactsAdapter>();
         services.AddScoped<IInvitationManageAuthorizer, InvitationManageAuthorizer>();
         services.AddScoped<InvitationInitialEntries>();
-        services.AddSingleton(Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
     }
 
     private sealed record Seed(OrgStack Stack, Guid BoardId, Guid PageId, Guid Manager);

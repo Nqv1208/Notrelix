@@ -215,6 +215,7 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IIdempotencyExecutionContext>(sp => sp.GetRequiredService<IdempotencyExecutionContext>());
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp => sp.GetRequiredService<IdempotencyExecutionContext>());
 
+        services.AddSingleton(Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
         configure?.Invoke(services);
         services.AddProductionCrossContextAdapters();
         return services.BuildServiceProvider();
