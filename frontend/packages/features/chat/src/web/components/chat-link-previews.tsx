@@ -1,4 +1,4 @@
-import { FileText, Link2, Lock, SquareKanban } from "lucide-react";
+import { FileText, Link2, Lock, SquareKanban, Users } from "lucide-react";
 import { Skeleton, cn } from "@notrelix/ui-web";
 import {
   findProductLinks,
@@ -26,7 +26,12 @@ export function kindLabel(kind: ChatLinkKind, copy: ChatCopy): string {
 }
 
 export function KindIcon({ kind }: { readonly kind: ChatLinkKind }) {
-  const Icon = kind === "documents.page" ? FileText : SquareKanban;
+  const Icon =
+    kind === "documents.page"
+      ? FileText
+      : kind === "governance.team"
+        ? Users
+        : SquareKanban;
   return <Icon className="size-3.5 shrink-0" aria-hidden="true" />;
 }
 

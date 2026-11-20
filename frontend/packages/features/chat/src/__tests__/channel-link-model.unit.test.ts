@@ -40,6 +40,16 @@ describe("parseLinkInput (UC-CHT-H10)", () => {
     });
   });
 
+  it("reads a Team address as the Team (UC-CHT-H11)", () => {
+    expect(
+      parseLinkInput(`/workspaces/${WS}/teams/t-1`, WS, "documents.page"),
+    ).toEqual({ kind: "governance.team", resourceId: "t-1" });
+    expect(parseLinkInput("t-9", WS, "governance.team")).toEqual({
+      kind: "governance.team",
+      resourceId: "t-9",
+    });
+  });
+
   it("refuses another Workspace, another site's path, an unknown route and an empty or oversized text", () => {
     for (const text of [
       "",
@@ -60,23 +70,26 @@ describe("parseLinkInput (UC-CHT-H10)", () => {
 });
 
 describe("resourceHref and the linkable kinds", () => {
-  it("is the product route of a Board or Page, encoded, and none for a Team", () => {
+  it("is the product route of a Board, Page or Team, encoded, and none for an item", () => {
     expect(resourceHref("work-management.board", "w 1", "b/1")).toBe(
       "/workspaces/w%201/boards/b%2F1",
     );
     expect(resourceHref("documents.page", WS, "p-1")).toBe(
       `/workspaces/${WS}/docs/p-1`,
     );
-    expect(resourceHref("governance.team", WS, "t-1")).toBeNull();
+    expect(resourceHref("governance.team", WS, "t 1")).toBe(
+      `/workspaces/${WS}/teams/t%201`,
+    );
     expect(resourceHref("work-management.board-item", WS, "i-1")).toBeNull();
   });
 
-  it("offers a Board and a Page, never a Team or an item", () => {
+  it("offers a Board, a Page and a Team, never an item", () => {
     expect([...CHAT_LINKABLE_KINDS]).toEqual([
       "work-management.board",
       "documents.page",
+      "governance.team",
     ]);
-    expect(isLinkableKind("governance.team")).toBe(false);
+    expect(isLinkableKind("governance.team")).toBe(true);
     expect(isLinkableKind("work-management.board-item")).toBe(false);
   });
 });

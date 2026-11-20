@@ -45,6 +45,16 @@ public interface IResourceVisibility
 
     /// <summary>The names of the given Spaces of the Workspace (non-deleted ones only). Callers pass ids they already filtered by visibility; an id the caller may not see is never disclosed through this.</summary>
     Task<IReadOnlyDictionary<Guid, string>> SpaceNamesAsync(Guid workspaceId, IReadOnlyCollection<Guid> spaceIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The non-deleted Teams (active and archived) of the Workspace the principal may see, with their names. A Team is
+    /// visible to whoever may read the Workspace's member list (<c>ViewMembers</c>, the decision the Teams administration
+    /// read makes): an active Owner, Admin or Member (a custom role counts by its base role), never a Guest, and not
+    /// denied by an applicable permission rule. Anyone else sees no Team, and a hidden, deleted or missing Team look the same.
+    /// </summary>
+    Task<IReadOnlyList<VisibleTeam>> VisibleTeamsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 }
+
+public sealed record VisibleTeam(Guid TeamId, string Name);
 
 public sealed record SpaceAccessEntry(Guid SpaceId, string Level);

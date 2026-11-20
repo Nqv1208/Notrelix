@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Editor } from "@tiptap/react";
 import type { BlockType } from "@notrelix/docs-core";
 import { Button, NotFoundState, Skeleton } from "@notrelix/ui-web";
@@ -102,6 +102,8 @@ export interface DocPageScreenSurfaceProps {
   readonly toc: readonly DocTocEntry[];
   /** Word and character counts of the page, shown by the document bar. */
   readonly stats?: { readonly words: number; readonly characters: number };
+  /** A host action in the page header (see `DocPageHost.headerAction`). */
+  readonly headerAction?: ReactNode;
   readonly comments: readonly DocCommentView[];
   /** The selected text a comment is being written on. */
   readonly pendingQuote?: string | null;
@@ -245,6 +247,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     relatedDocs,
     toc,
     stats,
+    headerAction,
     comments,
     pendingQuote,
     panelTab,
@@ -385,6 +388,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
             header={header}
             saveState={saveState}
             stats={stats}
+            headerAction={headerAction}
             shareOpen={shareOpen}
             canShare={share !== undefined}
             panelOpen={versions ? undefined : panelOpen}

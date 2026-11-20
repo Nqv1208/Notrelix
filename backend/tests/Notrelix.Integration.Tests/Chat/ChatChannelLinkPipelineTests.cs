@@ -9,8 +9,10 @@ using Notrelix.Application.Features.Chat.Channels.Queries.GetChannel;
 using Notrelix.Application.Features.Chat.Links.Queries.ListLinkedChannels;
 using Notrelix.Application.Features.Chat.Links.Services;
 using Notrelix.Domain.Chat.Spaces;
+using Notrelix.Domain.Governance.Permissions;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Domain.Workspaces.Teams;
 using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Integration.Tests.Workspaces.OrgTree;
@@ -142,5 +144,64 @@ public sealed class ChatChannelLinkPipelineTests
         var unlinked = await SendAsync(owner, new UnlinkChannelCommand(stack.WorkspaceId, open.Id, await VersionAsync(open.Id)));
         unlinked.Succeeded.Should().BeTrue();
         unlinked.Data!.Link.Should().BeNull();
+    }
+
+    private async Task<Guid> SeedTeamAsync(OrgStack stack, string name)
+    {
+        var team = Team.Create(stack.AccountId, stack.WorkspaceId, name, stack.OwnerId, OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(seed =>
+        {
+            seed.Teams.Add(team);
+            return Task.CompletedTask;
+        });
+        return team.Id;
+    }
+
+    [Fact]
+    public async Task AManagerLinksATeamTheyCanView_TheNameIsReadBack_ToViewersOfTheTeamOnly_AndTheLookupFollowsTheTeamVisibility()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var manager = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Manager");
+        var guest = await _host.AddMemberAsync(stack, WorkspaceRole.Guest, "Guest");
+        var teamId = await SeedTeamAsync(stack, "Platform");
+        var channel = await SeedChannelAsync(stack, manager, guest);
+
+        using var asManager = ProviderFor(stack, manager);
+        var linked = await SendAsync(asManager, new LinkChannelCommand(stack.WorkspaceId, channel.Id, ChannelLinkKinds.Team, teamId, await VersionAsync(channel.Id)));
+
+        linked.Succeeded.Should().BeTrue(string.Join("; ", linked.Errors));
+        linked.Data!.Link.Should().BeEquivalentTo(new { Kind = ChannelLinkKinds.Team, ResourceId = teamId, Accessible = true, Title = "Platform" });
+        (await _host.ReadAsync(c => c.ChatSpaces.Where(s => s.Id == channel.Id).Select(s => s.LinkKind).SingleAsync())).Should().Be(ChannelLinkKinds.Team);
+
+        // A Guest is in the channel but is never shown a Team: no name, and the reverse lookup is empty.
+        using var asGuest = ProviderFor(stack, guest);
+        var guestView = await SendAsync(asGuest, new GetChannelQuery(stack.WorkspaceId, channel.Id));
+        guestView.Data!.Channel.Link.Should().BeEquivalentTo(new { Kind = ChannelLinkKinds.Team, Accessible = false, Title = (string?)null });
+        (await SendAsync(asGuest, new ListLinkedChannelsQuery(stack.WorkspaceId, ChannelLinkKinds.Team, teamId))).Data.Should().BeEmpty();
+
+        (await SendAsync(asManager, new ListLinkedChannelsQuery(stack.WorkspaceId, ChannelLinkKinds.Team, teamId))).Data!.Select(c => c.Id).Should().Equal(channel.Id);
+    }
+
+    [Fact]
+    public async Task ATeamTheManagerCannotView_IsForbidden_ADenyRuleOnTheMemberListHidesEveryTeam_AndAnotherWorkspacesTeamIsNeverLinkable()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var other = await _host.SeedWorkspaceAsync();
+        var manager = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Manager");
+        var teamId = await SeedTeamAsync(stack, "Platform");
+        var foreignTeam = await SeedTeamAsync(other, "Foreign");
+        var channel = await SeedChannelAsync(stack, manager);
+
+        var version = await VersionAsync(channel.Id);
+
+        using var asManager = ProviderFor(stack, manager);
+        await FluentActions.Awaiting(() => SendAsync(asManager, new LinkChannelCommand(stack.WorkspaceId, channel.Id, ChannelLinkKinds.Team, foreignTeam, version)))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>("a Team of another Workspace is the same answer as a missing one");
+
+        await _host.SeedRuleAsync(stack, PermissionSubjectType.User, manager, PermissionAction.ViewMembers, PermissionEffect.Deny);
+        await FluentActions.Awaiting(() => SendAsync(asManager, new LinkChannelCommand(stack.WorkspaceId, channel.Id, ChannelLinkKinds.Team, teamId, version)))
+            .Should().ThrowAsync<Notrelix.Application.Common.Exceptions.ForbiddenException>("a person denied the member list does not see Teams");
+
+        (await _host.ReadAsync(c => c.ChatSpaces.Where(s => s.Id == channel.Id).Select(s => s.LinkId).SingleAsync())).Should().BeNull();
     }
 }

@@ -77,7 +77,7 @@ export const linksOperations = [
         } else {
           if (!isSupportedKind(kind)) {
             validationProblem(
-              "The kind must be work-management.board-item, work-management.board or documents.page.",
+              "The kind must be work-management.board-item, work-management.board, documents.page or governance.team.",
             );
           }
           if (!resourceId || !LINK_ID.test(resourceId)) {
@@ -116,7 +116,7 @@ export const linksOperations = [
         const kind = typeof body?.kind === "string" ? body.kind : "";
         if (!isLinkableKind(kind)) {
           validationProblem(
-            "kind must be work-management.board or documents.page; a Team cannot be linked yet.",
+            "kind must be work-management.board, documents.page or governance.team.",
           );
         }
         const resourceId =

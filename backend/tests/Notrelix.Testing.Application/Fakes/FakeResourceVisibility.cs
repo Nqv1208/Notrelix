@@ -51,4 +51,9 @@ public sealed class FakeResourceVisibility : IResourceVisibility
         Task.FromResult<IReadOnlyList<SpaceAccessEntry>>(Spaces
             .Select(id => new SpaceAccessEntry(id, SpaceLevels.GetValueOrDefault(id, "Viewer")))
             .ToArray());
+
+    public List<VisibleTeam> Teams { get; } = [];
+
+    public Task<IReadOnlyList<VisibleTeam>> VisibleTeamsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<VisibleTeam>>(Teams.ToArray());
 }
