@@ -301,6 +301,8 @@ export const endpoints = {
   // Workspaces.Workspaces.* routes under an Account.
   accounts: {
     workspaces: (accountId: string) => `/accounts/${accountId}/workspaces`,
+    // Workspaces.Workspaces.ResolveSlug: anonymous, the address in the `slug` query.
+    resolve: (accountId: string) => `/accounts/${accountId}/resolve`,
     workspaceSlugCheck: (accountId: string) =>
       `/accounts/${accountId}/workspaces/slug-check`,
     // Workspaces.Workspaces.GetDeletedWorkspaces: the "Recently deleted" list of the Owner.

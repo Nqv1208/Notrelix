@@ -9,7 +9,7 @@ using Notrelix.Domain.Chat.Spaces;
 namespace Notrelix.Application.Features.Chat.Links.Queries.ListLinkedChannels;
 
 /// <summary>
-/// The channels linked to a Board or a Page that the caller can see (UC-CHT-H10, the reverse lookup behind the Discuss entry point).
+/// The channels linked to a Board, a Page or a Team that the caller can see (UC-CHT-H10, the reverse lookup behind the Discuss entry point).
 /// Visibility is the channel's own rule (<see cref="ChannelAccess.VisibleSpaces"/>: a public channel for a non-Guest, any other channel for
 /// its active members), so a private channel the caller is not in is absent, never "hidden". A caller who cannot view the resource gets an
 /// empty list too: the lookup discloses nothing about who discusses a resource they cannot open. Archived channels are listed with their
@@ -64,6 +64,6 @@ public class ListLinkedChannelsQueryValidator : AbstractValidator<ListLinkedChan
     {
         RuleFor(x => x.ResourceId).NotEmpty();
         RuleFor(x => x.Kind).Must(ChatResourceViews.IsLinkable)
-            .WithMessage("kind must be work-management.board or documents.page.");
+            .WithMessage("kind must be work-management.board, documents.page or governance.team.");
     }
 }

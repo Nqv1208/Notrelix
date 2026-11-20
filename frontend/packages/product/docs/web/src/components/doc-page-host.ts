@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { BlockType, Page } from "@notrelix/docs-core";
 import type { DocsRealtime } from "@notrelix/docs-collaboration";
 import type {
@@ -74,6 +75,12 @@ export interface DocPageHost {
   readonly openPage?: (pageId: string) => void;
   /** Link of a board, from the host router. */
   readonly pageHref?: (pageId: string) => string;
+  /**
+   * An action the host adds to the page header, before Share (UC-CHT-H11: the Discuss entry of the channels linked to this
+   * page). Documents does not know what it is; it renders nothing around it, so a host action that has nothing to show
+   * collapses with no gap. Absent: the header is as before.
+   */
+  readonly headerAction?: ReactNode;
 }
 
 export interface DocPageHostInput {

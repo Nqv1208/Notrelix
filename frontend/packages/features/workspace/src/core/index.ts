@@ -61,9 +61,16 @@ export {
 } from "./api/invitations.service";
 export { createViewsService } from "./api/views.service";
 export {
+  createWorkspaceAddressService,
+  type WorkspaceAddressEndpoints,
+  type WorkspaceAddressResolution,
+  type WorkspaceAddressService,
+} from "./api/workspace-address.service";
+export {
   createActivityService,
   parseActivityPage,
   type ActivityEndpoints,
+  type WorkspaceActivityEntry,
   type WorkspaceActivityPage,
 } from "./api/activity.service";
 export {

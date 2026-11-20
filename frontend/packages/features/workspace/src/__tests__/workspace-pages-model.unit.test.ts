@@ -491,40 +491,43 @@ describe("Producer adapters", () => {
     );
   });
 
-  it("keeps only complete activity entries", async () => {
-    expect(
-      parseActivityPage({ data: [], total: 0, page: 1, pageSize: 20 }),
-    ).toEqual({
+  it("keeps only complete activity entries and reads the cursor", async () => {
+    expect(parseActivityPage({ items: [], nextCursor: null })).toEqual({
       entries: [],
-      total: 0,
+      nextCursor: null,
     });
     const api = {
       get: vi.fn().mockResolvedValue({
-        data: [
+        items: [
           {
             id: "a",
-            actor: "Ada",
-            action: "edited",
-            target: "Plan",
-            createdAt: iso(0),
+            type: "work.board-created",
+            title: 'Board "Plan" was created',
+            actorName: "Ada",
+            subjectName: "Plan",
+            occurredAt: iso(0),
           },
-          { id: "b", action: "edited" },
+          { id: "b", type: "work.board-created" },
         ],
-        total: 2,
+        nextCursor: "c2",
       }),
       post: vi.fn(),
       put: vi.fn(),
       patch: vi.fn(),
       delete: vi.fn(),
     };
-    const page = await createActivityService(api, {
+    const service = createActivityService(api, {
       workspaces: { activity: (id) => `/workspaces/${id}/activity` },
-    }).getPage("ws", 1, 10);
-    expect(api.get).toHaveBeenCalledWith(
-      "/workspaces/ws/activity?page=1&pageSize=10",
-    );
+    });
+    const page = await service.getPage("ws", null, 10);
+    expect(api.get).toHaveBeenCalledWith("/workspaces/ws/activity?limit=10");
     expect(page.entries.map((entry) => entry.id)).toEqual(["a"]);
-    expect(page.total).toBe(2);
+    expect(page.nextCursor).toBe("c2");
+
+    await service.getPage("ws", "c2", 10);
+    expect(api.get).toHaveBeenLastCalledWith(
+      "/workspaces/ws/activity?limit=10&cursor=c2",
+    );
   });
 
   it("writes the profile to /profile with the expected version and reads settings", async () => {

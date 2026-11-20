@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore.Storage;
 using Notrelix.Application.Common.Exceptions;
 using Notrelix.Application.Features.Governance.Public.Visibility;
+using Notrelix.Domain.Governance.Permissions;
 
 namespace Notrelix.Infrastructure.Data.Authz;
 
@@ -55,6 +56,57 @@ public sealed class PostgresResourceVisibility : IResourceVisibility
             : await _dbContext.Spaces.AsNoTracking()
                 .Where(s => s.WorkspaceId == workspaceId && s.DeletedAt == null && spaceIds.Contains(s.Id))
                 .ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+
+    public async Task<IReadOnlyList<VisibleTeam>> VisibleTeamsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    {
+        var rows = new List<VisibleTeam>();
+        await ReadAsync(
+            ResourceVisibilityQuery.VisibleTeamsSql, workspaceId, userId,
+            ResourceVisibilityQuery.TeamReadResource, ResourceVisibilityQuery.TeamReadAction,
+            reader => rows.Add(new VisibleTeam(reader.GetGuid(0), reader.GetString(1))),
+            cancellationToken);
+        return rows;
+    }
+
+    public async Task<IReadOnlyList<TeamBoardGrant>> TeamBoardGrantsAsync(
+        Guid workspaceId, Guid userId, IReadOnlyCollection<Guid> teamIds, CancellationToken cancellationToken)
+    {
+        if (teamIds.Count == 0)
+        {
+            return [];
+        }
+
+        var visibleBoards = await VisibleBoardIdsAsync(workspaceId, userId, cancellationToken);
+        if (visibleBoards.Count == 0)
+        {
+            return [];
+        }
+
+        var boardKind = ResourceKind.Create(BoardKind);
+        var grants = await _dbContext.ResourcePermissions.AsNoTracking()
+            .Where(p => p.WorkspaceId == workspaceId
+                && p.ResourceKind == boardKind
+                && p.SubjectType == PermissionSubjectType.Team
+                && p.Effect == PermissionEffect.Allow
+                && p.DeletedAt == null
+                && teamIds.Contains(p.SubjectId)
+                && visibleBoards.Contains(p.ResourceId))
+            .Select(p => new { TeamId = p.SubjectId, BoardId = p.ResourceId, p.Level, p.CreatedAt })
+            .ToListAsync(cancellationToken);
+        if (grants.Count == 0)
+        {
+            return [];
+        }
+
+        var boardIds = grants.Select(g => g.BoardId).Distinct().ToList();
+        var names = await _dbContext.Boards.AsNoTracking()
+            .Where(b => b.WorkspaceId == workspaceId && b.DeletedAt == null && boardIds.Contains(b.Id))
+            .ToDictionaryAsync(b => b.Id, b => b.Title, cancellationToken);
+        return grants
+            .Where(g => names.ContainsKey(g.BoardId))
+            .Select(g => new TeamBoardGrant(g.TeamId, g.BoardId, names[g.BoardId], g.Level == PermissionLevel.Owner ? "Manager" : g.Level.ToString(), g.CreatedAt))
+            .ToList();
+    }
 
     private static string LevelName(int level) => level switch
     {

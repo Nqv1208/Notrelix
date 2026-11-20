@@ -92,6 +92,10 @@ export {
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
 export {
+  WorkspaceAddressGate,
+  type WorkspaceAddressGateProps,
+} from "./address/workspace-address-gate";
+export {
   ArchivedWorkspaceBanner,
   type ArchivedBannerState,
   type ArchivedWorkspaceBannerProps,
@@ -136,6 +140,10 @@ export {
 } from "./home/workspace-home.copy";
 export { useWorkspaceHomeCopy } from "./home/use-workspace-home-copy";
 export * from "./home/home-models";
+export {
+  describeActivity,
+  type HomeActivityView,
+} from "./home/workspace-activity";
 export {
   WorkspaceHomeSurface,
   type HomeAgenda,
