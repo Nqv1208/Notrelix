@@ -13,5 +13,8 @@ public enum ApiTokenRevokedReason
     MemberSuspended,
 
     /// <summary>The person who issued it left the workspace.</summary>
-    MemberLeft
+    MemberLeft,
+
+    /// <summary>The person who issued it was disabled, so every token of theirs in every workspace stopped.</summary>
+    UserDisabled
 }
