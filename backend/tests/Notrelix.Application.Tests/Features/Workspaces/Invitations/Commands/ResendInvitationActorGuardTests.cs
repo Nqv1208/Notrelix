@@ -35,7 +35,7 @@ public class ResendInvitationActorGuardTests : WorkspaceHandlerTestBase
 
     private ResendInvitationCommandHandler Sut() => new(
         DbContextMock.Object, RequestContextMock.Object, _tokens.Object, _encryptor.Object,
-        _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object);
+        _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object, Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
 
     private WorkspaceInvitation Invitation(WorkspaceRole role)
     {

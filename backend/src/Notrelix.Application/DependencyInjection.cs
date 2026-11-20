@@ -123,6 +123,13 @@ public static class DependencyInjection
             Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter,
             Notrelix.Application.Features.Chat.RateLimits.ChatRateLimiter>();
 
+        // Invitation email limits: per workspace and per inviter, on the shared limiter store.
+        services.AddOptions<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimitOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimitOptions.SectionName));
+        services.AddScoped<
+            Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter,
+            Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimiter>();
+
         // Scoped execution context: one instance is exposed as both the read and
         // the write contract so the transport can bind the key and the pipeline
         // can require it.

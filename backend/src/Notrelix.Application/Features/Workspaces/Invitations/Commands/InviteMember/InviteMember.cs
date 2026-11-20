@@ -63,6 +63,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly InvitationInitialEntries _initialEntries;
     private readonly IMemberEmailDisclosure _memberEmails;
+    private readonly IInvitationRateLimiter _rateLimiter;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -73,8 +74,10 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
         InvitationInitialEntries initialEntries,
-        IMemberEmailDisclosure memberEmails)
+        IMemberEmailDisclosure memberEmails,
+        IInvitationRateLimiter rateLimiter)
     {
+        _rateLimiter = rateLimiter;
         _memberEmails = memberEmails;
         _initialEntries = initialEntries;
         _workspaceContext = workspaceContext;
@@ -88,6 +91,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
     public async Task<Result<Guid>> Handle(InviteMemberCommand request, CancellationToken ct)
     {
+        await _rateLimiter.RequireAsync(request.WorkspaceId, _requestContext.UserId, ct);
+
         var workspace = await _workspaceContext.Workspaces
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
