@@ -77,6 +77,13 @@ public class HandlerAuthorizationBypassArchitectureTests : ArchitectureTestBase
             "Workspaces bounded context — workspace ownership lifecycle",
             "Review if ownership transfer moves to a dedicated Governance action or dedicated PermissionAction."),
         new(
+            "ResetMemberMfa.cs",
+            "ResetMemberMfaCommandHandler.Handle",
+            "m.Role == WorkspaceRole.Owner (the caller must be the Owner; no Owner is a valid target)",
+            "Owner-only recovery invariant (lead decision 2026-11-20): only the workspace Owner may reset another member's second factor and nobody may reset an Owner's. ManageWorkspace pipeline authorization runs first; the handler adds the Owner-only rule that an Admin's ManageWorkspace grant does not satisfy, and answers a non-Owner with the identical NotFound.",
+            "Workspaces bounded context — member security recovery",
+            "Review if member MFA reset moves to a dedicated Governance action or dedicated PermissionAction."),
+        new(
             "GetDeletedWorkspaces.cs",
             "GetDeletedWorkspacesQueryHandler.Handle",
             "m.Role == WorkspaceRole.Owner (the caller's own owned workspaces)",
