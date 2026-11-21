@@ -50,18 +50,39 @@ Only `tools/deliveryctl` interprets these files. `ci.yml` does not consume them;
 ## 4. The CI job graph
 
 ```text
-changes -> backend-unit ------\
-        -> backend-integration (3 shards: workspaces-auth, work-rls, rest)
-        -> frontend -----------+-> CI gate (required, if: always())
-        -> dependencies -------/
+changes -> fast-checks-backend  (format | contract) ---\
+        -> fast-checks-frontend (typecheck | rest) ------> fast-checks (one verdict)
+fast-checks -> backend-build -> backend-unit
+                             -> backend-integration (7 shards)
+fast-checks -> frontend
+            -> frontend-web (4 shards)
+dependencies (no needs)
+every job above -> CI gate (required, if: always())
 ```
 
-- `changes` selects the backend and frontend side from the changed paths.
-- `backend-unit` — `dotnet format`, build, the unit test projects (Domain, Application, Infrastructure, Architecture, Platform, API) and OpenAPI drift.
-- `backend-integration` — three shards of the integration tests.
-- `frontend` — `format:check`, `typecheck`, `lint`, `check:architecture`, `check:i18n`, `codegen:check`, `test:node`, `test:web` and the `app-web` build.
+- `changes` selects the backend and frontend side from the changed paths. A change under `.github/` or `backend/contracts/` counts as both sides.
+- `fast-checks-backend` — two parallel checks: `format` (`dotnet format --verify-no-changes`) and `contract` (the Architecture tests and the OpenAPI export compared with `backend/contracts/openapi/notrelix.v1.json`). It keeps its own restore and build.
+- `fast-checks-frontend` — `typecheck`, and `rest` (`format:check`, `lint`, `check:architecture`, `check:i18n`, `check:mock-consumer-surface`, `codegen:check`).
+- `fast-checks` — one verdict: every fast check of a changed side must be success and a side with no change must be skipped. Any failure keeps every heavy job below from starting.
+- `backend-build` — the only restore and build of `backend.slnx` in Release for the heavy jobs. It saves the NuGet package cache and uploads `bin/` and `obj/` as one tar artifact (`backend-build`, kept one day).
+- `backend-unit` — the Domain, Application, Infrastructure, Platform and API test projects, run with `--no-build --no-restore` on the unpacked build (composite action `use-backend-build`). The Architecture tests run in `fast-checks-backend`.
+- `backend-integration` — seven shards of `Notrelix.Integration.Tests`, each run with `--no-build --no-restore` on the same build: `workspaces-auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-rest` and `rest`. Their filters are exact complements, so every test runs in exactly one shard (section 4.1).
+- `frontend` — `test:node` and the `app-web` build.
+- `frontend-web` — the web component suite, split across 4 vitest shards (`--shard=N/4`).
 - `dependencies` — calls `security-ci.yml` (reusable) for the NuGet and pnpm dependency audit.
-- `CI gate` — fails unless every job passed or was skipped as not needed.
+- `CI gate` — fails unless every job passed or was skipped as not needed: a changed side must be success, and a skip is allowed only when that side did not change. Branch protection requires only this check.
+
+A heavy job starts on `!cancelled()` plus its own side and the fast-check verdict (or `backend-build` for the backend test jobs), never on the implicit `success()`. The implicit check also counts the skipped fast check of the other side further up the chain and would skip the job on a one-sided pull request. The release jobs follow the same rule.
+
+### 4.1 Integration shards
+
+The Rls tests run one class after another, so a long class makes the whole shard long. The split is set by measured time:
+
+- `rls-1`, `rls-2` and `rls-3` name their classes (`FullyQualifiedName~Notrelix.Integration.Tests.Rls.<Class>.`, joined with `|`).
+- `rls-rest` is the complement: every other Rls class, including new ones (`...Rls.` and `&FullyQualifiedName!~...Rls.<Class>.` for each listed class).
+- `workspaces-auth`, `work-management` and `rest` select by namespace; `rest` is the complement of those and of `Rls.`.
+
+Each shard uploads its `.trx` as the artifact `integration-trx-<shard>` (kept seven days). To rebalance, download those from one run, sum the time of each class (the span from its first start to its last end, plus about 4 s between classes), pack the large classes into the explicit shards and leave the small ones to `rls-rest`. Keep every job under about 8 minutes. Prove the new filters before pushing: `dotnet test tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj --no-build --list-tests --filter "<filter>"` for each shard must select every test of the unfiltered list exactly once.
 
 Other workflows: `security-scheduled` and `codeql` (scheduled/code scanning), `postgres-image` (derived postgres runtime image), `stack-smoke`, `container-ci` (`workflow_call`, called by the `release-images` job), and the release path (section 9).
 
