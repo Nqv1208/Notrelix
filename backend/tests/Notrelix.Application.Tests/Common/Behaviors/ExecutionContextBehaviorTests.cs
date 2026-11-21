@@ -31,6 +31,13 @@ public sealed class ExecutionContextBehaviorTests
         public PermissionAction Action => PermissionAction.CreateComment;
     }
 
+    private sealed record CommentIdWriteRequest(Guid CommentId)
+        : IRequest<string>, IAuthenticatedRequest, IResourceScopedRequest, IWriteRequest, IRequirePermission
+    {
+        public PermissionAction Action => PermissionAction.ViewBoard;
+        public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("collaboration.comment"), CommentId);
+    }
+
     [Fact]
     public async Task Global_request_publishes_snapshot_without_locator_io()
     {
@@ -397,13 +404,91 @@ public sealed class ExecutionContextBehaviorTests
         (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
     }
 
+    /// <summary>A request keyed by a comment id: the locator answers with the host kind the comment sits on.</summary>
+    private static Fixture<CommentIdWriteRequest> LocatedFixture(string? hostKind, Type? mapAs = null, params string[] tokenScopes)
+    {
+        var account = Guid.NewGuid();
+        var workspace = Guid.NewGuid();
+        var fixture = CreateFixture<CommentIdWriteRequest>(
+            CredentialKind.ApiToken, account, workspace, tokenScopes: tokenScopes, followsLocatedHost: true, mapAs: mapAs);
+        fixture.Locator
+            .Setup(locator => locator.LocateAsync(It.IsAny<ResourceRef>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ResourceRef resource, Guid _, CancellationToken _) => new ResourceLocation(
+                resource.Kind, resource.ResourceId, account, workspace, hostKind is null ? null : ResourceKind.Create(hostKind)));
+        return fixture;
+    }
+
+    private static async Task<string> SendCommentIdAsync(Fixture<CommentIdWriteRequest> fixture) =>
+        await fixture.Behavior.Handle(new CommentIdWriteRequest(Guid.NewGuid()), _ => Task.FromResult("ok"), CancellationToken.None);
+
+    [Theory]
+    [InlineData("work-management.board-item", "work:write")]
+    [InlineData("documents.page", "docs:write")]
+    public async Task A_token_edits_a_comment_when_it_has_the_write_scope_of_the_located_host_kind(string hostKind, string scope)
+    {
+        var fixture = LocatedFixture(hostKind, null, scope);
+
+        (await SendCommentIdAsync(fixture)).Should().Be("ok");
+    }
+
+    [Theory]
+    [InlineData("documents.page", "work:write", "work:read")]
+    [InlineData("work-management.board-item", "docs:write", "docs:read")]
+    [InlineData("work-management.board-item", "work:read")]
+    [InlineData("documents.page", "docs:read")]
+    public async Task A_token_without_the_write_scope_of_the_located_host_kind_is_refused(string hostKind, params string[] scopes)
+    {
+        var fixture = LocatedFixture(hostKind, null, scopes);
+
+        var act = () => SendCommentIdAsync(fixture);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Theory]
+    [InlineData("chat.message")]
+    [InlineData("work-management.board")]
+    [InlineData(null)]
+    public async Task A_comment_on_a_host_kind_no_scope_maps_is_refused_to_every_token(string? hostKind)
+    {
+        var fixture = LocatedFixture(hostKind, null, [.. ApiTokenScopes.Vocabulary]);
+
+        var act = () => SendCommentIdAsync(fixture);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Fact]
+    public async Task An_item_attachment_delete_on_a_page_attachment_is_as_missing_as_a_made_up_id()
+    {
+        var fixture = LocatedFixture(
+            "documents.page", typeof(Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand),
+            [.. ApiTokenScopes.Vocabulary]);
+
+        var act = () => SendCommentIdAsync(fixture);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+    }
+
+    [Fact]
+    public async Task An_item_attachment_delete_on_an_item_attachment_needs_work_write()
+    {
+        var delete = typeof(Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand);
+
+        (await SendCommentIdAsync(LocatedFixture("work-management.board-item", delete, "work:write"))).Should().Be("ok");
+        var act = () => SendCommentIdAsync(LocatedFixture("work-management.board-item", delete, "docs:write", "work:read"));
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
     private static Fixture<TRequest> CreateFixture<TRequest>(
         CredentialKind kind = CredentialKind.UserSession,
         Guid? boundAccountId = null,
         Guid? boundWorkspaceId = null,
         string[]? tokenScopes = null,
         string? requiredScope = null,
-        bool followsResource = false) where TRequest : IRequest<string>
+        bool followsResource = false,
+        bool followsLocatedHost = false,
+        Type? mapAs = null) where TRequest : IRequest<string>
     {
         var userId = Guid.NewGuid();
         var executionContext = new Notrelix.Application.Common.Context.ExecutionContext();
@@ -421,6 +506,8 @@ public sealed class ExecutionContextBehaviorTests
         {
             ApiTokenScope = requiredScope,
             ApiTokenScopeFollowsResource = followsResource,
+            ApiTokenScopeFollowsLocatedHost = followsLocatedHost,
+            RequestType = mapAs ?? typeof(TRequest),
         };
         var descriptors = new Mock<IRequestDescriptorRegistry>();
         descriptors.Setup(registry => registry.GetRequired(typeof(TRequest))).Returns(descriptor);

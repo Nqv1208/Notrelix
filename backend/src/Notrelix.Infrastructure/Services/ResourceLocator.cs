@@ -187,16 +187,16 @@ public sealed class ResourceLocator : IResourceLocator
                 .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
                 .FirstOrDefaultAsync(cancellationToken)),
 
-            "collaboration.comment" => ToLocation(Comment, await _collabDb.Comments
+            "collaboration.comment" => ToHostedLocation(Comment, await _collabDb.Comments
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .Select(r => new HostedRow(r.Id, r.AccountId, r.WorkspaceId, r.Target.Kind))
                 .FirstOrDefaultAsync(cancellationToken)),
 
-            "collaboration.attachment" => ToLocation(Attachment, await _collabDb.Attachments
+            "collaboration.attachment" => ToHostedLocation(Attachment, await _collabDb.Attachments
                 .IgnoreQueryFilters()
                 .Where(r => r.Id == resource.ResourceId)
-                .Select(r => new LocatedRow(r.Id, r.AccountId, r.WorkspaceId))
+                .Select(r => new HostedRow(r.Id, r.AccountId, r.WorkspaceId, r.Target.Kind))
                 .FirstOrDefaultAsync(cancellationToken)),
 
             "governance.resource-permission" => ToLocation(ResourcePermission, await _govDb.ResourcePermissions
@@ -243,5 +243,11 @@ public sealed class ResourceLocator : IResourceLocator
     private static ResourceLocation? ToLocation(ResourceKind kind, LocatedRow? row) =>
         row is null ? null : new ResourceLocation(kind, row.Id, row.AccountId, row.WorkspaceId);
 
+    // A comment or attachment also reports the kind of the resource it sits on, from the same row (no second query).
+    private static ResourceLocation? ToHostedLocation(ResourceKind kind, HostedRow? row) =>
+        row is null ? null : new ResourceLocation(kind, row.Id, row.AccountId, row.WorkspaceId, row.HostKind);
+
     private sealed record LocatedRow(Guid Id, Guid AccountId, Guid WorkspaceId);
+
+    private sealed record HostedRow(Guid Id, Guid AccountId, Guid WorkspaceId, ResourceKind HostKind);
 }

@@ -1431,8 +1431,9 @@ This optimizes feedback without reducing final proof.
 
 ```text
 backend-unit        → format, build, Domain/Application/Infrastructure/Architecture/Platform/API tests, OpenAPI drift
-backend-integration → 3 shards: workspaces-auth, work-rls, rest
-frontend            → format:check, typecheck, lint, check:architecture, check:i18n, codegen:check, test:node, test:web, app-web build
+backend-integration → 5 shards: workspaces-auth, work-management, rls-a-c, rls-d-z, rest
+frontend            → format:check, typecheck, lint, check:architecture, check:i18n, check:mock-consumer-surface, codegen:check, test:node, app-web build
+frontend-web        → test:web in 4 shards (vitest --shard=1/4 to 4/4)
 dependencies        → security-ci.yml (NuGet and pnpm audit)
 ```
 

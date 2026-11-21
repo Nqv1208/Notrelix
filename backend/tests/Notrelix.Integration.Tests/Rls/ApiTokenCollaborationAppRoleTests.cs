@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.API;
+using Notrelix.Domain.Collaboration.Attachments;
 using Notrelix.Domain.Collaboration.Comments;
 using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Tokens;
@@ -13,6 +14,7 @@ using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
 using Notrelix.Domain.WorkManagement.BoardGroups;
 using Notrelix.Domain.WorkManagement.Items;
+using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Infrastructure.Security.ApiTokens;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
@@ -22,9 +24,10 @@ namespace Notrelix.Integration.Tests.Rls;
 /// <summary>
 /// A comment, an attachment or a reaction takes the token scope of the resource it sits on: a board item needs work,
 /// a page needs docs, read for a read and write for a write. Over the production graph on the application login
-/// (dependency injection as in production, an app login that is not the owner, row-level security on). A comment or
-/// attachment id alone does not name its host, so editing, deleting or resolving a comment, deleting an item
-/// attachment, activity, watchers and the inbox stay refused to every token; the issuer's own permissions still apply.
+/// (dependency injection as in production, an app login that is not the owner, row-level security on). A request keyed
+/// by a comment or attachment id (edit, resolve, reopen or delete a comment, delete an item attachment) takes the scope
+/// of the host kind the resource locator returns for that id; activity, watchers and the inbox stay refused to every
+/// token; the issuer's own permissions still apply.
 /// </summary>
 [Collection("DatabaseAppRole")]
 [Trait("Category", "RlsAppRole")]
@@ -41,6 +44,11 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
     private Guid _pageId;
     private Guid _commentId;
     private Guid _pageCommentId;
+    private Guid _itemAttachmentId;
+    private Guid _pageAttachmentId;
+    private Guid _otherWorkspaceCommentId;
+    private Guid _otherWorkspaceAttachmentId;
+    private string _hash = null!;
     private WebApplicationFactory<Program>? _factory;
 
     public ApiTokenCollaborationAppRoleTests(AppRoleTestContainer fixture) => _fixture = fixture;
@@ -50,11 +58,11 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _fixture.ResetAsync();
-        string hash;
         using (var scope = Factory.Services.CreateScope())
-            hash = scope.ServiceProvider.GetRequiredService<IPasswordHasher>().HashPassword("Correct-Horse-9!");
+            _hash = scope.ServiceProvider.GetRequiredService<IPasswordHasher>().HashPassword("Correct-Horse-9!");
 
-        _a = await AppRoleTenants.SeedAsync(_fixture, "owner-collab-scopes@example.com", "Owner", hash);
+        _a = await AppRoleTenants.SeedAsync(_fixture, "owner-collab-scopes@example.com", "Owner", _hash);
+        var other = await AppRoleTenants.SeedAsync(_fixture, "owner-collab-other@example.com", "Other", _hash);
 
         var owner = _a.User.Id;
         var group = BoardGroup.Create(_a.AccountId, _a.WorkspaceId, _a.BoardId, "Todo", Color.Create("#808080"), FractionalIndex.Create("a0"), owner, Now);
@@ -66,9 +74,21 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         var pageComment = Comment.Create(
             _a.AccountId, _a.WorkspaceId, ResourceRef.Create(ResourceKind.Create("documents.page"), page.Id, _a.WorkspaceId), "Secret page comment", owner, Now);
 
+        ResourceRef On(string kind, Guid id, Guid workspace) => ResourceRef.Create(ResourceKind.Create(kind), id, workspace);
+        Attachment Link(Guid account, Guid workspace, ResourceRef target) => Attachment.Create(
+            account, workspace, target, AttachmentType.Link, FileMetadata.Create("spec", 0, "text/uri-list", url: "https://example.com/spec"), owner, Now);
+        var itemAttachment = Link(_a.AccountId, _a.WorkspaceId, On(ItemKind, item.Id, _a.WorkspaceId));
+        var pageAttachment = Link(_a.AccountId, _a.WorkspaceId, On("documents.page", page.Id, _a.WorkspaceId));
+        var otherItem = Guid.NewGuid();
+        var otherComment = Comment.Create(other.AccountId, other.WorkspaceId, On(ItemKind, otherItem, other.WorkspaceId), "Other workspace comment", other.User.Id, Now);
+        var otherAttachment = Link(other.AccountId, other.WorkspaceId, On(ItemKind, otherItem, other.WorkspaceId));
+
         var system = new FakeCurrentTenantContext();
         system.SetSystem();
         await using var ctx = _fixture.CreateOwnerContext(system);
+        ctx.Attachments.AddRange(itemAttachment, pageAttachment);
+        ctx.Comments.Add(otherComment);
+        ctx.Attachments.Add(otherAttachment);
         ctx.BoardGroups.Add(group);
         ctx.Comments.Add(pageComment);
         ctx.BoardItems.Add(item);
@@ -80,6 +100,10 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         _pageId = page.Id;
         _commentId = comment.Id;
         _pageCommentId = pageComment.Id;
+        _itemAttachmentId = itemAttachment.Id;
+        _pageAttachmentId = pageAttachment.Id;
+        _otherWorkspaceCommentId = otherComment.Id;
+        _otherWorkspaceAttachmentId = otherAttachment.Id;
     }
 
     public Task DisposeAsync()
@@ -88,12 +112,14 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    private async Task<HttpClient> BearerAsync(params string[] scopes)
+    private Task<HttpClient> BearerAsync(params string[] scopes) => BearerForAsync(_a.User.Id, scopes);
+
+    private async Task<HttpClient> BearerForAsync(Guid issuerId, params string[] scopes)
     {
         var secret = new ApiTokenSecretService().Generate();
         var token = ApiToken.Create(
-            _a.AccountId, _a.WorkspaceId, _a.User.Id, $"collab-{Guid.NewGuid():N}"[..16], secret.TokenHash,
-            ApiTokenScopes.Create(scopes), _a.User.Id, DateTimeOffset.UtcNow, expiresAt: null);
+            _a.AccountId, _a.WorkspaceId, issuerId, $"collab-{Guid.NewGuid():N}"[..16], secret.TokenHash,
+            ApiTokenScopes.Create(scopes), issuerId, DateTimeOffset.UtcNow, expiresAt: null);
         var system = new FakeCurrentTenantContext();
         system.SetSystem();
         await using (var ctx = _fixture.CreateOwnerContext(system))
@@ -220,20 +246,186 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ARequestThatDoesNotNameItsHostKind_StaysRefusedToATokenOfEveryScope()
+    public async Task ARequestThatNamesNoHostResource_StaysRefusedToATokenOfEveryScope()
     {
         using var client = await BearerAsync([.. ApiTokenScopes.Vocabulary]);
-
-        // The comment id alone does not say what the comment sits on, so these need a database read and are refused.
-        await AssertScopeMissingAsync(await client.SendAsync(
-            Send(HttpMethod.Patch, $"/api/v1/comments/{_commentId}", """{"contentMd":"x","expectedVersion":1}""")));
-        await AssertScopeMissingAsync(await client.SendAsync(Send(HttpMethod.Delete, $"/api/v1/comments/{_commentId}?expectedVersion=1")));
-        await AssertScopeMissingAsync(await client.SendAsync(Send(HttpMethod.Post, $"/api/v1/comments/{_commentId}/resolve")));
 
         // Watchers, activity and the inbox are person-level or feeds.
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/following"));
         await AssertScopeMissingAsync(await client.SendAsync(Send(HttpMethod.Put, $"/api/v1/board-items/{_itemId}/following", idempotent: true)));
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/activity"));
+    }
+
+    private static async Task<JsonElement> CommentAsync(HttpClient client, string url, Guid id)
+    {
+        var body = await client.GetStringAsync(url);
+        var list = JsonDocument.Parse(body).RootElement;
+        return list.EnumerateArray().Single(c => c.GetProperty("id").GetGuid() == id).Clone();
+    }
+
+    private static HttpRequestMessage Edit(Guid commentId, string text, long version) =>
+        Send(HttpMethod.Patch, $"/api/v1/comments/{commentId}", $$"""{"contentMd":"{{text}}","expectedVersion":{{version}}}""");
+
+    private static HttpRequestMessage Remove(Guid commentId, long version) =>
+        Send(HttpMethod.Delete, $"/api/v1/comments/{commentId}?expectedVersion={version}");
+
+    private static HttpRequestMessage Resolve(Guid commentId) => Send(HttpMethod.Post, $"/api/v1/comments/{commentId}/resolve");
+
+    private static HttpRequestMessage Reopen(Guid commentId) => Send(HttpMethod.Post, $"/api/v1/comments/{commentId}/reopen");
+
+    /// <summary>Edits, resolves, reopens and deletes one comment through its own id and checks each step landed.</summary>
+    private static async Task WriteLifecycleAsync(HttpClient client, string commentsUrl, Guid commentId, string text)
+    {
+        var version = (await CommentAsync(client, commentsUrl, commentId)).GetProperty("version").GetInt64();
+        var edited = await client.SendAsync(Edit(commentId, text, version));
+        edited.IsSuccessStatusCode.Should().BeTrue(await edited.Content.ReadAsStringAsync());
+        var afterEdit = await CommentAsync(client, commentsUrl, commentId);
+        afterEdit.GetProperty("contentMd").GetString().Should().Be(text);
+
+        var resolved = await client.SendAsync(Resolve(commentId));
+        resolved.IsSuccessStatusCode.Should().BeTrue(await resolved.Content.ReadAsStringAsync());
+        (await CommentAsync(client, commentsUrl, commentId)).GetProperty("resolvedAt").ValueKind.Should().NotBe(JsonValueKind.Null);
+
+        var reopened = await client.SendAsync(Reopen(commentId));
+        reopened.IsSuccessStatusCode.Should().BeTrue(await reopened.Content.ReadAsStringAsync());
+        (await CommentAsync(client, commentsUrl, commentId)).GetProperty("resolvedAt").ValueKind.Should().Be(JsonValueKind.Null);
+
+        var current = (await CommentAsync(client, commentsUrl, commentId)).GetProperty("version").GetInt64();
+        var removed = await client.SendAsync(Remove(commentId, current));
+        removed.IsSuccessStatusCode.Should().BeTrue(await removed.Content.ReadAsStringAsync());
+        // A deleted comment with no replies leaves the thread.
+        JsonDocument.Parse(await client.GetStringAsync(commentsUrl)).RootElement.EnumerateArray()
+            .Select(c => c.GetProperty("id").GetGuid()).Should().NotContain(commentId);
+    }
+
+    private async Task AssertEveryCommentWriteRefusedAsync(HttpClient client, Guid commentId)
+    {
+        await AssertScopeMissingAsync(await client.SendAsync(Edit(commentId, "Must not land", 1)));
+        await AssertScopeMissingAsync(await client.SendAsync(Remove(commentId, 1)));
+        await AssertScopeMissingAsync(await client.SendAsync(Resolve(commentId)));
+        await AssertScopeMissingAsync(await client.SendAsync(Reopen(commentId)));
+    }
+
+    private async Task<bool> CommentIsUntouchedAsync(Guid commentId, string content)
+    {
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using var ctx = _fixture.CreateOwnerContext(system);
+        return await ctx.Comments.AnyAsync(c => c.Id == commentId && c.Content == content && c.CommentStatus == CommentStatus.Active);
+    }
+
+    [Fact]
+    public async Task AWorkWriteToken_EditsResolvesReopensAndDeletes_ACommentOnABoardItem()
+    {
+        using var client = await BearerAsync("work:write", "work:read");
+
+        await WriteLifecycleAsync(client, ItemComments, _commentId, "Edited by a work token");
+    }
+
+    [Fact]
+    public async Task AWorkWriteToken_IsRefusedEveryWriteOnAPageComment_AndTheCommentIsUntouched()
+    {
+        using var client = await BearerAsync("work:write", "work:read");
+
+        await AssertEveryCommentWriteRefusedAsync(client, _pageCommentId);
+
+        (await CommentIsUntouchedAsync(_pageCommentId, "Secret page comment")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ADocsWriteToken_HandlesAPageComment_ButIsRefusedEveryWriteOnAnItemComment()
+    {
+        using var client = await BearerAsync("docs:write", "docs:read");
+
+        await AssertEveryCommentWriteRefusedAsync(client, _commentId);
+        (await CommentIsUntouchedAsync(_commentId, "A comment")).Should().BeTrue();
+
+        await WriteLifecycleAsync(client, PageComments, _pageCommentId, "Edited by a docs token");
+    }
+
+    [Fact]
+    public async Task AWorkReadToken_CannotEditOrDeleteAComment_ButStillReadsThem()
+    {
+        using var client = await BearerAsync("work:read");
+
+        (await client.GetAsync(ItemComments)).StatusCode.Should().Be(HttpStatusCode.OK);
+        await AssertEveryCommentWriteRefusedAsync(client, _commentId);
+
+        (await CommentIsUntouchedAsync(_commentId, "A comment")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AWorkWriteToken_DeletesAnItemAttachment_ButNeitherAWorkReadNorADocsToken()
+    {
+        var url = $"/api/v1/board-items/{_itemId}/attachments/{_itemAttachmentId}";
+
+        using var reader = await BearerAsync("work:read");
+        await AssertScopeMissingAsync(await reader.SendAsync(Send(HttpMethod.Delete, url)));
+
+        using var docs = await BearerAsync("docs:write", "docs:read");
+        await AssertScopeMissingAsync(await docs.SendAsync(Send(HttpMethod.Delete, url)));
+
+        using var writer = await BearerAsync("work:write", "work:read");
+        var deleted = await writer.SendAsync(Send(HttpMethod.Delete, url));
+        deleted.StatusCode.Should().Be(HttpStatusCode.NoContent, await deleted.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task AnAttachmentIdOfAnotherHostKindOrWorkspaceOrARandomOne_GetsTheSame404()
+    {
+        using var all = await BearerAsync([.. ApiTokenScopes.Vocabulary]);
+        using var work = await BearerAsync(ItemScopes);
+
+        foreach (var client in new[] { all, work })
+        {
+            var missing = await SendRouteAsync(client, new("random", HttpMethod.Delete, _ => $"/api/v1/board-items/{_itemId}/attachments/{Guid.NewGuid()}", null), Guid.Empty);
+            missing.Status.Should().Be(HttpStatusCode.NotFound);
+            foreach (var id in new[] { _pageAttachmentId, _otherWorkspaceAttachmentId })
+            {
+                var spoof = await SendRouteAsync(client, new("spoof", HttpMethod.Delete, _ => $"/api/v1/board-items/{_itemId}/attachments/{id}", null), Guid.Empty);
+                spoof.Status.Should().Be(HttpStatusCode.NotFound, id.ToString());
+                spoof.Body.Should().Be(missing.Body, "no oracle for a page attachment or another workspace's attachment");
+            }
+        }
+
+        // The page attachment is still there: only the page route removes it.
+        using var docs = await BearerAsync("docs:write", "docs:read");
+        (await docs.GetAsync($"/api/v1/pages/{_pageId}/attachments")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ACommentIdOfAnotherWorkspaceOrARandomOne_GetsTheSame404_ForEveryCommentWrite()
+    {
+        using var client = await BearerAsync("work:write", "work:read");
+
+        foreach (var write in new Func<Guid, HttpRequestMessage>[] { id => Edit(id, "x", 1), id => Remove(id, 1), Resolve, Reopen })
+        {
+            var missing = await client.SendAsync(write(Guid.NewGuid()));
+            var other = await client.SendAsync(write(_otherWorkspaceCommentId));
+            var missingBody = Normalize(await missing.Content.ReadAsStringAsync());
+            missing.StatusCode.Should().Be(HttpStatusCode.NotFound, missingBody);
+            other.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            Normalize(await other.Content.ReadAsStringAsync()).Should().Be(missingBody, "no oracle for another workspace's comment");
+        }
+    }
+
+    [Fact]
+    public async Task ATokenOfAnIssuerWhoIsNotTheAuthor_StillCannotEditOrDeleteTheComment()
+    {
+        var member = await AppRoleMembers.AddAsync(
+            _fixture, _a, "Member", WorkspaceRole.Member, WorkspaceMemberStatus.Active, _hash);
+        using var client = await BearerForAsync(member.Id, "work:write", "work:read");
+
+        // The scope allows it; the author-only rule of the issuer's own permissions does not.
+        var version = (await CommentAsync(client, ItemComments, _commentId)).GetProperty("version").GetInt64();
+        var edit = await client.SendAsync(Edit(_commentId, "Edited by a non-author", version));
+        var remove = await client.SendAsync(Remove(_commentId, version));
+
+        edit.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await edit.Content.ReadAsStringAsync()).Should().Contain("collaboration.comment_author_only").And.NotContain(ScopeMissing);
+        remove.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await remove.Content.ReadAsStringAsync()).Should().Contain("collaboration.comment_author_only").And.NotContain(ScopeMissing);
+        (await CommentIsUntouchedAsync(_commentId, "A comment")).Should().BeTrue();
     }
 
     /// <summary>One request that carries a resource kind: the route names the kind, the id is the one under test.</summary>

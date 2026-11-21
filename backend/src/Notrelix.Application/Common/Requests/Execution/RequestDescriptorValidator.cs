@@ -102,6 +102,12 @@ public static class RequestDescriptorValidator
             throw Misconfigured(requestType, "A request whose token scope follows its resource must be Resource scoped.");
         }
 
+        var followsHost = ApiTokenScopeMap.LocatedHostRequests.ContainsKey(requestType.FullName ?? string.Empty);
+        if (followsHost && (scope != ApplicationScopeKind.Resource || followsResource))
+        {
+            throw Misconfigured(requestType, "A request whose token scope follows its located host must be Resource scoped and not name its host itself.");
+        }
+
         return new RequestDescriptor(
             requestType,
             kind,
@@ -111,8 +117,9 @@ public static class RequestDescriptorValidator
             access,
             isIdempotent,
             requiresExpectedVersion,
-            followsResource ? null : ApiTokenScopeMap.RequiredScope(requestType, kind, dataAccess),
-            followsResource);
+            followsResource || followsHost ? null : ApiTokenScopeMap.RequiredScope(requestType, kind, dataAccess),
+            followsResource,
+            followsHost);
     }
 
     private static TClassification SingleClassification<TClassification>(

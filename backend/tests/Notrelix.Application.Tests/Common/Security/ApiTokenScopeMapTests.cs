@@ -3,8 +3,12 @@ using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
+using Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
 using Notrelix.Application.Features.Documents.Pages.Commands.PublishPage;
 using Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
@@ -41,8 +45,7 @@ public sealed class ApiTokenScopeMapTests
     [Theory]
     [InlineData(typeof(CreateSpaceCommand))]
     [InlineData(typeof(ListApiTokensQuery))]
-    [InlineData(typeof(ResolveCommentCommand))]
-    [InlineData(typeof(DeleteAttachmentCommand))]
+    [InlineData(typeof(FollowBoardItemCommand))]
     public void A_request_of_a_context_no_scope_covers_is_refused_to_every_token(Type requestType)
     {
         ScopeOf(requestType).Should().BeNull();
@@ -68,7 +71,25 @@ public sealed class ApiTokenScopeMapTests
 
         descriptor.ApiTokenScopeFollowsResource.Should().BeTrue();
         descriptor.ApiTokenScope.Should().BeNull();
-        RequestDescriptorValidator.Create(typeof(ResolveCommentCommand)).ApiTokenScopeFollowsResource.Should().BeFalse();
+        var followed = RequestDescriptorValidator.Create(typeof(FollowBoardItemCommand));
+        followed.ApiTokenScopeFollowsResource.Should().BeFalse();
+        followed.ApiTokenScopeFollowsLocatedHost.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(typeof(UpdateCommentCommand))]
+    [InlineData(typeof(DeleteCommentCommand))]
+    [InlineData(typeof(ResolveCommentCommand))]
+    [InlineData(typeof(ReopenCommentCommand))]
+    [InlineData(typeof(DeleteAttachmentCommand))]
+    public void A_request_keyed_by_a_comment_or_attachment_id_follows_the_host_kind_the_locator_returns(Type requestType)
+    {
+        var descriptor = RequestDescriptorValidator.Create(requestType);
+
+        descriptor.ApiTokenScopeFollowsLocatedHost.Should().BeTrue();
+        descriptor.ApiTokenScopeFollowsResource.Should().BeFalse();
+        descriptor.ApiTokenScope.Should().BeNull("the scope is decided from the located host kind");
+        descriptor.Scope.Should().Be(ApplicationScopeKind.Resource);
     }
 
     private static string? ScopeFor(IResourceScopedRequest request)
