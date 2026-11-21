@@ -53,7 +53,7 @@ Only `tools/deliveryctl` interprets these files. `ci.yml` does not consume them;
 changes -> fast-checks-backend  (format | contract) ---\
         -> fast-checks-frontend (typecheck | rest) ------> fast-checks (one verdict)
 fast-checks -> backend-build -> backend-unit
-                             -> backend-integration (7 shards)
+                             -> backend-integration (8 shards)
 fast-checks -> frontend
             -> frontend-web (4 shards)
 dependencies (no needs)
@@ -66,7 +66,7 @@ every job above -> CI gate (required, if: always())
 - `fast-checks` — one verdict: every fast check of a changed side must be success and a side with no change must be skipped. Any failure keeps every heavy job below from starting.
 - `backend-build` — the only restore and build of `backend.slnx` in Release for the heavy jobs. It saves the NuGet package cache and uploads `bin/` and `obj/` as one tar artifact (`backend-build`, kept one day).
 - `backend-unit` — the Domain, Application, Infrastructure, Platform and API test projects, run with `--no-build --no-restore` on the unpacked build (composite action `use-backend-build`). The Architecture tests run in `fast-checks-backend`.
-- `backend-integration` — seven shards of `Notrelix.Integration.Tests`, each run with `--no-build --no-restore` on the same build: `workspaces-auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-rest` and `rest`. Their filters are exact complements, so every test runs in exactly one shard (section 4.1).
+- `backend-integration` — eight shards of `Notrelix.Integration.Tests`, each run with `--no-build --no-restore` on the same build: `workspaces-auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-4`, `rls-rest` and `rest`. Their filters are exact complements, so every test runs in exactly one shard (section 4.1).
 - `frontend` — `test:node` and the `app-web` build.
 - `frontend-web` — the web component suite, split across 4 vitest shards (`--shard=N/4`).
 - `dependencies` — calls `security-ci.yml` (reusable) for the NuGet and pnpm dependency audit.
@@ -78,7 +78,7 @@ A heavy job starts on `!cancelled()` plus its own side and the fast-check verdic
 
 The Rls tests run one class after another, so a long class makes the whole shard long. The split is set by measured time:
 
-- `rls-1`, `rls-2` and `rls-3` name their classes (`FullyQualifiedName~Notrelix.Integration.Tests.Rls.<Class>.`, joined with `|`).
+- `rls-1` to `rls-4` name their classes (`FullyQualifiedName~Notrelix.Integration.Tests.Rls.<Class>.`, joined with `|`).
 - `rls-rest` is the complement: every other Rls class, including new ones (`...Rls.` and `&FullyQualifiedName!~...Rls.<Class>.` for each listed class).
 - `workspaces-auth`, `work-management` and `rest` select by namespace; `rest` is the complement of those and of `Rls.`.
 
