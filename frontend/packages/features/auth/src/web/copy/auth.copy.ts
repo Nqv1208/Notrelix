@@ -51,6 +51,8 @@ export const en = {
     redirecting: "Taking you to {{provider}}…",
     passwordReset:
       "Your password was changed and every device was signed out. Sign in with the new password.",
+    mfaEnrollmentRequired:
+      "Your account now requires two-step verification. Sign in to set it up.",
   },
   password: {
     title: "Enter your password",
@@ -107,6 +109,27 @@ export const en = {
     inactive:
       "This account cannot sign in right now. Contact your administrator.",
     locked: "Too many wrong codes. Try again in {{seconds}} seconds.",
+  },
+  enroll: {
+    title: "Set up two-step verification",
+    lead: "Your account requires a second step at sign-in. Scan the QR code with an authenticator app, then enter the 6-digit code it shows.",
+    preparing: "Preparing your authenticator…",
+    qrLabel: "QR code for your authenticator app",
+    secretLabel: "Can't scan it? Enter this key in the app instead:",
+    codeLabel: "6-digit code",
+    verify: "Turn on and continue",
+    verifying: "Verifying…",
+    back: "Back to sign-in",
+    wrong:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
+    expired: "This set-up expired. Sign in again.",
+    locked: "Too many wrong codes. Try again in {{seconds}} seconds.",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
+    codesTitle: "Save your recovery codes",
+    codesLead:
+      "Each code works once if you lose your phone. They are shown only now.",
+    codesContinue: "I saved them, continue",
   },
   forgot: {
     title: "Reset your password",
@@ -340,6 +363,8 @@ export const vi: AuthCopy = {
     redirecting: "Đang chuyển đến {{provider}}…",
     passwordReset:
       "Mật khẩu đã được đổi và mọi thiết bị đã bị đăng xuất. Hãy đăng nhập bằng mật khẩu mới.",
+    mfaEnrollmentRequired:
+      "Tài khoản của bạn nay bắt buộc xác minh hai bước. Hãy đăng nhập để thiết lập.",
   },
   password: {
     title: "Nhập mật khẩu",
@@ -393,6 +418,26 @@ export const vi: AuthCopy = {
     inactive:
       "Tài khoản này tạm thời không đăng nhập được. Hãy liên hệ quản trị viên.",
     locked: "Nhập sai mã quá nhiều lần. Thử lại sau {{seconds}} giây.",
+  },
+  enroll: {
+    title: "Thiết lập xác minh hai bước",
+    lead: "Tài khoản của bạn yêu cầu bước thứ hai khi đăng nhập. Quét mã QR bằng ứng dụng xác thực, rồi nhập mã 6 số ứng dụng hiển thị.",
+    preparing: "Đang chuẩn bị ứng dụng xác thực…",
+    qrLabel: "Mã QR cho ứng dụng xác thực",
+    secretLabel: "Không quét được? Hãy nhập khóa này vào ứng dụng:",
+    codeLabel: "Mã 6 số",
+    verify: "Bật và tiếp tục",
+    verifying: "Đang xác minh…",
+    back: "Quay lại đăng nhập",
+    wrong:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
+    expired: "Phiên thiết lập đã hết hạn. Hãy đăng nhập lại.",
+    locked: "Nhập sai mã quá nhiều lần. Thử lại sau {{seconds}} giây.",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    codesTitle: "Lưu mã dự phòng của bạn",
+    codesLead:
+      "Mỗi mã dùng được một lần nếu bạn mất điện thoại. Các mã chỉ hiện lúc này.",
+    codesContinue: "Tôi đã lưu, tiếp tục",
   },
   forgot: {
     title: "Đặt lại mật khẩu",

@@ -33,7 +33,11 @@ export type MockBusinessState =
   /** Final-Home `xong-viec`: today's two items were completed at 10:05. */
   | "done-today"
   /** Final-Billing `qua-han`: invoice HĐ-2026-0131 is overdue. */
-  | "billing-past-due";
+  | "billing-past-due"
+  /** Wsp-D06: the Account is Suspended; reads stay open, every workspace write answers 403 `account.suspended`. */
+  | "account-suspended"
+  /** Same as `account-suspended`, for a Closed Account. */
+  | "account-closed";
 
 export type MockDensity = "tiny" | "normal" | "large" | "stress";
 
@@ -192,6 +196,8 @@ const VALID_STATES = new Set<string>([
   "expired-session",
   "done-today",
   "billing-past-due",
+  "account-suspended",
+  "account-closed",
 ]);
 const VALID_DENSITIES = new Set<string>(["tiny", "normal", "large", "stress"]);
 const VALID_LATENCIES = new Set<string>(["instant", "fast", "normal", "slow"]);

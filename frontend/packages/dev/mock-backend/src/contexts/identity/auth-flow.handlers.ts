@@ -58,6 +58,20 @@ function isInternalPath(path: string | undefined): path is string {
   return false;
 }
 
+/** The recovery codes the required enrolment hands out once. */
+const RECOVERY_CODES = Array.from(
+  { length: 8 },
+  (_, index) => `RC${String(index + 1).padStart(2, "0")}-MOCK-${1000 + index}`,
+);
+
+/** A token that is unknown, used or out of tries. */
+const enrollmentExpired = () =>
+  identityProblem(
+    400,
+    "identity.mfa.challenge-invalid",
+    "The set-up expired. Sign in again.",
+  );
+
 /** The backend's minimum; the page asks for the same. */
 const MIN_PASSWORD = 8;
 
@@ -255,6 +269,64 @@ export const authFlowOperations = [
     },
   }),
 
+  defineMockOperation<
+    Record<string, never>,
+    { enrollmentToken?: string },
+    unknown
+  >({
+    id: "identity.mfa.requiredEnrollment.start",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Mfa.StartRequiredEnrollment",
+    },
+    method: "POST",
+    route: "/auth/mfa/required-enrollment/start",
+    async handle({ body, store }) {
+      const outcome = store.auth.startEnrollment(body?.enrollmentToken);
+      if (outcome.kind === "invalid-token") return enrollmentExpired();
+      return ok({
+        mfaMethodId: outcome.mfaMethodId,
+        secret: MOCK_AUTH.enrollSecret,
+        otpAuthUri: `otpauth://totp/Notrelix:${MOCK_AUTH.enrollEmail}?secret=${MOCK_AUTH.enrollSecret}&issuer=Notrelix`,
+      });
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { enrollmentToken?: string; mfaMethodId?: string; code?: string },
+    unknown
+  >({
+    id: "identity.mfa.requiredEnrollment.complete",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Mfa.CompleteRequiredEnrollment",
+    },
+    method: "POST",
+    route: "/auth/mfa/required-enrollment/complete",
+    async handle({ body, store }) {
+      const outcome = store.auth.completeEnrollment(
+        body?.enrollmentToken,
+        body?.code ?? "",
+      );
+      if (outcome === "invalid-token") return enrollmentExpired();
+      if (outcome === "invalid")
+        return identityProblem(
+          400,
+          "identity.mfa.invalid-code",
+          "The code is not right.",
+        );
+      store.loginCurrentUser();
+      const security = store.accountPages.securityOf(
+        store.getCurrentUser().id,
+        (minutes) => store.getClock().offsetMinutes(minutes),
+      );
+      security.twoFactorEnabled = true;
+      security.recoveryCodesLeft = RECOVERY_CODES.length;
+      return ok({ ...sessionOf(store), recoveryCodes: RECOVERY_CODES });
+    },
+  }),
+
   defineMockOperation<{ provider: string }, never, unknown>({
     id: "auth.oauth.start",
     contract: { kind: "openapi", operationId: "Identity.Auth.OAuth.Start" },
@@ -282,6 +354,14 @@ export const authFlowOperations = [
         store.auth.startProviderMfa();
         return ok({
           redirectTo: `/sign-in?step=mfa${suffix ? `&${suffix}` : ""}`,
+        });
+      }
+      // The Account requires two-step verification and the Google account has none: the token
+      // goes into the cookie and the browser lands on the enrolment step (`enroll=1`).
+      if (params.provider === "google" && store.auth.accountMfaRequired) {
+        store.auth.startProviderEnrollment();
+        return ok({
+          redirectTo: `/sign-in?step=mfa&enroll=1${suffix ? `&${suffix}` : ""}`,
         });
       }
       store.loginCurrentUser();

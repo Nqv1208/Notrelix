@@ -67,7 +67,16 @@ export function SignInPage() {
         providerError={search.get("error")}
         sessionEnded={search.get("reason") === "session-ended"}
         passwordReset={search.get("reason") === "password-reset"}
-        initialStep={search.get("step") === "mfa" ? "mfa" : null}
+        mfaEnrollmentRequired={
+          search.get("reason") === "mfa-enrollment-required"
+        }
+        initialStep={
+          search.get("step") === "mfa"
+            ? search.get("enroll") === "1"
+              ? "enroll"
+              : "mfa"
+            : null
+        }
       />
     </AuthLayout>
   );

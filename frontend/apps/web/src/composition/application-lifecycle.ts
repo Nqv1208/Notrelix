@@ -39,7 +39,7 @@ export interface ApplicationLifecycleDependencies {
   readonly queryClient: QueryClient;
   readonly realtime: RealtimeTransport;
   readonly sessionEvents: SessionEventBus;
-  readonly navigateToSignedOut: () => void;
+  readonly navigateToSignedOut: (reason?: "mfa-enrollment-required") => void;
   /**
    * True on a page a person without a session opens on purpose (sign-in, the
    * invitation link). No session ended there, so nothing is cleared: a read in
@@ -84,7 +84,11 @@ export function createApplicationLifecycle(
     if (deps.onSignedOutRoute?.()) return;
     clearApplicationCache(deps.queryClient, { sessionEnded: true });
     deps.realtime.disconnect("session-expired");
-    deps.navigateToSignedOut();
+    deps.navigateToSignedOut(
+      event.reason === "mfa-enrollment-required"
+        ? "mfa-enrollment-required"
+        : undefined,
+    );
   };
 
   const unsubscribeSession = deps.sessionEvents.subscribe(handleSessionExpired);

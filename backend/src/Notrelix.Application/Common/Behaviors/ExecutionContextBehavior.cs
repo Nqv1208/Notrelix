@@ -42,6 +42,7 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
         Guid? accountId = _tenant.AccountId;
         Guid? workspaceId = null;
         ResourceRef? resource = null;
+        ResourceLocation? location = null;
 
         switch (descriptor.Scope)
         {
@@ -103,7 +104,7 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                     var actorId = RequireUser(userId, "Resource-scoped request requires authenticated user.");
                     resource = ((IResourceScopedRequest)request).Resource;
                     using var locatorStage = PipelineActivitySource.Instance.StartActivity("resource_locator.query");
-                    var location = await _resourceLocator.LocateAsync(resource, actorId, cancellationToken);
+                    location = await _resourceLocator.LocateAsync(resource, actorId, cancellationToken);
                     if (location is null)
                     {
                         throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
@@ -143,6 +144,8 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                 break;
         }
 
+        EnforceApiTokenScope(descriptor, resource, location);
+
         _executionContext.SetSnapshot(new ExecutionContextSnapshot(
             userId,
             accountId,
@@ -159,6 +162,61 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
         userId is { } value && value != Guid.Empty
             ? value
             : throw new UnauthorizedException(message);
+
+    /// <summary>
+    /// The one place a token's scopes are checked. A scope only narrows access: it runs after the binding checks
+    /// above (so another workspace still answers as before) and before any handler, and the permission checks of
+    /// the issuer still follow it. A request no scope covers (descriptor scope null) is refused for every token. A
+    /// comment, attachment or reaction takes the scope of the kind of resource it names (board item or page); a kind
+    /// no scope maps is refused. The kind is the request's own value, so this reads nothing. A comment or attachment id
+    /// takes the scope of the host kind the resource locator returned for it (same read as the NotFound above).
+    /// </summary>
+    private void EnforceApiTokenScope(RequestDescriptor descriptor, ResourceRef? resource, ResourceLocation? location)
+    {
+        // Only the tenant-scoped requests are scoped: every other authenticated request is refused to a token
+        // above, and an anonymous one (a public form, a sign-in) never needed the credential.
+        if (_credential.Kind != CredentialKind.ApiToken
+            || descriptor.Scope is not (ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource))
+        {
+            return;
+        }
+
+        var required = descriptor.ApiTokenScopeFollowsLocatedHost
+            ? RequiredScopeForLocatedHost(descriptor, resource, location)
+            : descriptor.ApiTokenScopeFollowsResource
+                ? resource is { } host
+                    ? ApiTokenScopeMap.RequiredScopeForResource(host.Kind, descriptor.Kind, descriptor.DataAccess)
+                    : null
+                : descriptor.ApiTokenScope;
+
+        if (required is null
+            || _credential.ApiTokenScopes?.Contains(required) != true)
+        {
+            throw new ForbiddenException(
+                "This API token does not have the scope this request needs.",
+                AccessDenialCodes.ApiTokenScopeMissing);
+        }
+    }
+
+    /// <summary>
+    /// The scope of a request keyed by a comment or attachment id: from the host kind the locator already returned.
+    /// A host of another kind than the one the request accepts is as missing as a made-up id (the same NotFound).
+    /// </summary>
+    private static string? RequiredScopeForLocatedHost(RequestDescriptor descriptor, ResourceRef? resource, ResourceLocation? location)
+    {
+        if (location?.HostKind is not { } hostKind || resource is null)
+        {
+            return null;
+        }
+
+        var accepted = ApiTokenScopeMap.LocatedHostRequests.GetValueOrDefault(descriptor.RequestType.FullName ?? string.Empty);
+        if (accepted is not null && hostKind.Value != accepted)
+        {
+            throw new AppNotFoundException(resource.Kind.ToString(), resource.ResourceId);
+        }
+
+        return ApiTokenScopeMap.RequiredScopeForResource(hostKind, descriptor.Kind, descriptor.DataAccess);
+    }
 
     private void EnforceApiTokenWorkspaceBinding(Guid workspaceId)
     {

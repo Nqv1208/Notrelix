@@ -14062,7 +14062,7 @@
           "Identity.ApiTokens"
         ],
         "summary": "Issue a new API token for a workspace",
-        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.",
+        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise), and at least one scope from the published list (identity.api-tokens.scopes-required, identity.api-tokens.unknown-scope); scopes cannot be changed afterwards. A call with the token outside its scopes is answered 403 identity.token.scope-missing. The raw secret is returned exactly once in this response; the issue is recorded in the audit log.",
         "operationId": "Identity.ApiTokens.Create",
         "parameters": [
           {
@@ -28747,6 +28747,96 @@
         ]
       }
     },
+    "/api/v1/forms/{formId}/public-access": {
+      "get": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "Whether a form is public, and its public key (workspace Owner or Admin)",
+        "operationId": "WorkManagement.Forms.GetPublicAccess",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "WorkManagement.Forms",
+          "WorkManagement.Forms"
+        ],
+        "summary": "Switch a form public or private (workspace Owner or Admin)",
+        "operationId": "WorkManagement.Forms.SetPublicAccess",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Forms.Requests.SetFormPublicAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/form-submissions/{submissionId}/process": {
       "post": {
         "tags": [
@@ -29410,6 +29500,78 @@
             "Cookie": [ ]
           }
         ]
+      }
+    },
+    "/api/v1/public/forms/{publicKey}": {
+      "get": {
+        "tags": [
+          "WorkManagement.PublicForms"
+        ],
+        "summary": "The form an anonymous visitor fills",
+        "operationId": "WorkManagement.PublicForms.Get",
+        "parameters": [
+          {
+            "name": "publicKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/forms/{publicKey}/submissions": {
+      "post": {
+        "tags": [
+          "WorkManagement.PublicForms"
+        ],
+        "summary": "Submit answers to a public form anonymously, with a captcha token",
+        "operationId": "WorkManagement.PublicForms.Submit",
+        "parameters": [
+          {
+            "name": "publicKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitPublicFormRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/System.Void"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/boards/{boardId}/relations": {
@@ -39460,12 +39622,40 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SetFormPublicAccessRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest": {
         "type": "object",
         "properties": {
           "answers": {
             "type": "object",
             "additionalProperties": { },
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitPublicFormRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          },
+          "captchaToken": {
+            "type": "string",
             "nullable": true
           },
           "website": {
@@ -40414,6 +40604,13 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           },
           "stepUpToken": {
@@ -43839,7 +44036,10 @@
             "nullable": true
           },
           "scopes": {
-            "type": "string",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           },
           "status": {
@@ -48092,6 +48292,10 @@
             "nullable": true
           },
           "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountStatus": {
             "type": "string",
             "nullable": true
           }

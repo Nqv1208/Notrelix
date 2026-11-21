@@ -8,6 +8,8 @@
  *   forms.questions.add / .update / .remove        — /forms/:formId/questions[/:questionId]
  *   forms.submissions.list / forms.submit          — /forms/:formId/submissions
  *   forms.submissions.process / .reject / .spam / .reopen / .delete — /form-submissions/:submissionId[/<verb>]
+ *   forms.publicAccess.get / .set                  — /forms/:formId/public-access (workspace Owner or Admin)
+ *   publicForms.get / publicForms.submit           — /public/forms/:publicKey[/submissions] (no sign-in, no workspace)
  *
  * The rules mirror the producer: a form is read with the board, built by a
  * manager of the board, submitted by a member who can create items on it, and
@@ -31,6 +33,7 @@ import type {
   MockFormSubmission,
 } from "../../state/mock-board-forms";
 import type { MockStore } from "../../state/mock-store";
+import type { MockHttpResult } from "../../transport/create-response";
 import {
   canEditBoard,
   canManageBoard,
@@ -243,6 +246,100 @@ function checkAnswer(
     default:
       return "This question type is not supported.";
   }
+}
+
+/** Cloudflare's always-pass Turnstile test site key: the real widget solves itself in the dev world. */
+const MOCK_CAPTCHA_SITE_KEY = "1x00000000000000000000AA";
+/** The tokens the mock's captcha accepts: the test one, and what Cloudflare's test key hands the real widget. */
+const CAPTCHA_PASS_TOKENS = new Set([
+  "captcha-test-pass",
+  "XXXX.DUMMY.TOKEN.XXXX",
+]);
+const PUBLIC_SENDS_PER_MINUTE = 5;
+const PUBLIC_WINDOW_SECONDS = 60;
+const PUBLIC_SHARING_OFF = "WorkManagement_Form_PublicSharingDisabled";
+
+function publicAccessRow(form: MockForm) {
+  return { isPublic: form.publicKey !== null, publicKey: form.publicKey };
+}
+
+function workspaceOf(store: MockStore, form: MockForm): string {
+  return store.getBoard(form.boardId)?.workspaceId ?? "";
+}
+
+/** Only a workspace Owner or Admin reads or switches the public state, whatever they hold on the board. */
+function publicAdmin(store: MockStore, formId: string) {
+  const { form, refusal } = readable(store, formId);
+  if (!form) return { form: null, refusal } as const;
+  const role = store.getCurrentMemberRole(workspaceOf(store, form));
+  if (role !== "owner" && role !== "admin")
+    return { form: null, refusal: forbidden() } as const;
+  return { form, refusal: null } as const;
+}
+
+/**
+ * The form a public key opens: public, published, on a live board of an active workspace that allows public
+ * links. Anything else is the same null (a 404 that does not say why).
+ */
+function openForm(store: MockStore, publicKey: string): MockForm | null {
+  const form = store.forms.findByPublicKey(publicKey);
+  if (!form || form.deleted || form.status !== "Published") return null;
+  const board = store.getBoard(form.boardId);
+  if (!board || board.isArchived || store.isWorkspaceDeleted(board.workspaceId))
+    return null;
+  return store.getWorkspaceSettings(board.workspaceId).allowPublicSharing
+    ? form
+    : null;
+}
+
+/** The questions a visitor can answer: files and signatures have nowhere to go yet. */
+function publicQuestions(form: MockForm, store: MockStore) {
+  return [...form.questions]
+    .filter(
+      (q) => q.questionType !== "FileUpload" && q.questionType !== "Signature",
+    )
+    .sort((a, b) => (a.position < b.position ? -1 : 1))
+    .map((q) => {
+      const field = q.boardFieldId
+        ? store.getColumns(form.boardId).find((c) => c.id === q.boardFieldId)
+        : undefined;
+      return {
+        key: q.questionKey,
+        label: q.label,
+        type: q.questionType,
+        required: q.isRequired,
+        placeholder: q.placeholder,
+        helpText: q.helpText,
+        maxLength: q.maxLength,
+        minValue: q.minValue,
+        maxValue: q.maxValue,
+        options: field?.options
+          ? field.options.map((o) => ({ key: o.id, label: o.name }))
+          : q.options,
+      };
+    });
+}
+
+function badRequest(errors: Record<string, string[]>): MockHttpResult<object> {
+  return {
+    status: 400,
+    body: { message: "Validation failed", code: "VALIDATION_ERROR", errors },
+  };
+}
+
+/**
+ * One more anonymous send of this key; false once the last minute holds more than the limit.
+ * shortcut: the minute is the chat's virtual time (one second per chat write, or advanceVirtualSeconds in a test),
+ * never the wall clock; in a dev session the window opens again only as chat writes move it.
+ */
+function withinPublicLimit(store: MockStore, publicKey: string): boolean {
+  const now = store.chat.virtualSeconds();
+  const live = (store.forms.publicHits.get(publicKey) ?? []).filter(
+    (at) => at > now - PUBLIC_WINDOW_SECONDS,
+  );
+  live.push(now);
+  store.forms.publicHits.set(publicKey, live);
+  return live.length <= PUBLIC_SENDS_PER_MINUTE;
 }
 
 type BoardParams = { boardId: string };
@@ -738,6 +835,120 @@ export const formsOperations = [
       const { submission, refusal } = submissionOf(store, params.submissionId);
       if (!submission) return refusal;
       submission.status = "Deleted";
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<FormParams, never, unknown>({
+    id: "forms.publicAccess.get",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Forms.GetPublicAccess",
+    },
+    method: "GET",
+    route: "/forms/:formId/public-access",
+    async handle({ params, store }) {
+      const { form, refusal } = publicAdmin(store, params.formId);
+      return form ? ok(publicAccessRow(form)) : refusal;
+    },
+  }),
+
+  defineMockOperation<FormParams, { enabled?: boolean }, unknown>({
+    id: "forms.publicAccess.set",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.Forms.SetPublicAccess",
+    },
+    method: "PUT",
+    route: "/forms/:formId/public-access",
+    async handle({ params, body, store }) {
+      const { form, refusal } = publicAdmin(store, params.formId);
+      if (!form) return refusal;
+      if (body?.enabled === true) {
+        if (
+          !store.getWorkspaceSettings(workspaceOf(store, form))
+            .allowPublicSharing
+        ) {
+          const refused = conflict(
+            "This workspace does not allow public links. An Owner or Admin can turn them on in the workspace settings.",
+          );
+          return {
+            ...refused,
+            body: { ...refused.body, ruleCode: PUBLIC_SHARING_OFF },
+          };
+        }
+        // Already public keeps its key: every link out there stays good.
+        form.publicKey ??= store.forms.mintPublicKey();
+      } else form.publicKey = null;
+      return ok(publicAccessRow(form));
+    },
+  }),
+
+  defineMockOperation<{ publicKey: string }, never, unknown>({
+    id: "publicForms.get",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.PublicForms.Get",
+    },
+    method: "GET",
+    route: "/public/forms/:publicKey",
+    async handle({ params, store }) {
+      const form = openForm(store, params.publicKey);
+      if (!form) return notFound("Form not found");
+      return ok({
+        name: form.name,
+        description: form.description === "" ? null : form.description,
+        questions: publicQuestions(form, store),
+        captchaSiteKey: MOCK_CAPTCHA_SITE_KEY,
+      });
+    },
+  }),
+
+  defineMockOperation<
+    { publicKey: string },
+    {
+      answers?: Record<string, unknown>;
+      captchaToken?: string;
+      website?: string;
+    },
+    void
+  >({
+    id: "publicForms.submit",
+    contract: {
+      kind: "openapi",
+      operationId: "WorkManagement.PublicForms.Submit",
+    },
+    method: "POST",
+    route: "/public/forms/:publicKey/submissions",
+    async handle({ params, body, store }) {
+      // The limit runs before anything else, per key, so a key that opens nothing is no oracle either.
+      if (!withinPublicLimit(store, params.publicKey))
+        return {
+          status: 429,
+          headers: { "Retry-After": String(PUBLIC_WINDOW_SECONDS) },
+          body: {
+            type: "https://notrelix.dev/problems/rate_limit-exceeded",
+            title: "Too many requests",
+            status: 429,
+            detail: "Bạn đã gửi quá nhiều lần. Vui lòng thử lại sau ít phút.",
+            errorCode: "rate_limit.exceeded",
+          },
+        };
+      const form = openForm(store, params.publicKey);
+      if (!form) return notFound("Form not found");
+      if (!CAPTCHA_PASS_TOKENS.has(body?.captchaToken ?? ""))
+        return badRequest({ captchaToken: ["Captcha verification failed."] });
+      // A filled honeypot is a bot: a success that stores nothing.
+      if ((body?.website ?? "").trim() !== "") return noContent();
+      const answers = body?.answers ?? {};
+      const errors = checkAnswers(form, answers, store);
+      if (Object.keys(errors).length > 0) return badRequest(errors);
+      store.forms.addSubmission(form, {
+        submitterUserId: null,
+        submitterEmail: null,
+        payloadJson: JSON.stringify(answers),
+        key: null,
+      });
       return noContent();
     },
   }),

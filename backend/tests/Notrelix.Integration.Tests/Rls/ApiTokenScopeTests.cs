@@ -49,7 +49,7 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
     {
         var secret = new ApiTokenSecretService().Generate();
         var token = ApiToken.Create(tenant.AccountId, tenant.WorkspaceId, tenant.User.Id, name, secret.TokenHash,
-            scopes: null, createdBy: tenant.User.Id, createdAt: DateTimeOffset.UtcNow, expiresAt: null);
+            scopes: ApiTokenScopes.All(), createdBy: tenant.User.Id, createdAt: DateTimeOffset.UtcNow, expiresAt: null);
         var system = new FakeCurrentTenantContext();
         system.SetSystem();
         await using var ctx = _fixture.CreateOwnerContext(system);
@@ -57,6 +57,9 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
         await ctx.SaveChangesAsync();
         return (secret, token.Id);
     }
+
+    // The probe is a route the token's scopes reach (the workspace itself, workspace:read); a token never reaches the token list.
+    private static string WorkspaceUrl(Guid workspaceId) => $"/api/v1/workspaces/{workspaceId}";
 
     private async Task<string> OwnerScalarAsync(string sql, params (string, object)[] p)
     {
@@ -92,7 +95,7 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
     [Fact]
     public async Task AValidToken_Authenticates_AndItsUseIsRecorded()
     {
-        (await CallAsync($"/api/v1/workspaces/{_a.WorkspaceId}/api-tokens", _tokenA.RawToken)).Should().Be(HttpStatusCode.OK);
+        (await CallAsync(WorkspaceUrl(_a.WorkspaceId), _tokenA.RawToken)).Should().Be(HttpStatusCode.OK);
         (await OwnerScalarAsync("SELECT last_used_at IS NOT NULL FROM identity.api_tokens WHERE id = @i", ("i", _tokenAId)))
             .Should().Be("True", "the authentication step recorded the use of the one token row it entered the scope for");
     }
@@ -101,14 +104,14 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
     public async Task AnUnknownToken_IsRejected()
     {
         var unknown = new ApiTokenSecretService().Generate().RawToken;
-        (await CallAsync($"/api/v1/workspaces/{_a.WorkspaceId}/api-tokens", unknown)).Should().Be(HttpStatusCode.Unauthorized);
+        (await CallAsync(WorkspaceUrl(_a.WorkspaceId), unknown)).Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task ARevokedToken_IsRejected()
     {
         await OwnerScalarAsync("UPDATE identity.api_tokens SET status = 'Revoked', revoked_at = now() WHERE id = @i", ("i", _tokenAId));
-        (await CallAsync($"/api/v1/workspaces/{_a.WorkspaceId}/api-tokens", _tokenA.RawToken)).Should().Be(HttpStatusCode.Unauthorized);
+        (await CallAsync(WorkspaceUrl(_a.WorkspaceId), _tokenA.RawToken)).Should().Be(HttpStatusCode.Unauthorized);
         (await OwnerScalarAsync("SELECT last_used_at IS NULL FROM identity.api_tokens WHERE id = @i", ("i", _tokenAId)))
             .Should().Be("True", "a revoked token's use is not recorded");
     }
@@ -117,13 +120,13 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
     public async Task AnExpiredToken_IsRejected()
     {
         await OwnerScalarAsync("UPDATE identity.api_tokens SET expires_at = now() - interval '1 minute' WHERE id = @i", ("i", _tokenAId));
-        (await CallAsync($"/api/v1/workspaces/{_a.WorkspaceId}/api-tokens", _tokenA.RawToken)).Should().Be(HttpStatusCode.Unauthorized);
+        (await CallAsync(WorkspaceUrl(_a.WorkspaceId), _tokenA.RawToken)).Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task ATokenOfOneWorkspace_CannotReachAnotherWorkspace()
     {
-        var status = await CallAsync($"/api/v1/workspaces/{_b.WorkspaceId}/api-tokens", _tokenA.RawToken);
+        var status = await CallAsync(WorkspaceUrl(_b.WorkspaceId), _tokenA.RawToken);
         status.Should().NotBe(HttpStatusCode.OK);
         status.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized);
     }

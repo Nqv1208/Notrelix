@@ -65,6 +65,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Accounts.GetSecurityPolicy",
+    operationId: "Accounts.GetSecurityPolicy",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Accounts.SetMfaPolicy",
+    operationId: "Accounts.SetMfaPolicy",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Profile.GetPreferences",
     operationId: "Identity.Profile.GetPreferences",
     mutation: false,
@@ -1453,6 +1473,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
     capability: "Identity.Auth.Login",
     operationId: "Identity.Auth.Login",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Mfa.StartRequiredEnrollment",
+    operationId: "Identity.Mfa.StartRequiredEnrollment",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Mfa.CompleteRequiredEnrollment",
+    operationId: "Identity.Mfa.CompleteRequiredEnrollment",
     mutation: true,
   },
   {
@@ -4617,6 +4657,46 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/product/work-management/state/src/api/form.api.ts",
     capability: "WorkManagement.Forms.ReopenSubmission",
     operationId: "WorkManagement.Forms.ReopenSubmission",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getFormPublicAccess",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.GetPublicAccess",
+    operationId: "WorkManagement.Forms.GetPublicAccess",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setFormPublicAccess",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.SetPublicAccess",
+    operationId: "WorkManagement.Forms.SetPublicAccess",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getPublicForm",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.PublicForms.Get",
+    operationId: "WorkManagement.PublicForms.Get",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "submitPublicForm",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.PublicForms.Submit",
+    operationId: "WorkManagement.PublicForms.Submit",
     mutation: true,
   },
   {

@@ -75,6 +75,7 @@ import { useTabletSidebarPreference } from "./use-tablet-sidebar-preference";
 import { useInboxSummary } from "./work-feed-bridge";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
+import { AccountReadOnlyBannerHost } from "./account-read-only-banner-host";
 import { ArchivedWorkspaceBannerHost } from "./archived-workspace-banner-host";
 import { useCommandSearch } from "./use-command-search";
 import { useWorkFeedWrites } from "./work-feed-bridge";
@@ -769,6 +770,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             }
           />
         ) : null}
+        <AccountReadOnlyBannerHost navigation={navigation} />
         <ArchivedWorkspaceBannerHost />
         {/* The one scroll container of the workspace shell (WX-SHELL-004). */}
         <main id="workspace-main" className="min-h-0 flex-1 overflow-y-auto">

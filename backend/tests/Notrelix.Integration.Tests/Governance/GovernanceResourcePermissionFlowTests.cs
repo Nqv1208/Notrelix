@@ -1927,6 +1927,13 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             global::Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             global::Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Public.Status.IAccountStatusFacts,
+            global::Notrelix.Infrastructure.Accounts.Status.AccountStatusFactsReader>();
+        // Public forms: the per-form scope, the workspace public-links fact and the captcha test double.
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Public.Sharing.IWorkspaceSharingFacts,
+            global::Notrelix.Infrastructure.Workspaces.Sharing.WorkspaceSharingFactsReader>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Forms.Services.PublicFormScope>();
+        services.AddSingleton<global::Notrelix.Application.Features.WorkManagement.Forms.Services.ICaptchaVerifier, Notrelix.Testing.Application.Fakes.FakeCaptchaVerifier>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,

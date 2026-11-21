@@ -65,11 +65,27 @@ export const en = {
     renewed: "New backup codes created.",
     turnedOn: "Two-factor authentication is on.",
   },
+  policy: {
+    title: "Account policy",
+    required: "Required",
+    notRequired: "Not required",
+    rowTitle: "Require two-step verification",
+    ownerText:
+      "When it is on, every member of this account must set up two-step verification at their next sign-in.",
+    memberText:
+      "Set by the account Owner. When it is on, every member must use two-step verification.",
+    require: "Require for everyone",
+    stop: "Stop requiring",
+    savedOn: "Two-step verification is now required for the account.",
+    savedOff: "Two-step verification is no longer required for the account.",
+  },
   flow: {
     enrollTitle: "Set up the authenticator app",
     enrollText:
       "Scan this QR code with your authenticator app, then enter the 6-digit code it shows.",
     qrLabel: "QR code for your authenticator app",
+    requiredByAccount:
+      "Your account requires two-step verification, so it can't be turned off.",
     secretLabel: "Can't scan it? Enter this key in the app instead:",
     disableTitle: "Confirm to turn off two-factor authentication",
     renewTitle: "Confirm to create new backup codes",
@@ -302,11 +318,27 @@ export const vi: AccountSecurityCopy = {
     renewed: "Đã tạo mã dự phòng mới.",
     turnedOn: "Đã bật xác thực hai yếu tố.",
   },
+  policy: {
+    title: "Chính sách tài khoản",
+    required: "Bắt buộc",
+    notRequired: "Không bắt buộc",
+    rowTitle: "Bắt buộc xác minh hai bước",
+    ownerText:
+      "Khi bật, mọi thành viên của tài khoản phải thiết lập xác minh hai bước ở lần đăng nhập tiếp theo.",
+    memberText:
+      "Do chủ sở hữu tài khoản đặt. Khi bật, mọi thành viên phải dùng xác minh hai bước.",
+    require: "Bắt buộc cho mọi người",
+    stop: "Ngừng bắt buộc",
+    savedOn: "Tài khoản đã bắt buộc xác minh hai bước.",
+    savedOff: "Tài khoản không còn bắt buộc xác minh hai bước.",
+  },
   flow: {
     enrollTitle: "Thiết lập ứng dụng xác thực",
     enrollText:
       "Quét mã QR này bằng ứng dụng xác thực, rồi nhập mã 6 số ứng dụng hiển thị.",
     qrLabel: "Mã QR cho ứng dụng xác thực",
+    requiredByAccount:
+      "Tài khoản của bạn bắt buộc xác minh hai bước nên không thể tắt.",
     secretLabel: "Không quét được? Hãy nhập khóa này vào ứng dụng:",
     disableTitle: "Xác nhận để tắt xác thực hai lớp",
     renewTitle: "Xác nhận để tạo mã dự phòng mới",

@@ -4,7 +4,7 @@
  * Every key is workspace-scoped via the canonical `workspaceQueryKey` helper.
  * No compatibility overload without workspaceId.
  */
-import { workspaceQueryKey } from "@notrelix/query";
+import { globalQueryKey, workspaceQueryKey } from "@notrelix/query";
 
 export const wmQueryKeys = {
   boardChecklists: (workspaceId: string, boardId: string) =>
@@ -63,6 +63,16 @@ export const wmQueryKeys = {
       "detail",
       formId,
     ),
+  formPublicAccess: (workspaceId: string, formId: string) =>
+    workspaceQueryKey(
+      workspaceId,
+      "work-management",
+      "forms",
+      "public-access",
+      formId,
+    ),
+  /** The anonymous page of a public form: no session, so no workspace or account in the key. */
+  publicForm: (publicKey: string) => globalQueryKey("public-form", publicKey),
   formSubmissions: (workspaceId: string, formId: string) =>
     workspaceQueryKey(
       workspaceId,

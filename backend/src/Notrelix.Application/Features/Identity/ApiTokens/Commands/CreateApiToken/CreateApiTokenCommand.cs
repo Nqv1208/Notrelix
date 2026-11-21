@@ -4,18 +4,21 @@ using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Application.Features.Identity.ApiTokens.DTOs;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Domain.Identity;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Features.Identity.ApiTokens.Commands.CreateApiToken;
 
 /// <summary>
-/// Issues a new API token for the workspace. Protected by step-up verification
-/// (IssueApiToken purpose). The raw secret is returned exactly once.
+/// Issues a new API token for the workspace, limited to the scopes chosen here (at least one; they cannot be
+/// changed afterwards). Protected by step-up verification (IssueApiToken purpose). The raw secret is returned
+/// exactly once.
 /// </summary>
 public sealed record CreateApiTokenCommand(
     Guid WorkspaceId,
     string Name,
     DateTimeOffset? ExpiresAt,
+    IReadOnlyList<string> Scopes,
     string StepUpToken)
     : ICommand<Result<CreatedApiTokenDto>>,
       IWriteRequest,
@@ -119,6 +122,28 @@ public sealed class CreateApiTokenCommandHandler
                 nameof(CreateApiTokenCommand.ExpiresAt)));
         }
 
+        ApiTokenScopes scopes;
+        try
+        {
+            scopes = ApiTokenScopes.Create(request.Scopes);
+        }
+        catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException ex) when (ex.RuleCode == IdentityRuleCodes.Identity_ApiToken_ScopesRequired)
+        {
+            return Result<CreatedApiTokenDto>.Failure(new ApplicationError(
+                "identity.api-tokens.scopes-required",
+                "An API token needs at least one scope.",
+                ApplicationErrorType.Validation,
+                nameof(CreateApiTokenCommand.Scopes)));
+        }
+        catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException ex) when (ex.RuleCode == IdentityRuleCodes.Identity_ApiToken_UnknownScope)
+        {
+            return Result<CreatedApiTokenDto>.Failure(new ApplicationError(
+                "identity.api-tokens.unknown-scope",
+                ex.Message,
+                ApplicationErrorType.Validation,
+                nameof(CreateApiTokenCommand.Scopes)));
+        }
+
         var stepUp = await _stepUpService.ConsumeAsync(
             request.StepUpToken, userId, sessionId.Value, StepUpPurpose.IssueApiToken, ct);
         if (!stepUp.Succeeded)
@@ -133,7 +158,7 @@ public sealed class CreateApiTokenCommandHandler
             userId: userId,
             name: name,
             tokenHash: secret.TokenHash,
-            scopes: null,
+            scopes: scopes,
             createdBy: userId,
             createdAt: now,
             expiresAt: request.ExpiresAt,
@@ -158,7 +183,7 @@ public sealed class CreateApiTokenCommandHandler
                 null,
                 null,
                 null,
-                new { tokenId = token.Id, name = token.Name, expiresAt = token.ExpiresAt }));
+                new { tokenId = token.Id, name = token.Name, expiresAt = token.ExpiresAt, scopes = scopes.Scopes.Order().ToList() }));
 
         return Result<CreatedApiTokenDto>.Success(new CreatedApiTokenDto(
             token.Id,

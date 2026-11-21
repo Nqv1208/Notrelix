@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { describeWorkspaceFailure } from "@notrelix/features-workspace/core";
+import {
+  describeWorkspaceFailure,
+  isAccountReadOnly,
+} from "@notrelix/features-workspace/core";
 import {
   ArchivedWorkspaceBanner,
   createUseWorkspaceSettingsMutations,
@@ -34,7 +37,9 @@ export function ArchivedWorkspaceBannerHost() {
   const mutations = useMutations(workspaceId);
   const [outcome, setOutcome] = useState<ArchivedBannerState>("idle");
 
-  if (workspace?.isArchived !== true) return null;
+  // The Account state is the stronger one and has its own banner.
+  if (workspace?.isArchived !== true || isAccountReadOnly(workspace))
+    return null;
 
   const version = workspace.version;
   const state: ArchivedBannerState = mutations.unarchive.isPending

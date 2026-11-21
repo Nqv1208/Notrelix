@@ -51,6 +51,16 @@ public enum OutboundDeliverySkipReason
     ConnectionRevoked,
     ConnectionDeleted,
     ConnectionMissing,
+
+    /// <summary>The Account is suspended or closed: nothing leaves a read-only Account (stable code <c>account.suspended</c>).</summary>
+    AccountSuspended,
+}
+
+public static class OutboundDeliverySkipReasonCodes
+{
+    /// <summary>The code the delivery log shows; the Account reason is the shared stable code, the others keep their name.</summary>
+    public static string Code(this OutboundDeliverySkipReason reason) =>
+        reason == OutboundDeliverySkipReason.AccountSuspended ? "account.suspended" : reason.ToString();
 }
 
 /// <summary>

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Domain.Workspaces.Workspaces;
 using Notrelix.Infrastructure;
@@ -36,9 +37,11 @@ public sealed class WebhookFanOutRuntimeChainIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task AnItemCreatedFactIsDeliveredOncePerActiveConnectionAndSkipsPausedOnes()
     {
-        var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
+        // The delivery skips when the Account is not operating, and an unreadable Account counts as not operating: seed it Active.
+        var account = Account.Create("Hook Account", $"hook-{Guid.NewGuid():N}"[..20], AccountType.Team, ownerId, now);
+        var accountId = account.Id;
         var workspace = Workspace.Create(accountId, ownerId, "Hook WS", $"hook-{Guid.NewGuid():N}", now);
         var active = IntegrationConnection.Create(accountId, workspace.Id, IntegrationProvider.Webhook, ownerId, now, targetUrl: "https://hooks.example.com/a");
         var paused = IntegrationConnection.Create(accountId, workspace.Id, IntegrationProvider.Webhook, ownerId, now, targetUrl: "https://hooks.example.com/b");
@@ -46,6 +49,7 @@ public sealed class WebhookFanOutRuntimeChainIntegrationTests : IAsyncLifetime
 
         await using (var seed = _db.CreateOwnerContext(SystemTenant()))
         {
+            seed.Accounts.Add(account);
             seed.Workspaces.Add(workspace);
             seed.IntegrationConnections.Add(active);
             seed.IntegrationConnections.Add(paused);

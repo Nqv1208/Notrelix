@@ -74,13 +74,13 @@ async function init(): Promise<void> {
 
   const services = createWebApplicationServices(runtime, {
     onSignedOutRoute: () => isSignedOutRoute(window.location.pathname),
-    navigateToSignedOut: () => {
+    navigateToSignedOut: (reason) => {
       if (isSignedOutRoute(window.location.pathname)) return;
       const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       const redirectPath = sanitizeInternalReturnUrl(currentUrl);
       void router.navigate({
         to: "/sign-in",
-        search: { redirect: redirectPath, reason: "session-ended" },
+        search: { redirect: redirectPath, reason: reason ?? "session-ended" },
         replace: true,
       });
     },

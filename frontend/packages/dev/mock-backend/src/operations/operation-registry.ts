@@ -14,6 +14,7 @@ import { createMockResponse } from "../transport/create-response";
 import type { MockOperationDefinition } from "./types";
 import type { NormalizedMockRequest } from "../transport/normalize-request";
 import type { MockStore } from "../state/mock-store";
+import { refuseWriteOfSuspendedAccount } from "./account-suspension-gate";
 
 export class MockDuplicateOperationIdError extends Error {
   constructor(operationId: string, route: string) {
@@ -102,6 +103,9 @@ export class MockOperationRegistry {
     request.searchParams.forEach((value, key) => {
       query[key] = value;
     });
+
+    const refused = refuseWriteOfSuspendedAccount(request, match.params, store);
+    if (refused) return createMockResponse(refused);
 
     const result = await op.handle({
       params: match.params,

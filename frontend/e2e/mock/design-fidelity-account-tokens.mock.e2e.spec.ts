@@ -6,8 +6,10 @@ import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-d
  * Idn-Tokens boards (Idn-Tokens, Idn-Var-Tokens-Issue, -StepUp, -Reveal, -Revoke, -Empty), measured
  * from the boards rendered with `render.py` at the same viewport. Where the page differs on purpose
  * the box is asserted by what the two share:
- *  - no scope column or picker (the vocabulary of UC-IDN-L05 is not decided), so the issue dialog is
- *    shorter and the name column wider; boxes inside it are asserted from the dialog's top;
+ *  - no scope column, and a picker of the seven scopes (read and write per context, the workspace read)
+ *    in place of the board's two presets, which predate the scope vocabulary (UC-IDN-L05): the issue
+ *    dialog is taller and the name column wider; boxes inside it are asserted from the dialog's top;
+ *    each token's scopes read in the detail line under its name;
  *  - one field for the code or password where the board draws six boxes, so the proof dialog's body is
  *    shorter; the head, the sentence and the footer are asserted.
  */
@@ -190,7 +192,7 @@ for (const dark of [false, true]) {
       });
     });
 
-    test("the issue dialog is the Idn-Var-Tokens-Issue board, less the scope picker", async ({
+    test("the issue dialog is the Idn-Var-Tokens-Issue board, with the seven-scope picker in place of its presets", async ({
       page,
     }) => {
       await open(page, TOKENS, dark);
@@ -218,6 +220,7 @@ for (const dark of [false, true]) {
         .getByRole("button", { name: "Tạo token", exact: true })
         .click();
       await page.getByLabel("Tên token").fill("Báo cáo tồn kho");
+      await page.getByRole("checkbox", { name: "Công việc: đọc" }).check();
       await page.getByRole("button", { name: "Tạo token" }).last().click();
       const dialog = page.getByRole("dialog", {
         name: "Xác nhận lại danh tính",
@@ -240,6 +243,7 @@ for (const dark of [false, true]) {
         .getByRole("button", { name: "Tạo token", exact: true })
         .click();
       await page.getByLabel("Tên token").fill("Báo cáo tồn kho");
+      await page.getByRole("checkbox", { name: "Công việc: đọc" }).check();
       await page.getByRole("button", { name: "Tạo token" }).last().click();
       await page
         .getByLabel("Mã 6 số từ ứng dụng xác thực")

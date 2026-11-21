@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.Collaboration.Public.WorkspaceActivity;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
@@ -29,6 +30,33 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
                 ids.Select(id => new ActorSnapshot(id, $"User {id:N}", null)).ToList());
     }
 
+    private static IAccountStatusFacts ActiveAccount() => AccountWith(AccountStatusFact.Active);
+
+    private static IAccountStatusFacts AccountWith(AccountStatusFact status)
+    {
+        var facts = new Mock<IAccountStatusFacts>();
+        facts.Setup(f => f.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(status);
+        return facts.Object;
+    }
+
+    [Theory]
+    [InlineData(AccountStatusFact.Active, "Active")]
+    [InlineData(AccountStatusFact.Suspended, "Suspended")]
+    [InlineData(AccountStatusFact.Closed, "Closed")]
+    public async Task GetWorkspace_CarriesTheAccountStatus_AndAMemberStillReadsTheWorkspace(AccountStatusFact status, string expected)
+    {
+        var workspace = CreateWorkspace(TestWorkspaceId);
+        SetupWorkspaces(workspace);
+        SetupMembers(Active());
+
+        var result = await new GetWorkspaceQueryHandler(DbContextMock.Object, AccountWith(status))
+            .Handle(new GetWorkspaceQuery(TestWorkspaceId), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue("member reads stay open while the Account is suspended");
+        result.Data!.AccountStatus.Should().Be(expected);
+        result.Data.Name.Should().Be(workspace.Name);
+    }
+
     [Fact]
     public async Task GetWorkspace_ReportsTheAggregateVersion_AndCountsOnlyMembersStillParticipating()
     {
@@ -37,7 +65,7 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
         SetupWorkspaces(workspace);
         SetupMembers(Active(), Suspended(), Removed());
 
-        var result = await new GetWorkspaceQueryHandler(DbContextMock.Object)
+        var result = await new GetWorkspaceQueryHandler(DbContextMock.Object, ActiveAccount())
             .Handle(new GetWorkspaceQuery(TestWorkspaceId), CancellationToken.None);
 
         result.Data!.Version.Should().Be(workspace.Version).And.BeGreaterThan(1, "a rename advances the version");
@@ -51,7 +79,7 @@ public sealed class WorkspaceAdministrationReadHandlerTests : WorkspaceHandlerTe
         SetupMembers(Active());
         SetupInvitations();
 
-        var workspace = await new GetWorkspaceQueryHandler(DbContextMock.Object)
+        var workspace = await new GetWorkspaceQueryHandler(DbContextMock.Object, ActiveAccount())
             .Handle(new GetWorkspaceQuery(TestWorkspaceId), CancellationToken.None);
         var members = await new GetWorkspaceMembersQueryHandler(DbContextMock.Object, _actors.Object, _phones.Object, RequestContextMock.Object)
             .Handle(new GetWorkspaceMembersQuery(TestWorkspaceId), CancellationToken.None);

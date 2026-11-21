@@ -23,10 +23,18 @@ import type {
   TwoFactorEnrollment,
   UserProfile,
   AccountApiTokenPage,
+  AccountTokenScope,
 } from "../types/account";
+import { ACCOUNT_TOKEN_SCOPES } from "../types/account";
 
 export interface AccountApiClient {
-  get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
+  get<T>(
+    url: string,
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
+  ): Promise<T>;
   post<T>(
     url: string,
     body?: unknown,
@@ -35,7 +43,10 @@ export interface AccountApiClient {
   put<T>(
     url: string,
     body?: unknown,
-    options?: { skipGlobalErrorToast?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   patch<T>(
     url: string,
@@ -92,6 +103,8 @@ export interface AccountEndpoints {
   /** `Workspaces.Workspaces.GetDeletedWorkspaces`: the Owner's Recently deleted list. */
   accounts: {
     deletedWorkspaces: (accountId: string) => string;
+    securityPolicy: string;
+    mfaPolicy: string;
   };
   workspaces: {
     apiTokens: (workspaceId: string) => string;
@@ -346,6 +359,7 @@ interface ApiTokenPageWire {
         readonly expiresAt?: string | null;
         readonly createdAt?: string;
         readonly suffix?: string | null;
+        readonly scopes?: readonly string[] | null;
         readonly revokedReason?: string | null;
       }[]
     | null;
@@ -374,6 +388,9 @@ export function toApiTokenPage(wire: ApiTokenPageWire): AccountApiTokenPage {
       expiresAt: item.expiresAt ?? null,
       createdAt: item.createdAt ?? "",
       suffix: item.suffix ?? null,
+      scopes: ACCOUNT_TOKEN_SCOPES.filter((scope) =>
+        (item.scopes ?? []).includes(scope),
+      ),
       revokedReason: REVOKED_REASONS[item.revokedReason ?? ""] ?? null,
     })),
     nextCursor: wire.nextCursor ?? null,
@@ -401,6 +418,14 @@ export function createAccountService(
   api: AccountApiClient,
   endpoints: AccountEndpoints,
 ) {
+  /** Account-scoped routes name the Account in `X-Account-Id`; the bootstrap names the member's own. */
+  const accountHeader = async (): Promise<Record<string, string>> => {
+    const bootstrap = await api.get<{ accountId?: string | null }>(
+      endpoints.auth.bootstrap,
+      PAGE_QUIET,
+    );
+    return bootstrap?.accountId ? { "X-Account-Id": bootstrap.accountId } : {};
+  };
   return {
     async getProfile(): Promise<UserProfile> {
       return toUserProfile(await api.get<UserWire>(endpoints.auth.profile));
@@ -596,7 +621,12 @@ export function createAccountService(
     /** Spends an `IssueApiToken` proof. The secret is in this answer alone: hold it in memory, never store it. */
     async issueApiToken(
       workspaceId: string,
-      input: { name: string; expiresAt: string; stepUpToken: string },
+      input: {
+        name: string;
+        expiresAt: string;
+        scopes: readonly AccountTokenScope[];
+        stepUpToken: string;
+      },
     ): Promise<{ id: string; secret: string; name: string }> {
       const wire = await api.post<{
         id?: string;
@@ -821,6 +851,30 @@ export function createAccountService(
         QUIET,
       );
       return { pendingEmail: wire.pendingEmail ?? null };
+    },
+
+    /** The Account's MFA requirement (every member reads it) and whether the caller is the Account Owner who may change it. */
+    async getAccountMfaPolicy(): Promise<{
+      required: boolean;
+      canManage: boolean;
+    }> {
+      const wire = await api.get<{ requireMfa?: boolean; canManage?: boolean }>(
+        endpoints.accounts.securityPolicy,
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
+      return {
+        required: wire?.requireMfa === true,
+        canManage: wire?.canManage === true,
+      };
+    },
+
+    /** Only the Account Owner may: Admin and Member answer 403. */
+    async setAccountMfaPolicy(required: boolean): Promise<void> {
+      await api.put<void>(
+        endpoints.accounts.mfaPolicy,
+        { required },
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
     },
 
     async disableTwoFactor(stepUpToken: string): Promise<void> {

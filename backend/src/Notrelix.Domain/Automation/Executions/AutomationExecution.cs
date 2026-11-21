@@ -88,7 +88,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
     /// <summary>
     /// UC-AUT-C02: records a fact whose rule conditions were evaluated and not met. The execution is retained
     /// as Skipped (no action runs, nothing is dispatched, and it is not a failure, so it never counts toward
-    /// the consecutive-failure limit).
+    /// the consecutive-failure limit). <paramref name="skipReason"/> names the stable reason when the rule did not run for a
+    /// reason other than its conditions (UC-WSP-D06: <c>account.suspended</c>).
     /// </summary>
     public static AutomationExecution CreateSkipped(
         Guid accountId,
@@ -98,7 +99,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
         DateTimeOffset occurredAt,
         long? ruleVersion,
         string? configurationSnapshot,
-        DateTimeOffset skippedAt)
+        DateTimeOffset skippedAt,
+        string? skipReason = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -107,6 +109,8 @@ public class AutomationExecution : AggregateRoot, IWorkspaceScoped
 
         var execution = new AutomationExecution
         {
+            // The stable code of why nothing ran when it is not a condition (for example account.suspended); null for a condition not met.
+            Error = skipReason,
             AccountId = accountId,
             WorkspaceId = workspaceId,
             RuleId = ruleId,

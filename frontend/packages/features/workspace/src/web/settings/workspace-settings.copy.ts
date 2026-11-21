@@ -62,9 +62,11 @@ export const en = {
     sharingLabel: "Allow public links",
     sharingHelp:
       "Members can share a read-only link to a Board or Doc with anyone.",
-    mfaLabel: "Require two-step verification",
+    mfaLabel: "Two-step verification",
     mfaHelp:
-      "Members must turn on two-step verification to open this workspace.",
+      "Set for the whole account by its Owner, in Account settings, Security.",
+    mfaOn: "Required by your account",
+    mfaOff: "Not required by your account",
     timeZoneLabel: "Time zone",
     timeZoneHelp: "Every board of the workspace uses it for dates and times.",
     timeZonePlaceholder: "Search a time zone, such as Europe/Paris",
@@ -264,9 +266,11 @@ export const vi: WorkspaceSettingsCopy = {
     sharingLabel: "Cho phép liên kết công khai",
     sharingHelp:
       "Thành viên có thể chia sẻ liên kết chỉ xem của một Bảng hoặc Tài liệu cho bất kỳ ai.",
-    mfaLabel: "Bắt buộc xác minh hai bước",
+    mfaLabel: "Xác minh hai bước",
     mfaHelp:
-      "Thành viên phải bật xác minh hai bước để mở không gian làm việc này.",
+      "Chủ sở hữu tài khoản đặt cho cả tài khoản, trong Cài đặt tài khoản, mục Bảo mật.",
+    mfaOn: "Tài khoản của bạn bắt buộc",
+    mfaOff: "Tài khoản của bạn không bắt buộc",
     timeZoneLabel: "Múi giờ",
     timeZoneHelp:
       "Mọi bảng của không gian làm việc dùng múi giờ này cho ngày và giờ.",

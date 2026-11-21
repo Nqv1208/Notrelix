@@ -255,6 +255,7 @@ function workspaceDto(store: MockStore, workspaceId: string) {
       ).length,
     isPersonal: w.isPersonal,
     isArchived: store.isWorkspaceArchived(w.id),
+    accountStatus: store.accountStatusOf(w.id),
     version: store.getWorkspaceVersion(w.id),
   };
 }
@@ -1323,7 +1324,11 @@ export const workspaceOperations = [
     route: "/workspaces/:workspaceId/settings",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      return ok({ ...store.getWorkspaceSettings(params.workspaceId) });
+      // The Account owns the MFA requirement: the read returns its fact.
+      return ok({
+        ...store.getWorkspaceSettings(params.workspaceId),
+        enforceMfa: store.auth.accountMfaRequired,
+      });
     },
   }),
 

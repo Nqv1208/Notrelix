@@ -86,11 +86,17 @@ type WorkspaceSettingsDto = OperationResponse<
 export function parseWorkspaceSummary(payload: unknown): WorkspaceSummary {
   const summary = payload as Omit<WorkspaceSummary, "version"> &
     Pick<WorkspaceDto, "version">;
-  const { version, ...rest } = summary;
+  const { version, accountStatus, ...rest } = summary;
   rememberMarkTone(rest.id, (payload as { color?: unknown }).color);
+  const known =
+    accountStatus === "Active" ||
+    accountStatus === "Suspended" ||
+    accountStatus === "Closed"
+      ? { accountStatus }
+      : {};
   return typeof version === "number" && version > 0
-    ? { ...rest, version }
-    : rest;
+    ? { ...rest, ...known, version }
+    : { ...rest, ...known };
 }
 
 /**

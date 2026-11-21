@@ -16,7 +16,11 @@ import {
   Skeleton,
   cn,
 } from "@notrelix/ui-web";
-import type { AccountApiToken } from "../../core/types/account";
+import type {
+  AccountApiToken,
+  AccountTokenScope,
+} from "../../core/types/account";
+import { ACCOUNT_TOKEN_SCOPES } from "../../core/types/account";
 import {
   BTN,
   BTN_DANGER,
@@ -44,6 +48,8 @@ export type AccountTokensIssueFlow =
       readonly kind: "form";
       readonly name: string;
       readonly days: TokenLifetime;
+      /** What the token may do; the person picks at least one. */
+      readonly scopes: readonly AccountTokenScope[];
       readonly error: "failed" | null;
     }
   | {
@@ -77,7 +83,11 @@ export interface AccountTokensSurfaceProps {
   readonly notice: string | null;
   readonly actionError: boolean;
   readonly onStart: () => void;
-  readonly onSubmitForm: (input: { name: string; days: TokenLifetime }) => void;
+  readonly onSubmitForm: (input: {
+    name: string;
+    days: TokenLifetime;
+    scopes: readonly AccountTokenScope[];
+  }) => void;
   readonly onSubmitProof: (value: string) => void;
   readonly onProvider: (provider: string) => void;
 
@@ -261,16 +271,21 @@ function FormStep({
 }) {
   const [name, setName] = React.useState(flow.name);
   const [days, setDays] = React.useState<TokenLifetime>(flow.days);
+  const [scopes, setScopes] = React.useState<readonly AccountTokenScope[]>(
+    flow.scopes,
+  );
   const [missing, setMissing] = React.useState(false);
+  const [noScope, setNoScope] = React.useState(false);
   const nameId = React.useId();
   const daysId = React.useId();
   const t = copy.form;
   const submit = () => {
-    if (name.trim() === "") {
-      setMissing(true);
+    if (name.trim() === "" || scopes.length === 0) {
+      setMissing(name.trim() === "");
+      setNoScope(scopes.length === 0);
       return;
     }
-    onSubmit({ name: name.trim(), days });
+    onSubmit({ name: name.trim(), days, scopes });
   };
   return (
     <Shell
@@ -359,6 +374,15 @@ function FormStep({
           </select>
           <p className="m-0 text-crumb text-meta-foreground">{t.hint}</p>
         </div>
+        <ScopePicker
+          copy={copy}
+          scopes={scopes}
+          missing={noScope && scopes.length === 0}
+          onChange={(next) => {
+            setScopes(next);
+            setNoScope(false);
+          }}
+        />
         {flow.error ? (
           <p role="alert" className="m-0 text-crumb text-danger-text">
             {copy.proof.failed}
@@ -367,6 +391,114 @@ function FormStep({
         <button type="submit" hidden />
       </form>
     </Shell>
+  );
+}
+
+/** The scopes a token can carry, by context: read and write apart, the workspace readable alone. */
+function ScopePicker({
+  copy,
+  scopes,
+  missing,
+  onChange,
+}: {
+  copy: AccountTokensCopy;
+  scopes: readonly AccountTokenScope[];
+  missing: boolean;
+  onChange: (next: readonly AccountTokenScope[]) => void;
+}) {
+  const t = copy.scopes;
+  const hintId = React.useId();
+  const errorId = React.useId();
+  const toggle = (scope: AccountTokenScope) =>
+    onChange(
+      scopes.includes(scope)
+        ? scopes.filter((s) => s !== scope)
+        : ACCOUNT_TOKEN_SCOPES.filter((s) => s === scope || scopes.includes(s)),
+    );
+  const box = (scope: AccountTokenScope, text: string) => (
+    <label className="flex items-center gap-2 text-compact text-foreground">
+      <input
+        type="checkbox"
+        checked={scopes.includes(scope)}
+        aria-label={t.label[scope]}
+        onChange={() => toggle(scope)}
+        className={cn("size-4 shrink-0 accent-primary", FOCUS)}
+      />
+      <span aria-hidden="true">{text}</span>
+    </label>
+  );
+  const rows: readonly {
+    key: string;
+    name: string;
+    hint?: string;
+    read: AccountTokenScope;
+    write?: AccountTokenScope;
+  }[] = [
+    {
+      key: "work",
+      name: t.contexts.work,
+      read: "work:read",
+      write: "work:write",
+    },
+    {
+      key: "docs",
+      name: t.contexts.docs,
+      read: "docs:read",
+      write: "docs:write",
+    },
+    {
+      key: "chat",
+      name: t.contexts.chat,
+      read: "chat:read",
+      write: "chat:write",
+    },
+    {
+      key: "workspace",
+      name: t.workspace,
+      hint: t.workspaceHint,
+      read: "workspace:read",
+    },
+  ];
+  return (
+    <fieldset
+      aria-describedby={missing ? `${hintId} ${errorId}` : hintId}
+      className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0"
+    >
+      <legend className="p-0 text-crumb font-semibold text-muted-foreground">
+        {t.legend}
+      </legend>
+      <p id={hintId} className="m-0 text-crumb text-meta-foreground">
+        {t.hint}
+      </p>
+      <div className="flex flex-col rounded-md border border-line">
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className="grid grid-cols-[minmax(0,1fr)_88px_88px] items-center gap-3 border-t border-line px-3 py-2 first:border-t-0"
+          >
+            <span className="min-w-0 text-compact font-semibold text-foreground">
+              {row.name}
+              {row.hint ? (
+                <small className="block text-xs font-normal text-meta-foreground">
+                  {row.hint}
+                </small>
+              ) : null}
+            </span>
+            {box(row.read, t.read)}
+            {row.write ? box(row.write, t.write) : <span />}
+          </div>
+        ))}
+      </div>
+      {missing ? (
+        <p
+          id={errorId}
+          role="alert"
+          className="m-0 text-crumb text-danger-text"
+        >
+          {t.required}
+        </p>
+      ) : null}
+    </fieldset>
   );
 }
 
@@ -950,6 +1082,16 @@ export function AccountTokensSurface(props: AccountTokensSurfaceProps) {
   );
 }
 
+/** "All scopes", the chosen scopes by name, or the plain fact that a token carries none. */
+export function scopesSummary(
+  copy: AccountTokensCopy,
+  scopes: readonly AccountTokenScope[],
+): string {
+  if (scopes.length === 0) return copy.scopes.none;
+  if (scopes.length === ACCOUNT_TOKEN_SCOPES.length) return copy.scopes.all;
+  return scopes.map((scope) => copy.scopes.label[scope]).join(", ");
+}
+
 function TokenName({
   token,
   copy,
@@ -957,6 +1099,20 @@ function TokenName({
   token: AccountApiToken;
   copy: AccountTokensCopy;
 }) {
+  // The one line under the name: which token it is, what it may do, and why it stopped or that it never ends.
+  const detail = [
+    token.suffix ? `ntk_v1.••••••${token.suffix}` : "ntk_v1.••••••",
+    scopesSummary(copy, token.scopes),
+    token.status === "revoked" &&
+    token.revokedReason &&
+    token.revokedReason !== "manual"
+      ? copy.revokedReason[token.revokedReason]
+      : token.expiresAt === null
+        ? copy.noExpiryHint
+        : null,
+  ]
+    .filter((part) => part !== null)
+    .join(" · ");
   return (
     <div data-f="who" className="flex min-w-0 items-center gap-[11px]">
       <Tile tone="plain">
@@ -966,15 +1122,11 @@ function TokenName({
         <b className="block truncate text-nav font-semibold text-foreground">
           {token.name}
         </b>
-        <small className="block truncate font-mono text-xs leading-[1.5] text-meta-foreground">
-          {token.suffix ? `ntk_v1.••••••${token.suffix}` : "ntk_v1.••••••"}
-          {token.status === "revoked" &&
-          token.revokedReason &&
-          token.revokedReason !== "manual"
-            ? ` · ${copy.revokedReason[token.revokedReason]}`
-            : token.expiresAt === null
-              ? ` · ${copy.noExpiryHint}`
-              : ""}
+        <small
+          title={detail}
+          className="block truncate font-mono text-xs leading-[1.5] text-meta-foreground"
+        >
+          {detail}
         </small>
       </div>
     </div>

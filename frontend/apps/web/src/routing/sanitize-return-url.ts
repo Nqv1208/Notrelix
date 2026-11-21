@@ -23,6 +23,8 @@ const signedOutRoutes = [
   "/verify-email",
   "/auth/callback",
   "/invite",
+  // A public form: anyone with the link, never signed in.
+  "/f",
 ];
 
 export function isSignedOutRoute(pathname: string): boolean {

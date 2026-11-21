@@ -100,6 +100,10 @@ export {
   type ArchivedBannerState,
   type ArchivedWorkspaceBannerProps,
 } from "./shell/archived-workspace-banner";
+export {
+  AccountReadOnlyBanner,
+  type AccountReadOnlyBannerProps,
+} from "./shell/account-read-only-banner";
 
 // ── Inbox (Final-Inbox) ───────────────────────────────────────────
 export { workspaceInboxCatalog } from "./inbox/workspace-inbox.catalog";

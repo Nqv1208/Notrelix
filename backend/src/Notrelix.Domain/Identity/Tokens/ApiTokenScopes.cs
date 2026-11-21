@@ -5,6 +5,18 @@ namespace Notrelix.Domain.Identity.Tokens;
 
 public sealed class ApiTokenScopes : ValueObject
 {
+    public const string WorkRead = "work:read";
+    public const string WorkWrite = "work:write";
+    public const string DocsRead = "docs:read";
+    public const string DocsWrite = "docs:write";
+    public const string ChatRead = "chat:read";
+    public const string ChatWrite = "chat:write";
+    public const string WorkspaceRead = "workspace:read";
+
+    /// <summary>Every scope a token may carry. Write does not imply read; a scope only narrows what the issuer may do.</summary>
+    public static readonly IReadOnlyList<string> Vocabulary =
+        [WorkRead, WorkWrite, DocsRead, DocsWrite, ChatRead, ChatWrite, WorkspaceRead];
+
     private readonly IReadOnlySet<string> _scopes;
 
     public IReadOnlySet<string> Scopes => _scopes;
@@ -18,6 +30,23 @@ public sealed class ApiTokenScopes : ValueObject
     {
         _scopes = new ReadOnlySet<string>(scopes);
     }
+
+    /// <summary>The scopes chosen at issue: at least one, each from <see cref="Vocabulary"/>.</summary>
+    public static ApiTokenScopes Create(IEnumerable<string> scopes)
+    {
+        var chosen = scopes.ToHashSet(StringComparer.Ordinal);
+        if (chosen.Count == 0)
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_ScopesRequired, "An API token needs at least one scope.");
+
+        var unknown = chosen.Where(scope => !Vocabulary.Contains(scope)).Order().ToList();
+        if (unknown.Count > 0)
+            throw new BusinessRuleException(IdentityRuleCodes.Identity_ApiToken_UnknownScope, $"Unknown API token scope: {string.Join(", ", unknown)}.");
+
+        return new ApiTokenScopes(chosen);
+    }
+
+    /// <summary>Every scope; what a token issued before scopes existed was migrated to.</summary>
+    public static ApiTokenScopes All() => new(Vocabulary.ToHashSet(StringComparer.Ordinal));
 
     public static ApiTokenScopes FromJson(string json)
     {

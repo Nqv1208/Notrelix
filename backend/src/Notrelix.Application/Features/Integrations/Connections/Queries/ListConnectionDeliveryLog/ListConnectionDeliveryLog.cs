@@ -82,7 +82,7 @@ public sealed class ListConnectionDeliveryLogQueryHandler
             d.AttemptCount,
             d.ResponseStatusCode,
             d.FailureClass?.ToString(),
-            d.SkipReason?.ToString(),
+            d.SkipReason?.Code(),
             d.CreatedAt,
             d.UpdatedAt,
             d.DeliveredAt)).ToList();

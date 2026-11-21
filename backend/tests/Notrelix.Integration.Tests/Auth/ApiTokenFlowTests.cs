@@ -107,7 +107,7 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
             new Mock<IAuditService>().Object,
             Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
         var result = await handler.Handle(new CreateApiTokenCommand(
-            _workspaceId, name, expiresAt, "proof-token"), CancellationToken.None);
+            _workspaceId, name, expiresAt, ApiTokenScopes.All().Scopes.ToList(), "proof-token"), CancellationToken.None);
         await context.SaveChangesAsync();
         return result;
     }

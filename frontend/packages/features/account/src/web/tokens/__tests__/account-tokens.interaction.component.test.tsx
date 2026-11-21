@@ -28,6 +28,15 @@ function props(
             expiresAt: "2027-02-12T00:00:00Z",
             createdAt: "2026-11-01T00:00:00Z",
             suffix: "a41f",
+            scopes: [
+              "work:read",
+              "work:write",
+              "docs:read",
+              "docs:write",
+              "chat:read",
+              "chat:write",
+              "workspace:read",
+            ],
           },
           {
             id: "t2",
@@ -37,6 +46,7 @@ function props(
             expiresAt: null,
             createdAt: "2026-10-01T00:00:00Z",
             suffix: null,
+            scopes: ["work:read", "docs:write"],
           },
         ],
         hasMore: false,
@@ -126,7 +136,7 @@ describe.each(["vi", "en"] as const)("API tokens (%s)", (locale) => {
     renderPureUi(
       <AccountTokensSurface
         {...props(locale, {
-          flow: { kind: "form", name: "", days: 90, error: null },
+          flow: { kind: "form", name: "", days: 90, scopes: [], error: null },
         })}
       />,
     );
@@ -174,5 +184,124 @@ describe.each(["vi", "en"] as const)("API tokens (%s)", (locale) => {
           .replace("{{date}}", dateIn(365)),
       ),
     ).toBeTruthy();
+  });
+});
+
+describe.each(["vi", "en"] as const)("API token scopes (%s)", (locale) => {
+  const copy = accountTokensCopy(locale);
+  const form = (over: { name?: string; scopes?: readonly string[] } = {}) =>
+    ({
+      kind: "form",
+      name: over.name ?? "CI deploy",
+      days: 90,
+      scopes: over.scopes ?? [],
+      error: null,
+    }) as AccountTokensSurfaceProps["flow"];
+
+  it("offers every scope, read and write apart, and the workspace readable alone, none ticked", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale, { flow: form() })} />);
+    const boxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+    expect(boxes.map((box) => box.getAttribute("aria-label"))).toEqual([
+      copy.scopes.label["work:read"],
+      copy.scopes.label["work:write"],
+      copy.scopes.label["docs:read"],
+      copy.scopes.label["docs:write"],
+      copy.scopes.label["chat:read"],
+      copy.scopes.label["chat:write"],
+      copy.scopes.label["workspace:read"],
+    ]);
+    expect(boxes.every((box) => !box.checked)).toBe(true);
+  });
+
+  it("says a scope is needed and asks for no proof when none is chosen", () => {
+    const shown = props(locale, { flow: form() });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+    expect(screen.queryByText(copy.scopes.required)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: copy.form.submit }));
+
+    expect(screen.getByText(copy.scopes.required)).toBeTruthy();
+    expect(shown.onSubmitForm).not.toHaveBeenCalled();
+  });
+
+  it("hands the chosen scopes, and only those, to the issue; write does not tick read", () => {
+    const shown = props(locale, { flow: form() });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: copy.scopes.label["docs:write"] }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: copy.scopes.label["work:read"] }),
+    );
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: copy.scopes.label["docs:read"],
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(false);
+    expect(screen.queryByText(copy.scopes.required)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: copy.form.submit }));
+
+    expect(shown.onSubmitForm).toHaveBeenCalledWith({
+      name: "CI deploy",
+      days: 90,
+      scopes: ["work:read", "docs:write"],
+    });
+  });
+
+  it("unticking the last scope brings the message back", () => {
+    const shown = props(locale, { flow: form({ scopes: ["chat:read"] }) });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: copy.scopes.label["chat:read"] }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.form.submit }));
+
+    expect(screen.getByText(copy.scopes.required)).toBeTruthy();
+    expect(shown.onSubmitForm).not.toHaveBeenCalled();
+  });
+
+  it("lists on each row what the token may do: all scopes, or the chosen ones", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale)} />);
+    const rows = screen.getAllByRole("row");
+    const first = rows.find((row) => row.textContent?.includes("CI deploy"));
+    const second = rows.find((row) => row.textContent?.includes("Old job"));
+    expect(first?.textContent).toContain(copy.scopes.all);
+    expect(second?.textContent).toContain(
+      `${copy.scopes.label["work:read"]}, ${copy.scopes.label["docs:write"]}`,
+    );
+  });
+
+  it("says plainly that a token with no scope reaches nothing", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          section: {
+            status: "ready",
+            data: {
+              tokens: [
+                {
+                  id: "t9",
+                  name: "Unscoped",
+                  status: "active",
+                  lastUsedAt: null,
+                  expiresAt: "2027-02-12T00:00:00Z",
+                  createdAt: "2026-11-01T00:00:00Z",
+                  suffix: "zz99",
+                  scopes: [],
+                },
+              ],
+              hasMore: false,
+            },
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole("row", { name: /Unscoped/ }).textContent).toContain(
+      copy.scopes.none,
+    );
   });
 });

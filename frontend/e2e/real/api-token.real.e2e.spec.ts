@@ -3,9 +3,10 @@ import { freshMember } from "./support/fresh-person";
 import { apiRead } from "./support/real-session";
 
 /**
- * API tokens against the real backend (UC-IDN-L01, L02, L03, L04): an owner issues a token behind
- * a password proof, the secret shows once, the list keeps only its last four characters, a call
- * with the token is answered 200, and after the revoke the same call is answered 401.
+ * API tokens against the real backend (UC-IDN-L01, L02, L03, L04, L05): an owner issues a token
+ * limited to chosen scopes behind a password proof, the secret shows once, the list keeps only its
+ * last four characters and the scopes, a call inside the scopes is answered 200 and one outside them
+ * 403, and after the revoke the same call is answered 401.
  */
 const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
 
@@ -26,6 +27,7 @@ test("an owner issues a token, calls the API with it, revokes it, and the same c
   await page.getByRole("button", { name: "New token" }).first().click();
   const form = page.getByRole("dialog", { name: "New API token" });
   await form.getByLabel("Token name").fill("CI deploy");
+  await form.getByRole("checkbox", { name: "Workspace: read" }).check();
   await form.getByRole("button", { name: "Create token" }).click();
   const proof = page.getByRole("dialog", { name: "Confirm it's you" });
   await proof.getByLabel("Current password").fill(owner.password);
@@ -49,6 +51,7 @@ test("an owner issues a token, calls the API with it, revokes it, and the same c
   );
   expect(listed.items.map((item) => item.suffix)).toEqual([secret.slice(-4)]);
   expect(JSON.stringify(listed)).not.toContain(secret);
+  await expect(row).toContainText("Workspace: read");
 
   // L04: a client with no session, holding only the token, is let in.
   const client = await request.newContext();
@@ -57,6 +60,15 @@ test("an owner issues a token, calls the API with it, revokes it, and the same c
       headers: { Authorization: `Bearer ${secret}` },
     });
   expect((await call()).status()).toBe(200);
+  // L05: the token holds workspace:read alone, so a route of another context is refused with the scope code.
+  const outside = await client.get(
+    `${apiUrl}/workspaces/${owner.workspaceId}/boards`,
+    {
+      headers: { Authorization: `Bearer ${secret}` },
+    },
+  );
+  expect(outside.status()).toBe(403);
+  expect(await outside.text()).toContain("identity.token.scope-missing");
 
   // Revoke: it asks first, and the next call is refused at once.
   await page.getByRole("button", { name: "Revoke CI deploy" }).click();

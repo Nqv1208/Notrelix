@@ -124,6 +124,16 @@ export const identityOperations = [
           "identity.auth.invalid-credentials",
           "Invalid credentials",
         );
+      if (outcome.kind === "enroll")
+        return ok({
+          ...sessionOf(store),
+          user: undefined,
+          expiresAt: null,
+          mfaEnrollmentRequired: true,
+          mfaEnrollmentToken: outcome.enrollmentToken,
+          mfaMethod: "totp",
+          mfaExpiresAt: store.getClock().offsetMinutes(10),
+        });
       if (outcome.kind === "otp")
         return ok({
           ...sessionOf(store),
@@ -149,6 +159,18 @@ export const identityOperations = [
       if (store.isCurrentUserLoggedOut()) {
         return unauthorized();
       }
+      // The Account requires two-step verification and this person has none: no new token.
+      if (
+        store.auth.accountMfaRequired &&
+        !store.accountPages.securityOf(store.getCurrentUser().id, (minutes) =>
+          store.getClock().offsetMinutes(minutes),
+        ).twoFactorEnabled
+      )
+        return identityProblem(
+          401,
+          "identity.auth.mfa-enrollment-required",
+          "Set up two-step verification to continue.",
+        );
       return ok(sessionOf(store));
     },
   }),
