@@ -1110,7 +1110,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
         {
             await using var context = _fixture.CreatePostgresOwnerContext();
             var handler = new DisableMfaCommandHandler(
-                context, Actor(userId, sessionId).Object, _jwtBlacklist.Object, StepUp(context), _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>(),
+                context, Actor(userId, sessionId).Object, new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context), _jwtBlacklist.Object, StepUp(context), _time.Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>(),
                 NullLogger<DisableMfaCommandHandler>.Instance);
             var result = await handler.Handle(new DisableMfaCommand { StepUpToken = stepUpToken }, CancellationToken.None);
             await context.SaveChangesAsync();
@@ -1147,7 +1147,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
             var passwordHasher = new Mock<IPasswordHasher>();
             passwordHasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
             var handler = new LoginCommandHandler(
-                context, passwordHasher.Object, SessionIssuer(context), _challengeStore, Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), _time.Object,
+                context, passwordHasher.Object, SessionIssuer(context), _challengeStore, new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), _time.Object,
                 NullLogger<LoginCommandHandler>.Instance);
             var result = await handler.Handle(new LoginCommand { Email = email, Password = "Password1!" }, CancellationToken.None);
             await context.SaveChangesAsync();

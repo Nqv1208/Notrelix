@@ -83,11 +83,11 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
         using var provider = _host.CreateProvider(stack.AccountId, stack.OwnerId);
         var before = await VersionAsync(stack.WorkspaceId);
 
-        await OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, false, true, "Member", 14, before));
+        await OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, true, "Member", 14, before));
         var after = await VersionAsync(stack.WorkspaceId);
         after.Should().Be(before + 1, "a saved change moves the version by one");
 
-        await OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, false, true, "Member", 21, after));
+        await OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, true, "Member", 21, after));
         (await VersionAsync(stack.WorkspaceId)).Should().Be(after + 1, "a second save carries the version the first one produced");
         (await OrgTreeTestHost.QueryAsync(provider, new GetWorkspaceSettingsQuery(stack.WorkspaceId))).InvitationExpiryDays.Should().Be(21);
     }
@@ -104,12 +104,12 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
         foreach (var userId in new[] { member, guest })
         {
             using var provider = _host.CreateProvider(stack.AccountId, userId);
-            var write = () => OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Member", 14, version));
+            var write = () => OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Member", 14, version));
             await write.Should().ThrowAsync<AppForbidden>("only an Owner or Admin changes the workspace settings");
         }
 
         using var asOutsider = _host.CreateProvider(stack.AccountId, outsider);
-        var outsiderWrite = () => OrgTreeTestHost.SendAsync(asOutsider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Member", 14, version));
+        var outsiderWrite = () => OrgTreeTestHost.SendAsync(asOutsider, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Member", 14, version));
         await outsiderWrite.Should().ThrowAsync<AppNotFound>();
 
         (await VersionAsync(stack.WorkspaceId)).Should().Be(version);
@@ -123,10 +123,10 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
         var stack = await _host.SeedWorkspaceAsync();
         using var asOwner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
         var read = await VersionAsync(stack.WorkspaceId);
-        await OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, false, true, "Member", 14, read));
+        await OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, true, "Member", 14, read));
         var current = await VersionAsync(stack.WorkspaceId);
 
-        var stale = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Member", 3, read));
+        var stale = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Member", 3, read));
         (await stale.Should().ThrowAsync<PreconditionFailed>("another admin saved after this one read"))
             .Which.ErrorCode.Should().Be("common.precondition-failed", "the API maps this error to 412 Precondition Failed");
 
@@ -135,7 +135,7 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
         settings.InvitationExpiryDays.Should().Be(14);
         settings.AllowPublicSharing.Should().BeFalse("a rejected write changes nothing");
 
-        var versionless = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Member", 3, 0));
+        var versionless = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Member", 3, 0));
         await versionless.Should().ThrowAsync<AppValidation>("a write without a version is not accepted");
     }
 
@@ -148,7 +148,7 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
         var version = await VersionAsync(stack.WorkspaceId);
         var facts = await AuditFactsAsync(stack.WorkspaceId);
 
-        await OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, false, true, "Member", 14, version));
+        await OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, false, true, "Member", 14, version));
 
         (await VersionAsync(stack.WorkspaceId)).Should().Be(version, "saving the values already stored is a no-op");
         (await AuditFactsAsync(stack.WorkspaceId)).Should().Be(facts, "a no-op records nothing");
@@ -180,12 +180,12 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
 
         var cases = new (string Name, UpdateWorkspaceSettingsCommand Command)[]
         {
-            ("expiry 0", new(stack.WorkspaceId, false, false, true, "Member", 0, version)),
-            ("expiry 31", new(stack.WorkspaceId, false, false, true, "Member", 31, version)),
-            ("owner as default role", new(stack.WorkspaceId, false, false, true, "Owner", 7, version)),
-            ("size", new(stack.WorkspaceId, false, false, true, "Member", 7, version, null, "huge")),
-            ("language", new(stack.WorkspaceId, false, false, true, "Member", 7, version, null, null, "xx")),
-            ("guest expiry 45", new(stack.WorkspaceId, false, false, true, "Member", 7, version, 45)),
+            ("expiry 0", new(stack.WorkspaceId, false, true, "Member", 0, version)),
+            ("expiry 31", new(stack.WorkspaceId, false, true, "Member", 31, version)),
+            ("owner as default role", new(stack.WorkspaceId, false, true, "Owner", 7, version)),
+            ("size", new(stack.WorkspaceId, false, true, "Member", 7, version, null, "huge")),
+            ("language", new(stack.WorkspaceId, false, true, "Member", 7, version, null, null, "xx")),
+            ("guest expiry 45", new(stack.WorkspaceId, false, true, "Member", 7, version, 45)),
         };
         foreach (var (name, command) in cases)
         {
@@ -216,7 +216,7 @@ public sealed class WorkspaceSettingsAccessIntegrationTests : IAsyncLifetime
     {
         var version = await VersionAsync(workspaceId);
         await OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(
-            workspaceId, allowPublicSharing, false, allowGuestInvites, defaultRole, invitationExpiryDays, version,
+            workspaceId, allowPublicSharing, allowGuestInvites, defaultRole, invitationExpiryDays, version,
             guestDefaultExpiryDays, size, language));
     }
 

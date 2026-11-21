@@ -189,6 +189,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.Identity.Users.Services.IdentityUserAccessProvider>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
         services.AddScoped<IAccountDomainFacts, AccountDomainFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts,
+            Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure,
             Notrelix.Application.Features.Workspaces.Members.Services.MemberEmailDisclosure>();
 

@@ -23,6 +23,18 @@ public record AuthResult
 
     /// <summary>UTC expiry of the challenge token.</summary>
     public DateTime? MfaExpiresAt { get; init; }
+
+    /// <summary>
+    /// True when the person's Account requires MFA and they hold no factor: no session exists yet and
+    /// <see cref="MfaEnrollmentToken"/> only opens the required-enrollment step. Tokens are null.
+    /// </summary>
+    public bool MfaEnrollmentRequired { get; init; }
+
+    /// <summary>Single-use token accepted only by the required-enrollment operations.</summary>
+    public string? MfaEnrollmentToken { get; init; }
+
+    /// <summary>One-time recovery codes, set only on the sign-in that just enrolled the factor.</summary>
+    public IReadOnlyList<string>? RecoveryCodes { get; init; }
 }
 
 public record UserDto

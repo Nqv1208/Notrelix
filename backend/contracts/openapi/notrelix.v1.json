@@ -38,6 +38,60 @@
         ]
       }
     },
+    "/api/v1/accounts/security-policy": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Read the current account's security policy",
+        "operationId": "Accounts.GetSecurityPolicy",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/mfa": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Require MFA for every member of the current account (Owner only)",
+        "operationId": "Accounts.SetMfaPolicy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/admin/outbox/stats": {
       "get": {
         "tags": [
@@ -15534,6 +15588,112 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/required-enrollment/start": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Start the authenticator the Account requires, before a session exists",
+        "description": "The enrollment token comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. Returns the secret and setup URI once.",
+        "operationId": "Identity.Mfa.StartRequiredEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/required-enrollment/complete": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Mfa"
+        ],
+        "summary": "Activate the authenticator with its first code and finish the sign-in",
+        "description": "Issues the session and returns the one-time recovery codes. The token is consumed; the cookie is cleared on success and when the token is expired or exhausted.",
+        "operationId": "Identity.Mfa.CompleteRequiredEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.API.Contracts.Identity.AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -36308,6 +36468,15 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
         "type": "object",
         "properties": {
@@ -37837,6 +38006,20 @@
           "mfaExpiresAt": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          },
+          "mfaEnrollmentRequired": {
+            "type": "boolean"
+          },
+          "mfaEnrollmentToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "recoveryCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           }
         },
@@ -39835,9 +40018,6 @@
           "allowPublicSharing": {
             "type": "boolean"
           },
-          "enforceMfa": {
-            "type": "boolean"
-          },
           "allowGuestInvites": {
             "type": "boolean"
           },
@@ -40413,6 +40593,34 @@
             "nullable": true
           },
           "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentCompleteRequest": {
+        "type": "object",
+        "properties": {
+          "enrollmentToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "mfaMethodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentStartRequest": {
+        "type": "object",
+        "properties": {
+          "enrollmentToken": {
             "type": "string",
             "nullable": true
           }

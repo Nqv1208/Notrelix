@@ -107,7 +107,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         afterStale.Version.Should().Be(renamed.Version);
 
         _now = BaseTime.AddMinutes(2);
-        await SendAsync(owner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Guest", 14, renamed.Version));
+        await SendAsync(owner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Guest", 14, renamed.Version));
         var afterSettings = await GetWorkspaceAsync(owner, stack.WorkspaceId);
         afterSettings.Version.Should().BeGreaterThan(renamed.Version);
 

@@ -34,6 +34,7 @@ public static class PermissionCatalog
     [
         PermissionAction.CreateWorkspace,
         PermissionAction.ManageAccount,
+        PermissionAction.ManageAccountSecurity,
         PermissionAction.ChangeMemberRole,
         PermissionAction.ManageApiTokens,
         PermissionAction.ManageWorkspace,
@@ -55,6 +56,7 @@ public static class PermissionCatalog
     {
         [PermissionAction.CreateWorkspace] = "account",
         [PermissionAction.ManageAccount] = "account",
+        [PermissionAction.ManageAccountSecurity] = "account",
         [PermissionAction.ViewBilling] = "billing",
         [PermissionAction.ViewWorkspace] = "workspace",
         [PermissionAction.ManageWorkspace] = "workspace",
@@ -125,7 +127,7 @@ public static class PermissionCatalog
 
     private static PermissionCatalogEntry Describe(PermissionAction action)
     {
-        var accountLevel = action is PermissionAction.CreateWorkspace or PermissionAction.ManageAccount;
+        var accountLevel = action is PermissionAction.CreateWorkspace or PermissionAction.ManageAccount or PermissionAction.ManageAccountSecurity;
         var resourceLevel = !accountLevel
             && WorkspaceRoleBaseline.Decide("Member", action) == BaselineDecision.LevelBased;
         var level = accountLevel ? PermissionLevels.Account

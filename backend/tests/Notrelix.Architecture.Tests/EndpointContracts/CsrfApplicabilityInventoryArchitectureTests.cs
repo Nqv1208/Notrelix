@@ -48,6 +48,8 @@ public class CsrfApplicabilityInventoryArchitectureTests : ArchitectureTestBase
             "rotates ambient refresh/access token cookies"),
         ["CompleteMfaChallengeEndpoint.cs"] = new(true, "CSRF_REQUIRED",
             "completes challenge and establishes ambient access/refresh token cookies on success"),
+        ["RequiredMfaEnrollmentEndpoints.cs"] = new(true, "CSRF_REQUIRED",
+            "completes required enrollment and establishes ambient access/refresh token cookies on success"),
         ["ForgotPasswordEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "no ambient session read or established; response is enumeration-safe generic"),
         ["CalendarEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",

@@ -525,7 +525,6 @@ export const workspaceOperations = [
     { workspaceId: string },
     {
       allowPublicSharing?: boolean;
-      enforceMfa?: boolean;
       allowGuestInvites?: boolean;
       defaultMemberRole?: string;
       invitationExpiryDays?: number;
@@ -574,7 +573,8 @@ export const workspaceOperations = [
           body?.expectedVersion,
           {
             allowPublicSharing: body?.allowPublicSharing === true,
-            enforceMfa: body?.enforceMfa === true,
+            // The Account owns the requirement; a settings write leaves the stored value alone.
+            enforceMfa: kept.enforceMfa,
             allowGuestInvites: body?.allowGuestInvites === true,
             defaultMemberRole: role,
             invitationExpiryDays: days,

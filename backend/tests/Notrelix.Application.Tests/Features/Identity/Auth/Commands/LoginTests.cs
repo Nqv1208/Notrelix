@@ -11,11 +11,14 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 
 public class LoginTests : IdentityHandlerTestBase
 {
+    private readonly Mock<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts> _policy = new();
+
     private LoginCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
         PasswordHasherMock.Object,
         SessionIssuerMock.Object,
         ChallengeStoreMock.Object,
+        _policy.Object,
         Mock.Of<ILoginThrottle>(),
         ActivityMock.Object,
         DateTimeProviderMock.Object,
@@ -258,6 +261,67 @@ public class LoginTests : IdentityHandlerTestBase
 
         ActivityMock.Verify(a => a.Record(user.Id, SecurityActivityType.SignInFailed, TestNow, null), Times.Once);
         ActivityMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_WhenAnAccountRequiresMfaAndThePersonHasNoFactor_IssuesNoSessionOnlyAnEnrollmentChallenge()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        SetupUserMfaMethods();
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        _policy.Setup(p => p.IsMfaRequiredForPersonAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await CreateSut().Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        result.Data!.MfaEnrollmentRequired.Should().BeTrue();
+        result.Data.MfaEnrollmentToken.Should().NotBeNullOrWhiteSpace();
+        result.Data.AccessToken.Should().BeNull();
+        result.Data.RefreshToken.Should().BeNull();
+        result.Data.MfaRequired.Should().BeFalse();
+        SessionIssuerMock.Verify(
+            s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        ChallengeStoreMock.Verify(s => s.StoreAsync(
+            result.Data.MfaEnrollmentToken!,
+            It.Is<Notrelix.Application.Features.Identity.Mfa.DTOs.MfaChallengePayload>(
+                p => p.UserId == user.Id && p.Purpose == MfaChallengePurpose.RequiredEnrollment),
+            It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAnAccountRequiresMfaAndThePersonHasAFactor_IsTheOrdinaryMfaChallenge()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        var method = UserMfaMethod.Create(TestUserId, MfaMethodType.AuthenticatorApp, TestNow, SecretRef.Create("secret"));
+        method.Verify(TestNow);
+        SetupUserMfaMethods(method);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        _policy.Setup(p => p.IsMfaRequiredForPersonAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await CreateSut().Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Data!.MfaRequired.Should().BeTrue();
+        result.Data.MfaEnrollmentRequired.Should().BeFalse();
+        result.Data.MfaChallengeToken.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoAccountRequiresMfa_SignsInAsBefore()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        SetupUserMfaMethods();
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        SessionIssuerMock.Setup(s => s.IssueAsync(user, TestNow, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthResult { AccessToken = "access-token", RefreshToken = "refresh-token" });
+        _policy.Setup(p => p.IsMfaRequiredForPersonAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var result = await CreateSut().Handle(new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Data!.AccessToken.Should().Be("access-token");
+        result.Data.MfaEnrollmentRequired.Should().BeFalse();
     }
 
     [Fact]

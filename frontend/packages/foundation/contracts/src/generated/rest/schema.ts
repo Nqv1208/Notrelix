@@ -21,6 +21,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/security-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current account's security policy */
+        get: operations["Accounts.GetSecurityPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Require MFA for every member of the current account (Owner only) */
+        put: operations["Accounts.SetMfaPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/outbox/stats": {
         parameters: {
             query?: never;
@@ -3371,6 +3405,46 @@ export interface paths {
          * @description The challenge comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. A body token wins. The cookie is cleared on success and when the challenge is expired or exhausted.
          */
         post: operations["Identity.Mfa.VerifyChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/required-enrollment/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the authenticator the Account requires, before a session exists
+         * @description The enrollment token comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. Returns the secret and setup URI once.
+         */
+        post: operations["Identity.Mfa.StartRequiredEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/required-enrollment/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate the authenticator with its first code and finish the sign-in
+         * @description Issues the session and returns the one-time recovery codes. The token is consumed; the cookie is cleared on success and when the token is expired or exhausted.
+         */
+        post: operations["Identity.Mfa.CompleteRequiredEnrollment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8406,6 +8480,9 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest": {
+            required?: boolean;
+        };
         "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
             name?: string | null;
         };
@@ -8894,6 +8971,9 @@ export interface components {
             mfaMethod?: string | null;
             /** Format: date-time */
             mfaExpiresAt?: string | null;
+            mfaEnrollmentRequired?: boolean;
+            mfaEnrollmentToken?: string | null;
+            recoveryCodes?: string[] | null;
         };
         "Notrelix.API.Contracts.Identity.OneTimeTokenRequest": {
             token?: string | null;
@@ -9567,7 +9647,6 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Settings.Requests.UpdateWorkspaceSettingsRequest": {
             allowPublicSharing?: boolean;
-            enforceMfa?: boolean;
             allowGuestInvites?: boolean;
             defaultMemberRole?: string | null;
             /** Format: int32 */
@@ -9763,6 +9842,15 @@ export interface components {
             email?: string | null;
             password?: string | null;
             name?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentCompleteRequest": {
+            enrollmentToken?: string | null;
+            /** Format: uuid */
+            mfaMethodId?: string;
+            code?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentStartRequest": {
+            enrollmentToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
             stepUpToken?: string | null;
@@ -12886,6 +12974,46 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.GetSecurityPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.SetMfaPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest"];
             };
         };
         responses: {
@@ -22391,6 +22519,90 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.StartRequiredEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.CompleteRequiredEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.API.Contracts.Identity.AuthSessionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

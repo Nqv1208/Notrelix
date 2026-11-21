@@ -32,7 +32,7 @@ public class RefreshTokenCommandHandlerTests : IAsyncLifetime
         var ledger = new Mock<IRefreshRotationLedger>();
         ledger.Setup(l => l.TryClaimAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         return new RefreshTokenCommandHandler(
-            context, jwtService, new Mock<IJwtBlacklistService>().Object, ledger.Object,
+            context, Mock.Of<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts>(), jwtService, new Mock<IJwtBlacklistService>().Object, ledger.Object,
             new Mock<ISecurityActivityRecorder>().Object, dateTimeProvider);
     }
 

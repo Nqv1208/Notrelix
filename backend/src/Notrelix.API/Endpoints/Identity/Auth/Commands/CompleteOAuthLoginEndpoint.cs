@@ -97,6 +97,23 @@ public static class CompleteOAuthLoginEndpoint
             return Results.Redirect(AppendReturnTo(redirectOptions.Value.FrontendMfaUrl, returnTo));
         }
 
+        // The Account requires MFA and the person has no factor: same cookie, same page, but the page
+        // is told to enrol one (the required-enrollment endpoints read the cookie).
+        if (result.Data.MfaEnrollmentRequired)
+        {
+            if (string.IsNullOrEmpty(result.Data.MfaEnrollmentToken) || result.Data.MfaExpiresAt is null)
+            {
+                return Results.Redirect(AppendErrorCode(redirectOptions.Value.FrontendFailureUrl, MfaRequiredErrorCode));
+            }
+
+            cookieService.SetMfaChallengeCookie(
+                result.Data.MfaEnrollmentToken,
+                new DateTimeOffset(DateTime.SpecifyKind(result.Data.MfaExpiresAt.Value, DateTimeKind.Utc)));
+
+            var mfaUrl = AppendReturnTo(redirectOptions.Value.FrontendMfaUrl, returnTo);
+            return Results.Redirect($"{mfaUrl}{(mfaUrl.Contains('?') ? '&' : '?')}enroll=1");
+        }
+
         if (string.IsNullOrEmpty(result.Data.AccessToken) || string.IsNullOrEmpty(result.Data.RefreshToken))
         {
             return Results.Redirect(AppendErrorCode(redirectOptions.Value.FrontendFailureUrl, MfaRequiredErrorCode));

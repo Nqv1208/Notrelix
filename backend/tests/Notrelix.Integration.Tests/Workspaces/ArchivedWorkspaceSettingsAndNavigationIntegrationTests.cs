@@ -78,7 +78,7 @@ public sealed class ArchivedWorkspaceSettingsAndNavigationIntegrationTests : IAs
         var version = await VersionAsync(stack);
         using var asOwner = As(stack, stack.OwnerId);
 
-        var write = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Member", 14, version));
+        var write = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Member", 14, version));
 
         (await write.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(ArchivedCode);
         (await VersionAsync(stack)).Should().Be(version, "a refused write does not move the version");

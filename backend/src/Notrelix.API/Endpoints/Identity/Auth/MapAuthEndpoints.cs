@@ -23,6 +23,7 @@ public static class MapAuthEndpoints
         publicGroup.MapCompleteOAuthLogin();
         publicGroup.MapEmailVerification();
         publicGroup.MapCompleteMfaChallenge();
+        publicGroup.MapRequiredMfaEnrollment();
 
         var authGroup = app
             .MapGroup("/api/v1/auth")

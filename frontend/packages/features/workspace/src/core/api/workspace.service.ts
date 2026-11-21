@@ -238,7 +238,6 @@ export function createWorkspaceSettingsService(
     ): Promise<void> {
       const body: SettingsBody = {
         allowPublicSharing: settings.allowPublicSharing,
-        enforceMfa: settings.enforceMfa,
         allowGuestInvites: settings.allowGuestInvites,
         defaultMemberRole: ROLE_NAME[settings.defaultMemberRole],
         invitationExpiryDays: settings.invitationExpiryDays,
