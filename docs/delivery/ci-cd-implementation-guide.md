@@ -37,7 +37,7 @@ review_on:
 
 ## 2. Required repository checks
 
-Protected trunk requires the single check `CI gate` (it aggregates `changes`, `backend-unit`, `backend-integration`, `frontend` and `dependencies`), plus the CodeQL checks GitHub emits. Do not require per-job names.
+Protected trunk requires the single check `CI gate` (it aggregates `changes`, the fast checks, `backend-build`, `backend-unit`, `backend-integration`, `frontend`, `frontend-web` and `dependencies`), plus the CodeQL checks GitHub emits. Do not require per-job names.
 
 ## 3. Local validation
 
