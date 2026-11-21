@@ -20,7 +20,7 @@ namespace Notrelix.Integration.Tests.Auth;
 [Collection("Database")]
 public class GoogleLoginSsoEnforcementTests : IAsyncLifetime
 {
-    private static readonly OAuthLoginState State = new("state", "nonce", "verifier", OAuthProvider.Google, null, DateTimeOffset.UtcNow.AddMinutes(10));
+    private static readonly OAuthLoginState State = new("state", "nonce", "verifier", OAuthProvider.Google, null, DateTimeOffset.UtcNow.AddMinutes(10), BindingHash: StateBinding.Hash("binding"));
 
     private readonly PostgresTestContainer _db;
     private readonly FakeAccountSsoFacts _sso = new();
@@ -54,7 +54,7 @@ public class GoogleLoginSsoEnforcementTests : IAsyncLifetime
             new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context),
             Mock.Of<IPasswordHasher>(h => h.HashPassword(It.IsAny<string>()) == "hash"), clock.Object, Mock.Of<IIntegrationEventCollector>(),
             NullLogger<CompleteOAuthLoginCommandHandler>.Instance, _sso);
-        var result = await handler.Handle(new CompleteOAuthLoginCommand { Provider = OAuthProvider.Google, Code = "c", State = "state" }, CancellationToken.None);
+        var result = await handler.Handle(new CompleteOAuthLoginCommand { Provider = OAuthProvider.Google, Code = "c", State = "state", BrowserBinding = "binding" }, CancellationToken.None);
         await context.SaveChangesAsync();
         return result;
     }

@@ -53,17 +53,23 @@ public sealed class AccountSsoScopeReader : IAccountSsoScopeReader
         if (_context.Database.CurrentTransaction is null)
             throw new InvalidOperationException("The SSO callback scope is transaction-local and must be entered inside an open transaction.");
 
-        var entered = await ScalarAsync($"SELECT ops.enter_sso_callback_scope({accountId}) AS \"Value\"", cancellationToken);
-        RlsScopeMetrics.Record("sso-callback", "SsoCallback", entered);
-        // The account id is derived by the server (the stored state); the secret and the code are never logged.
-        _logger.LogInformation(
-            entered ? "SSO callback scope entered | account {AccountId}" : "SSO callback scope not entered | account {AccountId}", accountId);
+        var entered = await EnterCallbackScopeAsync(accountId, cancellationToken);
         if (!entered) return null;
 
         var rows = await _context.Database
             .SqlQuery<string?>($"SELECT ops.sso_callback_secret() AS \"Value\"")
             .ToListAsync(cancellationToken);
         return rows.Count == 1 ? rows[0] : null;
+    }
+
+    /// <summary>Enters the database callback scope for an Account the server derived itself. Nothing secret exists yet here.</summary>
+    private async Task<bool> EnterCallbackScopeAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        var entered = await ScalarAsync($"SELECT ops.enter_sso_callback_scope({accountId}) AS \"Value\"", cancellationToken);
+        RlsScopeMetrics.Record("sso-callback", "SsoCallback", entered);
+        _logger.LogInformation(
+            entered ? "SSO callback scope entered | account {AccountId}" : "SSO callback scope not entered | account {AccountId}", accountId);
+        return entered;
     }
 
     public Task<bool> JoinMemberAsync(Guid accountId, Guid userId, DateTimeOffset now, CancellationToken cancellationToken)

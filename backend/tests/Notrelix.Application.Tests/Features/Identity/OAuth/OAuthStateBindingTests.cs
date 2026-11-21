@@ -24,7 +24,8 @@ public class OAuthStateBindingTests : IdentityHandlerTestBase
         IdentityContextMock.Object, new Mock<IAccountProvisioningActions>().Object, SessionIssuerMock.Object,
         ChallengeStoreMock.Object, Mock.Of<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts>(),
         PasswordHasherMock.Object, DateTimeProviderMock.Object, IntegrationEventCollectorMock.Object,
-        new Mock<ILogger<CompleteOAuthLoginCommandHandler>>().Object);
+        new Mock<ILogger<CompleteOAuthLoginCommandHandler>>().Object,
+        new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
 
     private void StateIs(string? bindingHash) =>
         _state.Setup(s => s.ConsumeAsync("state", It.IsAny<CancellationToken>()))
