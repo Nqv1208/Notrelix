@@ -57,9 +57,74 @@ jobs:
           grep -qE "$shared|^backend/" <<<"$files" && echo "backend=true" >> "$GITHUB_OUTPUT" || echo "backend=false" >> "$GITHUB_OUTPUT"
           grep -qE "$shared|^frontend/" <<<"$files" && echo "frontend=true" >> "$GITHUB_OUTPUT" || echo "frontend=false" >> "$GITHUB_OUTPUT"
 
+  # Cheap checks run first and alone: a failure here stops every heavy job below (needs:), so a format slip costs ~2 minutes, not a full run.
+  fast-checks-backend:
+    name: Fast checks (backend)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - name: Restore NuGet packages cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/**/Directory.*.props', 'backend/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - run: dotnet restore backend.slnx
+      # Every light check runs and reports even when an earlier one fails.
+      - run: dotnet format backend.slnx --verify-no-changes --no-restore
+      - name: Architecture tests
+        if: ${{ !cancelled() }}
+        run: dotnet test tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
+      - name: OpenAPI contract has no drift
+        if: ${{ !cancelled() }}
+        env:
+          DOTNET_ENVIRONMENT: Development
+          Messaging__Transport: InMemory
+          Database__MigrateOnStartup: "false"
+          SeedData__RunOnStartup: "false"
+        run: |
+          set -euo pipefail
+          dotnet run --project src/Notrelix.API/Notrelix.API.csproj --configuration "$DOTNET_CONFIGURATION" --no-restore -- --export-openapi /tmp/notrelix.v1.json
+          cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.json
+
+  fast-checks-frontend:
+    name: Fast checks (frontend)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      # Every light check runs and reports even when an earlier one fails.
+      - if: ${{ !cancelled() }}
+        run: pnpm format:check
+      - if: ${{ !cancelled() }}
+        run: pnpm typecheck
+      - if: ${{ !cancelled() }}
+        run: pnpm lint
+      - if: ${{ !cancelled() }}
+        run: pnpm check:architecture
+      - if: ${{ !cancelled() }}
+        run: pnpm check:i18n
+      - if: ${{ !cancelled() }}
+        run: pnpm check:mock-consumer-surface
+      - if: ${{ !cancelled() }}
+        run: pnpm codegen:check
+
   backend-unit:
     name: Backend build and unit tests
-    needs: changes
+    needs: [changes, fast-checks-backend]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -70,33 +135,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
       - run: dotnet restore backend.slnx
-      - run: dotnet format backend.slnx --verify-no-changes --no-restore
-      # A light check (format) never hides the heavy ones: build and tests still run and report, the job still fails.
       - id: build
-        if: ${{ !cancelled() }}
         run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
-      - name: Domain, Application, Infrastructure, Architecture, Platform and API tests
+      - name: Domain, Application, Infrastructure, Platform and API tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           set -euo pipefail
-          for p in Domain Application Infrastructure Architecture Platform API; do
+          for p in Domain Application Infrastructure Platform API; do
             dotnet test "tests/Notrelix.$p.Tests/Notrelix.$p.Tests.csproj" --no-build --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
           done
-      - name: OpenAPI contract has no drift
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        env:
-          DOTNET_ENVIRONMENT: Development
-          Messaging__Transport: InMemory
-          Database__MigrateOnStartup: "false"
-          SeedData__RunOnStartup: "false"
-        run: |
-          set -euo pipefail
-          dotnet run --project src/Notrelix.API/Notrelix.API.csproj --configuration "$DOTNET_CONFIGURATION" --no-build -- --export-openapi /tmp/notrelix.v1.json
-          cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.json
 
   backend-integration:
     name: Integration tests (${{ matrix.shard.name }})
-    needs: changes
+    needs: [changes, fast-checks-backend]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -148,8 +199,8 @@ jobs:
           --filter "${{ matrix.shard.filter }}"
 
   frontend:
-    name: Frontend checks and tests
-    needs: changes
+    name: Frontend tests and build
+    needs: [changes, fast-checks-frontend]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -159,21 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      # Every check runs and reports even when an earlier one fails, so a light failure never hides a heavy result.
-      - if: ${{ !cancelled() }}
-        run: pnpm format:check
-      - if: ${{ !cancelled() }}
-        run: pnpm typecheck
-      - if: ${{ !cancelled() }}
-        run: pnpm lint
-      - if: ${{ !cancelled() }}
-        run: pnpm check:architecture
-      - if: ${{ !cancelled() }}
-        run: pnpm check:i18n
-      - if: ${{ !cancelled() }}
-        run: pnpm check:mock-consumer-surface
-      - if: ${{ !cancelled() }}
-        run: pnpm codegen:check
+      # test:node and the build both report even when the other fails.
       - if: ${{ !cancelled() }}
         run: pnpm test:node
       - if: ${{ !cancelled() }}
@@ -182,7 +219,7 @@ jobs:
   # The web component suite is the long pole, so vitest splits its files across shards; every file runs in exactly one shard.
   frontend-web:
     name: Frontend web tests (${{ matrix.shard }}/4)
-    needs: changes
+    needs: [changes, fast-checks-frontend]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -207,7 +244,7 @@ jobs:
 
   ci-gate:
     name: CI gate
-    needs: [changes, backend-unit, backend-integration, frontend, frontend-web, dependencies]
+    needs: [changes, fast-checks-backend, fast-checks-frontend, backend-unit, backend-integration, frontend, frontend-web, dependencies]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -215,13 +252,20 @@ jobs:
       - name: Every job passed or was not needed
         run: |
           set -euo pipefail
-          ok(){ [[ "$2" == success || "$2" == skipped ]] || { echo "::error::$1=$2"; exit 1; }; }
+          # skipped is allowed only when the path filter said the side did not change; a skip from a failed dependency fails the gate.
+          check(){ # name result side-changed
+            if [[ "$3" == true ]]; then [[ "$2" == success ]] || { echo "::error::$1=$2 but its side changed"; exit 1; }
+            else [[ "$2" == skipped ]] || { echo "::error::$1=$2 but its side did not change"; exit 1; }; fi
+          }
           [[ "${{ needs.changes.result }}" == success ]] || { echo "::error::changes=${{ needs.changes.result }}"; exit 1; }
-          ok backend-unit "${{ needs.backend-unit.result }}"
-          ok backend-integration "${{ needs.backend-integration.result }}"
-          ok frontend "${{ needs.frontend.result }}"
-          ok frontend-web "${{ needs.frontend-web.result }}"
-          ok dependencies "${{ needs.dependencies.result }}"
+          be="${{ needs.changes.outputs.backend }}"; fe="${{ needs.changes.outputs.frontend }}"
+          check fast-checks-backend "${{ needs.fast-checks-backend.result }}" "$be"
+          check backend-unit "${{ needs.backend-unit.result }}" "$be"
+          check backend-integration "${{ needs.backend-integration.result }}" "$be"
+          check fast-checks-frontend "${{ needs.fast-checks-frontend.result }}" "$fe"
+          check frontend "${{ needs.frontend.result }}" "$fe"
+          check frontend-web "${{ needs.frontend-web.result }}" "$fe"
+          [[ "${{ needs.dependencies.result }}" == success || "${{ needs.dependencies.result }}" == skipped ]] || { echo "::error::dependencies=${{ needs.dependencies.result }}"; exit 1; }
 
   # ---- Release candidate: release/** only, after the gate is green and only when the plan says release ----
   release-plan:
