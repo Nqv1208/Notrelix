@@ -397,7 +397,8 @@ describe("domains", () => {
     const row = screen
       .getByText("minhan.vn", { selector: "b" })
       .closest("[tabindex='-1']");
-    expect(document.activeElement).toBe(row);
+    // The panel moves focus in an effect after the note renders, so wait for it.
+    await waitFor(() => expect(document.activeElement).toBe(row));
   });
 
   it("shows the claimed conflict and offers no Verify", () => {
