@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace Notrelix.Domain.Accounts;
 
 /// <summary>
