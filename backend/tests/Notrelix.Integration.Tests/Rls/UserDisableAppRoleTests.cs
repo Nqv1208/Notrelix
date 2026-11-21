@@ -59,7 +59,7 @@ public sealed class UserDisableAppRoleTests : IAsyncLifetime
         await using var ctx = _fixture.CreateOwnerContext(system);
         ctx.ApiTokens.Add(ApiToken.Create(
             _a.AccountId, _a.WorkspaceId, _a.User.Id, "Alice token", secret.TokenHash,
-            scopes: null, createdBy: _a.User.Id, createdAt: DateTimeOffset.UtcNow, expiresAt: null));
+            scopes: ApiTokenScopes.All(), createdBy: _a.User.Id, createdAt: DateTimeOffset.UtcNow, expiresAt: null));
         await ctx.SaveChangesAsync();
     }
 
@@ -74,7 +74,8 @@ public sealed class UserDisableAppRoleTests : IAsyncLifetime
 
     private IConnectionMultiplexer Redis => _redis ??= ConnectionMultiplexer.Connect(_fixture.RedisConnectionString);
 
-    private static string TokensUrl(Guid workspaceId) => $"/api/v1/workspaces/{workspaceId}/api-tokens";
+    // The probe is a route the token's scopes reach (the workspace itself); a token never reaches the token list.
+    private static string TokensUrl(Guid workspaceId) => $"/api/v1/workspaces/{workspaceId}";
 
     private async Task<HttpClient> SignInAsync(string email)
     {

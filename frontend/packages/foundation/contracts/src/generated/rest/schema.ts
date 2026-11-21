@@ -2958,7 +2958,7 @@ export interface paths {
         put?: never;
         /**
          * Issue a new API token for a workspace
-         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.
+         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise), and at least one scope from the published list (identity.api-tokens.scopes-required, identity.api-tokens.unknown-scope); scopes cannot be changed afterwards. A call with the token outside its scopes is answered 403 identity.token.scope-missing. The raw secret is returned exactly once in this response; the issue is recorded in the audit log.
          */
         post: operations["Identity.ApiTokens.Create"];
         delete?: never;
@@ -9849,6 +9849,7 @@ export interface components {
             name?: string | null;
             /** Format: date-time */
             expiresAt?: string | null;
+            scopes?: string[] | null;
             stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest": {
@@ -10967,7 +10968,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             name?: string | null;
-            scopes?: string | null;
+            scopes?: string[] | null;
             status?: string | null;
             /** Format: date-time */
             lastUsedAt?: string | null;

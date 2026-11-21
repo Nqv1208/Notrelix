@@ -95,10 +95,12 @@ export const accountTokensRoute = createRoute({
     stepUpResult?: "failed";
     name?: string;
     days?: number;
+    scopes?: string;
   } => ({
     ...(typeof search.stepUp === "string" ? { stepUp: search.stepUp } : {}),
     ...(search.stepUpResult === "failed" ? { stepUpResult: "failed" } : {}),
     ...(typeof search.name === "string" ? { name: search.name } : {}),
+    ...(typeof search.scopes === "string" ? { scopes: search.scopes } : {}),
     ...(Number.isFinite(Number(search.days))
       ? { days: Number(search.days) }
       : {}),

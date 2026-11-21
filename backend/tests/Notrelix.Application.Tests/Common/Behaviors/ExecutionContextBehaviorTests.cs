@@ -1,3 +1,6 @@
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.Identity.Tokens;
+
 namespace Notrelix.Application.Tests.Common.Behaviors;
 
 public sealed class ExecutionContextBehaviorTests
@@ -11,6 +14,13 @@ public sealed class ExecutionContextBehaviorTests
 
     private sealed record ResourceRequest(ResourceRef Resource)
         : IRequest<string>, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest;
+
+    private sealed record WorkspaceWriteRequest(Guid WorkspaceId)
+        : IRequest<string>, IAuthenticatedRequest, IWorkspaceRequest, IWriteRequest, IRequirePermission
+    {
+        public PermissionAction Action => PermissionAction.ManageApiTokens;
+        public ResourceRef? Resource => null;
+    }
 
     [Fact]
     public async Task Global_request_publishes_snapshot_without_locator_io()
@@ -179,7 +189,8 @@ public sealed class ExecutionContextBehaviorTests
     {
         var boundAccount = Guid.NewGuid();
         var boundWorkspace = Guid.NewGuid();
-        var fixture = CreateFixture<ResourceRequest>(CredentialKind.ApiToken, boundAccount, boundWorkspace);
+        var fixture = CreateFixture<ResourceRequest>(
+            CredentialKind.ApiToken, boundAccount, boundWorkspace, tokenScopes: ["work:read"], requiredScope: "work:read");
         var resource = ResourceRef.Create(ResourceKind.Create("work-management.board"), Guid.NewGuid());
         fixture.Locator
             .Setup(locator => locator.LocateAsync(resource, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -207,10 +218,98 @@ public sealed class ExecutionContextBehaviorTests
         await otherWorkspace.Should().ThrowAsync<ForbiddenException>();
     }
 
+    [Fact]
+    public async Task Api_token_without_the_scope_of_a_write_is_refused_with_scope_missing()
+    {
+        var boundAccount = Guid.NewGuid();
+        var boundWorkspace = Guid.NewGuid();
+        var fixture = CreateFixture<WorkspaceWriteRequest>(
+            CredentialKind.ApiToken, boundAccount, boundWorkspace, tokenScopes: ["work:read"], requiredScope: "work:write");
+        var nextCalled = false;
+
+        var act = () => fixture.Behavior.Handle(
+            new WorkspaceWriteRequest(boundWorkspace), _ => { nextCalled = true; return Task.FromResult("ok"); }, CancellationToken.None);
+
+        var refusal = await act.Should().ThrowAsync<ForbiddenException>("a read-only token cannot write");
+        refusal.Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+        nextCalled.Should().BeFalse();
+        fixture.ExecutionContext.Snapshot.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Api_token_of_another_context_is_refused_with_scope_missing()
+    {
+        var boundAccount = Guid.NewGuid();
+        var boundWorkspace = Guid.NewGuid();
+        var fixture = CreateFixture<WorkspaceRequest>(
+            CredentialKind.ApiToken, boundAccount, boundWorkspace,
+            tokenScopes: ["work:read", "work:write"], requiredScope: "docs:read");
+
+        var act = () => fixture.Behavior.Handle(
+            new WorkspaceRequest(boundWorkspace), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Fact]
+    public async Task Api_token_is_refused_on_a_request_no_token_may_send()
+    {
+        var boundWorkspace = Guid.NewGuid();
+        var fixture = CreateFixture<WorkspaceRequest>(
+            CredentialKind.ApiToken, Guid.NewGuid(), boundWorkspace,
+            tokenScopes: [.. ApiTokenScopes.Vocabulary], requiredScope: null);
+
+        var act = () => fixture.Behavior.Handle(
+            new WorkspaceRequest(boundWorkspace), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>("every scope together still does not reach a request no scope covers"))
+            .Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Fact]
+    public async Task Api_token_with_no_scope_reaches_nothing()
+    {
+        var boundWorkspace = Guid.NewGuid();
+        var fixture = CreateFixture<WorkspaceRequest>(
+            CredentialKind.ApiToken, Guid.NewGuid(), boundWorkspace, tokenScopes: null, requiredScope: "work:read");
+
+        var act = () => fixture.Behavior.Handle(
+            new WorkspaceRequest(boundWorkspace), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>("an empty scope list means no access, never full access"))
+            .Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Fact]
+    public async Task Api_token_with_the_scope_of_its_request_is_let_through()
+    {
+        var boundWorkspace = Guid.NewGuid();
+        var fixture = CreateFixture<WorkspaceWriteRequest>(
+            CredentialKind.ApiToken, Guid.NewGuid(), boundWorkspace, tokenScopes: ["work:write"], requiredScope: "work:write");
+
+        var result = await fixture.Behavior.Handle(
+            new WorkspaceWriteRequest(boundWorkspace), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        result.Should().Be("ok");
+    }
+
+    [Fact]
+    public async Task A_person_session_is_not_narrowed_by_token_scopes()
+    {
+        var fixture = CreateFixture<WorkspaceRequest>(requiredScope: null);
+
+        var result = await fixture.Behavior.Handle(
+            new WorkspaceRequest(Guid.NewGuid()), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        result.Should().Be("ok");
+    }
+
     private static Fixture<TRequest> CreateFixture<TRequest>(
         CredentialKind kind = CredentialKind.UserSession,
         Guid? boundAccountId = null,
-        Guid? boundWorkspaceId = null) where TRequest : IRequest<string>
+        Guid? boundWorkspaceId = null,
+        string[]? tokenScopes = null,
+        string? requiredScope = null) where TRequest : IRequest<string>
     {
         var userId = Guid.NewGuid();
         var executionContext = new Notrelix.Application.Common.Context.ExecutionContext();
@@ -221,8 +320,10 @@ public sealed class ExecutionContextBehaviorTests
         credential.SetupGet(context => context.Kind).Returns(kind);
         credential.SetupGet(context => context.BoundAccountId).Returns(boundAccountId);
         credential.SetupGet(context => context.BoundWorkspaceId).Returns(boundWorkspaceId);
+        credential.SetupGet(context => context.ApiTokenScopes)
+            .Returns(tokenScopes?.ToHashSet() ?? new HashSet<string>());
         var locator = new Mock<IResourceLocator>();
-        var descriptor = RequestDescriptorValidator.Create(typeof(TRequest));
+        var descriptor = RequestDescriptorValidator.Create(typeof(TRequest)) with { ApiTokenScope = requiredScope };
         var descriptors = new Mock<IRequestDescriptorRegistry>();
         descriptors.Setup(registry => registry.GetRequired(typeof(TRequest))).Returns(descriptor);
 
@@ -231,7 +332,7 @@ public sealed class ExecutionContextBehaviorTests
             .Setup(store => store.ResolveWorkspaceAccessAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new WorkspaceAccessSnapshot(
-                Guid.NewGuid(), Guid.NewGuid(), userId, true, true));
+                boundAccountId ?? Guid.NewGuid(), Guid.NewGuid(), userId, true, true));
 
         var behavior = new ExecutionContextBehavior<TRequest, string>(
             descriptors.Object,

@@ -120,7 +120,7 @@ public sealed class WorkspaceCredentialAndInvitationEscalationTests : IAsyncLife
 
         foreach (var request in new object[]
         {
-            new CreateApiTokenCommand(stack.WorkspaceId, "Admin minted", DateTimeOffset.UtcNow.AddDays(30), "step-up"),
+            new CreateApiTokenCommand(stack.WorkspaceId, "Admin minted", DateTimeOffset.UtcNow.AddDays(30), ["work:read"], "step-up"),
             new ListApiTokensQuery(stack.WorkspaceId),
             new RevokeApiTokenCommand(stack.WorkspaceId, ownerTokenId),
         })
@@ -141,7 +141,7 @@ public sealed class WorkspaceCredentialAndInvitationEscalationTests : IAsyncLife
         using var asOwner = As(stack, stack.OwnerId);
 
         var created = (Result<CreatedApiTokenDto>)(await OrgTreeTestHost.SendAsync(
-            asOwner, new CreateApiTokenCommand(stack.WorkspaceId, "Owner token", DateTimeOffset.UtcNow.AddDays(30), "step-up")))!;
+            asOwner, new CreateApiTokenCommand(stack.WorkspaceId, "Owner token", DateTimeOffset.UtcNow.AddDays(30), ["work:read"], "step-up")))!;
         created.Data!.RawSecret.Should().NotBeNullOrEmpty();
 
         var listed = await OrgTreeTestHost.QueryAsync(asOwner, new ListApiTokensQuery(stack.WorkspaceId));

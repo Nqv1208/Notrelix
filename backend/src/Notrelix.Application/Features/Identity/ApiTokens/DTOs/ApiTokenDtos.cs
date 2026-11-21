@@ -4,7 +4,8 @@ namespace Notrelix.Application.Features.Identity.ApiTokens.DTOs;
 public sealed record ApiTokenSummaryDto(
     Guid Id,
     string Name,
-    string? Scopes,
+    /// <summary>The scopes the token was issued with, sorted; empty for a token that carries none (it reaches nothing).</summary>
+    IReadOnlyList<string> Scopes,
     string Status,
     DateTimeOffset? LastUsedAt,
     DateTimeOffset? ExpiresAt,

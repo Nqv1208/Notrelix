@@ -1,3 +1,5 @@
+using Notrelix.Domain.Identity.Tokens;
+
 namespace Notrelix.Application.Features.Identity.ApiTokens.Commands.CreateApiToken;
 
 /// <summary>
@@ -19,6 +21,17 @@ public class CreateApiTokenCommandValidator : AbstractValidator<CreateApiTokenCo
             .NotEmpty()
             .WithErrorCode("identity.api-tokens.invalid-step-up-token")
             .WithMessage("Step-up verification token is required.");
+
+        // At least one scope, each from the published vocabulary: none would mean no access, never full access.
+        RuleFor(x => x.Scopes)
+            .Must(scopes => scopes is { Count: > 0 })
+            .WithErrorCode("identity.api-tokens.scopes-required")
+            .WithMessage("An API token needs at least one scope.");
+
+        RuleFor(x => x.Scopes)
+            .Must(scopes => scopes is null || scopes.All(ApiTokenScopes.Vocabulary.Contains))
+            .WithErrorCode("identity.api-tokens.unknown-scope")
+            .WithMessage(x => $"Unknown API token scope: {string.Join(", ", (x.Scopes ?? []).Where(s => !ApiTokenScopes.Vocabulary.Contains(s)).Order())}.");
 
         // An API token needs an expiry, within the default maximum lifetime (Lead decision L7).
         RuleFor(x => x.ExpiresAt)

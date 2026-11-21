@@ -2,12 +2,13 @@
  * Workspace API tokens on the Identity contracts (`Identity.ApiTokens.*`):
  *
  *   GET    /workspaces/:workspaceId/api-tokens             metadata only, newest first, cursor page (default 50, max 200)
- *   POST   /workspaces/:workspaceId/api-tokens             201 with the secret, once; needs an IssueApiToken proof
+ *   POST   /workspaces/:workspaceId/api-tokens             201 with the secret, once; needs an IssueApiToken proof and at least one scope (fixed for the token's life)
  *   DELETE /workspaces/:workspaceId/api-tokens/:tokenId    204; a second revoke is a no-op
  *
  * Only an owner or admin of the workspace may use them; anyone else gets the NotFound of a missing workspace.
  */
 import { defineMockOperation } from "../../operations/types";
+import { MOCK_API_TOKEN_SCOPES } from "../../state/mock-account-pages";
 import type { MockStore } from "../../state/mock-store";
 import {
   created,
@@ -56,10 +57,7 @@ export const accountApiTokenOperations = [
       if (!Number.isInteger(start) || start < 0)
         return invalid("common.validation", "Cursor is not valid.");
       const all = tokensOf(store, params.workspaceId);
-      const items = all.slice(start, start + limit).map((t) => ({
-        ...t,
-        scopes: null,
-      }));
+      const items = all.slice(start, start + limit).map((t) => ({ ...t }));
       return ok({
         items,
         nextCursor: start + limit < all.length ? String(start + limit) : null,
@@ -69,7 +67,12 @@ export const accountApiTokenOperations = [
 
   defineMockOperation<
     { workspaceId: string },
-    { name?: string; expiresAt?: string | null; stepUpToken?: string }
+    {
+      name?: string;
+      expiresAt?: string | null;
+      scopes?: string[] | null;
+      stepUpToken?: string;
+    }
   >({
     id: "account.apiTokens.create",
     contract: { kind: "openapi", operationId: "Identity.ApiTokens.Create" },
@@ -100,6 +103,21 @@ export const accountApiTokenOperations = [
           "identity.api-tokens.lifetime-exceeded",
           `An API token cannot live longer than ${MAX_DAYS} days.`,
         );
+      const scopes = [...new Set(body.scopes ?? [])];
+      if (scopes.length === 0)
+        return invalid(
+          "identity.api-tokens.scopes-required",
+          "An API token needs at least one scope.",
+        );
+      const unknown = scopes.filter(
+        (scope) =>
+          !(MOCK_API_TOKEN_SCOPES as readonly string[]).includes(scope),
+      );
+      if (unknown.length > 0)
+        return invalid(
+          "identity.api-tokens.unknown-scope",
+          `Unknown API token scope: ${unknown.join(", ")}.`,
+        );
       const security = store.accountPages.securityOf(
         store.getCurrentUser().id,
         (minutes) => store.getClock().offsetMinutes(minutes),
@@ -129,6 +147,7 @@ export const accountApiTokenOperations = [
         revokedAt: null,
         revokedReason: null,
         suffix: serial,
+        scopes: MOCK_API_TOKEN_SCOPES.filter((scope) => scopes.includes(scope)),
       };
       all.unshift(token);
       return created({
