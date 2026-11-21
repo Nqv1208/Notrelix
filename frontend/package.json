@@ -4,6 +4,7 @@
   "private": true,
   "description": "Notrelix Client Workspace",
   "scripts": {
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "dev": "turbo dev",
     "dev:marketing": "pnpm --filter @notrelix/app-marketing dev",
     "marketing:previews": "node ./scripts/capture-marketing-previews.mjs",

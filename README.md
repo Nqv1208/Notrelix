@@ -937,6 +937,8 @@ Install:
 pnpm install
 ```
 
+`pnpm install` (and `make dev-up`) also point git at the committed hooks (`git config core.hooksPath .githooks`). The pre-push hook runs the cheap CI checks of the side you changed before a push leaves your machine: for `backend/`, `dotnet format backend.slnx --verify-no-changes --no-restore` and the Architecture tests; for `frontend/`, prettier on the changed files, typecheck of the affected packages and `check:architecture`. A failure names the check and the command that fixes it.
+
 Run web:
 
 ```bash
