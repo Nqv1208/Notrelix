@@ -42,6 +42,7 @@ write_if_changed() { # path, content on stdin; returns 0 when the file changed
 
 verify() {
   local fail=0
+  install -d -m 0755 /run/sshd # Ubuntu 24.04 socket-activated ssh may not have created it yet; sshd -T needs it
   check() { if eval "$2" >/dev/null 2>&1; then printf 'PASS  %s\n' "$1"; else printf 'FAIL  %s\n' "$1"; fail=1; fi; }
   check "docker engine and compose plugin" "docker compose version"
   check "deploy user exists, is not root, is in the docker group" "id -nG $DEPLOY_USER | grep -qw docker"
@@ -102,7 +103,13 @@ KbdInteractiveAuthentication no
 PermitRootLogin no
 PubkeyAuthentication yes
 CONF
-sshd -t && systemctl reload ssh
+install -d -m 0755 /run/sshd # privilege separation dir, missing until ssh.service first starts under ssh.socket
+sshd -t
+if systemctl is-active --quiet ssh.service; then
+  systemctl reload ssh.service || systemctl restart ssh.service
+else
+  echo "ssh.service is not running (socket-activated): new connections already read the new config"
+fi
 
 log "firewall: 22, 80, 443 (Oracle default iptables rules reject the rest)"
 for p in 22 80 443; do open_port "$p"; done
