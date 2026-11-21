@@ -177,9 +177,26 @@ jobs:
       - if: ${{ !cancelled() }}
         run: pnpm test:node
       - if: ${{ !cancelled() }}
-        run: pnpm test:web
-      - if: ${{ !cancelled() }}
         run: pnpm --filter @notrelix/app-web build
+
+  # The web component suite is the long pole, so vitest splits its files across shards; every file runs in exactly one shard.
+  frontend-web:
+    name: Frontend web tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm test:web --shard=${{ matrix.shard }}/4
 
   dependencies:
     name: Dependency audit
@@ -190,7 +207,7 @@ jobs:
 
   ci-gate:
     name: CI gate
-    needs: [changes, backend-unit, backend-integration, frontend, dependencies]
+    needs: [changes, backend-unit, backend-integration, frontend, frontend-web, dependencies]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -203,6 +220,7 @@ jobs:
           ok backend-unit "${{ needs.backend-unit.result }}"
           ok backend-integration "${{ needs.backend-integration.result }}"
           ok frontend "${{ needs.frontend.result }}"
+          ok frontend-web "${{ needs.frontend-web.result }}"
           ok dependencies "${{ needs.dependencies.result }}"
 
   # ---- Release candidate: release/** only, after the gate is green and only when the plan says release ----
