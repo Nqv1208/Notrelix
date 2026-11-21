@@ -1,5 +1,8 @@
 using System.Net;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.API;
@@ -37,6 +40,7 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
     private Guid _itemId;
     private Guid _pageId;
     private Guid _commentId;
+    private Guid _pageCommentId;
     private WebApplicationFactory<Program>? _factory;
 
     public ApiTokenCollaborationAppRoleTests(AppRoleTestContainer fixture) => _fixture = fixture;
@@ -59,10 +63,14 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         var comment = Comment.Create(
             _a.AccountId, _a.WorkspaceId, ResourceRef.Create(ResourceKind.Create(ItemKind), item.Id, _a.WorkspaceId), "A comment", owner, Now);
 
+        var pageComment = Comment.Create(
+            _a.AccountId, _a.WorkspaceId, ResourceRef.Create(ResourceKind.Create("documents.page"), page.Id, _a.WorkspaceId), "Secret page comment", owner, Now);
+
         var system = new FakeCurrentTenantContext();
         system.SetSystem();
         await using var ctx = _fixture.CreateOwnerContext(system);
         ctx.BoardGroups.Add(group);
+        ctx.Comments.Add(pageComment);
         ctx.BoardItems.Add(item);
         ctx.Pages.Add(page);
         ctx.Comments.Add(comment);
@@ -71,6 +79,7 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         _itemId = item.Id;
         _pageId = page.Id;
         _commentId = comment.Id;
+        _pageCommentId = pageComment.Id;
     }
 
     public Task DisposeAsync()
@@ -225,5 +234,116 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/following"));
         await AssertScopeMissingAsync(await client.SendAsync(Send(HttpMethod.Put, $"/api/v1/board-items/{_itemId}/following", idempotent: true)));
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/activity"));
+    }
+
+    /// <summary>One request that carries a resource kind: the route names the kind, the id is the one under test.</summary>
+    private sealed record KindRoute(string Name, HttpMethod Method, Func<Guid, string> Url, string? Json, bool Idempotent = false, bool Multipart = false);
+
+    private static readonly string[] ItemScopes = ["work:read", "work:write"];
+    private static readonly string[] PageScopes = ["docs:read", "docs:write"];
+
+    private IEnumerable<KindRoute> ItemKindRoutes()
+    {
+        const string link = """{"filename":"spec.txt","url":"https://example.com/spec.txt"}""";
+        yield return new("create item comment", HttpMethod.Post, id => $"/api/v1/board-items/{id}/comments", """{"contentMd":"Spoofed on an item route"}""", Idempotent: true);
+        yield return new("read item comments", HttpMethod.Get, id => $"/api/v1/board-items/{id}/comments", null);
+        yield return new("read item comments page", HttpMethod.Get, id => $"/api/v1/board-items/{id}/comments/page", null);
+        yield return new("react", HttpMethod.Put, id => $"/api/v1/board-items/{id}/comments/{_pageCommentId}/reactions/{ThumbsUp}", null);
+        yield return new("withdraw reaction", HttpMethod.Delete, id => $"/api/v1/board-items/{id}/comments/{_pageCommentId}/reactions/{ThumbsUp}", null);
+        yield return new("list item attachments", HttpMethod.Get, id => $"/api/v1/board-items/{id}/attachments", null);
+        yield return new("link item attachment", HttpMethod.Post, id => $"/api/v1/board-items/{id}/attachments", link);
+        yield return new("upload item attachment", HttpMethod.Post, id => $"/api/v1/board-items/{id}/attachments/files", null, Idempotent: true, Multipart: true);
+        yield return new("read item attachment content", HttpMethod.Get, id => $"/api/v1/board-items/{id}/attachments/{Guid.Empty}/content", null);
+    }
+
+    private IEnumerable<KindRoute> PageKindRoutes()
+    {
+        const string link = """{"filename":"spec.txt","url":"https://example.com/spec.txt"}""";
+        yield return new("create page comment", HttpMethod.Post, id => $"/api/v1/pages/{id}/comments", """{"contentMd":"Spoofed on a page route"}""", Idempotent: true);
+        yield return new("read page comments", HttpMethod.Get, id => $"/api/v1/pages/{id}/comments", null);
+        yield return new("read page comments page", HttpMethod.Get, id => $"/api/v1/pages/{id}/comments/page", null);
+        yield return new("list page attachments", HttpMethod.Get, id => $"/api/v1/pages/{id}/attachments", null);
+        yield return new("link page attachment", HttpMethod.Post, id => $"/api/v1/pages/{id}/attachments", link);
+        yield return new("upload page attachment", HttpMethod.Post, id => $"/api/v1/pages/{id}/attachments/files", null, Idempotent: true, Multipart: true);
+        yield return new("read page attachment content", HttpMethod.Get, id => $"/api/v1/pages/{id}/attachments/{Guid.Empty}/content", null);
+        yield return new("delete page attachment", HttpMethod.Delete, id => $"/api/v1/pages/{id}/attachments/{Guid.Empty}", null);
+    }
+
+    private static async Task<(HttpStatusCode Status, string Body)> SendRouteAsync(HttpClient client, KindRoute route, Guid id)
+    {
+        var request = Send(route.Method, route.Url(id), route.Json, route.Idempotent);
+        if (route.Multipart)
+        {
+            var file = new ByteArrayContent([0x25, 0x50, 0x44, 0x46]);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            request.Content = new MultipartFormDataContent { { file, "file", "report.pdf" } };
+        }
+
+        var response = await client.SendAsync(request);
+        return (response.StatusCode, Normalize(await response.Content.ReadAsStringAsync()));
+    }
+
+    private static string Normalize(string body)
+    {
+        var text = body;
+        try
+        {
+            if (JsonNode.Parse(body) is JsonObject obj)
+            {
+                foreach (var key in obj.Select(kv => kv.Key).Where(k => k is "traceId" or "correlationId" or "instance" or "requestId").ToList())
+                    obj.Remove(key);
+                text = obj.ToJsonString();
+            }
+        }
+        catch (JsonException)
+        {
+            // Not JSON (an empty body): compare the text as it is.
+        }
+
+        return Regex.Replace(text, "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-f]{32}|0H[0-9A-Z]{11}", "<id>");
+    }
+
+    /// <summary>
+    /// The scope comes from the kind the route names, so the id must exist AS that kind: the resource locator answers
+    /// NotFound for an id of another kind before the scope or any handler runs. For every request that carries a kind,
+    /// in both directions, the answer for a wrong-kind id (a page id sent as an item, an item id sent as a page) is the
+    /// same 404 as for a random id: same status, same body, so the refusal is no oracle for the other resource.
+    /// </summary>
+    [Fact]
+    public async Task AWrongKindForAnId_IsRefusedLikeAMissingResource_InBothDirections_ForEveryKindCarryingRequest()
+    {
+        using var work = await BearerAsync(ItemScopes);
+        using var docs = await BearerAsync(PageScopes);
+
+        foreach (var route in ItemKindRoutes())
+        {
+            var wrong = await SendRouteAsync(work, route, _pageId);
+            var missing = await SendRouteAsync(work, route, Guid.NewGuid());
+            missing.Status.Should().Be(HttpStatusCode.NotFound, $"{route.Name}: a random id");
+            wrong.Status.Should().Be(HttpStatusCode.NotFound, $"{route.Name}: a page id sent as an item");
+            wrong.Body.Should().Be(missing.Body, $"{route.Name}: no oracle for the page");
+        }
+
+        foreach (var route in PageKindRoutes())
+        {
+            var wrong = await SendRouteAsync(docs, route, _itemId);
+            var missing = await SendRouteAsync(docs, route, Guid.NewGuid());
+            missing.Status.Should().Be(HttpStatusCode.NotFound, $"{route.Name}: a random id");
+            wrong.Status.Should().Be(HttpStatusCode.NotFound, $"{route.Name}: an item id sent as a page");
+            wrong.Body.Should().Be(missing.Body, $"{route.Name}: no oracle for the item");
+        }
+
+        (await CommentCountAsync("Spoofed on an item route")).Should().Be(0);
+        (await CommentCountAsync("Spoofed on a page route")).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AWrongKindForAnId_DoesNotReturnTheOtherResourcesComments()
+    {
+        using var work = await BearerAsync(ItemScopes);
+        using var docs = await BearerAsync(PageScopes);
+
+        (await (await work.GetAsync($"/api/v1/board-items/{_pageId}/comments")).Content.ReadAsStringAsync()).Should().NotContain("Secret page comment");
+        (await (await docs.GetAsync($"/api/v1/pages/{_itemId}/comments")).Content.ReadAsStringAsync()).Should().NotContain("A comment");
     }
 }
