@@ -222,11 +222,16 @@ jobs:
             filter: FullyQualifiedName~Notrelix.Integration.Tests.Workspaces.|FullyQualifiedName~Notrelix.Integration.Tests.Auth.
           - name: work-management
             filter: FullyQualifiedName~Notrelix.Integration.Tests.WorkManagement.
-          # Rls is split by class-name initial (flat namespace): A-C, then everything else.
-          - name: rls-a-c
-            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.A|FullyQualifiedName~Notrelix.Integration.Tests.Rls.B|FullyQualifiedName~Notrelix.Integration.Tests.Rls.C
-          - name: rls-d-z
-            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.A&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.B&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.C
+          # The Rls classes run one after another, so they are split by measured time (trx of a CI run, see docs/delivery/ci-cd-architecture.md): rls-1 to rls-3 list their classes,
+          # rls-rest is the exact complement (every other Rls class, including new ones). No class is in two shards and none is dropped.
+          - name: rls-1
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.AppRoleConformanceTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.ApiTokenCollaborationAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.UserScopeIsolationTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.AdminGrantWriteTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.NonMemberDisclosureTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.AnalyticsReportNonMemberDisclosureTests.
+          - name: rls-2
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.AccountSsoAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.ApiTokenScopeTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.SsoSignInAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.AccountMfaPolicyAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.AccountSuspensionAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.WorkerPrincipalTests.
+          - name: rls-3
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.CredentialScopeTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.InvitationScopeTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.PublicFormAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.ApiTokenScopesAppRoleTests.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.FormPublicAccessAppRoleTests.
+          - name: rls-rest
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.AppRoleConformanceTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.ApiTokenCollaborationAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.UserScopeIsolationTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.AdminGrantWriteTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.NonMemberDisclosureTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.AnalyticsReportNonMemberDisclosureTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.AccountSsoAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.ApiTokenScopeTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.SsoSignInAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.AccountMfaPolicyAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.AccountSuspensionAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.WorkerPrincipalTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.CredentialScopeTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.InvitationScopeTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.PublicFormAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.ApiTokenScopesAppRoleTests.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.FormPublicAccessAppRoleTests.
           - name: rest
             filter: FullyQualifiedName!~Notrelix.Integration.Tests.Workspaces.&FullyQualifiedName!~Notrelix.Integration.Tests.Auth.&FullyQualifiedName!~Notrelix.Integration.Tests.WorkManagement.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.
     services:
