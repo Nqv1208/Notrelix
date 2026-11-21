@@ -48284,6 +48284,10 @@
           "language": {
             "type": "string",
             "nullable": true
+          },
+          "accountStatus": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

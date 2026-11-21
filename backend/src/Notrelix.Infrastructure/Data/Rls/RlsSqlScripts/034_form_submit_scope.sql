@@ -5,7 +5,8 @@
 -- worker bypass, the request enters a scope bound to exactly ONE form: the database derives the form (and
 -- its account, workspace and board) from the form's public key, and only when the form is currently open to
 -- the public: published, not deleted, its public key set (the form is public), its board live and not
--- archived, its workspace active and not deleted, and the workspace's public-links switch on. Anything else
+-- archived, its workspace active and not deleted, the workspace's public-links switch on, and its Account neither
+-- suspended nor closed (a read-only Account serves nothing to the public). Anything else
 -- enters nothing, so a private, closed, deleted, archived or switched-off form is indistinguishable from an
 -- unknown key (404). Switching the form back to private clears the key, which ends the principal at once.
 --
@@ -75,6 +76,7 @@ BEGIN
       JOIN workspace.workspaces w ON w.id = f.workspace_id AND w.account_id = f.account_id
                                  AND w.deleted_at IS NULL AND w.status = 'Active'
                                  AND w.settings_allow_public_sharing
+      JOIN account.accounts a ON a.id = f.account_id AND a.status NOT IN ('Suspended', 'Closed')
      WHERE f.public_key = p_public_key
        AND f.deleted_at IS NULL
        AND f.status = 'Published';

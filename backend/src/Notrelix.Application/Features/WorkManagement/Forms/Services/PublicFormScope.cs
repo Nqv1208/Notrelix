@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.WorkManagement.Abstractions;
 using Notrelix.Application.Features.Workspaces.Public.Sharing;
 
@@ -9,7 +10,7 @@ namespace Notrelix.Application.Features.WorkManagement.Forms.Services;
 /// the rest of the request. Where the host sets database session context the database derives the form from
 /// the key and binds the request to it (the per-form principal: it can read that form's definition and insert
 /// its submissions, nothing else); a key that opens nothing returns null. Where it does not (in-memory hosts)
-/// the same gate runs here. Every refusal is the same null, so a private, closed, archived or switched-off
+/// the same gate runs here, including the Account status (a suspended or closed Account opens nothing). Every refusal is the same null, so a private, closed, archived or switched-off
 /// form is indistinguishable from an unknown key.
 /// </summary>
 public sealed class PublicFormScope
@@ -21,17 +22,20 @@ public sealed class PublicFormScope
     private readonly ICurrentTenantContext _tenant;
     private readonly IRlsSessionContext _rls;
     private readonly IWorkspaceSharingFacts _sharing;
+    private readonly IAccountStatusFacts _accountStatus;
 
     public PublicFormScope(
         IWorkManagementDbContext context,
         ICurrentTenantContext tenant,
         IRlsSessionContext rls,
-        IWorkspaceSharingFacts sharing)
+        IWorkspaceSharingFacts sharing,
+        IAccountStatusFacts accountStatus)
     {
         _context = context;
         _tenant = tenant;
         _rls = rls;
         _sharing = sharing;
+        _accountStatus = accountStatus;
     }
 
     /// <summary>The open public form with its questions, or null when the key opens nothing.</summary>
@@ -52,6 +56,8 @@ public sealed class PublicFormScope
         {
             var facts = await _sharing.FindAsync(form.WorkspaceId, ct);
             if (facts is not { IsActive: true, AllowsPublicLinks: true }) return null;
+            // A suspended or closed Account is read-only: the same refusal as a closed form.
+            if (!(await _accountStatus.GetAsync(form.AccountId, ct)).IsOperating()) return null;
         }
 
         _tenant.SetWorkspace(form.AccountId, form.WorkspaceId, null);
