@@ -642,6 +642,9 @@ importers:
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.3.0)
+      qrcode-generator:
+        specifier: ^2.0.4
+        version: 2.0.4
       react-hook-form:
         specifier: ^7.71.2
         version: 7.81.0(react@19.3.0)

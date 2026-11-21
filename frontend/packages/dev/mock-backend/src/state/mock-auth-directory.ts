@@ -15,6 +15,10 @@ export const MOCK_AUTH = {
   otpCode: "482931",
   /** One of the recovery codes handed out when the second step was set up. */
   backupCode: "BK7Q-M2XN-91TD",
+  /** A person of an Account that requires two-step verification and has none yet: signs in to the enrolment step while the requirement is on. */
+  enrollEmail: "required-mfa@mock.test",
+  /** The key the enrolment step shows (and its setup address). */
+  enrollSecret: "JBSWY3DPEHPK3PXP",
   /** A company whose people sign in through the company identity provider. */
   ssoDomain: "minhan.vn",
   /** The six digits the password-reset email carries for that account. */
@@ -154,9 +158,15 @@ const INVITES: readonly MockGuestInvite[] = [
 export type MockLoginOutcome =
   | { readonly kind: "signed-in" }
   | { readonly kind: "otp"; readonly challengeToken: string }
+  /** The Account requires two-step verification and this person has none: no session, only the enrolment token. */
+  | { readonly kind: "enroll"; readonly enrollmentToken: string }
   | { readonly kind: "invalid" }
   /** Too many wrong passwords: the attempt is throttled, not verified. */
   | { readonly kind: "locked"; readonly retryAfterSeconds: number };
+
+export type MockEnrollOutcome =
+  | { readonly kind: "started"; readonly mfaMethodId: string }
+  | { readonly kind: "invalid-token" };
 
 /** The answer to a second-step code (`identity.mfa.*`); no one is told how many tries are left. */
 export type MockOtpOutcome =
@@ -175,6 +185,12 @@ export class MockAuthDirectory {
   private acceptedInvites = new Set<string>();
   private declinedInvites = new Set<string>();
   private sequence = 0;
+  /** The Account's MFA requirement (`security.require-mfa`) and whether the signed-in person may change it (the Owner). */
+  accountMfaRequired = false;
+  accountOwner = true;
+  /** Required enrolment: token -> wrong codes left; the backend's cookie after a provider sign-in. */
+  private enrollments = new Map<string, { triesLeft: number }>();
+  private enrollCookie: string | null = null;
 
   /**
    * The lock runs on the wall clock: the mock's own clock is frozen at the
@@ -187,6 +203,10 @@ export class MockAuthDirectory {
     this.lockedUntil.clear();
     this.challenges.clear();
     this.mfaChallengeCookie = null;
+    this.accountMfaRequired = false;
+    this.accountOwner = true;
+    this.enrollments.clear();
+    this.enrollCookie = null;
     this.acceptedInvites.clear();
     this.declinedInvites.clear();
     this.sequence = 0;
@@ -217,6 +237,19 @@ export class MockAuthDirectory {
     const email = rawEmail.trim().toLowerCase();
     const locked = this.secondsLocked(email);
     if (locked > 0) return { kind: "locked", retryAfterSeconds: locked };
+    if (
+      email === MOCK_AUTH.enrollEmail &&
+      password === MOCK_AUTH.personalPassword &&
+      this.accountMfaRequired
+    ) {
+      this.attempts.delete(email);
+      return { kind: "enroll", enrollmentToken: this.issueEnrollmentToken() };
+    }
+    if (
+      email === MOCK_AUTH.enrollEmail &&
+      password === MOCK_AUTH.personalPassword
+    )
+      return { kind: "signed-in" };
     if (
       email === MOCK_AUTH.personalEmail &&
       password === MOCK_AUTH.personalPassword
@@ -255,6 +288,50 @@ export class MockAuthDirectory {
 
   clearMfaChallengeCookie(): void {
     this.mfaChallengeCookie = null;
+  }
+
+  /** A new single-use enrolment token (10 minutes in the backend; the mock never ages it). */
+  issueEnrollmentToken(): string {
+    const token = `enroll-${(this.sequence += 1)}`;
+    this.enrollments.set(token, { triesLeft: OTP_ATTEMPTS });
+    return token;
+  }
+
+  /** A provider sign-in that needs the enrolment step: the token goes into the cookie. */
+  startProviderEnrollment(): void {
+    this.enrollCookie = this.issueEnrollmentToken();
+  }
+
+  /** The token of a body, else the cookie's. */
+  private enrollmentToken(body: string | null | undefined): string {
+    return body?.trim() ? body.trim() : (this.enrollCookie ?? "");
+  }
+
+  startEnrollment(body: string | null | undefined): MockEnrollOutcome {
+    return this.enrollments.has(this.enrollmentToken(body))
+      ? { kind: "started", mfaMethodId: "mfa-method-required" }
+      : { kind: "invalid-token" };
+  }
+
+  /** The first code finishes the sign-in; the fifth wrong one kills the token. */
+  completeEnrollment(
+    body: string | null | undefined,
+    code: string,
+  ): "done" | "invalid" | "invalid-token" {
+    const token = this.enrollmentToken(body);
+    const entry = this.enrollments.get(token);
+    if (!entry) return "invalid-token";
+    if (code.replace(/\s+/g, "") === MOCK_AUTH.otpCode) {
+      this.enrollments.delete(token);
+      this.enrollCookie = null;
+      return "done";
+    }
+    entry.triesLeft -= 1;
+    if (entry.triesLeft <= 0) {
+      this.enrollments.delete(token);
+      return "invalid-token";
+    }
+    return "invalid";
   }
 
   /** The second step: the app's six digits, or a backup code. */

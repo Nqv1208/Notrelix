@@ -26,6 +26,8 @@ export const AUTH_FLOW_PATHS = {
   login: "/auth/login",
   register: "/auth/register",
   mfaVerify: "/auth/mfa/verify",
+  mfaRequiredEnrollmentStart: "/auth/mfa/required-enrollment/start",
+  mfaRequiredEnrollmentComplete: "/auth/mfa/required-enrollment/complete",
   /** The browser is sent here (a redirect), never called with XHR. */
   oauthStart: (provider: string) =>
     `/auth/oauth/${encodeURIComponent(provider)}/start`,
@@ -80,7 +82,20 @@ export type LoginResult =
       /** How the second step is answered ("totp"); the page asks for the app's digits or a recovery code. */
       readonly method: string | null;
       readonly expiresAt: string | null;
+    }
+  | {
+      /** The Account requires two-step verification and the person has none: no session, only this token (kept in memory). */
+      readonly kind: "enroll";
+      readonly enrollmentToken: string;
+      readonly expiresAt: string | null;
     };
+
+/** The authenticator the required enrolment adds: its key and setup address, shown once. */
+export interface RequiredEnrollment {
+  readonly methodId: string;
+  readonly secret: string;
+  readonly otpAuthUri: string;
+}
 
 /** `Identity.Auth.Login` / `Identity.Mfa.VerifyChallenge`: `AuthSessionResponse`. */
 interface AuthSessionWire {
@@ -95,6 +110,9 @@ interface AuthSessionWire {
   readonly mfaChallengeToken?: string | null;
   readonly mfaMethod?: string | null;
   readonly mfaExpiresAt?: string | null;
+  readonly mfaEnrollmentRequired?: boolean;
+  readonly mfaEnrollmentToken?: string | null;
+  readonly recoveryCodes?: readonly string[] | null;
 }
 
 function toUser(wire: AuthSessionWire["user"]): User {
@@ -113,6 +131,12 @@ export function toLoginResult(wire: AuthSessionWire): LoginResult {
       kind: "mfa",
       challengeToken: wire.mfaChallengeToken,
       method: wire.mfaMethod ?? null,
+      expiresAt: wire.mfaExpiresAt ?? null,
+    };
+  if (wire.mfaEnrollmentRequired && wire.mfaEnrollmentToken)
+    return {
+      kind: "enroll",
+      enrollmentToken: wire.mfaEnrollmentToken,
       expiresAt: wire.mfaExpiresAt ?? null,
     };
   return {
@@ -297,6 +321,51 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
           QUIET,
         ),
       );
+    },
+    /**
+     * Starts the authenticator the Account requires. The token is the login's (in memory only);
+     * after a provider sign-in it is the backend's httpOnly cookie, so `null` sends no body token.
+     */
+    async startRequiredEnrollment(
+      enrollmentToken: string | null,
+    ): Promise<RequiredEnrollment> {
+      const wire = await api.post<{
+        mfaMethodId?: string;
+        secret?: string | null;
+        otpAuthUri?: string | null;
+      }>(
+        AUTH_FLOW_PATHS.mfaRequiredEnrollmentStart,
+        enrollmentToken ? { enrollmentToken } : {},
+        QUIET,
+      );
+      return {
+        methodId: wire.mfaMethodId ?? "",
+        secret: wire.secret ?? "",
+        otpAuthUri: wire.otpAuthUri ?? "",
+      };
+    },
+    /** The first code opens the session; the recovery codes come back once. */
+    async completeRequiredEnrollment(data: {
+      enrollmentToken: string | null;
+      methodId: string;
+      code: string;
+    }): Promise<SessionResult & { readonly recoveryCodes: readonly string[] }> {
+      const { enrollmentToken, methodId, code } = data;
+      const wire = await api.post<AuthSessionWire>(
+        AUTH_FLOW_PATHS.mfaRequiredEnrollmentComplete,
+        {
+          ...(enrollmentToken ? { enrollmentToken } : {}),
+          mfaMethodId: methodId,
+          // Authenticator apps group the digits ("123 456"); the backend wants six.
+          code: code.replace(/\s+/g, ""),
+        },
+        QUIET,
+      );
+      return {
+        user: toUser(wire.user),
+        expiresAt: wire.expiresAt ?? null,
+        recoveryCodes: wire.recoveryCodes ?? [],
+      };
     },
     /**
      * Where the browser goes to sign in with Google or Microsoft (path under

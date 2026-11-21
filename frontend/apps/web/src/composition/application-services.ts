@@ -22,7 +22,7 @@ export interface WebApplicationServices {
 }
 
 export interface CreateWebApplicationServicesOptions {
-  readonly navigateToSignedOut: () => void;
+  readonly navigateToSignedOut: (reason?: "mfa-enrollment-required") => void;
   readonly onSignedOutRoute?: () => boolean;
 }
 

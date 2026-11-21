@@ -811,6 +811,13 @@ export const accountSecurityOperations = [
       const security = securityOf(store);
       // An off factor stays off: nothing changes and no session ends.
       if (!security.twoFactorEnabled) return { status: 200 };
+      // An Account the person belongs to requires it: the factor stays, the proof is kept.
+      if (store.auth.accountMfaRequired)
+        return identityProblem(
+          409,
+          "identity.mfa.required-by-account",
+          "Your account requires two-step verification, so it cannot be turned off.",
+        );
       if (security.proofs.get(body?.stepUpToken ?? "") !== "DisableMfa")
         return identityProblem(
           412,
