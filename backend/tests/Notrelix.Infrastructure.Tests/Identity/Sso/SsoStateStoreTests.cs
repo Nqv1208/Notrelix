@@ -32,7 +32,7 @@ public class SsoStateStoreTests
     {
         var cache = new DictionaryCache();
         var store = new SsoStateStore(cache);
-        var state = new SsoLoginState("state-raw-value", Guid.NewGuid(), "a@acme.com", "nonce", "verifier", "https://api/cb", "/home", "https://login.acme.example", DateTimeOffset.UtcNow.AddMinutes(10));
+        var state = new SsoLoginState("state-raw-value", Guid.NewGuid(), "a@acme.com", "nonce", "verifier", "https://api/cb", "/home", "https://login.acme.example", "binding-hash", DateTimeOffset.UtcNow.AddMinutes(10));
 
         await store.StoreAsync(state, TimeSpan.FromMinutes(10), CancellationToken.None);
 

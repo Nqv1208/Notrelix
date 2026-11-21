@@ -27,14 +27,22 @@ public static class StartSsoSignInEndpoint
         StartSsoSignInRequest request,
         ISender sender,
         IOptions<SsoRedirectOptions> redirectOptions,
+        ICookieService cookieService,
         HttpContext http)
     {
+        // Ties the state to this browser: the callback only works with the cookie set here.
+        var binding = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
         var result = await sender.Send(new StartSsoSignInCommand
         {
             Email = request.Email,
             ReturnUrl = request.ReturnUrl,
             RedirectUri = redirectOptions.Value.CallbackUrl(http.Request),
+            BrowserBinding = binding,
         });
+        if (result.Succeeded)
+            cookieService.SetSsoBindingCookie(binding);
         return result.ToApiResult();
     }
 }

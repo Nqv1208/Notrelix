@@ -33,8 +33,12 @@ public static class CompleteSsoSignInEndpoint
         IOptions<OAuthRedirectOptions> redirectOptions)
     {
         var options = redirectOptions.Value;
+        var binding = cookieService.GetSsoBindingCookie();
+        // The binding works once, whatever the outcome.
+        cookieService.DeleteSsoBindingCookie();
         var result = await sender.Send(new CompleteSsoSignInCommand
         {
+            BrowserBinding = binding,
             Code = code,
             State = state,
             Error = error,

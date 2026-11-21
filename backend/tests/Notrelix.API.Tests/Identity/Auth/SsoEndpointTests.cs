@@ -21,6 +21,8 @@ public sealed class SsoCallbackHost : IDisposable
 
     public StartSsoSignInCommand? LastStart { get; private set; }
 
+    public CompleteSsoSignInCommand? LastComplete { get; private set; }
+
     public Result<SsoStartResult> StartOutcome { get; set; } = Result<SsoStartResult>.Failure("not set");
 
     public SsoCallbackHost()
@@ -31,7 +33,9 @@ public sealed class SsoCallbackHost : IDisposable
             services.AddScoped<IRequestHandler<CompleteSsoSignInCommand, Result<SsoSignInResult>>>(_ =>
             {
                 var handler = new Mock<IRequestHandler<CompleteSsoSignInCommand, Result<SsoSignInResult>>>();
-                handler.Setup(h => h.Handle(It.IsAny<CompleteSsoSignInCommand>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => Outcome);
+                handler.Setup(h => h.Handle(It.IsAny<CompleteSsoSignInCommand>(), It.IsAny<CancellationToken>()))
+                    .Callback<CompleteSsoSignInCommand, CancellationToken>((c, _) => LastComplete = c)
+                    .ReturnsAsync(() => Outcome);
                 return handler.Object;
             });
             services.RemoveAll<IRequestHandler<StartSsoSignInCommand, Result<SsoStartResult>>>();
@@ -61,17 +65,47 @@ public class SsoEndpointTests : IClassFixture<SsoCallbackHost>
 
     public SsoEndpointTests(SsoCallbackHost host) => _host = host;
 
-    private static string[] SetCookies(HttpResponseMessage response) =>
+    private static string[] AllSetCookies(HttpResponseMessage response) =>
         response.Headers.TryGetValues("Set-Cookie", out var values) ? values.ToArray() : [];
+
+    /// <summary>Every cookie except the binding cookie, which the callback clears on every outcome.</summary>
+    private static string[] SetCookies(HttpResponseMessage response) =>
+        AllSetCookies(response).Where(c => !c.StartsWith("ssoBinding=", StringComparison.Ordinal)).ToArray();
 
     private static Result<SsoSignInResult> Failure(string code) =>
         Result<SsoSignInResult>.Failure(new ApplicationError(code, "details that must never reach the browser", ApplicationErrorType.Authentication));
 
-    private async Task<HttpResponseMessage> CallbackAsync(Result<SsoSignInResult> outcome)
+    private async Task<HttpResponseMessage> CallbackAsync(Result<SsoSignInResult> outcome, string? bindingCookie = null)
     {
         _host.Outcome = outcome;
         using var client = _host.CreateClient();
-        return await client.GetAsync(Callback);
+        using var request = new HttpRequestMessage(HttpMethod.Get, Callback);
+        if (bindingCookie is not null) request.Headers.Add("Cookie", $"ssoBinding={bindingCookie}");
+        return await client.SendAsync(request);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TheCallback_PassesTheBindingCookieToTheCommand_AndAlwaysClearsIt(bool succeeds)
+    {
+        var outcome = succeeds
+            ? Result<SsoSignInResult>.Success(new SsoSignInResult(new AuthResult { AccessToken = "a", RefreshToken = "r", ExpiresAt = DateTime.UtcNow.AddHours(1) }, null))
+            : Failure("identity.sso.state-invalid");
+
+        var response = await CallbackAsync(outcome, "the-raw-binding");
+
+        _host.LastComplete!.BrowserBinding.Should().Be("the-raw-binding");
+        var cleared = AllSetCookies(response).Single(c => c.StartsWith("ssoBinding=;", StringComparison.Ordinal));
+        cleared.Should().ContainEquivalentOf("path=/api/v1/auth/sso/callback").And.ContainEquivalentOf("httponly").And.ContainEquivalentOf("samesite=lax");
+    }
+
+    [Fact]
+    public async Task TheCallbackWithoutTheCookie_PassesNoBindingToTheCommand()
+    {
+        await CallbackAsync(Failure("identity.sso.state-invalid"));
+
+        _host.LastComplete!.BrowserBinding.Should().BeNull();
     }
 
     [Fact]
@@ -162,6 +196,14 @@ public class SsoEndpointTests : IClassFixture<SsoCallbackHost>
         (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("authorizationUrl").GetString().Should().Be("https://login.acme.example/authorize?x=1");
         _host.LastStart!.RedirectUri.Should().Be("https://api.example/api/v1/auth/sso/callback");
         _host.LastStart.ReturnUrl.Should().Be("/boards/1");
+
+        var cookie = AllSetCookies(response).Single(c => c.StartsWith("ssoBinding=", StringComparison.Ordinal));
+        cookie.Should().ContainEquivalentOf("path=/api/v1/auth/sso/callback").And.ContainEquivalentOf("httponly")
+            .And.ContainEquivalentOf("samesite=lax").And.ContainEquivalentOf("secure").And.ContainEquivalentOf("max-age=600");
+        var raw = cookie["ssoBinding=".Length..].Split(';')[0];
+        raw.Should().Be(_host.LastStart.BrowserBinding, "the cookie holds exactly what the command hashes");
+        raw.Length.Should().BeGreaterThanOrEqualTo(43);
+        (await response.Content.ReadAsStringAsync()).Should().NotContain(raw);
     }
 
     [Fact]
@@ -174,6 +216,7 @@ public class SsoEndpointTests : IClassFixture<SsoCallbackHost>
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("errorCode").GetString().Should().Be("identity.sso.unavailable");
+        AllSetCookies(response).Should().BeEmpty("a refused start sets no binding");
     }
 
     [Fact]

@@ -21,6 +21,9 @@ public sealed record StartSsoSignInCommand
     public required string Email { get; init; }
     public string? ReturnUrl { get; init; }
     public required string RedirectUri { get; init; }
+
+    /// <summary>The random value the endpoint put in the starting browser's cookie. Only its hash is stored.</summary>
+    public required string BrowserBinding { get; init; }
 }
 
 public sealed class StartSsoSignInCommandHandler : IRequestHandler<StartSsoSignInCommand, Result<SsoStartResult>>
@@ -72,7 +75,7 @@ public sealed class StartSsoSignInCommandHandler : IRequestHandler<StartSsoSignI
         await _stateStore.StoreAsync(
             new SsoLoginState(
                 state, route.AccountId, email, nonce, codeVerifier, request.RedirectUri,
-                SafeReturnPath.OrNull(request.ReturnUrl), document.Issuer, _clock.UtcNow.Add(StateLifetime)),
+                SafeReturnPath.OrNull(request.ReturnUrl), document.Issuer, SsoBinding.Hash(request.BrowserBinding), _clock.UtcNow.Add(StateLifetime)),
             StateLifetime,
             cancellationToken);
 

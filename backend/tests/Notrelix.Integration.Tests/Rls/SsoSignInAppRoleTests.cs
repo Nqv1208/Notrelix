@@ -139,9 +139,13 @@ public sealed class SsoSignInAppRoleTests : IAsyncLifetime
         return response;
     }
 
-    private async Task<HttpResponseMessage> AnonymousAsync(HttpMethod method, string url, object? body = null, string? cookies = null)
+    /// <summary>One browser: it keeps the cookies the server sets and sends them back by path, like a real one.</summary>
+    private HttpClient NewBrowser() => Factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
+
+    private async Task<HttpResponseMessage> AnonymousAsync(HttpMethod method, string url, object? body = null, string? cookies = null, HttpClient? browser = null)
     {
-        using var client = Factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
+        using var own = browser is null ? Factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false }) : null;
+        var client = browser ?? own!;
         using var request = new HttpRequestMessage(method, url);
         if (body is not null) request.Content = JsonContent.Create(body);
         if (cookies is not null) request.Headers.Add("Cookie", cookies);
@@ -173,17 +177,29 @@ public sealed class SsoSignInAppRoleTests : IAsyncLifetime
     /// <summary>The sign-in page asks how the email signs in, starts the company sign-in, the provider answers and the browser lands on the callback.</summary>
     private async Task<HttpResponseMessage> SignInThroughTheProviderAsync(string email, string? returnUrl = null)
     {
-        var started = await AnonymousAsync(HttpMethod.Post, "/api/v1/auth/sso/start", new { email, returnUrl });
+        using var browser = NewBrowser();
+        await StartAsync(browser, email, returnUrl);
+        return await CallbackAsync(_provider.Code, _provider.State!, browser);
+    }
+
+    /// <summary>Starts a company sign-in in <paramref name="browser"/> (which receives the binding cookie) and lets the provider answer.</summary>
+    private async Task<HttpResponseMessage> StartAsync(HttpClient browser, string email, string? returnUrl = null)
+    {
+        var started = await AnonymousAsync(HttpMethod.Post, "/api/v1/auth/sso/start", new { email, returnUrl }, browser: browser);
         started.StatusCode.Should().Be(HttpStatusCode.OK, await started.Content.ReadAsStringAsync());
         var url = (await JsonAsync(started)).GetProperty("authorizationUrl").GetString()!;
         url.Should().StartWith(Issuer + "/authorize?");
         _provider.Email = email;
         _provider.Follow(url);
-        return await CallbackAsync(_provider.Code, _provider.State!);
+        return started;
     }
 
-    private Task<HttpResponseMessage> CallbackAsync(string code, string state) =>
-        AnonymousAsync(HttpMethod.Get, $"/api/v1/auth/sso/callback?code={Uri.EscapeDataString(code)}&state={Uri.EscapeDataString(state)}");
+    private Task<HttpResponseMessage> CallbackAsync(string code, string state, HttpClient? browser = null) =>
+        AnonymousAsync(HttpMethod.Get, $"/api/v1/auth/sso/callback?code={Uri.EscapeDataString(code)}&state={Uri.EscapeDataString(state)}", browser: browser);
+
+    private static string? BindingOf(HttpResponseMessage response) =>
+        SetCookies(response).Where(c => c.StartsWith("ssoBinding=", StringComparison.Ordinal))
+            .Select(c => c["ssoBinding=".Length..].Split(';')[0]).FirstOrDefault(v => v.Length > 0);
 
     private static string LocationOf(HttpResponseMessage response) => response.Headers.Location!.OriginalString;
 
@@ -247,9 +263,83 @@ public sealed class SsoSignInAppRoleTests : IAsyncLifetime
 
         LocationOf(replay).Should().Be("/sign-in?error=identity.sso.state-invalid");
         LocationOf(mismatch).Should().Be("/sign-in?error=identity.sso.state-invalid");
-        SetCookies(replay).Concat(SetCookies(mismatch)).Should().BeEmpty();
+        SetCookies(replay).Concat(SetCookies(mismatch)).Should().OnlyContain(c => c.StartsWith("ssoBinding=;", StringComparison.Ordinal), "only the binding cookie is cleared");
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions")).Should().Be("1", "only the first callback made a session");
         (await OwnerScalarAsync("SELECT count(*) FROM identity.users WHERE normalized_email = 'ann@acme.com'")).Should().Be("1");
+    }
+
+    // ── browser binding (login CSRF) ───────────────────────────────────────
+
+    [Fact]
+    public async Task TheStartResponse_SetsTheBindingCookie_WithTheRightFlags_AndNeitherTheBodyNorTheAddressCarryIt()
+    {
+        await ConfigureAsync();
+        using var browser = NewBrowser();
+
+        var started = await StartAsync(browser, "ann@acme.com");
+
+        var cookie = SetCookies(started).Single(c => c.StartsWith("ssoBinding=", StringComparison.Ordinal));
+        cookie.Should().ContainEquivalentOf("path=/api/v1/auth/sso/callback").And.ContainEquivalentOf("samesite=lax")
+            .And.ContainEquivalentOf("httponly").And.ContainEquivalentOf("max-age=600");
+        var raw = BindingOf(started)!;
+        raw.Length.Should().BeGreaterThanOrEqualTo(43, "32 random bytes, base64url");
+        (await started.Content.ReadAsStringAsync()).Should().NotContain(raw);
+        _provider.State.Should().NotContain(raw);
+    }
+
+    [Fact]
+    public async Task TheCallbackAlwaysClearsTheBindingCookie_OnSuccessAndOnFailure()
+    {
+        await ConfigureAsync();
+        using var browser = NewBrowser();
+        await StartAsync(browser, "ann@acme.com");
+        var success = await CallbackAsync(_provider.Code, _provider.State!, browser);
+
+        using var stranger = NewBrowser();
+        var failure = await CallbackAsync(_provider.Code, "unknown-state", stranger);
+
+        foreach (var response in new[] { success, failure })
+        {
+            var cleared = SetCookies(response).Single(c => c.StartsWith("ssoBinding=;", StringComparison.Ordinal));
+            cleared.Should().ContainEquivalentOf("path=/api/v1/auth/sso/callback").And.ContainEquivalentOf("expires=Thu, 01 Jan 1970").And.ContainEquivalentOf("httponly");
+        }
+        success.StatusCode.Should().Be(HttpStatusCode.Redirect);
+    }
+
+    [Fact]
+    public async Task AVictimsBrowserOpeningTheAttackersCallback_HasNoBindingCookie_IsRefused_AndTheStateIsUsedUp()
+    {
+        await ConfigureAsync();
+        using var attacker = NewBrowser();
+        await StartAsync(attacker, "ann@acme.com");
+        var (code, state) = (_provider.Code, _provider.State!);
+
+        using var victim = NewBrowser();
+        var forged = await CallbackAsync(code, state, victim);
+        var legitimate = await CallbackAsync(code, state, attacker);
+
+        LocationOf(forged).Should().Be("/sign-in?error=identity.sso.state-invalid");
+        SetCookies(forged).Should().NotContain(c => c.StartsWith("accessToken=", StringComparison.Ordinal));
+        LocationOf(legitimate).Should().Be("/sign-in?error=identity.sso.state-invalid", "the forged attempt used the single-use state up");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions")).Should().Be("0");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.users WHERE normalized_email = 'ann@acme.com'")).Should().Be("0");
+        _provider.Requests.Should().BeEmpty("no token exchange happened for the forged callback");
+    }
+
+    [Fact]
+    public async Task AVictimsOwnBindingCookieFromAnotherStart_DoesNotOpenTheAttackersCallback()
+    {
+        await ConfigureAsync();
+        using var attacker = NewBrowser();
+        await StartAsync(attacker, "ann@acme.com");
+        var (code, state) = (_provider.Code, _provider.State!);
+        using var victim = NewBrowser();
+        await StartAsync(victim, "ann@acme.com");
+
+        var forged = await CallbackAsync(code, state, victim);
+
+        LocationOf(forged).Should().Be("/sign-in?error=identity.sso.state-invalid");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions")).Should().Be("0");
     }
 
     [Fact]

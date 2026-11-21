@@ -17,6 +17,15 @@ namespace Notrelix.Application.Common.Security.Auth
         /// <summary>Only the step-up endpoints receive the proof cookie.</summary>
         const string StepUpProofCookiePath = "/api/v1/auth/security/step-up";
 
+        /// <summary>Cookie that ties a company sign-in's state to the browser that started it (login CSRF defence).</summary>
+        const string SsoBindingCookieName = "ssoBinding";
+
+        /// <summary>Only the company sign-in callback receives the binding cookie.</summary>
+        const string SsoBindingCookiePath = "/api/v1/auth/sso/callback";
+
+        /// <summary>The binding lives as long as the sign-in state does.</summary>
+        static readonly TimeSpan SsoBindingCookieLifetime = TimeSpan.FromMinutes(10);
+
         void SetTokenCookie(string accesToken, string refreshToken);
         void DeleteTokenCookie();
 
@@ -39,5 +48,12 @@ namespace Notrelix.Application.Common.Security.Auth
         string? GetStepUpProofCookie();
 
         void DeleteStepUpProofCookie();
+
+        /// <summary>httpOnly, path-scoped to the callback, SameSite=Lax (the callback is a top-level GET from the provider).</summary>
+        void SetSsoBindingCookie(string binding);
+
+        string? GetSsoBindingCookie();
+
+        void DeleteSsoBindingCookie();
     }
 }

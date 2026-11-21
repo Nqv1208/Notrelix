@@ -1,6 +1,9 @@
 namespace Notrelix.Application.Features.Identity.Sso;
 
-/// <summary>What the callback must remember about one started company sign-in. Held server-side only, single use.</summary>
+/// <summary>
+/// What the callback must remember about one started company sign-in. Held server-side only, single use.
+/// <see cref="BindingHash"/> is the SHA-256 of the random value only the starting browser holds (in a cookie); the value itself is never stored.
+/// </summary>
 public sealed record SsoLoginState(
     string State,
     Guid AccountId,
@@ -10,7 +13,20 @@ public sealed record SsoLoginState(
     string RedirectUri,
     string? ReturnUrl,
     string Issuer,
+    string BindingHash,
     DateTimeOffset ExpiresAt);
+
+public static class SsoBinding
+{
+    public static string Hash(string binding) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(binding)));
+
+    /// <summary>Constant-time check of a presented binding against the stored hash; a missing binding never matches.</summary>
+    public static bool Matches(string? presented, string storedHash) =>
+        !string.IsNullOrEmpty(presented)
+        && System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+            System.Text.Encoding.ASCII.GetBytes(Hash(presented)), System.Text.Encoding.ASCII.GetBytes(storedHash));
+}
 
 public interface ISsoStateStore
 {

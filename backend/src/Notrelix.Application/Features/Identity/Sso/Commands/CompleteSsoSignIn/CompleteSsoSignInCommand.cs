@@ -24,6 +24,9 @@ public sealed record CompleteSsoSignInCommand
     public string? State { get; init; }
     public string? Error { get; init; }
     public string? ErrorDescription { get; init; }
+
+    /// <summary>The value read from the browser's binding cookie; null when the browser sent none.</summary>
+    public string? BrowserBinding { get; init; }
 }
 
 /// <summary>
@@ -89,6 +92,14 @@ public sealed class CompleteSsoSignInCommandHandler : IRequestHandler<CompleteSs
         if (state is null || state.ExpiresAt <= now)
         {
             _logger.LogWarning("SSO callback with an unknown, used or expired state");
+            return Fail(SsoErrorCodes.StateInvalid);
+        }
+
+        // The state belongs to the browser that started it: a callback opened by anyone else (login CSRF) is refused
+        // exactly like an unknown state, and the state is already used up.
+        if (!SsoBinding.Matches(request.BrowserBinding, state.BindingHash))
+        {
+            _logger.LogWarning("SSO callback refused: the browser is not the one that started the sign-in");
             return Fail(SsoErrorCodes.StateInvalid);
         }
 

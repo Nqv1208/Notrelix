@@ -12,6 +12,7 @@ public class StartSsoSignInTests
 {
     private const string Issuer = "https://login.acme.example";
     private const string Callback = "https://api.example/api/v1/auth/sso/callback";
+    private const string Binding = "raw-binding-value-from-the-cookie";
 
     private readonly AccountSsoTestKit _kit = new();
     private readonly InMemorySsoStateStore _states = new();
@@ -27,7 +28,7 @@ public class StartSsoSignInTests
     }
 
     private Task<Result<SsoStartResult>> StartAsync(string email = "Ann@Acme.com", string? returnUrl = null, StartSsoSignInCommandHandler? handler = null) =>
-        (handler ?? Handler()).Handle(new StartSsoSignInCommand { Email = email, ReturnUrl = returnUrl, RedirectUri = Callback }, CancellationToken.None);
+        (handler ?? Handler()).Handle(new StartSsoSignInCommand { Email = email, ReturnUrl = returnUrl, RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
 
     private static Dictionary<string, string> QueryOf(string url) =>
         new Uri(url).Query.TrimStart('?').Split('&').Select(p => p.Split('=', 2))
@@ -66,6 +67,30 @@ public class StartSsoSignInTests
     }
 
     [Fact]
+    public async Task TheStateKeepsOnlyTheHashOfTheBrowserBinding_AndNothingTheBrowserSeesCarriesIt()
+    {
+        Route();
+
+        var result = await StartAsync();
+
+        var stored = _states.Stored.Single();
+        stored.BindingHash.Should().Be(SsoBinding.Hash(Binding)).And.NotContain(Binding);
+        System.Text.Json.JsonSerializer.Serialize(stored).Should().NotContain(Binding, "the raw binding is never stored");
+        result.Data!.AuthorizationUrl.Should().NotContain(Binding);
+    }
+
+    [Fact]
+    public void TheBinding_MatchesOnlyTheValueItWasHashedFrom_AndNeverAMissingOne()
+    {
+        var hash = SsoBinding.Hash(Binding);
+
+        SsoBinding.Matches(Binding, hash).Should().BeTrue();
+        SsoBinding.Matches("another-start", hash).Should().BeFalse();
+        SsoBinding.Matches(null, hash).Should().BeFalse();
+        SsoBinding.Matches("", hash).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task AnUnsafeReturnPath_IsDroppedFromTheStoredState()
     {
         Route();
@@ -87,13 +112,13 @@ public class StartSsoSignInTests
         other.AddDomain(other.AccountId, "acme.com", verified: true);
         other.AddProvider(other.AccountId, active: false);                                      // Draft provider
         refusals.Add(await new StartSsoSignInCommandHandler(other.Facts, other.Discovery, _states, other.Clock, NullLogger<StartSsoSignInCommandHandler>.Instance)
-            .Handle(new StartSsoSignInCommand { Email = "a@acme.com", RedirectUri = Callback }, CancellationToken.None));
+            .Handle(new StartSsoSignInCommand { Email = "a@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None));
 
         var unreachable = new AccountSsoTestKit();                                              // routable, provider unreachable
         unreachable.AddDomain(unreachable.AccountId, "acme.com", verified: true);
         unreachable.AddProvider(unreachable.AccountId);
         refusals.Add(await new StartSsoSignInCommandHandler(unreachable.Facts, unreachable.Discovery.Refuse(Issuer, OidcDiscoveryFailure.AddressRefused), _states, unreachable.Clock, NullLogger<StartSsoSignInCommandHandler>.Instance)
-            .Handle(new StartSsoSignInCommand { Email = "a@acme.com", RedirectUri = Callback }, CancellationToken.None));
+            .Handle(new StartSsoSignInCommand { Email = "a@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None));
 
         refusals.Should().OnlyContain(r => !r.Succeeded);
         refusals.Select(r => r.TypedErrors.Single()).Distinct().Should().ContainSingle()
@@ -106,8 +131,8 @@ public class StartSsoSignInTests
     {
         var validator = new StartSsoSignInCommandValidator();
 
-        validator.Validate(new StartSsoSignInCommand { Email = "not-an-email", RedirectUri = Callback }).IsValid.Should().BeFalse();
-        validator.Validate(new StartSsoSignInCommand { Email = "a@acme.com", ReturnUrl = "https://evil.example", RedirectUri = Callback }).IsValid.Should().BeFalse();
-        validator.Validate(new StartSsoSignInCommand { Email = "a@acme.com", ReturnUrl = "/ok", RedirectUri = Callback }).IsValid.Should().BeTrue();
+        validator.Validate(new StartSsoSignInCommand { Email = "not-an-email", RedirectUri = Callback, BrowserBinding = Binding }).IsValid.Should().BeFalse();
+        validator.Validate(new StartSsoSignInCommand { Email = "a@acme.com", ReturnUrl = "https://evil.example", RedirectUri = Callback, BrowserBinding = Binding }).IsValid.Should().BeFalse();
+        validator.Validate(new StartSsoSignInCommand { Email = "a@acme.com", ReturnUrl = "/ok", RedirectUri = Callback, BrowserBinding = Binding }).IsValid.Should().BeTrue();
     }
 }

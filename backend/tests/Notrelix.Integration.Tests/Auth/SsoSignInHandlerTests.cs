@@ -34,6 +34,7 @@ public class SsoSignInHandlerTests : IAsyncLifetime
     private const string Issuer = "https://login.acme.example";
     private const string ClientSecret = "client-secret-must-never-leak-77aa";
     private const string Callback = "https://api.example/api/v1/auth/sso/callback";
+    private const string Binding = "raw-binding-of-the-starting-browser";
 
     private readonly PostgresTestContainer _db;
     private readonly ReversibleSecretEncryptor _encryptor = new();
@@ -144,11 +145,11 @@ public class SsoSignInHandlerTests : IAsyncLifetime
     }
 
     /// <summary>Starts a sign-in for <paramref name="startEmail"/>, lets the provider answer as configured, and completes the callback like the pipeline would (handler, then save).</summary>
-    private async Task<Run> SignInAsync(string providerEmail, string startEmail = "ann@acme.com", Action<FakeOidcProvider>? tweak = null, string? stateOverride = null)
+    private async Task<Run> SignInAsync(string providerEmail, string startEmail = "ann@acme.com", Action<FakeOidcProvider>? tweak = null, string? stateOverride = null, string? completeBinding = Binding)
     {
         var (complete, start, sessions, context) = Build();
         await using var _ = context;
-        var started = await start.Handle(new StartSsoSignInCommand { Email = startEmail, RedirectUri = Callback, ReturnUrl = "/boards/1" }, CancellationToken.None);
+        var started = await start.Handle(new StartSsoSignInCommand { Email = startEmail, RedirectUri = Callback, ReturnUrl = "/boards/1", BrowserBinding = Binding }, CancellationToken.None);
         started.Succeeded.Should().BeTrue();
 
         _provider.Email = providerEmail;
@@ -157,7 +158,7 @@ public class SsoSignInHandlerTests : IAsyncLifetime
         tweak?.Invoke(_provider);
 
         var result = await complete.Handle(
-            new CompleteSsoSignInCommand { Code = _provider.Code, State = stateOverride ?? _provider.State }, CancellationToken.None);
+            new CompleteSsoSignInCommand { BrowserBinding = completeBinding, Code = _provider.Code, State = stateOverride ?? _provider.State }, CancellationToken.None);
         await context.SaveChangesAsync();
         return new Run(result, sessions, _provider.State);
     }
@@ -166,6 +167,66 @@ public class SsoSignInHandlerTests : IAsyncLifetime
 
     private static void NoSession(Run run) =>
         run.Sessions.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    // ── browser binding (login CSRF) ───────────────────────────────────────
+
+    [Fact]
+    public async Task ACallbackWithAValidState_ButNoBindingCookie_IsRefusedAsAnUnknownState_AndNoSessionIsIssued()
+    {
+        await SeedAccountAsync(jit: true);
+
+        var run = await SignInAsync("ann@acme.com", completeBinding: null);
+
+        Code(run.Result).Should().Be(SsoErrorCodes.StateInvalid);
+        NoSession(run);
+        await using var context = _db.CreateOwnerContext();
+        (await context.Users.CountAsync(u => u.NormalizedEmail == "ann@acme.com")).Should().Be(0);
+        (await context.SsoIdentities.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ACallbackWithTheBindingCookieOfAnotherStart_IsRefusedAsAnUnknownState_AndNoSessionIsIssued()
+    {
+        await SeedAccountAsync(jit: true);
+
+        var run = await SignInAsync("ann@acme.com", completeBinding: "binding-of-the-victims-own-start");
+
+        Code(run.Result).Should().Be(SsoErrorCodes.StateInvalid);
+        NoSession(run);
+    }
+
+    [Fact]
+    public async Task AFailedBindingCheck_StillConsumesTheState_SoTheRightCookieCannotReplayIt()
+    {
+        await SeedAccountAsync(jit: true);
+        var (complete, start, sessions, context) = Build();
+        await using var _ = context;
+        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
+        _provider.Email = "ann@acme.com";
+        _provider.Follow(started.Data!.AuthorizationUrl);
+
+        var wrong = await complete.Handle(new CompleteSsoSignInCommand { BrowserBinding = "another-start", Code = _provider.Code, State = _provider.State }, CancellationToken.None);
+        var right = await complete.Handle(new CompleteSsoSignInCommand { BrowserBinding = Binding, Code = _provider.Code, State = _provider.State }, CancellationToken.None);
+
+        Code(wrong).Should().Be(SsoErrorCodes.StateInvalid);
+        Code(right).Should().Be(SsoErrorCodes.StateInvalid, "the state was used up by the first attempt");
+        sessions.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ABindingMismatch_IsRefusedBeforeTheProviderErrorBranch_WithoutAnyTokenExchange()
+    {
+        await SeedAccountAsync(jit: true);
+        var (complete, start, _, context) = Build();
+        await using var _ = context;
+        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
+        _provider.Follow(started.Data!.AuthorizationUrl);
+
+        var forged = await complete.Handle(new CompleteSsoSignInCommand { State = _provider.State, Error = "access_denied" }, CancellationToken.None);
+
+        Code(forged).Should().Be(SsoErrorCodes.StateInvalid, "a forged callback learns nothing, not even the provider's error");
+        _provider.Requests.Should().BeEmpty("no secret was read and no token was requested");
+    }
 
     // ── just-in-time ───────────────────────────────────────────────────────
 
@@ -340,7 +401,7 @@ public class SsoSignInHandlerTests : IAsyncLifetime
         await using var _ = context;
 
         // Pending routes nothing, so the start itself is refused.
-        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback }, CancellationToken.None);
+        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
 
         Code(started.Succeeded ? throw new InvalidOperationException("must refuse") : ToSso(started)).Should().Be(SsoErrorCodes.Unavailable);
     }
@@ -356,10 +417,10 @@ public class SsoSignInHandlerTests : IAsyncLifetime
         await SeedAccountAsync();
         var (complete, start, sessions, context) = Build();
         await using var _ = context;
-        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback }, CancellationToken.None);
+        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
         _provider.Email = "ann@acme.com";
         _provider.Follow(started.Data!.AuthorizationUrl);
-        var command = new CompleteSsoSignInCommand { Code = _provider.Code, State = _provider.State };
+        var command = new CompleteSsoSignInCommand { BrowserBinding = Binding, Code = _provider.Code, State = _provider.State };
 
         var first = await complete.Handle(command, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -390,11 +451,11 @@ public class SsoSignInHandlerTests : IAsyncLifetime
         await SeedAccountAsync();
         var (complete, start, _, context) = Build();
         await using var _ = context;
-        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback }, CancellationToken.None);
+        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
         var state = new Uri(started.Data!.AuthorizationUrl).Query.Split('&').First(p => p.StartsWith("state=", StringComparison.Ordinal))[6..];
 
-        var denied = await complete.Handle(new CompleteSsoSignInCommand { State = Uri.UnescapeDataString(state), Error = "access_denied", ErrorDescription = "x\r\ny" }, CancellationToken.None);
-        var again = await complete.Handle(new CompleteSsoSignInCommand { State = Uri.UnescapeDataString(state), Error = "access_denied" }, CancellationToken.None);
+        var denied = await complete.Handle(new CompleteSsoSignInCommand { BrowserBinding = Binding, State = Uri.UnescapeDataString(state), Error = "access_denied", ErrorDescription = "x\r\ny" }, CancellationToken.None);
+        var again = await complete.Handle(new CompleteSsoSignInCommand { BrowserBinding = Binding, State = Uri.UnescapeDataString(state), Error = "access_denied" }, CancellationToken.None);
 
         Code(denied).Should().Be(SsoErrorCodes.Denied);
         Code(again).Should().Be(SsoErrorCodes.StateInvalid);
@@ -408,13 +469,13 @@ public class SsoSignInHandlerTests : IAsyncLifetime
         await SeedAccountAsync();
         var (complete, start, _, context) = Build();
         await using var _ = context;
-        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback }, CancellationToken.None);
+        var started = await start.Handle(new StartSsoSignInCommand { Email = "ann@acme.com", RedirectUri = Callback, BrowserBinding = Binding }, CancellationToken.None);
         _provider.Follow(started.Data!.AuthorizationUrl);
         var stored = _states.Stored.Single();
         await _states.ConsumeAsync(stored.State, CancellationToken.None);
         await _states.StoreAsync(stored with { Issuer = "https://old.example" }, TimeSpan.FromMinutes(1), CancellationToken.None);
 
-        var result = await complete.Handle(new CompleteSsoSignInCommand { Code = _provider.Code, State = _provider.State }, CancellationToken.None);
+        var result = await complete.Handle(new CompleteSsoSignInCommand { BrowserBinding = Binding, Code = _provider.Code, State = _provider.State }, CancellationToken.None);
 
         Code(result).Should().Be(SsoErrorCodes.Failed);
         _provider.Requests.Should().BeEmpty();
