@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.WorkManagement.Forms.Services;
 
 namespace Notrelix.Infrastructure.Captcha;
