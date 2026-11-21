@@ -265,6 +265,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("verification_token_hash");
 
+                    b.Property<string>("VerificationTokenProtected")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("verification_token_protected");
+
                     b.Property<DateTimeOffset?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("verified_at");
@@ -281,7 +286,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("Domain")
                         .IsUnique()
-                        .HasDatabaseName("idx_account_domains_domain");
+                        .HasDatabaseName("idx_account_domains_domain_verified")
+                        .HasFilter("verification_status = 'Verified'");
+
+                    b.HasIndex("AccountId", "Domain")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_domains_account_domain");
 
                     b.ToTable("account_domains", "account");
                 });
@@ -300,6 +310,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("certificate_ref");
+
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("client_secret_protected");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -350,6 +370,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("ValidationError")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("validation_error");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
@@ -359,6 +384,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_account_identity_providers");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_identity_providers_account");
 
                     b.ToTable("account_identity_providers", "account");
                 });

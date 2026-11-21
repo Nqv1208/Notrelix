@@ -32,3 +32,4 @@
 \i 032_invitation_arm_prefilter.sql
 \i 033_member_active_elsewhere.sql
 \i 034_form_submit_scope.sql
+\i 035_sso_scope.sql

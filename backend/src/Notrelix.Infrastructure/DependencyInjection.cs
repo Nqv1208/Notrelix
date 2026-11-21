@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddEmail(configuration);
         services.AddRealtime(configuration, environment);
         services.AddIntegrations(configuration);
+        services.AddSsoInfrastructure(configuration);
         services.AddBilling(configuration, environment);
         services.AddOperatorConsole(configuration);
         services.AddOperations(configuration, environment);

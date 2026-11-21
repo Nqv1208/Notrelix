@@ -20,9 +20,15 @@ public class AccountIdentityProviderConfiguration : IEntityTypeConfiguration<Acc
         builder.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(32);
         builder.Property(x => x.JitProvisioningEnabled).HasColumnName("jit_provisioning_enabled");
 
+        builder.Property(x => x.ClientId).HasColumnName("client_id").HasMaxLength(255);
+        builder.Property(x => x.ClientSecretProtected).HasColumnName("client_secret_protected").HasMaxLength(2048);
+        builder.Property(x => x.ValidationError).HasColumnName("validation_error").HasMaxLength(120);
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+
+        builder.HasIndex(x => x.AccountId).IsUnique().HasDatabaseName("idx_account_identity_providers_account");
     }
 }

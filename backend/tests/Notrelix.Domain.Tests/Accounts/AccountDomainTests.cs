@@ -376,4 +376,36 @@ public class AccountDomainTests
         var evt = domain.DomainEvents.OfType<DomainEvent>().Last();
         evt.Should().BeOfType<AccountDomainAutoJoinDisabledDomainEvent>();
     }
+
+    [Fact]
+    public void Create_WithTxtToken_KeepsTheProtectedTokenAndItsSha256Hash()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com", _actorId, _now, "hash", protectedToken: "cipher");
+
+        domain.VerificationTokenProtected.Should().Be("cipher");
+        domain.VerificationTokenHash.Should().Be("hash");
+    }
+
+    [Fact]
+    public void Verify_ClearsTheProtectedToken_ButKeepsTheHashForAudit()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com", _actorId, _now, "hash", protectedToken: "cipher");
+
+        domain.Verify(_now.AddMinutes(1), _actorId);
+
+        domain.VerificationStatus.Should().Be(DomainVerificationStatus.Verified);
+        domain.VerificationTokenProtected.Should().BeNull();
+        domain.VerificationTokenHash.Should().Be("hash");
+    }
+
+    [Fact]
+    public void Reject_KeepsTheProtectedTokenOfAPendingClaimOutOfReach()
+    {
+        var domain = AccountDomain.Create(_accountId, "example.com", _actorId, _now, "hash", protectedToken: "cipher");
+
+        domain.Reject(_actorId, _now.AddMinutes(1));
+
+        domain.VerificationStatus.Should().Be(DomainVerificationStatus.Rejected);
+        domain.VerificationTokenProtected.Should().BeNull("a rejected claim never shows instructions again");
+    }
 }

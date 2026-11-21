@@ -92,6 +92,210 @@
         ]
       }
     },
+    "/api/v1/accounts/security-policy/sso": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Read the account's single sign-on setup (Owner only; never returns the client secret)",
+        "operationId": "Accounts.GetSso",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/provider": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Save and validate the account's OIDC provider (Owner only)",
+        "operationId": "Accounts.SaveSsoProvider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Remove the account's OIDC provider (Owner only)",
+        "operationId": "Accounts.RemoveSsoProvider",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/domains": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Claim a domain and get its DNS TXT instructions (Owner only)",
+        "operationId": "Accounts.AddSsoDomain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/domains/{id}/verify": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Check the domain's DNS TXT record and verify it (Owner only)",
+        "operationId": "Accounts.VerifySsoDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/domains/{id}": {
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Remove a domain claim (Owner only)",
+        "operationId": "Accounts.RemoveSsoDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/require": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Require single sign-on for the members of the verified domains (Owner only)",
+        "operationId": "Accounts.SetSsoRequired",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/admin/outbox/stats": {
       "get": {
         "tags": [
@@ -36616,6 +36820,16 @@
         },
         "additionalProperties": { }
       },
+      "Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
         "type": "object",
         "properties": {
@@ -36630,7 +36844,41 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "issuerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientSecret": {
+            "type": "string",
+            "nullable": true
+          },
+          "jitProvisioning": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest": {
         "type": "object",
         "properties": {
           "required": {
