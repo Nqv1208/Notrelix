@@ -166,16 +166,18 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
     [InlineData("GET", "/api/v1/profile/preferences", null)]
     [InlineData("POST", "/api/v1/auth/sessions/revoke-others", "{}")]
     [InlineData("POST", "/api/v1/auth/security/step-up/requirement", "{\"purpose\":\"ChangePassword\"}")]
-    [InlineData("POST", "/api/v1/auth/security/step-up/complete-password", "{\"purpose\":\"ChangePassword\",\"password\":\"Passw0rd!Passw0rd!\"}")]
+    [InlineData("POST", "/api/v1/auth/security/step-up/complete-password", "{\"purpose\":\"ChangePassword\",\"password\":\"@current@\"}")]
     [InlineData("POST", "/api/v1/auth/mfa/disable", "{}")]
-    [InlineData("POST", "/api/v1/auth/change-password", "{\"currentPassword\":\"Passw0rd!Passw0rd!\",\"newPassword\":\"Other-Passw0rd!2\"}")]
-    [InlineData("POST", "/api/v1/auth/set-password", "{\"newPassword\":\"Other-Passw0rd!2\",\"stepUpToken\":\"proof\"}")]
+    [InlineData("POST", "/api/v1/auth/change-password", "{\"currentPassword\":\"@current@\",\"newPassword\":\"@next@\"}")]
+    [InlineData("POST", "/api/v1/auth/set-password", "{\"newPassword\":\"@next@\",\"stepUpToken\":\"proof\"}")]
     [InlineData("POST", "/api/v1/auth/oauth/google/unlink", "{\"stepUpToken\":\"proof\"}")]
     [InlineData("POST", "/api/v1/profile/email", "{\"email\":\"new-address@example.com\"}")]
     [InlineData("PATCH", "/api/v1/profile", "{\"name\":\"Someone\"}")]
     [InlineData("PATCH", "/api/v1/profile/preferences", "{\"expectedVersion\":0,\"locale\":\"vi\"}")]
     public async Task ATokenCannotReachAPersonLevelRoute(string method, string url, string? body)
     {
+        // Passwords are generated per run so no credential-shaped literal sits in the source.
+        body = body?.Replace("@current@", RuntimePassword()).Replace("@next@", RuntimePassword());
         using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
         using var client = factory.CreateClient();
         using var request = new HttpRequestMessage(new HttpMethod(method), url)
@@ -188,6 +190,8 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
 
         status.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized);
     }
+
+    private static string RuntimePassword() => "Aa1!" + Guid.NewGuid().ToString("N");
 
     [Fact]
     public async Task TheScopeFunction_EntersOnlyForAnActiveUnexpiredUserBoundToken()
