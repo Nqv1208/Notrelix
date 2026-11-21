@@ -98,8 +98,12 @@ public class OAuthCallbackMfaTests : IClassFixture<OAuthCallbackHost>
             ExpiresAt = DateTime.UtcNow.AddHours(1),
         });
 
+    // The callback also clears the sign-in binding cookie on every outcome (OAuthBrowserBindingEndpointTests); these
+    // tests are about the session and challenge cookies it sets, so the clearing one is left out of the list.
     private static string[] SetCookies(HttpResponseMessage response) =>
-        response.Headers.TryGetValues("Set-Cookie", out var values) ? values.ToArray() : [];
+        response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values.Where(cookie => !cookie.StartsWith("oauthBinding=", StringComparison.Ordinal)).ToArray()
+            : [];
 
     [Fact]
     public async Task Callback_ForMfaEnabledUser_HandsTheChallengeOverInAScopedHttpOnlyCookie()

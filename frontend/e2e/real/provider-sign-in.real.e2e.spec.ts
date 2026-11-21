@@ -106,7 +106,10 @@ test("a new Google subject with a verified free email gets one account and a ses
   expect(replay.headers()["location"]).toContain(
     "error=identity.oauth.state-invalid",
   );
-  expect(replay.headers()["set-cookie"]).toBeUndefined();
+  // The refusal only clears the sign-in binding cookie; it sets no session cookie.
+  expect(replay.headers()["set-cookie"] ?? "").not.toMatch(
+    /accessToken|refreshToken/,
+  );
   await replayContext.close();
 
   // A new browser, the same provider subject: the same person, no second account.
@@ -136,7 +139,9 @@ test("a callback with a state that was never issued is refused with the expired 
   expect(refused.headers()["location"]).toContain(
     "error=identity.oauth.state-invalid",
   );
-  expect(refused.headers()["set-cookie"]).toBeUndefined();
+  expect(refused.headers()["set-cookie"] ?? "").not.toMatch(
+    /accessToken|refreshToken/,
+  );
 
   await page.goto("/sign-in?error=identity.oauth.state-invalid");
   await expect(page.getByRole("alert")).toContainText(
