@@ -8,8 +8,13 @@ public interface IResourceLocator
         CancellationToken cancellationToken);
 }
 
+/// <param name="HostKind">
+/// For a comment or attachment: the kind of the resource it sits on (a board item or a page), read from the same row;
+/// null for every other resource.
+/// </param>
 public sealed record ResourceLocation(
     ResourceKind ResourceKind,
     Guid ResourceId,
     Guid AccountId,
-    Guid WorkspaceId);
+    Guid WorkspaceId,
+    ResourceKind? HostKind = null);
