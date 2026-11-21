@@ -13,8 +13,8 @@ permissions:
 
 env:
   TRIVY_SEVERITY: CRITICAL,HIGH
-  # New upstream CVEs in base images block main, release/** and manual runs only; other runs print the findings.
-  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'workflow_dispatch') && '1' || '0' }}
+  # New upstream CVEs in base images block main, release/**, scheduled and manual runs only; other runs print the findings.
+  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && '1' || '0' }}
   FALLBACK_BACKEND_IMAGE_NAME: notrelix-backend
   FALLBACK_WEB_IMAGE_NAME: notrelix-web
   FALLBACK_MARKETING_IMAGE_NAME: notrelix-marketing

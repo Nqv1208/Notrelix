@@ -7,29 +7,11 @@ on:
       plan_sha256: {required: true, type: string}
 permissions: {contents: read, packages: read}
 jobs:
-  prepare:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      runtime_matrix: ${{ steps.matrix.outputs.runtime_matrix }}
-    steps:
-      - id: matrix
-        env: {IMAGES: '${{ inputs.release_images_json }}'}
-        run: |
-          jq -e '.images|length>0 and all(.[];.ref|contains("@sha256:"))' <<<"$IMAGES" >/dev/null
-          echo "runtime_matrix=$(jq -c '{include:[.images[]|select(.kind=="infrastructure")|{id:.id,ref:.ref}]}' <<<"$IMAGES")" >> "$GITHUB_OUTPUT"
   runtime-security:
-    needs: prepare
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.prepare.outputs.runtime_matrix) }}
-    steps:
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with: {image-ref: '${{ matrix.ref }}', exit-code: '1', ignore-unfixed: true, vuln-type: 'os,library', severity: 'HIGH,CRITICAL'}
+    uses: ./.github/workflows/runtime-image-scan.yml
+    with: {release_images_json: '${{ inputs.release_images_json }}'}
   stack:
-    needs: [prepare, runtime-security]
+    needs: runtime-security
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:

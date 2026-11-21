@@ -135,7 +135,7 @@ feature/* --PR--> develop --PR--> main --cut--> release/X.Y --tag--> vX.Y.Z-rc.N
 
 - `develop` is the integration branch: feature PRs land here, squash-merged, behind `CI gate`.
 - `main` is the canonical trunk. It receives `develop` (merge commit) and is always green.
-- `release/X.Y` is cut from `main` when every use case in that version's scope is DONE (`product-delivery-lifecycle.md` DEL-014). It takes fixes only, never capability. A fix lands on `main` first and is cherry-picked into the release branch, so `main` never lacks a fix the release has. The branch is kept until the next minor version ships.
+- `release/X.Y` is cut from `main` when every use case in that version's scope is DONE (`product-delivery-lifecycle.md` DEL-014). It takes fixes only, never capability. A fix lands on `main` first and is cherry-picked into the release branch, so `main` never lacks a fix the release has. The branch is kept until the next minor version ships. Run `scripts/release-preflight.sh` before cutting or pushing a release branch: it scans every image in `delivery/images.lock.toml` in one pass, and the `Nightly Image Scan` workflow runs the same gates on `develop` every day.
 - Tags live on the release branch: `vX.Y.Z-rc.N` is the candidate the owner accepts, `vX.Y.Z` is the released version. A hotfix is fixed on `main`, cherry-picked, and tagged `vX.Y.Z+1`.
 
 ### 13.1 Version numbers
