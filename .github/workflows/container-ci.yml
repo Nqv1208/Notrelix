@@ -18,7 +18,7 @@ env:
   FALLBACK_BACKEND_IMAGE_NAME: notrelix-backend
   FALLBACK_WEB_IMAGE_NAME: notrelix-web
   FALLBACK_MARKETING_IMAGE_NAME: notrelix-marketing
-  FALLBACK_BACKEND_BUILD_ARGS: '{"DOTNET_SDK_IMAGE":"mcr.microsoft.com/dotnet/sdk:9.0.317@sha256:f190d2dd9eef2899c91ac323caa0bd2b39334a5400ba93013e5199da39dad940","DOTNET_RUNTIME_IMAGE":"mcr.microsoft.com/dotnet/aspnet:9.0.21-bookworm-slim@sha256:4d94cf3204df98d321e8dbf8d6d06e0b34fd136aa75c945abf4390ee07eb30dd"}'
+  FALLBACK_BACKEND_BUILD_ARGS: '{"DOTNET_SDK_IMAGE":"mcr.microsoft.com/dotnet/sdk:9.0.317@sha256:f190d2dd9eef2899c91ac323caa0bd2b39334a5400ba93013e5199da39dad940","DOTNET_RUNTIME_IMAGE":"mcr.microsoft.com/dotnet/aspnet:9.0.23-bookworm-slim@sha256:22db800f670f4c21327f463df2a0bc8f0947b44f58c13e582ab4ed7e34310f3e"}'
   FALLBACK_WEB_BUILD_ARGS: '{"NODE_BASE_IMAGE":"node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32","NGINX_BASE_IMAGE":"nginx:1.30.7-alpine@sha256:bef154735288bc38d99fac41ae63730684bcc661503673a04a0f9bc526ba8598"}'
   FALLBACK_MARKETING_BUILD_ARGS: '{"NODE_BASE_IMAGE":"node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32"}'
   FALLBACK_SMOKE_DEPS: '{"postgres":"ghcr.io/nqv1208/notrelix-postgres@sha256:8fdd5cf67004aee25b6d1e8a6c1fbefad73ed51ec8956ae041345bc86f129381","redis":"redis@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85","rabbitmq":"rabbitmq@sha256:54cb013d76cd1fd6c0a0708f34062ad61c452bb6f016b434c6c33f1a765d2b58"}'
