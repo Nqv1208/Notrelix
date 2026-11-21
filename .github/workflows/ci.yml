@@ -134,6 +134,7 @@ jobs:
         run: pnpm codegen:check
 
   # One verdict for every cheap check: any failure on either side keeps all heavy jobs from starting; a side with no changes is skipped and does not count.
+  # Every heavy job below says !cancelled() and names its own side and this verdict: the implicit success() would also count the skipped fast check of the other side further up the chain and skip the job.
   fast-checks:
     name: Fast checks
     needs: [changes, fast-checks-backend, fast-checks-frontend]
@@ -155,7 +156,7 @@ jobs:
   backend-build:
     name: Backend build
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -190,7 +191,7 @@ jobs:
   backend-unit:
     name: Backend unit tests
     needs: [changes, fast-checks, backend-build]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -210,7 +211,7 @@ jobs:
   backend-integration:
     name: Integration tests (${{ matrix.shard.name }})
     needs: [changes, fast-checks, backend-build]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
@@ -265,7 +266,7 @@ jobs:
   frontend:
     name: Frontend tests and build
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.frontend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
@@ -284,7 +285,7 @@ jobs:
   frontend-web:
     name: Frontend web tests (${{ matrix.shard }}/4)
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.frontend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
