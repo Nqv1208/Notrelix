@@ -66,18 +66,13 @@ public sealed class ApiTokenScopeArchitectureTests
     }
 
     /// <summary>
-    /// Collaboration requests a token can still not send, by name. Each either names no host resource kind (it is keyed by a
-    /// comment or attachment id, so the host would need a database read), or is person-level or a feed (activity, watchers,
-    /// inbox). A new Collaboration request must join this list or <see cref="ApiTokenScopeMap.ResourceHostedRequests"/>.
+    /// Collaboration requests a token can still not send, by name: person-level or a feed (activity, watchers, inbox). A new
+    /// Collaboration request must join this list, <see cref="ApiTokenScopeMap.ResourceHostedRequests"/> (host kind named by
+    /// the request) or <see cref="ApiTokenScopeMap.LocatedHostRequests"/> (host kind returned by the resource locator).
     /// </summary>
     private static readonly string[] RefusedCollaborationRequests = [
         "Notrelix.Application.Features.Collaboration.Activity.Queries.GetPageActivity.GetPageActivityQuery",
         "Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity.GetResourceActivityQuery",
-        "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand",
-        "Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment.DeleteCommentCommand",
-        "Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment.ReopenCommentCommand",
-        "Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment.ResolveCommentCommand",
-        "Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment.UpdateCommentCommand",
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryDone.MarkInboxEntryDoneCommand",
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead.MarkInboxEntryReadCommand",
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryUnread.MarkInboxEntryUnreadCommand",
@@ -101,15 +96,20 @@ public sealed class ApiTokenScopeArchitectureTests
 
         var neither = requests
             .Select(d => d.RequestType.FullName!)
-            .Where(n => !ApiTokenScopeMap.ResourceHostedRequests.Contains(n) && !RefusedCollaborationRequests.Contains(n))
+            .Where(n => !ApiTokenScopeMap.ResourceHostedRequests.Contains(n)
+                && !ApiTokenScopeMap.LocatedHostRequests.ContainsKey(n)
+                && !RefusedCollaborationRequests.Contains(n))
             .ToList();
         neither.Should().BeEmpty(
-            "a Collaboration request must be in ApiTokenScopeMap.ResourceHostedRequests (scope from its resource kind) or named in "
+            "a Collaboration request must be in ApiTokenScopeMap.ResourceHostedRequests (scope from its resource kind), "
+            + "ApiTokenScopeMap.LocatedHostRequests (scope from the located host kind) or named in "
             + "RefusedCollaborationRequests: " + string.Join("; ", neither));
 
         ApiTokenScopeMap.ResourceHostedRequests.Intersect(RefusedCollaborationRequests).Should().BeEmpty();
+        ApiTokenScopeMap.LocatedHostRequests.Keys.Intersect(RefusedCollaborationRequests).Should().BeEmpty();
+        ApiTokenScopeMap.LocatedHostRequests.Keys.Intersect(ApiTokenScopeMap.ResourceHostedRequests).Should().BeEmpty();
         var names = requests.Select(d => d.RequestType.FullName!).ToHashSet();
-        ApiTokenScopeMap.ResourceHostedRequests.Concat(RefusedCollaborationRequests)
+        ApiTokenScopeMap.ResourceHostedRequests.Concat(ApiTokenScopeMap.LocatedHostRequests.Keys).Concat(RefusedCollaborationRequests)
             .Should().OnlyContain(n => names.Contains(n), "a renamed or removed request must leave both lists");
     }
 
@@ -119,14 +119,18 @@ public sealed class ApiTokenScopeArchitectureTests
         foreach (var descriptor in Collaboration())
         {
             var hosted = ApiTokenScopeMap.ResourceHostedRequests.Contains(descriptor.RequestType.FullName!);
+            var located = ApiTokenScopeMap.LocatedHostRequests.ContainsKey(descriptor.RequestType.FullName!);
             descriptor.ApiTokenScopeFollowsResource.Should().Be(hosted, descriptor.RequestType.FullName);
+            descriptor.ApiTokenScopeFollowsLocatedHost.Should().Be(located, descriptor.RequestType.FullName);
             descriptor.ApiTokenScope.Should().BeNull("a Collaboration request has no fixed scope: " + descriptor.RequestType.FullName);
-            if (hosted)
+            if (hosted || located)
             {
                 descriptor.Scope.Should().Be(ApplicationScopeKind.Resource, descriptor.RequestType.FullName);
             }
         }
 
+        ApiTokenScopeMap.LocatedHostRequests.Values.Where(kind => kind is not null)
+            .Should().OnlyContain(kind => ApiTokenScopeMap.ResourceKindContexts.ContainsKey(kind!));
         ApiTokenScopeMap.ResourceKindContexts.Keys.Should().BeEquivalentTo("work-management.board-item", "documents.page");
         ApiTokenScopeMap.ResourceKindContexts.Values.Should().OnlyContain(prefix => ApiTokenScopes.Vocabulary.Contains(prefix + ":read"));
     }

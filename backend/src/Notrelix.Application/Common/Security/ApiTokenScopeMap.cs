@@ -18,6 +18,10 @@ namespace Notrelix.Application.Common.Security;
 /// (<see cref="ResourceKindContexts"/>): a board item is <c>work</c>, a page is <c>docs</c>. The kind is the request's own
 /// value, so nothing is read from the database; any other kind, and every Collaboration request that does not name its host
 /// resource, stays refused.</item>
+/// <item>A named <see cref="LocatedHostRequests"/> request (edit, resolve, reopen or delete a comment, delete an item
+/// attachment) names only a comment or attachment id: the resource locator, which already runs before the scope decision to
+/// answer a missing id with NotFound, also returns the kind of the resource it sits on, and that kind decides the scope as
+/// above. The decision itself reads nothing.</item>
 /// </list>
 /// A request that maps to no scope (null) is refused to every token, so a context added later reaches no token
 /// until it is mapped here; the architecture test names every context of the workspace-scoped requests.
@@ -65,6 +69,21 @@ public static class ApiTokenScopeMap
         "Notrelix.Application.Features.Collaboration.Attachments.Commands.CreatePageAttachment.CreatePageAttachmentCommand",
         "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment.UploadPageAttachmentCommand",
         "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment.DeletePageAttachmentCommand",
+    };
+
+    /// <summary>
+    /// Collaboration requests keyed by a comment or attachment id: their scope follows the host kind the resource locator
+    /// returns for that id (<see cref="ResourceLocation.HostKind"/>). The value is the one host kind the request accepts, or
+    /// null for any kind <see cref="ResourceKindContexts"/> maps. A host of another kind than the required one is as missing as
+    /// a made-up id (the handler answers the same NotFound); an unmapped host kind is refused.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string?> LocatedHostRequests = new Dictionary<string, string?>
+    {
+        ["Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment.UpdateCommentCommand"] = null,
+        ["Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment.DeleteCommentCommand"] = null,
+        ["Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment.ResolveCommentCommand"] = null,
+        ["Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment.ReopenCommentCommand"] = null,
+        ["Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand"] = "work-management.board-item",
     };
 
     /// <summary>Resource kind (exact value) to the scope prefix of the context that owns it; any other kind is refused.</summary>
