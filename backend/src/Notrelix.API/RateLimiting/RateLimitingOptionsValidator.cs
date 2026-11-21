@@ -43,7 +43,7 @@ public sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimiting
         EndpointDataSource endpoints,
         IRateLimitPolicyProvider policies)
         => endpoints.Endpoints
-            .Select(endpoint => endpoint.Metadata.GetMetadata<RateLimitPolicyAttribute>()?.PolicyName)
+            .SelectMany(endpoint => endpoint.Metadata.GetOrderedMetadata<RateLimitPolicyAttribute>().Select(a => (string?)a.PolicyName))
             .Where(policyName => policyName is not null && policies.GetPolicy(policyName) is null)
             .Select(policyName => policyName!)
             .Distinct(StringComparer.Ordinal)

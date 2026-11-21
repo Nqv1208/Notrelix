@@ -1,4 +1,5 @@
 using Notrelix.API.Endpoints.WorkManagement.Forms.Commands;
+using Notrelix.API.Endpoints.WorkManagement.Forms.Public;
 using Notrelix.API.Endpoints.WorkManagement.Forms.Queries;
 
 namespace Notrelix.API.Endpoints.WorkManagement.Forms;
@@ -33,6 +34,8 @@ public static class MapFormEndpoints
         group.MapListFormSubmissionsPage();
         group.MapCountFormSubmissions();
         group.MapSubmitForm();
+        group.MapGetFormPublicAccess();
+        group.MapSetFormPublicAccess();
 
         var submissionGroup = app
             .MapGroup("/api/v1/form-submissions/{submissionId:guid}")
@@ -44,6 +47,8 @@ public static class MapFormEndpoints
         submissionGroup.MapMarkFormSubmissionAsSpam();
         submissionGroup.MapReopenFormSubmission();
         submissionGroup.MapDeleteFormSubmission();
+
+        app.MapPublicForms();
 
         return app;
     }

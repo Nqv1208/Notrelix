@@ -140,6 +140,8 @@ public static class WorkManagementRuleCodes
     public const string WorkManagement_Form_CannotPublishNoQuestions = "WorkManagement_Form_CannotPublishNoQuestions";
     public const string WorkManagement_Form_CannotSubmitToDraft = "WorkManagement_Form_CannotSubmitToDraft";
     public const string WorkManagement_Form_CannotSubmitToClosed = "WorkManagement_Form_CannotSubmitToClosed";
+    public const string WorkManagement_Form_WeakPublicKey = "WorkManagement_Form_WeakPublicKey";
+    public const string WorkManagement_Form_PublicSharingDisabled = "WorkManagement_Form_PublicSharingDisabled";
     public const string WorkManagement_Form_CannotAddQuestionToClosed = "WorkManagement_Form_CannotAddQuestionToClosed";
     public const string WorkManagement_Form_DuplicateQuestionKey = "WorkManagement_Form_DuplicateQuestionKey";
     public const string WorkManagement_Form_QuestionTypeNotSupported = "WorkManagement_Form_QuestionTypeNotSupported";

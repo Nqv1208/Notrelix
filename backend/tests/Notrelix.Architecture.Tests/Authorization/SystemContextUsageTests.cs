@@ -68,6 +68,7 @@ public class SystemContextUsageTests
         "GetAccountWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
         "InvitationTokenScope.cs",
+        "PublicFormScope.cs",
         "InviteeInvitations.cs",
     ];
 

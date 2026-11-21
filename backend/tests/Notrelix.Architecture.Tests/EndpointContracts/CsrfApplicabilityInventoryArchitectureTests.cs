@@ -56,6 +56,8 @@ public class CsrfApplicabilityInventoryArchitectureTests : ArchitectureTestBase
             "provider webhook callback authenticates by HMAC signature, not by ambient browser session"),
         ["MapCallMediaWebhookEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "media server webhook authenticates by a signed JWT over the raw body, not by ambient browser session"),
+        ["MapPublicFormEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",
+            "anonymous visitor submits to a public form behind a captcha; no ambient cookie session is read or established (the double-submit token still applies to the browser call)"),
         ["ResetPasswordEndpoint.cs"] = new(false, "CSRF_NOT_REQUIRED",
             "one-time reset-token credential flow; no ambient cookie session consumed or established"),
         ["EmailVerificationEndpoints.cs"] = new(false, "CSRF_NOT_REQUIRED",
