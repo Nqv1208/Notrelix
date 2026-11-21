@@ -24,6 +24,9 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
+# The locked base digest lags alpine security fixes; upgrade installed packages
+# to the repository's fixed revisions. Remove this layer once the lock moves.
+RUN apk upgrade --no-cache
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.
