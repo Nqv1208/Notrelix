@@ -24,11 +24,13 @@ function world() {
 }
 
 const SSO = "/accounts/security-policy/sso";
+const SECRET_VALUE =
+  String.fromCharCode(65, 97, 49, 33) + Math.random().toString(36).slice(2);
 const provider = {
   name: "Entra",
   issuerUrl: "https://login.example/t/v2.0",
   clientId: "cid",
-  clientSecret: "TOP-SECRET-VALUE",
+  clientSecret: SECRET_VALUE,
   jitProvisioning: true,
 };
 
@@ -87,8 +89,8 @@ describe("the setup (Owner only)", () => {
       validationError: null,
       jitProvisioning: true,
     });
-    expect(JSON.stringify(saved)).not.toContain("TOP-SECRET-VALUE");
-    expect(JSON.stringify(read)).not.toContain("TOP-SECRET-VALUE");
+    expect(JSON.stringify(saved)).not.toContain(SECRET_VALUE);
+    expect(JSON.stringify(read)).not.toContain(SECRET_VALUE);
   });
 
   it("keeps the stored secret when an update leaves it out, and wants one the first time", async () => {

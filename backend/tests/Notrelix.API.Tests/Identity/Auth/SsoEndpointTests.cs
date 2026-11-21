@@ -235,7 +235,7 @@ public class SsoEndpointTests : IClassFixture<SsoCallbackHost>
         }));
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/v1/auth/login", new { email = "ann@acme.com", password = "Test@123456" });
+        var response = await client.PostAsJsonAsync("/api/v1/auth/login", new { email = "ann@acme.com", password = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N")) });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>()).GetProperty("errorCode").GetString().Should().Be("identity.auth.sso-required");

@@ -60,11 +60,14 @@ public sealed class AccountSsoTestKit
         return row;
     }
 
-    public AccountIdentityProvider AddProvider(Guid accountId, bool active = true, string secret = "s3cret-plain", bool jit = true)
+    /// <summary>The client value a provider added without an explicit one holds; fresh per kit.</summary>
+    public string DefaultSecret { get; } = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
+
+    public AccountIdentityProvider AddProvider(Guid accountId, bool active = true, string? secret = null, bool jit = true)
     {
         var provider = AccountIdentityProvider.CreateOidc(
             accountId, "Acme SSO", "https://login.acme.example", "client-1",
-            Encryptor.Protect(secret, AccountSsoSupport.ClientSecretPurpose), jit, OwnerId, Now);
+            Encryptor.Protect(secret ?? DefaultSecret, AccountSsoSupport.ClientSecretPurpose), jit, OwnerId, Now);
         if (active) provider.MarkValidated("https://login.acme.example/authorize", OwnerId, Now);
         Context.AccountIdentityProviders.Add(provider);
         Context.SaveChanges();

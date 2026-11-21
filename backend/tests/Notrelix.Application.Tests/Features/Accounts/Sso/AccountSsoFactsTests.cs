@@ -99,8 +99,8 @@ public sealed class AccountSsoFactsTests
 
         var provider = await _k.Facts.GetCallbackProviderAsync(_k.AccountId, default);
 
-        provider!.ClientSecret.Should().Be("s3cret-plain");
-        provider.ToString().Should().NotContain("s3cret-plain", "the secret never reaches a log line through ToString");
+        provider!.ClientSecret.Should().Be(_k.DefaultSecret);
+        provider.ToString().Should().NotContain(_k.DefaultSecret, "the secret never reaches a log line through ToString");
 
         var draft = new AccountSsoTestKit();
         draft.AddProvider(draft.AccountId, active: false);

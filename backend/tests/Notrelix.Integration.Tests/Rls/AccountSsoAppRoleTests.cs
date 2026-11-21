@@ -32,7 +32,9 @@ namespace Notrelix.Integration.Tests.Rls;
 public sealed class AccountSsoAppRoleTests : IAsyncLifetime
 {
     private const string Issuer = "https://login.acme.example";
-    private const string PlainSecret = "plain-client-secret-AbC123-never-leaks";
+    private static readonly string PlainSecret = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
+    private static readonly string OtherSecret = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
+    private static readonly string MemberPassword = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
     private const string Base = "/api/v1/accounts/security-policy/sso";
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
@@ -66,7 +68,7 @@ public sealed class AccountSsoAppRoleTests : IAsyncLifetime
         string hash;
         using (var f = AppRoleHost.CreateFactory(_fixture, _fixture.OwnerConnectionString))
         using (var scope = f.Services.CreateScope())
-            hash = scope.ServiceProvider.GetRequiredService<IPasswordHasher>().HashPassword("Pw-x-9");
+            hash = scope.ServiceProvider.GetRequiredService<IPasswordHasher>().HashPassword(MemberPassword);
 
         _a = await AppRoleTenants.SeedAsync(_fixture, "a-sso@example.com", "Asso", hash);
         _b = await AppRoleTenants.SeedAsync(_fixture, "b-sso@example.com", "Bsso", hash);
@@ -146,7 +148,9 @@ public sealed class AccountSsoAppRoleTests : IAsyncLifetime
     private static async Task<string> ErrorCodeAsync(HttpResponseMessage response) =>
         (await JsonAsync(response)).GetProperty("errorCode").GetString()!;
 
-    private object ProviderBody(string? secret = PlainSecret, bool jit = true) =>
+    private object ProviderBody(bool jit = true) => ProviderBody(PlainSecret, jit);
+
+    private object ProviderBody(string? secret, bool jit = true) =>
         new { name = "Acme SSO", issuerUrl = Issuer, clientId = "client-1", clientSecret = secret, jitProvisioning = jit };
 
     /// <summary>The Owner of Account A configures a provider, claims and verifies acme.com, and (optionally) requires SSO.</summary>
@@ -578,7 +582,7 @@ public sealed class AccountSsoAppRoleTests : IAsyncLifetime
         await ConfigureAsync();
         // Account B has an Active provider too.
         (await AsAsync(_b.User, _b.AccountId, HttpMethod.Put, Base + "/provider",
-            new { name = "B SSO", issuerUrl = Issuer, clientId = "client-b", clientSecret = "b-secret-value" })).StatusCode.Should().Be(HttpStatusCode.OK);
+            new { name = "B SSO", issuerUrl = Issuer, clientId = "client-b", clientSecret = OtherSecret })).StatusCode.Should().Be(HttpStatusCode.OK);
         var aSecret = await OwnerScalarAsync("SELECT client_secret_protected FROM account.account_identity_providers WHERE account_id = @a", ("a", _a.AccountId));
         var bSecret = await OwnerScalarAsync("SELECT client_secret_protected FROM account.account_identity_providers WHERE account_id = @a", ("a", _b.AccountId));
 

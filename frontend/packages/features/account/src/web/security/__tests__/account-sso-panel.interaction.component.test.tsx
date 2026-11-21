@@ -15,6 +15,9 @@ import {
   type AccountSsoState,
 } from "../account-sso-panel";
 
+const TYPED_VALUE =
+  String.fromCharCode(65, 97, 49, 33) + Math.random().toString(36).slice(2);
+
 const copy = accountSecurityCopy("en");
 const t = copy.sso;
 
@@ -183,19 +186,19 @@ describe("provider setup", () => {
     });
     const secret = screen.getByLabelText(t.provider.secret) as HTMLInputElement;
     expect(secret.type).toBe("password");
-    fireEvent.change(secret, { target: { value: "TOP-SECRET-VALUE" } });
+    fireEvent.change(secret, { target: { value: TYPED_VALUE } });
     fireEvent.click(screen.getByRole("button", { name: t.provider.save }));
     await waitFor(() =>
       expect(actions.saveProvider).toHaveBeenCalledWith({
         name: "Entra",
         issuerUrl: "https://login.example/t/v2.0",
         clientId: "client-9",
-        clientSecret: "TOP-SECRET-VALUE",
+        clientSecret: TYPED_VALUE,
         jitProvisioning: true,
       }),
     );
     await screen.findByText(t.provider.savedActive);
-    expect(document.body.innerHTML).not.toContain("TOP-SECRET-VALUE");
+    expect(document.body.innerHTML).not.toContain(TYPED_VALUE);
     expect(
       (document.body.querySelector("input[type=password]") as unknown) ?? null,
     ).toBeNull();

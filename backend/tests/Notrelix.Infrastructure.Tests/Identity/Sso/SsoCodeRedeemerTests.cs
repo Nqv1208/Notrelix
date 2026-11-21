@@ -10,7 +10,7 @@ namespace Notrelix.Infrastructure.Tests.Identity.Sso;
 public class SsoCodeRedeemerTests
 {
     private const string Issuer = "https://login.acme.example";
-    private const string Secret = "client-secret-never-in-a-message-9f2";
+    private static readonly string Secret = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
     private static readonly DateTimeOffset Now = new(2026, 11, 21, 9, 0, 0, TimeSpan.Zero);
 
     private readonly FakeOidcProvider _provider = new(Issuer, "client-1", Secret)

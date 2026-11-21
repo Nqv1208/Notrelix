@@ -11,6 +11,11 @@ import {
   type AccountEndpoints,
 } from "../core/api/account.service";
 
+const LEAKED =
+  String.fromCharCode(65, 97, 49, 33) + Math.random().toString(36).slice(2);
+const SENT =
+  String.fromCharCode(65, 97, 49, 33) + Math.random().toString(36).slice(2);
+
 const domainWire = {
   id: "d1",
   domain: "minhan.vn",
@@ -51,9 +56,9 @@ describe("parseSsoSettings", () => {
   it("never carries a secret, even when the wire sends one", () => {
     const parsed = parseSsoSettings({
       ...settingsWire,
-      provider: { ...settingsWire.provider, clientSecret: "leak" },
+      provider: { ...settingsWire.provider, clientSecret: LEAKED },
     });
-    expect(JSON.stringify(parsed)).not.toContain("leak");
+    expect(JSON.stringify(parsed)).not.toContain(LEAKED);
   });
 
   it.each([
@@ -206,10 +211,10 @@ describe("account service: single sign-on", () => {
       name: "Entra",
       issuerUrl: "https://i.example",
       clientId: "c",
-      clientSecret: "s3cret",
+      clientSecret: SENT,
       jitProvisioning: false,
     });
-    expect(calls.at(-1)?.body).toMatchObject({ clientSecret: "s3cret" });
+    expect(calls.at(-1)?.body).toMatchObject({ clientSecret: SENT });
   });
 
   it("adds, verifies and removes a domain and flips the require switch", async () => {

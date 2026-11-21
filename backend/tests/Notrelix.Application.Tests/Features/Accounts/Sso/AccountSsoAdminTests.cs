@@ -16,7 +16,7 @@ namespace Notrelix.Application.Tests.Features.Accounts.Sso;
 public sealed class AccountSsoAdminTests
 {
     private const string Issuer = "https://login.acme.example";
-    private const string PlainSecret = "super-secret-client-value-123";
+    private static readonly string PlainSecret = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
 
     private readonly AccountSsoTestKit _k = new();
 

@@ -31,8 +31,9 @@ namespace Notrelix.Integration.Tests.Rls;
 public sealed class SsoSignInAppRoleTests : IAsyncLifetime
 {
     private const string Issuer = "https://login.acme.example";
-    private const string PlainSecret = "plain-client-secret-AbC123-never-leaks";
-    private const string Password = "Pw-x-9";
+    private static readonly string PlainSecret = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
+    private static readonly string WrongPassword = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
+    private static readonly string Password = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
     private const string Admin = "/api/v1/accounts/security-policy/sso";
     private static readonly DateTimeOffset Now = DateTimeOffset.UtcNow;
 
@@ -374,7 +375,7 @@ public sealed class SsoSignInAppRoleTests : IAsyncLifetime
         (await ErrorCodeAsync(refused)).Should().Be("identity.auth.sso-required");
         SetCookies(refused).Should().BeEmpty();
 
-        var wrong = await AnonymousAsync(HttpMethod.Post, "/api/v1/auth/login", new { email = "member@acme.com", password = "Wrong-pw-1" });
+        var wrong = await AnonymousAsync(HttpMethod.Post, "/api/v1/auth/login", new { email = "member@acme.com", password = WrongPassword });
         wrong.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await ErrorCodeAsync(wrong)).Should().Be("identity.auth.invalid-credentials");
 

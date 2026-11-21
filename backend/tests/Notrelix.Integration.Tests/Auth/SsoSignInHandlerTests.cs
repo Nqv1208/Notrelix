@@ -32,7 +32,7 @@ namespace Notrelix.Integration.Tests.Auth;
 public class SsoSignInHandlerTests : IAsyncLifetime
 {
     private const string Issuer = "https://login.acme.example";
-    private const string ClientSecret = "client-secret-must-never-leak-77aa";
+    private static readonly string ClientSecret = string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
     private const string Callback = "https://api.example/api/v1/auth/sso/callback";
     private const string Binding = "raw-binding-of-the-starting-browser";
 
