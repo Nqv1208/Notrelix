@@ -96,7 +96,32 @@ Sau deploy thành công: `https://demo.<domain>/health/live` trả 200; đăng n
 - Nhật ký deploy: `/opt/notrelix/deploy.log` (thời gian, release, sha, người chạy, kết quả, image). Dòng cuối cũng hiện trong summary của job deploy.
 - Backup trước migrate: `/opt/notrelix/backups/pre-migrate/pre-<release>.dump` (định dạng custom của `pg_dump`, giữ 5 bản mới nhất). Backup lỗi thì deploy dừng.
 - Khôi phục thủ công sau migration đổi schema (tự rollback bị chặn theo policy): dừng backend, `pg_restore --clean --if-exists -U <user> -d <db>` từ file dump vào container `postgres`, đặt lại release trước (`.notrelix-release-previous`), `up -d`.
-- Backup định kỳ ra ngoài VM, giám sát uptime và cảnh báo đĩa/RAM chưa nằm trong runbook này.
+- Backup định kỳ ra ngoài VM: mục 3.1. Giám sát uptime và cảnh báo đĩa/RAM chưa nằm trong runbook này.
+
+### 3.1. Backup hằng đêm lên Object Storage và diễn tập khôi phục
+
+`bootstrap.sh` cài `restic`, tạo `/opt/notrelix/.backup.env` (rỗng, mode 600) và bật `notrelix-backup.timer` (02:30 UTC, lệch ngẫu nhiên tới 10 phút). Timer chạy `infra/oracle/backup.sh` bằng user `deploy`: `pg_dump -Fc -Z0` từ container `postgres` của stack đang chạy, đẩy lên bucket bằng restic (mã hóa, khử trùng lặp, nén), rồi giữ 7 bản theo ngày và 4 bản theo tuần (`KEEP_DAILY`, `KEEP_WEEKLY`). Dump rỗng hoặc lỗi thì không thành snapshot và service báo lỗi.
+
+Chủ VM làm một lần:
+
+1. Trong Oracle Console tạo bucket riêng (ví dụ `notrelix-staging-backup`, private) và một Customer Secret Key cho user có quyền ghi bucket đó. Lấy namespace ở Object Storage, mục Tenancy.
+2. Điền `/opt/notrelix/.backup.env` (mode 600, không bao giờ vào git). Tên biến:
+   - `RESTIC_REPOSITORY` dạng `s3:https://<namespace>.compat.objectstorage.<region>.oraclecloud.com/<bucket>`
+   - `RESTIC_PASSWORD` mật khẩu mã hóa repo; mất mật khẩu là mất toàn bộ backup, cất ở nơi riêng
+   - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` khóa Customer Secret Key
+   - `AWS_DEFAULT_REGION` ví dụ `ap-singapore-1`
+3. Chạy thử: `sudo systemctl start notrelix-backup.service && journalctl -u notrelix-backup.service -n 30`. Lần đầu script tự `restic init`. Xem lịch: `systemctl list-timers notrelix-backup.timer`.
+
+Diễn tập khôi phục (nên chạy sau lần backup đầu và mỗi tháng): `sudo -u deploy bash /opt/notrelix/infra/oracle/restore-drill.sh`. Script kéo snapshot mới nhất, dựng một container Postgres tạm cùng image với container đang chạy, `pg_restore` vào đó, đếm dòng các bảng `accounts users workspaces boards` (đổi bằng `DRILL_TABLES`), in thời gian và dọn container. Kết thúc `drill ok` khi mọi bảng tồn tại và có dữ liệu; nếu không thì thoát lỗi. Ghi thời gian vào `deploy.log` hoặc sổ vận hành. Drill không đụng stack đang chạy; nó cần khoảng 1 GB RAM trống trong vài chục giây.
+
+Khôi phục thật (dữ liệu hỏng hoặc VM mới):
+
+1. Trên VM mới chạy bootstrap, điền lại `.backup.env`, deploy stack để có container `postgres` trống.
+2. `restic snapshots --tag staging` để chọn bản; `restic restore <id|latest> --tag staging --target /tmp/restore` (nạp env bằng `set -a; . /opt/notrelix/.backup.env; set +a`).
+3. Dừng backend (`api`, `realtime`, `worker`, `pgbouncer`), rồi `docker compose exec -T postgres pg_restore --clean --if-exists -U "$POSTGRES_USER" -d "$POSTGRES_DB" < /tmp/restore/.../notrelix.dump`.
+4. `up -d` lại stack, kiểm `/health/live` và đăng nhập. Xóa `/tmp/restore` sau khi xong.
+
+Giới hạn: bản dump là bản cắt lúc backup nên mất tối đa gần 24 giờ dữ liệu; phần mềm trong repo chưa gửi cảnh báo khi timer lỗi (mục giám sát thuộc bước riêng); Data Protection keys và Redis không nằm trong backup này.
 
 ## 4. Chính sách quét lỗ hổng (Trivy)
 

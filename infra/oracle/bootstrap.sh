@@ -54,6 +54,7 @@ verify() {
   check "firewall accepts 22, 80 and 443" "iptables -C INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT && iptables -C INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT && iptables -C INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT"
   check "caddy running with a valid config" "systemctl is-active caddy && caddy validate --config /etc/caddy/Caddyfile"
   check "deploy path owned by the deploy user" "test \"\$(stat -c %U $DEPLOY_PATH)\" = $DEPLOY_USER"
+  check "backup env file exists with mode 600 and the timer is enabled" "test \"\$(stat -c %a $DEPLOY_PATH/.backup.env)\" = 600 && systemctl is-enabled notrelix-backup.timer && command -v restic"
   check "env file exists with mode 600" "test \"\$(stat -c %a $DEPLOY_PATH/.env.staging)\" = 600"
   echo "Not checked here: OCI Security List ingress 22/80/443, DNS A record, GitHub Environment secrets."
   return "$fail"
@@ -69,7 +70,7 @@ if [[ "${1:-}" == "--verify" ]]; then verify; exit $?; fi
 log "architecture: $(uname -m), os: $(. /etc/os-release && echo "$PRETTY_NAME")"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg git jq fail2ban unattended-upgrades iptables iptables-persistent debian-keyring debian-archive-keyring apt-transport-https >/dev/null
+apt-get install -y -qq ca-certificates curl gnupg git jq fail2ban unattended-upgrades iptables iptables-persistent restic debian-keyring debian-archive-keyring apt-transport-https >/dev/null
 
 log "deploy user"
 id "$DEPLOY_USER" >/dev/null 2>&1 || adduser --disabled-password --gecos "" "$DEPLOY_USER"
@@ -146,6 +147,29 @@ log "deploy path ${DEPLOY_PATH} and an empty env file (mode 600)"
 install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$DEPLOY_PATH"
 [[ -d "$DEPLOY_PATH/.git" ]] || sudo -u "$DEPLOY_USER" git clone --quiet "$REPO_URL" "$DEPLOY_PATH"
 [[ -f "$DEPLOY_PATH/.env.staging" ]] || install -m 600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /dev/null "$DEPLOY_PATH/.env.staging"
+
+log "nightly backup: restic env file (empty, mode 600) and systemd timer"
+[[ -f "$DEPLOY_PATH/.backup.env" ]] || install -m 600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /dev/null "$DEPLOY_PATH/.backup.env"
+write_if_changed /etc/systemd/system/notrelix-backup.service <<CONF || true
+[Unit]
+Description=Notrelix nightly Postgres backup to Object Storage
+[Service]
+Type=oneshot
+User=$DEPLOY_USER
+Environment=DEPLOY_PATH=$DEPLOY_PATH
+ExecStart=/usr/bin/env bash $DEPLOY_PATH/infra/oracle/backup.sh
+CONF
+write_if_changed /etc/systemd/system/notrelix-backup.timer <<'CONF' && systemctl daemon-reload || true
+[Unit]
+Description=Notrelix nightly Postgres backup
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+[Install]
+WantedBy=timers.target
+CONF
+systemctl enable --now notrelix-backup.timer >/dev/null
 
 log "caddy with automatic Let's Encrypt, proxying to 127.0.0.1:8080"
 if ! command -v caddy >/dev/null 2>&1; then
