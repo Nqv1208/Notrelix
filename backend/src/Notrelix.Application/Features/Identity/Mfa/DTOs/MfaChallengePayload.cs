@@ -14,6 +14,7 @@ public enum MfaChallengePurpose
     StepUpRevokeOtherSessions,
     StepUpEnrollMfa,
     StepUpTransferWorkspaceOwnership,
+    StepUpResetMemberMfa,
 
     /// <summary>
     /// Sign-in stopped because the person's Account requires MFA and they hold no factor. The token only

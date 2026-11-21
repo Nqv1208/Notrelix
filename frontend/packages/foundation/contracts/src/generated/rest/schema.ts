@@ -8383,6 +8383,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/members/{memberId}/reset-mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a member's second factor (Owner only)
+         * @description Only the workspace Owner may. Needs a single-use ResetMemberMfa step-up proof bound to this workspace and this member (412 identity.security.step-up-required without one; 400 identity.security.step-up-invalid when stale, spent or given for another member). Removes the member's factors and recovery codes, ends their sessions, records an activity line and mails them. An Owner's factors cannot be reset; a non-Owner caller gets 404.
+         */
+        post: operations["Workspaces.Workspaces.ResetMemberMfa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/accounts/{accountId}/workspaces": {
         parameters: {
             query?: never;
@@ -9786,6 +9806,8 @@ export interface components {
             workspaceId?: string | null;
             /** Format: uuid */
             newOwnerId?: string | null;
+            /** Format: uuid */
+            memberId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest": {
             purpose?: string | null;
@@ -9794,6 +9816,8 @@ export interface components {
             workspaceId?: string | null;
             /** Format: uuid */
             newOwnerId?: string | null;
+            /** Format: uuid */
+            memberId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest": {
             stepUpToken?: string | null;
@@ -9845,6 +9869,8 @@ export interface components {
             workspaceId?: string | null;
             /** Format: uuid */
             newOwnerId?: string | null;
+            /** Format: uuid */
+            memberId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
@@ -9897,6 +9923,9 @@ export interface components {
         "Notrelix.API.Endpoints.Workspaces.Members.Commands.SetDefaultWorkspaceRequest": {
             /** Format: uuid */
             workspaceId?: string;
+        };
+        "Notrelix.API.Endpoints.Workspaces.Workspaces.Commands.ResetMemberMfaRequest": {
+            stepUpToken?: string | null;
         };
         "Notrelix.Application.Common.Models.CursorPageOfApiTokenSummaryDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"][] | null;
@@ -12874,7 +12903,7 @@ export interface components {
         /** @enum {string} */
         "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
         /** @enum {string} */
-        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked" | "ProviderLinked" | "ProviderUnlinked";
+        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked" | "ProviderLinked" | "ProviderUnlinked" | "MfaReset";
         /**
          * Format: int32
          * @enum {integer}
@@ -34004,6 +34033,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Workspaces.Requests.TransferOwnershipRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Workspaces.ResetMemberMfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Workspaces.Workspaces.Commands.ResetMemberMfaRequest"];
             };
         };
         responses: {

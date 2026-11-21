@@ -15,5 +15,6 @@ public enum SecurityActivityType
     SessionRevoked,
     OtherSessionsRevoked,
     ProviderLinked,
-    ProviderUnlinked
+    ProviderUnlinked,
+    MfaReset
 }

@@ -123,7 +123,7 @@ public static class SecurityStepUpEndpoints
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
-        if (!StepUpTargetInput.TryResolve(purpose, request.WorkspaceId, request.NewOwnerId, out var target))
+        if (!StepUpTargetInput.TryResolve(purpose, request.WorkspaceId, request.NewOwnerId, request.MemberId, out var target))
         {
             return EndpointExtensions.InvalidInput(StepUpTargetInput.Missing);
         }
@@ -148,7 +148,7 @@ public static class SecurityStepUpEndpoints
             return EndpointExtensions.InvalidInput($"Invalid step-up purpose: {request.Purpose}");
         }
 
-        if (!StepUpTargetInput.TryResolve(purpose, request.WorkspaceId, request.NewOwnerId, out var target))
+        if (!StepUpTargetInput.TryResolve(purpose, request.WorkspaceId, request.NewOwnerId, request.MemberId, out var target))
         {
             return EndpointExtensions.InvalidInput(StepUpTargetInput.Missing);
         }
@@ -180,6 +180,9 @@ public sealed record CompleteStepUpMfaRequest
 
     /// <summary>The incoming Owner of a handover proof (TransferWorkspaceOwnership only).</summary>
     public Guid? NewOwnerId { get; init; }
+
+    /// <summary>The member whose factors a reset proof is for (ResetMemberMfa only).</summary>
+    public Guid? MemberId { get; init; }
 }
 
 public sealed record CompleteStepUpPasswordRequest
@@ -192,4 +195,7 @@ public sealed record CompleteStepUpPasswordRequest
 
     /// <summary>The incoming Owner of a handover proof (TransferWorkspaceOwnership only).</summary>
     public Guid? NewOwnerId { get; init; }
+
+    /// <summary>The member whose factors a reset proof is for (ResetMemberMfa only).</summary>
+    public Guid? MemberId { get; init; }
 }

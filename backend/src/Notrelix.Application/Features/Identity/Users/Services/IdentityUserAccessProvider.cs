@@ -1,5 +1,8 @@
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Public.Access;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Domain.Identity.Mfa;
+using Notrelix.Domain.Identity.Security;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Features.Identity.Users.Services;
@@ -17,9 +20,15 @@ public sealed class IdentityUserAccessProvider : IIdentityUserAccess
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
 
+    private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
+
     public IdentityUserAccessProvider(
-        IIdentityDbContext context, IJwtBlacklistService jwtBlacklist, IDateTimeProvider dateTimeProvider)
+        IIdentityDbContext context, IJwtBlacklistService jwtBlacklist, IDateTimeProvider dateTimeProvider,
+        ISecurityActivityRecorder activity, ISecurityNotice notice)
     {
+        _activity = activity;
+        _notice = notice;
         _context = context;
         _jwtBlacklist = jwtBlacklist;
         _dateTimeProvider = dateTimeProvider;
@@ -53,6 +62,37 @@ public sealed class IdentityUserAccessProvider : IIdentityUserAccess
         // Access tokens and realtime connections already issued stay valid until they expire unless the
         // user watermark rejects them.
         await _jwtBlacklist.RevokeUserBeforeAsync(userId, now, RevocationWatermarkTtl);
+        return true;
+    }
+
+    public async Task<bool> ResetMfaAsync(Guid userId, Guid resetBy, CancellationToken cancellationToken)
+    {
+        if (!await _context.Users.AnyAsync(u => u.Id == userId, cancellationToken))
+            return false;
+
+        var now = _dateTimeProvider.UtcNow;
+
+        foreach (var method in await _context.UserMfaMethods
+                     .Where(m => m.UserId == userId && m.Status == MfaMethodStatus.Active)
+                     .ToListAsync(cancellationToken))
+            method.Disable(now);
+
+        foreach (var batch in await _context.MfaRecoveryBatches
+                     .Where(b => b.UserId == userId && b.InvalidatedAt == null)
+                     .ToListAsync(cancellationToken))
+            batch.Invalidate(now, resetBy);
+
+        (await _context.UserSecuritySettings.FirstOrDefaultAsync(s => s.UserId == userId, cancellationToken))
+            ?.DisableMfa(now);
+
+        foreach (var session in await _context.Sessions
+                     .Where(s => s.UserId == userId && s.Status == SessionStatus.Active)
+                     .ToListAsync(cancellationToken))
+            session.Revoke(now, SessionRevocationReasons.MfaReset);
+
+        await _jwtBlacklist.RevokeUserBeforeAsync(userId, now, RevocationWatermarkTtl);
+        _activity.Record(userId, SecurityActivityType.MfaReset, now);
+        await _notice.QueueAsync(userId, SecurityNoticeKind.MfaReset, now, null, cancellationToken);
         return true;
     }
 }

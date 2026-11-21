@@ -8,4 +8,7 @@ public static class StepUpTarget
 {
     public static string OwnershipTransfer(Guid workspaceId, Guid newOwnerId) =>
         $"workspace:{workspaceId:N}:owner:{newOwnerId:N}";
+
+    public static string MemberMfaReset(Guid workspaceId, Guid memberId) =>
+        $"workspace:{workspaceId:N}:mfa-reset:{memberId:N}";
 }

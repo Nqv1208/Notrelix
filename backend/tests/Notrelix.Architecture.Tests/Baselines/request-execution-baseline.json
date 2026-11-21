@@ -13175,6 +13175,31 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.ResetMemberMfa.ResetMemberMfaCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IWorkspaceRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Workspaces.Workspaces.Commands.ResetMemberMfa.ResetMemberMfaCommandHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace.RestoreWorkspaceCommand",
     "kind": "Command",
     "principalMarkers": [
