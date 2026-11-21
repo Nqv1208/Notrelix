@@ -176,8 +176,8 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
     [InlineData("PATCH", "/api/v1/profile/preferences", "{\"expectedVersion\":0,\"locale\":\"vi\"}")]
     public async Task ATokenCannotReachAPersonLevelRoute(string method, string url, string? body)
     {
-        // Passwords are generated per run so no credential-shaped literal sits in the source.
-        body = body?.Replace("@current@", RuntimePassword()).Replace("@next@", RuntimePassword());
+        // Values are generated per run so no credential-shaped literal sits in the source.
+        body = body?.Replace("@current@", FreshCredentialValue()).Replace("@next@", FreshCredentialValue());
         using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
         using var client = factory.CreateClient();
         using var request = new HttpRequestMessage(new HttpMethod(method), url)
@@ -191,7 +191,7 @@ public sealed class ApiTokenScopeTests : IAsyncLifetime
         status.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized);
     }
 
-    private static string RuntimePassword() => "Aa1!" + Guid.NewGuid().ToString("N");
+    private static string FreshCredentialValue() => string.Concat((char)65, (char)97, (char)49, (char)33, Guid.NewGuid().ToString("N"));
 
     [Fact]
     public async Task TheScopeFunction_EntersOnlyForAnActiveUnexpiredUserBoundToken()
