@@ -22,6 +22,15 @@ public sealed class ExecutionContextBehaviorTests
         public ResourceRef? Resource => null;
     }
 
+    private sealed record ResourceReadQuery(ResourceRef Resource)
+        : IQuery<string>, IAuthenticatedRequest, IResourceScopedRequest, IReadRequest;
+
+    private sealed record ResourceWriteRequest(ResourceRef Resource)
+        : IRequest<string>, IAuthenticatedRequest, IResourceScopedRequest, IWriteRequest, IRequirePermission
+    {
+        public PermissionAction Action => PermissionAction.CreateComment;
+    }
+
     [Fact]
     public async Task Global_request_publishes_snapshot_without_locator_io()
     {
@@ -304,12 +313,97 @@ public sealed class ExecutionContextBehaviorTests
         result.Should().Be("ok");
     }
 
+    private static ResourceRef Host(string kind) => ResourceRef.Create(ResourceKind.Create(kind), Guid.NewGuid());
+
+    private static Fixture<TRequest> HostedFixture<TRequest>(ResourceRef host, params string[] tokenScopes)
+        where TRequest : IRequest<string>
+    {
+        var account = Guid.NewGuid();
+        var workspace = Guid.NewGuid();
+        var fixture = CreateFixture<TRequest>(
+            CredentialKind.ApiToken, account, workspace, tokenScopes: tokenScopes, followsResource: true);
+        fixture.Locator
+            .Setup(locator => locator.LocateAsync(host, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResourceLocation(host.Kind, host.ResourceId, account, workspace));
+        return fixture;
+    }
+
+    [Fact]
+    public async Task A_work_write_token_comments_on_a_board_item()
+    {
+        var host = Host("work-management.board-item");
+        var fixture = HostedFixture<ResourceWriteRequest>(host, "work:write");
+
+        var result = await fixture.Behavior.Handle(
+            new ResourceWriteRequest(host), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        result.Should().Be("ok");
+    }
+
+    [Fact]
+    public async Task A_work_write_token_is_refused_on_a_page_comment()
+    {
+        var host = Host("documents.page");
+        var fixture = HostedFixture<ResourceWriteRequest>(host, "work:write", "work:read");
+        var nextCalled = false;
+
+        var act = () => fixture.Behavior.Handle(
+            new ResourceWriteRequest(host), _ => { nextCalled = true; return Task.FromResult("ok"); }, CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+        nextCalled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_docs_read_token_reads_page_comments_but_cannot_write_one()
+    {
+        var host = Host("documents.page");
+        var fixture = HostedFixture<ResourceWriteRequest>(host, "docs:read");
+        var readFixture = HostedFixture<ResourceReadQuery>(host, "docs:read");
+
+        var read = await readFixture.Behavior.Handle(
+            new ResourceReadQuery(host), _ => Task.FromResult("ok"), CancellationToken.None);
+        var write = () => fixture.Behavior.Handle(
+            new ResourceWriteRequest(host), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        read.Should().Be("ok");
+        (await write.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Fact]
+    public async Task A_work_read_token_cannot_write_an_item_comment()
+    {
+        var host = Host("work-management.board-item");
+        var fixture = HostedFixture<ResourceWriteRequest>(host, "work:read");
+
+        var act = () => fixture.Behavior.Handle(
+            new ResourceWriteRequest(host), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
+    [Theory]
+    [InlineData("work-management.board")]
+    [InlineData("collaboration.comment")]
+    [InlineData("chat.message")]
+    public async Task A_resource_kind_no_context_owns_here_is_refused_to_every_token(string kind)
+    {
+        var host = Host(kind);
+        var fixture = HostedFixture<ResourceWriteRequest>(host, [.. ApiTokenScopes.Vocabulary]);
+
+        var act = () => fixture.Behavior.Handle(
+            new ResourceWriteRequest(host), _ => Task.FromResult("ok"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ForbiddenException>()).Which.Code.Should().Be(AccessDenialCodes.ApiTokenScopeMissing);
+    }
+
     private static Fixture<TRequest> CreateFixture<TRequest>(
         CredentialKind kind = CredentialKind.UserSession,
         Guid? boundAccountId = null,
         Guid? boundWorkspaceId = null,
         string[]? tokenScopes = null,
-        string? requiredScope = null) where TRequest : IRequest<string>
+        string? requiredScope = null,
+        bool followsResource = false) where TRequest : IRequest<string>
     {
         var userId = Guid.NewGuid();
         var executionContext = new Notrelix.Application.Common.Context.ExecutionContext();
@@ -323,7 +417,11 @@ public sealed class ExecutionContextBehaviorTests
         credential.SetupGet(context => context.ApiTokenScopes)
             .Returns(tokenScopes?.ToHashSet() ?? new HashSet<string>());
         var locator = new Mock<IResourceLocator>();
-        var descriptor = RequestDescriptorValidator.Create(typeof(TRequest)) with { ApiTokenScope = requiredScope };
+        var descriptor = RequestDescriptorValidator.Create(typeof(TRequest)) with
+        {
+            ApiTokenScope = requiredScope,
+            ApiTokenScopeFollowsResource = followsResource,
+        };
         var descriptors = new Mock<IRequestDescriptorRegistry>();
         descriptors.Setup(registry => registry.GetRequired(typeof(TRequest))).Returns(descriptor);
 

@@ -143,7 +143,7 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
                 break;
         }
 
-        EnforceApiTokenScope(descriptor);
+        EnforceApiTokenScope(descriptor, resource);
 
         _executionContext.SetSnapshot(new ExecutionContextSnapshot(
             userId,
@@ -165,9 +165,11 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
     /// <summary>
     /// The one place a token's scopes are checked. A scope only narrows access: it runs after the binding checks
     /// above (so another workspace still answers as before) and before any handler, and the permission checks of
-    /// the issuer still follow it. A request no scope covers (descriptor scope null) is refused for every token.
+    /// the issuer still follow it. A request no scope covers (descriptor scope null) is refused for every token. A
+    /// comment, attachment or reaction takes the scope of the kind of resource it names (board item or page); a kind
+    /// no scope maps is refused. The kind is the request's own value, so this reads nothing.
     /// </summary>
-    private void EnforceApiTokenScope(RequestDescriptor descriptor)
+    private void EnforceApiTokenScope(RequestDescriptor descriptor, ResourceRef? resource)
     {
         // Only the tenant-scoped requests are scoped: every other authenticated request is refused to a token
         // above, and an anonymous one (a public form, a sign-in) never needed the credential.
@@ -177,7 +179,13 @@ public sealed class ExecutionContextBehavior<TRequest, TResponse> : IPipelineBeh
             return;
         }
 
-        if (descriptor.ApiTokenScope is not { } required
+        var required = descriptor.ApiTokenScopeFollowsResource
+            ? resource is { } host
+                ? ApiTokenScopeMap.RequiredScopeForResource(host.Kind, descriptor.Kind, descriptor.DataAccess)
+                : null
+            : descriptor.ApiTokenScope;
+
+        if (required is null
             || _credential.ApiTokenScopes?.Contains(required) != true)
         {
             throw new ForbiddenException(
