@@ -35,7 +35,7 @@ out=$(mktemp -d); trap 'rm -rf "$out"' EXIT
 rc=0
 while read -r id ref; do
   echo "scanning $id ..." >&2
-  if ! "${trivy[@]}" image -q --scanners vuln --pkg-types os,library --severity HIGH,CRITICAL --ignore-unfixed -f json "$ref" > "$out/$id.json" 2> "$out/$id.err"; then
+  if ! "${trivy[@]}" image -q --timeout 15m --scanners vuln --pkg-types os,library --severity HIGH,CRITICAL --ignore-unfixed -f json "$ref" > "$out/$id.json" 2> "$out/$id.err"; then
     echo "scan error for $id:" >&2; tail -5 "$out/$id.err" >&2; echo '{"ScanError":true}' > "$out/$id.json"
   fi
 done < <(list)
