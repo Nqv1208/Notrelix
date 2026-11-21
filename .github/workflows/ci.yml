@@ -134,6 +134,7 @@ jobs:
         run: pnpm codegen:check
 
   # One verdict for every cheap check: any failure on either side keeps all heavy jobs from starting; a side with no changes is skipped and does not count.
+  # Every heavy job below says !cancelled() and names its own side and this verdict: the implicit success() would also count the skipped fast check of the other side further up the chain and skip the job.
   fast-checks:
     name: Fast checks
     needs: [changes, fast-checks-backend, fast-checks-frontend]
@@ -155,7 +156,7 @@ jobs:
   backend-build:
     name: Backend build
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -190,7 +191,7 @@ jobs:
   backend-unit:
     name: Backend unit tests
     needs: [changes, fast-checks, backend-build]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -210,7 +211,7 @@ jobs:
   backend-integration:
     name: Integration tests (${{ matrix.shard.name }})
     needs: [changes, fast-checks, backend-build]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
@@ -265,7 +266,7 @@ jobs:
   frontend:
     name: Frontend tests and build
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.frontend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
@@ -284,7 +285,7 @@ jobs:
   frontend-web:
     name: Frontend web tests (${{ matrix.shard }}/4)
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.frontend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -337,7 +338,7 @@ jobs:
   release-plan:
     name: Release plan
     needs: ci-gate
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success'
+    if: ${{ !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -365,7 +366,7 @@ jobs:
   release-images:
     name: Release images (amd64 and arm64)
     needs: release-plan
-    if: needs.release-plan.outputs.release_candidate == 'true'
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-plan.outputs.release_candidate == 'true' }}
     permissions:
       contents: read
       packages: write
@@ -381,6 +382,7 @@ jobs:
   release-candidate:
     name: Build release candidate
     needs: [release-plan, release-images]
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-images.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -414,6 +416,7 @@ jobs:
   release-stack:
     name: Release stack on the published digests
     needs: [release-plan, release-candidate]
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-candidate.result == 'success' }}
     permissions:
       contents: read
       packages: read
@@ -426,6 +429,7 @@ jobs:
   release-seal:
     name: Attest release candidate
     needs: [release-candidate, release-stack]
+    if: ${{ !cancelled() && needs.release-candidate.result == 'success' && needs.release-stack.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
