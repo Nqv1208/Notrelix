@@ -1435,7 +1435,7 @@ fast-checks-frontend → typecheck, then format:check, lint, check:architecture,
 fast-checks          → one verdict: a failure of either side stops every heavy job
 backend-build        → restore and build backend.slnx once in Release; uploads bin and obj
 backend-unit         → Domain/Application/Infrastructure/Platform/API tests on that build (--no-build --no-restore)
-backend-integration  → 7 shards on that build: workspaces-auth, work-management, rls-1, rls-2, rls-3, rls-rest, rest (exact complements, split by measured time)
+backend-integration  → 8 shards on that build: workspaces-auth, work-management, rls-1, rls-2, rls-3, rls-4, rls-rest, rest (exact complements, split by measured time)
 frontend             → test:node, app-web build
 frontend-web         → test:web in 4 shards (vitest --shard=1/4 to 4/4)
 dependencies         → security-ci.yml (NuGet and pnpm audit)
