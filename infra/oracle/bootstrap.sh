@@ -40,17 +40,19 @@ write_if_changed() { # path, content on stdin; returns 0 when the file changed
   install -m 644 "$tmp" "$path"; rm -f "$tmp"; return 0
 }
 
+# grep -q exits on the first match; piping into it makes the writer die of SIGPIPE and pipefail fails the check, so match on a captured string.
 verify() {
   local fail=0
+  install -d -m 0755 /run/sshd # Ubuntu 24.04 socket-activated ssh may not have created it yet; sshd -T needs it
   check() { if eval "$2" >/dev/null 2>&1; then printf 'PASS  %s\n' "$1"; else printf 'FAIL  %s\n' "$1"; fail=1; fi; }
   check "docker engine and compose plugin" "docker compose version"
-  check "deploy user exists, is not root, is in the docker group" "id -nG $DEPLOY_USER | grep -qw docker"
+  check "deploy user exists, is not root, is in the docker group" "grep -qw docker <<< \"\$(id -nG $DEPLOY_USER)\""
   check "deploy user has an authorized key" "test -s /home/$DEPLOY_USER/.ssh/authorized_keys"
-  check "sshd: password login off" "sshd -T | grep -qi '^passwordauthentication no'"
-  check "sshd: root login off" "sshd -T | grep -qi '^permitrootlogin no'"
+  check "sshd: password login off" "grep -qi '^passwordauthentication no' <<< \"\$(sshd -T)\""
+  check "sshd: root login off" "grep -qi '^permitrootlogin no' <<< \"\$(sshd -T)\""
   check "fail2ban sshd jail active" "fail2ban-client status sshd"
   check "unattended-upgrades enabled" "grep -q 'Unattended-Upgrade \"1\"' /etc/apt/apt.conf.d/20auto-upgrades"
-  check "swap active" "swapon --show | grep -q /swapfile"
+  check "swap active" "grep -q /swapfile <<< \"\$(swapon --show)\""
   check "firewall accepts 22, 80 and 443" "iptables -C INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT && iptables -C INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT && iptables -C INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT"
   check "caddy running with a valid config" "systemctl is-active caddy && caddy validate --config /etc/caddy/Caddyfile"
   check "deploy path owned by the deploy user" "test \"\$(stat -c %U $DEPLOY_PATH)\" = $DEPLOY_USER"
@@ -102,7 +104,13 @@ KbdInteractiveAuthentication no
 PermitRootLogin no
 PubkeyAuthentication yes
 CONF
-sshd -t && systemctl reload ssh
+install -d -m 0755 /run/sshd # privilege separation dir, missing until ssh.service first starts under ssh.socket
+sshd -t
+if systemctl is-active --quiet ssh.service; then
+  systemctl reload ssh.service || systemctl restart ssh.service
+else
+  echo "ssh.service is not running (socket-activated): new connections already read the new config"
+fi
 
 log "firewall: 22, 80, 443 (Oracle default iptables rules reject the rest)"
 for p in 22 80 443; do open_port "$p"; done
@@ -129,7 +137,7 @@ Unattended-Upgrade::Automatic-Reboot-Time "04:00";
 CONF
 
 log "swap ${SWAP_GB} GB and journald cap"
-if ! swapon --show | grep -q /swapfile; then
+if ! grep -q /swapfile <<< "$(swapon --show)"; then
   [[ -f /swapfile ]] || { fallocate -l "${SWAP_GB}G" /swapfile; chmod 600 /swapfile; mkswap /swapfile >/dev/null; }
   swapon /swapfile
 fi
