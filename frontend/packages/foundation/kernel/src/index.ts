@@ -32,5 +32,3 @@ export { generateCorrelationId } from "./ids/correlation-id";
 
 // Assertions
 export { invariant, assertNonNull } from "./assertions/invariant";
-
-// ci proof: frontend-only change, reverted after the run
