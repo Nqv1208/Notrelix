@@ -134,6 +134,7 @@ jobs:
         run: pnpm codegen:check
 
   # One verdict for every cheap check: any failure on either side keeps all heavy jobs from starting; a side with no changes is skipped and does not count.
+  # Every heavy job below says !cancelled() and names its own side and this verdict: the implicit success() would also count the skipped fast check of the other side further up the chain and skip the job.
   fast-checks:
     name: Fast checks
     needs: [changes, fast-checks-backend, fast-checks-frontend]
@@ -151,10 +152,46 @@ jobs:
           check fast-checks-backend "${{ needs.fast-checks-backend.result }}" "${{ needs.changes.outputs.backend }}"
           check fast-checks-frontend "${{ needs.fast-checks-frontend.result }}" "${{ needs.changes.outputs.frontend }}"
 
-  backend-unit:
-    name: Backend build and unit tests
+  # The only backend restore and build of the heavy jobs: the unit job and every integration shard unpack this output and run dotnet test --no-build --no-restore.
+  backend-build:
+    name: Backend build
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.backend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.fast-checks.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      # Same key as the fast checks and as use-backend-build; the test jobs read what this job saves.
+      - name: Restore NuGet packages cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/**/Directory.*.props', 'backend/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - run: dotnet restore backend.slnx
+      - run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
+      # bin and obj together: obj holds project.assets.json, which --no-restore needs. A tar keeps the paths and file modes that upload-artifact would drop.
+      - name: Pack the build output
+        run: |
+          set -euo pipefail
+          find . -type d \( -name bin -o -name obj \) -prune -print0 | tar --null -T - -cf - | gzip -1 > "$RUNNER_TEMP/backend-build.tgz"
+          ls -lh "$RUNNER_TEMP/backend-build.tgz"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-build
+          path: ${{ runner.temp }}/backend-build.tgz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  backend-unit:
+    name: Backend unit tests
+    needs: [changes, fast-checks, backend-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
@@ -163,21 +200,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
-      - run: dotnet restore backend.slnx
-      - id: build
-        run: dotnet build backend.slnx --no-restore --configuration "$DOTNET_CONFIGURATION"
+      - uses: ./.github/actions/use-backend-build
       - name: Domain, Application, Infrastructure, Platform and API tests
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           set -euo pipefail
           for p in Domain Application Infrastructure Platform API; do
-            dotnet test "tests/Notrelix.$p.Tests/Notrelix.$p.Tests.csproj" --no-build --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
+            dotnet test "tests/Notrelix.$p.Tests/Notrelix.$p.Tests.csproj" --no-build --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
           done
 
   backend-integration:
     name: Integration tests (${{ matrix.shard.name }})
-    needs: [changes, fast-checks]
-    if: needs.changes.outputs.backend == 'true'
+    needs: [changes, fast-checks, backend-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
@@ -221,16 +255,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
-      - run: dotnet restore tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
+      - uses: ./.github/actions/use-backend-build
+        with:
+          restore-target: tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
       - run: >
           dotnet test tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj
-          --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
+          --no-build --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
           --filter "${{ matrix.shard.filter }}"
 
   frontend:
     name: Frontend tests and build
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.frontend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
@@ -249,7 +285,7 @@ jobs:
   frontend-web:
     name: Frontend web tests (${{ matrix.shard }}/4)
     needs: [changes, fast-checks]
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.frontend == 'true' && needs.fast-checks.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -273,7 +309,7 @@ jobs:
 
   ci-gate:
     name: CI gate
-    needs: [changes, fast-checks, fast-checks-backend, fast-checks-frontend, backend-unit, backend-integration, frontend, frontend-web, dependencies]
+    needs: [changes, fast-checks, fast-checks-backend, fast-checks-frontend, backend-build, backend-unit, backend-integration, frontend, frontend-web, dependencies]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -290,6 +326,7 @@ jobs:
           be="${{ needs.changes.outputs.backend }}"; fe="${{ needs.changes.outputs.frontend }}"
           [[ "${{ needs.fast-checks.result }}" == success ]] || { echo "::error::fast-checks=${{ needs.fast-checks.result }}"; exit 1; }
           check fast-checks-backend "${{ needs.fast-checks-backend.result }}" "$be"
+          check backend-build "${{ needs.backend-build.result }}" "$be"
           check backend-unit "${{ needs.backend-unit.result }}" "$be"
           check backend-integration "${{ needs.backend-integration.result }}" "$be"
           check fast-checks-frontend "${{ needs.fast-checks-frontend.result }}" "$fe"
@@ -301,7 +338,7 @@ jobs:
   release-plan:
     name: Release plan
     needs: ci-gate
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success'
+    if: ${{ !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -329,7 +366,7 @@ jobs:
   release-images:
     name: Release images (amd64 and arm64)
     needs: release-plan
-    if: needs.release-plan.outputs.release_candidate == 'true'
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-plan.outputs.release_candidate == 'true' }}
     permissions:
       contents: read
       packages: write
@@ -345,6 +382,7 @@ jobs:
   release-candidate:
     name: Build release candidate
     needs: [release-plan, release-images]
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-images.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -378,6 +416,7 @@ jobs:
   release-stack:
     name: Release stack on the published digests
     needs: [release-plan, release-candidate]
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-candidate.result == 'success' }}
     permissions:
       contents: read
       packages: read
@@ -390,6 +429,7 @@ jobs:
   release-seal:
     name: Attest release candidate
     needs: [release-candidate, release-stack]
+    if: ${{ !cancelled() && needs.release-candidate.result == 'success' && needs.release-stack.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
