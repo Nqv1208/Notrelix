@@ -27,6 +27,10 @@ public static class IdentityRuleCodes
     public const string Identity_ApiToken_InvalidScopesFormat = "Identity_ApiToken_InvalidScopesFormat";
     public const string Identity_ApiToken_CannotUseExpired = "Identity_ApiToken_CannotUseExpired";
     public const string Identity_ApiToken_CannotUseInactive = "Identity_ApiToken_CannotUseInactive";
+    public const string Identity_ApiToken_ScopesRequired = "Identity_ApiToken_ScopesRequired";
+    public const string Identity_ApiToken_UnknownScope = "Identity_ApiToken_UnknownScope";
+    /// <summary>A token's scopes do not cover the request; answered 403 with the wire code <c>identity.token.scope-missing</c> (AccessDenialCodes.ApiTokenScopeMissing).</summary>
+    public const string Identity_ApiToken_ScopeMissing = "Identity_ApiToken_ScopeMissing";
     public const string Identity_OneTimeToken_HashVersionMustBePositive = "Identity_OneTimeToken_HashVersionMustBePositive";
     public const string Identity_OneTimeToken_ExpirationMustBeAfterCreation = "Identity_OneTimeToken_ExpirationMustBeAfterCreation";
     public const string Identity_OneTimeToken_AlreadyUsed = "Identity_OneTimeToken_AlreadyUsed";

@@ -104,7 +104,8 @@ public static class RequestDescriptorValidator
             dataAccess,
             access,
             isIdempotent,
-            requiresExpectedVersion);
+            requiresExpectedVersion,
+            ApiTokenScopeMap.RequiredScope(requestType, kind, dataAccess));
     }
 
     private static TClassification SingleClassification<TClassification>(

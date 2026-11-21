@@ -126,15 +126,21 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<ApiTok
             Logger.LogWarning(ex, "Could not record the use of API token {TokenId}", token.Id);
         }
 
-        var identity = new ClaimsIdentity(
-            [
-                new Claim(JwtRegisteredClaimNames.Sub, token.UserId.Value.ToString()),
-                new Claim(CredentialClaims.Kind, CredentialClaims.ApiTokenKindValue),
-                new Claim(CredentialClaims.ApiTokenId, token.Id.ToString()),
-                new Claim(CredentialClaims.AccountId, token.AccountId.ToString()),
-                new Claim(CredentialClaims.WorkspaceId, token.WorkspaceId.ToString())
-            ],
-            ApiTokenAuthenticationOptions.SchemeName);
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, token.UserId.Value.ToString()),
+            new(CredentialClaims.Kind, CredentialClaims.ApiTokenKindValue),
+            new(CredentialClaims.ApiTokenId, token.Id.ToString()),
+            new(CredentialClaims.AccountId, token.AccountId.ToString()),
+            new(CredentialClaims.WorkspaceId, token.WorkspaceId.ToString())
+        };
+
+        // A token that carries no scope (one never migrated) gets no scope claim and so reaches nothing.
+        claims.AddRange((token.Scopes?.Scopes ?? new HashSet<string>())
+            .Order(StringComparer.Ordinal)
+            .Select(scope => new Claim(CredentialClaims.ApiTokenScope, scope)));
+
+        var identity = new ClaimsIdentity(claims, ApiTokenAuthenticationOptions.SchemeName);
 
         return AuthenticateResult.Success(
             new AuthenticationTicket(new ClaimsPrincipal(identity), ApiTokenAuthenticationOptions.SchemeName));

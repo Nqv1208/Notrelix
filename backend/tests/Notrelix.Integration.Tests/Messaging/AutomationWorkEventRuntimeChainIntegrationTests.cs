@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Notrelix.Application.Events.WorkManagement;
+using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Automation.Rules;
 using Notrelix.Domain.Automation.RulesEngine;
 using Notrelix.Domain.SharedKernel;
@@ -67,9 +68,11 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
 
     private async Task<ChainGraph> SeedActiveRuleAsync(string triggerType, string triggerConfig)
     {
-        var accountId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
+        // A rule is skipped when the Account is not operating, and an unreadable Account counts as not operating: seed it Active.
+        var account = Account.Create("Auto Chain Account", $"ac-{Guid.NewGuid():N}"[..20], AccountType.Team, ownerId, now);
+        var accountId = account.Id;
         var workspace = Workspace.Create(accountId, ownerId, "Auto Chain WS", $"ac-{Guid.NewGuid():N}", now);
         var board = Board.Create(accountId, workspace.Id, ownerId, "Chain Board", null, now);
         var group = BoardGroup.Create(
@@ -86,6 +89,7 @@ public sealed class AutomationWorkEventRuntimeChainIntegrationTests : IAsyncLife
         rule.Enable(ownerId, now);
 
         await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.Accounts.Add(account);
         seed.Workspaces.Add(workspace);
         seed.WorkspaceMembers.Add(WorkspaceMember.Create(
             accountId, workspace.Id, ownerId, WorkspaceRole.Owner, ownerId, now));

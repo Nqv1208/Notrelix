@@ -18,4 +18,10 @@ public interface ICurrentCredentialContext
 
     /// <summary>The workspace the API token was issued for, when applicable.</summary>
     Guid? BoundWorkspaceId { get; }
+
+    /// <summary>
+    /// The scopes the API token was issued with; empty for any other credential, and for a token that carries
+    /// none (which reaches nothing).
+    /// </summary>
+    IReadOnlySet<string> ApiTokenScopes { get; }
 }

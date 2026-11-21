@@ -3,9 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
- * Workspace API tokens (UC-IDN-L01, L02, L03): the list, issuing one behind a step-up proof with the
- * secret shown once, and revoking one after a confirmation. The page offers no scopes: the scope
- * vocabulary (UC-IDN-L05) waits on a product decision.
+ * Workspace API tokens (UC-IDN-L01, L02, L03, L05): the list, issuing one behind a step-up proof with the
+ * secret shown once, the scopes it is limited to (at least one, fixed at issue), and revoking one after a
+ * confirmation.
  */
 const scenario = process.env.VITE_MOCK_STATE ?? "default";
 const tokens = "/workspaces/mock-workspace-primary/account/tokens";
@@ -32,6 +32,8 @@ async function issue(page: Page, name: string) {
   await page.getByRole("button", { name: "Tạo token", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Tạo token API" });
   await form.getByLabel("Tên token").fill(name);
+  await form.getByRole("checkbox", { name: "Công việc: đọc" }).check();
+  await form.getByRole("checkbox", { name: "Tài liệu: ghi" }).check();
   await form.getByRole("button", { name: "Tạo token" }).click();
   const proof = page.getByRole("dialog", { name: "Xác nhận lại danh tính" });
   await proof
@@ -75,6 +77,7 @@ test("a token is issued behind a proof, its secret is shown once, then only its 
 
   const row = page.getByRole("row").filter({ hasText: "Báo cáo tồn kho" });
   await expect(row).toContainText(`••••••${secret.slice(-4)}`);
+  await expect(row).toContainText("Công việc: đọc, Tài liệu: ghi");
   await expect(page.locator("body")).not.toContainText(secret);
   await page.reload();
   await expect(page.locator("body")).not.toContainText(secret);
@@ -86,11 +89,39 @@ test("a token with no name asks for one before any proof is bought", async ({
   await open(page);
   await page.getByRole("button", { name: "Tạo token", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Tạo token API" });
+  await form.getByRole("checkbox", { name: "Chat: đọc" }).check();
   await form.getByRole("button", { name: "Tạo token" }).click();
   await expect(form.getByRole("alert")).toContainText("Hãy đặt tên");
   await expect(
     page.getByRole("dialog", { name: "Xác nhận lại danh tính" }),
   ).toHaveCount(0);
+});
+
+test("a token with no scope asks for one before any proof is bought", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Tạo token", exact: true }).click();
+  const form = page.getByRole("dialog", { name: "Tạo token API" });
+  await form.getByLabel("Tên token").fill("Không phạm vi");
+  await form.getByRole("button", { name: "Tạo token" }).click();
+  await expect(form.getByRole("alert")).toContainText(
+    "Hãy chọn ít nhất một phạm vi",
+  );
+  await expect(
+    page.getByRole("dialog", { name: "Xác nhận lại danh tính" }),
+  ).toHaveCount(0);
+});
+
+test("the list shows what each token may do", async ({ page }) => {
+  await open(page);
+  const rows = page.getByRole("row");
+  await expect(rows.filter({ hasText: "CI triển khai ERP" })).toContainText(
+    "Mọi phạm vi",
+  );
+  await expect(rows.filter({ hasText: "Báo cáo BI hằng tuần" })).toContainText(
+    "Công việc: đọc, Tài liệu: đọc",
+  );
 });
 
 test("a wrong code keeps the proof step open and names the problem", async ({
@@ -100,6 +131,7 @@ test("a wrong code keeps the proof step open and names the problem", async ({
   await page.getByRole("button", { name: "Tạo token", exact: true }).click();
   const form = page.getByRole("dialog", { name: "Tạo token API" });
   await form.getByLabel("Tên token").fill("Thử");
+  await form.getByRole("checkbox", { name: "Chat: đọc" }).check();
   await form.getByRole("button", { name: "Tạo token" }).click();
   const proof = page.getByRole("dialog", { name: "Xác nhận lại danh tính" });
   await proof.getByLabel("Mã 6 số từ ứng dụng xác thực").fill("000000");

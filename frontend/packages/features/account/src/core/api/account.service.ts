@@ -32,7 +32,9 @@ import type {
   TwoFactorEnrollment,
   UserProfile,
   AccountApiTokenPage,
+  AccountTokenScope,
 } from "../types/account";
+import { ACCOUNT_TOKEN_SCOPES } from "../types/account";
 
 export interface AccountApiClient {
   get<T>(
@@ -379,6 +381,7 @@ interface ApiTokenPageWire {
         readonly expiresAt?: string | null;
         readonly createdAt?: string;
         readonly suffix?: string | null;
+        readonly scopes?: readonly string[] | null;
         readonly revokedReason?: string | null;
       }[]
     | null;
@@ -407,6 +410,9 @@ export function toApiTokenPage(wire: ApiTokenPageWire): AccountApiTokenPage {
       expiresAt: item.expiresAt ?? null,
       createdAt: item.createdAt ?? "",
       suffix: item.suffix ?? null,
+      scopes: ACCOUNT_TOKEN_SCOPES.filter((scope) =>
+        (item.scopes ?? []).includes(scope),
+      ),
       revokedReason: REVOKED_REASONS[item.revokedReason ?? ""] ?? null,
     })),
     nextCursor: wire.nextCursor ?? null,
@@ -637,7 +643,12 @@ export function createAccountService(
     /** Spends an `IssueApiToken` proof. The secret is in this answer alone: hold it in memory, never store it. */
     async issueApiToken(
       workspaceId: string,
-      input: { name: string; expiresAt: string; stepUpToken: string },
+      input: {
+        name: string;
+        expiresAt: string;
+        scopes: readonly AccountTokenScope[];
+        stepUpToken: string;
+      },
     ): Promise<{ id: string; secret: string; name: string }> {
       const wire = await api.post<{
         id?: string;

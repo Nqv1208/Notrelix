@@ -19,6 +19,7 @@ function props(locale: "vi" | "en"): AccountTokensSurfaceProps {
     expiresAt: "2027-02-12T00:00:00Z",
     createdAt: "2026-11-01T00:00:00Z",
     suffix: "a41f",
+    scopes: ["work:read" as const],
   });
   return {
     copy: accountTokensCopy(locale),

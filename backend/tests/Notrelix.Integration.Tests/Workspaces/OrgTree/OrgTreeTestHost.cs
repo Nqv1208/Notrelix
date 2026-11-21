@@ -187,6 +187,8 @@ internal sealed class OrgTreeTestHost
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Status.IAccountStatusFacts,
+            Notrelix.Infrastructure.Accounts.Status.AccountStatusFactsReader>();
         // Public forms: the per-form scope, the workspace public-links fact and the captcha test double.
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Sharing.IWorkspaceSharingFacts,
             Notrelix.Infrastructure.Workspaces.Sharing.WorkspaceSharingFactsReader>();

@@ -103,8 +103,16 @@ export interface WorkspaceSummary {
   isPersonal: boolean;
   /** Read-only for every member until an owner unarchives it; as `GetWorkspace` and the lists report it. */
   isArchived?: boolean;
+  /**
+   * The Account's status as `GetWorkspace` reports it (other lists report `Active` and are not read for this).
+   * Absent or unknown reads as Active: the server refuses the writes, this only shapes the display.
+   */
+  accountStatus?: AccountStatus;
   settings?: string;
 }
+
+/** A Suspended or Closed Account is read-only for every member until an Account Owner restores it. */
+export type AccountStatus = "Active" | "Suspended" | "Closed";
 
 export interface WorkspaceViewTarget {
   boardId?: string;

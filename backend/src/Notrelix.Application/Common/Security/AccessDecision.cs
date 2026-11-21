@@ -28,6 +28,9 @@ public static class AccessDenialCodes
 
     /// <summary>The workspace setting AllowGuestInvites is off: nobody introduces a Guest by invitation, and an invitation issued earlier cannot be accepted.</summary>
     public const string GuestInvitesOff = "workspace.guest_invites_off";
+
+    /// <summary>An API token carries no scope that covers the request (rule Identity_ApiToken_ScopeMissing); the issuer's own permissions are not consulted.</summary>
+    public const string ApiTokenScopeMissing = "identity.token.scope-missing";
 }
 
 public sealed record AccessDecision(AccessDecisionKind Kind, string? Message = null, string? Code = null)

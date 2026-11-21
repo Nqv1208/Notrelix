@@ -12,5 +12,8 @@ public static class CredentialClaims
     public const string AccountId = "notrelix:credential:account_id";
     public const string WorkspaceId = "notrelix:credential:workspace_id";
 
+    /// <summary>One claim per scope the token was issued with. A token with none carries no such claim.</summary>
+    public const string ApiTokenScope = "notrelix:credential:scope";
+
     public const string ApiTokenKindValue = "api_token";
 }

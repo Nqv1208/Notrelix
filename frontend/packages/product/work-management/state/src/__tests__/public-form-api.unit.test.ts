@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { NotrelixClient } from "@notrelix/contracts";
 import { createFormApi } from "../api/form.api";
 import {
+  formWriteFailure,
   publicAccessFailure,
   publicSubmitFailure,
 } from "../mutations/use-form-writes";
@@ -121,5 +122,21 @@ describe("why a public write was refused", () => {
       publicSubmitFailure({ status: 429, message: "Quá nhiều lần" }),
     ).toEqual({ ok: false, reason: "limited", message: "Quá nhiều lần" });
     expect(publicSubmitFailure({ status: 500 }).reason).toBe("failed");
+  });
+});
+
+describe("a form write refused because the Account is suspended (D06)", () => {
+  const suspended = { status: 403, code: "account.suspended" };
+
+  it("is not reported as a missing permission: the Account message already says why", () => {
+    expect(formWriteFailure({ status: 403 })).toEqual({
+      ok: false,
+      reason: "forbidden",
+    });
+    expect(formWriteFailure(suspended)).toEqual({
+      ok: false,
+      reason: "failed",
+    });
+    expect(publicAccessFailure(suspended).reason).toBe("failed");
   });
 });

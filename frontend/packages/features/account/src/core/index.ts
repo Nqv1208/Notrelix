@@ -11,6 +11,7 @@ export type {
   AccountApiToken,
   AccountApiTokenPage,
   AccountApiTokenRevokedReason,
+  AccountTokenScope,
   AccountLeaveFailure,
   AccountPhotoFailure,
   AccountWorkspaceEntry,
