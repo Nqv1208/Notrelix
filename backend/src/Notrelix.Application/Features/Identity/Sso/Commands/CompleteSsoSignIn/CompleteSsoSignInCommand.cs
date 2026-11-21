@@ -226,7 +226,7 @@ public sealed class CompleteSsoSignInCommandHandler : IRequestHandler<CompleteSs
         // From here the person is an existing user: the Account's rules are read in that user's own scope.
         if (_credentialScope is not null)
             await _credentialScope.EnterByEmailAsync(email, cancellationToken);
-        _logger.LogInformation("SSO person provisioned as a Member of account {AccountId}", accountId);
+        _logger.LogInformation("SSO person provisioned as an Account Member");
         return user;
     }
 

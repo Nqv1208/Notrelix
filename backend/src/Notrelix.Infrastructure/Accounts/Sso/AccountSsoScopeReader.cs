@@ -67,8 +67,7 @@ public sealed class AccountSsoScopeReader : IAccountSsoScopeReader
     {
         var entered = await ScalarAsync($"SELECT ops.enter_sso_callback_scope({accountId}) AS \"Value\"", cancellationToken);
         RlsScopeMetrics.Record("sso-callback", "SsoCallback", entered);
-        _logger.LogInformation(
-            entered ? "SSO callback scope entered | account {AccountId}" : "SSO callback scope not entered | account {AccountId}", accountId);
+        _logger.LogInformation(entered ? "SSO callback scope entered" : "SSO callback scope not entered");
         return entered;
     }
 
