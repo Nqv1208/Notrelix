@@ -35,6 +35,9 @@ const nextConfig: NextConfig = {
       {
         test: /\.svg$/i,
         issuer: fileLoaderRule?.issuer,
+        // The app/icon.svg metadata image must reach Next's own loader as raw
+        // SVG; SVGR would turn it into a component and break type detection.
+        resourceQuery: { not: [/__next_metadata__/] },
         use: ["@svgr/webpack"],
       },
     );
