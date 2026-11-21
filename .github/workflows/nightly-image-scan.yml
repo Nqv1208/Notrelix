@@ -1,0 +1,45 @@
+name: Nightly Image Scan
+# Runs the same image gates as the release path (container-ci Trivy scans of our images, runtime-security of every
+# pinned runtime image) against develop so a new upstream CVE fails here, not on the first release/** push.
+# Builds only (publish_mode=false): nothing is pushed, signed or attested.
+on:
+  schedule: [{cron: '30 2 * * *'}]
+  workflow_dispatch:
+permissions: {contents: read}
+concurrency: {group: nightly-image-scan, cancel-in-progress: false}
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      container_matrix: ${{ steps.plan.outputs.container_matrix }}
+      runtime_images_json: ${{ steps.plan.outputs.runtime_images_json }}
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+      - id: plan
+        run: |
+          set -euo pipefail
+          python3 -m tools.deliveryctl plan --event-name workflow_dispatch --ref refs/heads/develop --source-sha "$(git rev-parse HEAD)" \
+            --full --output plan/plan.json --github-output
+  images:
+    name: Our images
+    needs: plan
+    # container-ci declares a publish job with write scopes; a caller must allow them even though publish_mode=false skips it.
+    permissions: {contents: read, packages: write, id-token: write, attestations: write}
+    uses: ./.github/workflows/container-ci.yml
+    with:
+      container_matrix: ${{ needs.plan.outputs.container_matrix }}
+      source_sha: ${{ github.sha }}
+      plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
+      publish_mode: ${{ format('{0}', 'false') }}
+  runtime-security:
+    name: Runtime images
+    needs: plan
+    permissions: {contents: read, packages: read}
+    uses: ./.github/workflows/runtime-image-scan.yml
+    with:
+      release_images_json: ${{ needs.plan.outputs.runtime_images_json }}
