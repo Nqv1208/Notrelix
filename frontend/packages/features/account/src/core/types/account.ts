@@ -126,6 +126,18 @@ export interface StepUpTarget {
   readonly newOwnerId: string;
 }
 
+/** What a token may do: read or write one context (`work`, `docs`, `chat`), or read the workspace itself. Write does not imply read. */
+export const ACCOUNT_TOKEN_SCOPES = [
+  "work:read",
+  "work:write",
+  "docs:read",
+  "docs:write",
+  "chat:read",
+  "chat:write",
+  "workspace:read",
+] as const;
+export type AccountTokenScope = (typeof ACCOUNT_TOKEN_SCOPES)[number];
+
 /** One API token of a workspace; never the secret, only the last characters. */
 export interface AccountApiToken {
   readonly id: string;
@@ -136,6 +148,8 @@ export interface AccountApiToken {
   readonly createdAt: string;
   /** `null` for a token issued before the suffix was kept. */
   readonly suffix: string | null;
+  /** Fixed at issue. Empty only for a token that carries none, which reaches nothing. */
+  readonly scopes: readonly AccountTokenScope[];
   /** Why a revoked token stopped; `null` while it is active or when it was revoked before the reason was kept. */
   readonly revokedReason?: AccountApiTokenRevokedReason | null;
 }

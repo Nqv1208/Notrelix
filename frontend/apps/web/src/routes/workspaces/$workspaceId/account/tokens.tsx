@@ -7,6 +7,7 @@ import {
   useAccountTokensCopy,
   type AccountApiToken,
   type AccountSection,
+  type AccountTokenScope,
   type AccountTokensIssueFlow,
 } from "@notrelix/features-account";
 import { useLocale } from "@notrelix/i18n";
@@ -17,6 +18,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const LIFETIMES = [30, 90, 365] as const;
 type Lifetime = (typeof LIFETIMES)[number];
 const PURPOSE = "IssueApiToken" as const;
+const SCOPES: readonly AccountTokenScope[] = [
+  "work:read",
+  "work:write",
+  "docs:read",
+  "docs:write",
+  "chat:read",
+  "chat:write",
+  "workspace:read",
+];
 
 const statusOf = (error: unknown) => (error as { status?: number })?.status;
 const codeOf = (error: unknown) => (error as { code?: string })?.code;
@@ -46,6 +56,7 @@ export function AccountTokensPage() {
     stepUpResult?: unknown;
     name?: unknown;
     days?: unknown;
+    scopes?: unknown;
   };
   const [flow, setFlow] = useState<AccountTokensIssueFlow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,9 +64,14 @@ export function AccountTokensPage() {
   const [notice, showNotice] = useToast();
   /** The challenge a code answer quotes. */
   const challenge = useRef<string | null>(null);
-  const draft = useRef<{ name: string; days: Lifetime }>({
+  const draft = useRef<{
+    name: string;
+    days: Lifetime;
+    scopes: readonly AccountTokenScope[];
+  }>({
     name: "",
     days: 90,
+    scopes: [],
   });
 
   const deps = useMemo(
@@ -123,7 +139,7 @@ export function AccountTokensPage() {
       try {
         const token = await proof;
         proved = true;
-        const { name, days } = draft.current;
+        const { name, days, scopes } = draft.current;
         // A minute short of the limit, so a clock a little ahead of the server's never trips it.
         const expiresAt = new Date(
           Date.now() + days * DAY_MS - 60_000,
@@ -131,6 +147,7 @@ export function AccountTokensPage() {
         const issued = await service.issueApiToken(workspaceId, {
           name,
           expiresAt,
+          scopes,
           stepUpToken: token,
         });
         setFlow({
@@ -191,8 +208,8 @@ export function AccountTokensPage() {
   // back here with the token's name and life in the address, the proof waiting in an httpOnly cookie.
   const startProvider = useCallback(
     (provider: string) => {
-      const { name, days } = draft.current;
-      const back = `/workspaces/${workspaceId}/account/tokens?stepUp=${PURPOSE}&name=${encodeURIComponent(name)}&days=${days}`;
+      const { name, days, scopes } = draft.current;
+      const back = `/workspaces/${workspaceId}/account/tokens?stepUp=${PURPOSE}&name=${encodeURIComponent(name)}&days=${days}&scopes=${encodeURIComponent(scopes.join(","))}`;
       void service
         .startProviderStepUp(provider, PURPOSE, back)
         .then((url) => {
@@ -219,13 +236,26 @@ export function AccountTokensPage() {
   const resumed = useRef(false);
   const resumeName = typeof search.name === "string" ? search.name : "";
   const resumeDays = LIFETIMES.find((d) => d === Number(search.days));
+  const resumeScopes = SCOPES.filter((scope) =>
+    (typeof search.scopes === "string"
+      ? search.scopes.split(",")
+      : []
+    ).includes(scope),
+  );
   const resuming =
-    search.stepUp === PURPOSE && resumeName !== "" && resumeDays !== undefined;
+    search.stepUp === PURPOSE &&
+    resumeName !== "" &&
+    resumeDays !== undefined &&
+    resumeScopes.length > 0;
   useEffect(() => {
     if (!resuming) resumed.current = false;
     if (resumed.current || !resuming || !summary.data) return;
     resumed.current = true;
-    draft.current = { name: resumeName, days: resumeDays };
+    draft.current = {
+      name: resumeName,
+      days: resumeDays,
+      scopes: resumeScopes,
+    };
     const failed = search.stepUpResult === "failed";
     // Read once: a reload must not spend (or ask for) another proof.
     void navigate({ to: ".", search: {}, replace: true } as Parameters<
@@ -243,6 +273,7 @@ export function AccountTokensPage() {
     navigate,
     resumeDays,
     resumeName,
+    resumeScopes,
     resuming,
     search.stepUpResult,
     service,
@@ -279,10 +310,10 @@ export function AccountTokensPage() {
       actionError={actionError}
       onStart={() => {
         setActionError(false);
-        setFlow({ kind: "form", name: "", days: 90, error: null });
+        setFlow({ kind: "form", name: "", days: 90, scopes: [], error: null });
       }}
-      onSubmitForm={({ name, days }) => {
-        draft.current = { name, days };
+      onSubmitForm={({ name, days, scopes }) => {
+        draft.current = { name, days, scopes };
         void beginProof();
       }}
       onSubmitProof={submitProof}

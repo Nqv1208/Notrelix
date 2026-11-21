@@ -14062,7 +14062,7 @@
           "Identity.ApiTokens"
         ],
         "summary": "Issue a new API token for a workspace",
-        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.",
+        "description": "Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise), and at least one scope from the published list (identity.api-tokens.scopes-required, identity.api-tokens.unknown-scope); scopes cannot be changed afterwards. A call with the token outside its scopes is answered 403 identity.token.scope-missing. The raw secret is returned exactly once in this response; the issue is recorded in the audit log.",
         "operationId": "Identity.ApiTokens.Create",
         "parameters": [
           {
@@ -40416,6 +40416,13 @@
             "format": "date-time",
             "nullable": true
           },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
           "stepUpToken": {
             "type": "string",
             "nullable": true
@@ -43839,7 +43846,10 @@
             "nullable": true
           },
           "scopes": {
-            "type": "string",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           },
           "status": {

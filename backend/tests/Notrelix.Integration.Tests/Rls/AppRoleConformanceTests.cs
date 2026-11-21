@@ -77,7 +77,7 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
         var secret = new ApiTokenSecretService().Generate();
         _apiTokenSecret = secret.RawToken;
         ctx.ApiTokens.Add(ApiToken.Create(account.Id, ws.Id, _alice.Id, "conformance", secret.TokenHash,
-            scopes: null, createdBy: _alice.Id, createdAt: now, expiresAt: null));
+            scopes: ApiTokenScopes.All(), createdBy: _alice.Id, createdAt: now, expiresAt: null));
         var issued = new OneTimeTokenService().Generate(TokenPurpose.WorkspaceInvitation);
         _invitationToken = issued.RawToken;
         ctx.WorkspaceInvitations.Add(WorkspaceInvitation.Create(
@@ -236,7 +236,7 @@ public sealed class AppRoleConformanceTests : IAsyncLifetime
     [Fact]
     public async Task ApiTokenAuthentication_UnderTheAppRole_Works()
     {
-        var url = $"/api/v1/workspaces/{_workspaceId}/api-tokens";
+        var url = $"/api/v1/workspaces/{_workspaceId}";
         var (owner, app) = await BothAsync(c => c.GetAsync(url), bearer: _apiTokenSecret);
         owner.StatusCode.Should().Be(HttpStatusCode.OK, await owner.Content.ReadAsStringAsync());
         app.StatusCode.Should().Be(HttpStatusCode.OK, await app.Content.ReadAsStringAsync());

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Notrelix.Domain.Identity;
 
 namespace Notrelix.Domain.Tests.Identity.Tokens;
 
@@ -82,5 +83,50 @@ public class ApiTokenScopesTests
     {
         var scopes = ApiTokenScopes.FromJson("[\"read\"]");
         scopes.HasAny().Should().BeTrue();
+    }
+
+    [Fact]
+    public void Vocabulary_ShouldBeReadAndWritePerContext_PlusWorkspaceRead()
+    {
+        ApiTokenScopes.Vocabulary.Should().BeEquivalentTo(
+            "work:read", "work:write", "docs:read", "docs:write", "chat:read", "chat:write", "workspace:read");
+    }
+
+    [Fact]
+    public void Create_ShouldKeepEveryChosenScope_AndAllowOnlyThose()
+    {
+        var scopes = ApiTokenScopes.Create(["work:read", "docs:write", "work:read"]);
+
+        scopes.Scopes.Should().BeEquivalentTo("work:read", "docs:write");
+        scopes.Allows("work:read").Should().BeTrue();
+        scopes.Allows("docs:write").Should().BeTrue();
+        scopes.Allows("work:write").Should().BeFalse("write does not imply read, nor read write");
+        scopes.Allows("docs:read").Should().BeFalse("write does not imply read");
+    }
+
+    [Fact]
+    public void Create_ShouldRefuseAnEmptyList()
+    {
+        Action act = () => ApiTokenScopes.Create([]);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode
+            .Should().Be(IdentityRuleCodes.Identity_ApiToken_ScopesRequired);
+    }
+
+    [Fact]
+    public void Create_ShouldRefuseAScopeOutsideTheVocabulary()
+    {
+        Action act = () => ApiTokenScopes.Create(["work:read", "admin"]);
+
+        act.Should().Throw<BusinessRuleException>().Which.RuleCode
+            .Should().Be(IdentityRuleCodes.Identity_ApiToken_UnknownScope);
+    }
+
+    [Fact]
+    public void All_ShouldAllowEveryScopeOfTheVocabulary()
+    {
+        var all = ApiTokenScopes.All();
+
+        ApiTokenScopes.Vocabulary.Should().OnlyContain(scope => all.Allows(scope));
     }
 }

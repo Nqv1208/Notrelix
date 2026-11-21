@@ -193,7 +193,20 @@ export interface MockApiToken {
   revokedReason:
     "Manual" | "MemberRemoved" | "MemberSuspended" | "MemberLeft" | null;
   suffix: string;
+  /** The scopes it was issued with, fixed for its life (the producer's seven; none may be empty). */
+  scopes: string[];
 }
+
+/** The producer's scope vocabulary: read and write per context, and the workspace read. */
+export const MOCK_API_TOKEN_SCOPES = [
+  "work:read",
+  "work:write",
+  "docs:read",
+  "docs:write",
+  "chat:read",
+  "chat:write",
+  "workspace:read",
+] as const;
 
 /** Three tokens a workspace already holds, newest first; times are minutes from the mock clock's now. */
 const defaultApiTokens = (
@@ -206,6 +219,7 @@ const defaultApiTokens = (
     suffix: string,
     usedAgo: number | null,
     left: number,
+    scopes: string[],
   ): MockApiToken => ({
     id: `00000000-0000-4000-8000-00000000000${n}`,
     name,
@@ -216,11 +230,17 @@ const defaultApiTokens = (
     revokedAt: null,
     revokedReason: null,
     suffix,
+    scopes,
   });
   return [
-    token(1, "CI triển khai ERP", "a41f", 120, 90),
-    token(2, "Báo cáo BI hằng tuần", "9c07", day, 30),
-    token(3, "Script dọn dẹp thẻ", "33be", null, 90),
+    token(1, "CI triển khai ERP", "a41f", 120, 90, [...MOCK_API_TOKEN_SCOPES]),
+    token(2, "Báo cáo BI hằng tuần", "9c07", day, 30, [
+      "work:read",
+      "docs:read",
+    ]),
+    token(3, "Script dọn dẹp thẻ", "33be", null, 90, [
+      ...MOCK_API_TOKEN_SCOPES,
+    ]),
   ];
 };
 
