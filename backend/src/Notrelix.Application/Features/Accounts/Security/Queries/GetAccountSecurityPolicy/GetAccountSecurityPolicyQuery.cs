@@ -1,6 +1,4 @@
 using Notrelix.Application.Common.Models;
-using Notrelix.Application.Features.Accounts.Abstractions;
-using Notrelix.Domain.Accounts.Members;
 using Notrelix.Application.Features.Accounts.Public.Security;
 
 namespace Notrelix.Application.Features.Accounts.Security.Queries.GetAccountSecurityPolicy;
@@ -20,26 +18,22 @@ public sealed class GetAccountSecurityPolicyQueryHandler
 {
     private readonly IAccountSecurityPolicyFacts _facts;
     private readonly ICurrentRequestContext _currentUser;
-    private readonly IAccountDbContext _context;
+    private readonly IAccountSecurityManageAuthorizer _manage;
 
     public GetAccountSecurityPolicyQueryHandler(
-        IAccountSecurityPolicyFacts facts, ICurrentRequestContext currentUser, IAccountDbContext context)
+        IAccountSecurityPolicyFacts facts, ICurrentRequestContext currentUser, IAccountSecurityManageAuthorizer manage)
     {
         _facts = facts;
         _currentUser = currentUser;
-        _context = context;
+        _manage = manage;
     }
 
     public async Task<Result<AccountSecurityPolicyDto>> Handle(
         GetAccountSecurityPolicyQuery request, CancellationToken cancellationToken)
     {
         var accountId = _currentUser.RequireAccountId();
-        var userId = _currentUser.UserId;
-        var canManage = await _context.AccountMembers.AsNoTracking().AnyAsync(
-            m => m.AccountId == accountId && m.UserId == userId
-                && m.Status == AccountMemberStatus.Active && m.Role == AccountRole.Owner,
-            cancellationToken);
         return Result<AccountSecurityPolicyDto>.Success(new AccountSecurityPolicyDto(
-            await _facts.IsMfaRequiredAsync(accountId, cancellationToken), canManage));
+            await _facts.IsMfaRequiredAsync(accountId, cancellationToken),
+            await _manage.CanManageAsync(cancellationToken)));
     }
 }
