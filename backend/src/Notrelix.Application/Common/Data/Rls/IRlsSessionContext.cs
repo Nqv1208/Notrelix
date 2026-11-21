@@ -55,7 +55,24 @@ public interface IRlsSessionContext
     /// transaction. The credential is never logged.
     /// </summary>
     Task<Guid?> EnterCredentialScopeAsync(CredentialScopeRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Enters the form-submit scope: the principal of ONE public form, derived by the database from the form's
+    /// public key. Returns the form it is bound to, or <c>null</c> (no scope entered) when no form is open to
+    /// the public under the key (private, closed, deleted, board or workspace archived, public links off).
+    /// Requires an open transaction. The key is never logged.
+    /// </summary>
+    Task<FormSubmitBinding?> EnterFormSubmitScopeAsync(string publicKey, SystemOperationReason reason, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The options (id and label) the bound form's mapped choice questions accept, inside the form-submit scope.
+    /// The scope has no read of the board or its fields; this is the one thing it may learn about them.
+    /// </summary>
+    Task<IReadOnlyList<FormSubmitFieldOption>> ReadFormSubmitFieldOptionsAsync(CancellationToken cancellationToken);
 }
+
+/// <summary>The one form (and its tenant and board) a form-submit scope was bound to by the database.</summary>
+public sealed record FormSubmitBinding(Guid FormId, Guid AccountId, Guid WorkspaceId, Guid BoardId);
 
 /// <summary>What a presented credential identifies the user by.</summary>
 public enum CredentialScopeKind
@@ -105,3 +122,6 @@ public sealed record TokenScopeRequest(
 
 /// <summary>The account and workspace a token scope was bound to by the database.</summary>
 public sealed record TokenScopeBinding(Guid AccountId, Guid WorkspaceId);
+
+/// <summary>One option of a board field that a question of the bound form fills.</summary>
+public sealed record FormSubmitFieldOption(Guid FieldId, Guid OptionId, string Name);

@@ -20,6 +20,8 @@ public class FormConfiguration : IEntityTypeConfiguration<Form>
         builder.Property(x => x.Visibility).HasColumnName("visibility").IsRequired();
         builder.Property(x => x.SettingsJson).HasColumnName("settings_json").IsRequired();
         builder.Property(x => x.SubmitterPolicyJson).HasColumnName("submitter_policy_json").IsRequired();
+        builder.Property(x => x.PublicKey).HasColumnName("public_key").HasMaxLength(64);
+        builder.Ignore(x => x.IsPublic);
 
         builder.HasMany(x => x.Questions)
             .WithOne()
@@ -37,6 +39,7 @@ public class FormConfiguration : IEntityTypeConfiguration<Form>
         builder.Property(x => x.Version).HasColumnName("version");
 
         builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_forms_slug");
+        builder.HasIndex(x => x.PublicKey).IsUnique().HasFilter("public_key IS NOT NULL").HasDatabaseName("idx_forms_public_key");
         builder.HasIndex(x => x.BoardId).HasFilter("deleted_at IS NULL").HasDatabaseName("idx_forms_board_id");
     }
 }

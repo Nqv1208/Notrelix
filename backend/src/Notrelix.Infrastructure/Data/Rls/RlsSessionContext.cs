@@ -269,6 +269,58 @@ public sealed class RlsSessionContext : IRlsSessionContext
         return binding;
     }
 
+    public async Task<FormSubmitBinding?> EnterFormSubmitScopeAsync(
+        string publicKey, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(publicKey))
+            throw new ArgumentException("A public form key is required.", nameof(publicKey));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("form-submit");
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT form_id, account_id, workspace_id, board_id FROM ops.enter_form_submit_scope(@key)", connection, transaction);
+        command.Parameters.AddWithValue("key", publicKey);
+
+        FormSubmitBinding? binding = null;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            if (await reader.ReadAsync(cancellationToken))
+                binding = new FormSubmitBinding(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetGuid(3));
+        }
+
+        RlsScopeMetrics.Record("form-submit", reason.Category, binding is not null);
+        if (binding is null)
+        {
+            _logger?.LogWarning("Form-submit scope not entered: {Category}: {Description}", reason.Category, reason.Description);
+        }
+        else
+        {
+            _active = RlsBoundedScope.Token;
+            // The key is a locator and is never logged; only the derived form is.
+            _logger?.LogInformation(
+                "Form-submit scope entered: {Category}: {Description} | form {FormId} workspace {WorkspaceId}",
+                reason.Category, reason.Description, binding.FormId, binding.WorkspaceId);
+        }
+
+        return binding;
+    }
+
+    public async Task<IReadOnlyList<FormSubmitFieldOption>> ReadFormSubmitFieldOptionsAsync(CancellationToken cancellationToken)
+    {
+        RequireTransaction("form-submit");
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand("SELECT field_id, option_id, option_name FROM ops.form_submit_field_options()", connection, transaction);
+
+        var rows = new List<FormSubmitFieldOption>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            rows.Add(new FormSubmitFieldOption(reader.GetGuid(0), reader.GetGuid(1), reader.GetString(2)));
+        return rows;
+    }
+
     private async Task<bool> ScalarBoolAsync(string sql, string parameter, object value, CancellationToken cancellationToken)
     {
         var connection = (NpgsqlConnection)_database.GetDbConnection();

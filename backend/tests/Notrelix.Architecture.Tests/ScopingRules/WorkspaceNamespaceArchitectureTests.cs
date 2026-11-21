@@ -112,6 +112,9 @@ public class WorkspaceNamespaceArchitectureTests
             "WorkManagement Public target-action parameter record — explicit scope fact for " +
             "cross-context callers, not a pipeline command",
             "Keep as-is; producer Public contract, not a pipeline request"),
+        ["SubmitPublicFormCommand"] = new("SubmitPublicFormCommand", AllowlistClassification.Intentional,
+            "An anonymous visitor's submission to a public form: no person and no workspace in the request; the form's own principal (RLS 034, derived from the public key) is the scope and may only insert that form's submissions",
+            "Keep as-is; anonymous request bound to one form by the database"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingWorkspaceRequest = new()
@@ -148,6 +151,9 @@ public class WorkspaceNamespaceArchitectureTests
             "WorkManagement Public target-action parameter record — authorization is supplied " +
             "explicitly by the caller's execution principal, not by pipeline permission markers",
             "Keep as-is; producer Public contract, not a pipeline request"),
+        ["SubmitPublicFormCommand"] = new("SubmitPublicFormCommand", AllowlistClassification.Intentional,
+            "An anonymous visitor holds no permission by design: the public key opens one form to the public, and the database principal bound to it can only insert that form's submissions",
+            "Keep as-is; anonymous request, authority is the per-form database principal"),
     };
 
     private static readonly Dictionary<string, AllowlistEntry> DocumentsMissingPermission = new()

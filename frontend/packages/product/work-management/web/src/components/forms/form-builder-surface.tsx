@@ -53,6 +53,10 @@ import {
   type ConflictDiffRow,
 } from "../board-settings/board-settings-conflict-parts";
 import { FormFillSurface } from "./form-fill-surface";
+import {
+  FormPublicAccessSection,
+  type FormPublicAccessSectionProps,
+} from "./form-public-access-section";
 import { Chip, FormAlert, FormStatusChip } from "./forms-parts";
 import { fillFormsCopy, type FormsCopy } from "./forms.copy";
 import {
@@ -100,6 +104,8 @@ export interface FormBuilderSurfaceProps {
   readonly onPublish: () => Promise<FormWriteResult>;
   readonly onClose: () => Promise<FormWriteResult>;
   readonly onCopyLink: () => Promise<boolean>;
+  /** The "Public link" section; left out where the host cannot read or switch it. */
+  readonly publicAccess?: Omit<FormPublicAccessSectionProps, "copy">;
   readonly onReload: () => void | Promise<unknown>;
   /** Reads the form as saved now without replacing the one shown (the diff of a stale save). */
   readonly onReadLatest?: () => Promise<FormDetail | null>;
@@ -580,6 +586,9 @@ function Builder(props: FormBuilderSurfaceProps & { form: FormDetail }) {
                 {copied ? b.copied : b.copy}
               </button>
             </div>
+          ) : null}
+          {props.publicAccess ? (
+            <FormPublicAccessSection copy={copy} {...props.publicAccess} />
           ) : null}
           {frozen ? (
             <div className="flex items-start gap-2 rounded-[10px] border border-line bg-background p-3 text-item-small text-muted-foreground">
