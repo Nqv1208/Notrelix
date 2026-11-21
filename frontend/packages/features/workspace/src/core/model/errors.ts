@@ -18,6 +18,9 @@ export type WorkspaceFailureKind =
 /** The producer's stable code for a denial because the member's email is not confirmed. */
 export const EMAIL_NOT_CONFIRMED_CODE = "auth.email_not_confirmed";
 
+/** The producer's stable code for a write refused because the Account is Suspended or Closed. */
+export const ACCOUNT_SUSPENDED_CODE = "account.suspended";
+
 /** The producer's stable code for a Guest invitation refused because the workspace setting `AllowGuestInvites` is off. */
 export const GUEST_INVITES_OFF_CODE = "workspace.guest_invites_off";
 
@@ -28,7 +31,8 @@ export const PIN_LIMIT_REACHED_RULE = "Workspaces_Navigation_PinLimitReached";
  * A reason that refines a failure without changing its kind: the request is
  * `forbidden`, and the recovery is not "ask an owner" but "confirm your email".
  */
-export type WorkspaceFailureReason = "email-not-confirmed";
+export type WorkspaceFailureReason =
+  "email-not-confirmed" | "account-suspended";
 
 export interface WorkspaceFailure {
   readonly kind: WorkspaceFailureKind;
@@ -102,9 +106,13 @@ export function describeWorkspaceFailure(error: unknown): WorkspaceFailure {
   else kind = "unknown";
 
   const reason: WorkspaceFailureReason | null =
-    kind === "forbidden" && errorCode === EMAIL_NOT_CONFIRMED_CODE
-      ? "email-not-confirmed"
-      : null;
+    kind !== "forbidden"
+      ? null
+      : errorCode === EMAIL_NOT_CONFIRMED_CODE
+        ? "email-not-confirmed"
+        : errorCode === ACCOUNT_SUSPENDED_CODE
+          ? "account-suspended"
+          : null;
 
   return { kind, reason, errorCode, ruleCode, detail, fieldErrors };
 }

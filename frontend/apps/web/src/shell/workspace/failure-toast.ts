@@ -16,6 +16,8 @@ export function toastFailure(
   hint: string | ((failure: WorkspaceFailure) => string),
 ): WorkspaceFailure {
   const failure = describeWorkspaceFailure(error);
+  // The Account is suspended: `AccountSuspensionBridge` already says so once for every refused write.
+  if (failure.reason === "account-suspended") return failure;
   // Refused because the email is not confirmed: say so, whatever the page's
   // own "ask an owner" hint is, and offer to send the link again.
   const recovery =

@@ -13,6 +13,7 @@ export type {
   WorkspaceInvitationState,
   PendingInvitation,
   WorkspaceInvitation,
+  AccountStatus,
   WorkspaceSummary,
   WorkspaceViewTarget,
   WorkspaceViewConfig,

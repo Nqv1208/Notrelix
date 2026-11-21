@@ -44,6 +44,20 @@ describe("toastFailure", () => {
     unregister();
   });
 
+  it("FUI[account.suspended:no-second-toast] leaves a refused write to the one Account message", () => {
+    const failure = toastFailure(
+      "Could not invite",
+      {
+        kind: "forbidden",
+        status: 403,
+        details: { errorCode: "account.suspended" },
+      },
+      "Ask a workspace owner.",
+    );
+    expect(failure.reason).toBe("account-suspended");
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
   it("keeps the page's own hint for an ordinary permission denial", () => {
     const unregister = registerEmailConfirmationRecovery({
       description: "Confirm your email first, then try again.",
