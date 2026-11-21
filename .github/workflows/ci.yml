@@ -107,8 +107,13 @@ jobs:
         shard:
           - name: workspaces-auth
             filter: FullyQualifiedName~Notrelix.Integration.Tests.Workspaces.|FullyQualifiedName~Notrelix.Integration.Tests.Auth.
-          - name: work-rls
-            filter: FullyQualifiedName~Notrelix.Integration.Tests.WorkManagement.|FullyQualifiedName~Notrelix.Integration.Tests.Rls.
+          - name: work-management
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.WorkManagement.
+          # Rls is split by class-name initial (flat namespace): A-C, then everything else.
+          - name: rls-a-c
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.A|FullyQualifiedName~Notrelix.Integration.Tests.Rls.B|FullyQualifiedName~Notrelix.Integration.Tests.Rls.C
+          - name: rls-d-z
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Rls.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.A&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.B&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.C
           - name: rest
             filter: FullyQualifiedName!~Notrelix.Integration.Tests.Workspaces.&FullyQualifiedName!~Notrelix.Integration.Tests.Auth.&FullyQualifiedName!~Notrelix.Integration.Tests.WorkManagement.&FullyQualifiedName!~Notrelix.Integration.Tests.Rls.
     services:
