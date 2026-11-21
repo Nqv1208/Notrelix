@@ -86,10 +86,10 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         context.ApiTokens.AddRange(
             ApiToken.Create(
                 AccountId, _workspaceA, _user.Id, "HTTP flow owner token", ownerSecret.TokenHash,
-                scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null),
+                scopes: ApiTokenScopes.All(), createdBy: _user.Id, createdAt: Now, expiresAt: null),
             ApiToken.Create(
                 AccountId, _workspaceA, _member.Id, "HTTP flow member token", memberSecret.TokenHash,
-                scopes: null, createdBy: _user.Id, createdAt: Now, expiresAt: null));
+                scopes: ApiTokenScopes.All(), createdBy: _user.Id, createdAt: Now, expiresAt: null));
         await context.SaveChangesAsync();
     }
 
@@ -217,7 +217,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _rawSecret);
 
-        var response = await client.GetAsync(ListTokensUrl(_workspaceA));
+        var response = await client.GetAsync(WorkspaceUrl(_workspaceA));
         var body = await response.Content.ReadAsStringAsync();
 
         response.StatusCode.Should().Be(
@@ -302,7 +302,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _rawSecret);
         client.DefaultRequestHeaders.Add("Cookie", "accessToken=not-a-valid-jwt");
 
-        var response = await client.GetAsync(ListTokensUrl(_workspaceA));
+        var response = await client.GetAsync(WorkspaceUrl(_workspaceA));
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK,
             "an explicit API token Authorization header must win over a stale browser cookie");
@@ -316,7 +316,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _rawSecret);
 
-        var response = await client.GetAsync(ListTokensUrl(_workspaceB));
+        var response = await client.GetAsync(WorkspaceUrl(_workspaceB));
         var body = await response.Content.ReadAsStringAsync();
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden,
@@ -324,7 +324,7 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MemberApiToken_SameWorkspace_PassesBootstrap_ButGovernanceDeniesManageApiTokens()
+    public async Task MemberApiToken_SameWorkspace_PassesBootstrapAndScope_ButGovernanceStillDeniesWhatTheMemberMayNotDo()
     {
         using var factory = CreateFactory();
         using var client = factory.CreateClient();
@@ -344,15 +344,23 @@ public sealed class ApiTokenHttpFlowTests : IAsyncLifetime
             $"member token must have valid workspace access before testing " +
             $"Governance denial. Body: {viewBody}");
 
-        // ListApiTokens requires ManageApiTokens. The Member has valid
-        // workspace access but not this Governance permission.
-        var manageResponse = await client.GetAsync(ListTokensUrl(_workspaceA));
+        // Creating a chat category requires ChatGroupManage, which the workspace baseline denies a Member. The token
+        // carries every scope, so the scope check passes (chat:write) and Governance must still deny the issuer's
+        // own permission: a scope only narrows, it never widens a Member to an Owner.
+        using var create = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/workspaces/{_workspaceA}/chat/channel-groups")
+        {
+            Content = new StringContent("{\"name\":\"Announcements\"}", System.Text.Encoding.UTF8, "application/json")
+        };
+        create.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        var manageResponse = await client.SendAsync(create);
         var manageBody = await manageResponse.Content.ReadAsStringAsync();
 
         manageResponse.StatusCode.Should().Be(
             System.Net.HttpStatusCode.Forbidden,
-            $"the credential is valid and workspace-bound, but Governance must " +
-            $"deny ManageApiTokens for a normal Member. Body: {manageBody}");
+            $"the credential is valid, workspace-bound and in scope, but Governance must " +
+            $"deny ChatGroupManage for a normal Member. Body: {manageBody}");
+        manageBody.Should().NotContain("identity.token.scope-missing",
+            "the refusal is the issuer's permission, not a missing scope");
     }
 
     [Fact]

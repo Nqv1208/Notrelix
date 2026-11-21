@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -29,6 +30,11 @@ async function open(page: Page, path: string, heading: string) {
     page.getByRole("heading", { level: 1, name: heading }),
   ).toBeVisible();
 }
+
+const serious = (result: Awaited<ReturnType<AxeBuilder["analyze"]>>) =>
+  result.violations
+    .filter((v) => ["serious", "critical"].includes(v.impact ?? ""))
+    .map((v) => `${v.id}: ${v.nodes[0]?.html.slice(0, 120)}`);
 
 const create = (page: Page) =>
   page.getByRole("button", { name: "Tạo mới", exact: true });
@@ -175,6 +181,21 @@ test.describe("Department page (owner)", () => {
     await expect(radios.nth(0)).toBeFocused();
   });
 
+  test("the type is chosen from the settings and visibility stays", async ({
+    page,
+  }) => {
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
+    const type = page.getByRole("combobox", { name: "Loại" });
+    await type.click();
+    await page.getByRole("option", { name: "Danh mục dự án" }).click();
+    await expect(page.getByText("Đã lưu cài đặt")).toBeVisible();
+    await expect(type).toHaveText("Danh mục dự án");
+    await expect(page.getByRole("radio").nth(0)).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   test("Move opens the picker and Escape returns focus to the button", async ({
     page,
   }) => {
@@ -188,20 +209,89 @@ test.describe("Department page (owner)", () => {
     await expect(move).toBeFocused();
   });
 
+  for (const theme of ["light", "dark"] as const) {
+    for (const width of [1440, 1024, 390]) {
+      test(`the Move picker is axe clean, never offers the Space's own subtree and does not scroll sideways at ${width}px, ${theme}`, async ({
+        page,
+      }) => {
+        await page.addInitScript((mode) => {
+          try {
+            window.localStorage.setItem("notrelix-theme-mode", mode);
+          } catch {
+            // Private mode: the default theme applies.
+          }
+        }, theme);
+        await page.setViewportSize({
+          width,
+          height: width === 390 ? 844 : 900,
+        });
+        await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
+        await page.getByRole("button", { name: "Chuyển", exact: true }).click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible();
+        // Its own subtree (Nhóm Hạ tầng) is listed but disabled, with the reason.
+        await expect(
+          dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
+        ).toBeDisabled();
+        await expect(
+          dialog.getByRole("radio", { name: /^Nhóm Hạ tầng/ }),
+        ).toHaveAccessibleDescription(/Không thể chuyển vào chính nó/);
+        await expect(
+          dialog.locator("[title='Không thể chuyển vào chính nó']").first(),
+        ).toHaveText("Bên trong");
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        ).toBe(true);
+        // The destination list never scrolls sideways either.
+        expect(
+          await dialog
+            .getByRole("radiogroup")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+        // Every visible reason pill sits fully inside the list: truncated, never clipped.
+        const listBox = (await dialog.getByRole("radiogroup").boundingBox())!;
+        const pills = dialog.getByRole("radiogroup").locator("[title]");
+        expect(await pills.count()).toBeGreaterThan(0);
+        for (const box of await pills.evaluateAll((els) =>
+          els.map((el) => el.getBoundingClientRect().toJSON()),
+        )) {
+          expect(box.right).toBeLessThanOrEqual(listBox.x + listBox.width);
+          expect(box.left).toBeGreaterThanOrEqual(listBox.x);
+        }
+        // The short reason fits whole: no pill text is truncated.
+        expect(
+          await pills.evaluateAll((els) =>
+            els.every((el) => {
+              const text = el.firstElementChild as HTMLElement;
+              return text.scrollWidth <= text.clientWidth;
+            }),
+          ),
+        ).toBe(true);
+        expect(serious(await new AxeBuilder({ page }).analyze())).toEqual([]);
+        if (process.env.MOVE_SHOTS_DIR) {
+          await page.screenshot({
+            path: `${process.env.MOVE_SHOTS_DIR}/move-${width}-${theme}.png`,
+          });
+        }
+      });
+    }
+  }
+
   test("Archive is blocked while the department has content, with the reason", async ({
     page,
   }) => {
     await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).toHaveAttribute("aria-disabled", "true");
-    await expect(page.getByText(/còn \d+ phòng ban con/)).toBeVisible();
+    // Archive and Delete both give the reason; the first is Archive.
+    await expect(page.getByText(/còn \d+ phòng ban con/).first()).toBeVisible();
     await archive.click({ force: true });
     await expect(page.getByRole("alertdialog")).toBeHidden();
   });
 
-  test("Archive of an empty department asks first and Delete stays inert", async ({
-    page,
-  }) => {
+  test("Archive of an empty department asks first", async ({ page }) => {
     await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
     const archive = page.getByRole("button", { name: "Lưu trữ", exact: true });
     await expect(archive).not.toHaveAttribute("aria-disabled", "true");
@@ -213,11 +303,124 @@ test.describe("Department page (owner)", () => {
     await page.keyboard.press("Escape");
     await expect(confirm).toBeHidden();
     await expect(archive).toBeFocused();
+  });
+
+  test("Delete is blocked while the department has content, with the reason", async ({
+    page,
+  }) => {
+    await open(page, `${ENGINEERING}?tab=settings`, "Công nghệ");
     const remove = page.getByRole("button", { name: "Xoá phòng ban" });
     await expect(remove).toHaveAttribute("aria-disabled", "true");
+    await expect(
+      page.getByText(/Hãy chuyển hoặc xoá chúng trước/),
+    ).toBeVisible();
     await remove.click({ force: true });
     await expect(page.getByRole("group")).toHaveCount(0);
   });
+
+  test("Delete asks for the name, lands on the deleted list and Restore brings the department back", async ({
+    page,
+  }) => {
+    await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
+    await expect(page.getByText(/Khôi phục được trong 30 ngày/)).toBeVisible();
+    const remove = page.getByRole("button", { name: "Xoá phòng ban" });
+    await remove.click();
+    const group = page.getByRole("group", {
+      name: /^Xoá Phòng Nhân sự khỏi/,
+    });
+    await expect(group).toBeVisible();
+    await expect(group.getByText(/Phòng ban đã xoá 30 ngày/)).toBeVisible();
+    const confirm = group.getByRole("button", { name: "Xoá phòng ban" });
+    await expect(confirm).toHaveAttribute("aria-disabled", "true");
+    await group.getByRole("textbox").fill("Phòng Nhân sự");
+    await expect(confirm).not.toHaveAttribute("aria-disabled", "true");
+    await confirm.click();
+    // The department leaves the tree and the deleted list shows it with its deadline.
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Phòng ban đã xoá" }),
+    ).toBeVisible();
+    await expect(page.getByText("Nhân sự", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Khôi phục được đến/)).toBeVisible();
+    const inTree = page.getByRole("treeitem", { name: /^Nhân sự/ });
+    await expect(inTree).toHaveCount(0);
+    await page.getByRole("button", { name: "Khôi phục" }).click();
+    await expect(page.getByText(/Không có phòng ban nào bị xoá/)).toBeVisible();
+    await expect(inTree).toBeVisible();
+    await inTree.click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Nhân sự" }),
+    ).toBeVisible();
+  });
+
+  test("the delete confirmation and the deleted list have no serious accessibility violation", async ({
+    page,
+  }) => {
+    await open(page, `${EMPTY_DEPARTMENT}?tab=settings`, "Nhân sự");
+    await page.getByRole("button", { name: "Xoá phòng ban" }).click();
+    await expect(page.getByRole("group", { name: /^Xoá/ })).toBeVisible();
+    const open1 = await new AxeBuilder({ page }).analyze();
+    expect(serious(open1)).toEqual([]);
+    await page.goto(`${WORKSPACE}/deleted-spaces`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Phòng ban đã xoá" }),
+    ).toBeVisible();
+    const list = await new AxeBuilder({ page }).analyze();
+    expect(serious(list)).toEqual([]);
+  });
+
+  test("a department id that does not exist reads as not found with a way back", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("notrelix-locale", "vi");
+      } catch {
+        // Private mode: the defaults apply.
+      }
+    });
+    await page.goto(`${WORKSPACE}/spaces/mock-space-missing`);
+    await expect(page.getByText("Không có phòng ban này")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Về Trang chủ" }),
+    ).toBeVisible();
+  });
+
+  for (const width of [1440, 1024, 390]) {
+    for (const mode of ["light", "dark"]) {
+      test(`a missing department reads as not found at ${width} px in the ${mode} theme`, async ({
+        page,
+      }, testInfo) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.addInitScript(
+          ([theme]) => {
+            try {
+              window.localStorage.setItem("notrelix-locale", "vi");
+              window.localStorage.setItem("notrelix-theme-mode", theme!);
+            } catch {
+              // Private mode: the defaults apply.
+            }
+          },
+          [mode],
+        );
+        await page.goto(`${WORKSPACE}/spaces/mock-space-missing`);
+        await expect(page.getByText("Không có phòng ban này")).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: "Về Trang chủ" }),
+        ).toBeVisible();
+        expect(
+          await page.evaluate(
+            () =>
+              document.documentElement.scrollWidth -
+              document.documentElement.clientWidth,
+          ),
+        ).toBeLessThanOrEqual(0);
+        await testInfo.attach(`not-found-${width}-${mode}`, {
+          body: await page.screenshot(),
+          contentType: "image/png",
+        });
+      });
+    }
+  }
 
   test("an empty department shows the first steps and they lead somewhere", async ({
     page,
@@ -388,6 +591,20 @@ test.describe("Department page for a member who does not manage it", () => {
       "aria-disabled",
       "true",
     );
+    await expect(
+      page.getByRole("button", { name: "Xoá phòng ban" }),
+    ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  test("the deleted departments say who the page is for", async ({ page }) => {
+    await open(page, ENGINEERING, "Công nghệ");
+    await page.goto(`${WORKSPACE}/deleted-spaces`);
+    await expect(
+      page.getByText(/Chỉ Owner hoặc Admin của workspace mới xem/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Về Trang chủ" }),
+    ).toBeVisible();
   });
 });
 

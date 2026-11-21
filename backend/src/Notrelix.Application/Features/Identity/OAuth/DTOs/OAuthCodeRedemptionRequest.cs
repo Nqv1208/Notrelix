@@ -4,4 +4,5 @@ public sealed record OAuthCodeRedemptionRequest(
     string Code,
     string? CodeVerifier,
     string? Nonce,
-    string RedirectUri);
+    string RedirectUri,
+    TimeSpan? MaxAuthenticationAge = null);

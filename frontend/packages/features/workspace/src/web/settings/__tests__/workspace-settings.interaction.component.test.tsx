@@ -10,6 +10,7 @@ import {
   settingsReadOnlyScenario,
   settingsSuccessScenario,
   settingsVersionUnavailableScenario,
+  workspaceSettingsFixture,
 } from "../../../verification/workspace-settings-fixtures";
 import {
   WorkspaceSettingsSurface,
@@ -36,6 +37,16 @@ function renderSettings(
     onDelete: vi.fn(),
     onReload: vi.fn(),
     onRetryDefaults: vi.fn(),
+    onTransfer: vi.fn(async () => null),
+    ownershipStepUp: {
+      request: vi.fn(async () => ({
+        factor: "code" as const,
+        challengeToken: "challenge",
+      })),
+      withCode: vi.fn(async () => "proof"),
+      withPassword: vi.fn(async () => "proof"),
+    },
+    onInviteForTransfer: vi.fn(),
     ...overrides,
   };
   renderPureUi(<WorkspaceSettingsSurface {...props} />);
@@ -121,7 +132,7 @@ describe("WorkspaceSettingsSurface", () => {
   it("FUI[workspace.settings:defaults] saves defaults from their own section", () => {
     const props = renderSettings();
     fireEvent.click(
-      screen.getByRole("switch", { name: copy.defaults.mfaLabel }),
+      screen.getByRole("switch", { name: copy.defaults.sharingLabel }),
     );
     fireEvent.change(screen.getByLabelText(copy.defaults.expiryLabel), {
       target: { value: "14" },
@@ -132,8 +143,38 @@ describe("WorkspaceSettingsSurface", () => {
       }),
     );
     expect(props.onSaveDefaults).toHaveBeenCalledWith(
-      expect.objectContaining({ enforceMfa: true, invitationExpiryDays: 14 }),
+      expect.objectContaining({
+        allowPublicSharing: true,
+        invitationExpiryDays: 14,
+      }),
     );
+  });
+
+  it.each([
+    ["Owner", settingsDefaultScenario],
+    ["Admin", settingsAdminScenario],
+    ["Member", settingsReadOnlyScenario],
+  ])(
+    "FUI[workspace.settings:mfa-account-note] shows the Account fact read-only, with no switch, for the %s",
+    (_role, scenario) => {
+      const base = scenario();
+      renderSettings({
+        ...base,
+        defaults: {
+          status: "ready",
+          data: workspaceSettingsFixture({ enforceMfa: true }),
+        },
+      });
+      expect(screen.getByText(copy.defaults.mfaOn)).toBeTruthy();
+      expect(
+        screen.queryByRole("switch", { name: copy.defaults.mfaLabel }),
+      ).toBeNull();
+    },
+  );
+
+  it("FUI[workspace.settings:mfa-account-note] says the Account does not require it when the fact is false", () => {
+    renderSettings();
+    expect(screen.getByText(copy.defaults.mfaOff)).toBeTruthy();
   });
 
   it("FUI[workspace.settings:timezone] takes any IANA time zone and refuses an unknown one", () => {
@@ -171,6 +212,24 @@ describe("WorkspaceSettingsSurface", () => {
   it("FUI[workspace.settings:saved] confirms a completed save next to the section", () => {
     renderSettings(settingsSuccessScenario());
     expect(within(form(copy.profile.title)).getByText(copy.saved)).toBeTruthy();
+  });
+
+  it("FUI[workspace.settings:saving] holds both Save buttons and says it is saving while a write is in flight", () => {
+    renderSettings({
+      ...settingsDefaultScenario(),
+      profileStatus: { state: "saving" },
+      defaultsStatus: { state: "saving" },
+    });
+    for (const title of [copy.profile.title, copy.defaults.title]) {
+      const save = within(form(title)).getByRole("button", {
+        name: copy.saving,
+      }) as HTMLButtonElement;
+      expect(save.disabled).toBe(true);
+    }
+    expect(
+      screen.queryByRole("button", { name: copy.save }),
+      "no live Save while a write is open",
+    ).toBeNull();
   });
 
   it("FUI[workspace.settings:archive] archives only after typing the workspace name", () => {

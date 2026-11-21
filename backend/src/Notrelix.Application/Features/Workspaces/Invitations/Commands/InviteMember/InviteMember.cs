@@ -1,8 +1,10 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
+using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
+using Notrelix.Application.Features.Workspaces.Public.Invitations;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Workspaces.Rules;
 
@@ -26,8 +28,10 @@ public record InviteMemberCommand(
     string Email,
     WorkspaceRole Role,
     IReadOnlyList<InvitationInitialEntryInput>? InitialEntries = null
-) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest
+) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IRequireAdditionalPermission, IRequireVerifiedEmail, IIdempotentRequest, IGuestInvitationRequest
 {
+    bool IGuestInvitationRequest.IntroducesGuest => Role.IntroducesGuest();
+
     private bool NamesKind(WorkspaceInvitationEntryKind kind) =>
         InitialEntries?.Any(e => string.Equals(e.Kind, kind.ToString(), StringComparison.OrdinalIgnoreCase)) == true;
 
@@ -60,6 +64,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
     private readonly IIntegrationEventCollector _integrationEventCollector;
     private readonly InvitationInitialEntries _initialEntries;
     private readonly IMemberEmailDisclosure _memberEmails;
+    private readonly IInvitationRateLimiter _rateLimiter;
+    private readonly IResourceVisibility _visibility;
 
     public InviteMemberCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -70,8 +76,12 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         ISecretEncryptor secretEncryptor,
         IIntegrationEventCollector integrationEventCollector,
         InvitationInitialEntries initialEntries,
-        IMemberEmailDisclosure memberEmails)
+        IMemberEmailDisclosure memberEmails,
+        IInvitationRateLimiter rateLimiter,
+        IResourceVisibility visibility)
     {
+        _visibility = visibility;
+        _rateLimiter = rateLimiter;
         _memberEmails = memberEmails;
         _initialEntries = initialEntries;
         _workspaceContext = workspaceContext;
@@ -85,6 +95,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
     public async Task<Result<Guid>> Handle(InviteMemberCommand request, CancellationToken ct)
     {
+        await _rateLimiter.RequireAsync(request.WorkspaceId, _requestContext.UserId, ct);
+
         var workspace = await _workspaceContext.Workspaces
             .AsNoTracking()
             .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active && w.DeletedAt == null, ct);
@@ -98,12 +110,21 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var entries = ToDomainEntries(request.InitialEntries);
         if (entries.Count > 0)
         {
-            if (!await _initialEntries.AllTargetsEligibleAsync(request.WorkspaceId, entries, ct))
-                return Result<Guid>.Failure("Every initial team or space must be an active team or space of this workspace.");
+            // Every refused entry is named (additive `entries` extension of the problem), so the form can show each one.
+            // A Space the inviter cannot see is refused like a missing one (GOV-029), whatever their actions allow.
+            var visibleSpaces = entries.Any(e => e.Kind == WorkspaceInvitationEntryKind.Space)
+                ? (await _visibility.VisibleSpaceIdsAsync(request.WorkspaceId, _requestContext.UserId, ct)).ToHashSet()
+                : new HashSet<Guid>();
+            var refused = await _initialEntries.IneligibleEntriesAsync(request.WorkspaceId, entries, visibleSpaces, ct);
+            if (refused.Count > 0)
+                throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                    Notrelix.Domain.Workspaces.WorkspaceRuleCodes.Workspaces_Invitation_EntryTargetNotActive,
+                    "Every initial team or space must be an active team or space of this workspace.",
+                    new Dictionary<string, object?> { ["entries"] = refused });
         }
 
         if (await IsActiveMemberAsync(request.WorkspaceId, cleanEmail, ct))
-            throw new ConflictException("This person is already a member of this workspace.", AlreadyMemberCode);
+            throw new ConflictException("This person is already a member of this workspace.", AlreadyMemberErrorCode);
 
         var hasActiveInvitation = await _workspaceContext.WorkspaceInvitations
             .AnyAsync(i => i.WorkspaceId == request.WorkspaceId
@@ -174,7 +195,8 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         return emails.Values.Any(e => string.Equals(e, email, StringComparison.OrdinalIgnoreCase));
     }
 
-    private const string AlreadyMemberCode = "workspaces.invitation.already-member";
+    /// <summary>The stable public code of the refusal when the person is already an Active member.</summary>
+    public const string AlreadyMemberErrorCode = "workspaces.invitation.already-member";
 
     private static IReadOnlyList<WorkspaceInvitationInitialEntry> ToDomainEntries(
         IReadOnlyList<InvitationInitialEntryInput>? inputs)

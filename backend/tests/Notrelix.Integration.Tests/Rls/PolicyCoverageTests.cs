@@ -95,4 +95,20 @@ public sealed class PolicyCoverageTests
 
         writable.Should().BeEmpty("the application role never writes a shared catalog");
     }
+
+    [Fact]
+    public async Task OnlyTheSharedCatalogs_CarryTheSupportSelectPolicy()
+    {
+        // 020 removes p_support_select from every table but the shared catalogs, and the support login holds no grant
+        // elsewhere. A policy helper that runs after 020 (029, 030) must not bring it back.
+        var offenders = await QueryAsync("""
+            SELECT schemaname || '.' || tablename
+              FROM pg_policies
+             WHERE policyname = 'p_support_select' OR 'notrelix_support_readonly' = ANY(roles)
+             ORDER BY 1
+            """);
+
+        offenders.Except(ApplicationReadableCatalogs).Should().BeEmpty(
+            "the support login reads only the shared catalogs, so no tenant table may carry a support policy");
+    }
 }

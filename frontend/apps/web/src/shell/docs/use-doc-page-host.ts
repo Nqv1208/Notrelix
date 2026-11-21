@@ -8,7 +8,7 @@
  * pages and presence have no producer yet; the host reports them as absent so
  * the page hides those parts (gap register).
  */
-import { useCallback, useMemo } from "react";
+import { createElement, useCallback, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
@@ -31,6 +31,7 @@ import type {
   UseDocPageHost,
 } from "@notrelix/docs-web";
 import { useCurrentUser } from "@notrelix/features-auth";
+import { PageDiscuss } from "../workspace/page-discuss";
 import {
   buildSpaceIndex,
   initialsFor,
@@ -541,7 +542,10 @@ export const useDocPageHost: UseDocPageHost = (
     realtime: runtime.realtime,
     pageHref: (targetId) =>
       `/workspaces/${workspaceId}/docs/${encodeURIComponent(targetId)}`,
-    canEdit: role !== "guest",
+    // "Discuss" for the channels linked to this page (UC-CHT-H11); it collapses when there is none.
+    headerAction: createElement(PageDiscuss, { workspaceId, pageId }),
+    // The server's decision for a write of this page; a producer that does not say falls back to the role.
+    canEdit: page?.canEdit ?? role !== "guest",
     blockTypes: CREATABLE_BLOCK_TYPES,
     canConvertTodo: convertBoards.length > 0,
     convertBoards,

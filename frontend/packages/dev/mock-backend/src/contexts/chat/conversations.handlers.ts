@@ -370,7 +370,7 @@ export const conversationsOperations = [
             state,
             space,
             caller.userId,
-            CHAT_SYSTEM_TEXT.memberAdded,
+            CHAT_SYSTEM_TEXT.groupMemberAdded,
           );
         }
         return ok({ added, skipped });
@@ -408,7 +408,7 @@ export const conversationsOperations = [
             state,
             space,
             caller.userId,
-            CHAT_SYSTEM_TEXT.memberLeft,
+            CHAT_SYSTEM_TEXT.groupMemberLeft,
           );
         }
         return { status: 204 };

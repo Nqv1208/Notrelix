@@ -77,6 +77,13 @@ public sealed class InvitationAcceptanceService
             return Result<AcceptInvitationResultDto>.Failure(
                 "Cannot accept invitation for an inactive workspace.");
 
+        // AllowGuestInvites is read at acceptance too: an invitation issued while it was on cannot bring a Guest in once it
+        // is off. Thrown before any mutation, so the Guest gets no membership and no entry and the invitation stays Pending
+        // (it works again if the setting comes back on, and its issuer or an admin can still revoke it).
+        if ((invitation.Role.IntroducesGuest() || invitation.IsResourceInvitation) && !workspace.Settings.AllowGuestInvites)
+            throw new ForbiddenException(
+                "Guest invitations are turned off for this workspace.", AccessDenialCodes.GuestInvitesOff);
+
         var accountAdmission = await _accountMembershipFacts.GetAdmissionAsync(
             workspace.AccountId, ct);
 
@@ -175,11 +182,28 @@ public sealed class InvitationAcceptanceService
 
         if (existingMember is not null)
         {
+            // An invitation never changes the role of an existing Active membership (ChangeRole is the only path), and
+            // its entries apply only where the CURRENT role may hold them: a Guest is not a Team member
+            // (Workspaces_Team_GuestCannotJoin) and holds no Space entry, so none are applied and the audit trail names them.
             invitation.Accept(userId, now);
             if (invitation.InitialEntries.Count > 0)
-                await _initialEntries.ApplyAsync(
-                    invitation.WorkspaceId, userId, existingMember.Id, invitation.InvitedBy,
-                    invitation.InitialEntries, now, ct);
+            {
+                if (Notrelix.Domain.Workspaces.Rules.WorkspaceMemberRules.TakesGuestSeat(existingMember.Role))
+                    await _auditService.RecordAsync(
+                        invitation.WorkspaceId,
+                        userId,
+                        "AcceptInvitationEntriesSkipped",
+                        ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), invitation.WorkspaceId, invitation.WorkspaceId),
+                        AuditMetadata.Create(),
+                        AuditSeverity.Info,
+                        cancellationToken: ct,
+                        change: new AuditChange("workspaces.member", userId, null,
+                            new { skippedEntries = invitation.InitialEntries.Select(e => new { kind = e.Kind.ToString(), e.TargetId, e.Role }) }));
+                else
+                    await _initialEntries.ApplyAsync(
+                        invitation.WorkspaceId, userId, existingMember.Id, invitation.InvitedBy,
+                        invitation.InitialEntries, now, ct);
+            }
 
             return Result<AcceptInvitationResultDto>.Success(
                 ResultFor(workspace, invitation));
@@ -214,13 +238,37 @@ public sealed class InvitationAcceptanceService
             ct);
 
         if (invitation.InitialEntries.Count > 0)
-            await _initialEntries.ApplyAsync(
-                invitation.WorkspaceId, userId, member.Id, invitation.InvitedBy,
-                invitation.InitialEntries, now, ct);
+        {
+            // A Guest is not a Team member (Workspaces_Team_GuestCannotJoin): an invitation already in flight that names a
+            // Team for a Guest has that Team entry skipped, and the audit trail names it. Space entries still apply.
+            var skipped = invitation.Role == WorkspaceRole.Guest
+                ? invitation.InitialEntries.Where(e => e.Kind == WorkspaceInvitationEntryKind.Team).ToList()
+                : [];
+            if (skipped.Count > 0)
+                await RecordSkippedEntriesAsync(invitation, userId, skipped, ct);
+
+            var applicable = invitation.InitialEntries.Except(skipped).ToList();
+            if (applicable.Count > 0)
+                await _initialEntries.ApplyAsync(
+                    invitation.WorkspaceId, userId, member.Id, invitation.InvitedBy, applicable, now, ct);
+        }
 
         return Result<AcceptInvitationResultDto>.Success(
             ResultFor(workspace, invitation));
     }
+
+    private Task RecordSkippedEntriesAsync(
+        WorkspaceInvitation invitation, Guid userId, IReadOnlyList<WorkspaceInvitationInitialEntry> skipped, CancellationToken ct) =>
+        _auditService.RecordAsync(
+            invitation.WorkspaceId,
+            userId,
+            "AcceptInvitationEntriesSkipped",
+            ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), invitation.WorkspaceId, invitation.WorkspaceId),
+            AuditMetadata.Create(),
+            AuditSeverity.Info,
+            cancellationToken: ct,
+            change: new AuditChange("workspaces.member", userId, null,
+                new { skippedEntries = skipped.Select(e => new { kind = e.Kind.ToString(), e.TargetId, e.Role }) }));
 
     private static AcceptInvitationResultDto ResultFor(Workspace workspace, WorkspaceInvitation invitation) =>
         new(workspace.Slug, invitation.WorkspaceId, invitation.ResourceGrant?.ResourceKind, invitation.ResourceGrant?.ResourceId);

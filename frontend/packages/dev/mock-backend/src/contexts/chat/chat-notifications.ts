@@ -102,3 +102,30 @@ export function deliverChatNotifications(
   }
   return written;
 }
+
+/**
+ * Tells the author that a moderator removed their message (UC-CHT-H03): one notice with no text, only while the author is still an
+ * active member of the space (ChatNotificationHandoff.HandOffRemovalAsync).
+ */
+export function deliverRemovalNotification(
+  state: MockChatState,
+  space: ChatSpaceRecord,
+  message: ChatMessageRecord,
+  moderatorId: string,
+): boolean {
+  if (message.authorId === moderatorId || space.deletedAt !== null)
+    return false;
+  const stays = state
+    .membershipsOfSpace(space.id)
+    .some((m) => m.userId === message.authorId && m.leftAt === null);
+  if (!stays) return false;
+  return state.store().feed.addChatNotification({
+    id: `chat-message-removed-${message.id}-${message.authorId}`,
+    recipientId: message.authorId,
+    createdAt: message.deletedAt ?? message.createdAt,
+    type: "chat_removed",
+    actorId: moderatorId,
+    chatSpaceId: space.id,
+    excerpt: null,
+  });
+}

@@ -22,6 +22,15 @@ public static class AccessDenialCodes
 
     /// <summary>The account is suspended or closed by the platform operator: its people read, nobody writes.</summary>
     public const string AccountSuspended = "account.suspended";
+
+    /// <summary>The workspace is archived: its members read, nobody writes, until an owner unarchives it.</summary>
+    public const string WorkspaceArchived = "workspace.archived";
+
+    /// <summary>The workspace setting AllowGuestInvites is off: nobody introduces a Guest by invitation, and an invitation issued earlier cannot be accepted.</summary>
+    public const string GuestInvitesOff = "workspace.guest_invites_off";
+
+    /// <summary>An API token carries no scope that covers the request (rule Identity_ApiToken_ScopeMissing); the issuer's own permissions are not consulted.</summary>
+    public const string ApiTokenScopeMissing = "identity.token.scope-missing";
 }
 
 public sealed record AccessDecision(AccessDecisionKind Kind, string? Message = null, string? Code = null)

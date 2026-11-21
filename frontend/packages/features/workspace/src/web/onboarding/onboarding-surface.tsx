@@ -179,7 +179,7 @@ export function OnboardingSurface(props: OnboardingSurfaceProps) {
           <ChevronLeft aria-hidden="true" className="size-4" />
           {t.back}
         </button>
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2.5">
           {step === "invite" || step === "board" ? (
             <button
               type="button"
@@ -547,12 +547,12 @@ function DoneStep({
   ];
   return (
     <>
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <span
           aria-hidden="true"
           className="grid size-13 shrink-0 place-items-center rounded-[14px] bg-success-subtle text-success-text"
         >
-          <Check className="size-6" />
+          <Check className="size-6.5" strokeWidth={2.4} />
         </span>
         <StepTitle
           title={fillOnboarding(t.title, {
@@ -566,60 +566,65 @@ function DoneStep({
       </div>
       <ul
         aria-label={t.summaryLabel}
-        className="m-0 flex list-none flex-col overflow-hidden rounded-[12px] border border-line p-0"
+        className="m-0 flex list-none flex-col overflow-hidden rounded-[12px] border border-line bg-popover p-0"
       >
         {rows.map((row) => (
           <li
             key={row.title}
-            className="flex items-center gap-3 border-b border-line px-4 py-3 text-item-prose last:border-b-0"
+            className="flex items-center gap-x-3 gap-y-0.5 border-t border-line px-3.5 py-2.5 text-item-ui leading-[1.45] first:border-t-0 max-sm:flex-wrap"
           >
             <span
               aria-hidden="true"
               className="grid size-5.5 shrink-0 place-items-center rounded-full bg-success-subtle text-success-text"
             >
-              <Check className="size-3.5" strokeWidth={3} />
+              <Check className="size-3.25" strokeWidth={2.6} />
             </span>
-            <span className="min-w-0 flex-1">{row.title}</span>
-            <span className="flex-1 text-crumb leading-[1.45] text-meta-foreground">
+            {row.title}
+            <small className="ml-auto text-right text-crumb leading-[1.45] text-meta-foreground max-sm:ml-8.5 max-sm:basis-full max-sm:text-left">
               {row.note}
-            </span>
+            </small>
           </li>
         ))}
       </ul>
-      <div className="flex flex-col gap-1">
-        <h2 className="m-0 text-item-prose font-semibold">
+      <section aria-labelledby="done-next">
+        <h2
+          id="done-next"
+          className="m-0 mb-1 text-body leading-[1.45] font-[650]"
+        >
           {t.continueTitle}{" "}
-          <span className="font-normal text-meta-foreground">0/3</span>
+          <span className="font-medium text-meta-foreground">0/3</span>
         </h2>
-        <p className="m-0 text-item-ui text-muted-foreground">
+        <p className="m-0 mb-2.5 text-crumb leading-normal text-meta-foreground">
           {t.continueNote}
         </p>
-      </div>
-      <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-        {next.map(({ title, note, Icon }) => (
-          <li
-            key={title}
-            className="flex items-center gap-3 rounded-[12px] border border-line bg-popover px-4 py-3.5"
-          >
-            <span
-              aria-hidden="true"
-              className="size-5.5 shrink-0 rounded-full border border-line-strong"
-            />
-            <span className="min-w-0 flex-1">
-              <b className="block text-item-prose font-semibold">{title}</b>
-              <span className="block text-item-ui text-muted-foreground">
-                {note}
-              </span>
-            </span>
-            <span
-              aria-hidden="true"
-              className="grid size-9 shrink-0 place-items-center rounded-[8px] bg-state-hover text-muted-foreground"
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {next.map(({ title, note, Icon }) => (
+            <li
+              key={title}
+              className="flex items-center gap-3 rounded-[12px] border border-line bg-popover px-3.5 py-3"
             >
-              <Icon className="size-4" />
-            </span>
-          </li>
-        ))}
-      </ul>
+              <span
+                aria-hidden="true"
+                className="size-5 shrink-0 rounded-full border-[1.5px] border-line-strong"
+              />
+              <span className="min-w-0">
+                <b className="block text-body leading-[1.45] font-semibold">
+                  {title}
+                </b>
+                <small className="block text-crumb leading-[1.45] text-meta-foreground">
+                  {note}
+                </small>
+              </span>
+              <span
+                aria-hidden="true"
+                className="ml-auto grid size-8.5 shrink-0 place-items-center rounded-[9px] bg-state-hover text-muted-foreground"
+              >
+                <Icon className="size-4" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
     </>
   );
 }

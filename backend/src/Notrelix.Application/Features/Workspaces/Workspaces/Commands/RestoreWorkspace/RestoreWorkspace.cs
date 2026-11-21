@@ -7,7 +7,7 @@ namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWo
 public record RestoreWorkspaceCommand(
     Guid WorkspaceId,
     long ExpectedVersion
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest, IWorkspaceReachesDeletedRequest
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest, IWorkspaceReachesDeletedRequest, IWorkspaceLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.RestoreWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

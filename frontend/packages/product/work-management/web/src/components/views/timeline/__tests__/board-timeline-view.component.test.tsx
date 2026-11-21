@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
 import {
+  act,
   fireEvent,
   renderPureUi,
   screen,
@@ -314,6 +315,32 @@ describe("BoardTimelineView on the ERP board", () => {
     expect(toast.error.mock.calls[0]?.[0]).toContain("Không dời được");
     await waitFor(() => expect(dueOf(container, "ERP-146")).toBe("16/10"));
   });
+
+  it("still says a move failed when another item was moved before the first answered", async () => {
+    let calls = 0;
+    let refuse!: (error: Error) => void;
+    const { container } = renderTimeline(erpOwnerAccess(), {
+      updateCard: () =>
+        ++calls === 1
+          ? new Promise<void>((_resolve, reject) => {
+              refuse = reject;
+            })
+          : Promise.resolve(),
+    });
+    await ready();
+    const titleOf = (key: string) =>
+      within(listRow(container, key)).getAllByRole("link")[1]!;
+    fireEvent.keyDown(titleOf("ERP-146"), { key: "ArrowRight", altKey: true });
+    await waitFor(() => expect(calls).toBe(1));
+    fireEvent.keyDown(titleOf("ERP-142"), { key: "ArrowRight", altKey: true });
+    await waitFor(() => expect(calls).toBe(2));
+    await act(async () => refuse(new Error("rejected")));
+    await waitFor(() =>
+      expect(toast.error.mock.calls.map((call) => String(call[0]))).toEqual([
+        expect.stringContaining("Không dời được"),
+      ]),
+    );
+  }, 20_000);
 
   it("gives a commenter no add and no reschedule, but still opens items", async () => {
     const onItem = vi.fn();

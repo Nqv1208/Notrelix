@@ -13,5 +13,8 @@ public enum SecurityActivityType
     MfaEnabled,
     MfaDisabled,
     SessionRevoked,
-    OtherSessionsRevoked
+    OtherSessionsRevoked,
+    ProviderLinked,
+    ProviderUnlinked,
+    MfaReset
 }

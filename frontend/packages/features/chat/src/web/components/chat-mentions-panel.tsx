@@ -9,6 +9,18 @@ export interface MentionsPanelProps {
   readonly copy: ChatCopy;
   readonly nameOf: (row: ChatUnreadRow) => string;
   readonly onOpen: (spaceId: string) => void;
+  /** Inside a section of the info panel: no title, the section names it. */
+  readonly embedded?: boolean;
+}
+
+/** The rows the panel lists: unread mentions in spaces that are not muted, most mentions first. */
+export function mentionRowsOf(rows: readonly ChatUnreadRow[]): ChatUnreadRow[] {
+  return rows
+    .filter((row) => row.mentionCount > 0 && !row.muted)
+    .sort(
+      (a, b) =>
+        b.mentionCount - a.mentionCount || a.spaceId.localeCompare(b.spaceId),
+    );
 }
 
 /**
@@ -20,22 +32,20 @@ export function MentionsPanel({
   copy,
   nameOf,
   onOpen,
+  embedded = false,
 }: MentionsPanelProps) {
-  const listed = rows
-    .filter((row) => row.mentionCount > 0 && !row.muted)
-    .sort(
-      (a, b) =>
-        b.mentionCount - a.mentionCount || a.spaceId.localeCompare(b.spaceId),
-    );
+  const listed = mentionRowsOf(rows);
   return (
     <section
       aria-label={copy.mentions.panelTitle}
       className="flex min-h-0 flex-1 flex-col"
       data-testid="chat-mentions-panel"
     >
-      <h2 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
-        {copy.mentions.panelTitle}
-      </h2>
+      {embedded ? null : (
+        <h2 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
+          {copy.mentions.panelTitle}
+        </h2>
+      )}
       {listed.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">
           {copy.mentions.panelEmpty}

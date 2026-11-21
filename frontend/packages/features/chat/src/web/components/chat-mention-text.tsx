@@ -3,6 +3,7 @@ import { cn } from "@notrelix/ui-web";
 import { splitByMentions } from "../../core/model/mention-model";
 import type { ChatMention } from "../../core/types/chat";
 import type { ChatCopy } from "./chat.copy";
+import { ChatInlineText } from "./chat-inline-text";
 import { useChatMentions } from "./chat-mention-context";
 import { fillCopy } from "./use-chat-copy";
 
@@ -36,12 +37,18 @@ export function ChatMentionText({
 }: ChatMentionTextProps) {
   const context = useChatMentions();
   const chip = tone === "own" ? OWN_CHIP : CHIP;
-  if (!mentions || mentions.length === 0) return <>{content}</>;
+  if (!mentions || mentions.length === 0) {
+    return <ChatInlineText text={content} tone={tone} />;
+  }
   return (
     <>
       {splitByMentions(content, mentions).map((segment, index) => {
         if (segment.type === "text") {
-          return <Fragment key={index}>{segment.text}</Fragment>;
+          return (
+            <Fragment key={index}>
+              <ChatInlineText text={segment.text} tone={tone} />
+            </Fragment>
+          );
         }
         const { mention } = segment;
         if (mention.kind === "user" && mention.userId) {

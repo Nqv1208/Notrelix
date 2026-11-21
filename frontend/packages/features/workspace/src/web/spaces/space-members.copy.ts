@@ -52,6 +52,11 @@ export const spaceMembersEn = {
     moreRows: "Show {{count}} more",
     empty: "No one has been added to this department yet.",
     noMatches: "No one matches.",
+    noMatchesLoaded:
+      "No one among the {{count}} people loaded matches. Search covers only the people loaded so far.",
+    loadMore: "Load more people",
+    loadingMore: "Loading more people",
+    loadMoreFailed: "More people could not be loaded.",
     loading: "Loading members",
     error: "Members couldn't load.",
     retry: "Try again",
@@ -223,6 +228,11 @@ export const spaceMembersVi: SpaceMembersCopy = {
     moreRows: "Hiện {{count}} người khác",
     empty: "Phòng ban này chưa có ai được thêm.",
     noMatches: "Không có ai khớp.",
+    noMatchesLoaded:
+      "Không ai trong {{count}} người đã tải khớp. Tìm kiếm chỉ chạy trên những người đã tải.",
+    loadMore: "Tải thêm người",
+    loadingMore: "Đang tải thêm người",
+    loadMoreFailed: "Chưa tải thêm được người.",
     loading: "Đang tải thành viên",
     error: "Chưa tải được thành viên.",
     retry: "Thử lại",

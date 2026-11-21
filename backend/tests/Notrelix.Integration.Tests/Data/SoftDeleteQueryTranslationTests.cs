@@ -109,7 +109,7 @@ public sealed class SoftDeleteQueryTranslationTests : IAsyncLifetime
         }
 
         await using var context = _db.CreateOwnerContext(SystemTenant());
-        var handler = new GetPageQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext());
+        var handler = new GetPageQueryHandler(context, new FakeResourceVisibility(), new FakeCurrentRequestContext(), Mock.Of<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess>());
 
         var found = await handler.Handle(new GetPageQuery(activePage.Id), CancellationToken.None);
         found.Succeeded.Should().BeTrue();

@@ -259,6 +259,29 @@ public sealed class PageVersionHandlerTests
         unseen.IsDeleted.Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("hologram", "{\"v\":1,\"runs\":[]}", "{}", DocumentRuleCodes.Documents_Version_BlockTypeInvalid)]
+    [InlineData("Text", "{\"v\":1}", "{}", DocumentRuleCodes.Documents_Block_ContentInvalid)]
+    [InlineData("Text", "{\"v\":1,\"runs\":[]}", "{\"retired\":true}", DocumentRuleCodes.Documents_Block_PropertiesInvalid)]
+    public async Task Restoring_AVersionWithABlockThatIsNoLongerValid_IsRefusedCleanly_AndNothingChanges(string type, string content, string properties, string ruleCode)
+    {
+        var f = new Fixture();
+        var block = NewBlock(f.Page, "a0", "current");
+        f.Blocks.Add(block);
+        var old = $"{{\"schema\":1,\"title\":\"Old\",\"blocks\":[{{\"id\":\"{Guid.CreateVersion7()}\",\"parentId\":null,\"type\":\"{type}\",\"position\":\"a0\",\"content\":{content},\"properties\":{properties}}}]}}";
+        f.Versions.Add(DocumentVersion.Create(AccountId, WorkspaceId, f.Page.Id, 1, DocumentSnapshot.Create(JsonValue.Create(old)), UserId, T0, "Old", DocumentVersionKind.Named));
+        var sut = new RestorePageVersionCommandHandler(f.Context, new NoPageBlockWriteLock(), f.Recorder, f.Request(), f.Clock);
+        var seen = block.Version;
+
+        var act = () => sut.Handle(new RestorePageVersionCommand(f.Page.Id, f.Versions[0].Id, [new SeenBlockVersion(block.Id, seen)]), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>()).Which.RuleCode.Should().Be(ruleCode);
+        f.Versions.Should().HaveCount(1);
+        f.Blocks.Should().ContainSingle().Which.IsDeleted.Should().BeFalse();
+        block.Version.Should().Be(seen);
+        block.Content.Data.Value.Should().Contain("current");
+    }
+
     [Fact]
     public async Task Restoring_KeepsTheTreeOfTheVersion()
     {

@@ -72,6 +72,8 @@ export interface AccountProfileSurfaceProps {
 
 /** The producer's `User.MaxNameLength`. */
 const NAME_MAX_LENGTH = 200;
+/** The producer's job title limit, after trimming. */
+const JOB_TITLE_MAX_LENGTH = 100;
 
 const TIMEZONES = ["UTC", "Asia/Ho_Chi_Minh", "Asia/Tokyo", "Europe/Paris"];
 const DATE_FORMATS = ["dd/mm/yyyy", "yyyy-mm-dd"];
@@ -177,6 +179,7 @@ function ProfileBody({
     timezone: React.useId(),
     dateFormat: React.useId(),
     nameError: React.useId(),
+    jobTitleError: React.useId(),
     phoneError: React.useId(),
     phoneHelp: React.useId(),
     phoneVisible: React.useId(),
@@ -255,6 +258,10 @@ function ProfileBody({
       : values.name.trim().length > NAME_MAX_LENGTH
         ? fillCopy(copy.nameTooLong, { count: NAME_MAX_LENGTH })
         : null;
+  const jobTitleError =
+    values.jobTitle.trim().length > JOB_TITLE_MAX_LENGTH
+      ? fillCopy(copy.jobTitleTooLong, { count: JOB_TITLE_MAX_LENGTH })
+      : null;
   const phoneCheck = checkPhone(values.phone);
   const phoneError =
     phoneCheck.kind !== "invalid"
@@ -269,7 +276,7 @@ function ProfileBody({
     isEdited(key) ? "border-primary ring-1 ring-primary" : undefined;
 
   const submit = () => {
-    if (!dirty || saving || nameError || phoneError) return;
+    if (!dirty || saving || nameError || jobTitleError || phoneError) return;
     onSave({
       name: values.name.trim(),
       jobTitle: values.jobTitle.trim(),
@@ -455,9 +462,25 @@ function ProfileBody({
             autoComplete="organization-title"
             value={values.jobTitle}
             disabled={saving}
+            aria-invalid={jobTitleError ? true : undefined}
+            aria-describedby={
+              cn(
+                jobTitleError && ids.jobTitleError,
+                isEdited("jobTitle") && `${ids.jobTitle}-edited`,
+              ) || undefined
+            }
             onChange={(event) => set("jobTitle", event.target.value)}
             className={cn(INPUT, editedClass("jobTitle"))}
           />
+          {jobTitleError ? (
+            <span
+              id={ids.jobTitleError}
+              role="alert"
+              className="text-xs text-danger-text"
+            >
+              {jobTitleError}
+            </span>
+          ) : null}
         </Field>
         <Field
           htmlFor={ids.email}
@@ -647,7 +670,12 @@ function ProfileBody({
           </button>
           <button
             type="button"
-            disabled={saving || nameError !== null || phoneError !== null}
+            disabled={
+              saving ||
+              nameError !== null ||
+              jobTitleError !== null ||
+              phoneError !== null
+            }
             onClick={submit}
             className={cn(BTN_PRIMARY, FOCUS)}
           >

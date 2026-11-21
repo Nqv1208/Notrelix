@@ -9,31 +9,41 @@ import {
   type ReactNode,
 } from "react";
 import {
+  Archive,
   Ban,
   Copy,
+  EyeOff,
+  Link2,
+  ListPlus,
   MessageSquareText,
   MessagesSquare,
   MoreHorizontal,
   Pencil,
+  Phone,
+  PhoneMissed,
   Pin,
   PinOff,
   Reply,
   RotateCw,
   ShieldX,
   Trash2,
+  Video,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, Button, cn } from "@notrelix/ui-web";
 import type { ChatMessage, ChatReactionSummary } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import { emojiOnlyCount } from "../../core/model/message-display-model";
 import type { ChatHooks } from "../query/create-chat-hooks";
 import type { ChatCopy } from "./chat.copy";
+import { ChatSticker } from "./chat-sticker";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { mentionsViewer } from "../../core/model/mention-model";
 import { ChatMentionText } from "./chat-mention-text";
 import { useChatMentions } from "./chat-mention-context";
 import { useChatHighlight } from "./chat-highlight-context";
+import { useChatMessageLink } from "./chat-link-context";
 import { MessageAttachments } from "./chat-attachments";
 import { MessageLinkPreviews } from "./chat-link-previews";
 import { ReactionChips } from "./chat-reactions";
@@ -43,7 +53,13 @@ import {
   type MessageMenuItem,
 } from "./chat-message-actions";
 import { isKeyboardFocus, useRowActivity } from "./chat-row-activity";
-import { fillCopy, pluralCopy } from "./use-chat-copy";
+import { useChatCallRedial } from "./chat-call-redial";
+import {
+  callLineOf,
+  fillCopy,
+  pluralCopy,
+  systemTextOf,
+} from "./use-chat-copy";
 
 export interface MessageAuthor {
   readonly name: string;
@@ -68,6 +84,8 @@ export interface ThreadChipView {
   readonly replyCount: number;
   readonly lastReplyAt: string | null;
   readonly participantIds?: readonly string[];
+  /** Inactive for the configured days: the chip carries an Archived mark until a reply reopens it. */
+  readonly archived?: boolean;
 }
 
 export interface ChatMessageRowProps {
@@ -82,8 +100,6 @@ export interface ChatMessageRowProps {
   readonly showName?: boolean;
   /** The caller's newest stored message: "Sent" shows under it. */
   readonly showSent?: boolean;
-  /** Fades the message in (a message that arrived while the list was open). */
-  readonly fresh?: boolean;
   readonly isOwn: boolean;
   readonly locale: string;
   readonly timeZone?: string;
@@ -112,6 +128,10 @@ export interface ChatMessageRowProps {
   readonly onReply?: (message: ChatMessage) => void;
   readonly onOpenThread?: (message: ChatMessage) => void;
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
+  /** Mark unread from this message (UC-CHT-I07): a message of the open channel; without a handler the entry is not offered. */
+  readonly onMarkUnread?: (message: ChatMessage) => void;
+  /** Create a task from this message (UC-CHT-I08): offered on a message with text; without a handler the entry is not offered. */
+  readonly onCreateTask?: (message: ChatMessage) => void;
   readonly onOpenQuote?: (messageId: string) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
@@ -179,8 +199,7 @@ const LONG_PRESS_MS = 450;
 const LONG_PRESS_SLOP_PX = 10;
 
 /** The avatar column of someone else's messages; rows without the avatar keep the gutter so the bubbles line up. */
-const GUTTER =
-  "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[34px]";
+const GUTTER = "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-3";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
 function ChatMessageRowBase({
@@ -190,7 +209,6 @@ function ChatMessageRowBase({
   groupEnd = true,
   showName = true,
   showSent = false,
-  fresh = false,
   isOwn,
   locale,
   timeZone,
@@ -209,6 +227,8 @@ function ChatMessageRowBase({
   onReply,
   onOpenThread,
   onTogglePin,
+  onMarkUnread,
+  onCreateTask,
   onOpenQuote,
   attachmentsReadOnly = false,
 }: ChatMessageRowProps) {
@@ -241,10 +261,76 @@ function ChatMessageRowBase({
     [],
   );
   const mentionContext = useChatMentions();
+  const redial = useChatCallRedial();
   const mentionsMe =
     mentionContext.viewerId !== null &&
     mentionsViewer(message, mentionContext.viewerId);
 
+  const callLine = isSystem
+    ? callLineOf(copy, message.content, author.name, isOwn)
+    : null;
+  if (callLine) {
+    const Icon = callLine.missed
+      ? PhoneMissed
+      : callLine.kind === "video"
+        ? Video
+        : Phone;
+    return (
+      <div
+        className="flex justify-center px-4 py-1"
+        data-testid="chat-system-message"
+        data-call-line={callLine.missed ? "missed" : "plain"}
+      >
+        <p
+          className={cn(
+            "inline-flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-[14px] px-3.5 py-2 text-center",
+            callLine.missed
+              ? "bg-destructive/10 text-destructive"
+              : "bg-muted text-muted-foreground",
+          )}
+          style={{ fontSize: 13, lineHeight: 1.45 }}
+        >
+          <span className="sr-only">{copy.list.systemLabel}: </span>
+          <span
+            className="inline-flex min-w-0 items-center gap-2.5"
+            data-testid="chat-call-line-text"
+          >
+            <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+            <span>
+              <b
+                className={cn(
+                  "font-semibold",
+                  !callLine.missed && "text-foreground",
+                )}
+              >
+                {callLine.head}
+              </b>
+              {callLine.tail ? ` ${callLine.tail}` : ""}
+              {" · "}
+              <time
+                dateTime={message.createdAt}
+                className="whitespace-nowrap tabular-nums"
+              >
+                {time}
+              </time>
+            </span>
+          </span>
+          {callLine.missed && redial ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="ms-2 h-7 rounded-[9px] bg-background px-3 font-semibold text-foreground"
+              style={{ fontSize: 13 }}
+              onClick={() => redial(callLine.kind)}
+            >
+              {copy.calls.redial}
+            </Button>
+          ) : null}
+        </p>
+      </div>
+    );
+  }
   if (isSystem) {
     return (
       <div
@@ -254,7 +340,9 @@ function ChatMessageRowBase({
         <p className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1.5 rounded-full bg-muted px-3 py-1 text-center text-xs text-muted-foreground">
           <span className="sr-only">{copy.list.systemLabel}: </span>
           <span className="font-medium">{author.name}</span>
-          <span className="wrap-anywhere">{message.content}</span>
+          <span className="wrap-anywhere">
+            {systemTextOf(copy, message.content)}
+          </span>
           <time
             dateTime={message.createdAt}
             className="whitespace-nowrap tabular-nums"
@@ -266,6 +354,7 @@ function ChatMessageRowBase({
     );
   }
 
+  const messageLink = useChatMessageLink()?.(message) ?? null;
   const live = !message.deleted;
   const reacted = reactions
     .filter((entry) => entry.reactedByMe)
@@ -278,12 +367,16 @@ function ChatMessageRowBase({
         copy,
         isOwn,
         pinned,
-        content,
-        onEdit,
+        // A sticker has no typed text to copy or edit (UC-CHT-I06).
+        content: message.stickerId ? "" : content,
+        messageLink,
+        onEdit: message.stickerId ? undefined : onEdit,
         onDelete,
         onModerate,
         onOpenThread,
         onTogglePin,
+        onMarkUnread,
+        onCreateTask,
       })
     : [];
   const replyHandler = live && onReply ? () => onReply(message) : undefined;
@@ -300,6 +393,9 @@ function ChatMessageRowBase({
       : 0;
   const shape = bubbleShape(isOwn, continued, groupEnd);
   const align = isOwn ? "end" : "start";
+  const showReactions = Boolean(
+    live && hooks && workspaceId && authorName && reactions.length > 0,
+  );
 
   function activate() {
     if (!showToolbar) return;
@@ -387,7 +483,7 @@ function ChatMessageRowBase({
       }
     },
     onFocus: (event: FocusEvent<HTMLDivElement>) => {
-      if (event.target === rowRef.current) return;
+      // The row itself counts too: arrowing onto a message shows its actions.
       if (isKeyboardFocus(event.target)) activate();
     },
     onBlur: (event: FocusEvent<HTMLDivElement>) => {
@@ -398,8 +494,9 @@ function ChatMessageRowBase({
     onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key !== "Escape" || heldRef.current || !active) return;
       event.stopPropagation();
-      store.release(message.id);
+      // Focus first: the row taking the focus shows its actions, and Escape must leave them hidden.
       rowRef.current?.focus({ preventScroll: true });
+      store.release(message.id);
     },
   };
 
@@ -443,6 +540,18 @@ function ChatMessageRowBase({
           : copy.list.deleted}
       </p>
     );
+  } else if (message.stickerId) {
+    bubble = (
+      <div className="flex flex-col">
+        <span className="sr-only">{srWho}: </span>
+        <ChatSticker
+          stickerId={message.stickerId}
+          copy={copy}
+          previewText={message.content}
+          highlighted={highlighted}
+        />
+      </div>
+    );
   } else if (emojiCount > 0) {
     bubble = (
       <p
@@ -463,12 +572,13 @@ function ChatMessageRowBase({
         className={cn(
           "min-w-0 max-w-full px-3 py-2 text-sm leading-[1.45]",
           shape,
+          "transition-colors duration-fast ease-out motion-reduce:transition-none",
           isOwn
-            ? "bg-primary text-primary-foreground"
+            ? "bg-primary text-primary-foreground hover:bg-[color-mix(in_oklab,var(--primary),var(--foreground)_8%)] active:bg-[color-mix(in_oklab,var(--primary),var(--foreground)_14%)]"
             : mentionsMe
               ? // A message that mentions the viewer: the warning tint (AA 5.4:1 light, 9.2:1 dark) plus "For you" for readers.
                 "bg-warning-subtle text-warning-subtle-foreground"
-              : "bg-sidebar-accent text-sidebar-accent-foreground",
+              : "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-[color-mix(in_oklab,var(--sidebar-accent),var(--foreground)_6%)] active:bg-[color-mix(in_oklab,var(--sidebar-accent),var(--foreground)_10%)]",
           highlighted &&
             "ring-2 ring-ring ring-offset-2 ring-offset-background",
         )}
@@ -538,8 +648,6 @@ function ChatMessageRowBase({
         "group/row relative flex w-full items-end gap-2 px-3.5 outline-none md:px-6 xl:px-5",
         isOwn ? "flex-row-reverse" : "flex-row",
         continued ? "mt-0.5" : "mt-3",
-        fresh &&
-          "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150",
       )}
       data-message-id={message.id}
       data-own={isOwn ? "true" : "false"}
@@ -588,6 +696,8 @@ function ChatMessageRowBase({
           className={cn(
             "flex max-w-full items-center gap-1",
             isOwn ? "flex-row-reverse" : "flex-row",
+            // The reaction pill hangs 10 px below the bubble: reserve that overhang (plus 2 for its ring), no more.
+            showReactions && "mb-3",
           )}
         >
           <div
@@ -596,6 +706,17 @@ function ChatMessageRowBase({
             title={fullTime}
           >
             {bubble}
+            {showReactions && hooks && workspaceId && authorName ? (
+              <ReactionChips
+                messageId={message.id}
+                workspaceId={workspaceId}
+                reactions={reactions}
+                hooks={hooks}
+                authorName={authorName}
+                copy={copy}
+                align={align}
+              />
+            ) : null}
             {showToolbar ? (
               <MessageActionBar
                 copy={copy}
@@ -650,18 +771,6 @@ function ChatMessageRowBase({
             readOnly={attachmentsReadOnly}
             copy={copy}
             align={align}
-          />
-        ) : null}
-        {live && hooks && workspaceId && authorName ? (
-          <ReactionChips
-            messageId={message.id}
-            workspaceId={workspaceId}
-            reactions={reactions}
-            hooks={hooks}
-            authorName={authorName}
-            copy={copy}
-            align={align}
-            onToggle={(emoji, add) => onReact?.(message, emoji, add)}
           />
         ) : null}
         {threadCount > 0 && onOpenThread ? (
@@ -723,22 +832,29 @@ export function buildMenuItems({
   isOwn,
   pinned,
   content,
+  messageLink,
   onEdit,
   onDelete,
   onModerate,
   onOpenThread,
   onTogglePin,
+  onMarkUnread,
+  onCreateTask,
 }: {
   readonly message: ChatMessage;
   readonly copy: ChatCopy;
   readonly isOwn: boolean;
   readonly pinned: boolean;
   readonly content: string;
+  readonly messageLink: string | null;
   readonly onEdit?: (message: ChatMessage) => void;
   readonly onDelete?: (message: ChatMessage) => void;
   readonly onModerate?: (message: ChatMessage) => void;
   readonly onOpenThread?: (message: ChatMessage) => void;
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
+  readonly onMarkUnread?: (message: ChatMessage) => void;
+  /** Create a task from this message (UC-CHT-I08): offered on a message with text; without a handler the entry is not offered. */
+  readonly onCreateTask?: (message: ChatMessage) => void;
 }): MessageMenuItem[] {
   const items: MessageMenuItem[] = [];
   if (onOpenThread) {
@@ -772,6 +888,34 @@ export function buildMenuItems({
       icon: Copy,
       onSelect: () =>
         void navigator.clipboard.writeText(content).catch(() => undefined),
+    });
+  }
+  if (messageLink !== null && canCopy()) {
+    items.push({
+      key: "copyLink",
+      label: copy.toolbar.copyLink,
+      icon: Link2,
+      onSelect: () =>
+        void navigator.clipboard
+          .writeText(messageLink)
+          .then(() => toast.success(copy.toolbar.copied))
+          .catch(() => undefined),
+    });
+  }
+  if (onMarkUnread) {
+    items.push({
+      key: "markUnread",
+      label: copy.toolbar.markUnread,
+      icon: EyeOff,
+      onSelect: () => onMarkUnread(message),
+    });
+  }
+  if (onCreateTask && content.trim().length > 0) {
+    items.push({
+      key: "createTask",
+      label: copy.toolbar.createTask,
+      icon: ListPlus,
+      onSelect: () => onCreateTask(message),
     });
   }
   if (isOwn && onDelete) {
@@ -842,21 +986,22 @@ function QuoteBlock({
       : (quote.text ?? "");
   const body = (
     <>
-      <span className="truncate font-semibold text-foreground">
+      <b className="block truncate font-bold">
         {fillCopy(copy.quote.quoteOf, { name: quote.name })}
-      </span>
-      <span className="truncate text-muted-foreground">{text}</span>
+      </b>
+      <span className="line-clamp-2">{text}</span>
     </>
   );
-  // An opaque block of the theme's own surfaces, so its text keeps the proven AA pairs on either bubble.
+  // Chat-Var-Quote: a 3 px bar, 2 8 padding and a 12.5 px text at 0.9 opacity on the bubble's own colours.
   const shell = cn(
-    "-mx-1 mb-1.5 flex min-w-0 max-w-full flex-col rounded-xl border-s-2 border-primary px-2.5 py-1.5 text-start text-xs whitespace-normal",
-    isOwn ? "bg-muted" : "bg-background",
+    "mb-1.5 block min-w-0 max-w-full border-s-[3px] px-2 py-0.5 text-start text-(length:--type-scale-12p5) leading-[1.45] whitespace-normal opacity-90",
+    isOwn ? "border-primary-foreground/70" : "border-primary",
   );
   return onOpen ? (
     <button
       type="button"
       onClick={onOpen}
+      data-testid="chat-quote"
       className={cn(
         shell,
         "w-full hover:opacity-90 focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none",
@@ -865,7 +1010,9 @@ function QuoteBlock({
       {body}
     </button>
   ) : (
-    <div className={shell}>{body}</div>
+    <div className={shell} data-testid="chat-quote">
+      {body}
+    </div>
   );
 }
 
@@ -897,7 +1044,7 @@ function ThreadChip({
       type="button"
       onClick={onOpen}
       className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-link shadow-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none"
-      aria-label={`${replies}, ${copy.thread.openThread}`}
+      aria-label={`${replies}, ${copy.thread.openThread}${thread.archived ? `, ${copy.thread.archivedChip}` : ""}`}
       data-testid="chat-thread-chip"
     >
       {faces.length > 0 ? (
@@ -924,6 +1071,15 @@ function ThreadChip({
             time: formatClock(thread.lastReplyAt, locale, timeZone),
           })}
         </time>
+      ) : null}
+      {thread.archived ? (
+        <span
+          data-testid="chat-thread-chip-archived"
+          className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 text-micro font-semibold text-muted-foreground"
+        >
+          <Archive className="size-3" aria-hidden="true" />
+          {copy.thread.archivedChip}
+        </span>
       ) : null}
     </button>
   );
@@ -955,7 +1111,7 @@ const shallowEqual = (a: unknown, b: unknown): boolean => {
 };
 
 /** Props that arrive as fresh objects each render (author, quote, thread) compare by content, the rest by identity. */
-function rowPropsEqual(
+export function rowPropsEqual(
   prev: ChatMessageRowProps,
   next: ChatMessageRowProps,
 ): boolean {
@@ -991,32 +1147,49 @@ export function ChatPendingRow({
   return (
     <div
       className={cn(
-        "flex w-full flex-row-reverse px-3 md:px-4",
+        "flex w-full flex-row-reverse px-3.5 md:px-6 xl:px-5",
         continued ? "mt-0.5" : "mt-3",
-        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150",
+        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-[160ms]",
       )}
       data-testid="chat-pending-message"
       data-status={pending.status}
       data-own="true"
     >
       <div className="flex min-w-0 max-w-[min(75%,36rem)] flex-col items-end">
+        {pending.stickerId ? (
+          <div
+            className={cn(
+              "rounded-2xl",
+              failed &&
+                "ring-2 ring-destructive ring-offset-2 ring-offset-background",
+            )}
+          >
+            <span className="sr-only">
+              {fillCopy(copy.list.messageBy, { name: copy.list.you, time })}
+              :{" "}
+            </span>
+            <ChatSticker stickerId={pending.stickerId} copy={copy} />
+          </div>
+        ) : (
+          <p
+            className={cn(
+              "min-w-0 max-w-full whitespace-pre-wrap break-words wrap-anywhere bg-primary px-3 py-2 text-sm leading-[1.45] text-primary-foreground",
+              bubbleShape(true, continued, groupEnd),
+              failed &&
+                "ring-2 ring-destructive ring-offset-2 ring-offset-background",
+            )}
+            data-bubble="own"
+          >
+            <span className="sr-only">
+              {fillCopy(copy.list.messageBy, { name: copy.list.you, time })}
+              :{" "}
+            </span>
+            {pending.content}
+          </p>
+        )}
         <p
           className={cn(
-            "min-w-0 max-w-full whitespace-pre-wrap break-words wrap-anywhere bg-primary px-3 py-2 text-sm leading-relaxed text-primary-foreground",
-            bubbleShape(true, continued, groupEnd),
-            failed &&
-              "ring-2 ring-destructive ring-offset-2 ring-offset-background",
-          )}
-          data-bubble="own"
-        >
-          <span className="sr-only">
-            {fillCopy(copy.list.messageBy, { name: copy.list.you, time })}:{" "}
-          </span>
-          {pending.content}
-        </p>
-        <p
-          className={cn(
-            "mt-0.5 pe-1 text-xs font-medium",
+            "mt-0.5 flex items-center gap-1.5 pe-1 text-xs font-medium leading-[1.45]",
             failed ? "text-destructive" : "text-muted-foreground",
           )}
           role={failed ? "status" : undefined}

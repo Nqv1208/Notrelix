@@ -34,14 +34,18 @@ import { kanbanCardCatalog } from "../kanban-card.catalog";
 import { kanbanLaneCatalog } from "../kanban-lane.catalog";
 import { kanbanToolbarCatalog } from "../kanban-toolbar.catalog";
 import { itemSheetCatalog } from "../../../card-detail/item-sheet.catalog";
+import { unsentCommentOf } from "../../../card-detail/update-composer";
+import { unsentDescriptionOf } from "../../../card-popup/sections/description-section";
 import { KanbanView, type KanbanViewProps } from "../kanban-view";
 import { ARCHIVE_UNDO_MS } from "../../table/use-archive-undo-window";
 
-const toast = vi.hoisted(() => ({
-  success: vi.fn(),
-  error: vi.fn(),
-  warning: vi.fn(),
-}));
+const toast = vi.hoisted(() =>
+  Object.assign(vi.fn(), {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+  }),
+);
 vi.mock("sonner", () => ({ toast }));
 
 beforeAll(() => {
@@ -52,6 +56,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  toast.mockClear();
   toast.success.mockClear();
   toast.error.mockClear();
   vi.useRealTimers();
@@ -86,11 +91,27 @@ function fakeServices(
     noGroups?: boolean;
     /** The archive write; absent: the fake server archives the item. */
     archiveCard?: () => Promise<void>;
+    /** The comment threads the item shows, and the answer to a resolve write. */
+    updates?: unknown[];
+    /** Item numbers taken off the board (so a lane can be empty). */
+    hideCards?: string[];
+    setCardUpdateResolved?: (updateId: string) => Promise<void> | undefined;
   } = {},
 ) {
   // The fake server keeps written statuses, so refetches see them.
   let board = erpBoardScenario();
   if (overrides.noGroups) board = { ...board, groups: [] };
+  if (overrides.hideCards)
+    board = {
+      ...board,
+      groups: board.groups.map((group) => ({
+        ...group,
+        cards: group.cards.filter(
+          (card) =>
+            !overrides.hideCards!.some((n) => card.id === `item-erp-${n}`),
+        ),
+      })),
+    };
   const createGroup = vi.fn(async () => undefined);
   const itemExtras = {
     getLinks: vi.fn(async () => [
@@ -187,7 +208,17 @@ function fakeServices(
     cards,
     groups: { createGroup },
     itemExtras,
-    comments: { getCardUpdates: vi.fn(async () => []) },
+    comments: {
+      getCardUpdates: vi.fn(async () => overrides.updates ?? []),
+      getCardUpdatesPage: vi.fn(async () => ({
+        items: overrides.updates ?? [],
+        nextCursor: null,
+      })),
+      setCardUpdateResolved: vi.fn(
+        async (updateId: string) =>
+          overrides.setCardUpdateResolved?.(updateId) ?? undefined,
+      ),
+    },
     itemCapabilities: itemCapabilitiesStub(),
   } as unknown as WorkManagementServices;
   return { services, cards, createGroup, itemExtras };
@@ -696,6 +727,111 @@ describe("KanbanView on the ERP board", () => {
     ).toBeTruthy();
   }, 20_000);
 
+  it("says where a card went even after another lane move has started", async () => {
+    let finishFirst!: () => void;
+    const first = new Promise<void>((resolve) => (finishFirst = resolve));
+    renderKanban(
+      erpOwnerAccess(),
+      {},
+      {
+        // Lanes Đang làm and Hoàn thành are empty, so a card moved into one is a value change, not a place.
+        hideCards: ["142", "144", "146", "131", "129", "136", "133", "135"],
+        updateStatus: (cardId) =>
+          cardId === erpItemId("ERP-149") ? first : undefined,
+      },
+    );
+    await ready();
+    const moveRight = (id: string) =>
+      fireEvent.keyDown(document.querySelector(`[data-card-id="${id}"]`)!, {
+        key: "ArrowRight",
+        altKey: true,
+      });
+    moveRight(erpItemId("ERP-149"));
+    moveRight(erpItemId("ERP-138"));
+    await waitFor(() => expect(laneCount("Hoàn thành")).toBe("1"));
+
+    finishFirst();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        expect.stringContaining("Viết tài liệu quy trình nhập hoá đơn đầu vào"),
+        expect.anything(),
+      ),
+    );
+  }, 20_000);
+
+  it("says where a card went when its drop is placed among others, even after another drop has started", async () => {
+    let finishFirst!: () => void;
+    const first = new Promise<void>((resolve) => (finishFirst = resolve));
+    renderKanban(
+      erpOwnerAccess(),
+      {},
+      {
+        updateStatus: (cardId) =>
+          cardId === erpItemId("ERP-149") ? first : undefined,
+      },
+    );
+    await ready();
+    const moveRight = (id: string) =>
+      fireEvent.keyDown(document.querySelector(`[data-card-id="${id}"]`)!, {
+        key: "ArrowRight",
+        altKey: true,
+      });
+    moveRight(erpItemId("ERP-149"));
+    moveRight(erpItemId("ERP-147"));
+    await waitFor(() => expect(laneCount("Đang làm")).toBe("5"));
+
+    finishFirst();
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        expect.stringContaining("Viết tài liệu quy trình nhập hoá đơn đầu vào"),
+        expect.anything(),
+      ),
+    );
+  }, 20_000);
+
+  it("reports a refused resolve even after another resolve has started", async () => {
+    let refuseFirst!: (error: Error) => void;
+    const first = new Promise<void>(
+      (_resolve, reject) => (refuseFirst = reject),
+    );
+    const thread = (id: string) => ({
+      id,
+      cardId: erpItemId("ERP-149"),
+      author: {
+        id: "cm-u-1",
+        userId: "u-1",
+        name: "Ada",
+        initials: "A",
+        color: "",
+      },
+      body: `Bình luận ${id}`,
+      mentionUserIds: [],
+      attachmentIds: [],
+      createdAt: "2026-11-01T09:00:00Z",
+      version: 1,
+      reactions: [],
+      resolved: false,
+    });
+    renderKanban(
+      erpOwnerAccess(),
+      { initialItem: erpItemId("ERP-149") },
+      {
+        updates: [thread("c-1"), thread("c-2")],
+        setCardUpdateResolved: (id) => (id === "c-1" ? first : undefined),
+      },
+    );
+    const buttons = await screen.findAllByRole(
+      "button",
+      { name: "Giải quyết" },
+      { timeout: 8000 },
+    );
+    fireEvent.click(buttons[0]!);
+    fireEvent.click(buttons[1]!);
+
+    refuseFirst(Object.assign(new Error("forbidden"), { status: 403 }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
   // Heavy interaction sequence: many role queries in jsdom exceed the 5 s default on a loaded runner.
   it("archives the item from the sheet (it is not deleted)", async () => {
     const { cards } = renderKanban(erpOwnerAccess(), {
@@ -1055,6 +1191,37 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     expect(cards.archiveCard).not.toHaveBeenCalled();
   }, 20_000);
 
+  it("clears the pick when a bar change is kept, even if an archive went out before it answered", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    pick(ERP_151);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu trữ" }));
+    let keep!: () => void;
+    cards.bulkUpdate.mockImplementationOnce(
+      () =>
+        new Promise<number>((resolve) => {
+          keep = () => resolve(1);
+        }),
+    );
+    pick(ERP_149);
+    fireEvent.click(screen.getByRole("button", { name: "Hạn" }));
+    fireEvent.change(await screen.findByLabelText("Hạn"), {
+      target: { value: "2026-12-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+    // The undo window of the first archive ends while the change is still out.
+    await act(async () => {
+      vi.advanceTimersByTime(ARCHIVE_UNDO_MS + 50);
+    });
+    await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(2));
+    await act(async () => keep());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Hạn" })).toBeNull(),
+    );
+  }, 20_000);
+
   it("sends the archive at once when the notice is closed", async () => {
     const { cards } = renderKanban(erpOwnerAccess());
     await ready();
@@ -1063,5 +1230,160 @@ describe("KanbanView bulk archive (UC-WM-J01)", () => {
     expect(cards.bulkUpdate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Đóng thông báo" }));
     await waitFor(() => expect(cards.bulkUpdate).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("clears the sent comment text even when the sheet was closed before the post answered", async () => {
+    const { services } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-149"),
+    });
+    let answer!: () => void;
+    const createCardUpdate = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    (services.comments as unknown as Record<string, unknown>).createCardUpdate =
+      createCardUpdate;
+    const dialog = await screen.findByRole("dialog", {
+      name: "Viết tài liệu quy trình nhập hoá đơn đầu vào",
+    });
+    const opener = await within(dialog).findAllByRole("button", {
+      name: "Viết bình luận…",
+    });
+    fireEvent.click(opener[0] as HTMLElement);
+    const box = await within(dialog).findByRole("textbox", {
+      name: /bình luận/i,
+    });
+    fireEvent.change(box, { target: { value: "Đã kiểm tra xong" } });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    await waitFor(() => expect(createCardUpdate).toHaveBeenCalledTimes(1));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(async () => answer());
+    expect(unsentCommentOf(erpItemId("ERP-149"))).toBe("");
+  }, 20_000);
+
+  it("tells the person when a lane's item limit could not be saved", async () => {
+    // The fake server has no saved-view write: the save is refused.
+    renderKanban(erpOwnerAccess());
+    await ready();
+    fireEvent.keyDown(
+      within(lane("Đang làm")).getByRole("button", {
+        name: "Tuỳ chọn cột Đang làm",
+        hidden: true,
+      }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Đặt giới hạn số việc" }),
+    );
+    fireEvent.change(
+      await screen.findByRole("textbox", {
+        name: "Giới hạn số việc của Đang làm",
+      }),
+      { target: { value: "5" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Lưu giới hạn" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("tells the person when a quick-edit date change was not saved", async () => {
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    cards.updateCard.mockRejectedValue(
+      Object.assign(new Error("refused"), { status: 400 }),
+    );
+    const card = document
+      .querySelector(`[data-card-id="${erpItemId("ERP-149")}"]`)!
+      .closest("article") as HTMLElement;
+    fireEvent.click(within(card).getByRole("button", { name: "Sửa nhanh" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa ngày" }));
+    fireEvent.change(screen.getByLabelText("Ngày hạn"), {
+      target: { value: "2026-12-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu ngày" }));
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("still tells the person a quick-edit date was not saved when another card was edited before the first answered", async () => {
+    const { cards } = renderKanban(erpOwnerAccess());
+    await ready();
+    let refuse!: (error: Error) => void;
+    cards.updateCard.mockImplementationOnce(
+      () =>
+        new Promise<undefined>((_resolve, reject) => {
+          refuse = reject;
+        }),
+    );
+    const editDate = async (key: string, day: string) => {
+      const card = document
+        .querySelector(`[data-card-id="${erpItemId(key)}"]`)!
+        .closest("article") as HTMLElement;
+      fireEvent.click(within(card).getByRole("button", { name: "Sửa nhanh" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Sửa ngày" }));
+      fireEvent.change(screen.getByLabelText("Ngày hạn"), {
+        target: { value: day },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Lưu ngày" }));
+    };
+    await editDate("ERP-149", "2026-12-01");
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await editDate("ERP-147", "2026-12-02");
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(2));
+    await act(async () =>
+      refuse(Object.assign(new Error("refused"), { status: 400 })),
+    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  }, 20_000);
+
+  it("keeps an unsaved description for the card and shows it in the editor when the card is opened again", async () => {
+    renderKanban(erpOwnerAccess(), { initialItem: erpItemId("ERP-149") });
+    const name = "Viết tài liệu quy trình nhập hoá đơn đầu vào";
+    const dialog = await screen.findByRole("dialog", { name });
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Thêm mô tả…" }),
+    );
+    const box = await within(dialog).findByRole("textbox", {
+      name: "Mô tả, dạng Markdown",
+    });
+    fireEvent.change(box, { target: { value: "Bản nháp chưa lưu" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(
+      document.querySelector(`[data-card-id="${erpItemId("ERP-149")}"]`)!,
+    );
+    const again = await screen.findByRole("dialog", { name });
+    const restored = await within(again).findByRole("textbox", {
+      name: "Mô tả, dạng Markdown",
+    });
+    expect((restored as HTMLTextAreaElement).value).toBe("Bản nháp chưa lưu");
+  }, 20_000);
+
+  it("drops the kept description draft once it is saved", async () => {
+    const { cards } = renderKanban(erpOwnerAccess(), {
+      initialItem: erpItemId("ERP-151"),
+    });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Cấu hình quyền truy cập theo phòng ban cho phân hệ Kế toán",
+    });
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Thêm mô tả…" }),
+    );
+    fireEvent.change(
+      await within(dialog).findByRole("textbox", {
+        name: "Mô tả, dạng Markdown",
+      }),
+      { target: { value: "Đã lưu rồi" } },
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
+    await waitFor(() => expect(cards.updateCard).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(
+        within(dialog).queryByRole("textbox", { name: "Mô tả, dạng Markdown" }),
+      ).toBeNull(),
+    );
+    expect(unsentDescriptionOf(erpItemId("ERP-151"))).toBe("");
   }, 20_000);
 });

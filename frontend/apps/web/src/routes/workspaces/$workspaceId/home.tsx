@@ -7,12 +7,15 @@ import {
   NAVIGATION_RESOURCE_KIND,
 } from "@notrelix/features-workspace/core";
 import {
+  createUseWorkspaceActivity,
+  createUseWorkspaceFigures,
   createUseWorkspacePins,
   createUseWorkspaceRecents,
   useWorkspaceHomeCopy,
   WorkspaceHomeSurface,
   formatCopy,
   type ContinueEntry,
+  type HomeActivityView,
   type HomeAgenda,
   type HomeReplyActions,
   type HomeReplyView,
@@ -73,6 +76,8 @@ export function HomePage() {
     return {
       useRecents: createUseWorkspaceRecents(deps),
       usePins: createUseWorkspacePins(deps),
+      useFigures: createUseWorkspaceFigures(deps),
+      useActivity: createUseWorkspaceActivity(deps),
     };
   }, [runtimeClient]);
 
@@ -82,6 +87,29 @@ export function HomePage() {
   const departments = useBoardDepartments(workspaceId);
   const recents = hooks.useRecents(workspaceId);
   const pins = hooks.usePins(workspaceId);
+  // The figures are for Owner and Admin: nobody else asks for them.
+  const figuresQuery = hooks.useFigures(workspaceId, isAdmin);
+  const figuresState = isAdmin
+    ? sectionState(figuresQuery, figuresQuery.data)
+    : undefined;
+  // The activity feed is for members: a Guest is refused it, so a Guest never asks.
+  const canReadActivity = viewer.role !== null && viewer.role !== "guest";
+  const activityQuery = hooks.useActivity(workspaceId, canReadActivity);
+  const activityView = useMemo<HomeActivityView | undefined>(() => {
+    if (!canReadActivity) return undefined;
+    const pages = activityQuery.data?.pages;
+    return {
+      state: sectionState(
+        activityQuery,
+        pages?.flatMap((page) => page.entries),
+      ),
+      hasMore: activityQuery.hasNextPage,
+      loadingMore: activityQuery.isFetchingNextPage,
+      loadMoreFailed: activityQuery.isFetchNextPageError,
+      onLoadMore: () => void activityQuery.fetchNextPage(),
+      onRetry: () => void activityQuery.refetch(),
+    };
+  }, [canReadActivity, activityQuery]);
   const myWorkQuery = useMyWorkExtended(workspaceId);
   const feedQuery = useHomeFeed(workspaceId);
   const departmentsById = useDepartmentsById(workspaceId);
@@ -123,6 +151,29 @@ export function HomePage() {
     departments,
     departmentsById,
   ]);
+
+  // Pins join the same authorized catalog as the recents: a pin of a Board or Doc the
+  // member can no longer read has no catalog match and is never drawn.
+  const pinnedState = useMemo<SectionState<readonly ContinueEntry[]>>(() => {
+    if (pins.isError || resources.failed) return { status: "error" };
+    if (!pins.data || !resources.ready) return { status: "loading" };
+    const docSpaces = new Map(
+      resources.docs.map((doc) => [doc.id, doc.spaceId]),
+    );
+    const entries = resolveNavigationEntries(
+      pins.data,
+      { boards: resources.boards, docs: resources.docs },
+      pins.data,
+    ).map((entry) => ({
+      ...entry,
+      location:
+        entry.kind === NAVIGATION_RESOURCE_KIND.doc
+          ? (departmentsById.get(docSpaces.get(entry.resourceId) ?? "")?.name ??
+            null)
+          : (departments.get(entry.resourceId)?.name ?? null),
+    }));
+    return { status: "ready", data: entries };
+  }, [pins.data, pins.isError, resources, departments, departmentsById]);
 
   const boardNames = useMemo(
     () => new Map(resources.boards.map((board) => [board.id, board.name])),
@@ -292,6 +343,9 @@ export function HomePage() {
             workspaceName={workspace?.name ?? ""}
           />
         }
+        figures={figuresState}
+        activity={activityView}
+        onRetryFigures={() => void figuresQuery.refetch()}
         copy={copy}
         navigation={navigation}
         formatters={formatters}
@@ -299,6 +353,7 @@ export function HomePage() {
         workspaceName={workspace?.name ?? null}
         greetingName={greetingNameFor(user?.name)}
         continueState={continueState}
+        pinnedState={pinnedState}
         myWork={myWorkState}
         myWorkHasMore={false}
         completedToday={completedToday}
@@ -330,6 +385,7 @@ export function HomePage() {
         }
         onRetryContinue={() => {
           void recents.refetch();
+          void pins.refetch();
           resources.retry();
         }}
         onRetryMyWork={() => void myWorkQuery.refetch()}

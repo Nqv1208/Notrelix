@@ -24,6 +24,7 @@ import {
   accountWorkspacesCatalog,
   accountProfileCatalog,
   accountSecurityCatalog,
+  accountTokensCatalog,
 } from "@notrelix/features-account";
 import { authCatalog } from "@notrelix/features-auth";
 import { chatCatalog } from "@notrelix/features-chat/web";
@@ -104,6 +105,7 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountProfileCatalog,
   accountAppearanceCatalog,
   accountSecurityCatalog,
+  accountTokensCatalog,
   accountNotificationsCatalog,
   accountWorkspacesCatalog,
   routerStatesCatalog,

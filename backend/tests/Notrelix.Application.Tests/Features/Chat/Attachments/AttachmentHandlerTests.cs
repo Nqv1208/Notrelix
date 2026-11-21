@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Attachments.Commands.DeleteMessageAttachment;
 using Notrelix.Application.Features.Chat.Attachments.Commands.UploadMessageAttachment;
 using Notrelix.Application.Features.Chat.Attachments.Queries.GetMessageAttachmentContent;
+using Notrelix.Application.Features.Chat.Attachments.Queries.GetMessageAttachmentUrl;
 using Notrelix.Application.Features.Chat.Attachments.Queries.ListMessageAttachments;
 using Notrelix.Application.Features.Chat.Messages.Commands.DeleteMessage;
 using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
@@ -392,6 +393,35 @@ public class AttachmentHandlerTests
     }
 
     [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_read_the_files_of_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _otherMember], _owner, Now);
+        group.AddMember(_guest, MembershipRole.Member, Now.AddHours(1));
+        _spaces.Add(group);
+        var before = Text(group);
+        var file = _files.Seed(before.Id);
+        var transfers = new Mock<Notrelix.Application.Features.Collaboration.Public.Attachments.IChatMessageAttachmentTransfers>();
+        transfers.Setup(t => t.SupportsPresignedUrls).Returns(true);
+        AsUser(_guest);
+
+        var list = () => new ListMessageAttachmentsQueryHandler(_db.Object, _context.Object, _members.Object, _files)
+            .Handle(new ListMessageAttachmentsQuery(_workspaceId, before.Id), CancellationToken.None);
+        var content = () => new GetMessageAttachmentContentQueryHandler(_db.Object, _context.Object, _members.Object, _files)
+            .Handle(new GetMessageAttachmentContentQuery(_workspaceId, before.Id, file.Id), CancellationToken.None);
+        var url = () => new GetMessageAttachmentUrlQueryHandler(_db.Object, _context.Object, _members.Object, transfers.Object)
+            .Handle(new GetMessageAttachmentUrlQuery(_workspaceId, before.Id, file.Id), CancellationToken.None);
+
+        await list.Should().ThrowAsync<AppNotFoundException>();
+        await content.Should().ThrowAsync<AppNotFoundException>();
+        await url.Should().ThrowAsync<AppNotFoundException>();
+        transfers.Verify(t => t.CreateDownloadUrlAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        AsUser(_otherMember);
+        (await new ListMessageAttachmentsQueryHandler(_db.Object, _context.Object, _members.Object, _files)
+            .Handle(new ListMessageAttachmentsQuery(_workspaceId, before.Id), CancellationToken.None)).Data.Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task Only_a_reader_of_the_space_downloads_a_file()
     {
         var space = Channel(SpaceKind.ChannelPrivate);
@@ -709,9 +739,10 @@ public class AttachmentHandlerTests
         [.. Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.WebM(durationMs, 2), .. new byte[padding]];
 
     private Task<Notrelix.Application.Common.Models.Result<Notrelix.Application.Features.Chat.Attachments.DTOs.MessageAttachmentDto>> UploadVoice(
-        Message message, byte[] bytes, int? hintMs = null, int[]? waveform = null, ChatVoiceOptions? voice = null, IChatMessageAttachments? attachments = null) =>
+        Message message, byte[] bytes, int? hintMs = null, int[]? waveform = null, ChatVoiceOptions? voice = null, IChatMessageAttachments? attachments = null,
+        string fileName = "voice.webm") =>
         UploadHandler(attachments ?? RealFlow(), voice).Handle(
-            new UploadMessageAttachmentCommand(_workspaceId, message.Id, "voice.webm", new MemoryStream(bytes), true, hintMs, waveform),
+            new UploadMessageAttachmentCommand(_workspaceId, message.Id, fileName, new MemoryStream(bytes), true, hintMs, waveform),
             CancellationToken.None);
 
     [Fact]
@@ -747,6 +778,29 @@ public class AttachmentHandlerTests
 
         // The row is added to the request unit of work, which a refused request never commits; the stored object is removed by the
         // compensation. The unit test checks the refusal itself.
+        var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
+        error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceTooLong);
+    }
+
+    [Fact]
+    public async Task An_ogg_voice_message_keeps_the_duration_read_from_its_last_page()
+    {
+        var message = Text(Channel());
+
+        var result = await UploadVoice(message, Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.OggOpus(2_500), hintMs: 9_000, fileName: "voice.ogg");
+
+        result.Data!.ContentType.Should().Be("audio/ogg");
+        result.Data.DurationMs.Should().Be(2_500);
+    }
+
+    [Fact]
+    public async Task An_ogg_voice_message_cannot_claim_a_short_duration_to_pass_the_limit()
+    {
+        // The file is 10 minutes long; the client claims 5 seconds. The last page decides.
+        var message = Text(Channel());
+
+        var act = () => UploadVoice(message, Notrelix.Application.Tests.Features.Collaboration.Attachments.AudioHeaderBuilder.OggOpus(600_000), hintMs: 5_000, fileName: "voice.ogg");
+
         var error = await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
         error.Which.RuleCode.Should().Be(ChatRuleCodes.VoiceTooLong);
     }

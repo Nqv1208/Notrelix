@@ -66,6 +66,10 @@ export {
 export { useBoardShareCopy } from "./components/board-share/use-board-share-copy";
 export * from "./components/board-share/board-share-models";
 export {
+  guestInviteConflict,
+  guestInviteFailureHint,
+} from "./components/board-share/board-share-guest";
+export {
   BoardShareDialogSurface,
   type BoardShareDialogSurfaceProps,
   type ShareCandidate,
@@ -150,6 +154,13 @@ export {
 } from "./components/views/calendar/calendar.copy";
 export { useCalendarCopy } from "./components/views/calendar/use-calendar-copy";
 
+// Data the pure surfaces read through the host
+export { WorkManagementUiPortsHost } from "./components/shared/wm-ui-ports-host";
+export {
+  WmUiPortsProvider,
+  type WmUiPorts,
+} from "./components/shared/wm-ui-ports";
+
 // Card detail
 export {
   BoardItemSheetHost,
@@ -187,6 +198,7 @@ export {
   FormBuilderPage,
   FormFillPage,
   FormInboxPage,
+  PublicFormPage,
   formLink,
 } from "./components/forms/forms-containers";
 

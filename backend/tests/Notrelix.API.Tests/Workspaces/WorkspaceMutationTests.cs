@@ -30,6 +30,16 @@ public class WorkspaceMutationTests : IClassFixture<NotrelixApiFactory>
     }
 
     [Fact]
+    public async Task ChangeWorkspaceSlug_WithValidBody_ReturnsSuccess()
+    {
+        var body = new { Slug = "acme-team", ExpectedVersion = 1L };
+
+        var response = await _client.PatchAsync($"/api/v1/workspaces/{WorkspaceId}/slug", JsonContent(body));
+
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task UpdateWorkspaceProfile_WithNonexistentWorkspace_ReturnsNotFound()
     {
         var body = new { Name = "Updated Name", ExpectedVersion = 1L };

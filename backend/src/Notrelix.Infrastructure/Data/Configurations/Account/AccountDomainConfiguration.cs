@@ -15,12 +15,16 @@ public class AccountDomainConfiguration : IEntityTypeConfiguration<AccountDomain
         builder.Property(x => x.Domain).HasColumnName("domain").IsRequired().HasMaxLength(255);
         builder.Property(x => x.VerificationStatus).HasColumnName("verification_status").IsRequired().HasMaxLength(32);
         builder.Property(x => x.VerificationTokenHash).HasColumnName("verification_token_hash").HasMaxLength(255);
+        builder.Property(x => x.VerificationTokenProtected).HasColumnName("verification_token_protected").HasMaxLength(1024);
         builder.Property(x => x.VerifiedAt).HasColumnName("verified_at");
         builder.Property(x => x.AutoJoinEnabled).HasColumnName("auto_join_enabled");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        builder.HasIndex(x => x.Domain).IsUnique().HasDatabaseName("idx_account_domains_domain");
+        // A Pending claim never blocks another Account from proving the same domain; only one Account can hold it Verified.
+        builder.HasIndex(x => x.Domain).IsUnique().HasDatabaseName("idx_account_domains_domain_verified")
+            .HasFilter("verification_status = 'Verified'");
+        builder.HasIndex(x => new { x.AccountId, x.Domain }).IsUnique().HasDatabaseName("idx_account_domains_account_domain");
     }
 }

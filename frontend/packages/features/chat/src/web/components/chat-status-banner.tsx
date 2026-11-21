@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { cn } from "@notrelix/ui-web";
 
-export type ChatBannerTone = "warning" | "info";
+export type ChatBannerTone = "warning" | "info" | "neutral";
 
 const TONE_CLASS: Record<ChatBannerTone, string> = {
   warning: "bg-warning-subtle text-warning-subtle-foreground",
   info: "bg-info-subtle text-info-subtle-foreground",
+  neutral: "bg-muted text-muted-foreground",
 };
 
 /**
@@ -20,8 +21,8 @@ export function ChatStatusBanner({
   action,
   placement = "bar",
 }: {
-  /** "bar" spans the pane under the header; "composer" is a rounded notice on the conversation column, above the composer. */
-  readonly placement?: "bar" | "composer";
+  /** "notice" is the board's call notice: 20 px in from the pane, 10 above the composer, radius 10, no border. "bar" spans the pane under the header; "composer" is a rounded notice on the conversation column, above the composer. */
+  readonly placement?: "bar" | "composer" | "notice";
   readonly tone: ChatBannerTone;
   readonly icon: ReactNode;
   readonly children: ReactNode;
@@ -30,11 +31,17 @@ export function ChatStatusBanner({
   return (
     <div
       role="status"
+      style={
+        placement === "notice" ? { fontSize: 13, lineHeight: 1.45 } : undefined
+      }
       className={cn(
-        "flex min-h-9 shrink-0 flex-wrap items-center gap-2 py-1.5 text-sm",
-        placement === "bar"
-          ? "border-b border-border px-4"
-          : "mx-3 mb-1 rounded-2xl border border-border px-3 md:mx-auto md:w-[calc(100%-2rem)] md:max-w-3xl",
+        "flex shrink-0 flex-wrap items-center",
+        placement === "notice"
+          ? "mx-5 mb-2.5 gap-2.5 rounded-[10px] px-3 py-2.5 font-semibold"
+          : "min-h-9 gap-2 py-1.5 text-sm",
+        placement === "bar" && "border-b border-border px-4",
+        placement === "composer" &&
+          "mx-3 mb-1 rounded-2xl border border-border px-3 md:mx-auto md:w-[calc(100%-2rem)] md:max-w-3xl",
         TONE_CLASS[tone],
       )}
     >

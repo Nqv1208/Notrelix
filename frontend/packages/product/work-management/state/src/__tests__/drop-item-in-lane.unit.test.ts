@@ -207,4 +207,25 @@ describe("runDropItemInLane", () => {
     ).rejects.toThrow(/version/);
     expect(writer.moveCard).not.toHaveBeenCalled();
   });
+  it("does not replay an unanswered drop minutes later: the same drop then is a new operation", async () => {
+    const { queryClient } = seeded();
+    const writer = {
+      moveCard: vi
+        .fn()
+        .mockRejectedValueOnce({ status: 502 })
+        .mockResolvedValue({ version: 9 }),
+    };
+    const now = vi.spyOn(Date, "now");
+    now.mockReturnValue(1_000_000);
+    await expect(
+      runDropItemInLane(queryClient, writer, variables),
+    ).rejects.toBeDefined();
+    now.mockReturnValue(1_000_000 + 10 * 60_000);
+    await runDropItemInLane(queryClient, writer, variables);
+    now.mockRestore();
+    const key = (i: number) =>
+      (writer.moveCard.mock.calls[i]![1] as { idempotencyKey: string })
+        .idempotencyKey;
+    expect(key(1)).not.toBe(key(0));
+  });
 });

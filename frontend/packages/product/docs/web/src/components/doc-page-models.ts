@@ -178,7 +178,7 @@ export interface DocSpaceView {
 
 export interface DocChip {
   readonly id: string;
-  readonly kind: "scope" | "date" | "board";
+  readonly kind: "scope" | "date" | "board" | "version";
   readonly label: string;
   readonly href?: string;
 }
@@ -235,16 +235,18 @@ export interface DocCommentView {
 
 export interface DocVersionView {
   readonly id: string;
-  /** Why the entry exists; names it when it has no name of its own. */
+  /** The number the history gives the entry ("phiên bản 12"). */
+  readonly number: number;
   readonly kind: "automatic" | "named" | "restore";
   readonly author: DocPerson;
   readonly time: string;
-  /** Day group heading ("Hôm qua", "10/10"). */
+  /** Day group heading ("Hôm qua", "03/11/2026"). */
   readonly day: string;
-  /** Full stamp for the compare bar ("10/10 15:42"). */
+  /** The moment as the viewing bar says it ("11:05 ngày 03/11"). */
   readonly stamp: string;
+  /** What the entry is, beside its time ("Tự động", "Trước khi khôi phục phiên bản 9"). */
+  readonly tag: string;
   readonly name?: string;
-  readonly summary: string;
   readonly current?: boolean;
 }
 
@@ -362,12 +364,39 @@ export interface DocHistoryActionView {
   readonly restoring: boolean;
   /** `conflict` = the page changed since it was read (nothing was restored). */
   readonly restoreFailed: "conflict" | "failed" | null;
+  /** How many blocks changed since the page was read, when a restore found a conflict. */
+  readonly conflictCount?: number;
+  /** The clock time the conflict was found, as the dialog says it. */
+  readonly conflictTime?: string;
 }
 
 /** The "Save as template" dialog's write state. */
 export interface DocTemplateActionView {
   readonly saving: boolean;
   readonly failed: boolean;
+}
+
+/** One template of the gallery, as its row shows it. */
+export interface DocTemplateRowView {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly blockCount: number;
+  /** The caller saved it or is a Workspace Admin. */
+  readonly canManage: boolean;
+}
+
+/** The templates dialog: the list and what the last write on a row answered. */
+export interface DocTemplatesView {
+  readonly status: "loading" | "error" | "ready";
+  readonly templates: readonly DocTemplateRowView[];
+  /** The row a write is running on. */
+  readonly busyId: string | null;
+  /** `conflict` = the template changed since the list was read (nothing was written). */
+  readonly failure: {
+    readonly id: string;
+    readonly kind: "conflict" | "forbidden" | "notFound" | "failed";
+  } | null;
 }
 
 /** The import dialog's state: reading and cleaning the file, then creating the page. */
@@ -392,6 +421,7 @@ export type DocOverlay =
   | { readonly kind: "saveVersion" }
   | { readonly kind: "restoreVersion" }
   | { readonly kind: "saveTemplate" }
+  | { readonly kind: "templates" }
   | { readonly kind: "importPage" }
   | { readonly kind: "shortcuts" }
   | { readonly kind: "wordCount" }
@@ -438,6 +468,8 @@ export interface DocPageCallbacks {
   readonly onAccessLostCopy?: () => void;
   /** Leaves the page after the right to edit was lost; omitted offers no button. */
   readonly onLeavePage?: () => void;
+  /** Reads the page again after a load failed. */
+  readonly onRetryLoad?: () => void;
   readonly onTitleCommit?: (title: string) => void;
   readonly onBlockCommit?: (blockId: string, text: string) => void;
   readonly onBlockTrigger?: (
@@ -503,6 +535,8 @@ export interface DocPageCallbacks {
   readonly onPrint?: () => void;
   readonly onOpenVersions?: () => void;
   readonly onCloseVersions?: () => void;
+  /** Leaves the version being viewed and shows the current page again. */
+  readonly onCloseVersionView?: () => void;
   readonly onSelectVersion?: (id: string) => void;
   /** "Save version": opens the name dialog. */
   readonly onSaveVersionOpen?: () => void;
@@ -512,6 +546,16 @@ export interface DocPageCallbacks {
   readonly onRestoreVersion?: () => void;
   readonly onSaveTemplateOpen?: () => void;
   readonly onSaveTemplate?: (name: string, description: string) => void;
+  /** Opens the templates dialog: rename, archive or delete a template. */
+  readonly onTemplatesOpen?: () => void;
+  readonly onTemplatesRetry?: () => void;
+  readonly onTemplateRename?: (
+    id: string,
+    name: string,
+    description: string,
+  ) => void;
+  readonly onTemplateArchive?: (id: string) => void;
+  readonly onTemplateDelete?: (id: string) => void;
   readonly onImportOpen?: () => void;
   readonly onImportFile?: (file: File) => void;
   readonly onCommentCreate?: (body: string, parentId?: string) => void;

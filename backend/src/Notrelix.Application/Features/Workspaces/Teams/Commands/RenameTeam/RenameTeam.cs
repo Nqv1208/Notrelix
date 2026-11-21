@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Members.Services;
 
 namespace Notrelix.Application.Features.Workspaces.Teams.Commands.RenameTeam;
 
@@ -22,9 +23,11 @@ public class RenameTeamCommandHandler : IRequestHandler<RenameTeamCommand, Resul
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IWorkspaceOwnerUpdateLocker _locker;
 
-    public RenameTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public RenameTeamCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceOwnerUpdateLocker locker)
     {
+        _locker = locker;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -32,6 +35,9 @@ public class RenameTeamCommandHandler : IRequestHandler<RenameTeamCommand, Resul
 
     public async Task<Result> Handle(RenameTeamCommand request, CancellationToken ct)
     {
+        // Locked until the write commits: a rename and a create of one name run one after the other.
+        await _locker.LockWorkspaceAsync(request.WorkspaceId, ct);
+
         var team = await _context.Teams
             .FirstOrDefaultAsync(t => t.Id == request.TeamId && t.WorkspaceId == request.WorkspaceId, ct);
 

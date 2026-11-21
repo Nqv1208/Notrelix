@@ -17,8 +17,8 @@
 -- second arm. The set of visible rows does not change, and no row becomes visible that was not before.
 --
 -- Same SECURITY DEFINER, search_path pinning and grants as the helpers it sits beside. Tables, commands and roles are
--- exactly the ones 008 gives the chat tables (ops.apply_scope_expression_policies keeps the worker and support
--- policies and the app write policies).
+-- exactly the ones 008 gives the chat tables (ops.apply_scope_expression_policies keeps the worker policy and the app
+-- write policies; the support SELECT policy it also creates is dropped again, as 020 requires).
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION ops.accessible_workspace_pairs()
@@ -55,6 +55,9 @@ BEGIN
             '(account_id, workspace_id) IN (SELECT p.account_id, p.workspace_id FROM ops.accessible_workspace_pairs() p) '
             || 'OR ops.has_workspace_access(account_id, workspace_id)',
             true);
+        -- The helper recreates the support SELECT policy that 020 removed; the support login holds no grant on tenant
+        -- content, so the policy must not come back (it would open the table the moment a grant is added by mistake).
+        EXECUTE format('DROP POLICY IF EXISTS p_support_select ON chat.%I', t);
     END LOOP;
 END
 $$;

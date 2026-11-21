@@ -3,6 +3,7 @@ using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Chat.Members.Commands.AddChannelMembers;
 using Notrelix.Application.Features.Chat.Members.Commands.JoinChannel;
 using Notrelix.Application.Features.Chat.Members.Commands.RemoveChannelMember;
+using Notrelix.Application.Features.Chat.Members.Commands.SetChannelMemberRole;
 
 namespace Notrelix.API.Endpoints.Chat.Members;
 
@@ -34,7 +35,22 @@ public static class MapChannelMemberEndpoints
             .WithDescription("A person may remove themselves; removing someone else needs a manager, a Workspace Owner or Admin. The last manager of a live channel cannot leave: 422 last-manager.")
             .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
 
+        group.MapWorkspacePut("/{userId:guid}/role", SetRoleAsync)
+            .WithName("Chat.Members.SetRole")
+            .WithSummary("Make a channel member a manager, or a manager a member")
+            .WithDescription("Needs a manager, a Workspace Owner or Admin. The last manager of a live channel cannot be made a member: 422 last-manager. A person who is not in the channel is 404; the same role again changes nothing.")
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status403Forbidden, StatusCodes.Status404NotFound, StatusCodes.Status422UnprocessableEntity);
+
         return app;
+    }
+
+    private static async Task<IResult> SetRoleAsync(Guid workspaceId, Guid channelId, Guid userId, SetChannelMemberRoleRequest body, ISender sender)
+    {
+        if (body.Role is not ("manager" or "member"))
+            return EndpointExtensions.InvalidInput("role must be manager or member.");
+
+        var result = await sender.Send(new SetChannelMemberRoleCommand(workspaceId, channelId, userId, body.Role));
+        return result.ToNoContentResult();
     }
 
     private static async Task<IResult> AddAsync(Guid workspaceId, Guid channelId, AddChannelMembersRequest body, ISender sender)

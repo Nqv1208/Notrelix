@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createNotrelixClient, endpoints } from "@notrelix/contracts";
 import {
   createBlockApi,
+  createPageApi,
   createTemplateApi,
   createVersionApi,
 } from "../../../../product/docs/state/src/index";
@@ -24,6 +25,7 @@ function setup() {
     versions: createVersionApi(api, docs),
     templates: createTemplateApi(api, docs),
     blocks: createBlockApi(api, docs),
+    pages: createPageApi(api, docs),
   };
 }
 
@@ -245,5 +247,135 @@ describe("Documents.Templates on the mock backend", () => {
     await expect(
       templates.createPage(WORKSPACE, { templateId: "nope" }),
     ).rejects.toMatchObject({ kind: "not_found" });
+  });
+
+  it("renames a template with the version read, refuses a stale one and bumps no version for the same name", async () => {
+    const { templates } = setup();
+    const saved = await templates.create(WORKSPACE, {
+      pageId: INVOICE_DOC_ID,
+      name: "Cũ",
+    });
+    expect(saved).toMatchObject({ canManage: true, version: 2 });
+
+    const renamed = await templates.update(WORKSPACE, {
+      templateId: saved.id,
+      name: "  Mới ",
+      description: "Mô tả",
+      expectedVersion: saved.version,
+    });
+    expect(renamed).toMatchObject({
+      name: "Mới",
+      description: "Mô tả",
+      version: 3,
+    });
+
+    const same = await templates.update(WORKSPACE, {
+      templateId: saved.id,
+      name: "Mới",
+      description: "Mô tả",
+      expectedVersion: renamed.version,
+    });
+    expect(same.version).toBe(renamed.version);
+
+    await expect(
+      templates.update(WORKSPACE, {
+        templateId: saved.id,
+        name: "Lost",
+        expectedVersion: saved.version,
+      }),
+    ).rejects.toMatchObject({ status: 412 });
+    await expect(
+      templates.update(WORKSPACE, {
+        templateId: saved.id,
+        name: " ",
+        expectedVersion: renamed.version,
+      }),
+    ).rejects.toMatchObject({ kind: "validation" });
+    expect((await templates.list(WORKSPACE))[0]!.name).toBe("Mới");
+  });
+
+  it("archives a template out of the list, leaves pages made from it alone, and deletes another", async () => {
+    const { store, templates } = setup();
+    const keep = await templates.create(WORKSPACE, {
+      pageId: INVOICE_DOC_ID,
+      name: "A",
+    });
+    const drop = await templates.create(WORKSPACE, {
+      pageId: INVOICE_DOC_ID,
+      name: "B",
+    });
+    const made = await templates.createPage(WORKSPACE, { templateId: keep.id });
+
+    await expect(
+      templates.archive(WORKSPACE, { templateId: keep.id, expectedVersion: 1 }),
+    ).rejects.toMatchObject({ status: 412 });
+    await templates.archive(WORKSPACE, {
+      templateId: keep.id,
+      expectedVersion: keep.version,
+    });
+    // Archiving an archived template is a no-op, so the version is still the one that archive wrote.
+    await templates.archive(WORKSPACE, {
+      templateId: keep.id,
+      expectedVersion: keep.version + 1,
+    });
+    await templates.remove(WORKSPACE, {
+      templateId: drop.id,
+      expectedVersion: drop.version,
+    });
+
+    expect(await templates.list(WORKSPACE)).toEqual([]);
+    expect(store.getPage(made.pageId)).toBeTruthy();
+    await expect(
+      templates.createPage(WORKSPACE, { templateId: keep.id }),
+    ).rejects.toMatchObject({ kind: "not_found" });
+    await expect(
+      templates.remove(WORKSPACE, { templateId: drop.id, expectedVersion: 2 }),
+    ).rejects.toMatchObject({ kind: "not_found" });
+  });
+});
+
+describe("Documents.Pages.DuplicatePage on the mock backend", () => {
+  it("copies the page beside the original, not its subpages, leaving media out", async () => {
+    const { store, pages } = setup();
+    const source = store.createPage(WORKSPACE, { title: "Plan" });
+    const child = store.createPage(WORKSPACE, {
+      title: "Child",
+      parentId: source.id,
+    });
+    const kept = store.createBlock(source.id, {
+      type: "paragraph",
+      properties: JSON.stringify({ text: "kept" }),
+      position: 1000,
+    });
+    store.createBlock(source.id, {
+      type: "image",
+      properties: "{}",
+      position: 2000,
+    });
+
+    const copy = await pages.duplicate(WORKSPACE, source.id);
+
+    expect(copy.droppedBlockCount).toBe(1);
+    expect(store.getPage(copy.pageId)?.title).toBe("Copy of Plan");
+    expect(store.getPage(copy.pageId)?.parentId).toBeUndefined();
+    const blocks = store.getPageBlocks(copy.pageId);
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    expect(blocks[0]!.id).not.toBe(kept.id);
+    expect(
+      store.getPages(WORKSPACE).filter((p) => p.parentId === copy.pageId),
+    ).toEqual([]);
+    expect(store.getPage(child.id)?.parentId).toBe(source.id);
+  });
+
+  it("takes the title the client sends and refuses a page that is not there", async () => {
+    const { store, pages } = setup();
+    const source = store.createPage(WORKSPACE, { title: "Plan" });
+
+    const copy = await pages.duplicate(WORKSPACE, source.id, "Plan (bản sao)");
+
+    expect(store.getPage(copy.pageId)?.title).toBe("Plan (bản sao)");
+    await expect(pages.duplicate(WORKSPACE, "nope")).rejects.toMatchObject({
+      kind: "not_found",
+    });
   });
 });

@@ -1,6 +1,7 @@
 import {
   createRoute,
   createRootRouteWithContext,
+  notFound,
 } from "@tanstack/react-router";
 import type { AppRouterContext } from "../context";
 import { requireWorkspaceId } from "../guards/require-workspace-membership";
@@ -15,8 +16,10 @@ import { VerifyEmailPage } from "../../routes/verify-email";
 import { HomePage } from "../../routes/home";
 import { InvitePage } from "../../routes/invite/$token";
 import { InviteLinkPage } from "../../routes/invite";
+import { PublicFormRoutePage } from "../../routes/f/$publicKey";
 import { OnboardingPage } from "../../routes/onboarding/onboarding-page";
 import { WelcomePage } from "../../routes/onboarding/welcome-page";
+import { WorkspaceAddressPage } from "../../routes/workspace-address";
 import { WorkspaceLayout } from "../../routes/workspaces/$workspaceId/route";
 
 export const rootRoute = createRootRouteWithContext<AppRouterContext>()({
@@ -68,6 +71,9 @@ export const verifyEmailRoute = createRoute({
 export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/home",
+  // `open=default` is set only by a finished sign-in: the launcher then opens the default workspace.
+  validateSearch: (search: Record<string, unknown>): { open?: "default" } =>
+    search.open === "default" ? { open: "default" } : {},
   component: HomePage,
 });
 
@@ -81,6 +87,13 @@ export const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/invite/$token",
   component: InvitePage,
+});
+
+/** A public form: anyone with the link, no sign-in (the address is the form's public key). */
+export const publicFormRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/f/$publicKey",
+  component: PublicFormRoutePage,
 });
 
 export const onboardingRoute = createRoute({
@@ -103,4 +116,25 @@ export const workspaceRoute = createRoute({
     const workspaceId = requireWorkspaceId(params);
     context?.services?.lifecycle?.prepareWorkspaceTransition(workspaceId);
   },
+});
+
+const ACCOUNT_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A workspace address at the root. TanStack ranks every static route above this one, so
+ * `/invite`, `/onboarding`, `/workspaces/...` and the other product routes (the reserved
+ * addresses of the Workspaces rules) keep their pages. A path without an Account id is
+ * not an address, so any other unknown path keeps the router's page-not-found screen.
+ */
+export const workspaceAddressRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/$slug",
+  validateSearch: (search: Record<string, unknown>): { account: string } => ({
+    account: typeof search.account === "string" ? search.account : "",
+  }),
+  beforeLoad: ({ search }) => {
+    if (!ACCOUNT_ID_PATTERN.test(search.account)) throw notFound();
+  },
+  component: WorkspaceAddressPage,
 });

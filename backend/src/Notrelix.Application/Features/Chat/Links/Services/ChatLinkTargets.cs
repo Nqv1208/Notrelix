@@ -17,10 +17,13 @@ public static class ChatLinkTargets
     /// </summary>
     public const string BoardKind = "work-management.board";
 
+    /// <summary>A Team, named by a kind and an id (UC-CHT-H11). Like a Board, it is accepted only as a ResourceRef, not as a message URL.</summary>
+    public const string TeamKind = "governance.team";
+
     /// <summary>The longest URL the resolver accepts.</summary>
     public const int MaxUrlLength = 2048;
 
-    public static readonly IReadOnlyList<string> SupportedKinds = [BoardItemKind, PageKind, BoardKind];
+    public static readonly IReadOnlyList<string> SupportedKinds = [BoardItemKind, PageKind, BoardKind, TeamKind];
 
     public static bool IsSupported(string? kind) => kind is not null && SupportedKinds.Contains(kind, StringComparer.Ordinal);
 

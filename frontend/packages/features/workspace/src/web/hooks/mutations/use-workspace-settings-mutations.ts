@@ -46,6 +46,18 @@ export function createUseWorkspaceSettingsMutations({
       onSettled: refreshWorkspace,
     });
 
+    const changeSlug = useMutation({
+      mutationFn: ({
+        slug,
+        expectedVersion,
+      }: {
+        slug: string;
+        expectedVersion: number;
+      }) => service.changeSlug(workspaceId, slug, expectedVersion),
+      retry: false,
+      onSettled: refreshWorkspace,
+    });
+
     const updateSettings = useMutation({
       mutationFn: ({
         settings,
@@ -73,6 +85,15 @@ export function createUseWorkspaceSettingsMutations({
         }),
     });
 
+    // Unarchiving makes the workspace writable again: its own record (the banner reads it) and the lists are
+    // read again whether it worked or not, so a stale version shows the newer state.
+    const unarchive = useMutation({
+      mutationFn: (expectedVersion: number) =>
+        service.unarchive(workspaceId, expectedVersion),
+      retry: false,
+      onSettled: refreshWorkspace,
+    });
+
     // Deleting cuts the workspace off at once: the lists the switcher and the rail draw lose it before
     // anything refetches. Dropping the workspace's own cached answers is the host's step, after it has left
     // the workspace (a scope transition: removing them first would only refetch a NotFound under the page).
@@ -94,6 +115,41 @@ export function createUseWorkspaceSettingsMutations({
       },
     });
 
-    return { updateProfile, updateSettings, archive, remove };
+    // The roles of two people changed: the member list, the viewer's own membership and the workspace record
+    // are all read again, so the former owner sees an admin's page at once.
+    const transferOwnership = useMutation({
+      mutationFn: ({
+        newOwnerId,
+        expectedVersion,
+        stepUpToken,
+      }: {
+        newOwnerId: string;
+        expectedVersion: number;
+        stepUpToken: string;
+      }) =>
+        service.transferOwnership(
+          workspaceId,
+          newOwnerId,
+          expectedVersion,
+          stepUpToken,
+        ),
+      retry: false,
+      onSettled: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.members(workspaceId),
+        });
+        await refreshWorkspace();
+      },
+    });
+
+    return {
+      updateProfile,
+      changeSlug,
+      updateSettings,
+      archive,
+      unarchive,
+      remove,
+      transferOwnership,
+    };
   };
 }

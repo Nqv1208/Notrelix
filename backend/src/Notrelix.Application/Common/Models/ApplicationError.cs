@@ -8,7 +8,8 @@ public enum ApplicationErrorType
     Conflict,
     PreconditionFailed,
     BusinessRule,
-    TooManyRequests
+    TooManyRequests,
+    Forbidden
 }
 
 public sealed record ApplicationError(

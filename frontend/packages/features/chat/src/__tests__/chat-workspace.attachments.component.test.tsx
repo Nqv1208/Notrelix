@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@notrelix/testing";
+import { fireEvent, render, screen, waitFor, within } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createNotrelixClient } from "@notrelix/contracts";
 import { I18nProvider } from "@notrelix/i18n";
@@ -95,8 +95,14 @@ describe("ChatWorkspace attach flow", () => {
     fireEvent.change(box, { target: { value: "with a file" } });
     fireEvent.keyDown(box, { key: "Enter" });
 
-    const log = await screen.findByText("with a file");
-    const row = log.closest("[data-message-id]") as HTMLElement;
+    // The pending bubble shows first; the row with a message id is the stored one.
+    const row = await waitFor(() => {
+      const found = screen
+        .getByText("with a file")
+        .closest("[data-message-id]");
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
     // The file card replaces the upload row once the server stored the file.
     expect(await within(row).findByText("notes.txt")).toBeTruthy();
     expect(within(row).queryByTestId("chat-upload-progress")).toBeNull();
@@ -110,8 +116,14 @@ describe("ChatWorkspace attach flow", () => {
     fireEvent.change(box, { target: { value: "upload will fail" } });
     fireEvent.keyDown(box, { key: "Enter" });
 
-    const log = await screen.findByText("upload will fail");
-    const row = log.closest("[data-message-id]") as HTMLElement;
+    // The pending bubble shows first; the row with a message id is the stored one.
+    const row = await waitFor(() => {
+      const found = screen
+        .getByText("upload will fail")
+        .closest("[data-message-id]");
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
     const failed = await within(row).findByTestId("chat-upload-failed");
     expect(failed.textContent).toContain("later.txt was not uploaded");
     expect(

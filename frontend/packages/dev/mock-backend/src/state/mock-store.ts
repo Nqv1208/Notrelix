@@ -207,6 +207,10 @@ export interface MockWorkspaceSettingsRecord {
 export type MockMemberChange =
   "ok" | "not-found" | "last-owner" | "owner-direct" | "inactive";
 
+/** Outcome of the ownership handover (`TransferOwnership`, LD-05). */
+export type MockOwnershipTransfer =
+  "ok" | "not-found" | "stale" | "self" | "guest";
+
 /**
  * Outcome of a versioned workspace write (`expectedVersion`, WX-SET-001):
  * `stale` mirrors the producer's 412 when the version the member last read is
@@ -260,6 +264,8 @@ export interface MockBoardPlan {
   /** Group id by item id, where the plan lists an item elsewhere. */
   readonly groups: Readonly<Record<string, string>>;
 }
+
+export type MockAccountStatus = "Active" | "Suspended" | "Closed";
 
 export class MockStore {
   /** Sign-in attempts, second steps and guest invitations (gap `CTR-GAP-AUTH-FLOW`). */
@@ -340,6 +346,7 @@ export class MockStore {
   private workspaceDescriptionById = new Map<string, string>();
   /** Archived workspaces drop out of the list and detail reads. */
   private archivedWorkspaceIds = new Set<string>();
+  private accountStatusByWorkspaceId = new Map<string, MockAccountStatus>();
   /** Deleted workspaces (id -> when): hidden from everyone, restorable by an Owner for 30 days. */
   private deletedWorkspaceAt = new Map<
     string,
@@ -2158,6 +2165,7 @@ export class MockStore {
     this.workspaceVersionById.clear();
     this.workspaceDescriptionById.clear();
     this.archivedWorkspaceIds.clear();
+    this.accountStatusByWorkspaceId.clear();
     this.deletedWorkspaceAt.clear();
     this.boardMembersByBoardId.clear();
     this.boardGrantsByBoardId.clear();
@@ -4399,7 +4407,7 @@ export class MockStore {
       settings = {
         allowPublicSharing: false,
         enforceMfa: false,
-        allowGuestInvites: true,
+        allowGuestInvites: false,
         defaultMemberRole: "Member",
         invitationExpiryDays: 7,
         timeZone: "Asia/Ho_Chi_Minh",
@@ -4422,6 +4430,22 @@ export class MockStore {
 
   isWorkspaceArchived(workspaceId: string): boolean {
     return this.archivedWorkspaceIds.has(workspaceId);
+  }
+
+  /**
+   * The Account's status for a workspace: set on that workspace, else from the world's business state
+   * (`account-suspended`, `account-closed`), else Active.
+   */
+  accountStatusOf(workspaceId: string): MockAccountStatus {
+    const own = this.accountStatusByWorkspaceId.get(workspaceId);
+    if (own) return own;
+    if (this.config.state === "account-suspended") return "Suspended";
+    if (this.config.state === "account-closed") return "Closed";
+    return "Active";
+  }
+
+  setAccountStatus(workspaceId: string, status: MockAccountStatus): void {
+    this.accountStatusByWorkspaceId.set(workspaceId, status);
   }
 
   isWorkspaceDeleted(workspaceId: string): boolean {
@@ -4536,6 +4560,29 @@ export class MockStore {
     });
   }
 
+  /**
+   * Changes the address: the same address is a no-op (no version step), another workspace's address in
+   * the Account is `taken`, nothing redirects from the old one.
+   */
+  changeWorkspaceSlug(
+    workspaceId: string,
+    expectedVersion: unknown,
+    slug: string,
+  ): MockVersionedWrite | "taken" {
+    const workspace = this.getWorkspace(workspaceId);
+    if (!workspace) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    if (workspace.slug === slug) return "ok";
+    if (
+      this.getWorkspaces().some((w) => w.id !== workspaceId && w.slug === slug)
+    )
+      return "taken";
+    return this.versionedWorkspaceWrite(workspaceId, expectedVersion, () => {
+      workspace.slug = slug;
+    });
+  }
+
   updateWorkspaceSettings(
     workspaceId: string,
     expectedVersion: unknown,
@@ -4569,6 +4616,31 @@ export class MockStore {
       workspaceId,
       this.getWorkspaceVersion(workspaceId) + 1,
     );
+    return "ok";
+  }
+
+  /**
+   * The current Owner hands the workspace to an active non-Guest member: the person becomes Owner, the caller
+   * Admin. The caller being an Owner is the handler's check; the version is checked first, as the producer's
+   * pipeline does.
+   */
+  transferOwnership(
+    workspaceId: string,
+    newOwnerId: string,
+    expectedVersion: unknown,
+  ): MockOwnershipTransfer {
+    if (!this.getWorkspace(workspaceId)) return "not-found";
+    if (expectedVersion !== this.getWorkspaceVersion(workspaceId))
+      return "stale";
+    const caller = this.findMembership(workspaceId, this.getCurrentUser().id);
+    if (!caller) return "not-found";
+    if (caller.userId === newOwnerId) return "self";
+    const target = this.findMembership(workspaceId, newOwnerId);
+    if (!target || this.suspendedMembershipIds.has(target.id))
+      return "not-found";
+    if (target.role === "guest") return "guest";
+    target.role = "owner";
+    caller.role = "admin";
     return "ok";
   }
 

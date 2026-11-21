@@ -25,6 +25,8 @@ public class SystemContextUsageTests
         "RestoreWorkspace.cs",
         "GetDeletedWorkspaces.cs",
         "RestoreSpace.cs",
+        "GetDeletedSpaces.cs",
+        "GetDeletedTeams.cs",
         "RestoreTeam.cs",
         "RestoreBoard.cs",
         "StaleFieldGuard.cs",
@@ -37,6 +39,8 @@ public class SystemContextUsageTests
         "RestoreBoardItem.cs",
         "ListBoardItemTrash.cs",
         "RestoreBoardView.cs",
+        "ChannelAccess.cs",
+        "ListDeletedChannels.cs",
         "RestoreForm.cs",
         "RestoreApprovalRequest.cs",
         "RestoreSavedFilter.cs",
@@ -61,8 +65,10 @@ public class SystemContextUsageTests
         "IdentityBootstrapReadAdapter.cs",
         "GetUserWorkspaces.cs",
         "GetMyWorkspaces.cs",
+        "GetAccountWorkspaces.cs",
         "CalendarWebhookBindingResolver.cs",
         "InvitationTokenScope.cs",
+        "PublicFormScope.cs",
         "InviteeInvitations.cs",
     ];
 

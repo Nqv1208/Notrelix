@@ -9,10 +9,12 @@ import {
   type WorkspaceInvitation,
   type WorkspaceMember,
   type WorkspaceRole,
+  type InviteManyOutcome,
 } from "@notrelix/features-workspace/core";
 import {
   createUseChangeInvitationRole,
   createUseCreateInvitation,
+  createUseInviteMembers,
   createUseMemberMutations,
   createUseResendInvitation,
   createUseRevokeInvitation,
@@ -22,12 +24,17 @@ import {
   WorkspaceMembersSurface,
   WorkspaceSetupFrame,
   useWorkspaceTeamsCopy,
+  type InvitationEntryOptions,
+  type JobTitleOutcome,
   type MemberWriteTarget,
   type MembersTab,
   type WorkspaceMembersCopy,
 } from "@notrelix/features-workspace/web";
 import {
   describeWorkspaceFailure,
+  GUEST_INVITES_OFF_CODE,
+  parseInvitationEntryRefusals,
+  type InvitationEntryRefusalReason,
   PENDING_INVITATION_EXISTS_CODE,
 } from "@notrelix/features-workspace/core";
 import { useFormatters } from "@notrelix/i18n";
@@ -40,6 +47,7 @@ import { useIdSet } from "@/shell/workspace/use-id-set";
 import { useNow } from "@/shell/workspace/use-now";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
+import { useSpaceHooks } from "@/shell/workspace/use-workspace-spaces";
 
 /** The producer refuses an invitation for a person who is already an Active member. */
 const ALREADY_MEMBER_CODE = "workspaces.invitation.already-member";
@@ -86,6 +94,7 @@ export function MembersPage() {
       useMemberMutations: createUseMemberMutations(deps),
       useInvitations: createUseWorkspaceInvitations(deps),
       useCreateInvitation: createUseCreateInvitation(deps),
+      useInviteMembers: createUseInviteMembers(deps),
       useRevokeInvitation: createUseRevokeInvitation(deps),
       useResendInvitation: createUseResendInvitation(deps),
       useChangeInvitationRole: createUseChangeInvitationRole(deps),
@@ -99,14 +108,72 @@ export function MembersPage() {
   const invitations = hooks.useInvitations(workspaceId, { enabled: admin });
   const mutations = hooks.useMemberMutations(workspaceId);
   const createInvitation = hooks.useCreateInvitation(workspaceId);
+  const inviteMembers = hooks.useInviteMembers(workspaceId);
+  const [inviteResults, setInviteResults] = useState<
+    readonly InviteManyOutcome[] | null
+  >(null);
   const revokeInvitation = hooks.useRevokeInvitation(workspaceId);
   const resendInvitation = hooks.useResendInvitation(workspaceId);
   const changeInvitationRole = hooks.useChangeInvitationRole(workspaceId);
   const pendingMembers = useIdSet();
   const pendingInvitations = useIdSet();
   const [inviteError, setInviteError] = useState<string | null>(null);
+  // Entries the producer refused, shown under the entry (`kind:targetId`).
+  const [entryRefusals, setEntryRefusals] = useState<
+    ReadonlyMap<string, InvitationEntryRefusalReason>
+  >(() => new Map());
   const [inviteResetKey, setInviteResetKey] = useState(0);
   const hint = useMemo(() => recoveryHint(copy), [copy]);
+
+  // What the inviter may name on an invitation: a kind they hold no action for is not offered. Naming
+  // Teams needs `ManageTeams`, naming Spaces `ManageSpaces`, and both kinds together need both; the
+  // producer checks every entry again.
+  const spaceHooks = useSpaceHooks();
+  const teamList = spaceHooks.useWorkspaceTeams(workspaceId, admin);
+  const spaceTree = spaceHooks.useSpaceTree(workspaceId);
+  const entryOptions = useMemo<InvitationEntryOptions | null>(() => {
+    if (!admin) return null;
+    return {
+      teams: viewer.can("ManageTeams")
+        ? (teamList.data ?? []).map((team) => ({
+            id: team.id,
+            name: team.name,
+          }))
+        : null,
+      spaces: viewer.can("ManageSpaces")
+        ? (spaceTree.data ?? [])
+            .filter((space) => !space.isArchived)
+            .map((space) => ({ id: space.id, name: space.name }))
+        : null,
+    };
+  }, [admin, spaceTree.data, teamList.data, viewer]);
+
+  const onSaveJobTitle = useCallback(
+    async (
+      member: WorkspaceMember,
+      jobTitle: string | null,
+    ): Promise<JobTitleOutcome> => {
+      try {
+        await mutations.updateJobTitle.mutateAsync({
+          userId: member.userId,
+          expectedVersion: member.version,
+          jobTitle,
+        });
+      } catch (error) {
+        const failure = describeWorkspaceFailure(error);
+        if (failure.kind === "conflict") return { kind: "conflict" };
+        if (failure.kind === "forbidden") return { kind: "denied" };
+        if (failure.kind === "validation" || failure.kind === "rule")
+          return { kind: "invalid" };
+        return { kind: "failed" };
+      }
+      toast.success(
+        formatCopy(copy.toasts.jobTitleSaved, { name: member.name }),
+      );
+      return { kind: "saved" };
+    },
+    [copy, mutations.updateJobTitle],
+  );
 
   const run = useCallback(
     (
@@ -150,6 +217,7 @@ export function MembersPage() {
   const onInvite = useCallback(
     (input: CreateWorkspaceInvitationInput) => {
       setInviteError(null);
+      setEntryRefusals(new Map());
       // One pending invitation per address (the producer's rule): say so in
       // the member's language before sending. The producer still decides.
       const waiting = pendingInvitationFor(
@@ -181,6 +249,11 @@ export function MembersPage() {
             );
             return;
           }
+          // Guest invitations are switched off in the workspace settings: say who can switch them on.
+          if (failure.errorCode === GUEST_INVITES_OFF_CODE) {
+            setInviteError(copy.invitations.guestInvitesOff);
+            return;
+          }
           const fieldMessage =
             Object.values(failure.fieldErrors).flat()[0] ?? null;
           // Someone else invited this address a moment ago: the same words as the check before sending.
@@ -190,6 +263,24 @@ export function MembersPage() {
                 email: input.email,
               }),
             );
+            return;
+          }
+          // The producer names each entry it refused: the reason shows under that entry.
+          const refusedEntries = parseInvitationEntryRefusals(error);
+          if (refusedEntries.length > 0) {
+            setEntryRefusals(
+              new Map(
+                refusedEntries.map((entry) => [
+                  `${entry.kind}:${entry.targetId}`,
+                  entry.reason,
+                ]),
+              ),
+            );
+            return;
+          }
+          // A refusal of an invitation that names Teams or Spaces: the inviter cannot grant one of them.
+          if (failure.kind === "forbidden" && input.initialEntries?.length) {
+            setInviteError(copy.invitations.entries.refused);
             return;
           }
           if (failure.kind === "validation" || failure.kind === "rule") {
@@ -210,38 +301,35 @@ export function MembersPage() {
     [copy, createInvitation, hint, invitations.data, now],
   );
 
-  // Several addresses typed at once: sent one after the other, each decided
-  // by the producer; what was not sent stays in the field to be fixed.
+  // Several addresses typed at once go in one request, with their initial Team and Space entries: the producer
+  // decides each address on its own and the dialog lists every outcome. A caller who may not name one of the
+  // entries is refused for the whole request, like a single invitation.
   const onInviteMany = useCallback(
     async (inputs: readonly CreateWorkspaceInvitationInput[]) => {
       setInviteError(null);
-      const failed: string[] = [];
-      let sent = 0;
-      for (const input of inputs) {
-        if (pendingInvitationFor(invitations.data ?? [], input.email, now)) {
-          failed.push(input.email);
-          continue;
+      try {
+        const outcomes = await inviteMembers.mutateAsync(inputs);
+        setInviteResults(outcomes);
+        if (outcomes.every((row) => row.outcome === "sent"))
+          setInviteResetKey((key) => key + 1);
+      } catch (error) {
+        if (
+          describeWorkspaceFailure(error).kind === "forbidden" &&
+          inputs.some((input) => input.initialEntries?.length)
+        ) {
+          setInviteError(copy.invitations.entries.refused);
+          return;
         }
-        try {
-          await createInvitation.mutateAsync(input);
-          sent += 1;
-        } catch {
-          failed.push(input.email);
-        }
-      }
-      if (failed.length === 0) {
-        setInviteResetKey((key) => key + 1);
-        toast.success(formatCopy(copy.toasts.invitedMany, { count: sent }));
-        return;
-      }
-      const emails = failed.join(", ");
-      if (sent > 0)
-        toast.success(
-          formatCopy(copy.toasts.invitedSome, { count: sent, emails }),
+        toastFailure(
+          formatCopy(copy.toasts.inviteFailed, {
+            email: inputs[0]?.email ?? "",
+          }),
+          error,
+          hint,
         );
-      setInviteError(formatCopy(copy.invitations.emailInvalidMany, { emails }));
+      }
     },
-    [copy, createInvitation, invitations.data, now],
+    [copy, hint, inviteMembers],
   );
 
   const onChangeInvitationRole = useCallback(
@@ -250,31 +338,32 @@ export function MembersPage() {
       role: CreateWorkspaceInvitationInput["role"],
     ) => {
       pendingInvitations.add(invitation.id);
-      changeInvitationRole.mutate(
-        {
+      // mutateAsync, not mutate with callbacks: those only fire for the latest call, so a second row's
+      // write would leave this row busy and its outcome unreported.
+      changeInvitationRole
+        .mutateAsync({
           invitationId: invitation.id,
           role,
           expectedVersion: invitation.version,
-        },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.invitationRoleChanged, {
-                email: invitation.email,
-                role: copy.roles[role],
-              }),
-            ),
-          onError: (error) =>
-            toastFailure(
-              formatCopy(copy.toasts.invitationRoleFailed, {
-                email: invitation.email,
-              }),
-              error,
-              hint,
-            ),
-          onSettled: () => pendingInvitations.remove(invitation.id),
-        },
-      );
+        })
+        .then(() =>
+          toast.success(
+            formatCopy(copy.toasts.invitationRoleChanged, {
+              email: invitation.email,
+              role: copy.roles[role],
+            }),
+          ),
+        )
+        .catch((error: unknown) =>
+          toastFailure(
+            formatCopy(copy.toasts.invitationRoleFailed, {
+              email: invitation.email,
+            }),
+            error,
+            hint,
+          ),
+        )
+        .finally(() => pendingInvitations.remove(invitation.id));
     },
     [changeInvitationRole, copy, hint, pendingInvitations],
   );
@@ -282,19 +371,21 @@ export function MembersPage() {
   const onResend = useCallback(
     (invitation: WorkspaceInvitation) => {
       pendingInvitations.add(invitation.id);
-      resendInvitation.mutate(invitation.id, {
-        onSuccess: () =>
+      resendInvitation
+        .mutateAsync(invitation.id)
+        .then(() =>
           toast.success(
             formatCopy(copy.toasts.resent, { email: invitation.email }),
           ),
-        onError: (error) =>
+        )
+        .catch((error: unknown) =>
           toastFailure(
             formatCopy(copy.toasts.resendFailed, { email: invitation.email }),
             error,
             hint,
           ),
-        onSettled: () => pendingInvitations.remove(invitation.id),
-      });
+        )
+        .finally(() => pendingInvitations.remove(invitation.id));
     },
     [copy, hint, pendingInvitations, resendInvitation],
   );
@@ -302,19 +393,21 @@ export function MembersPage() {
   const onRevoke = useCallback(
     (invitation: WorkspaceInvitation) => {
       pendingInvitations.add(invitation.id);
-      revokeInvitation.mutate(invitation.id, {
-        onSuccess: () =>
+      revokeInvitation
+        .mutateAsync(invitation.id)
+        .then(() =>
           toast.success(
             formatCopy(copy.toasts.revoked, { email: invitation.email }),
           ),
-        onError: (error) =>
+        )
+        .catch((error: unknown) =>
           toastFailure(
             formatCopy(copy.toasts.revokeFailed, { email: invitation.email }),
             error,
             hint,
           ),
-        onSettled: () => pendingInvitations.remove(invitation.id),
-      });
+        )
+        .finally(() => pendingInvitations.remove(invitation.id));
     },
     [copy, hint, pendingInvitations, revokeInvitation],
   );
@@ -354,6 +447,7 @@ export function MembersPage() {
         pendingInvitationIds={pendingInvitations.ids}
         inviting={createInvitation.isPending}
         inviteError={inviteError}
+        entryRefusals={entryRefusals}
         inviteResetKey={inviteResetKey}
         onChangeRole={onChangeRole}
         onRemove={(member) =>
@@ -374,8 +468,12 @@ export function MembersPage() {
             failure: copy.toasts.activateFailed,
           })
         }
+        onSaveJobTitle={admin ? onSaveJobTitle : undefined}
+        entryOptions={entryOptions}
         onInvite={onInvite}
         onInviteMany={onInviteMany}
+        inviteResults={inviteResults}
+        onDismissInviteResults={() => setInviteResults(null)}
         onResend={onResend}
         onChangeInvitationRole={onChangeInvitationRole}
         onRevoke={onRevoke}

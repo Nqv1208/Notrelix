@@ -23,6 +23,7 @@ export function workspaceSettingsFixture(
     allowGuestInvites: true,
     allowPublicSharing: false,
     enforceMfa: false,
+    guestDefaultExpiryDays: null,
     timeZone: "Asia/Ho_Chi_Minh",
     weekStart: "monday",
     ...overrides,
@@ -37,6 +38,9 @@ type SettingsScenario = Omit<
   | "onDelete"
   | "onReload"
   | "onRetryDefaults"
+  | "onTransfer"
+  | "ownershipStepUp"
+  | "onInviteForTransfer"
 >;
 
 export function settingsDefaultScenario(
@@ -61,12 +65,42 @@ export function settingsDefaultScenario(
     canDelete: true,
     isPersonal: false,
     deleting: false,
+    canTransfer: true,
+    transferCandidates: [
+      {
+        userId: "u-ha",
+        name: "Nguyễn Thu Hà",
+        role: "admin",
+        detail: "Phòng Nhân sự",
+      },
+      {
+        userId: "u-lan",
+        name: "Vũ Ngọc Lan",
+        role: "admin",
+        detail: "Ban giám đốc",
+      },
+      {
+        userId: "u-khoa",
+        name: "Lê Minh Khoa",
+        role: "member",
+        detail: null,
+      },
+    ],
   };
+}
+
+/** The Owner has nobody active and non-Guest to hand the workspace to. */
+export function settingsNoTransferCandidateScenario(): SettingsScenario {
+  return { ...settingsDefaultScenario(), transferCandidates: [] };
 }
 
 /** An admin who is not the Owner: the delete action is not offered at all. */
 export function settingsAdminScenario(): SettingsScenario {
-  return { ...settingsDefaultScenario(), canDelete: false };
+  return {
+    ...settingsDefaultScenario(),
+    canDelete: false,
+    canTransfer: false,
+  };
 }
 
 /** A personal workspace: the Owner sees the action explained and off. */

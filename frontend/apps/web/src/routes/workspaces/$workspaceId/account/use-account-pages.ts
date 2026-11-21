@@ -36,6 +36,9 @@ const PATHS: Record<AccountTab, string> = {
   appearance: "appearance",
   security: "security",
   notifications: "notifications",
+  email: "email",
+  providers: "providers",
+  tokens: "tokens",
   workspaces: "workspaces",
 };
 

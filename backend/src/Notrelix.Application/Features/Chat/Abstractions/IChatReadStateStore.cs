@@ -13,6 +13,13 @@ public interface IChatReadStateStore
     Task<bool> AdvanceAsync(Guid workspaceId, Guid spaceId, Guid userId, long target, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Moves the caller's boundary back to <paramref name="target"/> when it is ahead of it (UC-CHT-I07, Mark unread from here): the one
+    /// case where a boundary decreases. A target at or past the boundary changes nothing, so the call never reads anything forward.
+    /// The mention count is recounted after the new boundary. Returns false when the caller has no active membership there.
+    /// </summary>
+    Task<bool> RewindAsync(Guid workspaceId, Guid spaceId, Guid userId, long target, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Moves the boundary in every live space of the Workspace to that space's last sequence (UC-CHT-D07). The statement sees
     /// the sequences committed when it starts, so a message sent during the call stays unread. Returns the rows it touched.
     /// </summary>

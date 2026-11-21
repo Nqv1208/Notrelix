@@ -56,4 +56,8 @@ public enum PermissionAction
     ChatMessagePin,
     ChatMessageReact,
     ChatSearch,
+    ChatCallStart,
+
+    // Account security policy (the Account MFA requirement): Owner only, never carried by a role.
+    ManageAccountSecurity,
 }

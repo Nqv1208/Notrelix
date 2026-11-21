@@ -68,6 +68,14 @@ vi.mock("@notrelix/runtime-web", () => ({
         accounts: {
           deletedWorkspaces: (id: string) =>
             `/accounts/${id}/workspaces/deleted`,
+          sso: "/accounts/security-policy/sso",
+          ssoProvider: "/accounts/security-policy/sso/provider",
+          ssoDomains: "/accounts/security-policy/sso/domains",
+          ssoDomain: (id: string) =>
+            `/accounts/security-policy/sso/domains/${id}`,
+          ssoDomainVerify: (id: string) =>
+            `/accounts/security-policy/sso/domains/${id}/verify`,
+          ssoRequire: "/accounts/security-policy/sso/require",
         },
         workspaces: {
           restore: (id: string) => `/workspaces/${id}/restore`,
@@ -355,6 +363,157 @@ describe("AccountProfilePage container", () => {
     });
   });
 
+  describe("job title", () => {
+    const JOB_TITLE_URL = "/workspaces/w-1/members/me/job-title";
+    const conflict = "These settings were changed on another device";
+
+    async function typeIntoJobTitle(value: string) {
+      const input = host?.querySelector<HTMLInputElement>(
+        'input[autocomplete="organization-title"]',
+      );
+      if (!input) throw new Error("No job title input");
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      await act(async () => {
+        setter?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+
+    /** The membership read follows a job title write, as the producer does. */
+    async function open() {
+      let stored = { ...member };
+      runtime.get = (url) =>
+        url === "/workspaces/w-1/members/me"
+          ? { ...stored }
+          : (base as Record<string, unknown>)[url];
+      const write = runtime.put;
+      runtime.put = (url, body) => {
+        const answer = write?.(url, body);
+        if (answer instanceof Promise)
+          return answer.then((value) => {
+            stored = { ...stored, ...(body as object), version: 5 };
+            return value;
+          });
+        stored = { ...stored, ...(body as object), version: 5 };
+        return answer;
+      };
+      await mount(<AccountProfilePage />, "en");
+      await until(() => expect(text()).toContain("Time zone"));
+    }
+
+    it("saves a changed job title with the membership version and says the profile was updated", async () => {
+      const put = vi.fn(() => ({}));
+      runtime.put = put;
+      await open();
+      await typeIntoJobTitle("  Lead  ");
+      await clickButton("Save changes");
+      await until(() => expect(text()).toContain("Profile updated."));
+      expect(put).toHaveBeenCalledTimes(1);
+      expect(put).toHaveBeenCalledWith(JOB_TITLE_URL, {
+        jobTitle: "Lead",
+        expectedVersion: 4,
+      });
+    });
+
+    it("clears the job title when the field is blanked", async () => {
+      const put = vi.fn(() => ({}));
+      runtime.put = put;
+      await open();
+      await typeIntoJobTitle("   ");
+      await clickButton("Save changes");
+      await until(() => expect(text()).toContain("Profile updated."));
+      expect(put).toHaveBeenCalledWith(JOB_TITLE_URL, {
+        jobTitle: "",
+        expectedVersion: 4,
+      });
+    });
+
+    it("sends nothing when the job title is only re-spaced", async () => {
+      const put = vi.fn(() => ({}));
+      runtime.put = put;
+      await open();
+      await typeIntoJobTitle("  Implementation lead ");
+      expect(
+        Array.from(host?.querySelectorAll("button") ?? []).some(
+          (button) => button.textContent === "Save changes",
+        ),
+      ).toBe(false);
+      expect(put).not.toHaveBeenCalled();
+    });
+
+    it("refuses a job title over 100 characters before anything is sent", async () => {
+      const put = vi.fn(() => ({}));
+      runtime.put = put;
+      await open();
+      await typeIntoJobTitle("x".repeat(101));
+      expect(text()).toContain("A job title is at most 100 characters.");
+      expect(
+        Array.from(host?.querySelectorAll("button") ?? []).find(
+          (button) => button.textContent === "Save changes",
+        )?.disabled,
+      ).toBe(true);
+      expect(put).not.toHaveBeenCalled();
+    });
+
+    it("disables the job title input while it is being saved", async () => {
+      let finish: () => void = () => undefined;
+      runtime.put = () =>
+        new Promise((resolve) => {
+          finish = () => resolve({});
+        });
+      await open();
+      await typeIntoJobTitle("Lead");
+      await clickButton("Save changes");
+      const input = () =>
+        host?.querySelector<HTMLInputElement>(
+          'input[autocomplete="organization-title"]',
+        );
+      await until(() => expect(input()?.disabled).toBe(true));
+      expect(text()).not.toContain("Profile updated.");
+      await act(async () => finish());
+      await until(() => expect(text()).toContain("Profile updated."));
+      expect(input()?.disabled).toBe(false);
+    });
+
+    it("says nothing was saved when the membership changed elsewhere (412)", async () => {
+      runtime.put = () => {
+        throw Object.assign(new Error("stale"), { status: 412 });
+      };
+      await open();
+      await typeIntoJobTitle("Lead");
+      await clickButton("Save changes");
+      await until(() => expect(text()).toContain(conflict));
+      expect(text()).not.toContain("Profile updated.");
+    });
+
+    it("shows the generic save error on a server error or a network failure", async () => {
+      runtime.put = () => {
+        throw Object.assign(new Error("boom"), { status: 500 });
+      };
+      await open();
+      await typeIntoJobTitle("Lead");
+      await clickButton("Save changes");
+      await until(() =>
+        expect(text()).toContain("We couldn't save your changes."),
+      );
+      expect(text()).not.toContain(conflict);
+      expect(text()).not.toContain("Profile updated.");
+
+      runtime.put = () => {
+        throw new TypeError("Failed to fetch");
+      };
+      await typeIntoJobTitle("Lead 2");
+      await clickButton("Save changes");
+      await until(() =>
+        expect(text()).toContain("We couldn't save your changes."),
+      );
+      expect(text()).not.toContain("Profile updated.");
+    });
+  });
+
   it("shows the localized error with a retry when the profile cannot load", async () => {
     runtime.get = reads({ ...base, "/auth/me": new Error("boom") });
     await mount(<AccountProfilePage />, "vi");
@@ -586,9 +745,19 @@ describe("AccountSecurityPage container", () => {
       isCurrent: false,
     },
   ];
+  /** The Account's single sign-on setup as a member (not the Owner) reads it. */
+  const ssoSetup = {
+    canManage: false,
+    redirectUri: "https://api.example/api/v1/auth/sso/callback",
+    requireSso: false,
+    provider: null,
+    domains: [],
+  };
   const table = {
     "/auth/me": profile,
     "/workspaces/w-1": workspace,
+    "/auth/bootstrap": { accountId: "acc-1" },
+    "/accounts/security-policy/sso": ssoSetup,
     "/auth/security/summary": summary,
     "/auth/sessions": sessions,
     "/auth/security/activity": {
@@ -614,6 +783,24 @@ describe("AccountSecurityPage container", () => {
     expect(text()).toContain("Đăng nhập 2 giờ trước");
     expect(text()).toContain("Hoạt động bảo mật gần đây");
     expect(text()).toContain("Đã bật");
+  });
+
+  it("draws the single sign-on block: read-only for a member, the setup for the Owner", async () => {
+    runtime.get = reads(table);
+    await mount(<AccountSecurityPage />, "en");
+    await until(() =>
+      expect(text()).toContain(
+        "Only the account Owner can set up single sign-on",
+      ),
+    );
+    expect(host?.querySelector('[aria-label="Set up provider"]')).toBeNull();
+
+    runtime.get = reads({
+      ...table,
+      "/accounts/security-policy/sso": { ...ssoSetup, canManage: true },
+    });
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Set up provider"));
   });
 
   it("asks for a proof before creating new backup codes and shows them once", async () => {
@@ -726,7 +913,9 @@ describe("AccountSecurityPage container", () => {
       runtime.post = vi.fn((url: string) =>
         url === "/auth/security/step-up/requirement"
           ? { requiredFactor: "OAuth", challengeToken: null }
-          : undefined,
+          : url === "/auth/oauth/Google/step-up/start"
+            ? { authorizationUrl: "https://accounts.google.test/authorize?s=1" }
+            : undefined,
       );
       await mount(<AccountSecurityPage />, "en");
       await until(() =>
@@ -742,8 +931,18 @@ describe("AccountSecurityPage container", () => {
       expect(text()).toContain("there is no password to enter");
 
       await clickButton("Confirm with Google");
-      expect(assign).toHaveBeenCalledWith(
-        "https://api.test/auth/oauth/Google/step-up/start?purpose=EnrollMfa&returnUrl=%2Fworkspaces%2Fw-1%2Faccount%2Fsecurity%3FstepUp%3Denroll",
+      // A POST (no link can start it); the browser then leaves for the URL it answered.
+      await until(() =>
+        expect(assign).toHaveBeenCalledWith(
+          "https://accounts.google.test/authorize?s=1",
+        ),
+      );
+      expect(runtime.post).toHaveBeenCalledWith(
+        "/auth/oauth/Google/step-up/start",
+        {
+          purpose: "EnrollMfa",
+          returnUrl: "/workspaces/w-1/account/security?stepUp=enroll",
+        },
       );
       vi.unstubAllGlobals();
     });
@@ -1423,6 +1622,99 @@ describe("AccountWorkspacesPage container", () => {
       expect(text()).toContain("You are the only owner of this workspace."),
     );
     expect(runtime.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("AccountWorkspacesPage leave states", () => {
+  const owned = [
+    {
+      id: "w-1",
+      name: "Minh An Group",
+      slug: "minh-an",
+      role: "Owner",
+      memberCount: 86,
+      departmentCount: 5,
+      isDefault: true,
+      canLeave: false,
+    },
+    {
+      id: "w-2",
+      name: "Minh An Đà Nẵng",
+      slug: "da-nang",
+      role: "Member",
+      memberCount: 18,
+      departmentCount: null,
+      isDefault: false,
+      canLeave: true,
+    },
+  ];
+
+  it("leads the sole owner to the workspace settings to hand the workspace over, and no other row", async () => {
+    runtime.get = reads({ "/account/workspaces": owned });
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Group"));
+    const links = Array.from(
+      host?.querySelectorAll<HTMLAnchorElement>(
+        'a[aria-label^="Transfer the ownership of"]',
+      ) ?? [],
+    );
+    expect(links).toHaveLength(1);
+    expect(links[0]?.getAttribute("href")).toBe("/workspaces/w-1/settings");
+    expect(text()).toContain("You are the only owner of Minh An Group.");
+    await act(async () => links[0]?.click());
+    expect(runtime.navigate).toHaveBeenCalledWith({
+      to: "/workspaces/w-1/settings",
+    });
+  });
+
+  it("shows a leave in progress: the buttons stay off until the producer answers", async () => {
+    let finish: () => void = () => undefined;
+    runtime.get = reads({ "/account/workspaces": owned });
+    runtime.del = () =>
+      new Promise<null>((resolve) => {
+        finish = () => resolve(null);
+      });
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Đà Nẵng"));
+    const trigger = host?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Leave the workspace Minh An Đà Nẵng…"]',
+    );
+    await act(async () => trigger?.click());
+    const confirm = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ).find((button) => button.textContent === "Leave workspace");
+    await act(async () => confirm?.click());
+    await until(() =>
+      expect(
+        host?.querySelector<HTMLButtonElement>(
+          'button[aria-label="Leave the workspace Minh An Đà Nẵng…"]',
+        )?.disabled,
+      ).toBe(true),
+    );
+    await act(async () => finish());
+  });
+
+  it("says a failed leave in words and keeps the workspace listed", async () => {
+    runtime.get = reads({ "/account/workspaces": owned });
+    runtime.del = () => {
+      throw Object.assign(new Error("offline"), { status: 0 });
+    };
+    await mount(<AccountWorkspacesPage />, "en");
+    await until(() => expect(text()).toContain("Minh An Đà Nẵng"));
+    const trigger = host?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Leave the workspace Minh An Đà Nẵng…"]',
+    );
+    await act(async () => trigger?.click());
+    const confirm = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ).find((button) => button.textContent === "Leave workspace");
+    await act(async () => confirm?.click());
+    await until(() => expect(text()).toContain("We couldn't do that."));
+    expect(text()).toContain("Minh An Đà Nẵng");
   });
 });
 

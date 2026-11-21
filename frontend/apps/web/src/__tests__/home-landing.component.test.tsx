@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   navigated: [] as string[],
   routed: [] as string[],
   setDefault: [] as string[],
+  replaced: [] as boolean[],
+  search: {} as { open?: string },
 }));
 
 vi.mock("@notrelix/runtime-web", () => ({
@@ -34,8 +36,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
       state.routed.push(to);
     },
   }),
-  Navigate: ({ to }: { to: string }) => {
+  useSearch: () => state.search,
+  Navigate: ({ to, replace }: { to: string; replace?: boolean }) => {
     state.navigated.push(to);
+    state.replaced.push(replace === true);
     return null;
   },
 }));
@@ -59,6 +63,8 @@ afterEach(() => {
   state.navigated = [];
   state.routed = [];
   state.setDefault = [];
+  state.replaced = [];
+  state.search = {};
 });
 
 async function mount() {
@@ -155,5 +161,124 @@ describe("Home overview", () => {
     state.account = { workspaces: [], deletedIsError: true };
     await mount();
     expect(state.navigated).toEqual(["/onboarding"]);
+  });
+});
+
+describe("Home after sign-in (?open=default)", () => {
+  const landing = () => {
+    state.search = { open: "default" };
+  };
+
+  it("opens the default workspace in place of the launcher", async () => {
+    landing();
+    state.account = {
+      workspaces: [
+        workspace("w-1", "Minh An"),
+        workspace("w-2", "Studio", true),
+      ],
+      deleted: [],
+    };
+    await mount();
+    expect(state.navigated).toEqual(["/workspaces/w-2"]);
+    expect(state.replaced).toEqual([true]);
+    expect(host?.querySelector("h1")).toBeNull();
+  });
+
+  it("shows the launcher when no workspace is the default", async () => {
+    landing();
+    state.account = {
+      workspaces: [workspace("w-1", "Minh An"), workspace("w-2", "Studio")],
+      deleted: [],
+    };
+    await mount();
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")?.textContent).toBe("Hello, An");
+  });
+
+  it("shows the launcher when the default is archived or no longer listed", async () => {
+    landing();
+    state.account = {
+      workspaces: [
+        workspace("w-1", "Minh An"),
+        { ...workspace("w-2", "Studio", true), isArchived: true },
+      ],
+      deleted: [],
+    };
+    await mount();
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")?.textContent).toBe("Hello, An");
+    act(() => root?.unmount());
+    host?.remove();
+    // The default is not among the listed workspaces at all.
+    state.account = { workspaces: [workspace("w-1", "Minh An")], deleted: [] };
+    await mount();
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")?.textContent).toBe("Hello, An");
+  });
+
+  it("shows the launcher with its error when the list could not be read", async () => {
+    landing();
+    state.account = { isError: true, deleted: [] };
+    await mount();
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")).not.toBeNull();
+  });
+
+  it("waits while the list loads, then opens the default", async () => {
+    landing();
+    state.account = {};
+    await mount();
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")).not.toBeNull();
+    state.account = {
+      workspaces: [workspace("w-2", "Studio", true)],
+      deleted: [],
+    };
+    await act(async () => {
+      root?.render(
+        <I18nProvider catalogs={webCatalogs} initialLocale="en">
+          <HomePage />
+        </I18nProvider>,
+      );
+    });
+    expect(state.navigated).toEqual(["/workspaces/w-2"]);
+  });
+
+  it("does not open the default when Make default is used on the launcher afterwards", async () => {
+    landing();
+    state.account = {
+      workspaces: [workspace("w-1", "Minh An"), workspace("w-2", "Studio")],
+      deleted: [],
+    };
+    await mount();
+    state.account = {
+      workspaces: [
+        workspace("w-1", "Minh An", true),
+        workspace("w-2", "Studio"),
+      ],
+      deleted: [],
+    };
+    await act(async () => {
+      root?.render(
+        <I18nProvider catalogs={webCatalogs} initialLocale="en">
+          <HomePage />
+        </I18nProvider>,
+      );
+    });
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")?.textContent).toBe("Hello, An");
+  });
+
+  it("keeps the launcher reachable: without the flag a default workspace does not open", async () => {
+    state.account = {
+      workspaces: [
+        workspace("w-1", "Minh An"),
+        workspace("w-2", "Studio", true),
+      ],
+      deleted: [],
+    };
+    await mount();
+    expect(state.navigated).toEqual([]);
+    expect(host?.querySelector("h1")?.textContent).toBe("Hello, An");
   });
 });

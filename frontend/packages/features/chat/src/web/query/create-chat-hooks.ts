@@ -1,3 +1,4 @@
+import { onSessionReset } from "@notrelix/query";
 import {
   type InfiniteData,
   type QueryClient,
@@ -69,6 +70,7 @@ import {
 import { applyStoredReply, seedThreadCount } from "./thread-writes";
 import {
   detachFromCachedMessage,
+  cancelUpload,
   dismissUpload,
   enqueueUploads,
   retryUpload,
@@ -77,6 +79,7 @@ import {
 import type { ChatUploadItem } from "../../core/model/attachment-model";
 import { canonicalFilters } from "../../core/model/search-model";
 import { createConversationHooks } from "./create-conversation-hooks";
+import { createChannelGroupHooks } from "./create-channel-group-hooks";
 import { voiceFactsOf } from "../../core/model/voice-model";
 
 export interface ChatHookDeps {
@@ -112,6 +115,10 @@ function readPending(
 /** The read request waits this long, so a run of new messages sends one boundary. */
 const READ_DEBOUNCE_MS = 1000;
 
+/** The files of each unconfirmed send; they go to the message once the server stored it. Owned by the module, not a component, so a retry after the channel was left still has them. */
+const pendingFiles = new Map<string, readonly File[]>();
+onSessionReset(() => pendingFiles.clear());
+
 export function createChatHooks(deps: ChatHookDeps) {
   const service = createChatService(deps.api, deps.endpoints);
 
@@ -142,6 +149,16 @@ export function createChatHooks(deps: ChatHookDeps) {
     return useQuery({
       queryKey: chatQueryKeys.browse(workspaceId),
       queryFn: () => service.browseChannels(workspaceId),
+      staleTime: CHANNEL_STALE_MS,
+      enabled: enabled && workspaceId.length > 0,
+    });
+  }
+
+  /** The deleted channels the caller may restore (Chat.Channels.ListDeleted). */
+  function useDeletedChannels(workspaceId: string, enabled: boolean) {
+    return useQuery({
+      queryKey: chatQueryKeys.deleted(workspaceId),
+      queryFn: () => service.listDeletedChannels(workspaceId),
       staleTime: CHANNEL_STALE_MS,
       enabled: enabled && workspaceId.length > 0,
     });
@@ -227,6 +244,8 @@ export function createChatHooks(deps: ChatHookDeps) {
           ? { after: last.items[last.items.length - 1]!.sequence }
           : undefined,
       structuralSharing: shareMessages,
+      // The list draws every loaded row, so the loaded pages are capped; the pages at the far end are dropped.
+      maxPages: CHAT_LIMITS.maxLoadedPages,
       // A jump to the newest messages keeps the window on screen until the new one arrives, so a send made from
       // an older window shows its bubble at once instead of a skeleton.
       placeholderData: (previous, previousQuery) =>
@@ -270,8 +289,6 @@ export function createChatHooks(deps: ChatHookDeps) {
     const queryClient = useQueryClient();
     const pendingKey = chatQueryKeys.pending(workspaceId, channelId);
     const messagesKey = chatQueryKeys.messages(workspaceId, channelId);
-    /** The files of each unconfirmed send; they go to the message once the server stored it. */
-    const filesRef = useRef(new Map<string, readonly File[]>());
 
     const mutation = useMutation({
       mutationFn: (input: {
@@ -281,6 +298,7 @@ export function createChatHooks(deps: ChatHookDeps) {
         mentions?: readonly ChatMentionInput[];
         confirmBroadcast?: boolean;
         voiceMessage?: boolean;
+        stickerId?: string | null;
       }) =>
         service.sendMessage(workspaceId, channelId, {
           content: input.content,
@@ -289,9 +307,10 @@ export function createChatHooks(deps: ChatHookDeps) {
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
           voiceMessage: input.voiceMessage ?? false,
+          stickerId: input.stickerId ?? null,
         }),
       onMutate: async (input) => {
-        await queryClient.cancelQueries({ queryKey: messagesKey });
+        // The bubble goes in before anything is awaited, so it renders in the render of the keypress.
         const current = readPending(queryClient, pendingKey);
         const exists = current.some(
           (entry) => entry.clientMessageId === input.clientMessageId,
@@ -306,6 +325,9 @@ export function createChatHooks(deps: ChatHookDeps) {
           failure: null,
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
+          replyToId: input.replyToId,
+          voiceMessage: input.voiceMessage,
+          stickerId: input.stickerId ?? null,
         };
         queryClient.setQueryData<PendingMessage[]>(
           pendingKey,
@@ -317,22 +339,47 @@ export function createChatHooks(deps: ChatHookDeps) {
               )
             : [...current, next],
         );
+        // Only a loaded list needs its in-flight refetch stopped (it could overwrite the stored copy that
+        // joins it). Cancelling the very first load would leave the list pending with nothing to retry it.
+        const loaded = queryClient
+          .getQueriesData({ queryKey: messagesKey })
+          .some(([, data]) => data !== undefined);
+        if (loaded) await queryClient.cancelQueries({ queryKey: messagesKey });
       },
       onSuccess: (message: ChatMessage, input) => {
-        queryClient.setQueryData<PendingMessage[]>(
-          pendingKey,
-          readPending(queryClient, pendingKey).filter(
-            (entry) => entry.clientMessageId !== input.clientMessageId,
-          ),
-        );
         queryClient.setQueriesData<ChatMessagesCache>(
           { queryKey: messagesKey },
           (cache) => (cache ? appendToNewest(cache, message) : cache),
         );
+        const landed = queryClient
+          .getQueryCache()
+          .findAll({ queryKey: messagesKey })
+          .some(
+            (query) =>
+              query.isActive() &&
+              (query.state.data as ChatMessagesCache | undefined)?.pages.some(
+                (page) => page.items.some((item) => item.id === message.id),
+              ),
+          );
+        // Sent from an older window the message has no window on screen to join yet: the bubble stays, marked stored,
+        // until a window holds the copy (the list hides a pending entry the history holds) or the channel is left.
+        const entries = readPending(queryClient, pendingKey);
+        queryClient.setQueryData<PendingMessage[]>(
+          pendingKey,
+          landed
+            ? entries.filter(
+                (entry) => entry.clientMessageId !== input.clientMessageId,
+              )
+            : entries.map((entry) =>
+                entry.clientMessageId === input.clientMessageId
+                  ? { ...entry, storedMessageId: message.id }
+                  : entry,
+              ),
+        );
         // The message is stored (and shown): its files go to it now, even if one of them fails later.
-        const files = filesRef.current.get(input.clientMessageId);
+        const files = pendingFiles.get(input.clientMessageId);
         if (files) {
-          filesRef.current.delete(input.clientMessageId);
+          pendingFiles.delete(input.clientMessageId);
           enqueueUploads({ queryClient, service, workspaceId }, message, files);
         }
         // A conversation's list row shows its newest message: it moves in the cache, the list is not read again.
@@ -372,7 +419,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     ): string {
       const clientMessageId = newClientMessageId();
       if (files && files.length > 0) {
-        filesRef.current.set(clientMessageId, files);
+        pendingFiles.set(clientMessageId, files);
       }
       mutation.mutate({
         clientMessageId,
@@ -385,19 +432,34 @@ export function createChatHooks(deps: ChatHookDeps) {
       return clientMessageId;
     }
 
+    /** Sends a Notrelix sticker alone (UC-CHT-I06); returns the clientMessageId so a retry can reuse it. */
+    function sendSticker(stickerId: string, replyToId?: string | null): string {
+      const clientMessageId = newClientMessageId();
+      mutation.mutate({
+        clientMessageId,
+        content: "",
+        replyToId,
+        stickerId,
+      });
+      return clientMessageId;
+    }
+
     /** Sends again the failed entry with the same clientMessageId. */
     function retry(entry: PendingMessage): void {
       mutation.mutate({
         clientMessageId: entry.clientMessageId,
         content: entry.content,
+        replyToId: entry.replyToId,
         mentions: entry.mentions,
         confirmBroadcast: entry.confirmBroadcast,
+        voiceMessage: entry.voiceMessage,
+        stickerId: entry.stickerId,
       });
     }
 
     /** Drops a pending entry the user no longer wants to send. */
     function discard(clientMessageId: string): void {
-      filesRef.current.delete(clientMessageId);
+      pendingFiles.delete(clientMessageId);
       queryClient.setQueryData<PendingMessage[]>(
         pendingKey,
         readPending(queryClient, pendingKey).filter(
@@ -406,7 +468,27 @@ export function createChatHooks(deps: ChatHookDeps) {
       );
     }
 
-    return { send, retry, discard, isPending: mutation.isPending };
+    /** Drops the stored sends whose bubble still waits for a window: on leaving the channel, or once a window holds them. */
+    function discardStored(onlyIn?: ReadonlySet<string>): void {
+      const entries = readPending(queryClient, pendingKey);
+      const kept = entries.filter(
+        (entry) =>
+          entry.storedMessageId === undefined ||
+          (onlyIn !== undefined && !onlyIn.has(entry.storedMessageId)),
+      );
+      if (kept.length !== entries.length) {
+        queryClient.setQueryData<PendingMessage[]>(pendingKey, kept);
+      }
+    }
+
+    return {
+      send,
+      sendSticker,
+      retry,
+      discard,
+      discardStored,
+      isPending: mutation.isPending,
+    };
   }
 
   /** Edit of the caller's own message; a stale version refetches the history (412). */
@@ -739,7 +821,48 @@ export function createChatHooks(deps: ChatHookDeps) {
       return true;
     }
 
-    return { markRead, flush, isPending: mutation.isPending };
+    const unreadFromMutation = useMutation({
+      mutationFn: (input: { spaceId: string; fromSequence: number }) =>
+        service.markUnreadFrom(workspaceId, input.spaceId, input.fromSequence),
+      onSuccess: (boundary) => {
+        // The server lowered the boundary: the next read from this client is a real forward move again.
+        sentRef.current.set(boundary.spaceId, boundary.readSequence);
+        queryClient.setQueryData<ChatUnreadSummary>(unreadKey, (summary) =>
+          summary
+            ? {
+                ...summary,
+                spaces: summary.spaces.map((row) =>
+                  row.spaceId === boundary.spaceId
+                    ? { ...row, readSequence: boundary.readSequence }
+                    : row,
+                ),
+              }
+            : summary,
+        );
+      },
+      // The counts and the first unread message come from the server, not from a local guess.
+      onSettled: () => queryClient.invalidateQueries({ queryKey: unreadKey }),
+    });
+
+    /**
+     * Mark unread from a message (UC-CHT-I07): drops what this client queued for the space, so a late read cannot undo it, and
+     * moves the caller's own boundary back. Rejects when the server refuses; the caller shows the notice.
+     */
+    function markUnreadFrom(
+      spaceId: string,
+      fromSequence: number,
+    ): Promise<unknown> {
+      queuedRef.current.delete(spaceId);
+      return unreadFromMutation.mutateAsync({ spaceId, fromSequence });
+    }
+
+    return {
+      markRead,
+      markUnreadFrom,
+      flush,
+      isPending: mutation.isPending,
+      unreadFromPending: unreadFromMutation.isPending,
+    };
   }
 
   /** Mark every channel as read (UC-CHT-D07). */
@@ -786,10 +909,27 @@ export function createChatHooks(deps: ChatHookDeps) {
             : summary,
         );
       },
-      onSuccess: () => {
+      onSuccess: (_result, input) => {
+        // The open channel reads its detail first, which sits outside the channels key.
+        queryClient.setQueryData<ChatChannelDetail>(
+          chatQueryKeys.channel(workspaceId, input.spaceId),
+          (detail) =>
+            detail
+              ? {
+                  ...detail,
+                  channel: {
+                    ...detail.channel,
+                    notificationLevel: input.level,
+                  },
+                }
+              : detail,
+        );
         void queryClient.invalidateQueries({ queryKey: unreadKey });
         void queryClient.invalidateQueries({
           queryKey: chatQueryKeys.channels(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, input.spaceId),
         });
       },
     });
@@ -848,6 +988,26 @@ export function createChatHooks(deps: ChatHookDeps) {
     });
   }
 
+  /** Restore a deleted channel; the id and its version are passed per call (the list restores one row at a time). */
+  function useRestoreChannel(workspaceId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: { channelId: string; expectedVersion: number }) =>
+        service.restoreChannel(
+          workspaceId,
+          input.channelId,
+          input.expectedVersion,
+        ),
+      // The deleted list lives under the channels key, so this reloads it and the sidebar together.
+      onSuccess: () => refreshChannels(queryClient, workspaceId),
+      // A stale version or a missing row means the list is out of date: reload it too.
+      onError: () =>
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.deleted(workspaceId),
+        }),
+    });
+  }
+
   /** Join a public channel; the id is passed per call (the sidebar joins one it is not in). */
   function useJoinChannel(workspaceId: string) {
     const queryClient = useQueryClient();
@@ -876,6 +1036,69 @@ export function createChatHooks(deps: ChatHookDeps) {
         void queryClient.invalidateQueries({
           queryKey: chatQueryKeys.mentionables(workspaceId, channelId),
         });
+      },
+    });
+  }
+
+  /**
+   * Leave the channel (the caller's own id) or remove another member (UC-CHT-A07). The channel, its messages and its
+   * mention offers of the person who loses access are dropped from this client when it is the caller.
+   */
+  function useRemoveMember(
+    workspaceId: string,
+    channelId: string,
+    viewerId: string,
+  ) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (userId: string) =>
+        service.removeMember(workspaceId, channelId, userId),
+      onSuccess: (_result, userId) => {
+        if (userId === viewerId) {
+          queryClient.removeQueries({
+            queryKey: chatQueryKeys.messages(workspaceId, channelId),
+          });
+        }
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.mentionables(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
+      },
+    });
+  }
+
+  /** Make a member a manager, or a manager a member (UC-CHT-A07); the member list follows. */
+  function useSetMemberRole(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (input: { userId: string; role: "manager" | "member" }) =>
+        service.setMemberRole(workspaceId, channelId, input.userId, input.role),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
+      },
+    });
+  }
+
+  /** Delete the channel (soft delete with a recovery window); the expected version travels with the call. */
+  function useDeleteChannel(workspaceId: string, channelId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (expectedVersion: number) =>
+        service.deleteChannel(workspaceId, channelId, expectedVersion),
+      onSuccess: () => {
+        queryClient.removeQueries({
+          queryKey: chatQueryKeys.messages(workspaceId, channelId),
+        });
+        queryClient.removeQueries({
+          queryKey: chatQueryKeys.channel(workspaceId, channelId),
+        });
+        refreshChannels(queryClient, workspaceId);
       },
     });
   }
@@ -960,6 +1183,9 @@ export function createChatHooks(deps: ChatHookDeps) {
           alsoSendToChannel: input.alsoSendToChannel,
           mentions: input.mentions,
           confirmBroadcast: input.confirmBroadcast,
+          voiceMessage: (input.files ?? []).some(
+            (file) => voiceFactsOf(file) !== null,
+          ),
         }),
       onSuccess: (reply: ChatMessage, input) => {
         applyStoredReply(queryClient, workspaceId, reply);
@@ -1260,6 +1486,7 @@ export function createChatHooks(deps: ChatHookDeps) {
     return {
       retry: (uploadId: string) => retryUpload(ctx, uploadId),
       dismiss: (uploadId: string) => dismissUpload(ctx, uploadId),
+      cancel: (uploadId: string) => cancelUpload(ctx, uploadId),
       remove,
     };
   }
@@ -1394,6 +1621,7 @@ export function createChatHooks(deps: ChatHookDeps) {
   return {
     service,
     ...createConversationHooks(service),
+    ...createChannelGroupHooks(service),
     useUploads,
     useAttachmentActions,
     useAttachmentContent,
@@ -1405,6 +1633,8 @@ export function createChatHooks(deps: ChatHookDeps) {
     useChannels,
     useChannelGroups,
     useBrowseChannels,
+    useDeletedChannels,
+    useRestoreChannel,
     useChannel,
     useUnreadSummary,
     useMessages,
@@ -1429,6 +1659,9 @@ export function createChatHooks(deps: ChatHookDeps) {
     useArchiveChannel,
     useJoinChannel,
     useAddMembers,
+    useRemoveMember,
+    useSetMemberRole,
+    useDeleteChannel,
     useThreadReplies,
     useThreadCounts,
     useReplyInThread,

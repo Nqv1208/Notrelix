@@ -1,7 +1,9 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Identity.Public.DefaultWorkspace;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 using Notrelix.Domain.Workspaces;
 
 namespace Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspace;
@@ -15,7 +17,7 @@ namespace Notrelix.Application.Features.Workspaces.Members.Commands.LeaveWorkspa
 /// to the person.
 /// </summary>
 public record LeaveWorkspaceCommand(Guid WorkspaceId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IWorkspaceLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
@@ -39,6 +41,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
     private readonly IWorkspaceGrantProjectionService _grantProjection;
     private readonly IWorkspaceOwnerUpdateLocker _locker;
     private readonly IIdentityDefaultWorkspace _defaultWorkspace;
+    private readonly IIdentityApiTokens _apiTokens;
 
     public LeaveWorkspaceCommandHandler(
         IWorkspaceDbContext context,
@@ -46,8 +49,10 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
         IDateTimeProvider dateTimeProvider,
         IWorkspaceGrantProjectionService grantProjection,
         IWorkspaceOwnerUpdateLocker locker,
-        IIdentityDefaultWorkspace defaultWorkspace)
+        IIdentityDefaultWorkspace defaultWorkspace,
+        IIdentityApiTokens apiTokens)
     {
+        _apiTokens = apiTokens;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -61,7 +66,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
         var userId = _requestContext.UserId;
 
         // Serializes owner-affecting changes so the active-owner count below cannot be stale.
-        var workspace = await _locker.LockWorkspaceAsync(request.WorkspaceId, ct)
+        var workspace = await _locker.LockWorkspaceIncludingArchivedAsync(request.WorkspaceId, ct)
             ?? throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         var member = await _context.WorkspaceMembers
@@ -87,6 +92,10 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
                 "The last owner cannot leave; hand the workspace over first.", LastOwnerErrorCode);
         }
 
+        // Before the grant ends: the leaver's own grant is what lets them write these rows.
+        await MemberDepartureCleanup.RunAsync(
+            _context, workspace, userId, userId, _dateTimeProvider.UtcNow, ct);
+
         await _grantProjection.RevokeLeavingMemberGrantAsync(
             workspace.AccountId,
             workspace.Id,
@@ -101,6 +110,9 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
             workspace.AccountId, workspace.Id, userId, ct);
 
         await _defaultWorkspace.ClearIfAsync(userId, workspace.Id, ct);
+
+        // The tokens the person issued in this workspace leave with them, in the same transaction.
+        await _apiTokens.RevokeForMemberAsync(userId, workspace.Id, userId, MemberAccessEnd.Left, ct);
 
         // No access signal here: the grant ended in this transaction, so the person can no longer write a
         // workspace-scoped fact; their own client is cut by the periodic re-authorization pass.

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, renderPureUi, screen, within } from "@notrelix/testing";
 
 import {
+  workspaceFixture,
+  workspaceListFixture,
   workspacesCopyFixture,
   workspacesDefaultScenario,
   workspacesEdgeDataScenario,
@@ -73,6 +75,105 @@ describe("AccountWorkspacesSurface", () => {
     view.unmount();
   });
 
+  it("FUI[account.workspaces:default] disables make-default and unarchive while a change is in flight", () => {
+    const copy = workspacesCopyFixture("en");
+    const list = workspaceListFixture();
+    renderWorkspaces({
+      ...workspacesDefaultScenario("en"),
+      busy: true,
+      workspaces: {
+        status: "ready",
+        data: [
+          ...list,
+          workspaceFixture({
+            id: "workspace-old",
+            name: "Minh An Archive",
+            role: "owner",
+            isDefault: false,
+            isArchived: true,
+          }),
+        ],
+      },
+    });
+    const disabled = (name: string) =>
+      (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
+    expect(
+      disabled(copy.makeDefaultLabel.replace("{{name}}", "Minh An Đà Nẵng")),
+    ).toBe(true);
+    expect(
+      disabled(copy.unarchiveLabel.replace("{{name}}", "Minh An Archive")),
+    ).toBe(true);
+  });
+
+  it("FUI[account.workspaces:archived] offers Unarchive and never make-default or leave on an archived workspace", () => {
+    const copy = workspacesCopyFixture("en");
+    const { props } = renderWorkspaces({
+      ...workspacesDefaultScenario("en"),
+      workspaces: {
+        status: "ready",
+        data: [
+          workspaceFixture(),
+          workspaceFixture({
+            id: "workspace-old",
+            name: "Minh An Archive",
+            role: "owner",
+            isDefault: false,
+            isArchived: true,
+          }),
+        ],
+      },
+    });
+    const name = "Minh An Archive";
+    expect(
+      screen.queryByRole("button", {
+        name: copy.makeDefaultLabel.replace("{{name}}", name),
+      }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", {
+        name: copy.leaveLabel.replace("{{name}}", name),
+      }),
+    ).toBeNull();
+    expect(screen.getByText(copy.archivedTag)).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.unarchiveLabel.replace("{{name}}", name),
+      }),
+    );
+    expect(props.onUnarchive).toHaveBeenCalledWith("workspace-old");
+  });
+
+  it("FUI[account.workspaces:archived-admin] an Admin sees an archived workspace with Open read-only and no Unarchive, because lifecycle is Owner-only", () => {
+    const copy = workspacesCopyFixture("en");
+    const { props } = renderWorkspaces({
+      ...workspacesDefaultScenario("en"),
+      workspaces: {
+        status: "ready",
+        data: [
+          workspaceFixture({
+            id: "workspace-old",
+            name: "Minh An Archive",
+            role: "admin",
+            isDefault: false,
+            isArchived: true,
+          }),
+        ],
+      },
+    });
+    const name = "Minh An Archive";
+    expect(
+      screen.queryByRole("button", {
+        name: copy.unarchiveLabel.replace("{{name}}", name),
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("link", {
+        name: copy.openLabel.replace("{{name}}", name),
+      }),
+    ).toBeTruthy();
+    expect(props.onUnarchive).not.toHaveBeenCalled();
+  });
+
   it("FUI[account.workspaces:leave] asks first and leaves only after the confirmation", () => {
     for (const locale of LOCALES) {
       const copy = workspacesCopyFixture(locale);
@@ -119,6 +220,44 @@ describe("AccountWorkspacesSurface", () => {
       copy.lastOwnerError,
     );
     refused.view.unmount();
+  });
+
+  it("FUI[account.workspaces:sole-owner] leads the sole owner to the handover and not any other row", () => {
+    const copy = workspacesCopyFixture("en");
+    const onNavigate = vi.fn();
+    const scenario = workspacesSoleOwnerScenario("en");
+    const rows =
+      scenario.workspaces.status === "ready" ? scenario.workspaces.data : [];
+    const { props } = renderWorkspaces({
+      ...scenario,
+      workspaces: {
+        status: "ready",
+        data: rows.map((row, index) =>
+          index === 0
+            ? {
+                ...row,
+                handover: { href: "/workspaces/w-1/settings", onNavigate },
+              }
+            : row,
+        ),
+      },
+    });
+    const links = screen.getAllByRole("link", {
+      name: /Transfer the ownership of/,
+    });
+    expect(links).toHaveLength(1);
+    expect(links[0]?.getAttribute("href")).toBe("/workspaces/w-1/settings");
+    fireEvent.click(links[0]!);
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(copy.transferOwnership)).toBeTruthy();
+    expect(props.onLeave).not.toHaveBeenCalled();
+  });
+
+  it("FUI[account.workspaces:sole-owner] offers no handover link where the member can leave", () => {
+    renderWorkspaces(workspacesDefaultScenario("en"));
+    expect(
+      screen.queryByRole("link", { name: /Transfer the ownership of/ }),
+    ).toBeNull();
   });
 
   it("FUI[account.workspaces:guest] shows a guest only the role, with no people or department count and no invented notes", () => {

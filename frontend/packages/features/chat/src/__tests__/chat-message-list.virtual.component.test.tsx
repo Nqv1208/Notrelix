@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@notrelix/testing";
+import { fireEvent, render, screen, waitFor } from "@notrelix/testing";
 import { ChatMessageList } from "../web/components/chat-message-list";
 import { buildChatRows } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
@@ -89,13 +89,45 @@ describe("ChatMessageList: a long history", () => {
     vi.restoreAllMocks();
   });
 
-  it("keeps a few dozen rows in the page and tells assistive technology the full size", () => {
+  it("draws every loaded row, cheap off-screen, each under its stable key", async () => {
     render(<ChatMessageList {...listProps(500)} />);
     const log = screen.getByRole("log");
-    const items = log.querySelectorAll("li");
-    expect(items.length).toBeGreaterThan(0);
-    expect(items.length).toBeLessThan(80);
-    const sizeOfSet = Number(items[0]!.getAttribute("aria-setsize"));
-    expect(sizeOfSet).toBe(listProps(500).rows.length);
+    await waitFor(() =>
+      expect(log.querySelectorAll("li").length).toBeGreaterThan(0),
+    );
+    const items = Array.from(log.querySelectorAll<HTMLElement>("li"));
+    expect(items).toHaveLength(listProps(500).rows.length);
+    for (const item of items.slice(0, 5)) {
+      expect(item.dataset.rowKey).toBeTruthy();
+      expect(item.style.contentVisibility).toBe("auto");
+      expect(item.style.containIntrinsicSize).toContain("auto");
+    }
+    // A list may hold only list items (axe list rule): no row drops its role.
+    expect(log.querySelectorAll('li[role="presentation"]')).toHaveLength(0);
+  });
+
+  it("puts the reader's row back at the same offset when an older page lands above it", async () => {
+    const tops = new Map<string, number>();
+    vi.spyOn(HTMLElement.prototype, "offsetTop", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return tops.get(this.dataset.rowKey ?? "") ?? 0;
+      },
+    );
+    const layout = (rows: ReturnType<typeof listProps>["rows"]) => {
+      // 50 px rows, the first one starting at 0.
+      rows.forEach((row, i) => tops.set(row.key, i * 50));
+    };
+    const first = listProps(60);
+    const recent = { ...first, rows: first.rows.slice(30) };
+    layout(recent.rows);
+    const { rerender } = render(<ChatMessageList {...recent} />);
+    const log = screen.getByRole("log");
+    await waitFor(() => expect(log.querySelector("li")).not.toBeNull());
+    log.scrollTop = 100;
+    fireEvent.scroll(log);
+    layout(first.rows);
+    rerender(<ChatMessageList {...first} />);
+    // Thirty rows of 50 px were added above: the same row stays 100 px under the top edge.
+    await waitFor(() => expect(log.scrollTop).toBe(30 * 50 + 100));
   });
 });

@@ -63,12 +63,14 @@ public sealed class ListApiTokensQueryHandler
         var page = rows.Take(limit).Select(t => new ApiTokenSummaryDto(
             t.Id,
             t.Name,
-            t.Scopes?.ToJson(),
+            t.Scopes is null ? [] : t.Scopes.Scopes.Order(StringComparer.Ordinal).ToList(),
             t.Status.ToString(),
             t.LastUsedAt,
             t.ExpiresAt,
             t.CreatedAt,
-            t.RevokedAt)).ToList();
+            t.RevokedAt,
+            t.TokenSuffix,
+            t.RevokedReason?.ToString())).ToList();
 
         var nextCursor = hasMore ? ApiTokenCursor.Encode(rows[limit - 1].CreatedAt, rows[limit - 1].Id) : null;
 

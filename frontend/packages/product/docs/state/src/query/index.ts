@@ -9,6 +9,7 @@ export { useRememberPageAttachment } from "./hooks/use-remember-page-attachment"
 export { createUseAttachmentContent } from "./hooks/use-attachment-content";
 export { createUsePageComments } from "./hooks/use-page-comments";
 export { createUsePageHistory } from "./hooks/use-page-history";
+export { createUsePageActivity } from "./hooks/use-page-activity";
 export { createUsePageBacklinks } from "./hooks/use-page-backlinks";
 export { createUseVersionSnapshot } from "./hooks/use-version-snapshot";
 export { createUsePageVersions } from "./hooks/use-page-versions";
@@ -19,7 +20,9 @@ export {
 } from "./hooks/use-restore-version";
 export { createUsePageTemplates } from "./hooks/use-page-templates";
 export { createUseCreatePageTemplate } from "./hooks/use-create-page-template";
+export { createUseManagePageTemplates } from "./hooks/use-manage-page-templates";
 export { createUseCreatePageFromTemplate } from "./hooks/use-create-page-from-template";
+export { createUseDuplicatePage } from "./hooks/use-duplicate-page";
 export { createUseImportPage } from "./hooks/use-import-page";
 
 export { createUsePagePermissions } from "./hooks/use-page-permissions";

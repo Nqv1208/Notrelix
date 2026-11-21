@@ -38,7 +38,8 @@ public class InviteMemberActiveMemberTests : WorkspaceHandlerTestBase
         DbContextMock.Object, _actors.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
         _tokens.Object, _encryptor.Object, _events.Object,
         new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
-        _memberEmails.Object);
+        _memberEmails.Object, Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>(),
+        new Notrelix.Testing.Application.Fakes.FakeResourceVisibility());
 
     private Task<Notrelix.Application.Common.Models.Result<Guid>> Invite(string email) =>
         Handler().Handle(new InviteMemberCommand(TestWorkspaceId, email, WorkspaceRole.Member), CancellationToken.None);

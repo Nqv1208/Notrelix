@@ -37,7 +37,9 @@ export type ApiRequestOptions = {
 export interface SessionExpiredEvent {
   readonly eventId: string;
   readonly occurredAt: string;
-  readonly reason: "refresh-rejected" | "session-revoked";
+  /** `mfa-enrollment-required`: the Account now requires two-step verification and the person has none (sign in to set it up). */
+  readonly reason:
+    "refresh-rejected" | "session-revoked" | "mfa-enrollment-required";
   readonly error: AppError;
 }
 
@@ -47,6 +49,11 @@ export interface NotrelixClientConfig {
   createCorrelationId?: () => string;
   clock?: { now(): Date };
   onSessionExpired?: (event: SessionExpiredEvent) => void;
+  /**
+   * Called when the producer refuses a request with 403 `account.suspended`: the Account is Suspended or
+   * Closed and every write is paused. The request still fails with its own `AppError`.
+   */
+  onAccountSuspended?: () => void;
   /**
    * Builds the XMLHttpRequest an upload reports progress over. Without it the
    * browser's XMLHttpRequest is used, unless `fetchImpl` is injected (mock
@@ -59,6 +66,17 @@ const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 const CSRF_PROBLEM_TYPE = "csrf-validation-failed";
 const CSRF_ERROR_CODE = "security.csrf_validation_failed";
+
+const ACCOUNT_SUSPENDED_ERROR_CODE = "account.suspended";
+
+function isAccountSuspendedRefusal(status: number, body: unknown): boolean {
+  return (
+    status === 403 &&
+    !!body &&
+    typeof body === "object" &&
+    (body as Record<string, unknown>).errorCode === ACCOUNT_SUSPENDED_ERROR_CODE
+  );
+}
 
 function isCsrfRejection(status: number, body: unknown): boolean {
   if (status !== 403 || !body || typeof body !== "object") return false;
@@ -79,6 +97,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     config.createCorrelationId ?? generateCorrelationId;
   const clock = config.clock ?? { now: () => new Date() };
   const onSessionExpired = config.onSessionExpired;
+  const onAccountSuspended = config.onAccountSuspended;
 
   // Instance-scoped CSRF transport (ADR-005): memory-only token, single-flight
   // bootstrap shared by every unsafe request of this client instance.
@@ -159,6 +178,16 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
           // Only the server's 401 (invalid, expired or replayed token) ends the
           // session. A limit (429) or a server fault keeps it.
           const rejected = refreshResponse.status === 401;
+          const mustEnroll =
+            rejected &&
+            (await refreshResponse
+              .clone()
+              .json()
+              .then(
+                (body: { errorCode?: unknown }) =>
+                  body?.errorCode === "identity.auth.mfa-enrollment-required",
+                () => false,
+              ));
           const appErr = new AppError({
             kind: rejected ? "auth" : "server",
             status: refreshResponse.status,
@@ -171,7 +200,9 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
             onSessionExpired({
               eventId: createCorrelationId(),
               occurredAt: clock.now().toISOString(),
-              reason: "refresh-rejected",
+              reason: mustEnroll
+                ? "mfa-enrollment-required"
+                : "refresh-rejected",
               error: appErr,
             });
           }
@@ -305,6 +336,8 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
 
     // Handle non-2xx responses
     if (!response.ok) {
+      if (isAccountSuspendedRefusal(response.status, data))
+        onAccountSuspended?.();
       const message = extractErrorMessage(data);
       const kind = mapStatusToKind(response.status);
       const validationErrors =
@@ -405,6 +438,7 @@ export function createNotrelixClient(config: NotrelixClientConfig) {
     }
 
     if (raw.status < 200 || raw.status >= 300) {
+      if (isAccountSuspendedRefusal(raw.status, data)) onAccountSuspended?.();
       const problem = (data ?? {}) as Record<string, unknown>;
       throw new AppError({
         kind: mapStatusToKind(raw.status),

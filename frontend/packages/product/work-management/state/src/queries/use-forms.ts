@@ -2,7 +2,9 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
   Form,
   FormDetail,
+  FormPublicAccess,
   FormSubmission,
+  PublicForm,
 } from "@notrelix/work-management-core";
 import { useWorkManagementServices } from "../services";
 import { wmQueryKeys } from "./keys";
@@ -73,5 +75,39 @@ export function useFormSubmissions(
       data.pages.flatMap((page) => page.items),
     enabled: enabled && Boolean(formId && workspaceId),
     staleTime: 10_000,
+  });
+}
+
+/** Whether a form is public, and its key. Only a workspace Owner or Admin reads it: anyone else gets 403/404. */
+export function useFormPublicAccess(
+  formId: string,
+  workspaceId: string,
+  enabled = true,
+) {
+  const { forms } = useWorkManagementServices();
+  return useQuery<FormPublicAccess>({
+    queryKey: wmQueryKeys.formPublicAccess(workspaceId, formId),
+    queryFn: () => forms.getFormPublicAccess(formId),
+    enabled: enabled && Boolean(formId && workspaceId),
+    staleTime: 15_000,
+    retry: (count, error) => {
+      const status = (error as { status?: number }).status;
+      return status === 403 || status === 404 ? false : count < 2;
+    },
+  });
+}
+
+/** The form behind a public link, read with no session. A 404 is final: the link opens nothing. */
+export function usePublicForm(publicKey: string) {
+  const { forms } = useWorkManagementServices();
+  return useQuery<PublicForm>({
+    queryKey: wmQueryKeys.publicForm(publicKey),
+    queryFn: () => forms.getPublicForm(publicKey),
+    enabled: publicKey !== "",
+    staleTime: 60_000,
+    retry: (count, error) => {
+      const status = (error as { status?: number }).status;
+      return status === 404 || status === 429 ? false : count < 2;
+    },
   });
 }

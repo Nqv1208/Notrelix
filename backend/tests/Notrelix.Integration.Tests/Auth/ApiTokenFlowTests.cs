@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.ApiTokens.Commands.CreateApiToken;
+using Notrelix.Application.Features.Identity.ApiTokens.Services;
 using Notrelix.Application.Features.Identity.ApiTokens.Commands.RevokeApiToken;
 using Notrelix.Application.Features.Identity.ApiTokens.DTOs;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
@@ -103,9 +104,10 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
             context, Actor(userId, sessionId: Guid.NewGuid()).Object, stepUp.Object,
             new ApiTokenSecretService(), time.Object,
             NullLogger<CreateApiTokenCommandHandler>.Instance,
-            new Mock<IAuditService>().Object);
+            new Mock<IAuditService>().Object,
+            Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
         var result = await handler.Handle(new CreateApiTokenCommand(
-            _workspaceId, name, expiresAt, "proof-token"), CancellationToken.None);
+            _workspaceId, name, expiresAt, ApiTokenScopes.All().Scopes.ToList(), "proof-token"), CancellationToken.None);
         await context.SaveChangesAsync();
         return result;
     }
@@ -218,6 +220,86 @@ public sealed class ApiTokenFlowTests : IAsyncLifetime
         var auth = await AuthenticateAsync(created.Data.RawSecret);
         auth.Succeeded.Should().BeTrue();
         auth.Principal!.FindFirstValue(JwtRegisteredClaimNames.Sub).Should().Be(_user.Id.ToString());
+    }
+
+    private static IDateTimeProvider Clock()
+    {
+        var time = new Mock<IDateTimeProvider>();
+        time.Setup(t => t.UtcNow).Returns(() => DateTimeOffset.UtcNow);
+        return time.Object;
+    }
+
+    [Fact]
+    public async Task Authenticate_TokenOfAMemberWhoLeft_IsRefused_WhileAColleaguesTokenKeepsWorking()
+    {
+        var colleague = User.Create("colleague@example.com", "Colleague", "hashed", _now, hasPasswordCredential: true);
+        await using (var seed = _fixture.CreatePostgresOwnerContext())
+        {
+            seed.Users.Add(colleague);
+            await seed.SaveChangesAsync();
+        }
+
+        var leaversToken = await SendCreateToken(_user.Id, "Leaver token");
+        var colleaguesToken = await SendCreateToken(colleague.Id, "Colleague token");
+        (await AuthenticateAsync(leaversToken.Data!.RawSecret)).Succeeded.Should().BeTrue("it works while the person belongs");
+
+        await using (var context = CreateSystemContext())
+        {
+            var revoked = await new IdentityApiTokensProvider(context, Clock())
+                .RevokeForMemberAsync(_user.Id, _workspaceId, colleague.Id, Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd.Removed, CancellationToken.None);
+            await context.SaveChangesAsync();
+            revoked.Should().Be(1);
+        }
+
+        (await AuthenticateAsync(leaversToken.Data.RawSecret)).Succeeded.Should().BeFalse("a token ends with its issuer's membership");
+        (await AuthenticateAsync(colleaguesToken.Data!.RawSecret)).Succeeded.Should().BeTrue();
+
+        await using var after = CreateSystemContext();
+        var stored = after.ApiTokens.Single(x => x.Id == leaversToken.Data.Id);
+        stored.Status.Should().Be(ApiTokenStatus.Revoked);
+        stored.RevokedReason.Should().Be(ApiTokenRevokedReason.MemberRemoved);
+    }
+
+    [Fact]
+    public async Task Authenticate_RecordsTheFirstUse_ThenLeavesTheTimeAloneWithinTheInterval()
+    {
+        var created = await SendCreateToken(_user.Id, "Deploy token");
+        await using (var before = CreateSystemContext())
+        {
+            before.ApiTokens.Single(t => t.Id == created.Data!.Id).LastUsedAt.Should().BeNull("never used");
+        }
+
+        (await AuthenticateAsync(created.Data!.RawSecret)).Succeeded.Should().BeTrue();
+        DateTimeOffset? first;
+        await using (var afterFirst = CreateSystemContext())
+        {
+            first = afterFirst.ApiTokens.Single(t => t.Id == created.Data.Id).LastUsedAt;
+        }
+        first.Should().NotBeNull("the first call records its time");
+
+        (await AuthenticateAsync(created.Data.RawSecret)).Succeeded.Should().BeTrue();
+        await using var afterSecond = CreateSystemContext();
+        afterSecond.ApiTokens.Single(t => t.Id == created.Data.Id).LastUsedAt.Should().Be(first,
+            "a second call within the hour does not write the row again");
+    }
+
+    [Fact]
+    public async Task Authenticate_AfterTheIntervalHasPassed_RecordsTheNewUse()
+    {
+        var created = await SendCreateToken(_user.Id, "Deploy token");
+        // The token is two days old and was last used two hours ago.
+        var stale = DateTimeOffset.UtcNow.AddHours(-2);
+        var tokenId = created.Data!.Id;
+        await using (var seed = CreateSystemContext())
+        {
+            await seed.Database.ExecuteSqlInterpolatedAsync(
+                $"update identity.api_tokens set created_at = {stale.AddDays(-2)}, last_used_at = {stale} where id = {tokenId}");
+        }
+
+        (await AuthenticateAsync(created.Data!.RawSecret)).Succeeded.Should().BeTrue();
+
+        await using var after = CreateSystemContext();
+        after.ApiTokens.Single(t => t.Id == created.Data.Id).LastUsedAt.Should().BeAfter(stale.AddHours(1));
     }
 
     [Fact]

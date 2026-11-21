@@ -13,7 +13,8 @@ public static class GetSpaceMembersEndpoint
             .WithTags("Workspaces.Spaces")
             .WithSummary("Get the user and team entries of a space")
             .WithDescription(
-                "Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page.")
+                "Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page. " +
+                "Optional role (Admin, Member, Viewer) and kind (User, Team) keep only matching entries before the page is cut.")
             .Produces<CursorPage<SpaceMemberDto>>(StatusCodes.Status200OK, "application/json");
         return group;
     }
@@ -23,9 +24,11 @@ public static class GetSpaceMembersEndpoint
         Guid spaceId,
         string? cursor,
         int? limit,
+        string? role,
+        string? kind,
         ISender sender)
     {
-        var result = await sender.Send(new GetSpaceMembersQuery(workspaceId, spaceId, cursor, limit));
+        var result = await sender.Send(new GetSpaceMembersQuery(workspaceId, spaceId, cursor, limit, role, kind));
         return result.ToApiResult();
     }
 }

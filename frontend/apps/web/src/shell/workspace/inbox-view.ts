@@ -164,6 +164,7 @@ const KIND: Record<InboxEntryDto["type"], InboxKind> = {
   chat_direct: "mention",
   chat_thread: "change",
   chat_broadcast: "mention",
+  chat_removed: "mention",
   system: "system",
 };
 
@@ -314,6 +315,7 @@ export function toInboxEntries(
       case "chat_mention":
       case "chat_direct":
       case "chat_thread":
+      case "chat_removed":
       case "chat_broadcast": {
         // A chat notification names the channel; a conversation has no name.
         const chatTemplates = {
@@ -324,6 +326,8 @@ export function toInboxEntries(
             copy.feed.chatBroadcast,
             copy.feed.chatBroadcastPlain,
           ],
+          // The removed text is never in the notice, so only the plain form exists.
+          chat_removed: [copy.feed.chatRemoved, copy.feed.chatRemoved],
         } as const;
         const [withText, plain] = chatTemplates[entry.type];
         segments = sentence(

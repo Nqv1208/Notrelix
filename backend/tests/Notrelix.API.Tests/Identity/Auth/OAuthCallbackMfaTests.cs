@@ -27,6 +27,8 @@ public sealed class OAuthCallbackHost : IDisposable
 
     public string? StoredReturnUrl { get; set; }
 
+    public OAuthFlowKind StoredFlow { get; set; } = OAuthFlowKind.Login;
+
     public OAuthCallbackHost()
     {
         // One host for the whole class (building a host is slow); each test sets the outcome first.
@@ -47,7 +49,7 @@ public sealed class OAuthCallbackHost : IDisposable
                 var store = new Mock<IOAuthStateStore>();
                 store.Setup(s => s.PeekAsync("s", It.IsAny<CancellationToken>()))
                     .ReturnsAsync(() => new OAuthLoginState(
-                        "s", "nonce", "verifier", OAuthProvider.Google, StoredReturnUrl, DateTimeOffset.UtcNow.AddMinutes(10)));
+                        "s", "nonce", "verifier", OAuthProvider.Google, StoredReturnUrl, DateTimeOffset.UtcNow.AddMinutes(10), StoredFlow));
                 return store.Object;
             });
         }));
@@ -71,10 +73,11 @@ public class OAuthCallbackMfaTests : IClassFixture<OAuthCallbackHost>
 
     public OAuthCallbackMfaTests(OAuthCallbackHost host) => _host = host;
 
-    private HttpClient CreateClient(Result<AuthResult> outcome, string? storedReturnUrl = null, bool https = false)
+    private HttpClient CreateClient(Result<AuthResult> outcome, string? storedReturnUrl = null, bool https = false, OAuthFlowKind flow = OAuthFlowKind.Login)
     {
         _host.Outcome = outcome;
         _host.StoredReturnUrl = storedReturnUrl;
+        _host.StoredFlow = flow;
         return _host.CreateClient(https);
     }
 
@@ -95,8 +98,12 @@ public class OAuthCallbackMfaTests : IClassFixture<OAuthCallbackHost>
             ExpiresAt = DateTime.UtcNow.AddHours(1),
         });
 
+    // The callback also clears the sign-in binding cookie on every outcome (OAuthBrowserBindingEndpointTests); these
+    // tests are about the session and challenge cookies it sets, so the clearing one is left out of the list.
     private static string[] SetCookies(HttpResponseMessage response) =>
-        response.Headers.TryGetValues("Set-Cookie", out var values) ? values.ToArray() : [];
+        response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values.Where(cookie => !cookie.StartsWith("oauthBinding=", StringComparison.Ordinal)).ToArray()
+            : [];
 
     [Fact]
     public async Task Callback_ForMfaEnabledUser_HandsTheChallengeOverInAScopedHttpOnlyCookie()
@@ -263,5 +270,23 @@ public class OAuthCallbackMfaTests : IClassFixture<OAuthCallbackHost>
         var response = await client.GetAsync(CallbackPath);
 
         response.Headers.Location!.OriginalString.Should().Be("/auth/callback");
+    }
+
+    /// <summary>
+    /// The provider has one return address, the login callback. A step-up or link flow must go on to its
+    /// own callback on the API (where the session cookie is read), never to a web page that drops the code.
+    /// </summary>
+    [Theory]
+    [InlineData(OAuthFlowKind.StepUp, "step-up")]
+    [InlineData(OAuthFlowKind.Link, "link")]
+    public async Task Callback_ForAnotherFlow_GoesOnToThatFlowsOwnCallback(OAuthFlowKind flow, string segment)
+    {
+        using var client = CreateClient(SessionOutcome(), flow: flow);
+
+        var response = await client.GetAsync(CallbackPath);
+
+        response.Headers.Location!.OriginalString.Should()
+            .Be($"/api/v1/auth/oauth/google/{segment}/callback?state=s&code=c");
+        SetCookies(response).Should().BeEmpty("the login callback opens no session for another flow");
     }
 }

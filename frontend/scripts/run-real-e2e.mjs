@@ -36,6 +36,7 @@ try {
   await up();
   // A cold dotnet SDK container restores and builds first; allow it ten minutes.
   await waitForUrl(realBackend.healthUrl, 600_000);
+  await waitForUrl(realBackend.mailUrl, 60_000);
   await runFrontend("pnpm", ["--filter", "@notrelix/app-web", "build"], {
     env: webEnv,
   });

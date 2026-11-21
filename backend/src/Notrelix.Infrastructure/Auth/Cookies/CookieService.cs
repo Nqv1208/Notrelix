@@ -136,6 +136,48 @@ namespace Notrelix.Infrastructure.Auth.Cookies
                     : null;
         }
 
+        public void SetSsoBindingCookie(string binding)
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+            context.Response.Cookies.Append(
+                ICookieService.SsoBindingCookieName,
+                binding,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.SsoBindingCookiePath,
+                    MaxAge = ICookieService.SsoBindingCookieLifetime,
+                    Expires = DateTimeOffset.UtcNow.Add(ICookieService.SsoBindingCookieLifetime),
+                    IsEssential = true,
+                });
+        }
+
+        public string? GetSsoBindingCookie()
+        {
+            var context = _httpContextAccessor.HttpContext;
+            return context is not null
+                && context.Request.Cookies.TryGetValue(ICookieService.SsoBindingCookieName, out var value)
+                && !string.IsNullOrWhiteSpace(value)
+                    ? value
+                    : null;
+        }
+
+        public void DeleteSsoBindingCookie()
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+            context.Response.Cookies.Delete(
+                ICookieService.SsoBindingCookieName,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.SsoBindingCookiePath,
+                });
+        }
+
         public void DeleteStepUpProofCookie()
         {
             var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
@@ -147,6 +189,48 @@ namespace Notrelix.Infrastructure.Auth.Cookies
                     Secure = context.Request.IsHttps,
                     SameSite = SameSiteMode.Lax,
                     Path = ICookieService.StepUpProofCookiePath,
+                });
+        }
+
+        public void SetOAuthBindingCookie(string binding)
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+            context.Response.Cookies.Append(
+                ICookieService.OAuthBindingCookieName,
+                binding,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.OAuthBindingCookiePath,
+                    MaxAge = ICookieService.OAuthBindingCookieLifetime,
+                    Expires = DateTimeOffset.UtcNow.Add(ICookieService.OAuthBindingCookieLifetime),
+                    IsEssential = true,
+                });
+        }
+
+        public string? GetOAuthBindingCookie()
+        {
+            var context = _httpContextAccessor.HttpContext;
+            return context is not null
+                && context.Request.Cookies.TryGetValue(ICookieService.OAuthBindingCookieName, out var value)
+                && !string.IsNullOrWhiteSpace(value)
+                    ? value
+                    : null;
+        }
+
+        public void DeleteOAuthBindingCookie()
+        {
+            var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No active HTTP context found.");
+            context.Response.Cookies.Delete(
+                ICookieService.OAuthBindingCookieName,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = context.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = ICookieService.OAuthBindingCookiePath,
                 });
         }
     }

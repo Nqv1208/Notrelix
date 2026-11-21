@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.API;
+using Notrelix.Application.Features.Identity.Security.Abstractions;
+using Notrelix.Application.Features.Identity.Security.DTOs;
 using Notrelix.Domain.Accounts.Members;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
@@ -59,17 +61,28 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    private static string Jwt(WebApplicationFactory<Program> factory, User user)
+    private static string Jwt(WebApplicationFactory<Program> factory, User user, Guid? sessionId = null)
     {
         using var scope = factory.Services.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<IJwtService>().GenerateAccessToken(user);
+        return scope.ServiceProvider.GetRequiredService<IJwtService>().GenerateAccessToken(user, sessionId);
     }
 
-    private HttpClient ClientFor(WebApplicationFactory<Program> factory, User user)
+    private HttpClient ClientFor(WebApplicationFactory<Program> factory, User user, Guid? sessionId = null)
     {
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new("Bearer", Jwt(factory, user));
+        client.DefaultRequestHeaders.Authorization = new("Bearer", Jwt(factory, user, sessionId));
         return client;
+    }
+
+    /// <summary>A real fresh step-up proof in the host's own proof store, bound to the person, the session and the purpose.</summary>
+    private static async Task<string> ProofAsync(
+        WebApplicationFactory<Program> factory, User user, Guid sessionId, StepUpPurpose purpose, string? target = null)
+    {
+        using var scope = factory.Services.CreateScope();
+        var granted = await scope.ServiceProvider.GetRequiredService<ISecurityStepUpService>()
+            .GrantOAuthProofAsync(user.Id, sessionId, purpose, target, CancellationToken.None);
+        granted.Succeeded.Should().BeTrue();
+        return granted.Data!.ProofToken;
     }
 
     private async Task<string> OwnerScalarAsync(string sql, params (string, object)[] p)
@@ -202,15 +215,40 @@ public sealed class AdminGrantWriteTests : IAsyncLifetime
     {
         var bob = await AppRoleMembers.AddAsync(_fixture, _a, "Heir", WorkspaceRole.Admin, WorkspaceMemberStatus.Active, "hash");
         using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
-        using var client = ClientFor(factory, _a.User);
+        var sessionId = Guid.CreateVersion7();
+        using var client = ClientFor(factory, _a.User, sessionId);
         var version = await OwnerScalarAsync("SELECT version FROM workspace.workspaces WHERE id = @w", ("w", _a.WorkspaceId));
+        var proof = await ProofAsync(factory, _a.User, sessionId, StepUpPurpose.TransferWorkspaceOwnership, StepUpTarget.OwnershipTransfer(_a.WorkspaceId, bob.Id));
 
         var response = await client.PostAsJsonAsync($"/api/v1/workspaces/{_a.WorkspaceId}/transfer-ownership",
-            new { newOwnerId = bob.Id, expectedVersion = long.Parse(version) });
+            new { newOwnerId = bob.Id, expectedVersion = long.Parse(version), stepUpToken = proof });
         response.IsSuccessStatusCode.Should().BeTrue(await response.Content.ReadAsStringAsync());
 
         (await GrantOfAsync(_a.WorkspaceId, bob.Id, "role_codes[1]")).Should().Be("Owner");
         (await GrantOfAsync(_a.WorkspaceId, _a.User.Id, "role_codes[1]")).Should().Be("Admin");
+    }
+
+    [Fact]
+    public async Task TransferringOwnership_WithoutAFreshProof_UnderTheAppRole_IsRefused_AndTheOwnerGrantStays()
+    {
+        var bob = await AppRoleMembers.AddAsync(_fixture, _a, "Heir", WorkspaceRole.Admin, WorkspaceMemberStatus.Active, "hash");
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        var sessionId = Guid.CreateVersion7();
+        using var client = ClientFor(factory, _a.User, sessionId);
+        var version = long.Parse(await OwnerScalarAsync("SELECT version FROM workspace.workspaces WHERE id = @w", ("w", _a.WorkspaceId)));
+        var otherPurpose = await ProofAsync(factory, _a.User, sessionId, StepUpPurpose.RevokeOtherSessions);
+
+        var none = await client.PostAsJsonAsync($"/api/v1/workspaces/{_a.WorkspaceId}/transfer-ownership",
+            new { newOwnerId = bob.Id, expectedVersion = version });
+        var wrongPurpose = await client.PostAsJsonAsync($"/api/v1/workspaces/{_a.WorkspaceId}/transfer-ownership",
+            new { newOwnerId = bob.Id, expectedVersion = version, stepUpToken = otherPurpose });
+
+        none.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        (await none.Content.ReadAsStringAsync()).Should().Contain("identity.security.step-up-required");
+        wrongPurpose.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await wrongPurpose.Content.ReadAsStringAsync()).Should().Contain("identity.security.step-up-invalid");
+        (await GrantOfAsync(_a.WorkspaceId, _a.User.Id, "role_codes[1]")).Should().Be("Owner");
+        (await GrantOfAsync(_a.WorkspaceId, bob.Id, "role_codes[1]")).Should().Be("Admin");
     }
 
     [Fact]

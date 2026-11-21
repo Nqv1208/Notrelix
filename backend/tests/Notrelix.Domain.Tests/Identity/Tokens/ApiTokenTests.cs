@@ -50,6 +50,41 @@ public class ApiTokenTests
     }
 
     [Fact]
+    public void Revoke_WithoutAReason_IsAManualRevoke()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+
+        token.Revoke(UserId, Now);
+
+        token.RevokedReason.Should().Be(ApiTokenRevokedReason.Manual);
+    }
+
+    [Theory]
+    [InlineData(ApiTokenRevokedReason.MemberRemoved)]
+    [InlineData(ApiTokenRevokedReason.MemberSuspended)]
+    [InlineData(ApiTokenRevokedReason.MemberLeft)]
+    public void Revoke_KeepsTheReasonItWasGiven(ApiTokenRevokedReason reason)
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+
+        token.Revoke(CreatedBy, Now, reason);
+
+        token.RevokedReason.Should().Be(reason);
+    }
+
+    [Fact]
+    public void Revoke_AnAlreadyRevokedToken_KeepsTheFirstReason()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        token.Revoke(UserId, Now, ApiTokenRevokedReason.Manual);
+
+        token.Revoke(CreatedBy, Now.AddMinutes(1), ApiTokenRevokedReason.MemberRemoved);
+
+        token.RevokedReason.Should().Be(ApiTokenRevokedReason.Manual);
+        token.RevokedBy.Should().Be(UserId);
+    }
+
+    [Fact]
     public void Revoke_ShouldTransitionToRevokedAndRaiseEvent()
     {
         var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
@@ -85,6 +120,32 @@ public class ApiTokenTests
         token.RecordUse(useTime);
 
         token.LastUsedAt.Should().Be(useTime);
+    }
+
+    [Fact]
+    public void IsUseRecordDue_NeverUsedToken_IsDue()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+
+        token.IsUseRecordDue(Now).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsUseRecordDue_WithinTheInterval_IsNotDue()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        token.RecordUse(Now);
+
+        token.IsUseRecordDue(Now.Add(ApiToken.UseRecordingInterval).AddSeconds(-1)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsUseRecordDue_AtOrAfterTheInterval_IsDue()
+    {
+        var token = ApiToken.Create(Guid.NewGuid(), WorkspaceId, UserId, "Token", "hash", null, CreatedBy, Now);
+        token.RecordUse(Now);
+
+        token.IsUseRecordDue(Now.Add(ApiToken.UseRecordingInterval)).Should().BeTrue();
     }
 
     [Fact]

@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { apiRead, realUsers, signIn } from "./support/real-session";
+import {
+  apiRead,
+  findWorkspace,
+  realUsers,
+  signIn,
+} from "./support/real-session";
 import { totpCode } from "./support/totp";
 
 interface Summary {
@@ -11,7 +16,8 @@ test("turning two-factor on asks for the password first, and turning it off asks
 }) => {
   const user = realUsers.workspaceGuest;
   await signIn(page, user);
-  const workspaceId = /\/workspaces\/([^/]+)/.exec(page.url())![1];
+  // The landing page depends on which specs ran before; the seeded workspace does not (a Guest may not create one).
+  const workspaceId = (await findWorkspace(page, "Workspace 3")).id;
   await page.goto(`/workspaces/${workspaceId}/account/security`);
 
   expect(

@@ -47,6 +47,7 @@ public abstract class IdentityHandlerTestBase
     protected readonly Mock<ISecurityStepUpService> StepUpServiceMock = new();
     protected readonly Mock<ILoginThrottle> ThrottleMock = new();
     protected readonly Mock<ISecurityActivityRecorder> ActivityMock = new();
+    protected readonly Mock<ISecurityNotice> SecurityNoticeMock = new();
     protected readonly Mock<IOtpService> OtpServiceMock = new();
     protected readonly Mock<IRateLimitService> RateLimitServiceMock = new();
     protected readonly Mock<IEmailService> EmailServiceMock = new();

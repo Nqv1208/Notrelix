@@ -13,6 +13,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = (OAuthProvider)999,
+            BrowserBinding = "binding",
             ReturnUrl = null
         };
 
@@ -28,6 +29,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = null
         };
 
@@ -42,6 +44,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = "https://evil.com/phish"
         };
 
@@ -57,6 +60,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = "/dashboard"
         };
 
@@ -71,6 +75,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = "//evil.com/phish"
         };
 
@@ -86,6 +91,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = string.Empty
         };
 
@@ -105,6 +111,7 @@ public class StartOAuthLoginCommandValidatorTests
         var command = new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = returnUrl
         };
 

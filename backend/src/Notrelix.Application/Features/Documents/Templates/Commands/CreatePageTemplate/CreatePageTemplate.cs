@@ -52,6 +52,6 @@ public class CreatePageTemplateCommandHandler : IRequestHandler<CreatePageTempla
         template.Publish(userId, now);
         _context.PageTemplates.Add(template);
 
-        return Result<PageTemplateDto>.Success(PageTemplateMapper.ToDto(template));
+        return Result<PageTemplateDto>.Success(PageTemplateMapper.ToDto(template, canManage: true));
     }
 }

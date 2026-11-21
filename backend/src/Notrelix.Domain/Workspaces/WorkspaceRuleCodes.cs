@@ -8,6 +8,7 @@ public static class WorkspaceRuleCodes
     // ── Workspace ─────────────────────────────────────────────────────────
     public const string Workspaces_Workspace_NameTooLong = "Workspaces_Workspace_NameTooLong";
     public const string Workspaces_Workspace_CannotRenameArchived = "Workspaces_Workspace_CannotRenameArchived";
+    public const string Workspaces_Workspace_CannotChangeSlugArchived = "Workspaces_Workspace_CannotChangeSlugArchived";
     public const string Workspaces_Workspace_CannotUpdateDescriptionArchived = "Workspaces_Workspace_CannotUpdateDescriptionArchived";
     public const string Workspaces_Workspace_CannotUpdateSettingsArchived = "Workspaces_Workspace_CannotUpdateSettingsArchived";
     public const string Workspaces_Workspace_CannotUnarchiveNonArchived = "Workspaces_Workspace_CannotUnarchiveNonArchived";
@@ -29,6 +30,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Invitation_InitialEntriesRequireMemberOrGuest = "Workspaces_Invitation_InitialEntriesRequireMemberOrGuest";
     public const string Workspaces_Invitation_InitialEntryInvalid = "Workspaces_Invitation_InitialEntryInvalid";
     public const string Workspaces_Invitation_GuestEntryRoleTooPrivileged = "Workspaces_Invitation_GuestEntryRoleTooPrivileged";
+    public const string Workspaces_Invitation_EntryTargetNotActive = "Workspaces_Invitation_EntryTargetNotActive";
     public const string Workspaces_Invitation_InitialEntryDuplicate = "Workspaces_Invitation_InitialEntryDuplicate";
     public const string Workspaces_Invitation_TooManyInitialEntries = "Workspaces_Invitation_TooManyInitialEntries";
     public const string Workspaces_Invitation_ResourceKindNotInvitable = "Workspaces_Invitation_ResourceKindNotInvitable";
@@ -38,6 +40,7 @@ public static class WorkspaceRuleCodes
     // ── Member ────────────────────────────────────────────────────────────
     public const string Workspaces_Member_CannotChangeRoleOfInactive = "Workspaces_Member_CannotChangeRoleOfInactive";
     public const string Workspaces_Member_CannotPromoteInactiveToOwner = "Workspaces_Member_CannotPromoteInactiveToOwner";
+    public const string Workspaces_Member_CannotPromoteGuestToOwner = "Workspaces_Member_CannotPromoteGuestToOwner";
     public const string Workspaces_Member_CannotActivateRemoved = "Workspaces_Member_CannotActivateRemoved";
     public const string Workspaces_Member_CannotRejoinNonRemoved = "Workspaces_Member_CannotRejoinNonRemoved";
     public const string Workspaces_Member_CannotActOnLastOwner = "Workspaces_Member_CannotActOnLastOwner";
@@ -70,6 +73,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Team_CannotDowngradeLastLead = "Workspaces_Team_CannotDowngradeLastLead";
     public const string Workspaces_Team_LastLeadCannotLeave = "Workspaces_Team_LastLeadCannotLeave";
     public const string Workspaces_Team_DuplicateName = "Workspaces_Team_DuplicateName";
+    public const string Workspaces_Team_GuestCannotJoin = "Workspaces_Team_GuestCannotJoin";
 
     // ── TeamMember ────────────────────────────────────────────────────────
     public const string Workspaces_TeamMember_AlreadyActive = "Workspaces_TeamMember_AlreadyActive";
@@ -82,6 +86,7 @@ public static class WorkspaceRuleCodes
     public const string Workspaces_Space_CannotChangeTypeArchived = "Workspaces_Space_CannotChangeTypeArchived";
     public const string Workspaces_Space_CannotUnarchiveNonArchived = "Workspaces_Space_CannotUnarchiveNonArchived";
     public const string Workspaces_Space_ParentInOtherWorkspace = "Workspaces_Space_ParentInOtherWorkspace";
+    public const string Workspaces_Space_RestoreWindowExpired = "Workspaces_Space_RestoreWindowExpired";
     public const string Workspaces_Space_ParentNotActive = "Workspaces_Space_ParentNotActive";
     public const string Workspaces_Space_MoveCreatesCycle = "Workspaces_Space_MoveCreatesCycle";
     public const string Workspaces_Space_DuplicateSiblingName = "Workspaces_Space_DuplicateSiblingName";

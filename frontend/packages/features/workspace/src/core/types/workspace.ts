@@ -101,8 +101,18 @@ export interface WorkspaceSummary {
   plan: "free" | "pro" | "business" | "enterprise";
   memberCount: number;
   isPersonal: boolean;
+  /** Read-only for every member until an owner unarchives it; as `GetWorkspace` and the lists report it. */
+  isArchived?: boolean;
+  /**
+   * The Account's status as `GetWorkspace` reports it (other lists report `Active` and are not read for this).
+   * Absent or unknown reads as Active: the server refuses the writes, this only shapes the display.
+   */
+  accountStatus?: AccountStatus;
   settings?: string;
 }
+
+/** A Suspended or Closed Account is read-only for every member until an Account Owner restores it. */
+export type AccountStatus = "Active" | "Suspended" | "Closed";
 
 export interface WorkspaceViewTarget {
   boardId?: string;
@@ -202,6 +212,17 @@ export interface UpdateWorkspaceProfileInput {
   readonly expectedVersion: number;
 }
 
+/** The workspace figures Owner and Admin see (`GetWorkspaceDashboard`). */
+export interface WorkspaceFigures {
+  /** Active members only: suspended and removed people are not counted. */
+  readonly members: number;
+  /** The Spaces the caller can see. */
+  readonly spaces: number;
+  readonly teams: number;
+  readonly invitations: number;
+  readonly archived: boolean;
+}
+
 /** Workspace defaults (`Workspaces.Settings.*`). */
 export interface WorkspaceSettings {
   readonly defaultMemberRole: Exclude<WorkspaceRole, "owner">;
@@ -209,6 +230,11 @@ export interface WorkspaceSettings {
   readonly allowGuestInvites: boolean;
   readonly allowPublicSharing: boolean;
   readonly enforceMfa: boolean;
+  /**
+   * Days a new Guest's access lasts by default (30, 90 or 180); `null` = no end. It is read and sent back with
+   * every save because the producer reads a missing value as "none".
+   */
+  readonly guestDefaultExpiryDays: 30 | 90 | 180 | null;
   /** IANA time zone the workspace's boards inherit. */
   readonly timeZone: string;
   /** First day of the week the workspace's boards inherit. */
@@ -249,8 +275,20 @@ export function resolveTimeZone(value: string): string | null {
   }
 }
 
+/**
+ * A Team or Space the invitation puts the person into when they accept (WSP-026). Team roles are
+ * `member` and `lead`; Space roles are `viewer`, `member` and `admin`. A Guest never gets `lead` or `admin`.
+ */
+export interface InvitationEntryInput {
+  kind: "team" | "space";
+  targetId: string;
+  role: "member" | "lead" | "viewer" | "admin";
+}
+
 export interface CreateWorkspaceInvitationInput {
   email: string;
   /** Member or Guest only (WSP-026); Admin is granted after joining. */
   role: Extract<WorkspaceRole, "member" | "guest">;
+  /** Optional initial Team and Space entries, applied together with the membership on acceptance. */
+  initialEntries?: readonly InvitationEntryInput[];
 }

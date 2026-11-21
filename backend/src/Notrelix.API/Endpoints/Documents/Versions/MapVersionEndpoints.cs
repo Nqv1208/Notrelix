@@ -30,11 +30,13 @@ public static class MapVersionEndpoints
             .Produces<PageVersionDetailDto>(StatusCodes.Status200OK, "application/json");
 
         group.MapResourcePost("/", CreateAsync)
+            .WithIdempotencyKey()
             .WithName("Documents.Versions.CreatePageVersion")
             .WithSummary("Save the page as it is now as a named version")
             .Produces<PageVersionDto>(StatusCodes.Status201Created, "application/json");
 
         group.MapResourcePost("/{versionId:guid}/restore", RestoreAsync)
+            .WithIdempotencyKey()
             .WithName("Documents.Versions.RestorePageVersion")
             .WithSummary("Restore the page's blocks to a version (adds a new version)")
             .Produces<RestorePageVersionResultDto>(StatusCodes.Status200OK, "application/json")

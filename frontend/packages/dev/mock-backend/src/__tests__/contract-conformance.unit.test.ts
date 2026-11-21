@@ -404,10 +404,12 @@ describe("MFB-FZ-07: Contract Behavior and Conformance Matrix", () => {
     expect(afterConflict.version).toBe(2);
 
     // Defaults save with the current version.
+    // Guest invitations start off; the Owner switches them on in this save so the Guest invitation below is allowed.
     const defaults = await settings.getSettings(workspaceId);
+    expect(defaults.allowGuestInvites).toBe(false);
     await settings.updateSettings(
       workspaceId,
-      { ...defaults, invitationExpiryDays: 14 },
+      { ...defaults, invitationExpiryDays: 14, allowGuestInvites: true },
       2,
     );
     expect((await settings.getSettings(workspaceId)).invitationExpiryDays).toBe(

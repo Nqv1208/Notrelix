@@ -15,6 +15,7 @@ public static class AccountRuleCodes
 
     // ── IdentityProvider ──────────────────────────────────────────────────
     public const string Accounts_IdentityProvider_InvalidProviderType = "Accounts_IdentityProvider_InvalidProviderType";
+    public const string Accounts_IdentityProvider_ClientRequired = "Accounts_IdentityProvider_ClientRequired";
 
     // ── WorkspaceRoute ────────────────────────────────────────────────────
     public const string Accounts_WorkspaceRoute_InvalidWorkspaceId = "Accounts_WorkspaceRoute_InvalidWorkspaceId";

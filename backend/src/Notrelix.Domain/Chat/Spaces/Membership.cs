@@ -73,6 +73,15 @@ public sealed class Membership : IWorkspaceScoped
         };
     }
 
+    /// <summary>Changes the role of an active member. Returns false when it already is that role.</summary>
+    internal bool SetRole(MembershipRole role)
+    {
+        if (Role == role) return false;
+
+        Role = role;
+        return true;
+    }
+
     /// <summary>A person who left comes back as a fresh member; the row is reused, never duplicated.</summary>
     internal void Rejoin(MembershipRole role, DateTimeOffset at)
     {

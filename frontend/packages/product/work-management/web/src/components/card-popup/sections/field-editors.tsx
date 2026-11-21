@@ -9,6 +9,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Hash,
+  Link2,
   Loader2,
   Minus,
   Sigma,
@@ -53,6 +54,7 @@ import {
   PillSpinner,
   PillStatic,
 } from "./field-pill";
+import { RelationChips, RelationPickerPanel } from "./relation-field";
 import { useServerDraft } from "../use-server-draft";
 import {
   ChipBtn,
@@ -417,7 +419,11 @@ function FieldControlBody({
   // "+ Thêm" added this field: its picker opens at once (a typed control takes the cursor itself).
   useEffect(() => {
     if (openFieldId !== field.id) return;
-    if (!["select", "multi_select", "date", "person"].includes(field.fieldType))
+    if (
+      !["select", "multi_select", "date", "person", "relation"].includes(
+        field.fieldType,
+      )
+    )
       return;
     // After the menu has closed and handed focus back to its button, or that would close this picker.
     const id = window.setTimeout(() => {
@@ -732,6 +738,40 @@ function FieldControlBody({
             onClose={() => setOpen(false)}
           />
         ) : null}
+      </PanelPopover>
+    );
+  }
+
+  if (field.fieldType === "relation") {
+    const links = card.relationLinks?.[field.id] ?? [];
+    return (
+      <PanelPopover
+        fieldSheet
+        open={open}
+        onOpenChange={setOpen}
+        width={340}
+        trigger={trigger(
+          <>
+            <Link2 aria-hidden="true" className="size-[13px]" />
+            {links.length > 0 ? (
+              <RelationChips links={links} withTitle={!pill && !chip} />
+            ) : (
+              wrapChip(copy.sections.relation.empty)
+            )}
+            {tail}
+          </>,
+          { haspopup: "dialog" },
+        )}
+      >
+        <RelationPickerPanel
+          targetBoardId={field.relationBoardId}
+          links={links}
+          onCancel={() => setOpen(false)}
+          onSave={(ids) => {
+            write(ids);
+            setOpen(false);
+          }}
+        />
       </PanelPopover>
     );
   }

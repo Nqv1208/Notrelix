@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { SignInFlow, useAuth } from "@notrelix/features-auth";
 import { sanitizeInternalReturnUrl } from "../routing/sanitize-return-url";
+import { SIGN_IN_LANDING } from "../routing/sign-in-landing";
 import { AuthLayout } from "./auth-layout";
 import { useAuthFlowDeps } from "./auth-flow-deps";
 
@@ -44,10 +45,11 @@ export function SignInPage() {
     }
     setPhase("leaving");
     const target = search.get("returnTo") ?? search.get("redirect");
-    void navigate({
-      to: target ? sanitizeInternalReturnUrl(target) : "/home",
-      replace: true,
-    });
+    void navigate(
+      target
+        ? { to: sanitizeInternalReturnUrl(target), replace: true }
+        : { ...SIGN_IN_LANDING, replace: true },
+    );
   });
   if (phase !== "form") {
     return <div className="bg-background h-screen w-screen" aria-hidden />;
@@ -65,7 +67,16 @@ export function SignInPage() {
         providerError={search.get("error")}
         sessionEnded={search.get("reason") === "session-ended"}
         passwordReset={search.get("reason") === "password-reset"}
-        initialStep={search.get("step") === "mfa" ? "mfa" : null}
+        mfaEnrollmentRequired={
+          search.get("reason") === "mfa-enrollment-required"
+        }
+        initialStep={
+          search.get("step") === "mfa"
+            ? search.get("enroll") === "1"
+              ? "enroll"
+              : "mfa"
+            : null
+        }
       />
     </AuthLayout>
   );

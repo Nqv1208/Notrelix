@@ -212,12 +212,14 @@ describe("document page mapping", () => {
       "Bản trình Ban giám đốc",
       undefined,
     ]);
-    expect(versions.map((version) => version.summary)).toEqual([
-      copy.versions.kinds.restore,
-      copy.versions.kinds.named,
-      copy.versions.kinds.automatic,
+    expect(versions.map((version) => version.tag)).toEqual([
+      "Khôi phục từ phiên bản 1",
+      copy.versions.automatic,
+      copy.versions.automatic,
     ]);
-    expect(versions[0]?.stamp).toMatch(/11\/10 /);
+    expect(versions.map((version) => version.number)).toEqual([3, 2, 1]);
+    expect(versions[0]?.current).toBe(true);
+    expect(versions[0]?.stamp).toBe("16:05 ngày 11/10");
   });
 
   it("places a new block after another one, between neighbours or at the end", () => {

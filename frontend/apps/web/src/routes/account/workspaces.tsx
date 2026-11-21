@@ -52,6 +52,9 @@ function Frame() {
       appearance: link,
       security: link,
       notifications: link,
+      email: link,
+      providers: link,
+      tokens: link,
       workspaces: link,
     };
   }, [router]);

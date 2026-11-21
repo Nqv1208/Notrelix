@@ -4,6 +4,7 @@ namespace Notrelix.Application.Features.Workspaces.DTOs;
 /// <param name="Version">The Workspace aggregate version, sent back as <c>expectedVersion</c> by profile, settings, archive and delete writes.</param>
 /// <param name="Size">The company-size band (<c>1-10</c>, <c>11-50</c>, <c>51-200</c>, <c>201-1000</c> or <c>1000+</c>); null until an Owner or Admin sets it.</param>
 /// <param name="Language">The workspace language, <c>vi</c> or <c>en</c>; null until set.</param>
+/// <param name="AccountStatus">The status of the Account the workspace belongs to: <c>Active</c> (a trial counts as Active), <c>Suspended</c> or <c>Closed</c>. A suspended or closed Account is read-only: every write is refused with <c>account.suspended</c> and reads stay open. Only the single-workspace read fills it; every other list reports <c>Active</c>.</param>
 public record WorkspaceDto(
     Guid Id,
     string Name,
@@ -20,7 +21,8 @@ public record WorkspaceDto(
     string? Settings,
     long Version,
     string? Size = null,
-    string? Language = null
+    string? Language = null,
+    string AccountStatus = "Active"
 );
 
 /// <param name="Status">The membership status enum name (<c>Active</c> or <c>Suspended</c>). Removed members are not listed: removal ends the participation (docs/product/workspaces.md §13, §20).</param>

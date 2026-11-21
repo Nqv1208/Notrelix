@@ -281,3 +281,132 @@ export function AccountPasswordChangedPanel({
     </section>
   );
 }
+
+/**
+ * A first password for a person who signs in with a provider: the new one
+ * twice. The proof of presence came before this panel opened.
+ */
+export function AccountSetPasswordPanel({
+  copy,
+  email,
+  error,
+  wait,
+  busy,
+  onSubmit,
+  onClose,
+}: {
+  copy: AccountSecurityCopy;
+  email: string;
+  error: AccountPasswordError | null;
+  wait?: number;
+  busy: boolean;
+  onSubmit?: (next: string) => void;
+  onClose?: () => void;
+}) {
+  const t = copy.firstPassword;
+  const p = copy.passwordFlow;
+  const ids = {
+    next: React.useId(),
+    confirm: React.useId(),
+    nextError: React.useId(),
+    confirmError: React.useId(),
+  };
+  const nextRef = React.useRef<HTMLInputElement>(null);
+  const [next, setNext] = React.useState("");
+  const [confirm, setConfirm] = React.useState("");
+  const [tried, setTried] = React.useState(false);
+  // The panel opens in place: focus lands on the first field.
+  React.useEffect(() => nextRef.current?.focus(), []);
+  const problem = checkNewPassword({ current: "", next, confirm });
+  const shown = tried ? problem : null;
+  const nextText =
+    shown === "too-short"
+      ? fillCopy(p.tooShort, { count: PASSWORD_MIN_LENGTH })
+      : error === "rejected"
+        ? fillCopy(t.rejected, { count: PASSWORD_MIN_LENGTH })
+        : null;
+  const confirmText = shown === "mismatch" ? p.mismatch : null;
+  const failure =
+    error === "wait"
+      ? fillCopy(p.wait, { seconds: wait ?? 0 })
+      : error === "failed"
+        ? copy.actionError
+        : null;
+  return (
+    <section
+      aria-label={t.title}
+      className="rounded-[12px] border border-line bg-popover p-4 dark:bg-card"
+    >
+      <b className="block text-body font-semibold text-foreground">{t.title}</b>
+      <p className="m-0 mt-1 text-crumb text-muted-foreground">
+        {fillCopy(t.text, { email })}
+      </p>
+      <form
+        noValidate
+        className="mt-2.5 flex flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setTried(true);
+          if (busy || problem !== null) return;
+          onSubmit?.(next);
+        }}
+      >
+        <div className="flex flex-wrap gap-2.5">
+          <Field
+            id={ids.next}
+            label={p.newLabel}
+            hint={fillCopy(t.hint, { count: PASSWORD_MIN_LENGTH })}
+            error={nextText}
+            errorId={ids.nextError}
+          >
+            <input
+              ref={nextRef}
+              id={ids.next}
+              type="password"
+              autoComplete="new-password"
+              value={next}
+              aria-invalid={nextText ? true : undefined}
+              aria-describedby={nextText ? ids.nextError : undefined}
+              onChange={(event) => setNext(event.target.value)}
+              className={INPUT}
+            />
+          </Field>
+          <Field
+            id={ids.confirm}
+            label={p.confirmLabel}
+            error={confirmText}
+            errorId={ids.confirmError}
+          >
+            <input
+              id={ids.confirm}
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              aria-invalid={confirmText ? true : undefined}
+              aria-describedby={confirmText ? ids.confirmError : undefined}
+              onChange={(event) => setConfirm(event.target.value)}
+              className={INPUT}
+            />
+          </Field>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="submit"
+            disabled={busy || error === "wait"}
+            className={cn(BTN_PRIMARY, FOCUS)}
+          >
+            {t.submit}
+          </button>
+          <button type="button" onClick={onClose} className={cn(BTN_SM, FOCUS)}>
+            {p.cancel}
+          </button>
+        </div>
+      </form>
+      {failure ? (
+        <p role="alert" className="m-0 mt-2 text-crumb text-danger-text">
+          {failure}
+        </p>
+      ) : null}
+    </section>
+  );
+}

@@ -316,11 +316,11 @@ export const fieldTypeRegistry: Readonly<Record<FieldType, FieldTypeSpec>> = {
     editable: false,
     parseDraft: readOnlyDraft,
   },
-  // Links to items of another board (UC-WM-C18): set in the item, never typed; only emptiness is filterable.
+  // Links to items of another board (UC-WM-C18): picked in the item, never typed; only emptiness is filterable.
   relation: {
     ...base,
     type: "relation",
-    editable: false,
+    editable: true,
     operators: ["is_empty", "is_not_empty"],
     compare: (a, b) => linkCount(a) - linkCount(b),
     text: (value) => String(linkCount(value)),

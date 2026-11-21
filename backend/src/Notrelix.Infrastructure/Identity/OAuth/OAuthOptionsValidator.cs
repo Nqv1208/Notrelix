@@ -42,6 +42,9 @@ public sealed class OAuthOptionsValidator : IValidateOptions<OAuthOptions>
                 if (!config.Scopes.Contains("openid", StringComparer.OrdinalIgnoreCase))
                     return ValidateOptionsResult.Fail($"OAuth provider '{key}': the 'openid' Scope is required.");
 
+                if (string.IsNullOrWhiteSpace(config.JwksUri))
+                    return ValidateOptionsResult.Fail($"OAuth provider '{key}': JwksUri is required to verify the ID token signature.");
+
                 if (OidcIdTokenValidator.IssuersOf(provider, config).Count == 0)
                     return ValidateOptionsResult.Fail($"OAuth provider '{key}': Issuer is required when enabled.");
             }

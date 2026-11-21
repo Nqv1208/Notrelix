@@ -136,6 +136,33 @@ export const en = {
     showShortcuts: "Show keyboard shortcuts",
     close: "Close",
   },
+  archived: {
+    title: "This workspace is archived.",
+    text: "Everyone can read it, nothing in it can change, and automations and integration sync are paused.",
+    ownerHint: "As the owner you can unarchive it.",
+    memberHint: "Only the owner can unarchive it.",
+    unarchive: "Unarchive",
+    unarchiving: "Unarchiving…",
+    done: "{{workspace}} was unarchived. Everyone can work in it again.",
+    conflictTitle: "The workspace just changed.",
+    conflictText:
+      "It wasn't unarchived. Reload to see the latest, then try again.",
+    reload: "Reload",
+    deniedText: "Only the owner can unarchive this workspace.",
+    failedText: "It wasn't unarchived. Nothing changed; try again.",
+  },
+  accountReadOnly: {
+    suspendedTitle: "This Account is suspended.",
+    closedTitle: "This Account is closed.",
+    suspendedText:
+      "Everyone can still read everything here. Changes are paused until an Account Owner restores the Account.",
+    closedText:
+      "Everyone can still read everything here. Changes stay paused until an Account Owner restores the Account.",
+    billingHint: "You can review the plan and billing.",
+    billing: "Open billing",
+    refused:
+      "The Account is suspended. Changes are paused; you can still read.",
+  },
   scope: {
     loadingTitle: "Opening workspace",
     loadingDescription: "Checking your access…",
@@ -313,6 +340,32 @@ export const vi: WorkspaceShellCopy = {
     openPalette: "Mở bảng lệnh",
     showShortcuts: "Xem phím tắt",
     close: "Đóng",
+  },
+  archived: {
+    title: "Workspace này đang được lưu trữ.",
+    text: "Mọi người chỉ xem được, không sửa được gì, tự động hoá và đồng bộ tích hợp đã tạm dừng.",
+    ownerHint: "Là chủ sở hữu, bạn bỏ lưu trữ được.",
+    memberHint: "Chỉ chủ sở hữu bỏ lưu trữ được.",
+    unarchive: "Bỏ lưu trữ",
+    unarchiving: "Đang bỏ lưu trữ…",
+    done: "Đã bỏ lưu trữ {{workspace}}. Mọi người làm việc lại được.",
+    conflictTitle: "Workspace vừa thay đổi.",
+    conflictText: "Chưa bỏ lưu trữ được. Tải lại để xem bản mới rồi thử lại.",
+    reload: "Tải lại",
+    deniedText: "Chỉ chủ sở hữu mới bỏ lưu trữ được workspace này.",
+    failedText: "Chưa bỏ lưu trữ được. Chưa có gì thay đổi; hãy thử lại.",
+  },
+  accountReadOnly: {
+    suspendedTitle: "Tài khoản này đang bị tạm ngưng.",
+    closedTitle: "Tài khoản này đã đóng.",
+    suspendedText:
+      "Mọi người vẫn xem được toàn bộ nội dung. Mọi thay đổi tạm dừng cho đến khi Chủ sở hữu tài khoản khôi phục.",
+    closedText:
+      "Mọi người vẫn xem được toàn bộ nội dung. Mọi thay đổi vẫn tạm dừng cho đến khi Chủ sở hữu tài khoản khôi phục.",
+    billingHint: "Bạn xem được gói và thanh toán.",
+    billing: "Mở thanh toán",
+    refused:
+      "Tài khoản đang bị tạm ngưng. Mọi thay đổi tạm dừng; bạn vẫn xem được.",
   },
   scope: {
     loadingTitle: "Đang mở không gian làm việc",

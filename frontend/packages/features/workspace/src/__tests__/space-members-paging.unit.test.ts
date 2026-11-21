@@ -16,6 +16,7 @@ const endpoints: SpacesEndpoints = {
     spaceArchive: (w, s) => `/workspaces/${w}/spaces/${s}/archive`,
     spaceUnarchive: (w, s) => `/workspaces/${w}/spaces/${s}/unarchive`,
     spaceRestore: (w, s) => `/workspaces/${w}/spaces/${s}/restore`,
+    spacesDeleted: (w) => `/workspaces/${w}/spaces/deleted`,
     spaceMove: (w, s) => `/workspaces/${w}/spaces/${s}/move`,
     spaceMembers: (w, s) => `/workspaces/${w}/spaces/${s}/members`,
     spaceMember: (w, s, type, id) =>
@@ -96,6 +97,123 @@ describe("Space members read", () => {
       "user-0004",
       "user-0003",
       "user-0001",
+    ]);
+  });
+});
+
+/**
+ * Serves a producer that filters by role and kind, then cuts a page of `limit` after the cursor
+ * (an offset into the filtered list), as GET .../members does.
+ */
+function filteringApi(
+  all: readonly ReturnType<typeof entry>[],
+  urls: string[],
+): SpacesApiClient {
+  return {
+    async get<T>(url: string): Promise<T> {
+      urls.push(url);
+      const query = new URL(url, "http://producer.test").searchParams;
+      const role = query.get("role");
+      const kind = query.get("kind");
+      const rows = all
+        .filter((row) => !role || row.role === role)
+        .filter((row) => !kind || row.subjectType === kind);
+      const limit = Number(query.get("limit"));
+      const start = Number(query.get("cursor") ?? 0);
+      const next = start + limit < rows.length ? String(start + limit) : null;
+      return {
+        items: rows.slice(start, start + limit),
+        nextCursor: next,
+        hasNextPage: next !== null,
+      } as T;
+    },
+    post: unused,
+    put: unused,
+    patch: unused,
+    delete: unused,
+  };
+}
+
+describe("Space members tab read (one page at a time)", () => {
+  const large = Array.from({ length: 500 }, (_, n) => ({
+    ...entry(n, n < 50 ? "Admin" : n < 349 ? "Member" : "Viewer"),
+    subjectType: n % 10 === 9 ? "Team" : "User",
+  }));
+
+  it("asks for 50 entries by default and carries no filter when none is picked", async () => {
+    const urls: string[] = [];
+    const page = await createSpacesService(
+      filteringApi(large, urls),
+      endpoints,
+    ).getMembersPage("ws-1", "space-1");
+
+    expect(page.entries).toHaveLength(50);
+    expect(page.nextCursor).toBe("50");
+    expect(urls).toEqual(["/workspaces/ws-1/spaces/space-1/members?limit=50"]);
+  });
+
+  it("walks 500 entries in ten pages: the next page continues, nothing repeats or is skipped", async () => {
+    const api = createSpacesService(filteringApi(large, []), endpoints);
+    const seen: string[] = [];
+    const sizes: number[] = [];
+    let cursor: string | null = null;
+    do {
+      const page: Awaited<ReturnType<typeof api.getMembersPage>> =
+        await api.getMembersPage("ws-1", "space-1", { cursor });
+      sizes.push(page.entries.length);
+      seen.push(...page.entries.map((e) => e.subjectId));
+      cursor = page.nextCursor;
+    } while (cursor);
+
+    expect(sizes).toEqual(Array.from({ length: 10 }, () => 50));
+    expect(new Set(seen).size).toBe(500);
+    expect([...seen].sort()).toEqual(large.map((e) => e.subjectId).sort());
+  });
+
+  it("sends the role and kind to the producer, and cuts the page from the matching entries", async () => {
+    const urls: string[] = [];
+    const api = createSpacesService(filteringApi(large, urls), endpoints);
+
+    const members = await api.getMembersPage("ws-1", "space-1", {
+      role: "Member",
+      kind: "User",
+    });
+
+    expect(urls[0]).toContain("role=Member");
+    expect(urls[0]).toContain("kind=User");
+    expect(members.entries).toHaveLength(50);
+    expect(members.entries.every((e) => e.role === "Member")).toBe(true);
+    expect(members.entries.every((e) => e.subjectType === "User")).toBe(true);
+    expect(members.nextCursor).not.toBeNull();
+  });
+
+  it("passes the cursor back and ends with no cursor on the last page", async () => {
+    const urls: string[] = [];
+    const api = createSpacesService(filteringApi(large, urls), endpoints);
+
+    const last = await api.getMembersPage("ws-1", "space-1", {
+      role: "Admin",
+      cursor: "0",
+      limit: 200,
+    });
+
+    expect(urls[0]).toContain("cursor=0");
+    expect(urls[0]).toContain("limit=200");
+    expect(last.entries).toHaveLength(50);
+    expect(last.nextCursor).toBeNull();
+  });
+
+  it("lists Admins first within a page and never reorders a page already read", async () => {
+    const mixed = [entry(1, "Viewer"), entry(2, "Admin"), entry(3, "Member")];
+    const page = await createSpacesService(
+      filteringApi(mixed, []),
+      endpoints,
+    ).getMembersPage("ws-1", "space-1");
+
+    expect(page.entries.map((e) => e.role)).toEqual([
+      "Admin",
+      "Member",
+      "Viewer",
     ]);
   });
 });

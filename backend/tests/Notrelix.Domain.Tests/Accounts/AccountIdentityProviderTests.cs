@@ -140,4 +140,71 @@ public class AccountIdentityProviderTests
 
         act.Should().Throw<BusinessRuleException>();
     }
+
+    private AccountIdentityProvider Oidc(bool jit = true) => AccountIdentityProvider.CreateOidc(
+        _accountId, "Acme SSO", "https://login.acme.example", "client-1", "cipher-1", jit, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+    [Fact]
+    public void CreateOidc_StartsAsDraft_WithClientIdProtectedSecretAndJitFlag()
+    {
+        var idp = Oidc(jit: false);
+
+        idp.ProviderType.Should().Be("Oidc");
+        idp.Status.Should().Be(AccountIdentityProvider.StatusDraft);
+        idp.ClientId.Should().Be("client-1");
+        idp.ClientSecretProtected.Should().Be("cipher-1");
+        idp.JitProvisioningEnabled.Should().BeFalse();
+        idp.ValidationError.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateOidc_WithoutClientIdOrSecret_Throws()
+    {
+        var blankId = () => AccountIdentityProvider.CreateOidc(_accountId, "n", "https://i.example", " ", "c", true, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        var blankSecret = () => AccountIdentityProvider.CreateOidc(_accountId, "n", "https://i.example", "id", " ", true, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        blankId.Should().Throw<BusinessRuleException>();
+        blankSecret.Should().Throw<BusinessRuleException>();
+    }
+
+    [Fact]
+    public void MarkValidated_MakesItActive_AndClearsTheReason()
+    {
+        var idp = Oidc();
+        idp.MarkValidationFailed("unreachable", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        idp.MarkValidated("https://login.acme.example/authorize", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        idp.Status.Should().Be(AccountIdentityProvider.StatusActive);
+        idp.ValidationError.Should().BeNull();
+        idp.SsoUrl.Should().Be("https://login.acme.example/authorize");
+    }
+
+    [Fact]
+    public void MarkValidationFailed_LeavesItDraft_WithTheStatedReason()
+    {
+        var idp = Oidc();
+
+        idp.MarkValidationFailed("issuer-mismatch", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        idp.Status.Should().Be(AccountIdentityProvider.StatusDraft);
+        idp.ValidationError.Should().Be("issuer-mismatch");
+    }
+
+    [Fact]
+    public void UpdateOidc_ReturnsToDraft_KeepsTheStoredSecretWhenNoneIsGiven_AndReplacesItWhenGiven()
+    {
+        var idp = Oidc();
+        idp.MarkValidated("https://login.acme.example/authorize", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        idp.UpdateOidc("Acme 2", "https://login.acme.example", "client-2", null, false, Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        idp.Status.Should().Be(AccountIdentityProvider.StatusDraft);
+        idp.ClientId.Should().Be("client-2");
+        idp.ClientSecretProtected.Should().Be("cipher-1", "an update without a secret keeps the stored one");
+        idp.JitProvisioningEnabled.Should().BeFalse();
+
+        idp.UpdateOidc("Acme 2", "https://login.acme.example", "client-2", "cipher-2", false, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        idp.ClientSecretProtected.Should().Be("cipher-2");
+    }
 }

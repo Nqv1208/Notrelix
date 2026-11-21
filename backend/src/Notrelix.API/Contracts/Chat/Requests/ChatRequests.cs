@@ -15,6 +15,9 @@ public record LinkChannelRequest(string Kind, Guid ResourceId, long? ExpectedVer
 /// <summary>Archives (true) or unarchives (false) a channel, with the version the client read.</summary>
 public record ArchiveChannelRequest(bool? Archived, long? ExpectedVersion);
 
+/// <summary>Restores a deleted channel, with the version the client read.</summary>
+public record RestoreChannelRequest(long? ExpectedVersion);
+
 /// <summary>One channel's sidebar place, with the version the client read for that channel.</summary>
 public record ChannelPlacementRequest(Guid ChannelId, Guid? GroupId, double Position, long? ExpectedVersion);
 
@@ -23,6 +26,9 @@ public record ReorderChannelsRequest(IReadOnlyList<ChannelPlacementRequest>? Pla
 
 /// <summary>Workspace members to add to a channel.</summary>
 public record AddChannelMembersRequest(IReadOnlyList<Guid>? UserIds);
+
+/// <summary>The role a channel member is given: "manager" or "member".</summary>
+public record SetChannelMemberRoleRequest(string? Role);
 
 /// <summary>A new sidebar category. A missing position puts it last.</summary>
 public record CreateChannelGroupRequest(string Name, double? Position);
@@ -40,7 +46,8 @@ public record SendMessageRequest(
     Guid? ReplyToId,
     IReadOnlyList<MentionRequest>? Mentions = null,
     bool? ConfirmBroadcast = null,
-    bool? VoiceMessage = null);
+    bool? VoiceMessage = null,
+    string? StickerId = null);
 
 /// <summary>
 /// One mention in a message's text (UC-CHT-G01, G03, G04). Kind is user, channel-link, broadcast-channel or broadcast-here. Start and
@@ -59,6 +66,9 @@ public record EditMessageRequest(string? Content, long? ExpectedVersion, IReadOn
 /// <summary>The sequence the person has read up to in a space (UC-CHT-D02). A lower sequence than the boundary changes nothing.</summary>
 public record MarkSpaceReadRequest(long? UpToSequence);
 
+/// <summary>The sequence of the message to start the unread run from (UC-CHT-I07): that message and every later one become unread for the caller.</summary>
+public record MarkSpaceUnreadFromRequest(long? FromSequence);
+
 /// <summary>
 /// How the person is notified in a space: all, mentions or none (UC-CHT-D06). With none, an optional until time makes it a
 /// timed mute (UC-CHT-D05). An until time with another level is refused.
@@ -74,7 +84,8 @@ public record ReplyInThreadRequest(
     string? ClientMessageId,
     bool? AlsoSendToChannel,
     IReadOnlyList<MentionRequest>? Mentions = null,
-    bool? ConfirmBroadcast = null);
+    bool? ConfirmBroadcast = null,
+    bool? VoiceMessage = null);
 
 /// <summary>The caller's follow state on a thread. following false removes the follow; muted with following silences it (UC-CHT-F04).</summary>
 public record FollowThreadRequest(bool? Following, bool? Muted);

@@ -25,12 +25,13 @@ public class ClearChannelPermissionsCommandHandler(
     ICurrentRequestContext requestContext,
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
-    ChatAuditFacts audit) : IRequestHandler<ClearChannelPermissionsCommand, Result<ChannelPermissionsDto>>
+    ChatAuditFacts audit,
+    Notrelix.Application.Features.Chat.Calls.Services.ChatCallPermissionRefresh? calls = null) : IRequestHandler<ClearChannelPermissionsCommand, Result<ChannelPermissionsDto>>
 {
     public async Task<Result<ChannelPermissionsDto>> Handle(ClearChannelPermissionsCommand request, CancellationToken cancellationToken)
     {
         var dto = await ChannelPermissionUpdates.ApplyAsync(
-            db, members, audit, request.WorkspaceId, request.ChannelId, requestContext.UserId, Array.Empty<ChannelPermissionEntry>(), clock.UtcNow, cancellationToken);
+            db, members, audit, request.WorkspaceId, request.ChannelId, requestContext.UserId, Array.Empty<ChannelPermissionEntry>(), clock.UtcNow, cancellationToken, calls);
         return Result<ChannelPermissionsDto>.Success(dto);
     }
 }

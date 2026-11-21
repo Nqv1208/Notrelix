@@ -9,6 +9,7 @@
 
 import type { MockStore } from "../../state/mock-store";
 import type { ChatPermissionEntryRecord } from "./chat-permissions";
+import type { MockCallRecord } from "./chat-calls";
 import type {
   ChatAttachmentRecord,
   ChatDigestMail,
@@ -99,6 +100,9 @@ export class MockChatState {
   /** Blocks keyed by `${workspaceId}|${blockerId}|${blockedId}` (backend PersonBlock). */
   /** Blocks as `workspaceId|blocker|blocked`, with the time the block was made (newest first on read). */
   readonly blocks = new Map<string, string>();
+  /** Calls by id (backend Call): at most one live call per space. */
+  readonly calls = new Map<string, MockCallRecord>();
+  private callCounter = 0;
 
   private readonly streamVersions = new Map<string, number>();
   private readonly idCounters: Record<ChatIdKind, number> = {
@@ -138,6 +142,8 @@ export class MockChatState {
     this.directPairs.clear();
     this.permissionOverrides.clear();
     this.blocks.clear();
+    this.calls.clear();
+    this.callCounter = 0;
     this.limitHits.clear();
     this.limitOverrides.clear();
     this.retentionPolicies.clear();
@@ -154,6 +160,11 @@ export class MockChatState {
     this.idCounters.attachment = 0;
     this.writeTick = 0;
     this.eventCounter = 0;
+  }
+
+  nextCallId(): string {
+    this.callCounter += 1;
+    return `c7000000-0000-4000-8000-${String(this.callCounter).padStart(12, "0")}`;
   }
 
   nextId(kind: ChatIdKind): string {

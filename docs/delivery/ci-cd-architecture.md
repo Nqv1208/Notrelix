@@ -30,7 +30,7 @@ review_on:
 
 One workflow, `.github/workflows/ci.yml` (`Notrelix CI`), is the pull-request gate. It is the single orchestrator: jobs run in parallel and only the side that changed. A merge needs one required check, `CI gate`.
 
-Continuous delivery is dormant (TRANSITION). `release.yml` waits for a `Notrelix CI` run that contains a `release-candidate` job, and `ci.yml` has no such job, so release, promotion and deploy do not run until `ci.yml` produces that input again.
+A push to `main` runs the CI gate only: it builds no release candidate and deploys nothing. Delivery runs from `ci.yml` on a push to a `release/**` branch. After `CI gate` is green, `release-plan` runs `deliveryctl plan`; when the pushed range touches deployable code, `release-images` (`container-ci.yml`) builds each image natively for amd64 and arm64, scans it, and publishes one index digest per image. `release-candidate` builds the manifest from those digests, `release-stack` (`stack-smoke.yml`) runs the full stack on exactly those digests, and `release-seal` attests the manifest and uploads the `release-candidate` artifact. `release.yml` then deploys it to `staging`. Documentation-only and workflow-only pushes produce no candidate. Production is `promote-release.yml`, started by hand against a staging-verified release, behind the `production` GitHub Environment approval.
 
 ## 2. Canonical authorities
 
@@ -63,7 +63,7 @@ changes -> backend-unit ------\
 - `dependencies` — calls `security-ci.yml` (reusable) for the NuGet and pnpm dependency audit.
 - `CI gate` — fails unless every job passed or was skipped as not needed.
 
-Other workflows: `security-scheduled` and `codeql` (scheduled/code scanning), `postgres-image` (derived postgres runtime image), `stack-smoke`, `container-ci` (`workflow_call` only, no caller), and the dormant release path (section 9).
+Other workflows: `security-scheduled` and `codeql` (scheduled/code scanning), `postgres-image` (derived postgres runtime image), `stack-smoke`, `container-ci` (`workflow_call`, called by the `release-images` job), and the release path (section 9).
 
 Not in any pull-request workflow, so not gated by CI today:
 
@@ -77,7 +77,7 @@ Not in any pull-request workflow, so not gated by CI today:
 
 ## 9. Release state machine
 
-PR CI proves mergeability. Production release subjects are created only from trusted `main` CI.
+PR CI proves mergeability. Production release subjects are created only from trusted `release/**` CI; `main` CI never builds a candidate or deploys.
 
 ```text
 VERIFIED_CHANGE
@@ -131,7 +131,7 @@ Release readiness, the release stages and the acceptance of a version by the own
 
 ### 13.3 Transition
 
-Continuous delivery is dormant (§1). Until `ci.yml` produces the release-candidate input again, a release is the tagged commit on `release/X.Y`; the release path moves to release tags when delivery is reactivated.
+Staging is deployed from `release/X.Y` pushes by the release path (§1); `main` never deploys. A release is the tagged commit on `release/X.Y`; promotion to production is manual.
 
 ## 14. Architectural invariants
 

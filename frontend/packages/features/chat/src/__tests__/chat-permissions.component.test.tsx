@@ -313,14 +313,14 @@ describe("ChatHeader permissions entry", () => {
     render(
       <ChatHeader
         channel={CHANNEL}
-        members={[]}
-        viewerId="me"
         canManage
         canManagePermissions={canManagePermissions}
         onPermissions={onPermissions}
         joining={false}
-        authorName={() => "x"}
         copy={en}
+        infoOpen={false}
+        onToggleInfo={vi.fn()}
+        onOpenSection={vi.fn()}
         onOpenList={vi.fn()}
         onRename={vi.fn()}
         onToggleArchive={vi.fn()}
@@ -328,12 +328,9 @@ describe("ChatHeader permissions entry", () => {
         onSetLevel={vi.fn()}
       />,
     );
-    fireEvent.keyDown(
-      screen.getByRole("button", { name: "Channel settings" }),
-      {
-        key: "Enter",
-      },
-    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "More" }), {
+      key: "Enter",
+    });
     return onPermissions;
   }
 
@@ -447,10 +444,9 @@ describe("ChatWorkspace channel permissions and moderation", () => {
     const general = await openGeneral(s, "owner");
     await screen.findByRole("combobox", { name: /Message #general/ });
 
-    fireEvent.keyDown(
-      await screen.findByRole("button", { name: "Channel settings" }),
-      { key: "Enter" },
-    );
+    fireEvent.keyDown(await screen.findByRole("button", { name: "More" }), {
+      key: "Enter",
+    });
     fireEvent.click(
       await screen.findByRole("menuitem", { name: "Permissions" }),
     );

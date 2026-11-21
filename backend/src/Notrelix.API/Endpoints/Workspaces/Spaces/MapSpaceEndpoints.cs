@@ -14,6 +14,7 @@ public static class MapSpaceEndpoints
 
         group.MapGetWorkspaceSpaces();
         group.MapGetSpaceTree();
+        group.MapGetDeletedSpaces();
         group.MapCreateSpace();
 
         var byIdGroup = app

@@ -48,7 +48,9 @@ export const authSsoStep = {
     initials: "MA",
     providerLabel: "Microsoft Entra",
     domain: "minhan.vn",
+    enforced: false,
   },
+  error: null,
 } as const;
 
 export function authForgotScenario(

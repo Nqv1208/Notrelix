@@ -18,6 +18,9 @@ public sealed record CompleteStepUpMfaCommand
     public required StepUpPurpose Purpose { get; init; }
     public required string ChallengeToken { get; init; }
     public required string Code { get; init; }
+
+    /// <summary>What the proof is for, when the purpose acts on one thing (see <see cref="StepUpTarget"/>).</summary>
+    public string? Target { get; init; }
 }
 
 public sealed class CompleteStepUpMfaCommandHandler
@@ -51,6 +54,7 @@ public sealed class CompleteStepUpMfaCommandHandler
             request.Purpose,
             request.ChallengeToken,
             request.Code,
+            request.Target,
             cancellationToken);
     }
 }

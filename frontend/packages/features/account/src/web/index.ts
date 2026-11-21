@@ -47,12 +47,35 @@ export {
 } from "./appearance/account-appearance-surface";
 export type { AccountLocale } from "./shared/account-surface-model";
 
+export { accountTokensCatalog } from "./tokens/account-tokens.catalog";
+export {
+  accountTokensCopy,
+  type AccountTokensCopy,
+} from "./tokens/account-tokens.copy";
+export { useAccountTokensCopy } from "./tokens/use-account-tokens-copy";
+export {
+  AccountTokensSurface,
+  type AccountTokensIssueFlow,
+  type AccountTokensSurfaceProps,
+} from "./tokens/account-tokens-surface";
+export { createUseApiTokens } from "./query/hooks/use-api-tokens";
+
 export { accountSecurityCatalog } from "./security/account-security.catalog";
 export {
   accountSecurityCopy,
   type AccountSecurityCopy,
 } from "./security/account-security.copy";
 export { useAccountSecurityCopy } from "./security/use-account-security-copy";
+export {
+  AccountProvidersSurface,
+  type AccountProvidersFlow,
+  type AccountProvidersSurfaceProps,
+} from "./providers/account-providers-surface";
+export {
+  AccountEmailSurface,
+  type AccountEmailFlow,
+  type AccountEmailSurfaceProps,
+} from "./email/account-email-surface";
 export {
   AccountSecuritySurface,
   relativeAge,
@@ -64,6 +87,14 @@ export {
   type AccountSecuritySurfaceProps,
   type AccountSessionView,
 } from "./security/account-security-surface";
+export {
+  AccountSsoPanel,
+  type AccountSsoActions,
+  type AccountSsoPanelProps,
+  type AccountSsoState,
+  type SsoResult,
+} from "./security/account-sso-panel";
+export { AccountSsoSection } from "./security/account-sso-section";
 
 export { accountNotificationsCatalog } from "./notifications/account-notifications.catalog";
 export {

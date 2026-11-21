@@ -47,6 +47,7 @@ export function WorkspaceScopeBoundary({ children }: { children: ReactNode }) {
       isError: workspaceContext.isError,
       hasData: workspaceContext.workspace !== null,
       errorKind: errorKind(workspaceContext.error),
+      isArchived: workspaceContext.workspace?.isArchived === true,
     },
   });
 

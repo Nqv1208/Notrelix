@@ -11,7 +11,9 @@ import {
   type FormQuestionSettings,
   type NewFormQuestion,
   type FormDetail,
+  type FormPublicAccess,
   type FormQuestion,
+  type PublicForm,
   type FormSubmission,
   type FormSubmissionStatus,
 } from "@notrelix/work-management-core";
@@ -60,6 +62,36 @@ interface SubmissionWire {
   payloadJson?: string | null;
   reason?: string | null;
 }
+
+interface PublicAccessWire {
+  isPublic?: boolean;
+  publicKey?: string | null;
+}
+interface PublicFormWire {
+  name?: string | null;
+  description?: string | null;
+  captchaSiteKey?: string | null;
+  questions?:
+    | {
+        key?: string | null;
+        label?: string | null;
+        type?: string | null;
+        required?: boolean;
+        placeholder?: string | null;
+        helpText?: string | null;
+        maxLength?: number | null;
+        minValue?: number | null;
+        maxValue?: number | null;
+        options?: { key?: string; label?: string }[] | null;
+      }[]
+    | null;
+}
+
+/** Calls with no session: a 401 must not start a refresh or end a session that is not there. */
+const ANONYMOUS = {
+  skipAuthRefresh: true,
+  skipGlobalErrorToast: true,
+} as const;
 
 type AddQuestionBody = OperationRequestBody<"WorkManagement.Forms.AddQuestion">;
 type UpdateQuestionBody =
@@ -124,6 +156,16 @@ function mapQuestion(row: QuestionWire): FormQuestion | null {
         : [],
     ),
   };
+}
+
+type SetPublicAccessBody =
+  OperationRequestBody<"WorkManagement.Forms.SetPublicAccess">;
+type SubmitPublicBody =
+  OperationRequestBody<"WorkManagement.PublicForms.Submit">;
+
+function mapPublicAccess(row: PublicAccessWire | null): FormPublicAccess {
+  const publicKey = row?.publicKey || null;
+  return { isPublic: row?.isPublic === true && publicKey !== null, publicKey };
 }
 
 /** The version a body-less write names, as the producer's `expectedVersion` query parameter. */
@@ -290,6 +332,85 @@ export function createFormApi(client: NotrelixClient) {
         ];
       });
       return { items, nextCursor: page?.nextCursor ?? null };
+    },
+
+    /** Whether the form is public, with its key (workspace Owner or Admin; anyone else is refused 403/404). */
+    async getFormPublicAccess(formId: string): Promise<FormPublicAccess> {
+      return mapPublicAccess(
+        await api.get<PublicAccessWire>(endpoints.forms.publicAccess(formId)),
+      );
+    },
+
+    /** Switches the form public (a key is minted, or kept when it already is) or private (the key is cleared). */
+    async setFormPublicAccess(
+      formId: string,
+      enabled: boolean,
+    ): Promise<FormPublicAccess> {
+      const body: SetPublicAccessBody = { enabled };
+      return mapPublicAccess(
+        await api.put<PublicAccessWire>(
+          endpoints.forms.publicAccess(formId),
+          body,
+        ),
+      );
+    },
+
+    /** The form an anonymous visitor fills; 404 for anything not open to the public, without saying why. */
+    async getPublicForm(publicKey: string): Promise<PublicForm> {
+      const row = await api.get<PublicFormWire>(
+        endpoints.publicForms.detail(publicKey),
+        ANONYMOUS,
+      );
+      return {
+        name: row.name ?? "",
+        description: row.description ?? "",
+        captchaSiteKey: row.captchaSiteKey || null,
+        questions: (row.questions ?? []).flatMap((question) =>
+          question.key
+            ? [
+                {
+                  id: question.key,
+                  key: question.key,
+                  label: question.label ?? "",
+                  type: parseFormQuestionType(question.type),
+                  required: question.required === true,
+                  boardFieldId: null,
+                  position: "",
+                  placeholder: question.placeholder ?? null,
+                  helpText: question.helpText ?? null,
+                  maxLength: question.maxLength ?? null,
+                  minValue: question.minValue ?? null,
+                  maxValue: question.maxValue ?? null,
+                  options: (question.options ?? []).flatMap((option) =>
+                    option.key
+                      ? [{ key: option.key, label: option.label ?? option.key }]
+                      : [],
+                  ),
+                } satisfies FormQuestion,
+              ]
+            : [],
+        ),
+      };
+    },
+
+    /**
+     * Sends an anonymous response. The captcha token is single use, so a retry needs a new one; the
+     * honeypot (`website`) is empty for a person.
+     */
+    async submitPublicForm(
+      publicKey: string,
+      answers: Readonly<Record<string, unknown>>,
+      captchaToken: string,
+      honeypot = "",
+    ): Promise<void> {
+      const body: SubmitPublicBody = {
+        answers: { ...answers },
+        captchaToken,
+        website: honeypot,
+      };
+      await api.post<void>(endpoints.publicForms.submissions(publicKey), body, {
+        ...ANONYMOUS,
+      });
     },
 
     /** The totals of all responses by tab, whatever pages are loaded. */

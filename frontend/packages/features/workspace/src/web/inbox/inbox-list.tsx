@@ -210,9 +210,9 @@ export function InboxRow({
         {item.snoozedWhen ? (
           <span
             data-f="snoozed-when"
-            className="mt-[5px] inline-flex h-5 items-center gap-1 rounded-full bg-state-selected px-[7px] text-micro leading-[1.45] font-semibold text-state-selected-foreground"
+            className="mt-[3px] inline-flex h-[22px] items-center gap-[5px] rounded-full bg-state-selected px-2 text-xs leading-[1.45] font-semibold text-state-selected-foreground"
           >
-            <Clock aria-hidden="true" className="size-3" />
+            <Clock aria-hidden="true" className="size-[13px]" />
             {formatCopy(copy.snoozedBack, { when: item.snoozedWhen })}
           </span>
         ) : null}

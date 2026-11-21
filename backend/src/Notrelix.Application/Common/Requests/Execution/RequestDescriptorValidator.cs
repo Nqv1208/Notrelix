@@ -96,6 +96,18 @@ public static class RequestDescriptorValidator
                 "A tenant-scoped write must require a permission so the access facts, and with them account suspension, are always evaluated.");
         }
 
+        var followsResource = ApiTokenScopeMap.ResourceHostedRequests.Contains(requestType.FullName ?? string.Empty);
+        if (followsResource && scope != ApplicationScopeKind.Resource)
+        {
+            throw Misconfigured(requestType, "A request whose token scope follows its resource must be Resource scoped.");
+        }
+
+        var followsHost = ApiTokenScopeMap.LocatedHostRequests.ContainsKey(requestType.FullName ?? string.Empty);
+        if (followsHost && (scope != ApplicationScopeKind.Resource || followsResource))
+        {
+            throw Misconfigured(requestType, "A request whose token scope follows its located host must be Resource scoped and not name its host itself.");
+        }
+
         return new RequestDescriptor(
             requestType,
             kind,
@@ -104,7 +116,10 @@ public static class RequestDescriptorValidator
             dataAccess,
             access,
             isIdempotent,
-            requiresExpectedVersion);
+            requiresExpectedVersion,
+            followsResource || followsHost ? null : ApiTokenScopeMap.RequiredScope(requestType, kind, dataAccess),
+            followsResource,
+            followsHost);
     }
 
     private static TClassification SingleClassification<TClassification>(

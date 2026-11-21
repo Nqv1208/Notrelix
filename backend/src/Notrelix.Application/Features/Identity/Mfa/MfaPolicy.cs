@@ -8,6 +8,9 @@ public static class MfaPolicy
     /// <summary>Lifetime of a single-use challenge issued after credential verification.</summary>
     public static readonly TimeSpan ChallengeTtl = TimeSpan.FromMinutes(5);
 
+    /// <summary>Lifetime of the single-use token that opens required enrollment (scan a QR code, type a code).</summary>
+    public static readonly TimeSpan EnrollmentTtl = TimeSpan.FromMinutes(10);
+
     /// <summary>Maximum verification attempts allowed per challenge within its TTL window.</summary>
     public const int ChallengeMaxAttempts = 5;
 

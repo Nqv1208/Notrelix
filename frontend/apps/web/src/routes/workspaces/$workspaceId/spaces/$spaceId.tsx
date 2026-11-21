@@ -8,10 +8,12 @@ import {
   describeWorkspaceFailure,
   identityToneFor,
   markToneFor,
+  SPACE_RESTORE_DAYS,
   spaceMemberKey,
   spacePath,
   type SpaceMemberEntry,
   type SpaceRole,
+  type SpaceSubjectType,
   type SpaceTab,
 } from "@notrelix/features-workspace/core";
 import {
@@ -96,7 +98,13 @@ export function SpacePage() {
   const viewer = useWorkspaceViewer(workspaceId);
   const tree = hooks.useSpaceTree(workspaceId);
   const index = useMemo(() => buildSpaceIndex(tree.data ?? []), [tree.data]);
-  const node = index.byId.get(spaceId) ?? null;
+  const detail = hooks.useSpace(workspaceId, spaceId);
+  // The page shows the live record; the tree adds position and my access.
+  const treeNode = index.byId.get(spaceId) ?? null;
+  const node = useMemo(
+    () => (treeNode && detail.data ? { ...treeNode, ...detail.data } : null),
+    [treeNode, detail.data],
+  );
   const canManage = node?.access === "Manager";
   const asMember = search.as === "member" && canManage;
   const members = hooks.useSpaceMembers(workspaceId, node ? spaceId : null);
@@ -120,6 +128,42 @@ export function SpacePage() {
     ].join(":"),
   );
   const mover = useMoveToSpace();
+
+  // The members tab reads its own server-paged, server-filtered list (role and kind).
+  const [memberFilter, setMemberFilter] = useState<{
+    role: SpaceRole | null;
+    kind: SpaceSubjectType | null;
+  }>({ role: null, kind: null });
+  const memberPages = hooks.useSpaceMembersPage(
+    workspaceId,
+    node ? spaceId : null,
+    memberFilter,
+    tab === "members",
+  );
+  const memberTabEntries = useMemo(
+    () => memberPages.data?.pages.flatMap((page) => page.entries) ?? null,
+    [memberPages.data],
+  );
+  const onMemberFilterChange = useCallback(
+    (next: { role: SpaceRole | null; kind: SpaceSubjectType | null }) =>
+      setMemberFilter((current) =>
+        current.role === next.role && current.kind === next.kind
+          ? current
+          : next,
+      ),
+    [],
+  );
+  const membersPaging = useMemo(
+    () => ({
+      hasMore: memberPages.hasNextPage && !memberPages.isPlaceholderData,
+      loadingMore: memberPages.isFetchingNextPage,
+      loadMoreFailed:
+        memberPages.isFetchNextPageError && memberTabEntries !== null,
+      onLoadMore: () => void memberPages.fetchNextPage(),
+      onFilterChange: onMemberFilterChange,
+    }),
+    [memberPages, memberTabEntries, onMemberFilterChange],
+  );
 
   const extra = useSpaceMembersExtra(
     workspaceId,
@@ -146,11 +190,13 @@ export function SpacePage() {
   } | null>(null);
   const [saveStatus, setSaveStatus] = useState<SpaceSaveStatus>("idle");
   const [archiveRefused, setArchiveRefused] = useState(false);
+  const [deleteRefused, setDeleteRefused] = useState(false);
 
   // A different Space is a new page: drop its transient write state.
   useEffect(() => {
     setSaveStatus("idle");
     setArchiveRefused(false);
+    setDeleteRefused(false);
     setAddError(null);
     setExpandedTeams([]);
   }, [spaceId]);
@@ -354,11 +400,18 @@ export function SpacePage() {
         : node,
     [copy, node],
   );
-  const space: SectionState<typeof displayNode> = tree.isError
-    ? { status: "error" }
-    : !tree.isSuccess
-      ? { status: "loading" }
-      : { status: "ready", data: displayNode };
+  // NotFound (missing, outsider, another workspace) is a ready `null`; any other failure is an error.
+  const detailGone =
+    detail.isError &&
+    describeWorkspaceFailure(detail.error).kind === "not-found";
+  const space: SectionState<typeof displayNode> =
+    tree.isError || (detail.isError && !detailGone)
+      ? { status: "error" }
+      : detailGone
+        ? { status: "ready", data: null }
+        : !tree.isSuccess || !detail.isSuccess
+          ? { status: "loading" }
+          : { status: "ready", data: displayNode };
   const firstSteps =
     canManage &&
     content.status === "ready" &&
@@ -768,6 +821,38 @@ export function SpacePage() {
     );
   }, [copy, hint, mutations.archive, node, spaceId]);
 
+  const onDelete = useCallback(() => {
+    if (!node) return;
+    setDeleteRefused(false);
+    mutations.remove.mutate(
+      { spaceId, expectedVersion: node.version },
+      {
+        onSuccess: () => {
+          toast.success(
+            formatCopy(copy.toasts.deleted, {
+              name: node.name,
+              days: String(SPACE_RESTORE_DAYS),
+            }),
+          );
+          // The department is gone from the tree: land where it can be restored.
+          void navigate({
+            to: "/workspaces/$workspaceId/deleted-spaces",
+            params: { workspaceId },
+          });
+        },
+        onError: (error) => {
+          const failure = toastFailure(
+            formatCopy(copy.toasts.deleteFailed, { name: node.name }),
+            error,
+            hint,
+          );
+          // WSP-022: content the member cannot see can still block it.
+          if (failure.kind === "rule") setDeleteRefused(true);
+        },
+      },
+    );
+  }, [copy, hint, mutations.remove, navigate, node, spaceId, workspaceId]);
+
   const onUnarchive = useCallback(() => {
     if (!node) return;
     mutations.unarchive.mutate(
@@ -829,6 +914,14 @@ export function SpacePage() {
             : null
         }
         members={sectionState(members, members.data)}
+        membersTab={
+          memberPages.isError && memberTabEntries === null
+            ? { status: "error" }
+            : memberTabEntries === null
+              ? { status: "loading" }
+              : { status: "ready", data: memberTabEntries }
+        }
+        membersPaging={membersPaging}
         candidateUsers={candidateUsers}
         candidateTeams={sectionState(teams, teams.data)}
         pendingMemberKeys={pendingMemberKeys}
@@ -863,17 +956,31 @@ export function SpacePage() {
         onUnarchive={onUnarchive}
         onSave={onSave}
         onArchive={onArchive}
-        onDelete={null}
+        onDelete={onDelete}
+        deleting={mutations.remove.isPending}
+        deleteRefused={deleteRefused}
+        onOpenTrash={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/deleted-spaces",
+            params: { workspaceId },
+          })
+        }
         onAddMembers={onAddMembers}
         onChangeMemberRole={onChangeMemberRole}
         onRemoveMember={onRemoveMember}
-        onRetry={() => void tree.refetch()}
+        onRetry={() => {
+          void tree.refetch();
+          void detail.refetch();
+        }}
         onRetryContent={() => {
           resources.retry();
           if (placements.isError) void placements.refetch();
           if (pages.isError) void pages.refetch();
         }}
-        onRetryMembers={() => void members.refetch()}
+        onRetryMembers={() => {
+          void members.refetch();
+          void memberPages.refetch();
+        }}
       />
       {mover.dialog}
       {createResource.dialog}

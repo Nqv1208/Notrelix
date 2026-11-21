@@ -96,6 +96,8 @@ export interface TeamRowView {
     readonly count: number;
   };
   readonly lead: TeamAvatarView | null;
+  /** A live Team whose last lead left the workspace (LD-12); unknown until the extras are read. */
+  readonly needsLead: boolean;
   readonly usage: readonly TeamUsageView[];
   /** "Lưu trữ 20/09 · Nguyễn Thu Hà" for an archived Team. */
   readonly archivedLine: string | null;
@@ -195,6 +197,7 @@ export function buildTeamRows(
             tone: identityToneFor(lead.userId),
           }
         : null,
+      needsLead: !archived && info !== null && lead === null,
       usage,
       archivedLine:
         archived && info?.archivedAt

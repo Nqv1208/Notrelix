@@ -147,6 +147,56 @@ public class MessageHandlerTests
         _sequences.Verify(s => s.LockAsync(space.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // ── Sticker (UC-CHT-I06) ─────────────────────────────────────────────────
+
+    private static SendMessageCommand SendSticker(Guid workspaceId, Guid spaceId, string stickerId, string clientMessageId = "sticker-1") =>
+        new(workspaceId, spaceId, string.Empty, clientMessageId, null, StickerId: stickerId);
+
+    [Fact]
+    public async Task SendSticker_ByAMember_StoresAStickerMessageWithNoTypedText_AndTheSameKeyStoresItOnce()
+    {
+        var space = Channel();
+        space.AddMember(_member, MembershipRole.Member, Now);
+        AsUser(_member);
+
+        var first = await SendHandler().Handle(SendSticker(_workspaceId, space.Id, "rocket"), CancellationToken.None);
+        var again = await SendHandler().Handle(SendSticker(_workspaceId, space.Id, "rocket"), CancellationToken.None);
+
+        first.Data!.Created.Should().BeTrue();
+        first.Data.Message.StickerId.Should().Be("rocket");
+        first.Data.Message.Content.Should().Be("Sticker: Rocket");
+        again.Data!.Created.Should().BeFalse();
+        _messages.Where(m => m.SpaceId == space.Id).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task SendSticker_ByAPersonNotInTheSpace_IsNotFound_AndInAnArchivedChannelIsRefused()
+    {
+        var space = Channel();
+        AsUser(_member);
+        var notIn = () => SendHandler().Handle(SendSticker(_workspaceId, space.Id, "heart"), CancellationToken.None);
+        await notIn.Should().ThrowAsync<NotFoundException>();
+
+        space.AddMember(_member, MembershipRole.Member, Now);
+        Archived(space);
+        var archived = () => SendHandler().Handle(SendSticker(_workspaceId, space.Id, "heart"), CancellationToken.None);
+        await archived.Should().ThrowAsync<ConflictException>();
+        _messages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SendSticker_Validator_AcceptsACatalogStickerAlone_AndRefusesAnythingElse()
+    {
+        var validator = new SendMessageCommandValidator();
+        var space = Guid.NewGuid();
+
+        validator.Validate(SendSticker(_workspaceId, space, "heart")).IsValid.Should().BeTrue();
+        validator.Validate(SendSticker(_workspaceId, space, "not-a-sticker")).IsValid.Should().BeFalse("only Notrelix stickers exist");
+        validator.Validate(SendSticker(_workspaceId, space, "heart") with { Content = "typed text" }).IsValid.Should().BeFalse("a sticker has no text");
+        validator.Validate(SendSticker(_workspaceId, space, "heart") with { VoiceMessage = true }).IsValid.Should().BeFalse();
+        validator.Validate(SendSticker(_workspaceId, space, "heart") with { ClientMessageId = " " }).IsValid.Should().BeFalse();
+    }
+
     [Fact]
     public async Task Send_WithTheSameClientMessageIdAgain_ReturnsTheStoredMessageAndStoresNothing()
     {

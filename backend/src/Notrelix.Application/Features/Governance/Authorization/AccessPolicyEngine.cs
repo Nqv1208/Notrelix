@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.WorkManagement.Public.Authorization;
+using Notrelix.Application.Features.Workspaces.Public.Invitations;
 using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Governance.Authorization;
@@ -129,7 +130,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 AccessDenialCodes.FeatureNotEnabled);
         }
 
-        return RefuseWriteOnArchived(facts, request) ?? AccessDecision.Allow();
+        return RefuseWriteOnArchived(descriptor, facts, request) ?? AccessDecision.Allow();
     }
 
     /// <summary>
@@ -141,7 +142,7 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
     /// do a person's own preferences and follows (<see cref="IPersonalBoardRequest"/>), which
     /// change nothing on the Board.
     /// </summary>
-    private static AccessDecision? RefuseWriteOnArchived(AccessFacts facts, object request)
+    private static AccessDecision? RefuseWriteOnArchived(RequestDescriptor descriptor, AccessFacts facts, object request)
     {
         // A suspended or closed account is read-only for everyone in it, whatever the request (owner decision:
         // the platform operator suspends an account; its content stays and nothing is deleted).
@@ -151,6 +152,30 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
                 AccessDecisionKind.Forbidden,
                 "This account is suspended. It is read-only until the suspension is lifted.",
                 AccessDenialCodes.AccountSuspended);
+        }
+
+        // An archived workspace is read-only for every member, Owner and Admin included: every write inside it is
+        // refused (a Board lifecycle write too) except the workspace lifecycle, which is the way back, and a
+        // person's own state, which changes nothing the workspace holds.
+        if (request is IWriteRequest
+            && descriptor.Scope is ApplicationScopeKind.Workspace or ApplicationScopeKind.Resource
+            && facts.WorkspaceArchived
+            && request is not (IWorkspaceLifecycleRequest or IPersonalWorkspaceRequest or IPersonalBoardRequest))
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "This workspace is archived. It is read-only until an owner unarchives it.",
+                AccessDenialCodes.WorkspaceArchived);
+        }
+
+        // The workspace setting AllowGuestInvites: while off, no one introduces a Guest by invitation, Owner and Admin
+        // included. Decided after the permission rules, so a caller who could not make the request never learns the setting.
+        if (request is IWriteRequest and IGuestInvitationRequest { IntroducesGuest: true } && !facts.GuestInvitesAllowed)
+        {
+            return AccessDecision.Deny(
+                AccessDecisionKind.Forbidden,
+                "Guest invitations are turned off for this workspace.",
+                AccessDenialCodes.GuestInvitesOff);
         }
 
         if (request is not IWriteRequest || request is IBoardLifecycleRequest or IPersonalBoardRequest)
@@ -286,6 +311,28 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
         if (permission.Action == PermissionAction.DeleteWorkspace)
         {
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
+        // Switching a form public exposes it to people with no account, so it is a workspace-level right (Owner
+        // and Admin by default, ManageWorkspaceSettings), never a Board level: a Board Manager who is only a
+        // Member cannot do it. A form is a Board child, so this is decided here, before the Board path would
+        // refuse a workspace-level action. A missing form is NotFound; a Guest learns nothing about it.
+        if (permission.Resource?.Kind.Value == "work-management.form"
+            && permission.Action == PermissionAction.ManageWorkspaceSettings)
+        {
+            if (!facts.ResourceExists)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            if (!removedByRole && WorkspaceRoleBaseline.Decide(role, permission.Action) == BaselineDecision.Allow)
+            {
+                return AccessDecision.Allow();
+            }
+
+            return string.Equals(role, "Guest", StringComparison.Ordinal)
+                ? AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.")
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
         // A Board child resource is decided on its parent Board (GOV-033): the

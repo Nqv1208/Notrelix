@@ -17,6 +17,8 @@ public static class RealtimeNotificationJson
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        // Redis messages are JSON text, never HTML: keep '+' and non-ASCII text as they are, not as \uXXXX.
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     /// <summary>Returns the message split around the stream version placeholder.</summary>

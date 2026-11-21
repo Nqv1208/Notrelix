@@ -136,7 +136,27 @@ describe("docs web pure surfaces", () => {
       <DocPageScreenSurface {...docsPageScreenNotFoundScenario()} />,
     );
     expect(screen.getByText(docsCopy.notFound)).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: docsCopy.notFoundTitle }),
+    ).toBeTruthy();
+    // Nothing to leave to: no button.
+    expect(screen.queryByRole("button", { name: docsCopy.notFoundBack })).toBe(
+      null,
+    );
     missing.unmount();
+
+    const onLeavePage = vi.fn();
+    const withWayBack = renderPureUi(
+      <DocPageScreenSurface
+        {...docsPageScreenNotFoundScenario()}
+        callbacks={{ onLeavePage }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.notFoundBack }),
+    );
+    expect(onLeavePage).toHaveBeenCalledTimes(1);
+    withWayBack.unmount();
 
     const empty = renderPureUi(
       <DocPageScreenSurface {...docsPageScreenEmptyScenario()} />,
@@ -202,20 +222,20 @@ describe("docs web pure surfaces", () => {
     ).toBeNull();
   });
 
-  it("FUI[docs.page.screen:versions] swaps the tools and side tabs for the compare banner and version list", () => {
+  it("FUI[docs.page.screen:versions] swaps the tools and side tabs for the version bar and version list", () => {
     renderPureUi(
       <DocPageScreenSurface {...docsPageScreenVersionsScenario()} />,
     );
 
     expect(
-      screen.getByRole("region", { name: docsCopy.versions.bar }),
-    ).toBeTruthy();
+      screen
+        .getAllByRole("status")
+        .some((node) => node.textContent?.includes("phiên bản 5")),
+    ).toBe(true);
     expect(screen.queryByRole("toolbar")).toBeNull();
     expect(
       screen.getByRole("heading", { name: docsCopy.versions.title }),
     ).toBeTruthy();
-    expect(document.querySelectorAll("ins").length).toBeGreaterThan(0);
-    expect(document.querySelectorAll("del").length).toBeGreaterThan(0);
   });
 
   it("FUI[docs.page.bar:actions] routes retry and share through callbacks and states the unavailable actions", () => {
@@ -257,6 +277,7 @@ describe("docs web pure surfaces", () => {
       docsCopy.fileMenu.duplicate,
       docsCopy.fileMenu.move,
       docsCopy.fileMenu.trash,
+      docsCopy.fileMenu.importPage,
     ]) {
       const item = screen.getByRole("menuitem", { name });
       expect(item.getAttribute("aria-disabled")).toBe("true");
@@ -302,6 +323,51 @@ describe("docs web pure surfaces", () => {
       screen.getByRole("status").textContent?.includes(docsCopy.header.offline),
     ).toBe(true);
     expect(screen.queryByText(docsCopy.header.saved)).toBeNull();
+  });
+
+  it("FUI[docs.page.bar:host-action] shows a host action before Share, and nothing extra without one", () => {
+    const withAction = renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="saved"
+        canShare
+        headerAction={<button type="button">Discuss</button>}
+      />,
+    );
+    const discuss = screen.getByRole("button", { name: "Discuss" });
+    const share = screen.getByRole("button", { name: docsCopy.header.share });
+    expect(
+      discuss.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    withAction.unmount();
+
+    renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="saved"
+        canShare
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Discuss" })).toBeNull();
+  });
+
+  it("FUI[docs.page.bar:saving] shows a spinner while saving and a check only once saved", () => {
+    const saving = renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saving" />,
+    );
+    const status = screen.getByRole("status");
+    expect(status.textContent).toContain(docsCopy.header.saving);
+    expect(status.querySelector("svg.lucide-check")).toBeNull();
+    expect(status.querySelector("svg.lucide-loader-circle")).not.toBeNull();
+    saving.unmount();
+    renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saved" />,
+    );
+    expect(
+      screen.getByRole("status").querySelector("svg.lucide-check"),
+    ).not.toBeNull();
   });
 
   it("FUI[docs.page.toolbar:menus] opens the File menu and routes its actions through callbacks", () => {

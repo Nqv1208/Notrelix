@@ -32,7 +32,13 @@ describe("identify", () => {
       email: "ha@minhan.vn",
     });
     expect(company.body?.method).toBe("sso");
-    expect(company.body?.sso?.providerLabel).toBe("Microsoft Entra");
+    expect(company.body?.sso).toEqual({
+      orgName: "Minh An Group",
+      orgInitials: "MA",
+      provider: "oidc",
+      providerLabel: "OpenID Connect",
+      enforced: false,
+    });
     const bad = await call("POST", "/auth/identify", { email: "x" });
     expect(bad.status).toBe(400);
     expect(bad.body?.errorCode).toBe("validation.failed");
@@ -286,5 +292,100 @@ describe("CSRF on the anonymous calls", () => {
     const unsafe = seen.filter((call) => call.method === "POST");
     expect(unsafe).toHaveLength(3);
     for (const call of unsafe) expect(call.csrf).toBe("mock-csrf-token");
+  });
+});
+
+describe("required two-step enrolment and the Account policy", () => {
+  const password = "mock-pass-phrase-2026";
+
+  it("signs the enrolment person in only while the Account requires it, and finishes with the first code", async () => {
+    const { call } = world();
+    const email = "required-mfa@mock.test";
+    // Off: an ordinary session.
+    expect(
+      (await call("POST", "/auth/login", { email, password })).body?.user,
+    ).toBeTruthy();
+    expect(
+      (await call("PUT", "/accounts/security-policy/mfa", { required: true }))
+        .status,
+    ).toBe(204);
+    expect((await call("GET", "/accounts/security-policy")).body).toEqual({
+      requireMfa: true,
+      canManage: true,
+    });
+
+    const login = await call("POST", "/auth/login", { email, password });
+    expect(login.body?.mfaEnrollmentRequired).toBe(true);
+    expect(login.body?.user).toBeUndefined();
+    const token = login.body?.mfaEnrollmentToken as string;
+
+    const start = await call("POST", "/auth/mfa/required-enrollment/start", {
+      enrollmentToken: token,
+    });
+    expect(start.body?.secret).toBeTruthy();
+    const wrong = await call("POST", "/auth/mfa/required-enrollment/complete", {
+      enrollmentToken: token,
+      mfaMethodId: start.body?.mfaMethodId,
+      code: "000000",
+    });
+    expect(wrong.body?.errorCode).toBe("identity.mfa.invalid-code");
+    const done = await call("POST", "/auth/mfa/required-enrollment/complete", {
+      enrollmentToken: token,
+      mfaMethodId: start.body?.mfaMethodId,
+      code: "482931",
+    });
+    expect(done.body?.recoveryCodes).toHaveLength(8);
+    // The token is single use.
+    expect(
+      (
+        await call("POST", "/auth/mfa/required-enrollment/start", {
+          enrollmentToken: token,
+        })
+      ).body?.errorCode,
+    ).toBe("identity.mfa.challenge-invalid");
+  });
+
+  it("refuses a refresh without a factor and the turning off of the factor while the Account requires it", async () => {
+    const { call, store } = world();
+    const security = store.accountPages.securityOf(
+      store.getCurrentUser().id,
+      (minutes) => store.getClock().offsetMinutes(minutes),
+    );
+    store.auth.accountMfaRequired = true;
+    // With a factor: turning it off is refused and the factor stays.
+    security.twoFactorEnabled = true;
+    const disable = await call("POST", "/auth/mfa/disable", {
+      stepUpToken: "any",
+    });
+    expect(disable.status).toBe(409);
+    expect(disable.body?.errorCode).toBe("identity.mfa.required-by-account");
+    expect(security.twoFactorEnabled).toBe(true);
+    // Without one: no new token.
+    security.twoFactorEnabled = false;
+    const refresh = await call("POST", "/auth/refresh");
+    expect(refresh.status).toBe(401);
+    expect(refresh.body?.errorCode).toBe(
+      "identity.auth.mfa-enrollment-required",
+    );
+  });
+
+  it("answers 403 to the policy write of a person who is not the Owner and shows the fact in workspace settings", async () => {
+    const { call, store } = world();
+    store.auth.accountOwner = false;
+    expect(
+      (await call("GET", "/accounts/security-policy")).body?.canManage,
+    ).toBe(false);
+    expect(
+      (await call("PUT", "/accounts/security-policy/mfa", { required: true }))
+        .status,
+    ).toBe(403);
+    store.auth.accountOwner = true;
+    expect(
+      (await call("GET", "/accounts/security-policy")).body?.canManage,
+    ).toBe(true);
+    await call("PUT", "/accounts/security-policy/mfa", { required: true });
+    const workspace = store.getWorkspaces()[0]!;
+    const settings = await call("GET", `/workspaces/${workspace.id}/settings`);
+    expect(settings.body?.enforceMfa).toBe(true);
   });
 });

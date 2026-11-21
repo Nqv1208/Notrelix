@@ -19,10 +19,15 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "views"),
   activeView: (workspaceId: string, view: string) =>
     workspaceQueryKey(workspaceId, "workspace", "views", "active", view),
+  figures: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "figures"),
   invitations: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "invitations"),
   invitationByToken: (token: string) =>
     globalQueryKey("workspace-invitation", "token", token),
+  /** One address resolved in one Account (anonymous read; never cached past the page). */
+  address: (accountId: string, slug: string) =>
+    globalQueryKey("workspace-address", accountId, slug),
   pendingInvitations: (accountId: string) =>
     accountQueryKey(accountId, "workspace-invitations", "pending"),
   activity: (workspaceId: string) =>
@@ -41,10 +46,20 @@ export const workspaceQueryKeys = {
     workspaceQueryKey(workspaceId, "workspace", "spaces"),
   spaceTree: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "spaces", "tree"),
+  /** One Space read by id; every Space write invalidates the whole prefix. */
+  spaceDetails: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "detail"),
+  spaceDetail: (workspaceId: string, spaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "detail", spaceId),
+  deletedSpaces: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "spaces", "deleted"),
   spaceMembers: (workspaceId: string, spaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "spaces", spaceId, "members"),
   teams: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "teams"),
+  /** The deleted Teams (Owner or Admin); under `teams`, so any Team write refreshes it. */
+  deletedTeams: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "workspace", "teams", "deleted"),
   team: (workspaceId: string, teamId: string) =>
     workspaceQueryKey(workspaceId, "workspace", "teams", teamId),
   teamMembers: (workspaceId: string, teamId: string) =>

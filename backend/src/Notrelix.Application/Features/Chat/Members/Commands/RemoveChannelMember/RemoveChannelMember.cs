@@ -25,7 +25,8 @@ public class RemoveChannelMemberCommandHandler(
     IDateTimeProvider clock,
     ChatSystemMessages systemMessages,
     IAccessChangeSignal access,
-    ChatAuditFacts audit) : IRequestHandler<RemoveChannelMemberCommand, Result>
+    ChatAuditFacts audit,
+    Notrelix.Application.Features.Chat.Calls.Services.ChatCallRevocation? calls = null) : IRequestHandler<RemoveChannelMemberCommand, Result>
 {
     public async Task<Result> Handle(RemoveChannelMemberCommand request, CancellationToken cancellationToken)
     {
@@ -46,6 +47,9 @@ public class RemoveChannelMemberCommandHandler(
                 await audit.MemberRemovedAsync(space, request.UserId, cancellationToken);
             // The person's live subscription to this channel closes at once (UC-CHT-C06).
             access.ChannelPerson(request.WorkspaceId, request.ChannelId, request.UserId);
+            // A live call of the channel loses the person with their access (instant revocation).
+            if (calls is not null)
+                await calls.ReleaseAsync(request.WorkspaceId, space.Id, request.UserId, clock.UtcNow, cancellationToken);
         }
         return Result.Success();
     }

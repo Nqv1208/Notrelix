@@ -4,6 +4,7 @@ import { I18nProvider } from "@notrelix/i18n";
 import {
   fireEvent,
   renderPureUi,
+  act,
   screen,
   waitFor,
   within,
@@ -298,6 +299,38 @@ describe("BoardCalendarView on the ERP board", () => {
       toast.success.mock.calls[0]?.[1]?.id,
     );
   });
+
+  it("still reports a failed move when another item was moved before the first answered", async () => {
+    let calls = 0;
+    let refuse!: (error: Error) => void;
+    const { container } = renderCalendar(erpOwnerAccess(), {
+      updateCard: () =>
+        ++calls === 1
+          ? new Promise<void>((_resolve, reject) => {
+              refuse = reject;
+            })
+          : Promise.resolve(),
+    });
+    await ready();
+    const move = (key: string, day: string) => {
+      fireEvent.dragStart(eventOf(container, key), {
+        dataTransfer: dataTransfer(),
+      });
+      const target = dayCell(container, day);
+      fireEvent.dragOver(target, { dataTransfer: dataTransfer() });
+      fireEvent.drop(target, { dataTransfer: dataTransfer() });
+    };
+    move("ERP-151", "2026-10-21");
+    await waitFor(() => expect(calls).toBe(1));
+    move("ERP-146", "2026-10-20");
+    await waitFor(() => expect(calls).toBe(2));
+    await act(async () => refuse(new Error("rejected")));
+    await waitFor(() =>
+      expect(toast.error.mock.calls.map((call) => call[0])).toContain(
+        "Chưa lưu được ngày của ERP-151",
+      ),
+    );
+  }, 20_000);
 
   it("keeps the new position and offers Thử lại when the write fails", async () => {
     const { container } = renderCalendar(erpOwnerAccess(), {

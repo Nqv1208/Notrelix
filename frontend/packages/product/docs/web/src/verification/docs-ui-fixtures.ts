@@ -282,68 +282,75 @@ export const COMMENTS: readonly DocCommentView[] = [
 export const VERSIONS: readonly DocVersionView[] = [
   {
     id: "v1",
+    number: 7,
     kind: "automatic",
     author: KL,
     time: "16:40",
     day: "Hôm qua",
     stamp: "11/10 16:40",
-    summary: "Đổi trạng thái Đang soạn → Chờ duyệt",
+    tag: "Tự động",
     current: true,
   },
   {
     id: "v2",
+    number: 6,
     kind: "automatic",
     author: KL,
     time: "15:05",
     day: "Hôm qua",
     stamp: "11/10 15:05",
-    summary: "Sửa bước 3 · thêm 2 dòng danh sách kiểm",
+    tag: "Tự động",
   },
   {
     id: "v3",
+    number: 5,
     kind: "automatic",
     author: LT,
     time: "15:42",
     day: "10/10",
     stamp: "10/10 15:42",
-    summary: "Thêm lưu ý thuế GTGT cho hoá đơn từ 20 triệu đồng",
+    tag: "Tự động",
   },
   {
     id: "v4",
+    number: 4,
     kind: "named",
     author: KL,
     time: "11:20",
     day: "10/10",
     stamp: "10/10 11:20",
     name: "Bản trình Ban giám đốc",
-    summary: "Thêm mục Việc liên quan",
+    tag: "Tự động",
   },
   {
     id: "v5",
+    number: 3,
     kind: "restore",
     author: KL,
     time: "17:05",
     day: "08/10",
     stamp: "08/10 17:05",
-    summary: "Khôi phục từ phiên bản 05/10 14:20",
+    tag: "Tự động",
   },
   {
     id: "v6",
+    number: 2,
     kind: "automatic",
     author: LT,
     time: "09:40",
     day: "08/10",
     stamp: "08/10 09:40",
-    summary: "Viết lại mục 2 · bỏ bước duyệt hai cấp",
+    tag: "Tự động",
   },
   {
     id: "v7",
+    number: 1,
     kind: "automatic",
     author: KL,
     time: "14:20",
     day: "05/10",
     stamp: "05/10 14:20",
-    summary: "Tạo trang",
+    tag: "Tự động",
   },
 ];
 
@@ -588,32 +595,12 @@ export function docsPageScreenVersionsScenario(): DocPageScreenSurfaceProps {
   return {
     ...base,
     toolbar: undefined,
-    blocks: BLOCKS.map((block) => {
-      if (block.id === "b6" && block.kind === "numbered") {
-        return {
-          ...block,
-          segments: [
-            { kind: "text" as const, text: "Hoá đơn sai lệch quá " },
-            { kind: "del" as const, text: "1%" },
-            { kind: "text" as const, text: " " },
-            { kind: "ins" as const, text: "0,5%" },
-            { kind: "text" as const, text: " chuyển cho " },
-            { kind: "del" as const, text: "kế toán trưởng" },
-            { kind: "text" as const, text: " " },
-            { kind: "ins" as const, text: "trưởng nhóm" },
-            { kind: "text" as const, text: " duyệt." },
-          ],
-        };
-      }
-      if ((block.id === "b10" || block.id === "b11") && block.kind === "todo") {
-        return { ...block, inserted: true };
-      }
-      return block;
-    }),
     versions: {
       list: VERSIONS,
       selectedId: "v3",
       namedOnly: false,
+      canSave: true,
+      snapshotStatus: "ready",
     },
   };
 }

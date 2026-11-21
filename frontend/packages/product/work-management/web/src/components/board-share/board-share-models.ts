@@ -78,6 +78,8 @@ export interface BoardShareView {
   /** Shown "Show n more" past this many rows; the mockup list caps at 248 px. */
   readonly policy: "off" | "on" | "unknown";
   readonly canManage: boolean;
+  /** The Board is archived (GOV-033): read-only for everyone, so nothing is offered to add or change. */
+  readonly archived?: boolean;
   /**
    * Set when the producer discloses no entries to this reader: the list is not
    * drawn and the dialog says how many people and guests can open the Board.

@@ -19,8 +19,8 @@
 #
 # Local proof build:
 #   docker build -f infra/postgres/Dockerfile -t notrelix-postgres:gosu-proof infra/postgres
-ARG POSTGRES_BASE=postgres@sha256:0ea6700a3b4f0ae6ce746519073558aed4d88a79d8d07622a9a644946c7319c4
-ARG GO_IMAGE=golang:1.26.10-bookworm@sha256:632dff7351799a5a9954a48dc06670ade72ee44e8c351cdc0e5a57af2fea21af
+ARG POSTGRES_BASE=postgres@sha256:ce3efec6bc404f6b15ebf5d9bed6b45a9d4655aea238d7dacc3467ccb05a1175
+ARG GO_IMAGE=golang:1.26.11-bookworm@sha256:dc40a13b61304647ed7e5d581d246b86413dfc29d63c6d018310feb93cd98fc0
 
 FROM ${GO_IMAGE} AS gosu-build
 # tianon/gosu release 1.19 (the version the official image ships); the commit is pinned, the tag is not trusted.
@@ -37,6 +37,6 @@ RUN CGO_ENABLED=0 GOOS="${TARGETOS:-linux}" GOARCH="${TARGETARCH:-$(go env GOARC
 
 FROM ${POSTGRES_BASE}
 LABEL org.opencontainers.image.source="https://github.com/Nqv1208/Notrelix" \
-      org.opencontainers.image.description="postgres 16.15-bookworm with gosu rebuilt on a patched Go toolchain"
+      org.opencontainers.image.description="postgres 16.16-bookworm with gosu rebuilt on a patched Go toolchain"
 COPY --from=gosu-build --chmod=0755 /out/gosu /usr/local/bin/gosu
 RUN gosu nobody true && gosu --version

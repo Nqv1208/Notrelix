@@ -20,13 +20,13 @@ stateful = false
 
 [images.nginx-build]
 class = "build"
-source = "nginx:alpine"
-ref = "nginx:alpine@sha256:1ed1b0e1d7652937d6cbdaf4018c7b6fc009a7dd6c3047351e2eddda745de43f"
+source = "nginx:1.30.7-alpine"
+ref = "nginx:1.30.7-alpine@sha256:bef154735288bc38d99fac41ae63730684bcc661503673a04a0f9bc526ba8598"
 stateful = false
 
 [images.postgres]
 class = "runtime"
-source = "derived from postgres:16.15-bookworm with a rebuilt gosu (infra/postgres/Dockerfile)"
+source = "derived from postgres:16.16-bookworm with a rebuilt gosu (infra/postgres/Dockerfile)"
 ref = "ghcr.io/nqv1208/notrelix-postgres@sha256:6d7fa4cd052227fcd8a5917819e9dc4df1f622852c56249166d801b5cf4db679"
 compose_service = "postgres"
 deploy_env_var = "NOTRELIX_POSTGRES_IMAGE"
@@ -58,8 +58,8 @@ stateful = false
 
 [images.nginx]
 class = "runtime"
-source = "nginx:1.30-alpine-slim"
-ref = "nginx@sha256:3028fc1419f99b95c1c69f844bbaf49dc1b881750c51b497fc721ac4f02a14e6"
+source = "nginx:1.30.7-alpine-slim"
+ref = "nginx@sha256:8c950211a641ec5b23f265450517001f6bcca533666120ebe36cb4cff3d00a55"
 compose_service = "nginx"
 deploy_env_var = "NOTRELIX_NGINX_IMAGE"
 stateful = false

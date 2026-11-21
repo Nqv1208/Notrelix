@@ -18,10 +18,13 @@ import {
   previewOf,
   type ChatConversationListView,
 } from "../web/components/chat-conversation-list";
-import { ChatConversationDetails } from "../web/components/chat-conversation-view";
+import {
+  ConversationInfoFooter,
+  ConversationMemberRows,
+} from "../web/components/chat-conversation-view";
 import { ChatWorkspace } from "../web/components/chat-workspace";
 import type { ChatConversation } from "../core/types/chat";
-import { en } from "../web/components/chat.copy";
+import { en, vi as viCopy } from "../web/components/chat.copy";
 
 const WORKSPACE = mockIds.workspaces.primary;
 
@@ -122,6 +125,28 @@ describe("conversation section of the sidebar", () => {
     expect(within(groupRow).getByText("Lê Hoài An: Đã cập nhật")).toBeTruthy();
   });
 
+  it("shows the exact count of a direct conversation up to 99 and 99+ from 100", () => {
+    const render1 = (count: number) =>
+      render(
+        <ChatConversationSection
+          copy={en}
+          view={listView({
+            conversations: [conversation({ unreadCount: count })],
+          })}
+        />,
+      );
+    const first = render1(99);
+    expect(screen.getByText("99", { exact: true })).toBeTruthy();
+    first.unmount();
+    render1(120);
+    expect(screen.getByText("99+", { exact: true })).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: /^Direct message: / })
+        .getAttribute("aria-label"),
+    ).toContain("120 unread messages");
+  });
+
   it("opens a conversation and starts a new message from its buttons", () => {
     const view = listView({ conversations: [conversation()] });
     render(<ChatConversationSection copy={en} view={view} />);
@@ -163,6 +188,20 @@ describe("conversation section of the sidebar", () => {
         "UTC",
       ),
     ).toMatch(/09:05/);
+  });
+
+  it("shows a system line in the language of the copy, group or channel", () => {
+    const system = conversation({
+      lastMessage: {
+        sequence: 2,
+        authorId: "x",
+        kind: "system",
+        text: "left the group",
+        createdAt: "2026-11-10T09:05:00Z",
+      },
+    });
+    expect(previewOf(system, "me", nameOf, viCopy)).toBe("đã rời nhóm");
+    expect(previewOf(system, "me", nameOf, en)).toBe("left the group");
   });
 });
 
@@ -263,7 +302,7 @@ describe("new message dialog", () => {
 
 describe("conversation details panel", () => {
   function details(
-    overrides: Partial<Parameters<typeof ChatConversationDetails>[0]> = {},
+    overrides: Partial<Parameters<typeof ConversationInfoFooter>[0]> = {},
   ) {
     const handlers = {
       onBlock: vi.fn(),
@@ -273,26 +312,31 @@ describe("conversation details panel", () => {
       onHide: vi.fn(),
     };
     render(
-      <ChatConversationDetails
-        conversation={conversation()}
-        viewerId="me"
-        nameOf={nameOf}
-        copy={en}
-        locale="en"
-        blocked={false}
-        busy={false}
-        {...handlers}
-        {...overrides}
-      />,
+      <>
+        <ConversationMemberRows
+          conversation={overrides.conversation ?? conversation()}
+          viewerId="me"
+          nameOf={nameOf}
+          copy={en}
+        />
+        <ConversationInfoFooter
+          conversation={conversation()}
+          viewerId="me"
+          nameOf={nameOf}
+          copy={en}
+          locale="en"
+          blocked={false}
+          busy={false}
+          {...handlers}
+          {...overrides}
+        />
+      </>,
     );
     return handlers;
   }
 
   it("shows the profile of the other person with hide and block", () => {
     const handlers = details();
-    expect(
-      screen.getByRole("heading", { name: "Trần Minh Quân" }),
-    ).toBeTruthy();
     expect(screen.getByText("Conversation started")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Block person" }));
     expect(handlers.onBlock).toHaveBeenCalled();
@@ -302,7 +346,6 @@ describe("conversation details panel", () => {
 
   it("offers to unblock a blocked person", () => {
     const handlers = details({ blocked: true });
-    expect(screen.getByText("Blocked")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Unblock person" }));
     expect(handlers.onUnblock).toHaveBeenCalled();
   });
@@ -318,7 +361,7 @@ describe("conversation details panel", () => {
         ],
       }),
     });
-    expect(screen.getByText("Members, 3")).toBeTruthy();
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByText("You")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add people" }));
     expect(handlers.onAddPeople).toHaveBeenCalled();
@@ -346,11 +389,17 @@ describe("conversation details panel", () => {
 
 // ─── The workspace with a conversation open (mock backend) ──────────────────
 
-function workspaceSetup() {
+function workspaceSetup(
+  intercept?: (
+    input: RequestInfo | URL,
+    init: RequestInit | undefined,
+  ) => Response | null,
+) {
   const store = new MockStore({ ...defaultConfig });
   const client = createNotrelixClient({
     baseUrl: "http://localhost:8000/api/v1",
-    fetchImpl: (input, init) => createMockFetch(store)(input, init),
+    fetchImpl: async (input, init) =>
+      intercept?.(input, init) ?? createMockFetch(store)(input, init),
   });
   const viewerId = store.getCurrentUser().id;
   const members = store.getWorkspaceMembers(WORKSPACE);
@@ -468,5 +517,61 @@ describe("ChatWorkspace with a conversation", () => {
     expect(
       screen.getAllByRole("button", { name: "New message" }).length,
     ).toBeGreaterThan(1);
+  });
+
+  it("on a phone a person with direct messages and no channel lands on the list, where they open a conversation", async () => {
+    const noChannels = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      return /\/chat\/channels(\?|$)/.test(url) &&
+        (init?.method ?? "GET") === "GET"
+        ? new Response("[]", {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          })
+        : null;
+    };
+    const { deps, viewerId, people, others, wrapper } =
+      workspaceSetup(noChannels);
+    const service = (
+      await import("../web/query/create-chat-hooks")
+    ).createChatHooks(deps).service;
+    await service.startConversation(
+      WORKSPACE,
+      { kind: "direct", userId: others[0]! },
+      "phone-list-key",
+    );
+    const width = window.innerWidth;
+    window.innerWidth = 390;
+    try {
+      render(
+        <ChatWorkspace
+          deps={deps}
+          workspaceId={WORKSPACE}
+          viewerId={viewerId}
+          viewerRole="owner"
+          channelId={null}
+          conversationId={null}
+          onOpenConversation={vi.fn()}
+          onOpenChannel={vi.fn()}
+          people={people}
+        />,
+        { wrapper },
+      );
+      expect(
+        await screen.findByRole("heading", { name: "Direct messages" }),
+      ).toBeTruthy();
+      expect(
+        await screen.findByRole("button", {
+          name: `Direct message: ${people.get(others[0]!)!}`,
+        }),
+      ).toBeTruthy();
+    } finally {
+      window.innerWidth = width;
+    }
   });
 });

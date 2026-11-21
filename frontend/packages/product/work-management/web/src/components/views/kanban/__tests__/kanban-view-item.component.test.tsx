@@ -279,12 +279,16 @@ type ItemChange = (
   options?: { replace?: boolean },
 ) => void;
 
-function view(props: {
+function view({
+  locale = "en",
+  ...props
+}: {
   selectedItemId?: string;
   onSelectedItemChange?: ItemChange;
+  locale?: "vi" | "en";
 }) {
   return (
-    <I18nProvider catalogs={[kanbanCardCatalog]} initialLocale="en">
+    <I18nProvider catalogs={[kanbanCardCatalog]} initialLocale={locale}>
       <KanbanView
         boardId={scenario.board.id}
         workspaceId={scenario.board.workspaceId}
@@ -312,6 +316,7 @@ function scoped(children: ReactNode) {
 function renderView(props: {
   selectedItemId?: string;
   onSelectedItemChange?: ItemChange;
+  locale?: "vi" | "en";
 }) {
   return renderPureUi(scoped(view(props)));
 }
@@ -502,6 +507,63 @@ describe("KanbanView item detail through selectedItemId", () => {
     };
     renderView({ selectedItemId: "card-item", onSelectedItemChange: vi.fn() });
     expect(screen.getByText("Someone else deleted this card")).toBeTruthy();
+  });
+
+  it("says 'Một người khác' on the deleted and conflict notices when the server names no one, in Vietnamese (BC-Notices Guest boards)", () => {
+    cardQuery.current = {
+      card: undefined,
+      isLoading: false,
+      error: Object.assign(new Error("not found"), {
+        kind: "not_found",
+        code: "work-management.item.deleted",
+        details: { deletedByName: null },
+      }),
+    };
+    const { unmount } = renderView({
+      selectedItemId: "card-item",
+      onSelectedItemChange: vi.fn(),
+      locale: "vi",
+    });
+    expect(screen.getByText("Một người khác đã xoá thẻ này")).toBeTruthy();
+    unmount();
+
+    cardQuery.current = { card: existingCard(), isLoading: false, error: null };
+    itemConflict.current = {
+      conflict: true,
+      staleSchema: null,
+      changedBy: null,
+    };
+    renderView({
+      selectedItemId: "card-item",
+      onSelectedItemChange: vi.fn(),
+      locale: "vi",
+    });
+    expect(screen.getByText("Một người khác vừa sửa thẻ này")).toBeTruthy();
+  });
+
+  it("says someone else deleted the field when the server names no one, in English and Vietnamese (WMC-Var-StaleSchema-anon)", () => {
+    cardQuery.current = { card: existingCard(), isLoading: false, error: null };
+    itemConflict.current = {
+      conflict: false,
+      staleSchema: {
+        kind: "field-deleted",
+        fieldName: "Note",
+        byName: null,
+      },
+      changedBy: null,
+    };
+    for (const [locale, title] of [
+      ["en", "Someone else just deleted the field Note"],
+      ["vi", "Một người khác vừa xoá trường Note"],
+    ] as const) {
+      const { unmount } = renderView({
+        selectedItemId: "card-item",
+        onSelectedItemChange: vi.fn(),
+        locale,
+      });
+      expect(screen.getByText(title)).toBeTruthy();
+      unmount();
+    }
   });
 
   it("keeps an ordinary not-found as the one generic message", () => {

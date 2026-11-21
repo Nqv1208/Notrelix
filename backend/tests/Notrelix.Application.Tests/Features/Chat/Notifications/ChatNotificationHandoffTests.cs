@@ -1,6 +1,8 @@
+using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Features.Chat.Abstractions;
 using Notrelix.Application.Features.Chat.Notifications.Services;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Application.Tests.Features.Collaboration;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.Spaces;
@@ -31,6 +33,8 @@ public class ChatNotificationHandoffTests
     private readonly List<ThreadFollower> _followers = [];
     private readonly RecordingIntents _intents = new();
     private readonly Mock<IChatDbContext> _db = new();
+    private readonly RealtimePresenceRegistry _presence = new();
+    private readonly Mock<IWorkspaceMemberFacts> _workspaceMembers = new();
 
     public ChatNotificationHandoffTests()
     {
@@ -39,9 +43,21 @@ public class ChatNotificationHandoffTests
         _db.Setup(d => d.ChatMessages).Returns(() => TestDbSet.Create(_messages).Object);
         _db.Setup(d => d.ChatMessageMentions).Returns(() => TestDbSet.Create(_mentions).Object);
         _db.Setup(d => d.ChatThreadFollowers).Returns(() => TestDbSet.Create(_followers).Object);
+        _workspaceMembers.Setup(m => m.FindAsync(_workspaceId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid user, CancellationToken _) => new WorkspaceMemberFact(user, "Member", true));
     }
 
-    private ChatNotificationHandoff Handoff() => new(_db.Object, _intents, NullLogger<ChatNotificationHandoff>.Instance);
+    private void Online(params Guid[] users)
+    {
+        foreach (var user in users)
+            _presence.Mark(Guid.NewGuid(), _workspaceId, user, online: true);
+    }
+
+    private void AsGuest(Guid user) =>
+        _workspaceMembers.Setup(m => m.FindAsync(_workspaceId, user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WorkspaceMemberFact(user, "Guest", true));
+
+    private ChatNotificationHandoff Handoff() => new(_db.Object, _intents, _presence, _workspaceMembers.Object, NullLogger<ChatNotificationHandoff>.Instance);
 
     private Space Channel(params Guid[] members)
     {
@@ -137,21 +153,79 @@ public class ChatNotificationHandoffTests
     }
 
     [Fact]
-    public async Task A_channel_broadcast_notifies_every_other_member_and_a_here_broadcast_notifies_nobody_without_presence()
+    public async Task A_channel_broadcast_notifies_every_other_member()
     {
         var channel = Channel(_ana, _bao);
         var everyone = Send(channel, "@channel go");
         Mention(channel, everyone, MentionKind.BroadcastChannel);
-        var here = Send(channel, "@here go");
-        Mention(channel, here, MentionKind.BroadcastHere);
 
         await Run(everyone);
+
         _intents.Intents.Select(i => i.RecipientUserId).Should().BeEquivalentTo([_ana, _bao]);
         _intents.Intents.Should().OnlyContain(i => i.Reason == ChatNotificationReasons.Broadcast);
+    }
 
-        _intents.Reset();
-        await Run(here);
-        _intents.Calls.Should().Be(0, "@here reaches present members and presence is not a fact this side holds");
+    private Message SendHere(Space channel)
+    {
+        var here = Send(channel, "@here go");
+        Mention(channel, here, MentionKind.BroadcastHere);
+        return here;
+    }
+
+    [Fact]
+    public async Task A_here_broadcast_notifies_the_members_who_are_online_and_not_the_offline_ones()
+    {
+        var channel = Channel(_ana, _bao);
+        Online(_ana);
+
+        await Run(SendHere(channel));
+
+        _intents.Intents.Should().ContainSingle().Which.Should().Be(new ChatNotificationIntent(_ana, ChatNotificationReasons.Broadcast));
+    }
+
+    [Fact]
+    public async Task A_here_broadcast_gives_an_offline_member_nothing()
+    {
+        var channel = Channel(_ana, _bao);
+
+        await Run(SendHere(channel));
+
+        _intents.Calls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_here_broadcast_never_notifies_a_guest_even_when_online()
+    {
+        var channel = Channel(_ana, _bao);
+        AsGuest(_bao);
+        Online(_ana, _bao);
+
+        await Run(SendHere(channel));
+
+        _intents.Intents.Select(i => i.RecipientUserId).Should().BeEquivalentTo([_ana]);
+    }
+
+    [Fact]
+    public async Task A_here_broadcast_never_notifies_an_online_person_who_is_not_a_member_of_the_channel()
+    {
+        var channel = Channel(_ana);
+        Online(_ana, _chi);
+
+        await Run(SendHere(channel));
+
+        _intents.Intents.Select(i => i.RecipientUserId).Should().BeEquivalentTo([_ana]);
+    }
+
+    [Fact]
+    public async Task A_here_broadcast_does_not_notify_the_author_or_a_member_whose_channel_is_muted()
+    {
+        var channel = Channel(_ana, _bao);
+        MembershipOf(channel, _bao).SetNotificationLevel(NotificationLevel.None, null, Now);
+        Online(_author, _ana, _bao);
+
+        await Run(SendHere(channel));
+
+        _intents.Intents.Select(i => i.RecipientUserId).Should().BeEquivalentTo([_ana]);
     }
 
     [Fact]

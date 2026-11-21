@@ -49,8 +49,13 @@ export interface AccountWorkspaceView {
   readonly departmentCount: number | null;
   readonly isDefault: boolean;
   readonly canLeave: boolean;
-  /** Archived: read-only, listed in its own group, only opened from here. */
+  /** Archived: read-only, listed in its own group; opens read-only, and its owner can unarchive it. */
   readonly isArchived: boolean;
+  /** Where a sole Owner hands the workspace over (its settings); set by the host for them only. */
+  readonly handover?: {
+    readonly href: string;
+    readonly onNavigate: () => void;
+  };
   readonly open: { readonly href: string; readonly onNavigate: () => void };
 }
 
@@ -262,7 +267,7 @@ function Card({
               {copy.makeDefault}
             </button>
           )}
-          {view.isArchived ? (
+          {view.isArchived && view.role === "owner" ? (
             <button
               type="button"
               disabled={busy}
@@ -272,20 +277,20 @@ function Card({
             >
               {copy.unarchive}
             </button>
-          ) : (
-            <a
-              href={view.open.href}
-              aria-label={fillCopy(copy.openLabel, { name: view.name })}
-              onClick={(event) => {
-                if (!isPlainClick(event)) return;
-                event.preventDefault();
-                view.open.onNavigate();
-              }}
-              className={cn(BTN_SM, FOCUS)}
-            >
-              {copy.open}
-            </a>
-          )}
+          ) : null}
+          {/* An archived workspace opens read-only for every member; only its owner can unarchive it (GOV-013). */}
+          <a
+            href={view.open.href}
+            aria-label={fillCopy(copy.openLabel, { name: view.name })}
+            onClick={(event) => {
+              if (!isPlainClick(event)) return;
+              event.preventDefault();
+              view.open.onNavigate();
+            }}
+            className={cn(BTN_SM, FOCUS)}
+          >
+            {copy.open}
+          </a>
           {view.isArchived ? null : (
             <button
               type="button"
@@ -301,6 +306,22 @@ function Card({
         </div>
       </div>
       {note ? <Note id={noteId}>{note.text}</Note> : null}
+      {note && view.handover ? (
+        <a
+          href={view.handover.href}
+          aria-label={fillCopy(copy.transferOwnershipLabel, {
+            name: view.name,
+          })}
+          onClick={(event) => {
+            if (!isPlainClick(event)) return;
+            event.preventDefault();
+            view.handover?.onNavigate();
+          }}
+          className={cn(BTN_SM, FOCUS, "self-start")}
+        >
+          {copy.transferOwnership}
+        </a>
+      ) : null}
     </section>
   );
 }

@@ -33,8 +33,9 @@ identify the owning job (backend-unit | backend-integration | frontend | depende
 ## 2. Which job owns a change
 
 - `backend-unit` — format, build, unit test projects, OpenAPI drift.
-- `backend-integration` — integration test shards (`workspaces-auth`, `work-rls`, `rest`). A new shard is a new matrix entry.
-- `frontend` — `format:check`, `typecheck`, `lint`, `check:architecture`, `check:i18n`, `codegen:check`, `test:node`, `test:web`, `app-web` build.
+- `backend-integration` — integration test shards (`workspaces-auth`, `work-management`, `rls-a-c`, `rls-d-z`, `rest`). A new shard is a new matrix entry.
+- `frontend` — `format:check`, `typecheck`, `lint`, `check:architecture`, `check:i18n`, `codegen:check`, `test:node`, `app-web` build.
+- `frontend-web` — `test:web`, split across 4 vitest shards (`--shard=N/4`).
 - `dependencies` — reusable `security-ci.yml`.
 
 Checks that exist but are not in `ci.yml` (docs-check, validate-infra, deliveryctl, migration discipline, required-proof TRX, Storybook, Playwright e2e, image build) are listed in `docs/delivery/ci-cd-architecture.md` section 4. Adding one to `ci.yml` is a deliberate change to the gate; slow or flaky suites stay out of the PR gate.
@@ -54,10 +55,10 @@ Protected trunk requires the single check `CI gate`, never per-job names, plus t
 ```text
 delivery/images.lock.toml  the only committed image authority, referenced by digest
 delivery authority parsing  tools/deliveryctl only
-release/promotion/deployment workflows  dormant; they do not build application images
+release/promotion/deployment workflows  consume the release-candidate manifest; they do not build application images
 ```
 
-Release and deploy stay dormant until `ci.yml` produces the release-candidate input `release.yml` waits for.
+Release and deploy consume the release-candidate input that the `release-*` jobs of `ci.yml` produce on a push to `main`.
 
 ## 6. Review checklist
 

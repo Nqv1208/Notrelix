@@ -163,7 +163,13 @@ export function createUseTeamMutations({ api, endpoints }: TeamMutationDeps) {
       onSettled: refresh,
     });
 
+    // The version the producer holds now: a Team is made at a version of the producer's choosing, so a
+    // write that follows a create reads it instead of assuming one.
+    const readVersion = async (teamId: string) =>
+      (await service.get(workspaceId, teamId)).version;
+
     return {
+      readVersion,
       create,
       rename,
       describe,

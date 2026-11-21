@@ -43,6 +43,7 @@ import { VoiceRecorderPanel } from "./chat-voice-recorder";
 import {
   checkPendingFiles,
   formatFileSize,
+  isInlineImage,
   type PendingFileRefusal,
 } from "../../core/model/attachment-model";
 import {
@@ -61,8 +62,10 @@ import type { EmojiEntry } from "../../core/model/emoji-data";
 import type { ChatCopy } from "./chat.copy";
 import { rememberEmoji } from "./chat-emoji-recent";
 import { EmojiPickerButton } from "./chat-emoji-picker";
+import { StickerPickerButton } from "./chat-sticker-picker";
 import { AttachmentGlyphIcon } from "./chat-attachments";
 import { fillCopy } from "./use-chat-copy";
+import { useObjectUrl } from "./use-object-url";
 import { formatWait } from "./chat-rate-limit";
 
 /** What the composer needs to mention people and link channels (UC-CHT-G01 to G04); without it @ and # are plain text. */
@@ -99,7 +102,7 @@ export interface ChatComposerAttachments {
   readonly draftKey: string;
   /** The voice recorder port (UC-CHT-I04); the browser recorder when the host gives none. Tests pass a fake. */
   readonly voiceRecorder?: ChatVoiceRecorder;
-  /** False where a voice message cannot be sent (a thread reply): the composer shows no microphone. */
+  /** False where a voice message cannot be sent: the composer shows no microphone. */
   readonly voice?: boolean;
 }
 
@@ -123,6 +126,8 @@ export interface ChatComposerProps {
   readonly attachments?: ChatComposerAttachments;
   /** Above the text: the reply chip of a quote reply. */
   readonly leading?: ReactNode;
+  /** The composer floats over the bottom of the list (no band of its own): the list leaves room and fades under it. */
+  readonly floating?: boolean;
   /** In the footer before Send: the thread composer's "also send to channel". */
   readonly footerExtra?: ReactNode;
   /** The accessible name and placeholder; the channel composer names the channel by default. */
@@ -133,6 +138,8 @@ export interface ChatComposerProps {
   readonly onTyping?: () => void;
   /** The channel's slow mode in seconds (UC-CHT-H08); above 0 the hint line says so. */
   readonly slowModeSeconds?: number;
+  /** Sends a Notrelix sticker alone (UC-CHT-I06); without it the composer shows no sticker button (a thread or an edit has none). */
+  readonly onSendSticker?: (stickerId: string) => void;
 }
 
 /**
@@ -148,6 +155,7 @@ export function ChatComposer({
   onChange,
   onSend,
   leading,
+  floating = false,
   footerExtra,
   labelOverride,
   busy = false,
@@ -155,6 +163,7 @@ export function ChatComposer({
   onTyping,
   attachments,
   slowModeSeconds = 0,
+  onSendSticker,
 }: ChatComposerProps) {
   const hintId = useId();
   const listId = useId();
@@ -502,8 +511,19 @@ export function ChatComposer({
   }
 
   return (
-    <div className="shrink-0 bg-background px-2.5 pb-2.5 md:px-5 md:pb-4 xl:pb-1">
-      <div className="relative mx-auto w-full max-w-[720px]">
+    <div
+      className={
+        floating
+          ? "pointer-events-auto px-3.5 pb-3 md:px-6 md:pb-5 xl:px-5"
+          : "shrink-0 bg-background px-2.5 pb-2.5 md:px-5 md:pb-4 xl:pb-1"
+      }
+    >
+      <div
+        className={cn(
+          "relative mx-auto w-full",
+          floating ? "max-w-[1080px]" : "max-w-[720px] 2xl:max-w-[1000px]",
+        )}
+      >
         {trigger ? (
           <MentionPopover
             id={listId}
@@ -543,7 +563,7 @@ export function ChatComposer({
         ) : (
           <form
             className={cn(
-              "flex flex-col overflow-hidden rounded-[26px] border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
+              "flex flex-col overflow-hidden rounded-[26px] border border-input bg-card shadow-xs transition-[border-color,box-shadow] duration-fast ease-out focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30 motion-reduce:transition-none",
               disabled && "opacity-60",
               dragging && "border-ring ring-[3px] ring-ring/30",
             )}
@@ -581,6 +601,9 @@ export function ChatComposer({
                 refusals={refusals}
                 copy={copy}
                 onRemove={removeFile}
+                onDismissRefusal={(index) =>
+                  setRefusals((held) => held.filter((_, at) => at !== index))
+                }
               />
             ) : null}
             {dragging ? (
@@ -627,6 +650,14 @@ export function ChatComposer({
                 onPick={insertEmoji}
                 onClosed={() => textareaRef.current?.focus()}
               />
+              {onSendSticker ? (
+                <StickerPickerButton
+                  copy={copy}
+                  disabled={disabled}
+                  onPick={onSendSticker}
+                  onClosed={() => textareaRef.current?.focus()}
+                />
+              ) : null}
               <Textarea
                 ref={textareaRef}
                 role={mentions ? "combobox" : undefined}
@@ -676,7 +707,7 @@ export function ChatComposer({
                 <Button
                   type="submit"
                   size="icon"
-                  className="size-10 shrink-0 rounded-full"
+                  className="size-10 shrink-0 rounded-full transition-[opacity,transform,background-color] duration-fast ease-out active:scale-95 disabled:scale-90 motion-reduce:transform-none"
                   aria-label={copy.composer.send}
                   title={`${copy.composer.send} (Enter)`}
                   disabled={disabled || busy || tooLong || !check.ok}
@@ -727,6 +758,7 @@ function PendingFiles({
   refusals,
   copy,
   onRemove,
+  onDismissRefusal,
 }: {
   readonly files: readonly File[];
   readonly refusals: readonly {
@@ -735,6 +767,7 @@ function PendingFiles({
   }[];
   readonly copy: ChatCopy;
   readonly onRemove: (index: number) => void;
+  readonly onDismissRefusal: (index: number) => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5 border-b border-border px-3 py-2">
@@ -747,57 +780,124 @@ function PendingFiles({
           className="flex flex-wrap gap-1.5"
           data-testid="chat-pending-files"
         >
-          {files.map((file, index) => (
-            <li
-              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
-              className="flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/50 py-0.5 ps-2 pe-0.5 text-xs"
-            >
-              <AttachmentGlyphIcon
-                contentType={file.type}
-                fileName={file.name}
-                className="text-muted-foreground"
+          {files.map((file, index) =>
+            isInlineImage(file.type) ? (
+              <PendingImageTile
+                key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                file={file}
+                copy={copy}
+                onRemove={() => onRemove(index)}
               />
-              <span className="max-w-40 truncate font-medium text-foreground">
-                {file.name}
-              </span>
-              <span className="tabular-nums text-muted-foreground">
-                {formatFileSize(file.size)}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                aria-label={fillCopy(copy.attachments.removePending, {
-                  name: file.name,
-                })}
-                title={copy.attachments.removeShort}
-                onClick={() => onRemove(index)}
+            ) : (
+              <li
+                key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                className="flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/50 py-0.5 ps-2 pe-0.5 text-xs"
               >
-                <X aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
+                <AttachmentGlyphIcon
+                  contentType={file.type}
+                  fileName={file.name}
+                  className="text-muted-foreground"
+                />
+                <span className="max-w-40 truncate font-medium text-foreground">
+                  {file.name}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatFileSize(file.size)}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={fillCopy(copy.attachments.removePending, {
+                    name: file.name,
+                  })}
+                  title={copy.attachments.removeShort}
+                  onClick={() => onRemove(index)}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </li>
+            ),
+          )}
         </ul>
       ) : null}
       {refusals.length > 0 ? (
         <ul
           role="alert"
-          className="flex flex-col gap-0.5 text-xs text-destructive"
+          className="flex flex-col gap-1 text-xs text-destructive"
         >
           {refusals.map((refusal, index) => (
-            <li key={`${refusal.name}-${index}`}>
-              {fillCopy(copy.attachments.refused[refusal.reason], {
-                name: refusal.name,
-                max:
-                  refusal.reason === "too-large"
-                    ? formatFileSize(CHAT_LIMITS.attachmentMaxBytes)
-                    : CHAT_LIMITS.attachmentsPerMessageMax,
-              })}
+            <li
+              key={`${refusal.name}-${index}`}
+              className="flex items-center gap-2"
+            >
+              <span className="min-w-0 flex-1">
+                {fillCopy(copy.attachments.refused[refusal.reason], {
+                  name: refusal.name,
+                  max:
+                    refusal.reason === "too-large"
+                      ? formatFileSize(CHAT_LIMITS.attachmentMaxBytes)
+                      : CHAT_LIMITS.attachmentsPerMessageMax,
+                })}
+              </span>
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                aria-label={fillCopy(copy.attachments.refusedRemove, {
+                  name: refusal.name,
+                })}
+                onClick={() => onDismissRefusal(index)}
+              >
+                {copy.attachments.removeShort}
+              </Button>
             </li>
           ))}
         </ul>
       ) : null}
     </div>
+  );
+}
+
+/** A picked image in the tray: its own thumbnail at once, from the local file, with the remove control on its corner. */
+function PendingImageTile({
+  file,
+  copy,
+  onRemove,
+}: {
+  readonly file: File;
+  readonly copy: ChatCopy;
+  readonly onRemove: () => void;
+}) {
+  const url = useObjectUrl(file);
+  return (
+    <li
+      className="relative size-14 overflow-hidden rounded-lg border border-border bg-muted"
+      title={file.name}
+    >
+      {url ? (
+        <img
+          src={url}
+          alt={fillCopy(copy.attachments.previewOfPending, {
+            name: file.name,
+          })}
+          className="block size-full object-cover"
+        />
+      ) : null}
+      <Button
+        type="button"
+        variant="secondary"
+        size="icon-xs"
+        className="absolute end-0.5 top-0.5 size-5 rounded-full"
+        aria-label={fillCopy(copy.attachments.removePending, {
+          name: file.name,
+        })}
+        title={copy.attachments.removeShort}
+        onClick={onRemove}
+      >
+        <X aria-hidden="true" />
+      </Button>
+    </li>
   );
 }
 

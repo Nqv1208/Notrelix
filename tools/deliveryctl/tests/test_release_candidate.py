@@ -4,7 +4,7 @@ from tools.deliveryctl.release import build_candidate
 
 SHA40='a'*40
 PLAN={
- 'api_version':'delivery.notrelix.dev/v1','kind':'ExecutionPlan','source_sha':SHA40,'event':'push','ref':'refs/heads/main','release_candidate':True,'schema_change':False,'plan_sha256':'9'*64,
+ 'api_version':'delivery.notrelix.dev/v1','kind':'ExecutionPlan','source_sha':SHA40,'event':'push','ref':'refs/heads/release/0.1','release_candidate':True,'schema_change':False,'plan_sha256':'9'*64,
  'release_contract':{'migration_component':'backend-api','migration_service':'backend','migration_commands':['--migrate']},
  'deployment_containers':[
   {'component_id':'backend-api','compose_service':'backend','deploy_env_var':'NOTRELIX_BACKEND_IMAGE','stateful':False},

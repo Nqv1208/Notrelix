@@ -31,7 +31,8 @@ public interface IWorkspaceNavigationStore
 
     Task<PinnedResource?> FindPinAsync(Guid workspaceId, Guid userId, string resourceKind, Guid resourceId, CancellationToken cancellationToken);
 
-    Task<int> CountPinsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
+    /// <summary>Loads all of the member's pins as tracked entities (at most the cap).</summary>
+    Task<IReadOnlyList<PinnedResource>> LoadPinsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken);
 
     void AddPin(PinnedResource pin);
 

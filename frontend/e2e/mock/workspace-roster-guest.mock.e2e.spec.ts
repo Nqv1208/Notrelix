@@ -36,7 +36,7 @@ for (const viewport of viewports) {
       ).toBeVisible();
       await expect(page.getByRole("table").first()).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Invite people" }),
+        page.getByRole("button", { name: "Invite more people" }),
       ).toHaveCount(0);
       await expect(
         page.getByRole("button", { name: /^Actions for / }),

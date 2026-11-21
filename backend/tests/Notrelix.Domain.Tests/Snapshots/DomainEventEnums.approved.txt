@@ -34,6 +34,17 @@ Notrelix.Domain.Billing.BillingEvents.BillingEventType|System.Int32|InvoicePayme
 Notrelix.Domain.Billing.Payments.PaymentProvider|System.Int32|Stripe|0
 Notrelix.Domain.Billing.Payments.PaymentProvider|System.Int32|PayPal|1
 Notrelix.Domain.Billing.Payments.PaymentProvider|System.Int32|Manual|2
+Notrelix.Domain.Chat.Calls.CallEndReason|System.Int32|Declined|0
+Notrelix.Domain.Chat.Calls.CallEndReason|System.Int32|Missed|1
+Notrelix.Domain.Chat.Calls.CallEndReason|System.Int32|Cancelled|2
+Notrelix.Domain.Chat.Calls.CallEndReason|System.Int32|Busy|3
+Notrelix.Domain.Chat.Calls.CallEndReason|System.Int32|Failed|4
+Notrelix.Domain.Chat.Calls.CallEndReason|System.Int32|Completed|5
+Notrelix.Domain.Chat.Calls.CallKind|System.Int32|Voice|0
+Notrelix.Domain.Chat.Calls.CallKind|System.Int32|Video|1
+Notrelix.Domain.Chat.Calls.CallState|System.Int32|Ringing|0
+Notrelix.Domain.Chat.Calls.CallState|System.Int32|Active|1
+Notrelix.Domain.Chat.Calls.CallState|System.Int32|Ended|2
 Notrelix.Domain.Chat.Messages.MessageKind|System.Int32|User|0
 Notrelix.Domain.Chat.Messages.MessageKind|System.Int32|System|1
 Notrelix.Domain.Collaboration.Presence.PresenceStatus|System.Int32|Online|0

@@ -98,4 +98,23 @@ public class UpdateJobTitleCommandHandlerTests : WorkspaceHandlerTestBase
         new UpdateMyJobTitleCommandValidator().Validate(new UpdateMyJobTitleCommand(Guid.NewGuid(), "   ", 1))
             .IsValid.Should().BeTrue("a blank title clears it");
     }
+
+    [Theory]
+    [InlineData(100, true)]
+    [InlineData(101, false)]
+    public void Validators_AcceptExactly100Characters_AndRejectOneMore(int length, bool valid)
+    {
+        // Regression guard: the server already enforced the limit; this pins the exact boundary on both writes.
+        var title = new string('a', length);
+
+        new UpdateMyJobTitleCommandValidator().Validate(new UpdateMyJobTitleCommand(Guid.NewGuid(), title, 1))
+            .IsValid.Should().Be(valid);
+        new UpdateMemberJobTitleCommandValidator().Validate(new UpdateMemberJobTitleCommand(Guid.NewGuid(), Guid.NewGuid(), title, 1))
+            .IsValid.Should().Be(valid);
+    }
+
+    [Fact]
+    public void Validators_RejectAControlCharacter_InTheMiddleOfATitle() =>
+        new UpdateMyJobTitleCommandValidator().Validate(new UpdateMyJobTitleCommand(Guid.NewGuid(), "Lead\tEngineer", 1))
+            .IsValid.Should().BeFalse();
 }

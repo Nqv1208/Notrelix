@@ -1,10 +1,12 @@
 import {
   Check,
   CircleAlert,
+  LoaderCircle,
   MoreHorizontal,
   PanelRight,
   WifiOff,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { cn } from "@notrelix/ui-web";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import type {
@@ -26,6 +28,8 @@ export interface DocPageBarSurfaceProps {
   readonly readOnly?: boolean;
   /** Whether the side panel is open; absent hides the toggle. */
   readonly panelOpen?: boolean;
+  /** A host action shown before Share (see `DocPageHost.headerAction`). */
+  readonly headerAction?: ReactNode;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -45,6 +49,7 @@ export function DocPageBarSurface({
   shareOpen = false,
   canShare = false,
   panelOpen,
+  headerAction,
   callbacks,
 }: DocPageBarSurfaceProps) {
   const h = copy.header;
@@ -117,6 +122,11 @@ export function DocPageBarSurface({
               aria-hidden="true"
               className="size-[13px] shrink-0 stroke-[1.8]"
             />
+          ) : saveState === "saving" ? (
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-[13px] shrink-0 stroke-[1.8] motion-safe:animate-spin"
+            />
           ) : (
             <Check
               aria-hidden="true"
@@ -169,6 +179,7 @@ export function DocPageBarSurface({
           <PanelRight aria-hidden="true" className="size-4 stroke-[1.8]" />
         </button>
       ) : null}
+      {headerAction}
       <button
         type="button"
         aria-haspopup="dialog"

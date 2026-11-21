@@ -284,6 +284,10 @@ export const en = {
     lostBody:
       "It is not known how many items were created: check the board before importing again. Importing again uses the same key so nothing is created twice.",
     retry: "Try again",
+    checkFailed: "The file could not be checked",
+    confirmFailed: "The import was refused",
+    checkFailedBody: "No item was created. Check again; nothing was sent.",
+    checkAgain: "Check again",
     denied: "You may not import items into this board.",
     reason_required: "is required but empty.",
     reason_tooLong: "is too long (at most 500 characters).",
@@ -642,6 +646,10 @@ export const vi: BoardLifecycleCopy = {
     lostBody:
       "Không biết đã tạo được bao nhiêu việc: kiểm tra lại board trước khi nhập lại. Nhập lại dùng cùng khoá nên không tạo hai lần.",
     retry: "Thử lại",
+    checkFailed: "Không kiểm tra được tệp",
+    confirmFailed: "Máy chủ từ chối lần nhập",
+    checkFailedBody: "Không việc nào được tạo. Hãy kiểm tra lại; chưa gửi gì.",
+    checkAgain: "Kiểm tra lại",
     denied: "Bạn không có quyền nhập việc vào board này.",
     reason_required: "bắt buộc nhưng để trống.",
     reason_tooLong: "quá dài (tối đa 500 ký tự).",

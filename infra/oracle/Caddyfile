@@ -1,0 +1,15 @@
+# TLS edge for the single-VM staging stack. bootstrap.sh replaces @@DOMAIN@@ and installs this as
+# /etc/caddy/Caddyfile. Caddy gets and renews the Let's Encrypt certificate by itself (needs 80 and 443
+# reachable and the DNS A record pointing here). The stack's nginx listens only on 127.0.0.1:8080
+# (HTTP_PORT=127.0.0.1:8080 in the env file), so nothing reaches it except through Caddy.
+@@DOMAIN@@ {
+	encode zstd gzip
+
+	# WebSocket upgrades (realtime) pass through reverse_proxy without extra settings.
+	# X-Forwarded-For is replaced with the real TCP peer, never extended from what the client sent, so a client
+	# cannot spoof its address. nginx.prod.conf trusts only this hop (set_real_ip_from) and passes the scheme on.
+	reverse_proxy 127.0.0.1:8080 {
+		flush_interval -1
+		header_up X-Forwarded-For {remote_host}
+	}
+}

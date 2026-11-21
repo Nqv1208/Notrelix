@@ -59,7 +59,11 @@ import type {
   TeamPersonView,
   TypedToken,
 } from "./space-members-models";
-import { SpaceMembersView, type MemberMenuState } from "./space-members-view";
+import {
+  SpaceMembersView,
+  type MemberMenuState,
+  type SpaceMembersViewProps,
+} from "./space-members-view";
 import {
   SpaceSettingsPanel,
   type SpaceDetailsValues,
@@ -95,6 +99,12 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly viewAs: { readonly onExit: () => void } | null;
   /** Members tab (the members panel). */
   readonly members: SectionState<readonly SpaceMemberEntry[]>;
+  /**
+   * The people the members tab lists when they come from a server-paged read (the role and kind
+   * filters run on the producer). `members` stays the whole roster for the dialogs.
+   */
+  readonly membersTab?: SectionState<readonly SpaceMemberEntry[]>;
+  readonly membersPaging?: SpaceMembersViewProps["paging"];
   readonly candidateUsers: SectionState<readonly SpaceMemberCandidate[]>;
   readonly candidateTeams: SectionState<readonly SpaceTeam[]>;
   /** Workspace members by user id: email and role for the second line. */
@@ -127,8 +137,11 @@ export interface WorkspaceSpaceSurfaceProps {
   readonly onUnarchive: () => void;
   readonly onSave: (changes: Partial<SpaceDetailsValues>) => void;
   readonly onArchive: () => void;
-  /** `null`: no delete write exists, the button is drawn inert. */
+  /** `null`: the person cannot delete, the button is drawn inert. */
   readonly onDelete: (() => void) | null;
+  readonly deleting?: boolean;
+  readonly deleteRefused?: boolean;
+  readonly onOpenTrash?: (() => void) | null;
   readonly onAddMembers: (inputs: readonly AddSpaceMemberInput[]) => void;
   /** Closes the add dialog after the host finished adding. */
   readonly addDialogKey: number;
@@ -367,13 +380,16 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
         membersCount={props.membersCount}
         showSettings={manage || tab === "settings"}
       />
-      <div data-f="body" className="flex min-h-0 flex-1 overflow-hidden">
+      <div
+        data-f="body"
+        className="flex min-h-0 flex-1 overflow-hidden max-md:flex-col max-md:overflow-auto"
+      >
         {tab === "overview" ? (
           <>
             <div
               data-f="col"
               className={cn(
-                "flex min-w-0 flex-1 flex-col gap-7 overflow-auto px-7 pt-[22px] pb-8",
+                "flex min-w-0 flex-1 flex-col gap-7 overflow-auto px-7 pt-[22px] pb-8 max-md:flex-none max-md:overflow-visible max-md:px-4",
                 props.firstSteps && "box-content max-w-[820px]",
               )}
             >
@@ -450,7 +466,7 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
               <aside
                 data-f="aside"
                 aria-label={copy.aside.label}
-                className="box-border flex w-[340px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line bg-popover px-5 pt-5 pb-7 dark:bg-card"
+                className="box-border flex w-[340px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line max-md:w-full max-md:overflow-visible max-md:border-t max-md:border-l-0 bg-popover px-5 pt-5 pb-7 dark:bg-card"
               >
                 {!props.firstSteps && props.attention ? (
                   <AttentionBlock copy={copy} rows={props.attention} />
@@ -481,7 +497,8 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
             copy={copy}
             navigation={navigation}
             spaceName={node.name}
-            members={props.members}
+            members={props.membersTab ?? props.members}
+            paging={props.membersPaging}
             directory={props.directory}
             teams={
               props.candidateTeams.status === "ready"
@@ -523,6 +540,9 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
             onMove={props.onMoveSpace}
             onArchive={props.onArchive}
             onDelete={props.onDelete}
+            deleting={props.deleting}
+            deleteRefused={props.deleteRefused}
+            onOpenTrash={props.onOpenTrash}
             initialDeleteOpen={props.initialDeleteOpen}
           />
         )}

@@ -265,6 +265,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("verification_token_hash");
 
+                    b.Property<string>("VerificationTokenProtected")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("verification_token_protected");
+
                     b.Property<DateTimeOffset?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("verified_at");
@@ -281,7 +286,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("Domain")
                         .IsUnique()
-                        .HasDatabaseName("idx_account_domains_domain");
+                        .HasDatabaseName("idx_account_domains_domain_verified")
+                        .HasFilter("verification_status = 'Verified'");
+
+                    b.HasIndex("AccountId", "Domain")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_domains_account_domain");
 
                     b.ToTable("account_domains", "account");
                 });
@@ -300,6 +310,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("certificate_ref");
+
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("client_secret_protected");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -350,6 +370,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("ValidationError")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("validation_error");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
@@ -359,6 +384,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_account_identity_providers");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_identity_providers_account");
 
                     b.ToTable("account_identity_providers", "account");
                 });
@@ -2543,6 +2572,174 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("workspace_feature_usages", "billing");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.Call", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset?>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("answered_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("EmptySince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("empty_since");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("end_reason");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<Guid>("InitiatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("initiator_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("region");
+
+                    b.Property<string>("RoomKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("room_key");
+
+                    b.Property<Guid>("SpaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("space_id");
+
+                    b.Property<string>("SpaceKind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("space_kind");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("state");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("version");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_calls");
+
+                    b.HasIndex("RoomKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_calls_room_key");
+
+                    b.HasIndex("SpaceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_calls_space_live")
+                        .HasFilter("state IN ('ringing','active')");
+
+                    b.HasIndex("StartedAt")
+                        .HasDatabaseName("ix_calls_live_started_at")
+                        .HasFilter("state IN ('ringing','active')");
+
+                    b.HasIndex("SpaceId", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_calls_space_started_at");
+
+                    b.ToTable("calls", "chat");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.CallParticipant", b =>
+                {
+                    b.Property<Guid>("CallId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("call_id");
+
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("person_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<bool>("AudioOn")
+                        .HasColumnType("boolean")
+                        .HasColumnName("audio_on");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<DateTimeOffset?>("LeftAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("left_at");
+
+                    b.Property<bool>("SharingScreen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sharing_screen");
+
+                    b.Property<bool>("VideoOn")
+                        .HasColumnType("boolean")
+                        .HasColumnName("video_on");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workspace_id");
+
+                    b.HasKey("CallId", "PersonId")
+                        .HasName("pk_call_participants");
+
+                    b.HasIndex("PersonId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_call_participants_person_live")
+                        .HasFilter("left_at IS NULL");
+
+                    b.ToTable("call_participants", "chat");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Exports.ChatExportJob", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2687,6 +2884,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("author_id");
 
+                    b.Property<Guid?>("CallId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("call_id");
+
                     b.Property<string>("ClientMessageId")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
@@ -2735,6 +2936,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("space_id");
 
+                    b.Property<string>("StickerId")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("sticker_id");
+
                     b.Property<Guid?>("ThreadRootId")
                         .HasColumnType("uuid")
                         .HasColumnName("thread_root_id");
@@ -2771,6 +2977,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Content"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Content"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("SpaceId", "CallId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_space_call")
+                        .HasFilter("call_id IS NOT NULL");
 
                     b.HasIndex("SpaceId", "Sequence")
                         .IsUnique()
@@ -5860,6 +6071,50 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("user_sessions", "identity");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Identity.Sso.SsoIdentity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Issuer")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("issuer");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("subject");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sso_identities");
+
+                    b.HasIndex("AccountId", "Subject")
+                        .IsUnique()
+                        .HasDatabaseName("idx_sso_identities_account_subject");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_sso_identities_user_account");
+
+                    b.ToTable("sso_identities", "identity");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Identity.Tokens.ApiToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5900,6 +6155,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("revoked_by");
 
+                    b.Property<string>("RevokedReason")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("revoked_reason");
+
                     b.Property<string>("Scopes")
                         .HasColumnType("text")
                         .HasColumnName("scopes");
@@ -5914,6 +6174,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("token_hash");
+
+                    b.Property<string>("TokenSuffix")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("token_suffix");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6198,6 +6463,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("PendingEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("pending_email");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -7756,6 +8026,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
+                    b.Property<string>("PublicKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("public_key");
+
                     b.Property<string>("SettingsJson")
                         .IsRequired()
                         .HasColumnType("text")
@@ -7809,6 +8084,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("BoardId")
                         .HasDatabaseName("idx_forms_board_id")
                         .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("PublicKey")
+                        .IsUnique()
+                        .HasDatabaseName("idx_forms_public_key")
+                        .HasFilter("public_key IS NOT NULL");
 
                     b.HasIndex("Slug")
                         .IsUnique()
@@ -13400,6 +13680,26 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_usage_metric_history_usage_metrics_metric_id");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.Call", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
+                        .WithMany()
+                        .HasForeignKey("SpaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_calls_chat_spaces_space_id");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.CallParticipant", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Chat.Calls.Call", null)
+                        .WithMany("Participants")
+                        .HasForeignKey("CallId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_call_participants_calls_call_id");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Chat.Messages.Message", b =>
                 {
                     b.HasOne("Notrelix.Domain.Chat.Spaces.Space", null)
@@ -14235,6 +14535,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Navigation("RefreshTokenHash")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Sso.SsoIdentity", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Identity.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sso_identities_users_user_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Identity.Users.User", b =>
@@ -15397,6 +15707,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
             modelBuilder.Entity("Notrelix.Domain.Billing.Usage.UsageMetric", b =>
                 {
                     b.Navigation("History");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Chat.Calls.Call", b =>
+                {
+                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Chat.Spaces.Space", b =>

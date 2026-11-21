@@ -18,6 +18,8 @@ public static class WorkspaceSlugRules
     {
         "admin", "api", "app", "www", "settings", "login", "signup", "billing", "support", "help",
         "new", "invite", "join", "onboarding", "workspaces",
+        // First segment of every static root web route: those outrank /$slug, so the address could never open.
+        "sign-in", "sign-up", "auth", "forgot-password", "reset-password", "verify-email", "home", "welcome", "account",
     };
 
     /// <summary>The slug as the rule reads it: trimmed and lower-cased.</summary>

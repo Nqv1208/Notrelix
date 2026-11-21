@@ -9,7 +9,7 @@ unknown_change = "full-ci"
 
 [source_control]
 trunk_branch = "main"
-release_branch = "main"
+release_branch = "release/*"
 accepted_pr_bases = ["main", "develop"]
 transitional_branches = ["develop"]
 

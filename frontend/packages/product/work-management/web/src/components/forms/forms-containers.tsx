@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ComponentType } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@notrelix/i18n";
 import {
@@ -8,11 +8,15 @@ import {
   useCreateItemWithDetails,
   useDeleteCard,
   useForm,
+  useFormPublicAccess,
   useFormSubmissionCounts,
   useFormSubmissions,
   useFormWrites,
   useFullBoard,
+  usePublicForm,
+  useSetFormPublicAccess,
   useSubmitForm,
+  useSubmitPublicForm,
 } from "@notrelix/work-management-state";
 import type {
   FormSubmission,
@@ -25,6 +29,10 @@ import {
   type ResponseItemValues,
 } from "./response-item-dialog";
 import { FormBuilderSurface } from "./form-builder-surface";
+import { copyText } from "./copy-text";
+import { CaptchaWidget, type CaptchaWidgetProps } from "./captcha-widget";
+import { PublicFormSurface } from "./public-form-surface";
+import type { FormPublicAccessSectionProps } from "./form-public-access-section";
 import { FormFillSurface } from "./form-fill-surface";
 import { FormInboxSurface, whenLong } from "./form-inbox-surface";
 import type { BoardFormsPanelProps } from "./forms-list-panel";
@@ -42,15 +50,6 @@ export function formLink(
   formId: string,
 ): string {
   return `${window.location.origin}/workspaces/${workspaceId}/boards/${encodeURIComponent(boardId)}/forms/${encodeURIComponent(formId)}`;
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function readStatus(error: unknown): number | undefined {
@@ -144,6 +143,34 @@ function useCanHandleResponses(boardId: string, workspaceId: string) {
   };
 }
 
+/**
+ * The public link of a form for the builder. Only a workspace Owner or Admin may read it, so a refused read
+ * (403/404) is "denied", not a failure: the switch stays off and says why.
+ */
+export function useFormPublicAccessSection(
+  formId: string,
+  workspaceId: string,
+  enabled = true,
+): Omit<FormPublicAccessSectionProps, "copy"> {
+  const query = useFormPublicAccess(formId, workspaceId, enabled);
+  const setAccess = useSetFormPublicAccess(formId, workspaceId);
+  const denied = [403, 404].includes(readStatus(query.error) ?? 0);
+  return {
+    status: denied
+      ? "denied"
+      : query.isError
+        ? "error"
+        : query.isLoading
+          ? "loading"
+          : "ready",
+    access: query.data ?? null,
+    origin: window.location.origin,
+    onSwitch: setAccess,
+    onCopyLink: copyText,
+    onRetry: () => void query.refetch(),
+  };
+}
+
 export function FormBuilderPage({
   workspaceId,
   boardId,
@@ -171,6 +198,7 @@ export function FormBuilderPage({
   const writes = useFormWrites(boardId, workspaceId);
   const { board, fieldDefinitions } = useFullBoard(boardId, workspaceId);
   const { manager, pending } = useIsManager(boardId, workspaceId);
+  const publicAccess = useFormPublicAccessSection(formId, workspaceId, manager);
   const fields = useMemo(
     () => boardFormFields(fieldDefinitions),
     [fieldDefinitions],
@@ -222,6 +250,7 @@ export function FormBuilderPage({
       onPublish={() => writes.publish(formId)}
       onClose={() => writes.close(formId)}
       onCopyLink={() => copyText(formLink(workspaceId, boardId, formId))}
+      publicAccess={publicAccess}
       onReload={() => writes.reload(formId)}
       onReadLatest={() => writes.readLatest(formId)}
       onBack={onBack}
@@ -600,5 +629,39 @@ export function FormInboxPage({
         />
       ) : null}
     </>
+  );
+}
+
+/**
+ * The page behind a public link (`/f/<key>`): no session, no workspace, no shell. `Captcha` is the injection
+ * point of the challenge; the app uses Turnstile, a test passes a widget that solves itself.
+ */
+export function PublicFormPage({
+  publicKey,
+  Captcha = CaptchaWidget,
+}: {
+  readonly publicKey: string;
+  readonly Captcha?: ComponentType<CaptchaWidgetProps>;
+}) {
+  const copy = useFormsCopy();
+  const query = usePublicForm(publicKey);
+  const submit = useSubmitPublicForm(publicKey);
+  const unavailable = readStatus(query.error) === 404;
+  const status = unavailable
+    ? "unavailable"
+    : query.isError
+      ? "error"
+      : query.isLoading
+        ? "loading"
+        : "ready";
+  return (
+    <PublicFormSurface
+      copy={copy}
+      status={status}
+      form={query.data ?? null}
+      Captcha={Captcha}
+      onReload={() => void query.refetch()}
+      onSubmit={submit}
+    />
   );
 }

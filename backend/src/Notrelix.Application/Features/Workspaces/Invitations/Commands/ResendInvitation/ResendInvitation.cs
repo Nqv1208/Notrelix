@@ -3,6 +3,7 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Domain.Workspaces.Rules;
 
@@ -32,6 +33,7 @@ public sealed class ResendInvitationCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IActorLookupService _actorLookup;
     private readonly IGuestResourceInvitationFacts _resourceFacts;
+    private readonly IInvitationRateLimiter _rateLimiter;
 
     public ResendInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -41,8 +43,10 @@ public sealed class ResendInvitationCommandHandler
         IIntegrationEventCollector integrationEventCollector,
         IDateTimeProvider dateTimeProvider,
         IActorLookupService actorLookup,
-        IGuestResourceInvitationFacts resourceFacts)
+        IGuestResourceInvitationFacts resourceFacts,
+        IInvitationRateLimiter rateLimiter)
     {
+        _rateLimiter = rateLimiter;
         _actorLookup = actorLookup;
         _resourceFacts = resourceFacts;
         _workspaceContext = workspaceContext;
@@ -57,6 +61,8 @@ public sealed class ResendInvitationCommandHandler
         ResendInvitationCommand request,
         CancellationToken cancellationToken)
     {
+        await _rateLimiter.RequireAsync(request.WorkspaceId, _requestContext.UserId, cancellationToken);
+
         var invitation = await _workspaceContext.WorkspaceInvitations
             .FirstOrDefaultAsync(
                 x => x.Id == request.InvitationId

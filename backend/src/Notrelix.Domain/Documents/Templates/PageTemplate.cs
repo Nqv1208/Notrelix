@@ -60,4 +60,22 @@ public class PageTemplate : AggregateRoot
         IncrementVersion();
         RaiseDomainEvent(new PageTemplateArchivedDomainEvent(Id, archivedBy, archivedAt));
     }
+
+    /// <summary>Renames or re-describes the template. The same name and description change nothing (no version bump).</summary>
+    public void Rename(string name, string? description, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        Guard.NotEmpty(updatedBy);
+        Guard.NotNullOrWhiteSpace(name);
+        Guard.MaxLength(name.Trim(), 256);
+
+        var newName = name.Trim();
+        var newDescription = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        if (Name == newName && Description == newDescription) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        Name = newName;
+        Description = newDescription;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
 }

@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Documents.Common;
 using Notrelix.Application.Features.Documents.DTOs;
 using Notrelix.Application.Features.Documents.Versions.Services;
 using Notrelix.Domain.Documents;
+using Notrelix.Domain.Documents.Rules;
 using Notrelix.Domain.Documents.Versions;
 using Notrelix.Domain.SharedKernel.Ordering;
 
@@ -16,8 +17,10 @@ namespace Notrelix.Application.Features.Documents.Versions.Commands.RestorePageV
 /// content being replaced stays recoverable. The caller names the blocks and versions it saw, like a block save
 /// does: if any live block changed, appeared or vanished since, nothing is restored (412) and the current blocks
 /// come back so the caller can look again.
+/// A retry with the same key returns the first answer and restores nothing again.
 /// </summary>
-public record RestorePageVersionCommand(Guid PageId, Guid VersionId, List<SeenBlockVersion> CurrentBlocks) : ICommand<Result<RestorePageVersionResultDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+[IdempotencyOperation("documents.versions.restore-page-version.v1")]
+public record RestorePageVersionCommand(Guid PageId, Guid VersionId, List<SeenBlockVersion> CurrentBlocks) : ICommand<Result<RestorePageVersionResultDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("documents.page"), PageId);
@@ -53,6 +56,14 @@ public class RestorePageVersionCommandHandler : IRequestHandler<RestorePageVersi
             .FirstOrDefaultAsync(v => v.Id == request.VersionId && v.PageId == request.PageId, ct)
             ?? throw new NotFoundException(nameof(DocumentVersion), request.VersionId);
         var (_, captured) = PageVersionSnapshot.Parse(version.Snapshot.Data!.Value);
+
+        // DCT-030: history is not automatically valid under today's schema. Every captured block is checked against
+        // the current type, content and property rules before anything is written, so a refusal changes nothing.
+        foreach (var block in captured)
+        {
+            BlockContentValidator.Validate(block.Type, PageBlockSet.ContentOf(JsonDocumentElement(block.Content))!);
+            BlockPropertiesValidator.Normalize(block.Type, PageBlockSet.PropertiesOf(JsonDocumentElement(block.Properties))!);
+        }
 
         var userId = _requestContext.UserId;
         var now = _dateTimeProvider.UtcNow;

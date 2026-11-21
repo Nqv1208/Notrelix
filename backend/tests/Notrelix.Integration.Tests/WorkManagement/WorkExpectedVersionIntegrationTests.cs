@@ -164,7 +164,19 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
         problem.Extensions["currentVersion"].Should().Be(readVersion + 1);
     }
 
-    private async Task<PreconditionFailedException> StaleMoveProblemAsync(long staleVersion, bool guest)
+    [Fact]
+    public async Task StaleVersion_NamesNoOne_WhenNoWorkspaceAccessResolverIsInjected_ButStillAnswersTheCurrentVersion()
+    {
+        var readVersion = await VersionAsync<BoardItem>(_itemId);
+        await MoveAsync(_doneId, readVersion);
+
+        var problem = await StaleMoveProblemAsync(readVersion, guest: false, withAccessResolver: false);
+
+        problem.Extensions["changedByName"].Should().BeNull("a caller the server cannot clear reads no name");
+        problem.Extensions["currentVersion"].Should().Be(readVersion + 1);
+    }
+
+    private async Task<PreconditionFailedException> StaleMoveProblemAsync(long staleVersion, bool guest, bool withAccessResolver = true)
     {
         await using var context = _db.CreateOwnerContext(Tenant());
         var actors = new Mock<IActorLookupService>();
@@ -176,7 +188,7 @@ public sealed class WorkExpectedVersionIntegrationTests : IAsyncLifetime
             .ReturnsAsync(new WorkspaceAccessSnapshot(_accountId, _workspaceId, _userId, true, true, IsGuest: guest));
         var session = new EfRequestDataSession(
             context, Mock.Of<IRlsSessionContext>(), Mock.Of<ILogger<EfRequestDataSession>>(),
-            actors: actors.Object, workspaceAccess: access.Object, request: new FakeCurrentRequestContext().AsUser(_userId));
+            actors: actors.Object, workspaceAccess: withAccessResolver ? access.Object : null, request: new FakeCurrentRequestContext().AsUser(_userId));
         var command = new MoveBoardItemCommand(_itemId, _todoId, staleVersion);
         var constraint = new ExpectedVersionConstraint(typeof(MoveBoardItemCommand), command.Resource, staleVersion);
 

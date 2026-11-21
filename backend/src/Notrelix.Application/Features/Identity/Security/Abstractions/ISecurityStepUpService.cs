@@ -22,22 +22,33 @@ public interface ISecurityStepUpService
     Task<Result<StepUpRequirementResult>> GetRequirementAsync(
         Guid userId, Guid sessionId, StepUpPurpose purpose, CancellationToken ct);
 
-    /// <summary>Completes an MFA challenge (TOTP or recovery code) and issues a purpose-bound proof.</summary>
+    /// <summary>
+    /// Completes an MFA challenge (TOTP or recovery code) and issues a purpose-bound proof,
+    /// bound to <paramref name="target"/> when the purpose acts on one thing (see <see cref="StepUpTarget"/>).
+    /// </summary>
     Task<Result<StepUpProofResult>> CompleteMfaAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code, CancellationToken ct);
+        Guid userId, Guid sessionId, StepUpPurpose purpose, string challengeToken, string code, string? target, CancellationToken ct);
 
-    /// <summary>Verifies the current password and issues a purpose-bound proof.</summary>
+    /// <summary>Verifies the current password and issues a purpose-bound proof (and target-bound when given).</summary>
     Task<Result<StepUpProofResult>> CompletePasswordAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, string password, CancellationToken ct);
+        Guid userId, Guid sessionId, StepUpPurpose purpose, string password, string? target, CancellationToken ct);
 
-    /// <summary>Issues a purpose-bound proof after successful OAuth re-authentication bound to the user.</summary>
+    /// <summary>Issues a purpose-bound proof (and target-bound when given) after successful OAuth re-authentication bound to the user.</summary>
     Task<Result<StepUpProofResult>> GrantOAuthProofAsync(
-        Guid userId, Guid sessionId, StepUpPurpose purpose, CancellationToken ct);
+        Guid userId, Guid sessionId, StepUpPurpose purpose, string? target, CancellationToken ct);
 
     /// <summary>
     /// Consumes a step-up proof exactly once. Fails when the proof is missing, expired,
-    /// already used, or bound to a different user/session/purpose.
+    /// already used, bound to a different user/session/purpose, or bound to a target (a
+    /// target-bound proof is spent only through <see cref="ConsumeBoundAsync"/>).
     /// </summary>
     Task<Result> ConsumeAsync(
         string proofToken, Guid userId, Guid sessionId, StepUpPurpose purpose, CancellationToken ct);
+
+    /// <summary>
+    /// Consumes a step-up proof exactly once, and only when it was issued for exactly
+    /// <paramref name="target"/>. A proof for another target, or for none, fails like a stale one (and is spent).
+    /// </summary>
+    Task<Result> ConsumeBoundAsync(
+        string proofToken, Guid userId, Guid sessionId, StepUpPurpose purpose, string target, CancellationToken ct);
 }

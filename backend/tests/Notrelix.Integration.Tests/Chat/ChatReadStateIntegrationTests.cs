@@ -156,6 +156,25 @@ public sealed class ChatReadStateIntegrationTests : IAsyncLifetime
         return context;
     }
 
+    [Fact]
+    public async Task AStickerMessage_IsStoredWithItsId_ReadsBackAndCountsAsUnreadLikeAnyMessage()
+    {
+        await using (var send = _db.CreateOwnerContext(SystemTenant()))
+        {
+            send.ChatMessages.Add(Message.CreateStickerMessage(_accountId, _workspaceId, _beta, 5, _other, "rocket", "sticker-key", null, Now));
+            await send.SaveChangesAsync();
+        }
+        await SetLastSequenceAsync(_beta, 5);
+
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        var stored = await probe.ChatMessages.AsNoTracking().SingleAsync(m => m.SpaceId == _beta && m.Sequence == 5);
+        stored.StickerId.Should().Be("rocket");
+        stored.Content.Should().Be("Sticker: Rocket");
+
+        var summary = await UnreadSummaryBuilder.BuildAsync(probe, _workspaceId, _member, Now, CancellationToken.None);
+        summary.Spaces.Single(s => s.SpaceId == _beta).UnreadCount.Should().Be(5, "the four messages before it and the sticker");
+    }
+
     private Mock<IWorkspaceMemberFacts> ActiveMember(Guid userId)
     {
         var members = new Mock<IWorkspaceMemberFacts>();

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 export function useObjectUrl(blob: Blob | null | undefined): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (!blob) {
+    // No object URLs in this environment (a test DOM): no preview, never a throw.
+    if (!blob || typeof URL.createObjectURL !== "function") {
       setUrl(null);
       return;
     }

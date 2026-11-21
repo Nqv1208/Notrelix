@@ -36,6 +36,8 @@ export interface MockForm {
   version: number;
   createdAt: string;
   deleted: boolean;
+  /** The whole public link (`/f/<key>`) while the form is public; null while it is private. */
+  publicKey: string | null;
   questions: MockFormQuestion[];
 }
 
@@ -58,12 +60,27 @@ export interface MockFormSubmission {
 export class MockBoardForms {
   private readonly formsById = new Map<string, MockForm>();
   private readonly submissionsById = new Map<string, MockFormSubmission>();
+  /** Anonymous sends by public key, as virtual seconds (the rate limit counts the last minute). */
+  readonly publicHits = new Map<string, number[]>();
 
   constructor(private readonly store: () => MockStore) {}
 
   clear(): void {
     this.formsById.clear();
     this.submissionsById.clear();
+    this.publicHits.clear();
+  }
+
+  /** The form a public key belongs to, whatever its state; null for a key no form holds. */
+  findByPublicKey(key: string): MockForm | undefined {
+    for (const form of this.formsById.values())
+      if (form.publicKey !== null && form.publicKey === key) return form;
+    return undefined;
+  }
+
+  /** A key no earlier link had: a form made private and public again gets a new one. */
+  mintPublicKey(): string {
+    return `mockpk-${String(this.store().nextSequence("form-public-key")).padStart(6, "0")}`;
   }
 
   /** The live forms of a board, newest first. */
@@ -92,6 +109,7 @@ export class MockBoardForms {
       version: 1,
       createdAt: this.store().now(),
       deleted: false,
+      publicKey: null,
       questions: [],
     };
     this.formsById.set(form.id, form);

@@ -36,7 +36,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         var dateTimeProvider = new Mock<IDateTimeProvider>();
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer.Object, Mock.Of<IMfaChallengeStore>(), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer.Object, Mock.Of<IMfaChallengeStore>(), new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance, new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
 
         var result = await handler.Handle(new LoginCommand
         {
@@ -69,7 +69,7 @@ public class LoginCommandHandlerTests : IAsyncLifetime
         dateTimeProvider.Setup(x => x.UtcNow).Returns(() => DateTimeOffset.UtcNow);
 
         var sessionIssuer = new AuthSessionIssuer(jwtService.Object, context, dateTimeProvider.Object, new Mock<IClientMetadata>().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
-        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer, Mock.Of<IMfaChallengeStore>(), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance);
+        var handler = new LoginCommandHandler(context, passwordHasher.Object, sessionIssuer, Mock.Of<IMfaChallengeStore>(), new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), dateTimeProvider.Object, NullLogger<LoginCommandHandler>.Instance, new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
 
         var before = DateTimeOffset.UtcNow;
         var result = await handler.Handle(new LoginCommand

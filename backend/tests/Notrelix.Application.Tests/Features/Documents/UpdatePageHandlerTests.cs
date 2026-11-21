@@ -78,6 +78,58 @@ public sealed class UpdatePageHandlerTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
+    [Fact]
+    public async Task SetIcon_StoresTheIcon_BumpsTheVersionOnce_AndLeavesTheTitle()
+    {
+        var page = NewPage("Plan");
+        var before = page.Version;
+
+        await Sut(page).Handle(new UpdatePageCommand(page.Id, null, before, " 🚀 "), CancellationToken.None);
+
+        page.Icon.Should().Be("🚀");
+        page.Title.Should().Be("Plan");
+        page.Version.Should().Be(before + 1);
+    }
+
+    [Fact]
+    public async Task SetIcon_TheSameIcon_IsANoOp_AndABlankIconRestoresTheDefault()
+    {
+        var page = NewPage("Plan");
+        var sut = Sut(page);
+        await sut.Handle(new UpdatePageCommand(page.Id, null, page.Version, "🚀"), CancellationToken.None);
+        var version = page.Version;
+
+        await sut.Handle(new UpdatePageCommand(page.Id, null, version, "🚀"), CancellationToken.None);
+        page.Version.Should().Be(version);
+
+        await sut.Handle(new UpdatePageCommand(page.Id, null, version, ""), CancellationToken.None);
+        page.Icon.Should().Be(Page.DefaultIcon);
+        page.Version.Should().Be(version + 1);
+    }
+
+    [Fact]
+    public async Task SetIcon_OfATrashedPage_IsRefused()
+    {
+        var page = NewPage("Plan");
+        page.Delete(UserId, Now);
+
+        var act = () => Sut(page).Handle(new UpdatePageCommand(page.Id, null, page.Version, "🚀"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public void Validator_RefusesAnIconOver32Characters_AndARequestWithNeitherTitleNorIcon()
+    {
+        var validator = new UpdatePageCommandValidator();
+        var id = Guid.CreateVersion7();
+
+        validator.Validate(new UpdatePageCommand(id, null, 1, new string('x', 33))).IsValid.Should().BeFalse();
+        validator.Validate(new UpdatePageCommand(id, null, 1, new string('x', 32))).IsValid.Should().BeTrue();
+        validator.Validate(new UpdatePageCommand(id, null, 1)).IsValid.Should().BeFalse();
+        validator.Validate(new UpdatePageCommand(id, "", 1)).IsValid.Should().BeFalse();
+    }
+
     private static Page NewPage(string title) => Page.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), title, UserId, Now);
 
     private static UpdatePageCommandHandler Sut(Page page)

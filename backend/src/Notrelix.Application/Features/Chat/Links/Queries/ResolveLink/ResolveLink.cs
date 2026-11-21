@@ -63,7 +63,7 @@ public class ResolveLinkQueryValidator : AbstractValidator<ResolveLinkQuery>
         RuleFor(x => x.Url).MaximumLength(ChatLinkTargets.MaxUrlLength).When(x => x.Url is not null);
         RuleFor(x => x.Kind).Must(ChatLinkTargets.IsSupported)
             .When(x => x.Kind is not null)
-            .WithMessage("The kind must be work-management.board-item, work-management.board or documents.page.");
+            .WithMessage("The kind must be work-management.board-item, work-management.board, documents.page or governance.team.");
         RuleFor(x => x.ResourceId).NotEmpty().When(x => x.Kind is not null);
         RuleFor(x => x.Kind).NotEmpty().When(x => x.ResourceId is not null);
     }

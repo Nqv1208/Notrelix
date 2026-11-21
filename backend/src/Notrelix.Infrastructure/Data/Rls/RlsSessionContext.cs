@@ -200,16 +200,22 @@ public sealed class RlsSessionContext : IRlsSessionContext
             CredentialScopeKind.RefreshToken => "refresh-token",
             CredentialScopeKind.EmailVerificationToken => "email-verification",
             CredentialScopeKind.OAuthIdentity => "oauth-identity",
+            CredentialScopeKind.SsoIdentity => "sso-identity",
             _ => throw new ArgumentOutOfRangeException(nameof(request), request.Kind, "Unknown credential scope kind."),
         };
 
         var connection = (NpgsqlConnection)_database.GetDbConnection();
         var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
-        await using var command = new NpgsqlCommand(
-            "SELECT ops.enter_credential_scope(@kind, @credential, @version)", connection, transaction);
-        command.Parameters.AddWithValue("kind", kind);
-        command.Parameters.AddWithValue("credential", request.Credential);
-        command.Parameters.AddWithValue("version", request.HashVersion);
+        await using var command = request.Kind == CredentialScopeKind.SsoIdentity
+            ? SsoIdentityCommand(connection, transaction, request.Credential)
+            : new NpgsqlCommand("SELECT ops.enter_credential_scope(@kind, @credential, @version)", connection, transaction);
+        if (request.Kind != CredentialScopeKind.SsoIdentity)
+        {
+            command.Parameters.AddWithValue("kind", kind);
+            command.Parameters.AddWithValue("credential", request.Credential);
+            command.Parameters.AddWithValue("version", request.HashVersion);
+        }
+
         var result = await command.ExecuteScalarAsync(cancellationToken);
         Guid? userId = result is Guid found ? found : null;
 
@@ -223,6 +229,15 @@ public sealed class RlsSessionContext : IRlsSessionContext
                                : "Credential scope not entered: {Kind} | {Category}: {Description}",
             kind, request.Reason.Category, request.Reason.Description, userId);
         return userId;
+    }
+
+    private static NpgsqlCommand SsoIdentityCommand(NpgsqlConnection connection, NpgsqlTransaction transaction, string credential)
+    {
+        var parts = credential.Split('\u001f', 2);
+        var command = new NpgsqlCommand("SELECT ops.enter_sso_identity_scope(@account, @subject)", connection, transaction);
+        command.Parameters.AddWithValue("account", Guid.TryParse(parts[0], out var account) ? account : Guid.Empty);
+        command.Parameters.AddWithValue("subject", parts.Length > 1 ? parts[1] : string.Empty);
+        return command;
     }
 
     /// <summary>
@@ -267,6 +282,58 @@ public sealed class RlsSessionContext : IRlsSessionContext
         }
 
         return binding;
+    }
+
+    public async Task<FormSubmitBinding?> EnterFormSubmitScopeAsync(
+        string publicKey, SystemOperationReason reason, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(publicKey))
+            throw new ArgumentException("A public form key is required.", nameof(publicKey));
+        ArgumentNullException.ThrowIfNull(reason);
+        RequireTransaction("form-submit");
+
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand(
+            "SELECT form_id, account_id, workspace_id, board_id FROM ops.enter_form_submit_scope(@key)", connection, transaction);
+        command.Parameters.AddWithValue("key", publicKey);
+
+        FormSubmitBinding? binding = null;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            if (await reader.ReadAsync(cancellationToken))
+                binding = new FormSubmitBinding(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetGuid(3));
+        }
+
+        RlsScopeMetrics.Record("form-submit", reason.Category, binding is not null);
+        if (binding is null)
+        {
+            _logger?.LogWarning("Form-submit scope not entered: {Category}: {Description}", reason.Category, reason.Description);
+        }
+        else
+        {
+            _active = RlsBoundedScope.Token;
+            // The key is a locator and is never logged; only the derived form is.
+            _logger?.LogInformation(
+                "Form-submit scope entered: {Category}: {Description} | form {FormId} workspace {WorkspaceId}",
+                reason.Category, reason.Description, binding.FormId, binding.WorkspaceId);
+        }
+
+        return binding;
+    }
+
+    public async Task<IReadOnlyList<FormSubmitFieldOption>> ReadFormSubmitFieldOptionsAsync(CancellationToken cancellationToken)
+    {
+        RequireTransaction("form-submit");
+        var connection = (NpgsqlConnection)_database.GetDbConnection();
+        var transaction = (NpgsqlTransaction)_database.CurrentTransaction!.GetDbTransaction();
+        await using var command = new NpgsqlCommand("SELECT field_id, option_id, option_name FROM ops.form_submit_field_options()", connection, transaction);
+
+        var rows = new List<FormSubmitFieldOption>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            rows.Add(new FormSubmitFieldOption(reader.GetGuid(0), reader.GetGuid(1), reader.GetString(2)));
+        return rows;
     }
 
     private async Task<bool> ScalarBoolAsync(string sql, string parameter, object value, CancellationToken cancellationToken)

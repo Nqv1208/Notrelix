@@ -612,7 +612,7 @@ export interface DocArticleSurfaceProps {
   readonly why: string | null;
   readonly blocks: readonly DocBlockView[];
   readonly readOnly?: boolean;
-  /** Version compare: struck-through checked items are not struck. */
+  /** The page as a read-only copy (version history): no live editor, the blocks drawn statically. */
   readonly compare?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
@@ -848,9 +848,7 @@ export function DocArticleSurface({
               placeholder={copy.blockPlaceholder}
               className={cn(
                 "min-w-0",
-                block.checked &&
-                  !compare &&
-                  "text-meta-foreground line-through",
+                block.checked && "text-meta-foreground line-through",
                 block.inserted &&
                   "underline decoration-work-status-done decoration-[1.5px] underline-offset-3",
               )}
@@ -1069,7 +1067,7 @@ export function DocArticleSurface({
 }
 
 function ChipIcon({ kind }: { kind: DocChip["kind"] }) {
-  if (kind === "date") return null;
+  if (kind === "date" || kind === "version") return null;
   return kind === "scope" ? (
     <Lock aria-hidden="true" className="size-[13px] shrink-0 stroke-[1.8]" />
   ) : (

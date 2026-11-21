@@ -39,16 +39,29 @@ export function ChatTypingIndicator({
   );
 }
 
-/** The dots' stagger: each starts a little later, so the three pulse in a wave. */
-const DOT_DELAYS = [
-  "[animation-delay:0ms]",
-  "[animation-delay:160ms]",
-  "[animation-delay:320ms]",
-];
+/** The three dots; their stagger lives in the .chat-typing-wave rule (globals.css). */
+const DOTS = [0, 1, 2];
+
+/** The three wave dots, shared by the bubble and the sidebar rows. */
+export function ChatTypingDots({ className }: { readonly className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("inline-flex items-center gap-1", className)}
+    >
+      {DOTS.map((dot) => (
+        <span
+          key={dot}
+          className="chat-typing-wave size-1.5 rounded-full bg-muted-foreground"
+        />
+      ))}
+    </span>
+  );
+}
 
 /**
  * The typing bubble at the end of the list (Messenger): the first typer's avatar and a bubble of three dots
- * that pulse (still under reduced motion). Decorative: the live region above the composer says who is typing.
+ * that rise and fade in a soft wave (still under reduced motion). Decorative: the live region above the composer says who is typing.
  */
 export function ChatTypingBubble({
   ids,
@@ -64,7 +77,7 @@ export function ChatTypingBubble({
   const names = ids.map((id) => authorName(id));
   return (
     <div
-      className="mt-3 flex items-end gap-2 px-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150 md:px-4"
+      className="mt-3 flex items-end gap-2 px-3.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150 md:px-6 xl:px-5"
       data-testid="chat-typing-bubble"
       title={typingText(names, copy)}
     >
@@ -77,16 +90,8 @@ export function ChatTypingBubble({
           </AvatarFallback>
         </Avatar>
       </span>
-      <span className="inline-flex h-9 items-center gap-1 rounded-2xl bg-sidebar-accent px-3.5">
-        {DOT_DELAYS.map((delay) => (
-          <span
-            key={delay}
-            className={cn(
-              "size-1.5 rounded-full bg-muted-foreground motion-safe:animate-bounce motion-reduce:opacity-70",
-              delay,
-            )}
-          />
-        ))}
+      <span className="inline-flex h-9 items-center rounded-2xl bg-sidebar-accent px-3.5">
+        <ChatTypingDots />
       </span>
     </div>
   );

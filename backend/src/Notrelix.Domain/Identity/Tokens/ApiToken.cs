@@ -9,12 +9,16 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
     public Guid? UserId { get; private set; }
     public string Name { get; private set; } = null!;
     public string TokenHash { get; private set; } = null!;
+    /// <summary>The last characters of the secret, shown in lists so a person can tell tokens apart. Null for tokens issued before it was kept.</summary>
+    public string? TokenSuffix { get; private set; }
     public ApiTokenScopes? Scopes { get; private set; }
     public ApiTokenStatus Status { get; private set; } = ApiTokenStatus.Active;
     public DateTimeOffset? LastUsedAt { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
     public Guid? RevokedBy { get; private set; }
+    /// <summary>Null while the token is not revoked, and for tokens revoked before the reason was kept (read as manual).</summary>
+    public ApiTokenRevokedReason? RevokedReason { get; private set; }
 
     private ApiToken() : base() { }
 
@@ -27,7 +31,8 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
         ApiTokenScopes? scopes,
         Guid createdBy,
         DateTimeOffset createdAt,
-        DateTimeOffset? expiresAt = null)
+        DateTimeOffset? expiresAt = null,
+        string? tokenSuffix = null)
     {
         Guard.NotEmpty(workspaceId);
         Guard.NotNullOrWhiteSpace(name);
@@ -41,6 +46,7 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
             UserId = userId,
             Name = name.Trim(),
             TokenHash = tokenHash,
+            TokenSuffix = tokenSuffix,
             Scopes = scopes,
             Status = ApiTokenStatus.Active,
             ExpiresAt = expiresAt
@@ -51,7 +57,7 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
         return token;
     }
 
-    public void Revoke(Guid revokedBy, DateTimeOffset revokedAt)
+    public void Revoke(Guid revokedBy, DateTimeOffset revokedAt, ApiTokenRevokedReason reason = ApiTokenRevokedReason.Manual)
     {
         Guard.NotEmpty(revokedBy);
         if (Status == ApiTokenStatus.Revoked) return;
@@ -60,10 +66,17 @@ public sealed class ApiToken : AggregateRoot, IWorkspaceScoped
         Status = ApiTokenStatus.Revoked;
         RevokedAt = revokedAt;
         RevokedBy = revokedBy;
+        RevokedReason = reason;
         ApplyAuditUpdate(pending);
         RaiseDomainEvent(new ApiTokenRevokedDomainEvent(AccountId, WorkspaceId, Id, revokedAt));
         IncrementVersion();
     }
+
+    /// <summary>Last use is written at most once per interval, so a busy integration does not write the token row on every call.</summary>
+    public static readonly TimeSpan UseRecordingInterval = TimeSpan.FromHours(1);
+
+    public bool IsUseRecordDue(DateTimeOffset now) =>
+        LastUsedAt is null || now - LastUsedAt.Value >= UseRecordingInterval;
 
     public void RecordUse(DateTimeOffset usedAt)
     {

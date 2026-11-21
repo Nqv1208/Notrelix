@@ -28,3 +28,9 @@
 \i 028_deleted_workspaces.sql
 \i 029_attachment_pending_uploads.sql
 \i 030_chat_policy_fast_path.sql
+\i 031_tenant_policy_fast_path.sql
+\i 032_invitation_arm_prefilter.sql
+\i 033_member_active_elsewhere.sql
+\i 034_form_submit_scope.sql
+\i 035_sso_scope.sql
+\i 036_sso_identity_scope.sql

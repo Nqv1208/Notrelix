@@ -29,7 +29,7 @@ jobs:
       - name: Verify application provenance
         env: {GH_TOKEN: '${{ github.token }}', SHA: '${{ steps.identity.outputs.sha }}'}
         run: |
-          jq -r '.images[]|select(.kind=="application")|.ref' artifacts/input/release.json | while read -r image; do gh attestation verify "oci://$image" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/container-ci.yml" --source-digest "$SHA" --source-ref refs/heads/main; done
+          branch="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$(jq -er .ci_run_id artifacts/input/release.json)" --jq .head_branch)"; [[ "$branch" == release/* ]]; jq -r '.images[]|select(.kind=="application")|.ref' artifacts/input/release.json | while read -r image; do gh attestation verify "oci://$image" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/container-ci.yml" --source-digest "$SHA" --source-ref "refs/heads/$branch"; done
       - name: Configure SSH trust
         env: {HOST: '${{ vars.DEPLOY_HOST }}', KEY: '${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}', KNOWN: '${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}'}
         run: |
@@ -48,20 +48,30 @@ jobs:
           HEALTH: ${{ vars.DEPLOY_HEALTH_URL }}
           SMOKE: ${{ vars.DEPLOY_SMOKE_URL }}
           ALLOW_STATEFUL: ${{ vars.DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE }}
+          ACTOR: ${{ github.actor }}
         run: |
-          ssh -p "${PORT:-22}" "$USER@$HOST" bash -s -- "$DEPLOY_PATH" "$ENV_FILE" "$HEALTH" "$SMOKE" "${ALLOW_STATEFUL:-false}" "$REMOTE_BUNDLE" <<'REMOTE'
+          ssh -p "${PORT:-22}" "$USER@$HOST" bash -s -- "$DEPLOY_PATH" "$ENV_FILE" "$HEALTH" "$SMOKE" "${ALLOW_STATEFUL:-false}" "$REMOTE_BUNDLE" "$ACTOR" <<'REMOTE'
           set -euo pipefail
-          path="$1"; env_file="$2"; health="$3"; smoke="$4"; allow_stateful="$5"; incoming="$6"; cd "$path"; source "$incoming/metadata.env"
+          path="$1"; env_file="$2"; health="$3"; smoke="$4"; allow_stateful="$5"; incoming="$6"; actor="$7"; cd "$path"; source "$incoming/metadata.env"
           [[ "$ROLLBACK_AFTER_SCHEMA_CHANGE" == manual && "$STATEFUL_IMAGE_CHANGE_POLICY" == explicit-override && "$ROLLOUT_STRATEGY" == rolling ]]
           git fetch --quiet origin "$RELEASE_SHA"; git checkout --quiet --detach "$RELEASE_SHA"; test -f "$COMPOSE_OVERLAY"
           current=.notrelix-release-current; previous=.notrelix-release-previous; rm -rf "$previous"; [[ -d "$current" ]] && cp -a "$current" "$previous"
           stateful_changed=false; [[ -f "$current/stateful.env" ]] && ! cmp -s "$current/stateful.env" "$incoming/stateful.env" && stateful_changed=true
           [[ "$stateful_changed" == false || "$allow_stateful" == true ]] || { echo 'stateful image change requires explicit approval' >&2; exit 1; }
           rm -rf "$current"; cp -a "$incoming" "$current"; migration_started=false
-          compose(){ docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@"; }
-          rollback(){ rc=$?; trap - ERR; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull || true; docker compose --env-file "$env_file" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans || true; fi; exit "$rc"; }
+          # Append-only deploy log on the host: when, release, source, who, outcome and the exact image refs.
+          log(){ printf '%s release=%s sha=%s actor=%s result=%s images=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$RELEASE_ID" "$RELEASE_SHA" "$actor" "$1" "$(tr '\n' ' ' < "$current/images.env" 2>/dev/null)" >> "$path/deploy.log"; }
+          # Custom-format dump taken before migrations; any failure aborts the deploy. Keeps the 5 newest.
+          backup(){ local dir="$path/backups/pre-migrate" f; f="$dir/pre-$RELEASE_ID.dump"; umask 077; mkdir -p "$dir"; for _ in $(seq 1 60); do compose exec -T postgres pg_isready -h 127.0.0.1 >/dev/null 2>&1 && break; sleep 2; done; compose exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$f.tmp"; [[ -s "$f.tmp" ]]; mv "$f.tmp" "$f"; ls -1t "$dir"/pre-*.dump | tail -n +6 | xargs -r rm -f; }
+          compose(){ docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@"; }
+          rollback(){ rc=$?; trap - ERR; rm -f "$path"/backups/pre-migrate/*.tmp; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then log failed-rollback-blocked; echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; log failed; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull || true; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans || true; fi; exit "$rc"; }
           trap rollback ERR; compose config >/dev/null; compose pull
           mapfile -t stateful < <(grep -v '^$' "$current/stateful.services" || true); [[ ${#stateful[@]} -eq 0 ]] || compose up -d --no-build "${stateful[@]}"
-          if [[ "$RUN_MIGRATIONS" == true && -n "$MIGRATION_SERVICE" ]]; then [[ "$SCHEMA_CHANGE" == true ]] && migration_started=true; while read -r cmd; do [[ -n "$cmd" ]] && compose run --rm "$MIGRATION_SERVICE" "$cmd"; done < "$current/migration.commands"; fi
-          compose up -d --no-build --remove-orphans; ok=false; for _ in $(seq 1 75); do curl -fsS --max-time 5 "$health" >/dev/null && { ok=true; break; }; sleep 2; done; [[ "$ok" == true ]]; curl -fsS --max-time 10 "$smoke" >/dev/null; rm -rf "$previous" "$incoming"; trap - ERR
+          if [[ "$RUN_MIGRATIONS" == true && -n "$MIGRATION_SERVICE" ]]; then backup; [[ "$SCHEMA_CHANGE" == true ]] && migration_started=true; while read -r cmd; do [[ -n "$cmd" ]] && compose run --rm "$MIGRATION_SERVICE" "$cmd"; done < "$current/migration.commands"; fi
+          compose up -d --no-build --remove-orphans; ok=false; for _ in $(seq 1 75); do curl -fsS --max-time 5 "$health" >/dev/null && { ok=true; break; }; sleep 2; done; [[ "$ok" == true ]]; curl -fsS --max-time 10 "$smoke" >/dev/null; rm -rf "$previous" "$incoming"; trap - ERR; log success
           REMOTE
+      - name: Deploy log line
+        if: always()
+        env: {HOST: '${{ vars.DEPLOY_HOST }}', PORT: '${{ vars.DEPLOY_SSH_PORT }}', USER: '${{ secrets.DEPLOY_SSH_USER }}', DEPLOY_PATH: '${{ vars.DEPLOY_PATH }}'}
+        run: |
+          { echo '### Deploy log'; echo '```'; ssh -p "${PORT:-22}" "$USER@$HOST" "tail -n 3 '$DEPLOY_PATH/deploy.log'" || echo 'deploy.log not readable'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

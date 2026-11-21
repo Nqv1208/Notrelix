@@ -3,6 +3,7 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Events.Workspaces;
 using Notrelix.Application.Features.Governance.Public.Access;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Invitations;
 
 namespace Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteGuestToResource;
 
@@ -24,8 +25,10 @@ public record InviteGuestToResourceCommand(
     string Email,
     string Level
 ) : ICommand<Result<Guid>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest,
-    IRequirePermission, IRequireGrantPermission, IRequireVerifiedEmail
+    IRequirePermission, IRequireGrantPermission, IRequireVerifiedEmail, IGuestInvitationRequest
 {
+    bool IGuestInvitationRequest.IntroducesGuest => true;
+
     internal ResourceKind Kind => global::Notrelix.Domain.SharedKernel.ResourceKind.TryCreate(ResourceKind, out var kind)
         ? kind
         : throw new ArgumentException($"Invalid resource kind '{ResourceKind}'.", nameof(ResourceKind));

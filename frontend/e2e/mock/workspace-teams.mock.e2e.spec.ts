@@ -152,7 +152,7 @@ test.describe("Teams (owner)", () => {
     await page.getByRole("button", { name: "Lưu trữ nhóm" }).click();
     await page
       .getByRole("dialog", {
-        name: "Lưu trữ Nhóm Triển khai kho trong Minh An Group?",
+        name: "Lưu trữ Nhóm Triển khai kho?",
       })
       .getByRole("button", { name: "Lưu trữ nhóm" })
       .click();
@@ -179,7 +179,7 @@ test.describe("Teams (owner)", () => {
       .click();
     await page.getByRole("menuitem", { name: "Lưu trữ nhóm" }).click();
     const dialog = page.getByRole("dialog", {
-      name: "Lưu trữ Nhóm Kỹ sư ERP trong Minh An Group?",
+      name: "Lưu trữ Nhóm Kỹ sư ERP?",
     });
     await expect(
       dialog.getByText(/3 người sẽ mất quyền vào Phòng Công nghệ/),

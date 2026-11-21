@@ -38,6 +38,7 @@ internal static class StaleFieldGuard
     public static async Task<Exception> MissingAsync(
         IWorkManagementDbContext context,
         IActorLookupService? actors,
+        IWorkspaceAccessResolver? access,
         ICurrentRequestContext requestContext,
         Guid boardId,
         Guid fieldId,
@@ -53,9 +54,10 @@ internal static class StaleFieldGuard
             .FirstOrDefaultAsync(ct);
         if (deleted is null) return new NotFoundException("BoardField", fieldId);
 
-        string? by = null;
-        if (actors is not null && deleted.DeletedBy is { } actorId)
-            by = (await actors.FindManyAsync([actorId], ct)).FirstOrDefault()?.Name;
+        // Same rule as every change notice: a Guest, or a caller whose access cannot be resolved, reads "someone".
+        var by = actors is not null && access is not null
+            ? await ActorNotice.NameAsync(actors, access, workspaceId, requestContext.UserId, deleted.DeletedBy, ct)
+            : null;
         return new Notrelix.Application.Common.Exceptions.PreconditionFailedException(
             "The field was deleted since this client loaded the board.", DeletedCode)
         {

@@ -22,6 +22,7 @@ public class StartOAuthLoginCommandHandlerTests
         var result = await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = null
         }, CancellationToken.None);
 
@@ -51,6 +52,7 @@ public class StartOAuthLoginCommandHandlerTests
         var result = await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = null
         }, CancellationToken.None);
 
@@ -88,6 +90,7 @@ public class StartOAuthLoginCommandHandlerTests
         await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = null
         }, CancellationToken.None);
 
@@ -125,6 +128,7 @@ public class StartOAuthLoginCommandHandlerTests
         await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = "/dashboard"
         }, CancellationToken.None);
 
@@ -155,6 +159,7 @@ public class StartOAuthLoginCommandHandlerTests
         await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             ReturnUrl = "//evil.com/phish"
         }, CancellationToken.None);
 
@@ -185,6 +190,7 @@ public class StartOAuthLoginCommandHandlerTests
         var result = await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.GitHub,
+            BrowserBinding = "binding",
             ReturnUrl = null
         }, CancellationToken.None);
 
@@ -220,6 +226,7 @@ public class StartOAuthLoginCommandHandlerTests
         await handler.Handle(new StartOAuthLoginCommand
         {
             Provider = OAuthProvider.GitHub,
+            BrowserBinding = "binding",
             ReturnUrl = null
         }, CancellationToken.None);
 

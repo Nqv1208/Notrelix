@@ -1,4 +1,5 @@
 import type {
+  DuplicatedPage,
   Page,
   CreatePagePayload,
   MovePagePayload,
@@ -6,7 +7,12 @@ import type {
   UpdatePagePayload,
   PageDetail,
 } from "@notrelix/docs-core";
-import type { PageDtoApi, BreadcrumbDtoApi, TrashPageDtoApi } from "../dto";
+import type {
+  PageDtoApi,
+  BreadcrumbDtoApi,
+  DuplicatedPageDtoApi,
+  TrashPageDtoApi,
+} from "../dto";
 import { mapPage, mapBreadcrumb } from "../model/page.mapper";
 import { readAllCursorPages } from "./read-all-pages";
 
@@ -53,19 +59,25 @@ export interface DocsFileClient {
 export interface DocsApiClient {
   get<T>(url: string, options?: DocsRequestOptions): Promise<T>;
   post<T>(url: string, body: unknown, options?: DocsRequestOptions): Promise<T>;
-  patch<T>(url: string, body: unknown): Promise<T>;
-  delete<T>(url: string): Promise<T>;
+  patch<T>(
+    url: string,
+    body: unknown,
+    options?: DocsRequestOptions,
+  ): Promise<T>;
+  delete<T>(url: string, options?: DocsRequestOptions): Promise<T>;
 }
 
 export interface PageApiEndpoints {
   pages: {
     list: (workspaceId: string) => string;
     detail: (pageId: string) => string;
+    duplicate: (workspaceId: string, pageId: string) => string;
     breadcrumb: (pageId: string) => string;
     blocks: (pageId: string) => string;
     comments: (pageId: string) => string;
     commentsPage: (pageId: string) => string;
     history: (pageId: string) => string;
+    activity: (pageId: string) => string;
     search: (workspaceId: string) => string;
     move: (pageId: string) => string;
     moveToSpace: (pageId: string) => string;
@@ -80,6 +92,8 @@ export interface PageApiEndpoints {
   pageTemplates: {
     list: (workspaceId: string) => string;
     createPage: (workspaceId: string, templateId: string) => string;
+    detail: (workspaceId: string, templateId: string) => string;
+    archive: (workspaceId: string, templateId: string) => string;
   };
   resourcePermissions: {
     list: (resourceKind: string, resourceId: string) => string;
@@ -151,21 +165,48 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
     },
 
     /**
-     * `Documents.Pages.UpdatePage` renames, guarded by the page version the
-     * editor read: a stale `expectedVersion` answers 412 and changes nothing.
-     * The icon and cover are not stored yet.
+     * `Documents.Pages.UpdatePage` renames and/or sets the icon (a blank icon
+     * restores the default), guarded by the page version the editor read: a
+     * stale `expectedVersion` answers 412 and changes nothing. The cover is
+     * not stored yet.
      */
     async update(
       pageId: string,
       payload: UpdatePagePayload,
     ): Promise<PageDetail> {
-      if (payload.title === undefined || !payload.expectedVersion)
-        throw new Error("A rename needs the new title and the page version.");
+      if (
+        (payload.title === undefined && payload.icon === undefined) ||
+        !payload.expectedVersion
+      )
+        throw new Error(
+          "An update needs a title or an icon and the page version.",
+        );
       await api.patch<void>(endpoints.pages.detail(pageId), {
-        title: payload.title,
+        ...(payload.title !== undefined ? { title: payload.title } : {}),
+        ...(payload.icon !== undefined ? { icon: payload.icon ?? "" } : {}),
         expectedVersion: payload.expectedVersion,
       });
       return this.getDetail(pageId);
+    },
+
+    /**
+     * `Documents.Pages.DuplicatePage`: one page, not its subpages, in one
+     * server command; one key per call so a retry of the call returns the same copy.
+     */
+    async duplicate(
+      workspaceId: string,
+      pageId: string,
+      title?: string,
+    ): Promise<DuplicatedPage> {
+      const dto = await api.post<DuplicatedPageDtoApi>(
+        endpoints.pages.duplicate(workspaceId, pageId),
+        title ? { title } : {},
+        {
+          skipGlobalErrorToast: true,
+          idempotencyKey: globalThis.crypto.randomUUID(),
+        },
+      );
+      return { pageId: dto.pageId, droppedBlockCount: dto.droppedBlockCount };
     },
 
     /** `Documents.Pages.ArchivePage`: moves the page to the trash. */

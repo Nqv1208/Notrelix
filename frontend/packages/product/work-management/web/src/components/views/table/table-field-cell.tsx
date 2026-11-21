@@ -3,6 +3,7 @@ import { AlertCircle, ExternalLink, Loader2, Lock } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { StaleSchemaDetail } from "@notrelix/work-management-core";
 import {
+  canEditInTable,
   specOf,
   type ComputedValue,
   type FieldDefinition,
@@ -200,7 +201,7 @@ export function TableFieldCell({
   const value = write ? write.value : cell.value;
   const text = fieldText(field, value, members);
   const label = fillTableCopy(f.edit, { field: field.name, key: rowKey });
-  const canEdit = editable && spec.editable;
+  const canEdit = editable && canEditInTable(field);
   const ids = fieldIds(value);
   const empty = spec.isEmpty(value);
 
@@ -406,7 +407,7 @@ export function TableFieldCell({
       <>
         {editor}
         {/* A viewer's cell ends with a lock that names the field (`WM-Field-Editors`, "Chỉ xem"). */}
-        {!editable && spec.editable ? (
+        {!editable && canEditInTable(field) ? (
           <span
             role="img"
             aria-label={fillTableCopy(f.viewOnlyLabel, { field: field.name })}

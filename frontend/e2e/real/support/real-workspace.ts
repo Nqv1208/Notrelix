@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import {
   expect,
   request,
@@ -6,9 +5,8 @@ import {
   type Browser,
   type Page,
 } from "@playwright/test";
+import { devMails } from "./dev-mail";
 import { apiRead, apiWrite, realUsers, signIn } from "./real-session";
-
-const backendContainer = "notrelix-fe-real-e2e-backend";
 
 export type RealUser = (typeof realUsers)[keyof typeof realUsers];
 
@@ -104,41 +102,20 @@ export async function joinAs(
   return { context, page, invitationId: invitation!.id };
 }
 
-/** The address as the development mail log writes it. */
-function masked(email: string) {
-  const at = email.indexOf("@");
-  return `${email[0]}***${email.slice(at - 1)}`;
-}
-
 /**
  * The raw token of the newest invitation e-mail to `email`: no provider runs on
- * a developer machine, so the development backend logs the message text.
+ * a developer machine, so the real-run stack sends mail to its Mailpit sink.
  * `after` skips messages already read (a resend writes a second one).
  */
 export async function invitationTokenFor(
   email: string,
   after = 0,
 ): Promise<{ token: string; count: number }> {
-  const escaped = masked(email).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(
-    `Development email to ${escaped}: [\\s\\S]{0,1500}?/invite#token=([^\\s"<>]+)`,
-    "g",
-  );
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    const logs = execFileSync("docker", ["logs", backendContainer], {
-      encoding: "utf8",
-      maxBuffer: 128 * 1024 * 1024,
-    });
-    const found = [...logs.matchAll(pattern)];
-    if (found.length > after) {
-      return {
-        token: decodeURIComponent(found[found.length - 1]![1]!),
-        count: found.length,
-      };
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  throw new Error(`no invitation e-mail was logged for ${email}`);
+  const tokens = await devMails(email, '/invite#token=([^\\s"<>]+)', after);
+  return {
+    token: decodeURIComponent(tokens[tokens.length - 1]!),
+    count: tokens.length,
+  };
 }
 
 // The development mail log writes only the first and last character of the local part, so each address

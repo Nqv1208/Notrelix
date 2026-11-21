@@ -34,6 +34,7 @@ const spaceEndpoints: SpacesEndpoints = {
     spaceArchive: (w, s) => `/workspaces/${w}/spaces/${s}/archive`,
     spaceUnarchive: (w, s) => `/workspaces/${w}/spaces/${s}/unarchive`,
     spaceRestore: (w, s) => `/workspaces/${w}/spaces/${s}/restore`,
+    spacesDeleted: (w) => `/workspaces/${w}/spaces/deleted`,
     spaceMove: (w, s) => `/workspaces/${w}/spaces/${s}/move`,
     spaceMembers: (w, s) => `/workspaces/${w}/spaces/${s}/members`,
     spaceMember: (w, s, t, id) =>
@@ -48,6 +49,7 @@ const teamEndpoints: TeamsEndpoints = {
     teamDescription: (w, t) => `/workspaces/${w}/teams/${t}/description`,
     teamArchive: (w, t) => `/workspaces/${w}/teams/${t}/archive`,
     teamUnarchive: (w, t) => `/workspaces/${w}/teams/${t}/unarchive`,
+    teamsDeleted: (w) => `/workspaces/${w}/teams/deleted`,
     teamRestore: (w, t) => `/workspaces/${w}/teams/${t}/restore`,
     teamMembers: (w, t) => `/workspaces/${w}/teams/${t}/members`,
     teamMember: (w, t, u) => `/workspaces/${w}/teams/${t}/members/${u}`,
@@ -57,11 +59,37 @@ const teamEndpoints: TeamsEndpoints = {
 };
 
 describe("Space delete and restore calls", () => {
-  it("deletes the Space by its id with no expected version", async () => {
+  it("deletes the Space with its version in the query string", async () => {
     const api = fakeApi();
-    await createSpacesService(api, spaceEndpoints).remove(W, "sp-1");
-    expect(api.delete).toHaveBeenCalledWith("/workspaces/ws-1/spaces/sp-1");
+    await createSpacesService(api, spaceEndpoints).remove(W, "sp-1", 4);
+    expect(api.delete).toHaveBeenCalledWith(
+      "/workspaces/ws-1/spaces/sp-1?expectedVersion=4",
+    );
     expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("reads the deleted Spaces with their restore deadline", async () => {
+    const api = fakeApi();
+    api.get.mockResolvedValue([
+      {
+        id: "sp-1",
+        name: "Kế toán",
+        parentSpaceId: null,
+        deletedAt: "2026-11-01T02:00:00Z",
+        restorableUntil: "2026-12-01T02:00:00Z",
+      },
+    ]);
+    const rows = await createSpacesService(api, spaceEndpoints).listDeleted(W);
+    expect(api.get).toHaveBeenCalledWith("/workspaces/ws-1/spaces/deleted");
+    expect(rows).toEqual([
+      {
+        id: "sp-1",
+        name: "Kế toán",
+        parentSpaceId: null,
+        deletedAt: "2026-11-01T02:00:00Z",
+        restorableUntil: "2026-12-01T02:00:00Z",
+      },
+    ]);
   });
 
   it("restores the Space with an empty body and no expected version", async () => {

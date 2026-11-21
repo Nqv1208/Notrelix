@@ -97,6 +97,14 @@ public sealed class ProductionGraphTests : IAsyncLifetime
         services.GetRequiredService<IIdentityUserFacts>().Should().NotBeNull();
         services.GetRequiredService<IAccountMembershipFacts>().Should().NotBeNull();
         services.GetRequiredService<IAccountMembershipActions>().Should().NotBeNull();
+        // Single sign-on: the public facts, the DNS and discovery ports and the bounded database reader resolve to the real adapters.
+        services.GetRequiredService<Notrelix.Application.Features.Accounts.Public.Sso.IAccountSsoFacts>().Should().NotBeNull();
+        services.GetRequiredService<Notrelix.Application.Features.Accounts.Abstractions.IDomainTxtResolver>()
+            .Should().BeOfType<Notrelix.Infrastructure.Accounts.Sso.DnsDomainTxtResolver>();
+        services.GetRequiredService<Notrelix.Application.Common.Oidc.IOidcDiscoveryClient>()
+            .Should().BeOfType<Notrelix.Infrastructure.Oidc.OidcDiscoveryClient>();
+        services.GetRequiredService<Notrelix.Application.Features.Accounts.Abstractions.IAccountSsoScopeReader>()
+            .Should().BeOfType<Notrelix.Infrastructure.Accounts.Sso.AccountSsoScopeReader>();
         services.GetRequiredService<IWorkItemActions>().Should().NotBeNull();
         services.GetRequiredService<IBillingCapabilityFacts>().Should().NotBeNull();
 

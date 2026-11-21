@@ -49,6 +49,8 @@ export function TeamsPage() {
   const mutations = hooks.useTeamMutations(workspaceId);
   const viewer = useWorkspaceViewer(workspaceId);
   const canManage = isWorkspaceAdmin(viewer.role);
+  // Only an Owner or Admin may read what was deleted; the producer refuses everyone else.
+  const deletedTeams = hooks.useDeletedTeams(workspaceId, canManage);
   const pending = useIdSet();
 
   const revision = (teams.data ?? [])
@@ -103,15 +105,13 @@ export function TeamsPage() {
           description: values.description,
         });
         if (typeof teamId !== "string" || teamId === "") return;
-        let version = 1;
         const add = async (userId: string, role: "Lead" | "Member") => {
           await mutations.addMember.mutateAsync({
             teamId,
             userId,
             role,
-            expectedVersion: version,
+            expectedVersion: await mutations.readVersion(teamId),
           });
-          version += 1;
         };
         if (viewer.userId !== values.leadId) {
           await add(values.leadId, "Lead");
@@ -119,9 +119,8 @@ export function TeamsPage() {
             await mutations.removeMember.mutateAsync({
               teamId,
               userId: viewer.userId,
-              expectedVersion: version,
+              expectedVersion: await mutations.readVersion(teamId),
             });
-            version += 1;
           }
         }
         for (const userId of values.memberIds) {
@@ -204,6 +203,20 @@ export function TeamsPage() {
         )
       }
       onRetry={() => void teams.refetch()}
+      deleted={
+        canManage ? sectionState(deletedTeams, deletedTeams.data) : undefined
+      }
+      onRestoreDeleted={(teamId) =>
+        write(
+          teamId,
+          () => mutations.restore.mutateAsync({ teamId }),
+          formatCopy(copy.toasts.restored, {
+            name:
+              deletedTeams.data?.find((team) => team.id === teamId)?.name ?? "",
+          }),
+        )
+      }
+      onRetryDeleted={() => void deletedTeams.refetch()}
     />
   );
 }

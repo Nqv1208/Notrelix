@@ -12,6 +12,12 @@ public interface IPageVersionRecorder
     /// <summary>The longest a page goes between automatic entries while it is being edited.</summary>
     static readonly TimeSpan AutomaticInterval = TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// How long a page gets no block save before editing counts as over and unsnapshotted edits are captured
+    /// (owner decision 2026-11-15; stands in for "the last editor leaves" until presence exists).
+    /// </summary>
+    static readonly TimeSpan QuietPeriod = TimeSpan.FromMinutes(5);
+
     /// <summary>Adds an entry holding exactly <paramref name="liveBlocks"/> (the content the caller has just written, not yet committed).</summary>
     Task<DocumentVersion> AddAsync(
         Page page, IEnumerable<Block> liveBlocks, Guid actorId, DocumentVersionKind kind, string? name, DateTimeOffset now, CancellationToken cancellationToken);
@@ -21,6 +27,19 @@ public interface IPageVersionRecorder
     /// last entry is at least <see cref="AutomaticInterval"/> old (or there is none). Returns null when there is nothing to capture yet.
     /// </summary>
     Task<DocumentVersion?> CaptureAutomaticAsync(Guid pageId, Guid actorId, DateTimeOffset now, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The pages whose newest block save is at least <see cref="QuietPeriod"/> old but not older than
+    /// <paramref name="lookback"/>, oldest first, at most <paramref name="take"/>. A page that was saved again meanwhile is not named.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> QuietPagesAsync(DateTimeOffset now, TimeSpan lookback, int take, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds an automatic entry, as the editor of the newest block save, when the page has had no block save for
+    /// <see cref="QuietPeriod"/> and its committed content differs from the newest entry. The 10-minute rule does not apply.
+    /// Repeating it adds nothing: the content then equals the newest entry.
+    /// </summary>
+    Task<DocumentVersion?> CaptureWhenQuietAsync(Guid pageId, DateTimeOffset now, CancellationToken cancellationToken);
 }
 
 public sealed class PageVersionRecorder : IPageVersionRecorder
@@ -37,7 +56,43 @@ public sealed class PageVersionRecorder : IPageVersionRecorder
         return await AddJsonAsync(page, json, actorId, kind, name, now, cancellationToken);
     }
 
-    public async Task<DocumentVersion?> CaptureAutomaticAsync(Guid pageId, Guid actorId, DateTimeOffset now, CancellationToken cancellationToken)
+    public Task<DocumentVersion?> CaptureAutomaticAsync(Guid pageId, Guid actorId, DateTimeOffset now, CancellationToken cancellationToken) =>
+        CaptureAsync(pageId, actorId, now, requireInterval: true, cancellationToken);
+
+    // shortcut: reads every block touched in the lookback window each pass; add an index on the blocks' touch time if it shows up in profiles.
+    public async Task<IReadOnlyList<Guid>> QuietPagesAsync(DateTimeOffset now, TimeSpan lookback, int take, CancellationToken cancellationToken)
+    {
+        var quietBefore = now - IPageVersionRecorder.QuietPeriod;
+        var from = quietBefore - lookback;
+        var recent = _context.Blocks.AsNoTracking()
+            .Where(b => (b.DeletedAt ?? b.UpdatedAt ?? b.CreatedAt) > from)
+            .Select(b => b.PageId)
+            .Distinct();
+        return await _context.Blocks.AsNoTracking()
+            .Where(b => recent.Contains(b.PageId))
+            .GroupBy(b => b.PageId)
+            .Select(g => new { PageId = g.Key, Last = g.Max(b => b.DeletedAt ?? b.UpdatedAt ?? b.CreatedAt) })
+            .Where(x => x.Last <= quietBefore)
+            .OrderBy(x => x.Last)
+            .Select(x => x.PageId)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<DocumentVersion?> CaptureWhenQuietAsync(Guid pageId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var newest = await _context.Blocks.AsNoTracking()
+            .Where(b => b.PageId == pageId)
+            .OrderByDescending(b => b.DeletedAt ?? b.UpdatedAt ?? b.CreatedAt)
+            .Select(b => new { At = b.DeletedAt ?? b.UpdatedAt ?? b.CreatedAt, Editor = b.DeletedBy ?? b.UpdatedBy ?? b.CreatedBy })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (newest is null || now - newest.At < IPageVersionRecorder.QuietPeriod) return null;
+        if (newest.Editor is not { } editor || editor == Guid.Empty) return null;
+
+        return await CaptureAsync(pageId, editor, now, requireInterval: false, cancellationToken);
+    }
+
+    private async Task<DocumentVersion?> CaptureAsync(Guid pageId, Guid actorId, DateTimeOffset now, bool requireInterval, CancellationToken cancellationToken)
     {
         var page = await _context.Pages.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == pageId && p.DeletedAt == null, cancellationToken);
@@ -47,7 +102,7 @@ public sealed class PageVersionRecorder : IPageVersionRecorder
             .Where(v => v.PageId == pageId)
             .OrderByDescending(v => v.VersionNumber)
             .FirstOrDefaultAsync(cancellationToken);
-        if (latest is not null && now - latest.CreatedAt < IPageVersionRecorder.AutomaticInterval) return null;
+        if (requireInterval && latest is not null && now - latest.CreatedAt < IPageVersionRecorder.AutomaticInterval) return null;
 
         var live = await _context.Blocks.AsNoTracking()
             .Where(b => b.PageId == pageId && b.DeletedAt == null)

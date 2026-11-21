@@ -34,7 +34,8 @@ public record SendMessageCommand(
     Guid? ReplyToId,
     IReadOnlyList<MentionInput>? Mentions = null,
     bool ConfirmBroadcast = false,
-    bool VoiceMessage = false)
+    bool VoiceMessage = false,
+    string? StickerId = null)
     : ICommand<Result<SendMessageResultDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.ChatMessagePost;
@@ -101,8 +102,9 @@ public class SendMessageCommandHandler(
 
         if (request.ReplyToId is { } replyToId)
         {
+            var floor = ChannelAccess.HistoryFloor(space, userId);
             var quoted = await db.ChatMessages.AsNoTracking().AnyAsync(
-                m => m.Id == replyToId && m.SpaceId == space.Id, cancellationToken);
+                m => m.Id == replyToId && m.SpaceId == space.Id && (floor == null || m.CreatedAt >= floor), cancellationToken);
             if (!quoted)
                 throw new NotFoundException(nameof(Message), replyToId);
         }
@@ -111,24 +113,30 @@ public class SendMessageCommandHandler(
         await rateLimits.RequireAsync(ChatRateLimitPolicy.Send, space.Id, userId, cancellationToken);
         await SlowMode.RequireAsync(db, space, userId, clock.UtcNow, cancellationToken);
 
-        var resolution = await MentionResolver.ResolveAsync(
-            db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
+        // A sticker has no typed text, so it has nothing to mention (UC-CHT-I06).
+        var resolution = request.StickerId is not null
+            ? new MentionResolution([], [])
+            : await MentionResolver.ResolveAsync(
+                db, members, broadcast, space, caller, request.Content, request.Mentions, request.ConfirmBroadcast, cancellationToken);
         // An @channel or @here has its own, lower limit; a Workspace Admin is not exempt from it.
         if (resolution.Spans.Any(s => s.Kind is MentionKind.BroadcastChannel or MentionKind.BroadcastHere))
             await rateLimits.RequireAsync(ChatRateLimitPolicy.Broadcast, space.Id, userId, cancellationToken);
 
         var sequence = await sequences.NextAsync(space.Id, cancellationToken);
-        var message = Message.CreateUserMessage(
-            accountId,
-            request.WorkspaceId,
-            space.Id,
-            sequence,
-            userId,
-            request.Content,
-            clientMessageId,
-            request.ReplyToId,
-            clock.UtcNow,
-            voiceMessage: request.VoiceMessage);
+        var message = request.StickerId is { } stickerId
+            ? Message.CreateStickerMessage(
+                accountId, request.WorkspaceId, space.Id, sequence, userId, stickerId, clientMessageId, request.ReplyToId, clock.UtcNow)
+            : Message.CreateUserMessage(
+                accountId,
+                request.WorkspaceId,
+                space.Id,
+                sequence,
+                userId,
+                request.Content,
+                clientMessageId,
+                request.ReplyToId,
+                clock.UtcNow,
+                voiceMessage: request.VoiceMessage);
 
         db.ChatMessages.Add(message);
         await MessageMentions.ReplaceAsync(db, message, resolution.Spans, hadBefore: false, cancellationToken);
@@ -150,11 +158,22 @@ public class SendMessageCommandValidator : AbstractValidator<SendMessageCommand>
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.SpaceId).NotEmpty();
         // A voice message is sent with no text and its audio attachment follows (UC-CHT-I04); any other message needs text.
-        RuleFor(x => x.Content)
-            .NotNull()
-            .Must((command, content) => content is not null
-                && (content.Trim().Length is >= 1 and <= ChatLimits.MessageMaxLength || (command.VoiceMessage && content.Trim().Length == 0)))
-            .WithMessage($"A message has 1 to {ChatLimits.MessageMaxLength} characters after trim.");
+        // A sticker is one of the Notrelix catalog, alone: no text, no voice, no mentions (UC-CHT-I06).
+        When(x => x.StickerId is not null, () =>
+        {
+            RuleFor(x => x.StickerId).Must(StickerCatalog.Exists).WithMessage("This sticker does not exist.");
+            RuleFor(x => x.Content).Must(content => string.IsNullOrWhiteSpace(content)).WithMessage("A sticker is sent without text.");
+            RuleFor(x => x.VoiceMessage).Equal(false).WithMessage("A sticker is not a voice message.");
+            RuleFor(x => x.Mentions).Must(mentions => mentions is null or { Count: 0 }).WithMessage("A sticker carries no mentions.");
+        });
+        When(x => x.StickerId is null, () =>
+        {
+            RuleFor(x => x.Content)
+                .NotNull()
+                .Must((command, content) => content is not null
+                    && (content.Trim().Length is >= 1 and <= ChatLimits.MessageMaxLength || (command.VoiceMessage && content.Trim().Length == 0)))
+                .WithMessage($"A message has 1 to {ChatLimits.MessageMaxLength} characters after trim.");
+        });
         RuleFor(x => x.ClientMessageId)
             .NotNull()
             .Must(id => id is not null && id.Trim().Length is >= 1 and <= ChatLimits.ClientMessageIdMaxLength)

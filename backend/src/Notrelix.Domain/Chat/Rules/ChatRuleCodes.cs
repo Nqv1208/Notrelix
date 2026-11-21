@@ -9,6 +9,9 @@ public static class ChatRuleCodes
     public const string SpaceNotFound = "space-not-found";
     public const string ChannelArchived = "channel-archived";
     public const string NameConflict = "name-conflict";
+
+    /// <summary>A deleted channel is past its 30-day restore window and stays deleted.</summary>
+    public const string RestoreWindowElapsed = "restore-window-elapsed";
     public const string VersionConflict = "version-conflict";
     public const string RateLimited = "rate-limited";
     public const string LimitReached = "limit-reached";
@@ -24,6 +27,8 @@ public static class ChatRuleCodes
 
     /// <summary>A message's text is empty or longer than the limit after trim.</summary>
     public const string MessageContentInvalid = "message-content-invalid";
+    /// <summary>A sticker message names a sticker that is not in the Notrelix catalog, or is edited (UC-CHT-I06).</summary>
+    public const string StickerInvalid = "sticker-invalid";
 
     /// <summary>A message sequence must start at 1; the store assigns it.</summary>
     public const string MessageSequenceInvalid = "message-sequence-invalid";
@@ -96,4 +101,31 @@ public static class ChatRuleCodes
 
     /// <summary>A voice message is not one audio file, or its waveform or duration does not fit the rule (400, UC-CHT-I04).</summary>
     public const string VoiceInvalid = "voice-invalid";
+
+    /// <summary>The call is Ended; no transition leaves Ended (409, SPEC-CHAT-MEDIA-CALLS section 4).</summary>
+    public const string CallEnded = "call-ended";
+
+    /// <summary>The call is not in a state that allows the command (409).</summary>
+    public const string CallStateInvalid = "call-state-invalid";
+
+    /// <summary>The space already has a Ringing or Active call (409, invariant 1).</summary>
+    public const string CallAlreadyActive = "call-already-active";
+
+    /// <summary>The caller is already in another call (409, invariant 2).</summary>
+    public const string CallBusy = "call-busy";
+
+    /// <summary>The call holds the most participants its kind allows (422, invariant 4).</summary>
+    public const string CallFull = "call-full";
+
+    /// <summary>The person is not in the call, or is not the one who may run the command (403).</summary>
+    public const string CallNotParticipant = "call-not-participant";
+
+    /// <summary>The media state asks for something the call kind does not carry, such as video in a voice call (400).</summary>
+    public const string CallMediaNotAllowed = "call-media-not-allowed";
+
+    /// <summary>Someone else is already sharing a screen in the call and the caller did not ask to replace them (409).</summary>
+    public const string CallScreenShareTaken = "call-screen-share-taken";
+
+    /// <summary>The media plane cannot be reached, or calls are switched off (503, SPEC-CHAT-MEDIA-CALLS section 10).</summary>
+    public const string CallsUnavailable = "chat.calls.unavailable";
 }

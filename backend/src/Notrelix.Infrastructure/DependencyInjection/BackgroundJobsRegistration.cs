@@ -80,6 +80,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DeletedWorkspacePurger>();
         AddWorker<DeletedWorkspacePurgeService>();
 
+        // Workspaces: purge the Spaces (departments) deleted more than 30 days ago (restore is over by then).
+        services.AddOptions<DeletedSpacePurgeOptions>()
+            .Bind(configuration.GetSection(DeletedSpacePurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedSpacePurgeOptions>, DeletedSpacePurgeOptionsValidator>();
+        services.AddScoped<DeletedSpacePurger>();
+        AddWorker<DeletedSpacePurgeService>();
+
         // Work Management: purge the boards deleted more than 30 days ago (restore is over by then). Off by default.
         services.AddOptions<DeletedBoardPurgeOptions>()
             .Bind(configuration.GetSection(DeletedBoardPurgeOptions.SectionName))
@@ -88,6 +96,14 @@ public static class BackgroundJobsRegistration
         services.AddScoped<DeletedBoardPurger>();
         AddWorker<DeletedBoardPurgeService>();
 
+        // Chat: purge the channels deleted more than 30 days ago (restore is over by then). Off by default.
+        services.AddOptions<DeletedChatSpacePurgeOptions>()
+            .Bind(configuration.GetSection(DeletedChatSpacePurgeOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<DeletedChatSpacePurgeOptions>, DeletedChatSpacePurgeOptionsValidator>();
+        services.AddScoped<DeletedChatSpacePurger>();
+        AddWorker<DeletedChatSpacePurgeService>();
+
         // Collaboration: tell assignees about Items due tomorrow and overdue Items, once per Item and due day.
         services.AddOptions<DueDateNotificationOptions>()
             .Bind(configuration.GetSection(DueDateNotificationOptions.SectionName))
@@ -95,6 +111,14 @@ public static class BackgroundJobsRegistration
         services.AddSingleton<IValidateOptions<DueDateNotificationOptions>, DueDateNotificationOptionsValidator>();
         services.AddScoped<DueDateNotificationSweeper>();
         AddWorker<DueDateNotificationService>();
+
+        // Documents: capture an automatic version of a page whose editing went quiet for five minutes.
+        services.AddOptions<PageQuietVersionSweepOptions>()
+            .Bind(configuration.GetSection(PageQuietVersionSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<PageQuietVersionSweepOptions>, PageQuietVersionSweepOptionsValidator>();
+        services.AddScoped<PageQuietVersionSweeper>();
+        AddWorker<PageQuietVersionSweepService>();
 
         // Work Management: run queued board file imports and exports, and remove expired export files.
         services.AddScoped<BoardTransferRunner>();
@@ -109,6 +133,13 @@ public static class BackgroundJobsRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Retention.Services.ChatRetentionApplier>();
         services.AddScoped<ChatRetentionRunner>();
         AddWorker<ChatRetentionService>();
+        // Chat calls: end calls that rang out or stayed empty (Chat.Calls.Sweep).
+        services.AddOptions<ChatCallSweepOptions>()
+            .Bind(configuration.GetSection(ChatCallSweepOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ChatCallSweepOptions>, ChatCallSweepOptionsValidator>();
+        services.AddScoped<ChatCallSweepRunner>();
+        AddWorker<ChatCallSweepService>();
         services.AddScoped<Notrelix.Application.Features.Chat.Exports.ChatExportBuilder>();
         services.AddScoped<ChatExportRunner>();
         AddWorker<ChatExportService>();

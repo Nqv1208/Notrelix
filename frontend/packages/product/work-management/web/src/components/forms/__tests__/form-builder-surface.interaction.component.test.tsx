@@ -450,6 +450,28 @@ describe.each(["vi", "en"] as const)("form builder (%s)", (locale) => {
   });
 });
 
+describe("form builder public link", () => {
+  it("shows the public link section only where the host provides it, private by default", () => {
+    render("en");
+    expect(screen.queryByRole("region", { name: "Public link" })).toBeNull();
+    document.body.innerHTML = "";
+    render("en", {
+      publicAccess: {
+        status: "ready",
+        access: { isPublic: false, publicKey: null },
+        origin: "https://notrelix.test",
+        onSwitch: vi.fn(async () => ({ ok: false, reason: "failed" }) as const),
+        onCopyLink: vi.fn(async () => true),
+        onRetry: vi.fn(),
+      },
+    });
+    const section = screen.getByRole("region", { name: "Public link" });
+    expect(
+      within(section).getByRole("switch").getAttribute("aria-checked"),
+    ).toBe("false");
+  });
+});
+
 function cleanup() {
   document.body.innerHTML = "";
 }

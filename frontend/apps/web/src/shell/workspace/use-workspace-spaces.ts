@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import {
+  createUseDeletedSpaces,
+  createUseSpace,
   createUseSpaceMembers,
+  createUseSpaceMembersPage,
   createUseSpaceMutations,
   createUseSpaceTree,
   createUseTeamsMembers,
@@ -16,8 +19,11 @@ export function useSpaceHooks() {
   return useMemo(() => {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
+      useSpace: createUseSpace(deps),
       useSpaceTree: createUseSpaceTree(deps),
+      useDeletedSpaces: createUseDeletedSpaces(deps),
       useSpaceMembers: createUseSpaceMembers(deps),
+      useSpaceMembersPage: createUseSpaceMembersPage(deps),
       useWorkspaceTeams: createUseWorkspaceTeams(deps),
       useTeamsMembers: createUseTeamsMembers(deps),
       useSpaceMutations: createUseSpaceMutations(deps),

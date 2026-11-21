@@ -70,6 +70,8 @@ public static class DependencyInjection
 
         services.Configure<OAuthRedirectOptions>(
             configuration.GetSection("OAuth"));
+        services.Configure<SsoRedirectOptions>(
+            configuration.GetSection("Sso"));
 
         services.AddApiCsrf(configuration);
 

@@ -65,6 +65,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Accounts.GetSecurityPolicy",
+    operationId: "Accounts.GetSecurityPolicy",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Accounts.SetMfaPolicy",
+    operationId: "Accounts.SetMfaPolicy",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Profile.GetPreferences",
     operationId: "Identity.Profile.GetPreferences",
     mutation: false,
@@ -155,6 +175,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.ApiTokens.List",
+    operationId: "Identity.ApiTokens.List",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.ApiTokens.Create",
+    operationId: "Identity.ApiTokens.Create",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.ApiTokens.Revoke",
+    operationId: "Identity.ApiTokens.Revoke",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Security.StepUpRequirement",
     operationId: "Identity.Security.StepUpRequirement",
     mutation: true,
@@ -195,9 +245,29 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.OAuth.LinkStart",
+    operationId: "Identity.Auth.OAuth.LinkStart",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.OAuth.Unlink",
+    operationId: "Identity.Auth.OAuth.Unlink",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Auth.OAuth.StepUpStart",
     operationId: "Identity.Auth.OAuth.StepUpStart",
-    mutation: false,
+    mutation: true,
   },
   {
     context: "Account",
@@ -217,6 +287,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Auth.ChangePassword",
     operationId: "Identity.Auth.ChangePassword",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Auth.SetFirstPassword",
+    operationId: "Identity.Auth.SetFirstPassword",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Identity.Profile.UpdateEmail",
+    operationId: "Identity.Profile.UpdateEmail",
     mutation: true,
   },
   {
@@ -661,6 +751,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createWorkspaceInvitationsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
+    capability: "Workspaces.Members.InviteMembers",
+    operationId: "Workspaces.Members.InviteMembers",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceInvitationsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/invitations.service.ts",
     capability: "Workspaces.Invitations.ListWorkspaceInvitations",
     operationId: "Workspaces.Invitations.ListWorkspaceInvitations",
     mutation: false,
@@ -728,6 +828,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "Workspace",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    operationId: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceAddressService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace-address.service.ts",
+    capability: "Workspaces.Workspaces.ResolveSlug",
+    operationId: "Workspaces.Workspaces.ResolveSlug",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    operationId: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "createWorkspaceSettingsService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
@@ -753,6 +883,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
     capability: "Workspaces.Workspaces.DeleteWorkspace",
     operationId: "Workspaces.Workspaces.DeleteWorkspace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createWorkspaceSettingsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/workspace.service.ts",
+    capability: "Workspaces.Workspaces.TransferOwnership",
+    operationId: "Workspaces.Workspaces.TransferOwnership",
     mutation: true,
   },
   {
@@ -1093,6 +1233,15 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     classification: "CANONICAL_MOCKED",
     consumerSymbol: "useWorkFeedWrites",
     consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
+    capability: "Collaboration.Notifications.MarkInboxEntryUnread",
+    operationId: "Collaboration.Notifications.MarkInboxEntryUnread",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useWorkFeedWrites",
+    consumerFile: "frontend/apps/web/src/shell/workspace/work-feed-bridge.ts",
     capability: "Collaboration.Notifications.ReopenInboxEntry",
     operationId: "Collaboration.Notifications.ReopenInboxEntry",
     mutation: true,
@@ -1324,6 +1473,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
     capability: "Identity.Auth.Login",
     operationId: "Identity.Auth.Login",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Mfa.StartRequiredEnrollment",
+    operationId: "Identity.Mfa.StartRequiredEnrollment",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Mfa.CompleteRequiredEnrollment",
+    operationId: "Identity.Mfa.CompleteRequiredEnrollment",
     mutation: true,
   },
   {
@@ -1682,6 +1851,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createSpacesService",
     consumerFile:
       "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.DeleteSpace",
+    operationId: "Workspaces.Spaces.DeleteSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.RestoreSpace",
+    operationId: "Workspaces.Spaces.RestoreSpace",
+    mutation: true,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
+    capability: "Workspaces.Spaces.GetDeletedSpaces",
+    operationId: "Workspaces.Spaces.GetDeletedSpaces",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createSpacesService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
     capability: "Workspaces.Spaces.MoveSpace",
     operationId: "Workspaces.Spaces.MoveSpace",
     mutation: true,
@@ -1734,6 +1933,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/workspace/src/core/api/spaces.service.ts",
     capability: "Workspaces.Teams.GetWorkspaceTeams",
     operationId: "Workspaces.Teams.GetWorkspaceTeams",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createTeamsService",
+    consumerFile:
+      "frontend/packages/features/workspace/src/core/api/teams.service.ts",
+    capability: "Workspaces.Teams.GetDeletedTeams",
+    operationId: "Workspaces.Teams.GetDeletedTeams",
     mutation: false,
   },
   {
@@ -1924,6 +2133,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/product/docs/state/src/api/attachment.api.ts",
     capability: "Collaboration.PageAttachments.Delete",
     operationId: "Collaboration.PageAttachments.Delete",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createUseDuplicatePage",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/query/hooks/use-duplicate-page.ts",
+    capability: "Documents.Pages.DuplicatePage",
+    operationId: "Documents.Pages.DuplicatePage",
     mutation: true,
   },
   {
@@ -3643,6 +3862,36 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     mutation: true,
   },
   {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/template.api.ts",
+    capability: "Documents.Templates.UpdatePageTemplate",
+    operationId: "Documents.Templates.UpdatePageTemplate",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/template.api.ts",
+    capability: "Documents.Templates.ArchivePageTemplate",
+    operationId: "Documents.Templates.ArchivePageTemplate",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "TODO",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/template.api.ts",
+    capability: "Documents.Templates.DeletePageTemplate",
+    operationId: "Documents.Templates.DeletePageTemplate",
+    mutation: true,
+  },
+  {
     context: "Analytics",
     classification: "COMPATIBILITY_GAP_MOCKED",
     consumerSymbol: "createReportsApi",
@@ -4111,6 +4360,444 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     pathTemplate: "/workspaces/{workspaceId}/seat-summary",
     mutation: false,
   },
+  {
+    context: "Collaboration",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createItemApi",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    capability: "Collaboration.Attachments.Create",
+    operationId: "Collaboration.Attachments.Create",
+    mutation: true,
+  },
+  {
+    context: "Collaboration",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createCommentApi",
+    consumerFile: "frontend/packages/product/docs/state/src/api/comment.api.ts",
+    capability: "Collaboration.Comments.GetPageCommentsPage",
+    operationId: "Collaboration.Comments.GetPageCommentsPage",
+    mutation: false,
+  },
+  {
+    context: "Auth",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "register",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Auth.Register",
+    operationId: "Identity.Auth.Register",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "restoreField",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.BoardFields.Restore",
+    operationId: "WorkManagement.BoardFields.Restore",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listDeletedFields",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.BoardFields.Deleted",
+    operationId: "WorkManagement.BoardFields.Deleted",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "previewFormula",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.BoardFields.PreviewFormula",
+    operationId: "WorkManagement.BoardFields.PreviewFormula",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listLane",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    capability: "WorkManagement.BoardItems.ListLane",
+    operationId: "WorkManagement.BoardItems.ListLane",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listArchivedItems",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.Archived",
+    operationId: "WorkManagement.BoardItems.Archived",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "resolveKey",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item.api.ts",
+    capability: "WorkManagement.BoardItems.ResolveKey",
+    operationId: "WorkManagement.BoardItems.ResolveKey",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "clearLinks",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.BoardItems.ClearLinks",
+    operationId: "WorkManagement.BoardItems.ClearLinks",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setCover",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.SetCover",
+    operationId: "WorkManagement.BoardItems.SetCover",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setRepeat",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.SetRepeat",
+    operationId: "WorkManagement.BoardItems.SetRepeat",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setReminder",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.SetReminder",
+    operationId: "WorkManagement.BoardItems.SetReminder",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listVotes",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.ListVotes",
+    operationId: "WorkManagement.BoardItems.ListVotes",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setVote",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.SetVote",
+    operationId: "WorkManagement.BoardItems.SetVote",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "recordView",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.RecordView",
+    operationId: "WorkManagement.BoardItems.RecordView",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listViewers",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.BoardItems.ListViewers",
+    operationId: "WorkManagement.BoardItems.ListViewers",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listArchivedBoards",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.ListArchived",
+    operationId: "WorkManagement.Boards.ListArchived",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listDeletedBoards",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.ListDeleted",
+    operationId: "WorkManagement.Boards.ListDeleted",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getBoardPeople",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-extras.api.ts",
+    capability: "WorkManagement.Boards.GetPeople",
+    operationId: "WorkManagement.Boards.GetPeople",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "restoreBoard",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board-settings.api.ts",
+    capability: "WorkManagement.Boards.Restore",
+    operationId: "WorkManagement.Boards.Restore",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "archiveSavedView",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    capability: "WorkManagement.BoardViews.Archive",
+    operationId: "WorkManagement.BoardViews.Archive",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "unarchiveSavedView",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/board.api.ts",
+    capability: "WorkManagement.BoardViews.Unarchive",
+    operationId: "WorkManagement.BoardViews.Unarchive",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "copyChecklist",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.Checklists.Copy",
+    operationId: "WorkManagement.Checklists.Copy",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "listBoardChecklists",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/item-capabilities.api.ts",
+    capability: "WorkManagement.Checklists.ListForBoard",
+    operationId: "WorkManagement.Checklists.ListForBoard",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setItemAssignee",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    capability: "WorkManagement.Checklists.SetItemAssignee",
+    operationId: "WorkManagement.Checklists.SetItemAssignee",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setItemDue",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/checklist.api.ts",
+    capability: "WorkManagement.Checklists.SetItemDue",
+    operationId: "WorkManagement.Checklists.SetItemDue",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "submissionsPage",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.ListSubmissionsPage",
+    operationId: "WorkManagement.Forms.ListSubmissionsPage",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "submissionCounts",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.CountSubmissions",
+    operationId: "WorkManagement.Forms.CountSubmissions",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "reopenSubmission",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.ReopenSubmission",
+    operationId: "WorkManagement.Forms.ReopenSubmission",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getFormPublicAccess",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.GetPublicAccess",
+    operationId: "WorkManagement.Forms.GetPublicAccess",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setFormPublicAccess",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.SetPublicAccess",
+    operationId: "WorkManagement.Forms.SetPublicAccess",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getPublicForm",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.PublicForms.Get",
+    operationId: "WorkManagement.PublicForms.Get",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "submitPublicForm",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.PublicForms.Submit",
+    operationId: "WorkManagement.PublicForms.Submit",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardImportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-import-dialog.tsx",
+    capability: "WorkManagement.Imports.Upload",
+    operationId: "WorkManagement.Imports.Upload",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardImportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-import-dialog.tsx",
+    capability: "WorkManagement.Imports.Preview",
+    operationId: "WorkManagement.Imports.Preview",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardImportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-import-dialog.tsx",
+    capability: "WorkManagement.Imports.Confirm",
+    operationId: "WorkManagement.Imports.Confirm",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardImportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-import-dialog.tsx",
+    capability: "WorkManagement.Imports.Get",
+    operationId: "WorkManagement.Imports.Get",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardImportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-import-dialog.tsx",
+    capability: "WorkManagement.Imports.GetErrors",
+    operationId: "WorkManagement.Imports.GetErrors",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardExportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-export-dialog.tsx",
+    capability: "WorkManagement.Exports.List",
+    operationId: "WorkManagement.Exports.List",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardExportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-export-dialog.tsx",
+    capability: "WorkManagement.Exports.Create",
+    operationId: "WorkManagement.Exports.Create",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardExportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-export-dialog.tsx",
+    capability: "WorkManagement.Exports.GetSummary",
+    operationId: "WorkManagement.Exports.GetSummary",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "BoardExportDialog",
+    consumerFile:
+      "frontend/apps/web/src/shell/workspace/board-export-dialog.tsx",
+    capability: "WorkManagement.Exports.Get",
+    operationId: "WorkManagement.Exports.Get",
+    mutation: false,
+  },
+  {
+    context: "Workspace",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "useBoardSharing",
+    consumerFile: "frontend/apps/web/src/shell/workspace/use-board-sharing.ts",
+    capability: "Workspaces.Invitations.InviteGuestToResource",
+    operationId: "Workspaces.Invitations.InviteGuestToResource",
+    mutation: true,
+  },
   // Chat (S1.7): the web package features-chat, core/api/chat.service.ts.
   ...[
     [
@@ -4191,6 +4878,20 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Archive or unarchive a channel",
     ],
     [
+      "Chat.Channels.ListDeleted",
+      "GET",
+      "/workspaces/{workspaceId}/chat/channels/deleted",
+      false,
+      "List the deleted channels the caller can restore",
+    ],
+    [
+      "Chat.Channels.Restore",
+      "POST",
+      "/workspaces/{workspaceId}/chat/channels/{channelId}/restore",
+      true,
+      "Restore a deleted channel",
+    ],
+    [
       "Chat.Members.Add",
       "POST",
       "/workspaces/{workspaceId}/chat/channels/{channelId}/members",
@@ -4203,6 +4904,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "/workspaces/{workspaceId}/chat/channels/{channelId}/members/me",
       true,
       "Join a public channel",
+    ],
+    [
+      "Chat.Members.SetRole",
+      "PUT",
+      "/workspaces/{workspaceId}/chat/channels/{channelId}/members/{userId}/role",
+      true,
+      "Make a channel member a manager, or a manager a member",
     ],
     [
       "Chat.Members.Remove",
@@ -4252,6 +4960,13 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "/workspaces/{workspaceId}/chat/spaces/{spaceId}/read",
       true,
       "Move a channel's read boundary forward",
+    ],
+    [
+      "Chat.ReadState.MarkUnreadFrom",
+      "PUT",
+      "/workspaces/{workspaceId}/chat/spaces/{spaceId}/unread-from",
+      true,
+      "Mark a space unread from a message",
     ],
     [
       "Chat.ReadState.MarkAllRead",
@@ -4401,6 +5116,76 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "Block or unblock a person for the caller",
     ],
     [
+      "Chat.Calls.List",
+      "GET",
+      "/workspaces/{workspaceId}/chat/spaces/{spaceId}/calls",
+      false,
+      "List the calls of a space, newest first",
+    ],
+    [
+      "Chat.Calls.Start",
+      "POST",
+      "/workspaces/{workspaceId}/chat/spaces/{spaceId}/calls",
+      true,
+      "Start a voice or video call in a space",
+    ],
+    [
+      "Chat.Calls.GetActive",
+      "GET",
+      "/workspaces/{workspaceId}/chat/spaces/{spaceId}/calls/active",
+      false,
+      "Read the active call of a space",
+    ],
+    [
+      "Chat.Calls.Answer",
+      "POST",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/answer",
+      true,
+      "Answer a ringing call",
+    ],
+    [
+      "Chat.Calls.Decline",
+      "POST",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/decline",
+      true,
+      "Decline a ringing call",
+    ],
+    [
+      "Chat.Calls.Cancel",
+      "POST",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/cancel",
+      true,
+      "Cancel a call the caller started",
+    ],
+    [
+      "Chat.Calls.End",
+      "POST",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/end",
+      true,
+      "End a call for everyone",
+    ],
+    [
+      "Chat.Calls.Join",
+      "POST",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/join",
+      true,
+      "Join a call and get its media token",
+    ],
+    [
+      "Chat.Calls.Leave",
+      "POST",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/leave",
+      true,
+      "Leave a call",
+    ],
+    [
+      "Chat.Calls.UpdateMediaState",
+      "PUT",
+      "/workspaces/{workspaceId}/chat/calls/{callId}/participants/me",
+      true,
+      "Set the caller's audio, video and screen share state",
+    ],
+    [
       "Chat.Links.Resolve",
       "GET",
       "/workspaces/{workspaceId}/chat/links/resolve",
@@ -4441,6 +5226,27 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments",
       true,
       "Attach a file to your own message (multipart/form-data, streamed)",
+    ],
+    [
+      "Chat.Attachments.CreateUpload",
+      "POST",
+      "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads",
+      true,
+      "Start a direct upload of a file to your own message",
+    ],
+    [
+      "Chat.Attachments.CommitUpload",
+      "POST",
+      "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/uploads/{uploadId}/commit",
+      true,
+      "Finish a direct upload after the bytes are stored",
+    ],
+    [
+      "Chat.Attachments.GetUrl",
+      "GET",
+      "/workspaces/{workspaceId}/chat/messages/{messageId}/attachments/{attachmentId}/url",
+      false,
+      "Get a short-lived download URL for a file of a message",
     ],
     [
       "Chat.Attachments.GetContent",
@@ -4538,4 +5344,95 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     pathTemplate: pathTemplate as string,
     mutation: mutation as boolean,
   })),
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Read the Account's single sign-on setup",
+    operationId: "Accounts.GetSso",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Save the single sign-on provider",
+    operationId: "Accounts.SaveSsoProvider",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Remove the single sign-on provider",
+    operationId: "Accounts.RemoveSsoProvider",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Add a single sign-on domain",
+    operationId: "Accounts.AddSsoDomain",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Verify a single sign-on domain",
+    operationId: "Accounts.VerifySsoDomain",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Remove a single sign-on domain",
+    operationId: "Accounts.RemoveSsoDomain",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Require single sign-on for the Account",
+    operationId: "Accounts.SetSsoRequired",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Start the company sign-in",
+    operationId: "Identity.Auth.Sso.Start",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability:
+      "The company provider's way back (a redirect the browser follows; the mock plays it)",
+    operationId: "Identity.Auth.Sso.Callback",
+    mutation: false,
+  },
 ];

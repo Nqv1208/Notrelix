@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Commands.ResetPassword;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
 using Notrelix.Domain.Identity.Security;
@@ -11,12 +12,11 @@ public class ResetPasswordTests : IdentityHandlerTestBase
         IdentityContextMock.Object,
         OtpServiceMock.Object,
         PasswordHasherMock.Object,
-        EmailServiceMock.Object,
         DateTimeProviderMock.Object,
         JwtBlacklistMock.Object,
         ThrottleMock.Object,
         ActivityMock.Object,
-        ResetPasswordLoggerMock.Object);
+        SecurityNoticeMock.Object);
 
     [Fact]
     public async Task Handle_WhenValidOtp_HashesPasswordAndRevokesSessions()
@@ -42,7 +42,7 @@ public class ResetPasswordTests : IdentityHandlerTestBase
 
         result.Succeeded.Should().BeTrue();
         session.Status.Should().Be(SessionStatus.Revoked);
-        EmailServiceMock.Verify(e => e.SendAsync(TestEmail.ToLowerInvariant(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(TestUserId, SecurityNoticeKind.PasswordReset, TestNow, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

@@ -27,6 +27,7 @@ import type {
   CardMemberDtoApi,
   CardSummaryDtoApi,
   CardRepeatRule,
+  RelationLink,
   CardUpdate,
   Checklist,
   CommentDtoApi,
@@ -369,6 +370,7 @@ export function mapCardDto(dto: BoardItemReadDto): CardDetail {
       ? parseFieldValues(legacy.fieldValues)
       : generatedFieldValues(dto),
     computedValues: generatedComputedValues(dto),
+    ...relationLinksOf(dto as RelationLinksCarrier),
     _count: {
       comments: dto.commentCount ?? 0,
       attachments: dto.attachmentCount ?? 0,
@@ -702,6 +704,7 @@ function mapCardSummaryDto(
     checklists: [],
     fieldValues: { ...customValues, ...semanticValues },
     computedValues: generatedComputedValues(dto),
+    ...relationLinksOf(dto as RelationLinksCarrier),
     _count: {
       comments: dto.commentCount ?? 0,
       attachments: dto.attachmentCount ?? 0,
@@ -780,6 +783,9 @@ function mapBoardColumnDto(
       "isSystemField" in dto ? dto.isSystemField : (dto.isSystem ?? false),
     ...(typeof settings.unit === "string" ? { unit: settings.unit } : {}),
     ...(settings.multiple === true ? { multiple: true } : {}),
+    ...(typeof settings.targetBoardId === "string"
+      ? { relationBoardId: settings.targetBoardId }
+      : {}),
     ...(settings.display === "mark" ? { display: "mark" as const } : {}),
     ...(normalizeName(rawType) === "status"
       ? { semanticRole: "status" as const }
@@ -1233,4 +1239,37 @@ function normalizeMemberRole(value: string): BoardMember["role"] {
 
 function getInitials(name: string) {
   return personInitials(name);
+}
+
+/** The links of each Relation field the item read carries; a read without any leaves the key out. */
+type RelationLinksCarrier = {
+  relationLinks?: Record<
+    string,
+    readonly {
+      itemId?: string;
+      itemKey?: string | null;
+      title?: string | null;
+      locked?: boolean;
+    }[]
+  > | null;
+};
+
+export function relationLinksOf(dto: RelationLinksCarrier): {
+  relationLinks?: Record<string, RelationLink[]>;
+} {
+  if (!dto.relationLinks) return {};
+  return {
+    relationLinks: Object.fromEntries(
+      Object.entries(dto.relationLinks).map(([fieldId, links]) => [
+        fieldId,
+        links.map((link) => ({
+          itemId: link.itemId ?? "",
+          // A locked link never carries a title, whatever the wire says.
+          itemKey: link.locked ? null : (link.itemKey ?? null),
+          title: link.locked ? null : (link.title ?? null),
+          locked: link.locked === true,
+        })),
+      ]),
+    ),
+  };
 }

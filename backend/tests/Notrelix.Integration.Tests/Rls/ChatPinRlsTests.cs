@@ -166,7 +166,8 @@ public sealed class ChatPinRlsTests : IAsyncLifetime
         var pin = () => new PinMessageCommandHandler(db, context.Object, members.Object, sequences,
                 new Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages(db, sequences, clock), clock, new InMemoryChatMessageAttachments())
             .Handle(new PinMessageCommand(_a.WorkspaceId, _messageId), CancellationToken.None);
-        var unpin = () => new UnpinMessageCommandHandler(db, context.Object, members.Object, sequences, clock)
+        var unpin = () => new UnpinMessageCommandHandler(db, context.Object, members.Object, sequences,
+                new Notrelix.Application.Features.Chat.Messages.Services.ChatSystemMessages(db, sequences, clock), clock)
             .Handle(new UnpinMessageCommand(_a.WorkspaceId, _messageId), CancellationToken.None);
 
         await pin.Should().ThrowAsync<NotFoundException>();

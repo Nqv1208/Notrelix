@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Common.Data;
+using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Accounts.Accounts.Commands.RenameAccount;
 using Notrelix.Domain.Accounts.Accounts;
@@ -284,5 +285,42 @@ public class RenameAccountEvidenceTests : IAsyncLifetime
         var persisted = await verify.Accounts.SingleAsync(a => a.Id == accountId);
         persisted.Name.Should().Be("Name A", "one rename must win; the stale one must not overwrite it");
         persisted.Version.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Rename_StaleWriter_NamesNoOne_WhenTheStaleEntityBelongsToNoWorkspace()
+    {
+        var accountId = Guid.CreateVersion7();
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.Accounts.Add(CreateAccount(accountId));
+        await seed.SaveChangesAsync();
+        await using var winner = _db.CreateOwnerContext(SystemTenant());
+        await CreateHandler(winner, accountId, OwnerUserId).Handle(new RenameAccountCommand(accountId, "Name A", 1), CancellationToken.None);
+        await winner.SaveChangesAsync();
+
+        var tenant = new FakeCurrentTenantContext();
+        tenant.SetAccount(accountId, OwnerUserId);
+        await using var context = _db.CreateOwnerContext(tenant);
+        var actors = new Mock<IActorLookupService>();
+        actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<Guid> ids, CancellationToken _) =>
+                (IReadOnlyList<ActorSnapshot>)ids.Select(id => new ActorSnapshot(id, "Ada Lovelace", null)).ToList());
+        var access = new Mock<IWorkspaceAccessResolver>();
+        access.Setup(a => a.ResolveAsync(It.IsAny<Guid>(), OwnerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid workspaceId, Guid userId, CancellationToken _) => new WorkspaceAccessSnapshot(accountId, workspaceId, userId, true, true));
+        var session = new EfRequestDataSession(
+            context, new RlsSessionContext(context, Options.Create(new RlsOptions()), tenant), NullLogger<EfRequestDataSession>.Instance,
+            actors: actors.Object, workspaceAccess: access.Object, request: new FakeCurrentRequestContext().AsUser(OwnerUserId));
+        var command = new RenameAccountCommand(accountId, "Name B", 1);
+        var constraint = new ExpectedVersionConstraint(typeof(RenameAccountCommand), ((IExpectedVersionRequest)command).Resource, 1);
+
+        var act = () => session.ExecuteAsync(
+            new RequestDataSessionOptions(RequestDataAccess.Transactional, ApplyTenantScope: false, ApplyResourceScope: false, ExpectedVersion: constraint),
+            ct => CreateHandler(context, accountId, OwnerUserId).Handle(command, ct),
+            CancellationToken.None);
+
+        var problem = (await act.Should().ThrowAsync<PreconditionFailedException>()).Which;
+        problem.Extensions["changedByName"].Should().BeNull("an entity outside a workspace has no access to clear the caller against");
+        problem.Extensions["currentVersion"].Should().Be(2);
     }
 }

@@ -7,7 +7,9 @@ import {
   waitFor,
 } from "@notrelix/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { ChatVoiceRecorder } from "../core/api/chat-voice-recorder";
+import { voiceFactsOf } from "../core/model/voice-model";
 import { createNotrelixClient } from "@notrelix/contracts";
 import {
   MockStore,
@@ -58,7 +60,71 @@ async function rootOfGeneral(
   return root;
 }
 
+beforeAll(() => {
+  URL.createObjectURL = vi.fn(() => "blob:thread-voice");
+  URL.revokeObjectURL = vi.fn();
+});
+
 describe("ChatThreadPanel", () => {
+  it("records from the microphone and replies in the thread with the recording as a voice message (UC-CHT-I04)", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const mutate = vi.fn();
+    const stubbed = {
+      ...hooks,
+      useReplyInThread: () => ({ mutate, isPending: false }),
+    } as unknown as typeof hooks;
+    const recorder: ChatVoiceRecorder = {
+      isSupported: () => true,
+      start: vi.fn(async () => undefined),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => ({
+        blob: new Blob(["voice"], { type: "audio/webm" }),
+        durationMs: 4000,
+        waveform: [5, 250, 120],
+      })),
+      cancel: vi.fn(),
+    };
+    render(
+      <ChatThreadPanel
+        hooks={stubbed}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set<string>()}
+        voiceRecorder={recorder}
+        onClose={vi.fn()}
+        onReact={vi.fn()}
+        onTogglePin={vi.fn()}
+      />,
+      { wrapper },
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: en.voice.record }),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: en.voice.stop }));
+    fireEvent.click(await screen.findByRole("button", { name: en.voice.send }));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const input = mutate.mock.calls[0]![0] as {
+      content: string;
+      files: File[];
+    };
+    expect(input.content).toBe("");
+    expect(input.files).toHaveLength(1);
+    expect(voiceFactsOf(input.files[0]!)).toEqual({
+      durationMs: 4000,
+      waveform: [5, 250, 120],
+    });
+  });
+
   it("shows the root and its replies, and sends a reply that can also go to the channel", async () => {
     const { hooks, wrapper } = setup();
     const root = await rootOfGeneral(hooks);
@@ -105,13 +171,19 @@ describe("ChatThreadPanel", () => {
       ).checked,
     ).toBe(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Follow" }));
+    expect(screen.getByTestId("chat-thread-follow-state").textContent).toBe(
+      "Not following",
+    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "Thread options" }), {
+      key: "Enter",
+    });
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Follow thread" }),
+    );
     await waitFor(() =>
-      expect(
-        screen
-          .getByRole("button", { name: "Following" })
-          .getAttribute("aria-pressed"),
-      ).toBe("true"),
+      expect(screen.getByTestId("chat-thread-follow-state").textContent).toBe(
+        "Following",
+      ),
     );
     fireEvent.click(screen.getByRole("button", { name: "Close thread" }));
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -157,6 +229,168 @@ describe("ChatThreadPanel", () => {
       "The reply did not send. Your text is kept.",
     );
     expect((box as HTMLTextAreaElement).value).toBe("keep me");
+  });
+
+  it("keeps the caller's text and says to wait when the reply is rate limited", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const failing = {
+      ...hooks,
+      useReplyInThread: () => ({
+        mutate: (
+          _input: unknown,
+          options?: { onError?: (error: unknown) => void },
+        ) => options?.onError?.({ status: 429 }),
+        isPending: false,
+      }),
+    } as unknown as typeof hooks;
+    render(
+      <ChatThreadPanel
+        hooks={failing}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+        onReact={vi.fn()}
+        onTogglePin={vi.fn()}
+      />,
+      { wrapper },
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("chat-thread-replies")).toBeTruthy(),
+    );
+    const box = screen.getByRole("textbox", { name: "Reply in thread" });
+    fireEvent.change(box, { target: { value: "keep me too" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      en.feedback.rateLimited,
+    );
+    expect((box as HTMLTextAreaElement).value).toBe("keep me too");
+  });
+});
+
+describe("an archived thread", () => {
+  it("says it was archived and offers a reply that reopens it", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    const archivedHooks = {
+      ...hooks,
+      useThreadReplies: (workspaceId: string, rootId: string) => {
+        const query = hooks.useThreadReplies(workspaceId, rootId);
+        return {
+          ...query,
+          data: query.data && {
+            ...query.data,
+            pages: query.data.pages.map((page) => ({
+              ...page,
+              thread: { ...page.thread, archived: true },
+            })),
+          },
+        };
+      },
+    } as unknown as typeof hooks;
+    render(
+      <ChatThreadPanel
+        hooks={archivedHooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    expect(
+      (await screen.findByTestId("chat-thread-archived")).textContent,
+    ).toBe(en.thread.archivedBanner);
+    expect(
+      screen.getByRole("textbox", { name: en.thread.reopenLabel }),
+    ).toBeTruthy();
+  });
+});
+
+describe("a thread inactive for 7 days", () => {
+  it("shows the archived banner, and a reply reopens it: the banner goes at once", async () => {
+    const { hooks, wrapper, store } = setup();
+    const root = await rootOfGeneral(hooks);
+    await hooks.service.replyInThread(WORKSPACE, root.id, {
+      content: "Phản hồi đầu",
+      clientMessageId: crypto.randomUUID(),
+      alsoSendToChannel: false,
+    });
+    store.chat.threads.get(root.id)!.lastReplyAt = new Date(
+      store.getClock().now().getTime() - 8 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    render(
+      <ChatThreadPanel
+        hooks={hooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    expect(
+      (await screen.findByTestId("chat-thread-archived")).textContent,
+    ).toBe(en.thread.archivedBanner);
+    fireEvent.change(
+      screen.getByRole("textbox", { name: en.thread.reopenLabel }),
+      { target: { value: "Mở lại nhé" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.getByText("Mở lại nhé")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.queryByTestId("chat-thread-archived")).toBeNull(),
+    );
+    expect(
+      screen.getByRole("textbox", { name: en.thread.composerLabel }),
+    ).toBeTruthy();
+  });
+
+  it("shows no banner on a thread with a recent reply", async () => {
+    const { hooks, wrapper } = setup();
+    const root = await rootOfGeneral(hooks);
+    await hooks.service.replyInThread(WORKSPACE, root.id, {
+      content: "Phản hồi mới",
+      clientMessageId: crypto.randomUUID(),
+      alsoSendToChannel: false,
+    });
+    render(
+      <ChatThreadPanel
+        hooks={hooks}
+        workspaceId={WORKSPACE}
+        rootId={root.id}
+        viewerId="someone"
+        authorName={() => "Author"}
+        copy={en}
+        locale="en"
+        timeZone="UTC"
+        spaceLabel="# general"
+        pinnedIds={new Set()}
+        onClose={vi.fn()}
+      />,
+      { wrapper },
+    );
+    await screen.findByTestId("chat-thread-replies");
+    expect(screen.queryByTestId("chat-thread-archived")).toBeNull();
   });
 });
 

@@ -15,5 +15,6 @@ export {
   type SessionExpiredEvent,
   type FeatureRuntimeDependencies,
 } from "./runtime/app-runtime";
+export type { AccountSuspensionSignal } from "./runtime/account-suspension-signal";
 export type { KeyValueStorage } from "@notrelix/platform";
 export type { TelemetryPort } from "@notrelix/observability";

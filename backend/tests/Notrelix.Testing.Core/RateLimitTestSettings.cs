@@ -20,6 +20,7 @@ public static class RateLimitTestSettings
         "GeneralAuthenticated",
         "GeneralAnonymous",
         "WebhookIntakeByIp",
+        "CallMediaWebhookByIp",
         "ApiKeyAuthenticated",
     ];
 

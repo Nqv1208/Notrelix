@@ -27,6 +27,7 @@ export function appendUserMessage(
   clientMessageId: string,
   replyToId: string | null,
   mentions: readonly ChatMentionRecord[] = [],
+  stickerId: string | null = null,
 ): ChatMessageRecord {
   const message = storeMessage(state, space, {
     authorId,
@@ -34,6 +35,7 @@ export function appendUserMessage(
     content,
     clientMessageId,
     replyToId,
+    stickerId,
     threadRootId: null,
     threadSequence: null,
     alsoSentToChannel: false,
@@ -219,6 +221,7 @@ function storeMessage(
     content: string;
     clientMessageId: string | null;
     replyToId: string | null;
+    stickerId?: string | null;
     threadRootId: string | null;
     threadSequence: number | null;
     alsoSentToChannel: boolean;
@@ -242,6 +245,7 @@ function storeMessage(
     content: fields.content,
     clientMessageId: fields.clientMessageId,
     replyToId: fields.replyToId,
+    stickerId: fields.stickerId ?? null,
     threadRootId: fields.threadRootId,
     threadSequence: fields.threadSequence,
     alsoSentToChannel: fields.alsoSentToChannel,

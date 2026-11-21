@@ -145,17 +145,33 @@ public class WorkspaceInvitation : AggregateRoot, IWorkspaceScoped
         return entries.ToArray();
     }
 
-    // A Guest never manages: no Team lead and no Space admin entry for a Guest
-    // invitation (GOV-030 keeps a Guest from managing access).
+    // A Guest never manages (no Team lead, no Space admin: GOV-030) and is not a Team member at all
+    // (Workspaces_Team_GuestCannotJoin, workspaces.md section 46), so a Guest invitation names Space entries only.
+    // Every refused entry is named; the rule code is the same one a Guest invitation was refused with before.
     private static void EnsureGuestEntryRoles(WorkspaceRole role, IReadOnlyList<WorkspaceInvitationInitialEntry> entries)
     {
         if (role != WorkspaceRole.Guest) return;
 
-        if (entries.Any(e => e.Role is nameof(Teams.TeamMemberRole.Lead) or nameof(Spaces.SpaceRole.Admin)))
+        var refused = entries
+            .Select((e, index) => (Entry: e, Index: index))
+            .Select(x => (x.Entry, x.Index, Reason: GuestRefusalReason(x.Entry)))
+            .Where(x => x.Reason is not null)
+            .Select(x => new InvitationEntryRefusal(
+                x.Index, x.Entry.Kind.ToString().ToLowerInvariant(), x.Entry.TargetId, x.Reason!))
+            .ToList();
+        if (refused.Count > 0)
             throw new BusinessRuleException(
                 WorkspaceRuleCodes.Workspaces_Invitation_GuestEntryRoleTooPrivileged,
-                "A Guest invitation cannot name a Team lead or Space admin entry.");
+                "A Guest invitation cannot name a Team, a Team lead or a Space admin entry.",
+                new Dictionary<string, object?> { ["entries"] = refused });
     }
+
+    private static string? GuestRefusalReason(WorkspaceInvitationInitialEntry entry) =>
+        entry.Role is nameof(Teams.TeamMemberRole.Lead) or nameof(Spaces.SpaceRole.Admin)
+            ? InvitationEntryRefusal.GuestTooPrivileged
+            : entry.Kind == WorkspaceInvitationEntryKind.Team
+                ? InvitationEntryRefusal.GuestCannotJoinTeam
+                : null;
 
     public void Accept(Guid acceptedUserId, DateTimeOffset acceptedAt)
     {

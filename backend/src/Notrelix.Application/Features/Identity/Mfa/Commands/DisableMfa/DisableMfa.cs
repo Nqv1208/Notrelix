@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Features.Accounts.Public.Security;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
@@ -22,10 +23,12 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
 {
     private readonly IIdentityDbContext _context;
     private readonly ICurrentRequestContext _currentUser;
+    private readonly IAccountSecurityPolicyFacts _securityPolicy;
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly ISecurityStepUpService _stepUpService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
     private readonly ILogger<DisableMfaCommandHandler> _logger;
 
     private static readonly TimeSpan RevocationWatermarkTtl = TimeSpan.FromHours(24);
@@ -33,18 +36,21 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
     public DisableMfaCommandHandler(
         IIdentityDbContext context,
         ICurrentRequestContext currentUser,
+        IAccountSecurityPolicyFacts securityPolicy,
         IJwtBlacklistService jwtBlacklist,
         ISecurityStepUpService stepUpService,
         IDateTimeProvider dateTimeProvider,
-        ISecurityActivityRecorder activity,
+        ISecurityActivityRecorder activity, ISecurityNotice notice,
         ILogger<DisableMfaCommandHandler> logger)
     {
         _context = context;
         _currentUser = currentUser;
+        _securityPolicy = securityPolicy;
         _jwtBlacklist = jwtBlacklist;
         _stepUpService = stepUpService;
         _dateTimeProvider = dateTimeProvider;
         _activity = activity;
+        _notice = notice;
         _logger = logger;
     }
 
@@ -59,6 +65,15 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
         if (activeMethods.Count == 0)
         {
             return Result.Success();
+        }
+
+        // Checked before the proof is consumed, so a refused turn-off keeps it.
+        if (await _securityPolicy.IsMfaRequiredForPersonAsync(userId, cancellationToken))
+        {
+            return Result.Failure(new ApplicationError(
+                "identity.mfa.required-by-account",
+                "An account you belong to requires two-factor authentication, so it cannot be turned off.",
+                ApplicationErrorType.Conflict));
         }
 
         var stepUp = await ConsumeStepUpAsync(userId, request.StepUpToken, cancellationToken);
@@ -88,6 +103,7 @@ public sealed class DisableMfaCommandHandler : IRequestHandler<DisableMfaCommand
 
         settings?.DisableMfa(now);
         _activity.Record(userId, SecurityActivityType.MfaDisabled, now, _currentUser.SessionId);
+        await _notice.QueueAsync(userId, SecurityNoticeKind.MfaDisabled, now, null, cancellationToken);
 
         var activeSessions = await _context.Sessions
             .Where(s => s.UserId == userId && s.Status == SessionStatus.Active)

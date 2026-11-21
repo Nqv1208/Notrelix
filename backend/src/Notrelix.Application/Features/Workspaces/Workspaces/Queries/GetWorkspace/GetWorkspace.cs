@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using global::Notrelix.Application.Features.Workspaces.DTOs;
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Queries.GetWorkspace;
@@ -14,21 +15,24 @@ public record GetWorkspaceQuery(Guid WorkspaceId) : IQuery<Result<WorkspaceDto>>
 public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Result<WorkspaceDto>>
 {
     private readonly IWorkspaceDbContext _context;
+    private readonly IAccountStatusFacts _accountStatus;
 
-    public GetWorkspaceQueryHandler(IWorkspaceDbContext context)
+    public GetWorkspaceQueryHandler(IWorkspaceDbContext context, IAccountStatusFacts accountStatus)
     {
         _context = context;
+        _accountStatus = accountStatus;
     }
 
     public async Task<Result<WorkspaceDto>> Handle(GetWorkspaceQuery request, CancellationToken ct)
     {
         var workspace = await _context.Workspaces
             .AsNoTracking()
-            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.Status == WorkspaceStatus.Active, ct);
+            .FirstOrDefaultAsync(w => w.Id == request.WorkspaceId && w.DeletedAt == null, ct);
 
         if (workspace is null)
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
+        var accountStatus = await _accountStatus.GetAsync(workspace.AccountId, ct);
         var memberCount = await _context.WorkspaceMembers
             .CountAsync(m => m.WorkspaceId == workspace.Id && m.Status != WorkspaceMemberStatus.Removed, ct);
 
@@ -48,7 +52,8 @@ public class GetWorkspaceQueryHandler : IRequestHandler<GetWorkspaceQuery, Resul
             null,
             workspace.Version,
             workspace.Settings.Size,
-            workspace.Settings.Language
+            workspace.Settings.Language,
+            accountStatus.ToString()
         ));
     }
 }

@@ -6,6 +6,7 @@ using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Notrelix.Domain.Chat.ReadStates;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.Threads.Commands.MarkThreadRead;
 
@@ -16,7 +17,7 @@ namespace Notrelix.Application.Features.Chat.Threads.Commands.MarkThreadRead;
 /// has no pointer, so nothing moves and the unread count stays 0.
 /// </summary>
 public record MarkThreadReadCommand(Guid WorkspaceId, Guid ThreadId, long UpToReplySequence)
-    : ICommand<Result<ThreadReadDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<ThreadReadDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
@@ -41,6 +42,9 @@ public class MarkThreadReadCommandHandler(
         ChannelAccess.RequireVisible(space, caller, userId);
         if (!space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), thread.SpaceId);
+        var threadRoot = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == thread.RootMessageId && m.SpaceId == thread.SpaceId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Message), thread.RootMessageId);
+        ChannelAccess.RequireInHistory(space, userId, threadRoot);
 
         var target = ReadBoundary.Clamp(request.UpToReplySequence, thread.ReplyCount);
         await readStore.AdvanceAsync(request.WorkspaceId, request.ThreadId, userId, target, cancellationToken);

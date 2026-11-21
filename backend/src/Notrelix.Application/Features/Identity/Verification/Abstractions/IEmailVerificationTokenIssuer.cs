@@ -15,4 +15,12 @@ public interface IEmailVerificationTokenIssuer
         Guid actorUserId,
         DateTimeOffset issuedAt,
         CancellationToken cancellationToken);
+
+    /// <summary>Issues the link for the address a sign-in email change waits on and mails it to that address.</summary>
+    Task<EmailVerificationTokenIssue> IssueForPendingEmailAsync(
+        User user,
+        string pendingNormalizedEmail,
+        Guid actorUserId,
+        DateTimeOffset issuedAt,
+        CancellationToken cancellationToken);
 }

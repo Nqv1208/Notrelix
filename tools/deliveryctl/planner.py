@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, json, re, subprocess
+import fnmatch, hashlib, json, re, subprocess
 from pathlib import Path
 from typing import Any
 from .model import compact,component,image,load_authorities,matches,normalize_path,resolve_proof_profile
@@ -68,7 +68,7 @@ def build_plan(root=ROOT,event_name='workflow_dispatch',ref='',source_sha='',bas
         affected.update(front);packages.update(front_dep);security.add('frontend');caps.update(p['defaults']['full_frontend_capabilities'])
     if affected&front:caps.update(p['defaults']['frontend_default_capabilities']);security.add('frontend')
     for cid in affected&front:caps.update(comps[cid].get('frontend',{}).get('capabilities',[]))
-    release_candidate=event_name=='push' and ref==f"refs/heads/{c['repository']['release_branch']}" and release_required
+    release_candidate=event_name=='push' and fnmatch.fnmatchcase(ref,f"refs/heads/{c['repository']['release_branch']}") and release_required
     if release_candidate:packages=set(deployables);security.update({'backend','frontend','runtime'})
     frontend_selected=bool((affected&front) or caps)
     frontend_profile=dict(FRONTEND_FULL_BASELINE) if frontend_selected else None

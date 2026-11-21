@@ -238,6 +238,7 @@ describe("Teams service", () => {
       teamDescription: (ws, t) => `/w/${ws}/teams/${t}/description`,
       teamArchive: (ws, t) => `/w/${ws}/teams/${t}/archive`,
       teamUnarchive: (ws, t) => `/w/${ws}/teams/${t}/unarchive`,
+      teamsDeleted: (ws) => `/w/${ws}/teams/deleted`,
       teamRestore: (ws, t) => `/w/${ws}/teams/${t}/restore`,
       teamMembers: (ws, t) => `/w/${ws}/teams/${t}/members`,
       teamMember: (ws, t, u) => `/w/${ws}/teams/${t}/members/${u}`,

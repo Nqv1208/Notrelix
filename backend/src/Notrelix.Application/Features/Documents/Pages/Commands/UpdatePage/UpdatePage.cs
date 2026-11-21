@@ -4,15 +4,16 @@ using Notrelix.Application.Features.Documents.Abstractions;
 namespace Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
 
 /// <summary>
-/// Renames a page. Authorized as <c>UpdatePage</c> on the page, the same right as editing its content (owner
+/// Renames a page and/or sets its icon (a null field is left alone; a blank icon restores the default). Authorized as <c>UpdatePage</c> on the page, the same right as editing its content (owner
 /// decision 2026-10-30), and guarded by the page version the editor read: a stale version is refused (412) and
 /// changes nothing. The same title is a semantic no-op (no version bump, no event); a trashed page cannot be
 /// renamed.
 /// </summary>
 public record UpdatePageCommand(
     Guid PageId,
-    string Title,
-    long ExpectedVersion
+    string? Title,
+    long ExpectedVersion,
+    string? Icon = null
 ) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IExpectedVersionRequest
 {
     public PermissionAction Action => PermissionAction.UpdatePage;
@@ -36,7 +37,8 @@ public class UpdatePageCommandHandler : IRequestHandler<UpdatePageCommand, Resul
         var page = await _context.Pages.FirstOrDefaultAsync(page => page.Id == request.PageId && page.DeletedAt == null, ct);
         if (page is null) throw new NotFoundException(nameof(Page), request.PageId);
 
-        page.Rename(request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        if (request.Title is not null) page.Rename(request.Title, _currentUser.UserId, _dateTimeProvider.UtcNow);
+        if (request.Icon is not null) page.SetIcon(request.Icon, _currentUser.UserId, _dateTimeProvider.UtcNow);
 
         return Result.Success();
     }

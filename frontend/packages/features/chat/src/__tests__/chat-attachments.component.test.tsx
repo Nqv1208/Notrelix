@@ -15,7 +15,7 @@ import type { ChatMessage } from "../core/types/chat";
 import { chatQueryKeys } from "../query/keys";
 import { createChatHooks, flattenPages } from "../web/query/create-chat-hooks";
 import { ChatMessageRow } from "../web/components/chat-message-row";
-import { en } from "../web/components/chat.copy";
+import { en, vi as viCopy } from "../web/components/chat.copy";
 import { installBlobReaders } from "./blob-shim";
 
 installBlobReaders();
@@ -156,6 +156,27 @@ describe("message attachments", () => {
     expect(await blob.text()).toBe("1234567890");
   });
 
+  it("shows a hostile file name as inert text (UC-CHT-B08)", async () => {
+    const s = setup();
+    const name = "<img src=x onerror=window.__pwned=1>.pdf";
+    const message = await messageWithFiles(s, [
+      new File(["x"], name, { type: "application/pdf" }),
+    ]);
+    const { container } = render(
+      <Row s={s} messageId={message.id} spaceId={message.spaceId} isOwn />,
+      { wrapper: s.wrapper },
+    );
+    const group = await screen.findByRole("group", { name: "Files" });
+    // The server stores the name with angle brackets replaced; whatever comes back is drawn as text.
+    expect(
+      within(group).getByText(/img src=x onerror=window.__pwned=1.*\.pdf/),
+    ).not.toBeNull();
+    expect(
+      container.querySelector("img[src='x'], a[href^='javascript']"),
+    ).toBeNull();
+    expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+  });
+
   it("previews an image inline from bytes read with the session", async () => {
     const s = setup();
     const message = await messageWithFiles(s, [
@@ -256,6 +277,59 @@ describe("message attachments", () => {
     await waitFor(() =>
       expect(screen.queryByTestId("chat-image-viewer")).toBeNull(),
     );
+  });
+
+  it("zooms the viewer image with the wheel, a double click and the keys, and swipes to the next image only when it is not zoomed", async () => {
+    // jsdom has no PointerEvent: a MouseEvent that carries the pointer id gives the handlers real coordinates.
+    vi.stubGlobal(
+      "PointerEvent",
+      class extends MouseEvent {
+        readonly pointerId: number;
+        constructor(
+          type: string,
+          init: MouseEventInit & { pointerId?: number },
+        ) {
+          super(type, init);
+          this.pointerId = init.pointerId ?? 0;
+        }
+      },
+    );
+    const s = setup();
+    const message = await messageWithFiles(
+      s,
+      ["one", "two"].map(
+        (name) => new File([PNG], `${name}.png`, { type: "image/png" }),
+      ),
+    );
+    render(
+      <Row s={s} messageId={message.id} spaceId={message.spaceId} isOwn />,
+      { wrapper: s.wrapper },
+    );
+    const grid = await screen.findByTestId("chat-gallery");
+    fireEvent.click(
+      within(grid).getAllByRole("button", { name: /^Open .*\.png$/ })[0]!,
+    );
+    const viewer = await screen.findByTestId("chat-image-viewer");
+    const stage = await within(viewer).findByTestId("chat-viewer-stage");
+    expect(stage.getAttribute("data-zoom")).toBe("1.00");
+    fireEvent.wheel(stage, { deltaY: -100 });
+    expect(Number(stage.getAttribute("data-zoom"))).toBeGreaterThan(1);
+    fireEvent.keyDown(stage, { key: "0" });
+    expect(stage.getAttribute("data-zoom")).toBe("1.00");
+    fireEvent.doubleClick(stage);
+    expect(stage.getAttribute("data-zoom")).toBe("2.00");
+    // Zoomed: a sideways drag pans and does not page.
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300, clientY: 100 });
+    fireEvent.pointerUp(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    expect(within(viewer).getByText("1 of 2")).not.toBeNull();
+    fireEvent.doubleClick(stage);
+    expect(stage.getAttribute("data-zoom")).toBe("1.00");
+    fireEvent.pointerDown(stage, { pointerId: 2, clientX: 300, clientY: 100 });
+    fireEvent.pointerUp(stage, { pointerId: 2, clientX: 100, clientY: 100 });
+    await waitFor(() =>
+      expect(within(viewer).getByText("2 of 2")).not.toBeNull(),
+    );
+    vi.unstubAllGlobals();
   });
 
   it("offers remove only to the author, asks first, then removes the file", async () => {
@@ -472,6 +546,106 @@ describe("uploads on a message", () => {
         chatQueryKeys.uploads(WORKSPACE),
       ),
     ).toHaveLength(1);
+  });
+
+  it("shows an image upload as a tile at once from the local file, at its own ratio, with a progress ring", async () => {
+    await mountWithUploads((id) => [
+      upload(id, {
+        progress: 0.62,
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+    ]);
+    const tile = await screen.findByTestId("chat-upload-progress");
+    const ring = within(tile).getByRole("progressbar", {
+      name: "Uploading site.png",
+    });
+    expect(ring.getAttribute("aria-valuenow")).toBe("62");
+    // Before the image has loaded the tile keeps a 4:3 placeholder box; the real size then fixes the ratio.
+    const img = tile.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("blob:preview");
+    Object.defineProperty(img, "naturalWidth", { value: 4000 });
+    Object.defineProperty(img, "naturalHeight", { value: 1000 });
+    fireEvent.load(img);
+    await waitFor(() =>
+      expect((img.parentElement as HTMLElement).style.aspectRatio).toBe("2"),
+    );
+  });
+
+  it("turns the ring instead of filling it while no progress is known", async () => {
+    await mountWithUploads((id) => [
+      upload(id, {
+        status: "queued",
+        progress: 0,
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+    ]);
+    const ring = await screen.findByRole("progressbar", {
+      name: "Waiting to upload site.png",
+    });
+    expect(ring.getAttribute("aria-valuenow")).toBeNull();
+    expect(ring.querySelector("svg")!.getAttribute("class")).toContain(
+      "animate-spin",
+    );
+  });
+
+  it("cancels a running upload from its tile: the tile and the request go", async () => {
+    const { s } = await mountWithUploads((id) => [
+      upload(id, {
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+      upload(id, { status: "queued", progress: 0 }),
+    ]);
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Cancel uploading site.png",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("progressbar", { name: /site.png/ }),
+      ).toBeNull(),
+    );
+    // The other file is untouched and can be cancelled the same way.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cancel uploading slow.zip" }),
+    );
+    await waitFor(() =>
+      expect(
+        s.queryClient.getQueryData<ChatUploadItem[]>(
+          chatQueryKeys.uploads(WORKSPACE),
+        ),
+      ).toEqual([]),
+    );
+  });
+
+  it("keeps a failed image upload as a failed row with Retry, and Retry starts it again", async () => {
+    const { s } = await mountWithUploads((id) => [
+      upload(id, {
+        status: "failed",
+        progress: 0,
+        reason: "retryable",
+        file: new File(["abc"], "site.png", { type: "image/png" }),
+      }),
+    ]);
+    const alert = await screen.findByTestId("chat-upload-failed");
+    expect(alert.textContent).toContain(
+      "site.png was not uploaded. Check the connection and try again.",
+    );
+    fireEvent.click(
+      within(alert).getByRole("button", { name: "Retry uploading site.png" }),
+    );
+    await waitFor(() =>
+      expect(
+        s.queryClient.getQueryData<ChatUploadItem[]>(
+          chatQueryKeys.uploads(WORKSPACE),
+        )?.[0]?.status,
+      ).not.toBe("failed"),
+    );
+  });
+
+  it("offers Cancel in Vietnamese", () => {
+    expect(viCopy.attachments.cancel).toBe("Hủy");
+    expect(viCopy.attachments.refusedRemove).toContain("Bỏ");
   });
 
   it("does not show another person's uploads", async () => {

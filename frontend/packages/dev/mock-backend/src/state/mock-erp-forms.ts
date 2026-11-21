@@ -52,6 +52,7 @@ export function seedErpForms(store: MockStore): void {
     version: 4,
     createdAt: "2026-10-05T02:00:00.000Z",
     deleted: false,
+    publicKey: null,
     questions: [
       question("mock-fq-title", "a0", {
         questionKey: "title",
@@ -97,6 +98,7 @@ export function seedErpForms(store: MockStore): void {
     version: 1,
     createdAt: "2026-10-09T02:00:00.000Z",
     deleted: false,
+    publicKey: null,
     questions: [
       question("mock-fq-p1", "a0", {
         questionKey: "title",
@@ -116,6 +118,7 @@ export function seedErpForms(store: MockStore): void {
     version: 3,
     createdAt: "2026-09-20T02:00:00.000Z",
     deleted: false,
+    publicKey: null,
     questions: [
       question("mock-fq-b1", "a0", {
         questionKey: "title",

@@ -29,6 +29,23 @@ export interface PageTemplate {
   blockCount: number;
   createdBy: ID | null;
   createdAt: string;
+  /** The version a rename, archive or delete quotes; a stale one is refused. */
+  version: number;
+  /** The caller saved it or is a Workspace Admin: they may rename, archive or delete it. */
+  canManage: boolean;
+}
+
+export interface UpdatePageTemplatePayload {
+  templateId: ID;
+  name: string;
+  description?: string;
+  expectedVersion: number;
+}
+
+/** Archive and delete quote the template version the manager read. */
+export interface PageTemplateVersionPayload {
+  templateId: ID;
+  expectedVersion: number;
 }
 
 export interface CreatePageTemplatePayload {
@@ -44,6 +61,12 @@ export interface CreatePageFromTemplatePayload {
   spaceId?: ID | null;
   /** One per user action; the same key only to retry that action. */
   idempotencyKey?: string;
+}
+
+/** A duplicated page; `droppedBlockCount` blocks (images, files, videos) were not copied. */
+export interface DuplicatedPage {
+  pageId: ID;
+  droppedBlockCount: number;
 }
 
 /** A page made from a template; `droppedBlockCount` blocks (images, files, videos) were not copied. */

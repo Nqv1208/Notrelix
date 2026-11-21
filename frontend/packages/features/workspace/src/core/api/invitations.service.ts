@@ -59,6 +59,8 @@ export interface WorkspaceInvitationsEndpoints {
   workspaces: {
     /** `Workspaces.Members.InviteMember` (POST). */
     members: (workspaceId: string) => string;
+    /** `Workspaces.Members.InviteMembers` (POST). */
+    inviteMembers: (workspaceId: string) => string;
     /** `Workspaces.Invitations.ListWorkspaceInvitations` (GET). */
     invitations: (workspaceId: string) => string;
     /** `Workspaces.Invitations.CancelInvitation` (DELETE). */
@@ -142,6 +144,51 @@ const ROLE_NAME = {
   member: "Member",
   guest: "Guest",
 } as const;
+
+/** The wire shape of the initial Team and Space entries, shared by the single and the batch invitation. */
+function wireEntries(
+  entries: CreateWorkspaceInvitationInput["initialEntries"],
+) {
+  return entries && entries.length > 0
+    ? {
+        initialEntries: entries.map((entry) => ({
+          kind: entry.kind === "team" ? "Team" : "Space",
+          targetId: entry.targetId,
+          role: entry.role.charAt(0).toUpperCase() + entry.role.slice(1),
+        })),
+      }
+    : {};
+}
+
+type InviteManyBody = OperationRequestBody<"Workspaces.Members.InviteMembers">;
+
+const INVITE_OUTCOMES = [
+  "sent",
+  "already-member",
+  "already-pending",
+  "invalid",
+  "refused",
+] as const;
+
+/** What happened to one address of a batch invitation (`InviteMemberOutcomeDto`). */
+export interface InviteManyOutcome {
+  readonly email: string;
+  readonly outcome: (typeof INVITE_OUTCOMES)[number];
+  /** The stable code of a refusal (`workspace.guest_invites_off`, a rule code); `null` otherwise. */
+  readonly code: string | null;
+}
+
+/** Reads the outcomes; a row that cannot be read whole is shown as refused, never dropped. */
+export function parseInviteManyOutcomes(payload: unknown): InviteManyOutcome[] {
+  if (!Array.isArray(payload)) return [];
+  return (payload as Record<string, unknown>[]).map((raw) => ({
+    email: typeof raw?.email === "string" ? raw.email : "",
+    outcome: (INVITE_OUTCOMES as readonly unknown[]).includes(raw?.outcome)
+      ? (raw.outcome as InviteManyOutcome["outcome"])
+      : "refused",
+    code: typeof raw?.code === "string" ? raw.code : null,
+  }));
+}
 
 export function createInvitationsService(
   api: WorkspaceApiClient,
@@ -242,6 +289,7 @@ export function createWorkspaceInvitationsService(
       const body: InviteBody = {
         email: input.email.trim(),
         role: ROLE_NAME[input.role],
+        ...wireEntries(input.initialEntries),
       };
       const id = await api.post<unknown>(
         endpoints.workspaces.members(workspaceId),
@@ -249,6 +297,34 @@ export function createWorkspaceInvitationsService(
         idempotencyKey ? { idempotencyKey } : undefined,
       );
       return typeof id === "string" ? id : null;
+    },
+
+    /**
+     * Invites up to 50 people at once (`InviteMembers`). Not all-or-nothing: the answer holds one outcome per
+     * address (sent, already-member, already-pending, invalid, refused with its code). A retry under the same
+     * key returns the first answer and sends nothing again.
+     */
+    async createMany(
+      workspaceId: string,
+      entries: readonly Pick<
+        CreateWorkspaceInvitationInput,
+        "email" | "role" | "initialEntries"
+      >[],
+      idempotencyKey?: string,
+    ): Promise<InviteManyOutcome[]> {
+      const body: InviteManyBody = {
+        entries: entries.map((entry) => ({
+          email: entry.email.trim(),
+          role: ROLE_NAME[entry.role],
+          ...wireEntries(entry.initialEntries),
+        })),
+      };
+      const wire = await api.post<{ outcomes?: unknown } | null>(
+        endpoints.workspaces.inviteMembers(workspaceId),
+        body,
+        idempotencyKey ? { idempotencyKey } : undefined,
+      );
+      return parseInviteManyOutcomes(wire?.outcomes);
     },
 
     /**

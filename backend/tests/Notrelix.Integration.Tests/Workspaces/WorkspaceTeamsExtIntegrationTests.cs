@@ -1,4 +1,6 @@
 using Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt;
+using Notrelix.Domain.Governance.Permissions;
+using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Members;
 using Notrelix.Domain.Workspaces.Spaces;
 using Notrelix.Domain.Workspaces.Teams;
@@ -105,6 +107,38 @@ public sealed class WorkspaceTeamsExtIntegrationTests : IAsyncLifetime
             .Teams.Single().Usage.Should().BeEmpty("a Private Space the member cannot see does not leak through Team usage");
         (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceTeamsExtQuery(stack.WorkspaceId)))
             .Teams.Single().Usage.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Usage_ListsTheBoardGrantsOfATeam_ButNeverOfABoardTheCallerCannotSee()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var member = await _host.AddMemberAsync(stack, WorkspaceRole.Member, "Member");
+        var team = Team.Create(stack.AccountId, stack.WorkspaceId, "Platform", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        var other = Team.Create(stack.AccountId, stack.WorkspaceId, "Other", stack.OwnerId, OrgTreeTestHost.BaseTime);
+        await _host.WithSystemContextAsync(c => { c.Teams.Add(team); c.Teams.Add(other); return Task.CompletedTask; });
+        var openBoard = await _host.SeedBoardAsync(stack, "Roadmap");
+        var privateBoard = await _host.SeedBoardAsync(stack, "Leadership", BoardVisibility.Private);
+        const string boardKind = "work-management.board";
+        await _host.SeedResourcePermissionAsync(stack, boardKind, openBoard, PermissionSubjectType.Team, team.Id, PermissionLevel.Editor);
+        await _host.SeedResourcePermissionAsync(stack, boardKind, privateBoard, PermissionSubjectType.Team, team.Id, PermissionLevel.Manager);
+        await _host.SeedResourcePermissionAsync(stack, boardKind, openBoard, PermissionSubjectType.Team, other.Id, PermissionLevel.Viewer);
+        await _host.SeedResourcePermissionAsync(stack, boardKind, openBoard, PermissionSubjectType.User, member, PermissionLevel.Viewer);
+        using var asMember = _host.CreateProvider(stack.AccountId, member);
+        using var asOwner = _host.CreateProvider(stack.AccountId, stack.OwnerId);
+
+        var seen = await OrgTreeTestHost.QueryAsync(asMember, new GetWorkspaceTeamsExtQuery(stack.WorkspaceId));
+        var granted = seen.Teams.Single(t => t.Id == team.Id).Usage.Should().ContainSingle("the Private Board is not the member's to see").Subject;
+        granted.Kind.Should().Be("board");
+        granted.Id.Should().Be(openBoard);
+        granted.Name.Should().Be("Roadmap");
+        granted.Grant.Should().Be("editor");
+        granted.SpaceType.Should().BeNull();
+        seen.Teams.Single(t => t.Id == other.Id).Usage.Should().ContainSingle(u => u.Id == openBoard && u.Grant == "viewer", "a grant is listed under its own Team only");
+
+        var all = await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceTeamsExtQuery(stack.WorkspaceId));
+        all.Teams.Single(t => t.Id == team.Id).Usage.Select(u => (u.Id, u.Grant))
+            .Should().BeEquivalentTo([(openBoard, "editor"), (privateBoard, "manager")]);
     }
 
     [Fact]

@@ -13,9 +13,32 @@ const TABLE_FIELD_TYPES: readonly FieldType[] = [
   "multi_select",
   "date",
   "person",
+  "relation",
   "formula",
   "rollup",
 ];
+
+/** The types the table edits in the cell; any other editable type (Relation) is edited in the item sheet. */
+const TABLE_INLINE_EDIT_TYPES: readonly FieldType[] = [
+  "text",
+  "long_text",
+  "link",
+  "number",
+  "checkbox",
+  "select",
+  "multi_select",
+  "date",
+  "person",
+];
+
+/** Whether the table has an inline editor for the field's type. */
+export function canEditInTable(
+  field: Pick<FieldDefinition, "fieldType">,
+): boolean {
+  return (
+    specOf(field).editable && TABLE_INLINE_EDIT_TYPES.includes(field.fieldType)
+  );
+}
 
 /**
  * The board's custom fields in column order: every visible, non-system field of a
@@ -48,5 +71,5 @@ export function tableCustomFields(
 export function isReadOnlyFieldType(
   field: Pick<FieldDefinition, "fieldType">,
 ): boolean {
-  return !specOf(field).editable;
+  return !canEditInTable(field);
 }

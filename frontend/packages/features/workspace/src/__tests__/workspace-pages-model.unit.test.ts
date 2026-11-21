@@ -18,7 +18,10 @@ import {
   parseWorkspaceSettings,
   parseWorkspaceSummary,
 } from "../core/api/workspace.service";
-import { describeWorkspaceFailure } from "../core/model/errors";
+import {
+  describeWorkspaceFailure,
+  parseInvitationEntryRefusals,
+} from "../core/model/errors";
 import {
   countOwners,
   invitationState,
@@ -62,6 +65,7 @@ const WORKSPACE_ENDPOINTS = {
   workspaces: {
     list: "/workspaces",
     detail: (id: string) => `/workspaces/${id}`,
+    dashboard: (id: string) => `/workspaces/${id}/dashboard`,
   },
   accounts: { workspaces: (id: string) => `/accounts/${id}/workspaces` },
 };
@@ -130,9 +134,11 @@ describe("Member capabilities and the last-owner invariant (WSP-008)", () => {
     expect(
       memberCapabilities(member("u-owner", "owner"), admin, 2).roleBlockedBy,
     ).toBe("owner-by-transfer");
-    expect(
-      memberCapabilities(member("u-m", "member"), admin, 1).assignableRoles,
-    ).toEqual(["admin", "member", "guest"]);
+    // Changing a role is Owner-only (ChangeMemberRole): an admin reads the role as text with the reason.
+    const adminOnMember = memberCapabilities(member("u-m", "member"), admin, 1);
+    expect(adminOnMember.assignableRoles).toEqual([]);
+    expect(adminOnMember.roleBlockedBy).toBe("owner-only");
+    expect(adminOnMember.canRemove).toBe(true);
     expect(
       memberCapabilities(
         member("u-m", "member"),
@@ -317,6 +323,7 @@ describe("Invitations", () => {
     const service = createWorkspaceInvitationsService(api, {
       workspaces: {
         members: (id) => `/workspaces/${id}/members`,
+        inviteMembers: (id) => `/workspaces/${id}/members/bulk`,
         invitations: (id) => `/workspaces/${id}/invitations`,
         invitation: (id, inv) => `/workspaces/${id}/invitations/${inv}`,
         invitationRole: (id, inv) =>
@@ -484,40 +491,43 @@ describe("Producer adapters", () => {
     );
   });
 
-  it("keeps only complete activity entries", async () => {
-    expect(
-      parseActivityPage({ data: [], total: 0, page: 1, pageSize: 20 }),
-    ).toEqual({
+  it("keeps only complete activity entries and reads the cursor", async () => {
+    expect(parseActivityPage({ items: [], nextCursor: null })).toEqual({
       entries: [],
-      total: 0,
+      nextCursor: null,
     });
     const api = {
       get: vi.fn().mockResolvedValue({
-        data: [
+        items: [
           {
             id: "a",
-            actor: "Ada",
-            action: "edited",
-            target: "Plan",
-            createdAt: iso(0),
+            type: "work.board-created",
+            title: 'Board "Plan" was created',
+            actorName: "Ada",
+            subjectName: "Plan",
+            occurredAt: iso(0),
           },
-          { id: "b", action: "edited" },
+          { id: "b", type: "work.board-created" },
         ],
-        total: 2,
+        nextCursor: "c2",
       }),
       post: vi.fn(),
       put: vi.fn(),
       patch: vi.fn(),
       delete: vi.fn(),
     };
-    const page = await createActivityService(api, {
+    const service = createActivityService(api, {
       workspaces: { activity: (id) => `/workspaces/${id}/activity` },
-    }).getPage("ws", 1, 10);
-    expect(api.get).toHaveBeenCalledWith(
-      "/workspaces/ws/activity?page=1&pageSize=10",
-    );
+    });
+    const page = await service.getPage("ws", null, 10);
+    expect(api.get).toHaveBeenCalledWith("/workspaces/ws/activity?limit=10");
     expect(page.entries.map((entry) => entry.id)).toEqual(["a"]);
-    expect(page.total).toBe(2);
+    expect(page.nextCursor).toBe("c2");
+
+    await service.getPage("ws", "c2", 10);
+    expect(api.get).toHaveBeenLastCalledWith(
+      "/workspaces/ws/activity?limit=10&cursor=c2",
+    );
   });
 
   it("writes the profile to /profile with the expected version and reads settings", async () => {
@@ -537,9 +547,12 @@ describe("Producer adapters", () => {
     const service = createWorkspaceSettingsService(api, {
       workspaces: {
         profile: (id) => `/workspaces/${id}/profile`,
+        slug: (id) => `/workspaces/${id}/slug`,
         settings: (id) => `/workspaces/${id}/settings`,
         archive: (id) => `/workspaces/${id}/archive`,
+        unarchive: (id) => `/workspaces/${id}/archive/unarchive`,
         remove: (id, version) => `/workspaces/${id}?expectedVersion=${version}`,
+        transferOwnership: (id) => `/workspaces/${id}/transfer-ownership`,
       },
     });
     await service.updateProfile("ws", {
@@ -589,6 +602,33 @@ describe("Producer adapters", () => {
     expect(list.map((workspace) => workspace.version)).toEqual([3, undefined]);
     api.get.mockResolvedValueOnce(null);
     await expect(service.getList()).resolves.toEqual([]);
+  });
+
+  it("FUI[workspace.home:figures-read] reads the workspace figures and turns a missing count into 0", async () => {
+    const api = {
+      get: vi.fn().mockResolvedValue({
+        workspaceId: "w1",
+        memberCount: 12,
+        spaceCount: 3,
+        invitationCount: 4,
+        isArchived: true,
+      }),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      delete: vi.fn(),
+    };
+    const service = createWorkspaceService(api, WORKSPACE_ENDPOINTS);
+    await expect(service.getFigures("w1")).resolves.toEqual({
+      members: 12,
+      spaces: 3,
+      teams: 0,
+      invitations: 4,
+      archived: true,
+    });
+    expect(api.get).toHaveBeenCalledWith("/workspaces/w1/dashboard", {
+      skipGlobalErrorToast: true,
+    });
   });
 
   it("creates a workspace in the Account and reads it back by the id the producer answers", async () => {
@@ -794,5 +834,48 @@ describe("Library directory model (WX-DIR-001)", () => {
         viewportHeight: 400,
       }).end,
     ).toBe(320);
+  });
+});
+
+describe("parseInvitationEntryRefusals", () => {
+  it("reads each refused entry of an invitation and drops anything it does not know", () => {
+    const refused = parseInvitationEntryRefusals({
+      kind: "unknown",
+      status: 400,
+      details: {
+        errorCode: "business_rule.violation",
+        ruleCode: "Workspaces_Invitation_EntryTargetNotActive",
+        entries: [
+          { index: 1, kind: "team", targetId: "t-1", reason: "not-active" },
+          {
+            index: 2,
+            kind: "team",
+            targetId: "t-3",
+            reason: "guest-cannot-join-team",
+          },
+          {
+            index: 3,
+            kind: "space",
+            targetId: "s-1",
+            reason: "guest-too-privileged",
+          },
+          { index: 4, kind: "board", targetId: "b-1", reason: "not-active" },
+          { index: 5, kind: "team", targetId: "t-2", reason: "somethingelse" },
+        ],
+      },
+    });
+
+    expect(refused).toEqual([
+      { kind: "team", targetId: "t-1", reason: "not-active" },
+      { kind: "team", targetId: "t-3", reason: "guest-cannot-join-team" },
+      { kind: "space", targetId: "s-1", reason: "guest-too-privileged" },
+    ]);
+  });
+
+  it("is empty for a failure that names no entries", () => {
+    expect(
+      parseInvitationEntryRefusals({ details: { errorCode: "x" } }),
+    ).toEqual([]);
+    expect(parseInvitationEntryRefusals(new Error("network"))).toEqual([]);
   });
 });

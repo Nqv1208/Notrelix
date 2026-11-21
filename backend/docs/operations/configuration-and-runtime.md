@@ -348,6 +348,34 @@ the attachment object reaper removes its row and its object on its next pass (th
 orphan sweep in each pass). A bucket that serves browsers must allow `PUT` and `GET` from the web origin with the
 `Content-Type` and `Content-Length` headers (CORS).
 
+`Chat:Calls` (Application, `ChatCallOptions`, validated on start by `ChatCallOptionsValidator`) holds the call settings:
+`Enabled` (default `true`; false answers 503 `chat.calls.unavailable` on every call operation), `SfuUrl`, `TokenTtlSeconds` (60, at most 600),
+`RingSeconds` (45), `EmptyCallSeconds` (60), `Region` (`ap-southeast-1`, copied to `chat.calls.region` by the server; a client never
+supplies it) and `LogRetentionMonths` (12, not applied yet). `Chat:CallSweep` (Infrastructure, `ChatCallSweepOptions`) configures the
+job `Chat.Calls.Sweep` (`ChatCallSweepService`, a hosted service; `Enabled`, `Interval` default 5 seconds; `ReconcileInterval` default 30 seconds removes people a media room holds without an open participation): a call still Ringing after
+`RingSeconds` ends as Missed, and an Active call with nobody in it for `EmptyCallSeconds` ends as Completed, each in its own
+transaction under the system context with the RLS worker scope and a transaction advisory lock on the call, writing the one call
+message.
+
+`Chat:Calls:Media` (Infrastructure, `ChatCallMediaOptions`, validated on start by `ChatCallMediaOptionsValidator`) picks the adapter behind
+`IChatCallMediaGateway`: `Provider` is `InMemory` (default; tests and the mock stack; signs nothing real) or `LiveKit`
+(`LiveKitChatCallMediaGateway`; self-hosted LiveKit and LiveKit Cloud are this one adapter with another address and key pair). With
+`LiveKit`: `ApiUrl` (server to server, for example `http://livekit:7880`, absolute http or https), `ApiKey`, `ApiSecret` (at least 32
+characters), `RequestTimeoutSeconds` (5; the media plane counts as unreachable after it, which the handlers answer as
+`chat.calls.unavailable`) and `RoomEmptyTimeoutSeconds` (120). `Chat:Calls:SfuUrl` stays the address browsers connect to. The local dev
+key pair (`devkey-notrelix-local` and the secret in `docker-compose.dev.yml`) is refused when the host is not Development or Testing; staging
+and production carry their own key pair and never reuse the dev one. The dev compose starts the media server only under the profile
+`calls` (`docker compose --profile calls up -d livekit`, image `livekit/livekit-server:v1.13.0`, ports 7880, 7881 and 50000-50100/udp) and
+the backend selects it with `CHAT_CALLS_MEDIA_PROVIDER=LiveKit` (`LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_API_URL`,
+`LIVEKIT_CLIENT_URL`, `LIVEKIT_PORT`; see `.env.example`).
+
+The media server reports to `POST /api/v1/chat/calls/media-webhook` (the compose profile configures the address). The route has no user
+and no CSRF token: its only authority is the JWT in the `Authorization` header, signed with the media key, whose `sha256` claim is the
+digest of the exact body. A missing, tampered, wrongly keyed or expired request is 401 and nothing is read or written. The event id is
+claimed in the shared idempotency table (system scope), so a replay is a no-op; `participant_left` leaves the call and `room_finished`
+ends it, each in one transaction under the worker login with an advisory lock on the room. The rate policy `CallMediaWebhookByIp`
+(1200 per minute per address) is wider than `WebhookIntakeByIp` because a media server posts an event for every join, leave and track.
+
 `Chat:Retention` (Infrastructure, `ChatRetentionOptions`, validated on start by `ChatRetentionOptionsValidator`)
 configures the Chat retention job `Chat.Retention.Apply` (`ChatRetentionService`, a hosted service; UC-CHT-H05). Each
 pass lists the Workspaces that have a retention window, and for
@@ -370,7 +398,7 @@ files and requeues a job stuck Running for more than 15 minutes. The request is 
 `Export` (`RateLimiting:Chat:Export`, default 5 per person and 20 per Workspace per hour).
 `Chat:Digest` (Infrastructure, `ChatDigestOptions`, validated on start by `ChatDigestOptionsValidator`) configures the missed-mention email digest
 `Chat.Notifications.Digest` (`ChatDigestService`, a hosted service; UC-CHT-H09). Each pass looks at the unread chat notifications
-(mention, direct message, thread reply, broadcast) created in the latest completed window, and for each person who turned the `digest` email
+(mention, direct message, thread reply, broadcast) created in the latest completed window (and the `CatchUpWindows` before it), and for each person who turned the `digest` email
 preference on queues ONE email on the shared email outbox (the same `EmailDispatcher` and retries as every other mail; no second mail path). The
 deduplication key `chat-digest:{workspace}:{user}:{window}` makes a repeated pass add nothing, and a failed send is retried by the dispatcher.
 Chat supplies the facts through `IChatDigestFacts` (membership, level, mute, read and permission are re-checked at send); the address comes from
@@ -381,10 +409,19 @@ Identity's `IMemberDeliveryAddresses` (a Guest has none). It runs under the syst
 | `Enabled` | `true` | When false nothing is queued. |
 | `Interval` | `00:15:00` | Time between passes. Range 10 seconds to 1 day. |
 | `Window` | `1.00:00:00` | Length of one digest window (a person gets at most one digest per window). |
+| `CatchUpWindows` | 3 | Completed windows before the latest that a pass also sends when they were missed; one mail per person and window, never twice. Range 0 to 30. |
 | `MaxItems` | 10 | Message lines in one digest; the rest read "and N more". Range 1 to 50. |
 | `BatchSize` | 200 | People looked at per batch. Range 1 to 5000. |
 
 The chat search (UC-CHT-H07) reads `Search` (`RateLimiting:Chat:Search`, default 30 per minute per person and 300 per minute per Workspace). It has no other options: it reads the live message table, with no index and no worker.
+
+`Workspaces:Spaces:Purge` (Infrastructure, `DeletedSpacePurgeOptions`, validated on start by
+`DeletedSpacePurgeOptionsValidator`) configures the purge of deleted Spaces (`DeletedSpacePurgeService`, a hosted
+service; the window is `Space.RestoreWindow`, 30 days after the delete). On by default (`Enabled` true, `Interval`
+1 hour, `BatchSize` 20, same ranges as the board purge). Each pass claims, under the system context with the RLS
+worker scope, one Space deleted more than 30 days ago that has no child Space row (`FOR UPDATE SKIP LOCKED`) and, in
+one transaction, removes its member entries, its closure rows (`space_paths`), the Space row, and writes an audit fact
+`PurgeSpace` (actor type System, Critical). A Space holds no content when deleted, so nothing else is removed.
 
 `WorkManagement:Boards:Purge` (Infrastructure, `DeletedBoardPurgeOptions`, validated on start by
 `DeletedBoardPurgeOptionsValidator`) configures the purge of deleted boards (`DeletedBoardPurgeService`, a hosted
@@ -395,7 +432,7 @@ with the RLS worker scope, one board deleted more than 30 days ago with `FOR UPD
 transaction, removes every row of a `work` table that names the board in a uuid `board_id` or `*_board_id` column,
 every row (outside the retained schemas) whose cascading or blocking foreign key points at a removed row, children
 before parents by the live foreign keys (a cycle or a multi-column blocking key stops the pass), then the board row,
-and writes an audit fact `PurgeBoard` (actor type System, Critical). Rows of other contexts that name the board without
+and writes an audit fact `PurgeBoard` (actor type System, Critical). The same pass purges items and fields deleted more than 30 days ago (`PurgeItem`, `PurgeField`, same options, same rules, rows that follow by foreign key only). Rows of other contexts that name the board without
 a foreign key (comments, activity, reporting projections, automation rules, field permissions) follow their own
 retention. A failure rolls the board back and the next pass retries; a purged board is gone, so a second pass finds
 nothing.
@@ -405,6 +442,21 @@ nothing.
 | `Enabled` | `false` | When false nothing is purged. |
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 20 | Boards purged per pass, each in its own transaction. Range 1 to 1000. |
+
+`Chat:Spaces:Purge` (Infrastructure, `DeletedChatSpacePurgeOptions`, validated on start by `DeletedChatSpacePurgeOptionsValidator`) configures the
+purge of deleted Chat channels (`DeletedChatSpacePurgeService`, a hosted service; UC-CHT-H05). The window is the Domain constant of 30 days after
+the delete, `Space.RestoreWindow`. It is off by default: an operator turns it on, because removing a channel is irreversible. Each pass claims,
+under the system context with the RLS worker scope, one channel deleted more than 30 days ago with `FOR UPDATE SKIP LOCKED` and, in one transaction,
+removes every row of a `chat` table that names it in `space_id` (messages, members, threads, pins, reactions, mentions, calls), the rows that follow
+those by foreign key, then the channel row, and writes an audit fact `PurgeChatSpace` (actor type System, Critical). Rows of other contexts that
+name the channel without a foreign key (Inbox notifications) follow their own retention. The files of the channel (the Collaboration attachment rows of its messages) are removed in the same transaction, and their storage objects are deleted after the commit; a failed object delete is logged and the orphan sweep of the attachment reaper removes the object later. There is no
+legal hold in the platform, so none can skip a channel. A failure rolls the channel back and the next pass retries it.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `false` | When false nothing is purged. |
+| `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
+| `BatchSize` | 20 | Channels purged per pass, each in its own transaction. Range 1 to 1000. |
 
 `Collaboration:DueDateNotifications` (Infrastructure, `DueDateNotificationOptions`, validated on start by
 `DueDateNotificationOptionsValidator`) configures the due-date notifications (`DueDateNotificationService`, a hosted
@@ -419,6 +471,20 @@ repeat passes add nothing. It runs under the system (worker) context with the RL
 | `Interval` | `01:00:00` (1 hour) | Time between passes. Range 10 seconds to 1 day. |
 | `BatchSize` | 500 | Items read per batch. Range 1 to 5000. |
 | `OverdueGraceDays` | 3 | Local days after the due day an Item can still be reported overdue. Range 1 to 14. |
+
+`Documents:QuietVersionSweep` (Infrastructure, `PageQuietVersionSweepOptions`, validated on start by
+`PageQuietVersionSweepOptionsValidator`) configures the automatic version taken when editing goes quiet
+(`PageQuietVersionSweepService`, a hosted service; no delayed-message transport exists, so the delay is a sweep): a page
+with no block save for five minutes (`IPageVersionRecorder.QuietPeriod`) gets an Automatic history entry, as the editor of
+its newest block save, unless its content equals the newest entry. It is idempotent, runs beside the ten-minute rule that
+still captures long continuous sessions, and runs under the system (worker) context with the RLS worker scope:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Enabled` | `true` | When false nothing is captured by the sweep. |
+| `Interval` | `00:01:00` (1 minute) | Time between passes. Range 10 seconds to 1 hour. |
+| `Lookback` | `00:30:00` (30 minutes) | How far past the quiet period a page is still looked at. Range the interval to 1 day. |
+| `BatchSize` | 200 | Pages captured per pass, each in its own transaction. Range 1 to 5000. |
 
 Session cookies: `CookieService` marks the access and refresh cookies `Secure` (and `SameSite=None`)
 only when the environment is `Production`. The staging Compose overlay in this repository serves plain

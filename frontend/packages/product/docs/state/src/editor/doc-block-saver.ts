@@ -213,21 +213,20 @@ export class DocBlockSaver {
     }, this.options.debounceMs ?? 600);
   }
 
-  /** Writes whatever is pending now (route leave, hidden tab, unmount). */
-  flush(): Promise<void> {
+  /** Writes whatever is pending now (route leave, hidden tab, unmount); answers whether nothing is left unstored. */
+  flush(): Promise<boolean> {
     this.cancelTimer();
-    if (this.locked) return Promise.resolve();
-    if (this.running) {
-      this.again = true;
-      return this.running;
+    if (this.locked) return Promise.resolve(!this.hasWork());
+    if (this.running) this.again = true;
+    else {
+      this.running = this.run().finally(() => {
+        this.running = null;
+      });
     }
-    this.running = this.run().finally(() => {
-      this.running = null;
-    });
-    return this.running;
+    return (this.running as Promise<void>).then(() => !this.hasWork());
   }
 
-  retry(): Promise<void> {
+  retry(): Promise<boolean> {
     return this.flush();
   }
 
@@ -252,8 +251,18 @@ export class DocBlockSaver {
    * Structure changes wait until nothing is pending. Answers whether
    * everything was merged.
    */
-  mergeStored(stored: readonly BlockDraft[]): boolean {
+  mergeStored(read: readonly BlockDraft[]): boolean {
     if (this.disposed) return true;
+    // A refetch that started before a save landed holds older blocks: keep ours.
+    const mine = new Map(this.snapshot.map((draft) => [draft.id, draft]));
+    const stored = read.map((draft) => {
+      const have = mine.get(draft.id);
+      return have?.version !== undefined &&
+        draft.version !== undefined &&
+        draft.version < have.version
+        ? have
+        : draft;
+    });
     const pendingIds = this.pendingIds();
     const document = this.latest ?? this.snapshot;
     const same =

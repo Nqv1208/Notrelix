@@ -77,13 +77,14 @@ internal sealed class OrgTreeTestHost
 
     // ── Pipeline ──────────────────────────────────────────────────────────
 
-    public ServiceProvider CreateProvider(Guid accountId, Guid userId, Action<IServiceCollection>? configure = null)
+    public ServiceProvider CreateProvider(Guid accountId, Guid userId, Action<IServiceCollection>? configure = null, Guid? sessionId = null)
     {
         var tenant = new FakeCurrentTenantContext();
         tenant.SetAccount(accountId, userId);
 
         var requestContextMock = new Mock<ICurrentRequestContext>();
         requestContextMock.Setup(r => r.UserId).Returns(userId);
+        requestContextMock.Setup(r => r.SessionId).Returns(sessionId);
         requestContextMock.Setup(r => r.RequireAccountId()).Returns(accountId);
         requestContextMock.Setup(r => r.RequireWorkspaceId()).Returns(() => tenant.WorkspaceId ?? Guid.Empty);
 
@@ -120,16 +121,31 @@ internal sealed class OrgTreeTestHost
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccessControlBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker, Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
         services.AddScoped<ApplicationDbContext>(sp => _db.CreateOwnerContext(sp.GetRequiredService<ICurrentTenantContext>()));
         services.AddScoped<IWorkspaceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts, Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider>();
+        // Enterprise single sign-on: the public facts, the domain claim check, the secret store and the two outbound ports (fakes).
+        services.AddScoped<global::Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Members.IAccountGrantProjectionService,
+            global::Notrelix.Infrastructure.Data.Authz.AccountGrantProjectionServiceAdapter>();
+        services.AddSingleton<global::Notrelix.Application.Common.Security.ISecretEncryptor, Notrelix.Testing.Application.Fakes.ReversibleSecretEncryptor>();
+        services.AddSingleton<global::Notrelix.Application.Features.Accounts.Abstractions.IDomainTxtResolver, Notrelix.Testing.Application.Fakes.FakeDomainTxtResolver>();
+        services.AddSingleton<global::Notrelix.Application.Common.Oidc.IOidcDiscoveryClient, Notrelix.Testing.Application.Fakes.FakeOidcDiscoveryClient>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Public.Sso.IAccountSsoFacts,
+            global::Notrelix.Application.Features.Accounts.Sso.AccountSsoFactsProvider>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Sso.SsoDomainClaims>();
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICollaborationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Infrastructure.Data.Abstractions.IActivityProjectionDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<Notrelix.Application.Features.Collaboration.Public.WorkspaceActivity.IWorkspaceActivityFeed,
+            Notrelix.Infrastructure.Data.Collaboration.WorkspaceActivityFeed>();
 
         services.AddSingleton<IOptions<RlsOptions>>(Options.Create(new RlsOptions
         {
@@ -171,6 +187,13 @@ internal sealed class OrgTreeTestHost
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Status.IAccountStatusFacts,
+            Notrelix.Infrastructure.Accounts.Status.AccountStatusFactsReader>();
+        // Public forms: the per-form scope, the workspace public-links fact and the captcha test double.
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Sharing.IWorkspaceSharingFacts,
+            Notrelix.Infrastructure.Workspaces.Sharing.WorkspaceSharingFactsReader>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Forms.Services.PublicFormScope>();
+        services.AddSingleton<Notrelix.Application.Features.WorkManagement.Forms.Services.ICaptchaVerifier, Notrelix.Testing.Application.Fakes.FakeCaptchaVerifier>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeAuthorizer,
             Notrelix.Application.Features.Documents.Pages.Services.PageSubtreeAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
@@ -179,6 +202,8 @@ internal sealed class OrgTreeTestHost
             Notrelix.Infrastructure.Documents.Blocks.PostgresPageBlockWriteLock>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
             Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess,
+            Notrelix.Application.Features.Documents.Pages.Services.PageEditAccess>();
 
         services.AddScoped<Notrelix.Application.Features.Identity.Public.Queries.IIdentityUserFacts, Notrelix.Application.Features.Identity.Users.Services.IdentityUserFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Domains.IAccountDomainFacts, Notrelix.Application.Features.Accounts.Members.AccountDomainFactsProvider>();
@@ -211,6 +236,7 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IIdempotencyExecutionContext>(sp => sp.GetRequiredService<IdempotencyExecutionContext>());
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp => sp.GetRequiredService<IdempotencyExecutionContext>());
 
+        services.AddSingleton(Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
         configure?.Invoke(services);
         services.AddProductionCrossContextAdapters();
         return services.BuildServiceProvider();
@@ -301,6 +327,14 @@ internal sealed class OrgTreeTestHost
 
         return new OrgStack(account.Id, workspace.Id, owner.Id, workspace.Slug);
     }
+
+    /// <summary>Sets the workspace setting <c>AllowGuestInvites</c> (new workspaces start with guest invitations off).</summary>
+    public Task SetGuestInvitesAsync(OrgStack stack, bool allow) =>
+        WithSystemContextAsync(async seed =>
+        {
+            var workspace = await seed.Workspaces.SingleAsync(w => w.Id == stack.WorkspaceId);
+            workspace.UpdateSettings(WorkspaceSettings.Create(allowGuestInvites: allow), stack.OwnerId, BaseTime);
+        });
 
     /// <summary>Adds an active Workspace member with exactly the stated role.</summary>
     public async Task<Guid> AddMemberAsync(OrgStack stack, WorkspaceRole role, string name = "Member")

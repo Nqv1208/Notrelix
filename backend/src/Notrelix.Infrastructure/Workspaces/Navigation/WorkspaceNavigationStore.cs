@@ -81,10 +81,11 @@ public sealed class WorkspaceNavigationStore : IWorkspaceNavigationStore
                 cancellationToken);
     }
 
-    public async Task<int> CountPinsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<PinnedResource>> LoadPinsAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken)
     {
         return await _context.PinnedResources
-            .CountAsync(p => p.WorkspaceId == workspaceId && p.UserId == userId, cancellationToken);
+            .Where(p => p.WorkspaceId == workspaceId && p.UserId == userId)
+            .ToListAsync(cancellationToken);
     }
 
     public void AddPin(PinnedResource pin) => _context.PinnedResources.Add(pin);

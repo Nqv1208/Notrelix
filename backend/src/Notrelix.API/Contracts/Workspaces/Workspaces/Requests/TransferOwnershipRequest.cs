@@ -1,3 +1,3 @@
 namespace Notrelix.API.Contracts.Workspaces.Workspaces.Requests;
 
-public sealed record TransferOwnershipRequest(Guid NewOwnerId, long ExpectedVersion);
+public sealed record TransferOwnershipRequest(Guid NewOwnerId, long ExpectedVersion, string StepUpToken = "");

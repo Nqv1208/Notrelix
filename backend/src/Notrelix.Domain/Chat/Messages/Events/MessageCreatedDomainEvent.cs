@@ -15,5 +15,6 @@ public sealed record MessageCreatedDomainEvent(
     DateTimeOffset OccurredAt,
     Guid? ReplyToId = null,
     Guid? ThreadRootId = null,
-    long? ThreadSequence = null
+    long? ThreadSequence = null,
+    string? StickerId = null
 ) : WorkspaceScopedDomainEvent(AccountId, WorkspaceId, OccurredAt);

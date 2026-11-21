@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Notrelix.Application.Common.Data;
@@ -24,6 +25,7 @@ using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Application.Features.Identity.Auth.GetBootstrap;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMember;
+using Notrelix.Application.Features.Workspaces.Invitations.Commands.InviteMembers;
 using InvitationByToken = Notrelix.Application.Features.Workspaces.Invitations.Queries.GetInvitationByToken;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetUserPendingInvitations;
 using Notrelix.Application.Features.Workspaces.Invitations.Queries.GetWorkspaceInvitations;
@@ -31,6 +33,8 @@ using Notrelix.Application.Features.Workspaces.Members.Commands.RemoveMember;
 using Notrelix.Application.Features.Workspaces.Members.Commands.UpdateMemberRole;
 using Notrelix.Application.Features.Workspaces.Members.Queries.GetWorkspaceMembers;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
+using Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ChangeWorkspaceSlug;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.CreateWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspaceProfile;
@@ -398,13 +402,18 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
             MockWorkspaceHandler<GetWorkspaceQuery, Result<WorkspaceDto>>(services,
                 Result<WorkspaceDto>.Success(new WorkspaceDto(
                     Guid.NewGuid(), "Mocked", "mocked", null, false, "Free", null, null, null, false, 0, DateTime.UtcNow, null, 1)));
+            MockWorkspaceHandler<GetWorkspaceDashboardQuery, Result<WorkspaceDashboardDto>>(services,
+                Result<WorkspaceDashboardDto>.Success(new WorkspaceDashboardDto(Guid.NewGuid(), "Mocked", 1, 0, 0, 0, false)));
             MockWorkspaceHandler<UpdateWorkspaceProfileCommand, Result>(services, Result.Success());
+            MockWorkspaceHandler<ChangeWorkspaceSlugCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<ArchiveWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RestoreWorkspaceCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetWorkspaceMembersQuery, Result<CursorPage<WorkspaceMemberDto>>>(services,
                 Result<CursorPage<WorkspaceMemberDto>>.Success(new CursorPage<WorkspaceMemberDto>([], null)));
             MockWorkspaceHandler<InviteMemberCommand, Result<Guid>>(services,
                 Result<Guid>.Success(Guid.NewGuid()));
+            MockWorkspaceHandler<InviteMembersCommand, Result<MemberInvitationBatchResultDto>>(services,
+                Result<MemberInvitationBatchResultDto>.Success(new MemberInvitationBatchResultDto([])));
             MockWorkspaceHandler<UpdateMemberRoleCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<RemoveMemberCommand, Result>(services, Result.Success());
             MockWorkspaceHandler<GetWorkspaceInvitationsQuery, Result<CursorPage<WorkspaceInvitationDto>>>(services,
@@ -435,6 +444,14 @@ public class NotrelixApiFactory : WebApplicationFactory<Program>
                 Result<OAuthLoginStartResult>.Success(new OAuthLoginStartResult("https://accounts.google.com/o/oauth2/auth?test=true")));
             MockWorkspaceHandler<CompleteOAuthLoginCommand, Result<AuthResult>>(services,
                 Result<AuthResult>.Success(CreateAuthResult()));
+            MockWorkspaceHandler<Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.StartSsoSignInCommand,
+                Result<Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult>>(services,
+                Result<Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult>.Success(
+                    new Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult("https://login.acme.example/authorize?test=true")));
+            MockWorkspaceHandler<Notrelix.Application.Features.Identity.Sso.Commands.CompleteSsoSignIn.CompleteSsoSignInCommand,
+                Result<Notrelix.Application.Features.Identity.Sso.Commands.CompleteSsoSignIn.SsoSignInResult>>(services,
+                Result<Notrelix.Application.Features.Identity.Sso.Commands.CompleteSsoSignIn.SsoSignInResult>.Success(
+                    new Notrelix.Application.Features.Identity.Sso.Commands.CompleteSsoSignIn.SsoSignInResult(CreateAuthResult(), null)));
             MockWorkspaceHandler<InvitationByToken.GetInvitationByTokenQuery, Result<InvitationByToken.InvitationPreviewDto>>(services,
                 Result<InvitationByToken.InvitationPreviewDto>.Success(new InvitationByToken.InvitationPreviewDto(
                     "valid", "Inviter", "Test Workspace", "Member", null, null, null, new DateOnly(2030, 1, 1), "test@test.com", false)));

@@ -377,4 +377,8 @@ export interface MockPageTemplateRecord {
   createdBy: string | null;
   createdAt: string;
   blocks: MockBlockRecord[];
+  /** The version a rename, archive or delete quotes (the producer starts a saved template at 2). */
+  version: number;
+  /** An archived template leaves the list; pages made from it are unchanged. */
+  archived: boolean;
 }

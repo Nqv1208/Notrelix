@@ -16,6 +16,8 @@ export interface ObjectPutInput {
   readonly contentType: string;
   readonly body: Blob;
   readonly onProgress?: (progress: ObjectPutProgress) => void;
+  /** Aborting it cancels the request and rejects with an AbortError (the author cancelled the upload). */
+  readonly signal?: AbortSignal;
 }
 
 export class ObjectPutError extends Error {
@@ -30,6 +32,10 @@ export class ObjectPutError extends Error {
 
 export function putObjectWithProgress(input: ObjectPutInput): Promise<void> {
   return new Promise<void>((resolve, reject) => {
+    if (input.signal?.aborted) {
+      reject(new DOMException("Upload was aborted.", "AbortError"));
+      return;
+    }
     const xhr = new XMLHttpRequest();
     xhr.open(input.method, input.url, true);
     xhr.setRequestHeader("Content-Type", input.contentType);
@@ -38,15 +44,25 @@ export function putObjectWithProgress(input: ObjectPutInput): Promise<void> {
         input.onProgress?.({ loaded: event.loaded, total: event.total });
       }
     };
+    const onAbort = () => xhr.abort();
+    input.signal?.addEventListener("abort", onAbort, { once: true });
+    const done = () => input.signal?.removeEventListener("abort", onAbort);
     xhr.onload = () => {
+      done();
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
         reject(new ObjectPutError(xhr.status));
       }
     };
-    xhr.onerror = () => reject(new ObjectPutError(0));
-    xhr.onabort = () => reject(new ObjectPutError(0));
+    xhr.onerror = () => {
+      done();
+      reject(new ObjectPutError(0));
+    };
+    xhr.onabort = () => {
+      done();
+      reject(new ObjectPutError(0));
+    };
     xhr.send(input.body);
   });
 }
