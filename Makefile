@@ -33,6 +33,7 @@ help:
 dev: dev-up
 
 dev-up:
+	@git config core.hooksPath .githooks 2>/dev/null || true
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
 
 dev-down:
