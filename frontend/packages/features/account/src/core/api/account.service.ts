@@ -1,4 +1,13 @@
 import { resolveApiAssetUrl } from "@notrelix/contracts";
+import {
+  parseSsoDomain,
+  parseSsoProviderSaved,
+  parseSsoSettings,
+  type SsoDomain,
+  type SsoProviderInput,
+  type SsoProviderSaved,
+  type SsoSettings,
+} from "../sso";
 import type {
   AccountApiTokenRevokedReason,
   AccountLeaveFailure,
@@ -36,7 +45,11 @@ export interface AccountApiClient {
   post<T>(
     url: string,
     body?: unknown,
-    options?: { skipGlobalErrorToast?: boolean; skipAuthRefresh?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      skipAuthRefresh?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   put<T>(
     url: string,
@@ -53,7 +66,10 @@ export interface AccountApiClient {
   ): Promise<T>;
   delete<T>(
     url: string,
-    options?: { skipGlobalErrorToast?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   /** Multipart upload; `PUT` replaces a resource. */
   upload<T>(
@@ -103,6 +119,12 @@ export interface AccountEndpoints {
     deletedWorkspaces: (accountId: string) => string;
     securityPolicy: string;
     mfaPolicy: string;
+    sso: string;
+    ssoProvider: string;
+    ssoDomains: string;
+    ssoDomain: (domainId: string) => string;
+    ssoDomainVerify: (domainId: string) => string;
+    ssoRequire: string;
   };
   workspaces: {
     apiTokens: (workspaceId: string) => string;
@@ -861,6 +883,71 @@ export function createAccountService(
     async setAccountMfaPolicy(required: boolean): Promise<void> {
       await api.put<void>(
         endpoints.accounts.mfaPolicy,
+        { required },
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
+    },
+
+    /** The Account's single sign-on setup. Owner only: anyone else answers 403. The secret is never in the answer. */
+    async getSso(): Promise<SsoSettings> {
+      return parseSsoSettings(
+        await api.get<unknown>(endpoints.accounts.sso, {
+          ...PAGE_QUIET,
+          headers: await accountHeader(),
+        }),
+      );
+    },
+
+    /** Saves (or replaces) the one provider; the answer says whether it is Active or still a Draft and why. */
+    async saveSsoProvider(input: SsoProviderInput): Promise<SsoProviderSaved> {
+      return parseSsoProviderSaved(
+        await api.put<unknown>(endpoints.accounts.ssoProvider, input, {
+          ...PAGE_QUIET,
+          headers: await accountHeader(),
+        }),
+      );
+    },
+
+    async removeSsoProvider(): Promise<void> {
+      await api.delete<void>(endpoints.accounts.ssoProvider, {
+        ...PAGE_QUIET,
+        headers: await accountHeader(),
+      });
+    },
+
+    /** Adding a domain this Account already has answers the existing row. */
+    async addSsoDomain(domain: string): Promise<SsoDomain> {
+      return parseSsoDomain(
+        await api.post<unknown>(
+          endpoints.accounts.ssoDomains,
+          { domain },
+          { ...PAGE_QUIET, headers: await accountHeader() },
+        ),
+      );
+    },
+
+    /** A DNS miss is not an error: the row comes back still Pending. */
+    async verifySsoDomain(domainId: string): Promise<SsoDomain> {
+      return parseSsoDomain(
+        await api.post<unknown>(
+          endpoints.accounts.ssoDomainVerify(domainId),
+          undefined,
+          { ...PAGE_QUIET, headers: await accountHeader() },
+        ),
+      );
+    },
+
+    async removeSsoDomain(domainId: string): Promise<void> {
+      await api.delete<void>(endpoints.accounts.ssoDomain(domainId), {
+        ...PAGE_QUIET,
+        headers: await accountHeader(),
+      });
+    },
+
+    /** 409 `accounts.sso.not-ready` until the provider is Active and a domain is Verified. */
+    async setSsoRequired(required: boolean): Promise<void> {
+      await api.put<void>(
+        endpoints.accounts.ssoRequire,
         { required },
         { ...PAGE_QUIET, headers: await accountHeader() },
       );

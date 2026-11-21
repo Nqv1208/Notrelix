@@ -578,7 +578,7 @@ for (const dark of [false, true]) {
       );
       await expectBox(
         "continue",
-        link(page, "Tiếp tục với Microsoft Entra"),
+        link(page, "Tiếp tục với Minh An Group"),
         { y: 467, width: 400, height: 44 },
         1.35,
       );

@@ -68,6 +68,14 @@ vi.mock("@notrelix/runtime-web", () => ({
         accounts: {
           deletedWorkspaces: (id: string) =>
             `/accounts/${id}/workspaces/deleted`,
+          sso: "/accounts/security-policy/sso",
+          ssoProvider: "/accounts/security-policy/sso/provider",
+          ssoDomains: "/accounts/security-policy/sso/domains",
+          ssoDomain: (id: string) =>
+            `/accounts/security-policy/sso/domains/${id}`,
+          ssoDomainVerify: (id: string) =>
+            `/accounts/security-policy/sso/domains/${id}/verify`,
+          ssoRequire: "/accounts/security-policy/sso/require",
         },
         workspaces: {
           restore: (id: string) => `/workspaces/${id}/restore`,
@@ -737,9 +745,19 @@ describe("AccountSecurityPage container", () => {
       isCurrent: false,
     },
   ];
+  /** The Account's single sign-on setup as a member (not the Owner) reads it. */
+  const ssoSetup = {
+    canManage: false,
+    redirectUri: "https://api.example/api/v1/auth/sso/callback",
+    requireSso: false,
+    provider: null,
+    domains: [],
+  };
   const table = {
     "/auth/me": profile,
     "/workspaces/w-1": workspace,
+    "/auth/bootstrap": { accountId: "acc-1" },
+    "/accounts/security-policy/sso": ssoSetup,
     "/auth/security/summary": summary,
     "/auth/sessions": sessions,
     "/auth/security/activity": {
@@ -765,6 +783,24 @@ describe("AccountSecurityPage container", () => {
     expect(text()).toContain("Đăng nhập 2 giờ trước");
     expect(text()).toContain("Hoạt động bảo mật gần đây");
     expect(text()).toContain("Đã bật");
+  });
+
+  it("draws the single sign-on block: read-only for a member, the setup for the Owner", async () => {
+    runtime.get = reads(table);
+    await mount(<AccountSecurityPage />, "en");
+    await until(() =>
+      expect(text()).toContain(
+        "Only the account Owner can set up single sign-on",
+      ),
+    );
+    expect(host?.querySelector('[aria-label="Set up provider"]')).toBeNull();
+
+    runtime.get = reads({
+      ...table,
+      "/accounts/security-policy/sso": { ...ssoSetup, canManage: true },
+    });
+    await mount(<AccountSecurityPage />, "en");
+    await until(() => expect(text()).toContain("Set up provider"));
   });
 
   it("asks for a proof before creating new backup codes and shows them once", async () => {

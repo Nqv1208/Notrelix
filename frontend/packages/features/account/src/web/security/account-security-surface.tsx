@@ -160,6 +160,8 @@ export interface AccountSecuritySurfaceProps {
   readonly onSetTwoFactor: (enabled: boolean) => void;
   /** The Owner requires (or stops requiring) two-factor for the whole Account. */
   readonly onSetAccountMfaPolicy?: (required: boolean) => void;
+  /** The Account's single sign-on block (`AccountSsoSection`), drawn under the two-factor policy; absent = none. */
+  readonly ssoSlot?: React.ReactNode;
   /** Opens the change of password; absent = the account cannot change it here. */
   readonly onChangePassword?: () => void;
   /** Starts setting a first password (the proof comes first); absent = the page cannot do it. */
@@ -635,6 +637,7 @@ function SecurityBody({
   onPasswordChangedContinue,
   onSetTwoFactor,
   onSetAccountMfaPolicy,
+  ssoSlot,
   onSubmitCode,
   onSubmitPassword,
   onStartProviderStepUp,
@@ -851,6 +854,8 @@ function SecurityBody({
           />
         </Block>
       ) : null}
+
+      {ssoSlot}
 
       {flow?.kind === "setPassword" ? (
         <AccountSetPasswordPanel

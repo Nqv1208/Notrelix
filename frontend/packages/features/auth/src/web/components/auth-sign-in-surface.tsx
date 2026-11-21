@@ -6,7 +6,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { Clock, Loader2, Lock, Mail, Timer } from "lucide-react";
+import { Building2, Clock, Loader2, Lock, Mail, Timer } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
@@ -29,6 +29,18 @@ import {
  * Pure: the step, the copy and the callbacks are injected; the inputs it owns
  * are the typed email, password and code.
  */
+/** How a company sign-in can end on the email step; one plain sentence each, none says whether an account exists. */
+export type SsoErrorKind =
+  | "sso-state"
+  | "sso-denied"
+  | "sso-failed"
+  | "sso-email-unverified"
+  | "sso-domain-mismatch"
+  | "sso-identity-conflict"
+  | "sso-not-provisioned"
+  | "sso-unavailable"
+  | "sso-required-social";
+
 export type AuthSignInStep =
   | {
       readonly kind: "email";
@@ -47,6 +59,8 @@ export type AuthSignInStep =
         /** The provider's verified email belongs to an account that is not linked to it: sign in with the password. */
         | "provider-email-in-use"
         | "provider-email-unverified"
+        /** The company sign-in callback failed (`identity.sso.*`), or the company asks for it (`identity.oauth.sso-required`). */
+        | SsoErrorKind
         /** The session the person was using ended: this page opened by itself. */
         | "session-ended"
         /** A password reset just finished: sign in with the new password. */
@@ -70,7 +84,11 @@ export type AuthSignInStep =
         readonly initials: string;
         readonly providerLabel: string;
         readonly domain: string;
+        /** The company requires single sign-on: only the account Owner can still use a password. */
+        readonly enforced?: boolean;
       };
+      /** `unreachable`: the start did not answer; `refused`: a password was refused because the company requires single sign-on. */
+      readonly error?: "unreachable" | "refused" | null;
     }
   | AuthEnrollStep
   | AuthCodesStep
@@ -118,6 +136,8 @@ export interface AuthSignInSurfaceProps {
   readonly onSubmitPassword: (password: string) => void;
   readonly onForgot: () => void;
   readonly onSso: () => void;
+  /** From the company step: the password path stays reachable (the account Owner's break-glass). */
+  readonly onUsePassword?: () => void;
   readonly onVerify: (input: { code: string }) => void;
   readonly onToggleBackup: () => void;
   readonly onBack: () => void;
@@ -135,6 +155,15 @@ const PROVIDER_ERROR_COPY = {
   "provider-denied": "providerDenied",
   "provider-email-in-use": "providerEmailInUse",
   "provider-email-unverified": "providerEmailUnverified",
+  "sso-state": "ssoState",
+  "sso-denied": "ssoDenied",
+  "sso-failed": "ssoFailed",
+  "sso-email-unverified": "ssoEmailUnverified",
+  "sso-domain-mismatch": "ssoDomainMismatch",
+  "sso-identity-conflict": "ssoIdentityConflict",
+  "sso-not-provisioned": "ssoNotProvisioned",
+  "sso-unavailable": "ssoUnavailable",
+  "sso-required-social": "ssoRequiredSocial",
 } as const;
 type ProviderErrorKind = keyof typeof PROVIDER_ERROR_COPY;
 
@@ -557,6 +586,7 @@ function SsoStep({
   step,
   pending,
   onSso,
+  onUsePassword,
   onChangeEmail,
 }: AuthSignInSurfaceProps & {
   step: Extract<AuthSignInStep, { kind: "sso" }>;
@@ -594,24 +624,48 @@ function SsoStep({
         onClick={onSso}
         className={BUTTON_CLASS.primary}
       >
-        <span className="grid size-4.5 place-items-center rounded-[3px] bg-background">
-          <MicrosoftMark className="size-3.5" />
+        <span className="grid size-4.5 place-items-center rounded-[3px] bg-background text-foreground">
+          <Building2 aria-hidden="true" className="size-3.5" />
         </span>
         {pending
           ? fillAuthCopy(t.redirecting, values)
           : fillAuthCopy(t.continue, values)}
       </button>
+      {step.error === "unreachable" ? (
+        <FieldError>{t.unreachable}</FieldError>
+      ) : null}
+      {step.error === "refused" ? (
+        <FieldError>{fillAuthCopy(t.refused, values)}</FieldError>
+      ) : null}
       <div className="flex items-start gap-2.5 rounded-[10px] bg-state-hover px-3.5 py-3 text-item-small leading-normal text-muted-foreground">
         <Lock
           aria-hidden="true"
           className="mt-0.5 size-4 shrink-0 text-meta-foreground"
         />
         <p className="m-0">
-          <b className="font-semibold text-foreground">{t.noteTitle}</b>
-          {t.noteBody}
+          {org.enforced ? (
+            <>
+              <b className="font-semibold text-foreground">{t.enforcedTitle}</b>
+              {t.enforcedBody}
+            </>
+          ) : (
+            <>
+              <b className="font-semibold text-foreground">{t.optionalTitle}</b>
+              {t.optionalBody}
+            </>
+          )}
         </p>
       </div>
-      <div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {onUsePassword ? (
+          <button
+            type="button"
+            onClick={onUsePassword}
+            className={LINK_BUTTON_CLASS}
+          >
+            {t.usePassword}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onChangeEmail}

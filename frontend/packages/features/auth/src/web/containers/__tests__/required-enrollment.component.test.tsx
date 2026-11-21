@@ -36,6 +36,7 @@ const navigation = () =>
   ({
     navigate: vi.fn(),
     startProviderSignIn: vi.fn(),
+    startSsoSignIn: vi.fn(),
   }) satisfies AuthFlowNavigation;
 
 const asService = (service: object) => service as unknown as AuthFlowService;

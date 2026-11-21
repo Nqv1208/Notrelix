@@ -31,6 +31,8 @@ export const AUTH_FLOW_PATHS = {
   /** The browser is sent here (a redirect), never called with XHR. */
   oauthStart: (provider: string) =>
     `/auth/oauth/${encodeURIComponent(provider)}/start`,
+  /** `POST`: answers the provider's authorization address, which the browser is then sent to. */
+  ssoStart: "/auth/sso/start",
   forgotPassword: "/auth/forgot-password",
   resetPassword: "/auth/reset-password",
   confirmEmail: "/auth/email-verification/confirm",
@@ -49,6 +51,7 @@ interface IdentifyWire {
     readonly orgInitials?: string | null;
     readonly provider?: string | null;
     readonly providerLabel?: string | null;
+    readonly enforced?: boolean | null;
   } | null;
 }
 
@@ -61,6 +64,8 @@ export interface IdentifyResult {
     readonly provider: string;
     /** "Microsoft Entra". */
     readonly providerLabel: string;
+    /** The company requires single sign-on: only the account Owner can still use a password. */
+    readonly enforced: boolean;
   } | null;
 }
 
@@ -290,6 +295,7 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
               orgInitials: sso.orgInitials ?? "",
               provider: sso.provider ?? "",
               providerLabel: sso.providerLabel ?? "",
+              enforced: sso.enforced === true,
             },
           }
         : { method: "password", sso: null };
@@ -379,6 +385,25 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
       return isSafeReturnPath(returnUrl)
         ? `${path}?returnUrl=${encodeURIComponent(returnUrl)}`
         : path;
+    },
+    /**
+     * Starts the company sign-in for an email whose domain routes to a provider. The answer is the
+     * provider's address; the way back is the backend's callback, which sets the session cookies and
+     * redirects like the Google one (`/auth/callback`, `/sign-in?step=mfa`, or `/sign-in?error=<code>`).
+     * Not routable (unverified domain, no provider, provider off) answers 404 `identity.sso.unavailable`.
+     */
+    async startSso(
+      email: string,
+      returnUrl?: string | null,
+    ): Promise<{ authorizationUrl: string }> {
+      const wire = await api.post<{ authorizationUrl?: unknown }>(
+        AUTH_FLOW_PATHS.ssoStart,
+        isSafeReturnPath(returnUrl) ? { email, returnUrl } : { email },
+        QUIET,
+      );
+      if (typeof wire?.authorizationUrl !== "string" || !wire.authorizationUrl)
+        throw new Error("sso.start: no authorization address");
+      return { authorizationUrl: wire.authorizationUrl };
     },
     forgotPassword(email: string) {
       return api.post<void>(AUTH_FLOW_PATHS.forgotPassword, { email }, QUIET);

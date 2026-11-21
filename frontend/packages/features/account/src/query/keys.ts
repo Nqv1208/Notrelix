@@ -12,6 +12,8 @@ export const accountQueryKeys = {
     accountQueryKey(accountId, "account", "sessions"),
   activity: (accountId: string) =>
     accountQueryKey(accountId, "account", "security-activity"),
+  /** The Account's single sign-on setup (Owner only). */
+  sso: (accountId: string) => accountQueryKey(accountId, "account", "sso"),
   /** The API tokens of one workspace (metadata only). */
   apiTokens: (accountId: string, workspaceId: string) =>
     accountQueryKey(accountId, "account", "api-tokens", workspaceId),

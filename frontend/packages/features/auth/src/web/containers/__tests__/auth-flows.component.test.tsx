@@ -31,6 +31,7 @@ function navigation() {
   return {
     navigate: vi.fn(),
     startProviderSignIn: vi.fn(),
+    startSsoSignIn: vi.fn(),
   } satisfies AuthFlowNavigation;
 }
 

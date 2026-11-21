@@ -47,9 +47,61 @@ describe("auth flow adapter: identify", () => {
     expect(result.sso?.provider).toBe("microsoft-entra");
   });
 
+  it("carries whether the company requires single sign-on", async () => {
+    const { service } = setup({
+      method: "sso",
+      sso: {
+        orgName: "Minh An",
+        orgInitials: "MA",
+        provider: "oidc",
+        providerLabel: "OpenID Connect",
+        enforced: true,
+      },
+    });
+    expect((await service.identify("a@minhan.vn")).sso?.enforced).toBe(true);
+    const open = setup({
+      method: "sso",
+      sso: { orgName: "M", orgInitials: "M", provider: "oidc" },
+    });
+    expect((await open.service.identify("a@minhan.vn")).sso?.enforced).toBe(
+      false,
+    );
+  });
+
   it("falls back to a password when sso is announced without a block", async () => {
     const { service } = setup({ method: "sso", sso: null });
     expect((await service.identify("a@b.vn")).method).toBe("password");
+  });
+});
+
+describe("auth flow adapter: company sign-in", () => {
+  it("starts it with the email and a safe return path, and hands back the provider address", async () => {
+    const { post, service } = setup({
+      authorizationUrl: "https://login.example/authorize?state=s",
+    });
+    await expect(
+      service.startSso("a@minhan.vn", "/workspaces/a?b=1"),
+    ).resolves.toEqual({
+      authorizationUrl: "https://login.example/authorize?state=s",
+    });
+    expect(post).toHaveBeenCalledWith(
+      AUTH_FLOW_PATHS.ssoStart,
+      { email: "a@minhan.vn", returnUrl: "/workspaces/a?b=1" },
+      expect.objectContaining({ skipAuthRefresh: true }),
+    );
+    expect(AUTH_FLOW_PATHS.ssoStart).toBe("/auth/sso/start");
+  });
+
+  it("drops an unsafe return path and refuses an answer with no address", async () => {
+    const { post, service } = setup({ authorizationUrl: "https://i/a" });
+    await service.startSso("a@minhan.vn", "//evil.com");
+    expect(post).toHaveBeenCalledWith(
+      AUTH_FLOW_PATHS.ssoStart,
+      { email: "a@minhan.vn" },
+      expect.anything(),
+    );
+    const bad = setup({});
+    await expect(bad.service.startSso("a@minhan.vn")).rejects.toThrow();
   });
 });
 

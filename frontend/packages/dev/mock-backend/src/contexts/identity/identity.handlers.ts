@@ -102,14 +102,19 @@ export const identityOperations = [
         store.loginCurrentUser();
         return ok(sessionOf(store));
       }
-      if (store.auth.identify(body.email).method === "sso")
-        return {
-          status: 400,
-          body: {
-            message: "This company signs in through its own provider.",
-            code: "SSO_REQUIRED",
-          },
-        };
+      // Only a correct password of a non-Owner on a company that requires single sign-on is told
+      // so (403); a wrong one answers invalid-credentials exactly as everywhere else.
+      if (
+        store.auth.sso.isEnforcedFor(body.email) &&
+        !store.auth.sso.isOwner(body.email) &&
+        body.email.trim().toLowerCase() === MOCK_AUTH.ssoMemberEmail &&
+        body.password === MOCK_AUTH.personalPassword
+      )
+        return identityProblem(
+          403,
+          "identity.auth.sso-required",
+          "This company requires single sign-on.",
+        );
       const outcome = store.auth.login(body.email, body.password ?? "");
       if (outcome.kind === "locked")
         return identityProblem(

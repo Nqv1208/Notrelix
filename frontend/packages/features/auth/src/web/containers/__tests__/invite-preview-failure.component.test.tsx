@@ -39,7 +39,11 @@ function open(getInvite: ReturnType<typeof vi.fn>) {
     <Providers>
       <InviteFlow
         service={{ getInvite } as unknown as AuthFlowService}
-        navigation={{ navigate: vi.fn(), startProviderSignIn: vi.fn() }}
+        navigation={{
+          navigate: vi.fn(),
+          startProviderSignIn: vi.fn(),
+          startSsoSignIn: vi.fn(),
+        }}
         token="tok"
       />
     </Providers>,

@@ -32,7 +32,13 @@ describe("identify", () => {
       email: "ha@minhan.vn",
     });
     expect(company.body?.method).toBe("sso");
-    expect(company.body?.sso?.providerLabel).toBe("Microsoft Entra");
+    expect(company.body?.sso).toEqual({
+      orgName: "Minh An Group",
+      orgInitials: "MA",
+      provider: "oidc",
+      providerLabel: "OpenID Connect",
+      enforced: false,
+    });
     const bad = await call("POST", "/auth/identify", { email: "x" });
     expect(bad.status).toBe(400);
     expect(bad.body?.errorCode).toBe("validation.failed");

@@ -11,4 +11,9 @@ export interface AuthFlowNavigation {
    * round trip.
    */
   startProviderSignIn: (path: string) => void;
+  /**
+   * Sends the browser to the company provider's authorization address (the answer of the company
+   * sign-in start). The host owns how: a full page navigation, or the mock world's own round trip.
+   */
+  startSsoSignIn: (authorizationUrl: string) => void;
 }
