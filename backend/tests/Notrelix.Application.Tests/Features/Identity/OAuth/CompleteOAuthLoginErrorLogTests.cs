@@ -15,7 +15,7 @@ public class CompleteOAuthLoginErrorLogTests : IdentityHandlerTestBase
     {
         var state = new Mock<IOAuthStateStore>();
         state.Setup(s => s.ConsumeAsync("state", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new OAuthLoginState("state", "nonce", "verifier", OAuthProvider.Google, null, TestNow.AddMinutes(10)));
+            .ReturnsAsync(new OAuthLoginState("state", "nonce", "verifier", OAuthProvider.Google, null, TestNow.AddMinutes(10), BindingHash: StateBinding.Hash("binding")));
         var logger = new CapturingLogger<CompleteOAuthLoginCommandHandler>();
         var sut = new CompleteOAuthLoginCommandHandler(
             state.Object, new Mock<IOAuthProviderClient>().Object, new Mock<IOAuthOptionsProvider>().Object,
@@ -28,6 +28,7 @@ public class CompleteOAuthLoginErrorLogTests : IdentityHandlerTestBase
             Provider = OAuthProvider.Google,
             Code = "code",
             State = "state",
+            BrowserBinding = "binding",
             Error = "access_denied",
             ErrorDescription = "x\r\n2026-01-01 FAKE Critical: admin signed in" + new string('y', 500),
         }, CancellationToken.None);

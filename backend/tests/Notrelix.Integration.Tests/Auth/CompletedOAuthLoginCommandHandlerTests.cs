@@ -41,7 +41,8 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
     private static readonly OAuthLoginState ValidState = new(
         "test-state", "test-nonce", "test-code-verifier",
         OAuthProvider.Google, null,
-        DateTimeOffset.UtcNow.AddMinutes(10));
+        DateTimeOffset.UtcNow.AddMinutes(10),
+        BindingHash: StateBinding.Hash("binding"));
 
     private (Mock<IOAuthStateStore> StateStore, Mock<IOAuthProviderClient> ProviderClient,
             Mock<IOAuthOptionsProvider> OptionsProvider, Mock<IAuthSessionIssuer> SessionIssuer,
@@ -105,6 +106,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = string.Empty,
             State = "test-state",
             Error = "access_denied",
@@ -131,6 +133,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "bad-state"
         }, CancellationToken.None);
@@ -155,6 +158,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -181,6 +185,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -223,6 +228,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -259,6 +265,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -292,6 +299,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -326,6 +334,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -367,6 +376,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -420,6 +430,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var act = () => handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.Google,
+            BrowserBinding = "binding",
             Code = "auth-code",
             State = "test-state"
         }, CancellationToken.None);
@@ -437,7 +448,8 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var gitHubState = new OAuthLoginState(
             "github-state", "github-nonce", "github-code-verifier",
             OAuthProvider.GitHub, null,
-            DateTimeOffset.UtcNow.AddMinutes(10));
+            DateTimeOffset.UtcNow.AddMinutes(10),
+            BindingHash: StateBinding.Hash("binding"));
 
         var mocks = CreateMocks();
         mocks.OptionsProvider.Setup(x => x.GetRedirectUri(OAuthProvider.GitHub))
@@ -465,6 +477,7 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
         var result = await handler.Handle(new CompleteOAuthLoginCommand
         {
             Provider = OAuthProvider.GitHub,
+            BrowserBinding = "binding",
             Code = "github-code",
             State = "github-state"
         }, CancellationToken.None);

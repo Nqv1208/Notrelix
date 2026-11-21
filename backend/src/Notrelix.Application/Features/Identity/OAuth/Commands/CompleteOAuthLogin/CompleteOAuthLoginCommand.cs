@@ -28,6 +28,9 @@ public sealed record CompleteOAuthLoginCommand
     public required string State { get; init; }
     public string? Error { get; init; }
     public string? ErrorDescription { get; init; }
+
+    /// <summary>The value the browser's binding cookie held; the state only works for the browser that started it.</summary>
+    public string? BrowserBinding { get; init; }
 }
 
 public sealed class CompleteOAuthLoginCommandHandler
@@ -95,6 +98,13 @@ public sealed class CompleteOAuthLoginCommandHandler
         if (storedState is null)
         {
             _logger.LogWarning("OAuth callback with invalid or expired state");
+            return Fail(OAuthLoginErrorCodes.StateInvalid, "Invalid or expired OAuth state.");
+        }
+
+        // Same refusal as an unknown state, so nothing tells which check failed. The state is already used up.
+        if (!StateBinding.Matches(request.BrowserBinding, storedState.BindingHash))
+        {
+            _logger.LogWarning("OAuth callback state is not bound to this browser");
             return Fail(OAuthLoginErrorCodes.StateInvalid, "Invalid or expired OAuth state.");
         }
 

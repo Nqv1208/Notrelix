@@ -17,6 +17,18 @@ namespace Notrelix.Application.Common.Security.Auth
         /// <summary>Only the step-up endpoints receive the proof cookie.</summary>
         const string StepUpProofCookiePath = "/api/v1/auth/security/step-up";
 
+        /// <summary>Cookie that ties a provider sign-in's state to the browser that started it (login CSRF defence).</summary>
+        const string OAuthBindingCookieName = "oauthBinding";
+
+        /// <summary>
+        /// Only the provider sign-in endpoints receive the binding cookie. The provider segment of the callback
+        /// address is matched case-insensitively by the route but cookie paths are case-sensitive, so the path stops at the OAuth root.
+        /// </summary>
+        const string OAuthBindingCookiePath = "/api/v1/auth/oauth";
+
+        /// <summary>The binding lives as long as the sign-in state does.</summary>
+        static readonly TimeSpan OAuthBindingCookieLifetime = TimeSpan.FromMinutes(10);
+
         /// <summary>Cookie that ties a company sign-in's state to the browser that started it (login CSRF defence).</summary>
         const string SsoBindingCookieName = "ssoBinding";
 
@@ -48,6 +60,13 @@ namespace Notrelix.Application.Common.Security.Auth
         string? GetStepUpProofCookie();
 
         void DeleteStepUpProofCookie();
+
+        /// <summary>httpOnly, path-scoped, SameSite=Lax (the callback is a top-level GET from the provider), Secure when the request is HTTPS.</summary>
+        void SetOAuthBindingCookie(string binding);
+
+        string? GetOAuthBindingCookie();
+
+        void DeleteOAuthBindingCookie();
 
         /// <summary>httpOnly, path-scoped to the callback, SameSite=Lax (the callback is a top-level GET from the provider).</summary>
         void SetSsoBindingCookie(string binding);

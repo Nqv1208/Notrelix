@@ -12,6 +12,9 @@ public sealed record StartOAuthLoginCommand
 {
     public required OAuthProvider Provider { get; init; }
     public string? ReturnUrl { get; init; }
+
+    /// <summary>The random value the starting browser holds in a cookie; only its hash is kept with the state.</summary>
+    public required string BrowserBinding { get; init; }
 }
 
 public sealed class StartOAuthLoginCommandHandler
@@ -71,7 +74,8 @@ public sealed class StartOAuthLoginCommandHandler
 
         var expiresAt = _dateTimeProvider.UtcNow.AddMinutes(10);
         var loginState = new OAuthLoginState(
-            state, nonce, codeVerifier, request.Provider, SafeReturnPath.OrNull(request.ReturnUrl), expiresAt);
+            state, nonce, codeVerifier, request.Provider, SafeReturnPath.OrNull(request.ReturnUrl), expiresAt,
+            BindingHash: StateBinding.Hash(request.BrowserBinding));
 
         await _stateStore.StoreAsync(loginState, TimeSpan.FromMinutes(10), cancellationToken);
 

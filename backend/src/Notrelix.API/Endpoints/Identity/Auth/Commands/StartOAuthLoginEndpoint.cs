@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Notrelix.API.Extensions;
 using Notrelix.API.Options;
 using Notrelix.API.RateLimiting;
+using Notrelix.Application.Features.Identity.OAuth;
 using Notrelix.Application.Features.Identity.OAuth.Commands.StartOAuthLogin;
 
 namespace Notrelix.API.Endpoints.Identity.Auth.Commands;
@@ -26,6 +27,7 @@ public static class StartOAuthLoginEndpoint
         string provider,
         string? returnUrl,
         ISender sender,
+        ICookieService cookieService,
         IOptions<OAuthRedirectOptions> redirectOptions)
     {
         // The browser navigates here, so a refusal is the sign-in page saying so, never raw JSON.
@@ -38,10 +40,13 @@ public static class StartOAuthLoginEndpoint
             return unavailable;
         }
 
+        // Ties the state to this browser: the callback only works with the cookie set here.
+        var binding = StateBinding.NewValue();
         var command = new StartOAuthLoginCommand
         {
             Provider = oauthProvider,
-            ReturnUrl = returnUrl
+            ReturnUrl = returnUrl,
+            BrowserBinding = binding
         };
 
         var result = await sender.Send(command);
@@ -51,6 +56,7 @@ public static class StartOAuthLoginEndpoint
             return unavailable;
         }
 
+        cookieService.SetOAuthBindingCookie(binding);
         return Results.Redirect(result.Data.AuthorizationUrl);
     }
 }

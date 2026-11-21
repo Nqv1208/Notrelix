@@ -36,6 +36,10 @@ public static class CompleteOAuthLoginEndpoint
         IOAuthStateStore stateStore,
         IOptions<OAuthRedirectOptions> redirectOptions)
     {
+        // The binding works once, whatever the outcome.
+        var browserBinding = cookieService.GetOAuthBindingCookie();
+        cookieService.DeleteOAuthBindingCookie();
+
         if (!Enum.TryParse<Domain.Identity.OAuth.OAuthProvider>(provider, ignoreCase: true, out var oauthProvider)
             || !Enum.IsDefined(oauthProvider))
         {
@@ -67,7 +71,8 @@ public static class CompleteOAuthLoginEndpoint
             Code = code ?? string.Empty,
             State = state ?? string.Empty,
             Error = error,
-            ErrorDescription = error_description
+            ErrorDescription = error_description,
+            BrowserBinding = browserBinding
         };
 
         var result = await sender.Send(command);
