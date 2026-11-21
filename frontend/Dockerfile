@@ -24,11 +24,9 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
-# Explicit remediation for CVE-2026-86144 (HIGH): the locked nginx digest ships
-# libxml2 2.13.9-r2 while alpine v3.24 already publishes the fixed 2.13.9-r3.
-# A floor keeps the fix as the repository moves on. Remove this layer once the
-# base-image lock advances past the fixed revision.
-RUN apk add --no-cache "libxml2>=2.13.9-r3"
+# The locked base digest lags alpine security fixes; upgrade installed packages
+# to the repository's fixed revisions. Remove this layer once the lock moves.
+RUN apk upgrade --no-cache
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.
