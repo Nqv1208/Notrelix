@@ -193,12 +193,17 @@ jobs:
           retention-days: 1
           compression-level: 0
 
+  # One runner per unit test project, all on the build above. The Architecture tests run in fast-checks-backend. fail-fast is off so every project reports even when another fails.
   backend-unit:
-    name: Backend unit tests
+    name: Backend unit tests (${{ matrix.project }})
     needs: [changes, fast-checks, backend-build]
     if: ${{ !cancelled() && needs.changes.outputs.backend == 'true' && needs.backend-build.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [Domain, Application, Infrastructure, Platform, API]
     defaults:
       run:
         working-directory: backend
@@ -206,12 +211,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
       - uses: ./.github/actions/use-backend-build
-      - name: Domain, Application, Infrastructure, Platform and API tests
-        run: |
-          set -euo pipefail
-          for p in Domain Application Infrastructure Platform API; do
-            dotnet test "tests/Notrelix.$p.Tests/Notrelix.$p.Tests.csproj" --no-build --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
-          done
+        with:
+          restore-target: tests/Notrelix.${{ matrix.project }}.Tests/Notrelix.${{ matrix.project }}.Tests.csproj
+      - name: ${{ matrix.project }} tests
+        run: >
+          dotnet test "tests/Notrelix.${{ matrix.project }}.Tests/Notrelix.${{ matrix.project }}.Tests.csproj"
+          --no-build --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
+          --logger "trx;LogFileName=unit-${{ matrix.project }}.trx" --results-directory "$RUNNER_TEMP/trx"
+      # Per-test durations, to split a project further by measured time if it becomes the long pole.
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unit-trx-${{ matrix.project }}
+          path: ${{ runner.temp }}/trx/*.trx
+          if-no-files-found: warn
+          retention-days: 7
 
   backend-integration:
     name: Integration tests (${{ matrix.shard.name }})
@@ -224,8 +238,10 @@ jobs:
       matrix:
         # The last shard is the complement of the others, so every test runs exactly once.
         shard:
-          - name: workspaces-auth
-            filter: FullyQualifiedName~Notrelix.Integration.Tests.Workspaces.|FullyQualifiedName~Notrelix.Integration.Tests.Auth.
+          - name: workspaces
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Workspaces.
+          - name: auth
+            filter: FullyQualifiedName~Notrelix.Integration.Tests.Auth.
           - name: work-management
             filter: FullyQualifiedName~Notrelix.Integration.Tests.WorkManagement.
           # The Rls classes run one after another, so they are split by measured time (trx of a CI run, see docs/delivery/ci-cd-architecture.md): rls-1 to rls-4 list their classes,

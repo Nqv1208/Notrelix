@@ -52,8 +52,8 @@ Only `tools/deliveryctl` interprets these files. `ci.yml` does not consume them;
 ```text
 changes -> fast-checks-backend  (format | contract) ---\
         -> fast-checks-frontend (typecheck | rest) ------> fast-checks (one verdict)
-fast-checks -> backend-build -> backend-unit
-                             -> backend-integration (8 shards)
+fast-checks -> backend-build -> backend-unit (5 projects)
+                             -> backend-integration (9 shards)
 fast-checks -> frontend
             -> frontend-web (4 shards)
 dependencies (no needs)
@@ -65,8 +65,8 @@ every job above -> CI gate (required, if: always())
 - `fast-checks-frontend` — `typecheck`, and `rest` (`format:check`, `lint`, `check:architecture`, `check:i18n`, `check:mock-consumer-surface`, `codegen:check`).
 - `fast-checks` — one verdict: every fast check of a changed side must be success and a side with no change must be skipped. Any failure keeps every heavy job below from starting.
 - `backend-build` — the only restore and build of `backend.slnx` in Release for the heavy jobs. It saves the NuGet package cache and uploads `bin/` and `obj/` as one tar artifact (`backend-build`, kept one day).
-- `backend-unit` — the Domain, Application, Infrastructure, Platform and API test projects, run with `--no-build --no-restore` on the unpacked build (composite action `use-backend-build`). The Architecture tests run in `fast-checks-backend`.
-- `backend-integration` — eight shards of `Notrelix.Integration.Tests`, each run with `--no-build --no-restore` on the same build: `workspaces-auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-4`, `rls-rest` and `rest`. Their filters are exact complements, so every test runs in exactly one shard (section 4.1).
+- `backend-unit` — one runner per test project (Domain, Application, Infrastructure, Platform, API), each running `dotnet test --no-build --no-restore` on the unpacked build (composite action `use-backend-build`); the legs do not cancel each other, so every project reports. The Architecture tests run in `fast-checks-backend`. Each leg uploads its `.trx` as `unit-trx-<project>` (kept seven days).
+- `backend-integration` — nine shards of `Notrelix.Integration.Tests`, each run with `--no-build --no-restore` on the same build: `workspaces`, `auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-4`, `rls-rest` and `rest`. Their filters are exact complements, so every test runs in exactly one shard (section 4.1).
 - `frontend` — `test:node` and the `app-web` build.
 - `frontend-web` — the web component suite, split across 4 vitest shards (`--shard=N/4`).
 - `dependencies` — calls `security-ci.yml` (reusable) for the NuGet and pnpm dependency audit.
@@ -80,7 +80,7 @@ The Rls tests run one class after another, so a long class makes the whole shard
 
 - `rls-1` to `rls-4` name their classes (`FullyQualifiedName~Notrelix.Integration.Tests.Rls.<Class>.`, joined with `|`).
 - `rls-rest` is the complement: every other Rls class, including new ones (`...Rls.` and `&FullyQualifiedName!~...Rls.<Class>.` for each listed class).
-- `workspaces-auth`, `work-management` and `rest` select by namespace; `rest` is the complement of those and of `Rls.`.
+- `workspaces`, `auth` and `work-management` select by namespace; `rest` is the complement of those and of `Rls.`.
 
 Each shard uploads its `.trx` as the artifact `integration-trx-<shard>` (kept seven days). To rebalance, download those from one run, sum the time of each class (the span from its first start to its last end, plus about 4 s between classes), pack the large classes into the explicit shards and leave the small ones to `rls-rest`. Keep every job under about 8 minutes. Prove the new filters before pushing: `dotnet test tests/Notrelix.Integration.Tests/Notrelix.Integration.Tests.csproj --no-build --list-tests --filter "<filter>"` for each shard must select every test of the unfiltered list exactly once.
 

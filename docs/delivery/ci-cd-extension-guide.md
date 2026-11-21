@@ -36,8 +36,8 @@ identify the owning job (fast-checks-backend | fast-checks-frontend | backend-un
 - `fast-checks-backend` — `format` (format check, pre-push hook self-test) and `contract` (Architecture tests, OpenAPI drift). Cheap checks go here, so a slip costs minutes and stops the heavy jobs. A new check is a step in one of the two matrix entries, or a new entry.
 - `fast-checks-frontend` — `typecheck` and `rest` (`format:check`, `lint`, `check:architecture`, `check:i18n`, `check:mock-consumer-surface`, `codegen:check`).
 - `backend-build` — the single Release build of the solution. A heavy backend job takes this build through `./.github/actions/use-backend-build` and runs `dotnet test --no-build --no-restore`; it never restores or builds again.
-- `backend-unit` — the Domain, Application, Infrastructure, Platform and API test projects.
-- `backend-integration` — integration test shards (`workspaces-auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-4`, `rls-rest`, `rest`). A new shard is a new matrix entry whose filter keeps the shards exact complements (see `ci-cd-architecture.md` section 4.1); a new test class needs no entry, it lands in `rls-rest` or `rest`.
+- `backend-unit` — the Domain, Application, Infrastructure, Platform and API test projects, one matrix leg each. A new unit test project is a new `project` entry.
+- `backend-integration` — integration test shards (`workspaces`, `auth`, `work-management`, `rls-1`, `rls-2`, `rls-3`, `rls-4`, `rls-rest`, `rest`). A new shard is a new matrix entry whose filter keeps the shards exact complements (see `ci-cd-architecture.md` section 4.1); a new test class needs no entry, it lands in `rls-rest` or `rest`.
 - `frontend` — `test:node`, `app-web` build.
 - `frontend-web` — `test:web`, split across 4 vitest shards (`--shard=N/4`).
 - `dependencies` — reusable `security-ci.yml`.
