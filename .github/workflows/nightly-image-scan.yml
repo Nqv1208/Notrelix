@@ -1,6 +1,8 @@
 name: Nightly Image Scan
 # Runs the same image gates as the release path (container-ci Trivy scans of our images, runtime-security of every
 # pinned runtime image) against develop so a new upstream CVE fails here, not on the first release/** push.
+# This file lives on main because scheduled workflows only fire from the default branch; github.sha is therefore
+# main's head, so every scanned source is pinned to the develop SHA the plan job checked out.
 # Builds only (publish_mode=false): nothing is pushed, signed or attested.
 on:
   schedule: [{cron: '30 2 * * *'}]
@@ -15,11 +17,14 @@ jobs:
       container_matrix: ${{ steps.plan.outputs.container_matrix }}
       runtime_images_json: ${{ steps.plan.outputs.runtime_images_json }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
+      develop_sha: ${{ steps.sha.outputs.develop_sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: develop
           fetch-depth: 0
+      - id: sha
+        run: echo "develop_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - id: plan
         run: |
           set -euo pipefail
@@ -33,7 +38,7 @@ jobs:
     uses: ./.github/workflows/container-ci.yml
     with:
       container_matrix: ${{ needs.plan.outputs.container_matrix }}
-      source_sha: ${{ github.sha }}
+      source_sha: ${{ needs.plan.outputs.develop_sha }}
       plan_sha256: ${{ needs.plan.outputs.plan_sha256 }}
       publish_mode: ${{ format('{0}', 'false') }}
   runtime-security:
