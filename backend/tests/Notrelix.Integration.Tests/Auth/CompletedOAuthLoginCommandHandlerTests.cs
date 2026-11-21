@@ -86,7 +86,8 @@ public class CompleteOAuthLoginCommandHandlerTests : IAsyncLifetime
             passwordHasher.Object,
             dateTimeProvider.Object,
             eventCollector.Object,
-            NullLogger<CompleteOAuthLoginCommandHandler>.Instance);
+            NullLogger<CompleteOAuthLoginCommandHandler>.Instance,
+            new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
     }
 
     [Fact]

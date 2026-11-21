@@ -92,6 +92,210 @@
         ]
       }
     },
+    "/api/v1/accounts/security-policy/sso": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Read the account's single sign-on setup (Owner only; never returns the client secret)",
+        "operationId": "Accounts.GetSso",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/provider": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Save and validate the account's OIDC provider (Owner only)",
+        "operationId": "Accounts.SaveSsoProvider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Remove the account's OIDC provider (Owner only)",
+        "operationId": "Accounts.RemoveSsoProvider",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/domains": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Claim a domain and get its DNS TXT instructions (Owner only)",
+        "operationId": "Accounts.AddSsoDomain",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/domains/{id}/verify": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Check the domain's DNS TXT record and verify it (Owner only)",
+        "operationId": "Accounts.VerifySsoDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/domains/{id}": {
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Remove a domain claim (Owner only)",
+        "operationId": "Accounts.RemoveSsoDomain",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/accounts/security-policy/sso/require": {
+      "put": {
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Require single sign-on for the members of the verified domains (Owner only)",
+        "operationId": "Accounts.SetSsoRequired",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/admin/outbox/stats": {
       "get": {
         "tags": [
@@ -14325,6 +14529,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too Many Requests",
             "content": {
@@ -14623,6 +14837,131 @@
               "type": "string"
             }
           },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_description",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "302": {
+            "description": "Found"
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sso/start": {
+      "post": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Auth"
+        ],
+        "summary": "Start a company sign-in for an email",
+        "description": "Routes the email's verified domain to its Account's identity provider and answers the provider's authorization address (authorization code with PKCE). Every email that cannot sign in through a company provider gets the same 404 identity.sso.unavailable. Rate limited per IP.",
+        "operationId": "Identity.Auth.Sso.Start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notrelix.API.Endpoints.Identity.Auth.Commands.StartSsoSignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sso/callback": {
+      "get": {
+        "tags": [
+          "Identity.Auth",
+          "Identity.Auth"
+        ],
+        "summary": "Complete a company sign-in",
+        "description": "The one callback address of every company identity provider. Uses up the state, exchanges the code, checks the provider's ID token and finds, links or provisions the person, then sets the auth cookies and redirects. Every failure redirects to the sign-in page with one code: identity.sso.state-invalid, denied, failed, email-unverified, domain-mismatch, identity-conflict, not-provisioned or unavailable (or identity.oauth.mfa-required when the second factor cannot start).",
+        "operationId": "Identity.Auth.Sso.Callback",
+        "parameters": [
           {
             "name": "code",
             "in": "query",
@@ -36616,6 +36955,16 @@
         },
         "additionalProperties": { }
       },
+      "Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
         "type": "object",
         "properties": {
@@ -36630,7 +36979,41 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "issuerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientSecret": {
+            "type": "string",
+            "nullable": true
+          },
+          "jitProvisioning": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest": {
         "type": "object",
         "properties": {
           "required": {
@@ -40887,6 +41270,20 @@
         },
         "additionalProperties": false
       },
+      "Notrelix.API.Endpoints.Identity.Auth.Commands.StartSsoSignInRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "returnUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
         "type": "object",
         "properties": {
@@ -44245,6 +44642,9 @@
           "providerLabel": {
             "type": "string",
             "nullable": true
+          },
+          "enforced": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -44577,6 +44977,16 @@
           },
           "isCurrent": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult": {
+        "type": "object",
+        "properties": {
+          "authorizationUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

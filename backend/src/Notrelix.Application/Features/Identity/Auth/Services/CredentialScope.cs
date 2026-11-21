@@ -38,6 +38,10 @@ public sealed class CredentialScope
     public Task<Guid?> EnterByOAuthIdentityAsync(string provider, string subject, CancellationToken cancellationToken) =>
         EnterAsync(CredentialScopeKind.OAuthIdentity, $"{provider}\u001f{subject}", 0, cancellationToken);
 
+    /// <summary>The user the company provider's subject of this Account signs in as, or null.</summary>
+    public Task<Guid?> EnterBySsoIdentityAsync(Guid accountId, string subject, CancellationToken cancellationToken) =>
+        EnterAsync(CredentialScopeKind.SsoIdentity, $"{accountId:D}\u001f{subject}", 0, cancellationToken);
+
     /// <summary>
     /// Binds the request to the user a server-held, already validated record (an MFA challenge or an OAuth
     /// state held in a server-side store) belongs to. The user comes from that record, not from the caller;

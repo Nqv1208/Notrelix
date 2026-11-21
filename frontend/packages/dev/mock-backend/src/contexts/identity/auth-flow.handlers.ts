@@ -4,6 +4,8 @@
  *
  *   POST /auth/identify                     how this email signs in
  *   GET  /auth/oauth/:provider/start        Google or Microsoft sign-in (the real call is a redirect)
+ *   POST /auth/sso/start                    the company sign-in: the provider's authorization address
+ *   GET  /auth/sso/callback                 the company provider's way back (the real call is a redirect)
  *   POST /invitations/preview               guest invitation preview
  *   POST /invitations/decline
  *   POST /invitations/accept-with-registration
@@ -25,7 +27,7 @@ import type { MockStore } from "../../state/mock-store";
 const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 /** The provider whose mock account has an authenticator app: its sign-in goes through the second step. */
 const MFA_PROVIDER = "microsoft";
-const MOCK_PROVIDERS = ["google", "microsoft", "microsoft-entra"];
+const MOCK_PROVIDERS = ["google", "microsoft"];
 
 function hasControlCharacter(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
@@ -225,6 +227,7 @@ export const authFlowOperations = [
               orgInitials: sso.orgInitials,
               provider: sso.provider,
               providerLabel: sso.providerLabel,
+              enforced: sso.enforced,
             }
           : null,
       });
@@ -343,13 +346,16 @@ export const authFlowOperations = [
       const returnTo = isInternalPath(query.returnUrl) ? query.returnUrl : null;
       const suffix = returnTo ? `returnTo=${encodeURIComponent(returnTo)}` : "";
       // An unknown or switched-off provider makes no redirect to it: the backend sends the
-      // browser back to the sign-in page with the code. `microsoft-entra` is the mock-only
-      // company sign-in path (the real backend cannot serve it yet).
+      // browser back to the sign-in page with the code.
       if (!MOCK_PROVIDERS.includes(params.provider)) {
         return ok({
           redirectTo: "/sign-in?error=identity.oauth.provider-unavailable",
         });
       }
+      // A company that requires single sign-on refuses the social sign-in of its people, the
+      // Owner too, before any session or second step.
+      if (store.auth.sso.isEnforcedFor(store.getCurrentUser().email))
+        return ok({ redirectTo: "/sign-in?error=identity.oauth.sso-required" });
       if (params.provider === MFA_PROVIDER) {
         store.auth.startProviderMfa();
         return ok({
@@ -372,6 +378,91 @@ export const authFlowOperations = [
           "Google",
           (minutes) => store.getClock().offsetMinutes(minutes),
         );
+      return ok({
+        redirectTo: `/auth/callback${suffix ? `?${suffix}` : ""}`,
+      });
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { email?: string; returnUrl?: string },
+    unknown
+  >({
+    id: "auth.sso.start",
+    contract: { kind: "openapi", operationId: "Identity.Auth.Sso.Start" },
+    method: "POST",
+    route: "/auth/sso/start",
+    async handle({ body, store }) {
+      const email = body?.email?.trim() ?? "";
+      const returnTo = isInternalPath(body?.returnUrl) ? body.returnUrl : null;
+      const state = EMAIL.test(email)
+        ? store.auth.sso.start(email, returnTo)
+        : null;
+      // The same answer for an unverified domain, no provider and a provider that is off.
+      if (!state)
+        return identityProblem(
+          404,
+          "identity.sso.unavailable",
+          "Single sign-on is not available for this address.",
+        );
+      // The mock's provider has no page: the host plays the callback with this state and code.
+      return ok({
+        authorizationUrl: `https://mock-idp.invalid/authorize?state=${encodeURIComponent(state)}&code=mock-code`,
+      });
+    },
+  }),
+
+  defineMockOperation<Record<string, never>, never, unknown>({
+    id: "auth.sso.callback",
+    contract: { kind: "openapi", operationId: "Identity.Auth.Sso.Callback" },
+    method: "GET",
+    route: "/auth/sso/callback",
+    async handle({ query, store }) {
+      // The real call is a redirect to the web app; the mock says where it would land. Every
+      // failure carries one `identity.sso.*` code and no session is opened.
+      const fail = (code: string) =>
+        ok({ redirectTo: `/sign-in?error=identity.sso.${code}` });
+      const sso = store.auth.sso;
+      const opened = sso.take(query.state ?? "");
+      if (!opened) return fail("state-invalid");
+      if (query.error) return fail("denied");
+      if (!sso.routeOf(opened.email)) return fail("unavailable");
+      // The person to sign in is chosen by the address: its local part picks the outcome.
+      const local = opened.email.split("@")[0] ?? "";
+      const refusal = {
+        "sso-failed": "failed",
+        "sso-email-unverified": "email-unverified",
+        "sso-domain-mismatch": "domain-mismatch",
+        "sso-identity-conflict": "identity-conflict",
+        "sso-not-provisioned": "not-provisioned",
+      }[local];
+      if (refusal) return fail(refusal);
+      // With first-sign-in creation off, only people who already have an account get in.
+      const known = [
+        MOCK_AUTH.ssoOwnerEmail,
+        MOCK_AUTH.ssoMemberEmail,
+        store.getCurrentUser().email.toLowerCase(),
+      ].includes(opened.email);
+      if (!known && sso.provider?.jitProvisioning === false)
+        return fail("not-provisioned");
+      const suffix = opened.returnTo
+        ? `returnTo=${encodeURIComponent(opened.returnTo)}`
+        : "";
+      // The second step and the Account's two-step requirement apply exactly as after the Google sign-in.
+      if (local === "sso-mfa") {
+        store.auth.startProviderMfa();
+        return ok({
+          redirectTo: `/sign-in?step=mfa${suffix ? `&${suffix}` : ""}`,
+        });
+      }
+      if (store.auth.accountMfaRequired) {
+        store.auth.startProviderEnrollment();
+        return ok({
+          redirectTo: `/sign-in?step=mfa&enroll=1${suffix ? `&${suffix}` : ""}`,
+        });
+      }
+      store.loginCurrentUser();
       return ok({
         redirectTo: `/auth/callback${suffix ? `?${suffix}` : ""}`,
       });

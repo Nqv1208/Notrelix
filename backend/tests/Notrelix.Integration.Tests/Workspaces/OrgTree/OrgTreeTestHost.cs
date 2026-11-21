@@ -127,6 +127,16 @@ internal sealed class OrgTreeTestHost
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IAccountDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts, Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider>();
+        // Enterprise single sign-on: the public facts, the domain claim check, the secret store and the two outbound ports (fakes).
+        services.AddScoped<global::Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Members.IAccountGrantProjectionService,
+            global::Notrelix.Infrastructure.Data.Authz.AccountGrantProjectionServiceAdapter>();
+        services.AddSingleton<global::Notrelix.Application.Common.Security.ISecretEncryptor, Notrelix.Testing.Application.Fakes.ReversibleSecretEncryptor>();
+        services.AddSingleton<global::Notrelix.Application.Features.Accounts.Abstractions.IDomainTxtResolver, Notrelix.Testing.Application.Fakes.FakeDomainTxtResolver>();
+        services.AddSingleton<global::Notrelix.Application.Common.Oidc.IOidcDiscoveryClient, Notrelix.Testing.Application.Fakes.FakeOidcDiscoveryClient>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Public.Sso.IAccountSsoFacts,
+            global::Notrelix.Application.Features.Accounts.Sso.AccountSsoFactsProvider>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Sso.SsoDomainClaims>();
         services.AddScoped<IGovernanceDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IWorkManagementDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IDocumentDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());

@@ -4,6 +4,7 @@ namespace Notrelix.Application.Features.Accounts.Security;
 public static class AccountSecuritySettingKeys
 {
     public const string RequireMfa = "security.require-mfa";
+    public const string RequireSso = "security.require-sso";
     public const string True = "true";
     public const string False = "false";
 }

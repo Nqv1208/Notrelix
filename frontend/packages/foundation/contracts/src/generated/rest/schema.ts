@@ -55,6 +55,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/security-policy/sso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the account's single sign-on setup (Owner only; never returns the client secret) */
+        get: operations["Accounts.GetSso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save and validate the account's OIDC provider (Owner only) */
+        put: operations["Accounts.SaveSsoProvider"];
+        post?: never;
+        /** Remove the account's OIDC provider (Owner only) */
+        delete: operations["Accounts.RemoveSsoProvider"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim a domain and get its DNS TXT instructions (Owner only) */
+        post: operations["Accounts.AddSsoDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/domains/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check the domain's DNS TXT record and verify it (Owner only) */
+        post: operations["Accounts.VerifySsoDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/domains/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a domain claim (Owner only) */
+        delete: operations["Accounts.RemoveSsoDomain"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/require": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Require single sign-on for the members of the verified domains (Owner only) */
+        put: operations["Accounts.SetSsoRequired"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/outbox/stats": {
         parameters: {
             query?: never;
@@ -3147,6 +3250,46 @@ export interface paths {
          * @description Handles the OAuth provider callback, validates state, exchanges code, checks the provider ID token, and sets auth cookies. Every failure redirects to the sign-in page with one normalized error code: identity.oauth.failed, state-invalid, denied, email-unverified, email-in-use, mfa-required or provider-unavailable.
          */
         get: operations["Identity.Auth.OAuth.Callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sso/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a company sign-in for an email
+         * @description Routes the email's verified domain to its Account's identity provider and answers the provider's authorization address (authorization code with PKCE). Every email that cannot sign in through a company provider gets the same 404 identity.sso.unavailable. Rate limited per IP.
+         */
+        post: operations["Identity.Auth.Sso.Start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sso/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Complete a company sign-in
+         * @description The one callback address of every company identity provider. Uses up the state, exchanges the code, checks the provider's ID token and finds, links or provisions the person, then sets the auth cookies and redirects. Every failure redirects to the sign-in page with one code: identity.sso.state-invalid, denied, failed, email-unverified, domain-mismatch, identity-conflict, not-provisioned or unavailable (or identity.oauth.mfa-required when the second factor cannot start).
+         */
+        get: operations["Identity.Auth.Sso.Callback"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8527,12 +8670,25 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        "Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest": {
+            domain?: string | null;
+        };
         "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
             name?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest": {
+            name?: string | null;
+            issuerUrl?: string | null;
+            clientId?: string | null;
+            clientSecret?: string | null;
+            jitProvisioning?: boolean;
+        };
         "Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest": {
+            required?: boolean;
+        };
+        "Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest": {
             required?: boolean;
         };
         "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
@@ -9935,6 +10091,10 @@ export interface components {
             /** Format: uuid */
             memberId?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartSsoSignInRequest": {
+            email?: string | null;
+            returnUrl?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
         };
@@ -11028,6 +11188,7 @@ export interface components {
             orgInitials?: string | null;
             provider?: string | null;
             providerLabel?: string | null;
+            enforced?: boolean;
         };
         "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
             /** Format: uuid */
@@ -11137,6 +11298,9 @@ export interface components {
             ipAddress?: string | null;
             userAgent?: string | null;
             isCurrent?: boolean;
+        };
+        "Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult": {
+            authorizationUrl?: string | null;
         };
         "Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail.ConfirmEmailResultDto": {
             emailConfirmed?: boolean;
@@ -13078,6 +13242,148 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.GetSso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.SaveSsoProvider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.RemoveSsoProvider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.AddSsoDomain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.VerifySsoDomain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.RemoveSsoDomain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.SetSsoRequired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest"];
             };
         };
         responses: {
@@ -21627,6 +21933,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Too Many Requests */
             429: {
                 headers: {
@@ -21879,6 +22194,98 @@ export interface operations {
             path: {
                 provider: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Found */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Auth.Sso.Start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartSsoSignInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Auth.Sso.Callback": {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+                error_description?: string;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

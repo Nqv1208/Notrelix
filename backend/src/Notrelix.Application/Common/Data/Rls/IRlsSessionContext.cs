@@ -81,6 +81,8 @@ public enum CredentialScopeKind
     RefreshToken,
     EmailVerificationToken,
     OAuthIdentity,
+    /// <summary>A company sign-in identity: the credential is the Account id and the provider subject joined by U+001F.</summary>
+    SsoIdentity,
 }
 
 /// <summary>

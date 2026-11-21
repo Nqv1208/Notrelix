@@ -13,6 +13,7 @@ import { useAuthCopy } from "../copy/use-auth-copy";
 import {
   AuthSignInSurface,
   type AuthSignInStep,
+  type SsoErrorKind,
 } from "../components/auth-sign-in-surface";
 import type { AuthFlowNavigation } from "./flow-navigation";
 
@@ -52,6 +53,7 @@ type EmailError =
   | "provider-denied"
   | "provider-email-in-use"
   | "provider-email-unverified"
+  | SsoErrorKind
   | "session-ended"
   | "password-reset"
   | "mfa-enrollment";
@@ -64,6 +66,16 @@ const PROVIDER_ERROR: Readonly<Record<string, EmailError>> = {
   [IDENTITY_ERROR.oauthDenied]: "provider-denied",
   [IDENTITY_ERROR.oauthEmailInUse]: "provider-email-in-use",
   [IDENTITY_ERROR.oauthEmailUnverified]: "provider-email-unverified",
+  // The company sign-in. None of these says whether an account exists for the person.
+  [IDENTITY_ERROR.oauthSsoRequired]: "sso-required-social",
+  [IDENTITY_ERROR.ssoStateInvalid]: "sso-state",
+  [IDENTITY_ERROR.ssoDenied]: "sso-denied",
+  [IDENTITY_ERROR.ssoFailed]: "sso-failed",
+  [IDENTITY_ERROR.ssoEmailUnverified]: "sso-email-unverified",
+  [IDENTITY_ERROR.ssoDomainMismatch]: "sso-domain-mismatch",
+  [IDENTITY_ERROR.ssoIdentityConflict]: "sso-identity-conflict",
+  [IDENTITY_ERROR.ssoNotProvisioned]: "sso-not-provisioned",
+  [IDENTITY_ERROR.ssoUnavailable]: "sso-unavailable",
 };
 
 type Phase =
@@ -82,7 +94,9 @@ type Phase =
         provider: string;
         providerLabel: string;
         domain: string;
+        enforced: boolean;
       };
+      error: "unreachable" | "refused" | null;
     }
   | {
       kind: "otp";
@@ -191,10 +205,14 @@ export function SignInFlow({
     [navigation, queryClient, returnTo],
   );
 
+  const passwordRefused = useRef(false);
   const identify = useMutation({
     mutationFn: (email: string) => service.identify(email),
     onSuccess: (result, email) => {
       setTypedEmail(email);
+      // A password refused for a company that requires single sign-on lands back here, saying so.
+      const refused = passwordRefused.current;
+      passwordRefused.current = false;
       setPhase(
         result.method === "sso" && result.sso
           ? {
@@ -206,7 +224,9 @@ export function SignInFlow({
                 provider: result.sso.provider,
                 providerLabel: result.sso.providerLabel,
                 domain: email.split("@")[1] ?? "",
+                enforced: result.sso.enforced,
               },
+              error: refused ? "refused" : null,
             }
           : { kind: "password", email, error: null },
       );
@@ -296,7 +316,10 @@ export function SignInFlow({
     },
     onError: (error, input) => {
       const failure = readFlowError(error);
-      if (failure.code === "SSO_REQUIRED") {
+      // Only a correct password on a company that requires single sign-on is told so (403);
+      // the page goes back to the company step instead of showing a wrong-password message.
+      if (failure.code === IDENTITY_ERROR.authSsoRequired) {
+        passwordRefused.current = true;
         identify.mutate(input.email);
         return;
       }
@@ -376,8 +399,29 @@ export function SignInFlow({
     navigation.startProviderSignIn(service.oauthStartPath(name, returnTo));
   };
 
+  const startSso = useMutation({
+    mutationFn: (email: string) => service.startSso(email, returnTo),
+    onSuccess: ({ authorizationUrl }) => {
+      setRedirecting("sso");
+      navigation.startSsoSignIn(authorizationUrl);
+    },
+    onError: (error) => {
+      const failure = readFlowError(error);
+      // The address no longer routes to a provider (changed since the page asked): same answer for every cause.
+      if (failure.code === IDENTITY_ERROR.ssoUnavailable)
+        setPhase({ kind: "email", error: "sso-unavailable" });
+      else
+        setPhase((current) =>
+          current.kind === "sso"
+            ? { ...current, error: "unreachable" }
+            : current,
+        );
+    },
+  });
+
   const pending =
     identify.isPending ||
+    startSso.isPending ||
     login.isPending ||
     verify.isPending ||
     completeEnroll.isPending ||
@@ -441,7 +485,11 @@ export function SignInFlow({
           search: typedEmail ? { email: typedEmail } : undefined,
         })
       }
-      onSso={() => phase.kind === "sso" && startProvider(phase.org.provider)}
+      onSso={() => phase.kind === "sso" && startSso.mutate(phase.email)}
+      onUsePassword={() =>
+        phase.kind === "sso" &&
+        setPhase({ kind: "password", email: phase.email, error: null })
+      }
       onVerify={({ code }) =>
         phase.kind === "otp" &&
         verify.mutate({ challengeToken: phase.challengeToken, code })

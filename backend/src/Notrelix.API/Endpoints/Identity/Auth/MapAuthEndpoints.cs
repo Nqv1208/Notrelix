@@ -21,6 +21,8 @@ public static class MapAuthEndpoints
         publicGroup.MapRefreshToken();
         publicGroup.MapStartOAuthLogin();
         publicGroup.MapCompleteOAuthLogin();
+        publicGroup.MapStartSsoSignIn();
+        publicGroup.MapCompleteSsoSignIn();
         publicGroup.MapEmailVerification();
         publicGroup.MapCompleteMfaChallenge();
         publicGroup.MapRequiredMfaEnrollment();

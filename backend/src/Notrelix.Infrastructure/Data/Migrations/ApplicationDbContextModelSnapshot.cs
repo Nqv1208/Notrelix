@@ -265,6 +265,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("verification_token_hash");
 
+                    b.Property<string>("VerificationTokenProtected")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("verification_token_protected");
+
                     b.Property<DateTimeOffset?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("verified_at");
@@ -281,7 +286,12 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasIndex("Domain")
                         .IsUnique()
-                        .HasDatabaseName("idx_account_domains_domain");
+                        .HasDatabaseName("idx_account_domains_domain_verified")
+                        .HasFilter("verification_status = 'Verified'");
+
+                    b.HasIndex("AccountId", "Domain")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_domains_account_domain");
 
                     b.ToTable("account_domains", "account");
                 });
@@ -300,6 +310,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("certificate_ref");
+
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("ClientSecretProtected")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("client_secret_protected");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -350,6 +370,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("ValidationError")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("validation_error");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
@@ -359,6 +384,10 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_account_identity_providers");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_account_identity_providers_account");
 
                     b.ToTable("account_identity_providers", "account");
                 });
@@ -6040,6 +6069,50 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasDatabaseName("idx_user_sessions_user_id");
 
                     b.ToTable("user_sessions", "identity");
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Sso.SsoIdentity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Issuer")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("issuer");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("subject");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sso_identities");
+
+                    b.HasIndex("AccountId", "Subject")
+                        .IsUnique()
+                        .HasDatabaseName("idx_sso_identities_account_subject");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_sso_identities_user_account");
+
+                    b.ToTable("sso_identities", "identity");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Identity.Tokens.ApiToken", b =>
@@ -14462,6 +14535,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Navigation("RefreshTokenHash")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Sso.SsoIdentity", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Identity.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sso_identities_users_user_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Identity.Users.User", b =>

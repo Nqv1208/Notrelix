@@ -311,6 +311,15 @@ export const endpoints = {
     // Accounts.GetSecurityPolicy / Accounts.SetMfaPolicy: the Account's MFA requirement (the X-Account-Id header names it).
     securityPolicy: "/accounts/security-policy",
     mfaPolicy: "/accounts/security-policy/mfa",
+    // The Account's single sign-on (Owner only): the provider, the verified domains, the require switch.
+    sso: "/accounts/security-policy/sso",
+    ssoProvider: "/accounts/security-policy/sso/provider",
+    ssoDomains: "/accounts/security-policy/sso/domains",
+    ssoDomain: (domainId: string) =>
+      `/accounts/security-policy/sso/domains/${domainId}`,
+    ssoDomainVerify: (domainId: string) =>
+      `/accounts/security-policy/sso/domains/${domainId}/verify`,
+    ssoRequire: "/accounts/security-policy/sso/require",
   },
   onboarding: {
     draft: "/workspaces/onboarding-draft",

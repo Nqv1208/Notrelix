@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Events.Identity;
 using Notrelix.Application.Features.Accounts.Public.PersonalAccountProvisioning;
 using Notrelix.Application.Features.Accounts.Public.Security;
+using Notrelix.Application.Features.Accounts.Public.Sso;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Registration.Ports;
@@ -43,6 +44,7 @@ public sealed class CompleteOAuthLoginCommandHandler
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
     private readonly IAccountSecurityPolicyFacts _securityPolicy;
+    private readonly IAccountSsoFacts _ssoFacts;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IIntegrationEventCollector _integrationEventCollector;
@@ -64,6 +66,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         IDateTimeProvider dateTimeProvider,
         IIntegrationEventCollector integrationEventCollector,
         ILogger<CompleteOAuthLoginCommandHandler> logger,
+        IAccountSsoFacts ssoFacts,
         CredentialScope? credentialScope = null,
         RegistrationScope? registrationScope = null,
         IEmailRegistrationProbe? registrationProbe = null)
@@ -79,6 +82,7 @@ public sealed class CompleteOAuthLoginCommandHandler
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
         _securityPolicy = securityPolicy;
+        _ssoFacts = ssoFacts;
         _passwordHasher = passwordHasher;
         _dateTimeProvider = dateTimeProvider;
         _integrationEventCollector = integrationEventCollector;
@@ -168,6 +172,11 @@ public sealed class CompleteOAuthLoginCommandHandler
         }
 
         var normalizedEmail = profile.Email.Trim().ToLowerInvariant();
+
+        // A brand-new person on a domain that requires company single sign-on gets no social sign-in either.
+        if (await IsSocialRefusedAsync(normalizedEmail, null, cancellationToken))
+            return Fail(OAuthLoginErrorCodes.SsoRequired, "Your company requires single sign-on.");
+
         var emailTaken = _registrationProbe is not null
             ? await _registrationProbe.IsRegisteredAsync(normalizedEmail, cancellationToken)
             : await _identityContext.Users
@@ -203,6 +212,13 @@ public sealed class CompleteOAuthLoginCommandHandler
         {
             _logger.LogWarning("OAuth login blocked: user {UserId} is {Status}", user.Id, user.Status);
             return Fail(OAuthLoginErrorCodes.Failed, "Account is not active.");
+        }
+
+        // Nobody is exempt from the company sign-in requirement on a social sign-in, not even the Owner.
+        if (await IsSocialRefusedAsync(user.Email.Value, user.Id, cancellationToken))
+        {
+            _logger.LogWarning("OAuth login refused: the Account of {UserId} requires single sign-on", user.Id);
+            return Fail(OAuthLoginErrorCodes.SsoRequired, "Your company requires single sign-on.");
         }
 
         var mfaEnabled = await _identityContext.UserMfaMethods
@@ -283,6 +299,9 @@ public sealed class CompleteOAuthLoginCommandHandler
         _logger.LogInformation("New user {UserId} created via OAuth ({Provider})", user.Id, profile.Provider);
         return Result<AuthResult>.Success(authResult);
     }
+
+    private async Task<bool> IsSocialRefusedAsync(string email, Guid? userId, CancellationToken cancellationToken) =>
+        (await _ssoFacts.CheckEnforcementAsync(email, userId, AccountSsoSignInMethod.Social, cancellationToken)).Required;
 
     private static Result<AuthResult> Fail(string code, string message) =>
         Result<AuthResult>.Failure(new ApplicationError(code, message, ApplicationErrorType.Authentication));

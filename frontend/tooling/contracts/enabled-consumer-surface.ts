@@ -5344,4 +5344,95 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     pathTemplate: pathTemplate as string,
     mutation: mutation as boolean,
   })),
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Read the Account's single sign-on setup",
+    operationId: "Accounts.GetSso",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Save the single sign-on provider",
+    operationId: "Accounts.SaveSsoProvider",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Remove the single sign-on provider",
+    operationId: "Accounts.RemoveSsoProvider",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Add a single sign-on domain",
+    operationId: "Accounts.AddSsoDomain",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Verify a single sign-on domain",
+    operationId: "Accounts.VerifySsoDomain",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Remove a single sign-on domain",
+    operationId: "Accounts.RemoveSsoDomain",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Require single sign-on for the Account",
+    operationId: "Accounts.SetSsoRequired",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Start the company sign-in",
+    operationId: "Identity.Auth.Sso.Start",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability:
+      "The company provider's way back (a redirect the browser follows; the mock plays it)",
+    operationId: "Identity.Auth.Sso.Callback",
+    mutation: false,
+  },
 ];

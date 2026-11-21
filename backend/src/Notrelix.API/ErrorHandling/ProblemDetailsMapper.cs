@@ -255,6 +255,13 @@ public static class ProblemDetailsMapper
                 exception.Message,
                 null
             ),
+            Notrelix.Application.Common.Exceptions.UnprocessableException unprocessable => (
+                StatusCodes.Status422UnprocessableEntity,
+                unprocessable.ErrorCode,
+                "Unprocessable",
+                exception.Message,
+                null
+            ),
             AppConflictException conflict => (
                 StatusCodes.Status409Conflict,
                 conflict.ErrorCode ?? ErrorCodes.Conflict,

@@ -21,7 +21,7 @@ public class CompleteOAuthLoginErrorLogTests : IdentityHandlerTestBase
             state.Object, new Mock<IOAuthProviderClient>().Object, new Mock<IOAuthOptionsProvider>().Object,
             IdentityContextMock.Object, new Mock<IAccountProvisioningActions>().Object, SessionIssuerMock.Object,
             ChallengeStoreMock.Object, Mock.Of<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts>(), PasswordHasherMock.Object, DateTimeProviderMock.Object,
-            IntegrationEventCollectorMock.Object, logger);
+            IntegrationEventCollectorMock.Object, logger, new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
 
         var result = await sut.Handle(new CompleteOAuthLoginCommand
         {

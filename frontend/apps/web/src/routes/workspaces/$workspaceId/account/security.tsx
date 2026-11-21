@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   AccountSecuritySurface,
+  AccountSsoSection,
   createUseProfile,
   createUseSecurity,
   passwordChangeFailureOf,
@@ -735,6 +736,7 @@ export function AccountSecurityPage() {
       onPasswordChangedContinue={() => void signOutThisDevice()}
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}
       onSetAccountMfaPolicy={(required) => void setAccountMfaPolicy(required)}
+      ssoSlot={<AccountSsoSection copy={copy} service={service} />}
       onSubmitCode={(code) => void submitCode(code)}
       onSubmitPassword={(password) => void submitPassword(password)}
       onStartProviderStepUp={startProviderStepUp}

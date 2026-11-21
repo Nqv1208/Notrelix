@@ -87,6 +87,14 @@ export {
   type AccountSecuritySurfaceProps,
   type AccountSessionView,
 } from "./security/account-security-surface";
+export {
+  AccountSsoPanel,
+  type AccountSsoActions,
+  type AccountSsoPanelProps,
+  type AccountSsoState,
+  type SsoResult,
+} from "./security/account-sso-panel";
+export { AccountSsoSection } from "./security/account-sso-section";
 
 export { accountNotificationsCatalog } from "./notifications/account-notifications.catalog";
 export {

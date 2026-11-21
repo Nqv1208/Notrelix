@@ -17,6 +17,7 @@ import { identityProblem } from "../identity/auth-flow.handlers";
 import { accountPagesOperations } from "./account-pages.handlers";
 import { accountApiTokenOperations } from "./account-api-tokens.handlers";
 import { accountSecurityOperations } from "./account-security.handlers";
+import { accountSsoOperations } from "./account-sso.handlers";
 
 const LOCALES = ["vi", "en"] as const;
 const THEMES = ["light", "dark", "system"] as const;
@@ -65,6 +66,7 @@ const accountPolicyOperations = [
 
 export const accountOperations = [
   ...accountPolicyOperations,
+  ...accountSsoOperations,
   ...accountPagesOperations,
   ...accountSecurityOperations,
   ...accountApiTokenOperations,

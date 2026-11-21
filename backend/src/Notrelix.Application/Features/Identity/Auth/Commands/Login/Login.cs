@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Requests.Scoping;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Accounts.Public.Security;
+using Notrelix.Application.Features.Accounts.Public.Sso;
+using Notrelix.Application.Features.Identity.Sso;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
@@ -30,6 +32,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     private readonly IAuthSessionIssuer _sessionIssuer;
     private readonly IMfaChallengeStore _challengeStore;
     private readonly IAccountSecurityPolicyFacts _securityPolicy;
+    private readonly IAccountSsoFacts _ssoFacts;
     private readonly ILoginThrottle _throttle;
     private readonly ISecurityActivityRecorder _activity;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -46,6 +49,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         ISecurityActivityRecorder activity,
         IDateTimeProvider dateTimeProvider,
         ILogger<LoginCommandHandler> logger,
+        IAccountSsoFacts ssoFacts,
         CredentialScope? credentialScope = null)
     {
         _credentialScope = credentialScope;
@@ -54,6 +58,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
         _sessionIssuer = sessionIssuer;
         _challengeStore = challengeStore;
         _securityPolicy = securityPolicy;
+        _ssoFacts = ssoFacts;
         _throttle = throttle;
         _activity = activity;
         _dateTimeProvider = dateTimeProvider;
@@ -106,6 +111,18 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
             return Result<AuthResult>.Failure(InvalidCredentialsError);
         }
 
+        // Only a CORRECT password by an active user reaches this point, so a wrong password still answers
+        // invalid-credentials (no enumeration). An Account that requires single sign-on refuses the password
+        // before any second factor or session; its Owner keeps the password as the break-glass.
+        var enforcement = await _ssoFacts.CheckEnforcementAsync(
+            user.Email.Value, user.Id, AccountSsoSignInMethod.Password, cancellationToken);
+        if (enforcement.Required)
+        {
+            _activity.Record(user.Id, SecurityActivityType.SignInFailed, _dateTimeProvider.UtcNow);
+            _logger.LogWarning("Login refused: the Account of {UserId} requires single sign-on", user.Id);
+            return Result<AuthResult>.Failure(SsoRequiredError);
+        }
+
         await _throttle.RecordSuccessAsync(LoginThrottleScope.PasswordLogin, normalizedEmail, cancellationToken);
 
         var now = _dateTimeProvider.UtcNow;
@@ -147,6 +164,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
     }
 
     private const string DummyPasswordHash = "$2b$12$l21rZMRnrPl/Lfm2kVzYOuxlKgQzbwMzEvK7cOBZI40eJ42/FIuh2";
+
+    private static readonly ApplicationError SsoRequiredError = new(
+        SsoErrorCodes.SsoRequired,
+        "Your company requires you to sign in with single sign-on.",
+        ApplicationErrorType.Forbidden);
 
     private static readonly ApplicationError InvalidCredentialsError = new(
         "identity.auth.invalid-credentials",

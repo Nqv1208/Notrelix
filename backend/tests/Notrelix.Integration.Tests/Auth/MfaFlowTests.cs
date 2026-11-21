@@ -1148,7 +1148,7 @@ public sealed class MfaFlowTests : IAsyncLifetime
             passwordHasher.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
             var handler = new LoginCommandHandler(
                 context, passwordHasher.Object, SessionIssuer(context), _challengeStore, new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context), Mock.Of<ILoginThrottle>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), _time.Object,
-                NullLogger<LoginCommandHandler>.Instance);
+                NullLogger<LoginCommandHandler>.Instance, new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
             var result = await handler.Handle(new LoginCommand { Email = email, Password = "Password1!" }, CancellationToken.None);
             await context.SaveChangesAsync();
             return result;

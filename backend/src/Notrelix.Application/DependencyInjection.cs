@@ -191,6 +191,10 @@ public static class DependencyInjection
         services.AddScoped<IAccountDomainFacts, AccountDomainFactsProvider>();
         services.AddScoped<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts,
             Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Sso.IAccountSsoFacts,
+            Notrelix.Application.Features.Accounts.Sso.AccountSsoFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Sso.SsoDomainClaims>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Sso.SsoPendingWrites>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure,
             Notrelix.Application.Features.Workspaces.Members.Services.MemberEmailDisclosure>();
 

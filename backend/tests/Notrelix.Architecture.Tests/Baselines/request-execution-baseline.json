@@ -75,6 +75,181 @@
     ]
   },
   {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Commands.AddSsoDomain.AddSsoDomainCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Commands.AddSsoDomain.AddSsoDomainCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Commands.RemoveSsoDomain.RemoveSsoDomainCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Commands.RemoveSsoDomain.RemoveSsoDomainCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Commands.RemoveSsoProvider.RemoveSsoProviderCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Commands.RemoveSsoProvider.RemoveSsoProviderCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Commands.SaveSsoProvider.SaveSsoProviderCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Commands.SaveSsoProvider.SaveSsoProviderCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Commands.SetSsoRequired.SetSsoRequiredCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Commands.SetSsoRequired.SetSsoRequiredCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Commands.VerifySsoDomain.VerifySsoDomainCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Commands.VerifySsoDomain.VerifySsoDomainCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Accounts.Sso.Queries.GetAccountSso.GetAccountSsoQuery",
+    "kind": "Query",
+    "principalMarkers": [
+      "IAuthenticatedRequest"
+    ],
+    "scopeMarkers": [
+      "IAccountRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": true,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Accounts.Sso.Queries.GetAccountSso.GetAccountSsoQueryHandler"
+    ]
+  },
+  {
     "requestType": "Notrelix.Application.Features.Analytics.Dashboards.Commands.ArchiveDashboard.ArchiveDashboardCommand",
     "kind": "Command",
     "principalMarkers": [
@@ -5034,7 +5209,7 @@
       "IGlobalRequest"
     ],
     "dataMarkers": [
-      "INoDataRequest"
+      "IReadRequest"
     ],
     "requiresPermission": false,
     "requiresVerifiedEmail": false,
@@ -5847,6 +6022,56 @@
     "publicCache": false,
     "handlerTypes": [
       "Notrelix.Application.Features.Identity.Sessions.Queries.GetUserSessions.GetUserSessionsQueryHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Identity.Sso.Commands.CompleteSsoSignIn.CompleteSsoSignInCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IWriteRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Sso.Commands.CompleteSsoSignIn.CompleteSsoSignInCommandHandler"
+    ]
+  },
+  {
+    "requestType": "Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.StartSsoSignInCommand",
+    "kind": "Command",
+    "principalMarkers": [
+      "IAnonymousRequest"
+    ],
+    "scopeMarkers": [
+      "IGlobalRequest"
+    ],
+    "dataMarkers": [
+      "IReadRequest"
+    ],
+    "requiresPermission": false,
+    "requiresVerifiedEmail": false,
+    "requiresSubscription": false,
+    "requiresFeature": false,
+    "expectedVersion": false,
+    "idempotent": false,
+    "realtime": false,
+    "authorizedCache": false,
+    "publicCache": false,
+    "handlerTypes": [
+      "Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.StartSsoSignInCommandHandler"
     ]
   },
   {

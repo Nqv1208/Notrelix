@@ -142,11 +142,9 @@ test.describe("Sign-in pages (owner)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       "Minh An Group dùng đăng nhập một lần qua Microsoft Entra",
     );
-    await expect(
-      page.getByText("Mật khẩu do công ty bạn quản lý."),
-    ).toBeVisible();
+    await expect(page.getByText("Bạn vẫn có thể dùng mật khẩu.")).toBeVisible();
     await page
-      .getByRole("button", { name: "Tiếp tục với Microsoft Entra" })
+      .getByRole("button", { name: "Tiếp tục với Minh An Group" })
       .click();
     await expect(page).toHaveURL(/\/workspaces\/mock-workspace-primary/);
   });

@@ -1,4 +1,5 @@
 import { wallClockMs } from "./clock";
+import { MOCK_SSO, MockSsoState, type MockSsoRoute } from "./mock-sso";
 
 /**
  * Who can sign in, and how, in the mock world: the accounts with a password and a second step, the company domains that
@@ -19,8 +20,12 @@ export const MOCK_AUTH = {
   enrollEmail: "required-mfa@mock.test",
   /** The key the enrolment step shows (and its setup address). */
   enrollSecret: "JBSWY3DPEHPK3PXP",
-  /** A company whose people sign in through the company identity provider. */
-  ssoDomain: "minhan.vn",
+  /** A company whose people sign in through the company identity provider (the seeded, verified domain). */
+  ssoDomain: MOCK_SSO.seededDomain,
+  /** The Account Owner of that company: keeps the password sign-in while single sign-on is required. */
+  ssoOwnerEmail: MOCK_SSO.ownerEmail,
+  /** A member of that company: a correct password is refused while single sign-on is required. */
+  ssoMemberEmail: MOCK_SSO.memberEmail,
   /** The six digits the password-reset email carries for that account. */
   resetCode: "246810",
   /** A registration with this address is answered "too many requests" (the limit state). */
@@ -31,22 +36,6 @@ export const MOCK_AUTH = {
   maxAttempts: 10,
   lockSeconds: 900,
 } as const;
-
-export interface MockSsoDirectory {
-  readonly orgName: string;
-  readonly orgInitials: string;
-  readonly provider: "microsoft-entra";
-  readonly providerLabel: string;
-}
-
-const SSO_DOMAINS: Readonly<Record<string, MockSsoDirectory>> = {
-  [MOCK_AUTH.ssoDomain]: {
-    orgName: "Minh An Group",
-    orgInitials: "MA",
-    provider: "microsoft-entra",
-    providerLabel: "Microsoft Entra",
-  },
-};
 
 export type MockInviteState = "valid" | "expired" | "used";
 
@@ -185,6 +174,8 @@ export class MockAuthDirectory {
   private acceptedInvites = new Set<string>();
   private declinedInvites = new Set<string>();
   private sequence = 0;
+  /** The Account's single sign-on setup and the company sign-in round trip. */
+  readonly sso = new MockSsoState();
   /** The Account's MFA requirement (`security.require-mfa`) and whether the signed-in person may change it (the Owner). */
   accountMfaRequired = false;
   accountOwner = true;
@@ -210,15 +201,15 @@ export class MockAuthDirectory {
     this.acceptedInvites.clear();
     this.declinedInvites.clear();
     this.sequence = 0;
+    this.sso.reset();
   }
 
-  /** How this email signs in. A company domain goes to its provider; everything else uses a password. */
+  /** How this email signs in. A verified company domain with an Active provider goes to it; everything else uses a password. */
   identify(email: string): {
     method: "password" | "sso";
-    sso: MockSsoDirectory | null;
+    sso: MockSsoRoute | null;
   } {
-    const domain = email.trim().toLowerCase().split("@")[1] ?? "";
-    const sso = SSO_DOMAINS[domain] ?? null;
+    const sso = this.sso.routeOf(email);
     return { method: sso ? "sso" : "password", sso };
   }
 
@@ -237,6 +228,15 @@ export class MockAuthDirectory {
     const email = rawEmail.trim().toLowerCase();
     const locked = this.secondsLocked(email);
     if (locked > 0) return { kind: "locked", retryAfterSeconds: locked };
+    // The company's people: the Owner and a member, each with a password, until single sign-on is required.
+    if (
+      (email === MOCK_AUTH.ssoOwnerEmail ||
+        email === MOCK_AUTH.ssoMemberEmail) &&
+      password === MOCK_AUTH.personalPassword
+    ) {
+      this.attempts.delete(email);
+      return { kind: "signed-in" };
+    }
     if (
       email === MOCK_AUTH.enrollEmail &&
       password === MOCK_AUTH.personalPassword &&
