@@ -133,9 +133,27 @@ jobs:
       - if: ${{ !cancelled() && matrix.check == 'rest' }}
         run: pnpm codegen:check
 
+  # One verdict for every cheap check: any failure on either side keeps all heavy jobs from starting; a side with no changes is skipped and does not count.
+  fast-checks:
+    name: Fast checks
+    needs: [changes, fast-checks-backend, fast-checks-frontend]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - run: |
+          set -euo pipefail
+          check(){ # name result side-changed
+            if [[ "$3" == true ]]; then [[ "$2" == success ]] || { echo "::error::$1=$2 but its side changed"; exit 1; }
+            else [[ "$2" == skipped ]] || { echo "::error::$1=$2 but its side did not change"; exit 1; }; fi
+          }
+          [[ "${{ needs.changes.result }}" == success ]] || { echo "::error::changes=${{ needs.changes.result }}"; exit 1; }
+          check fast-checks-backend "${{ needs.fast-checks-backend.result }}" "${{ needs.changes.outputs.backend }}"
+          check fast-checks-frontend "${{ needs.fast-checks-frontend.result }}" "${{ needs.changes.outputs.frontend }}"
+
   backend-unit:
     name: Backend build and unit tests
-    needs: [changes, fast-checks-backend]
+    needs: [changes, fast-checks]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -158,7 +176,7 @@ jobs:
 
   backend-integration:
     name: Integration tests (${{ matrix.shard.name }})
-    needs: [changes, fast-checks-backend]
+    needs: [changes, fast-checks]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -211,7 +229,7 @@ jobs:
 
   frontend:
     name: Frontend tests and build
-    needs: [changes, fast-checks-frontend]
+    needs: [changes, fast-checks]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -230,7 +248,7 @@ jobs:
   # The web component suite is the long pole, so vitest splits its files across shards; every file runs in exactly one shard.
   frontend-web:
     name: Frontend web tests (${{ matrix.shard }}/4)
-    needs: [changes, fast-checks-frontend]
+    needs: [changes, fast-checks]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -255,7 +273,7 @@ jobs:
 
   ci-gate:
     name: CI gate
-    needs: [changes, fast-checks-backend, fast-checks-frontend, backend-unit, backend-integration, frontend, frontend-web, dependencies]
+    needs: [changes, fast-checks, fast-checks-backend, fast-checks-frontend, backend-unit, backend-integration, frontend, frontend-web, dependencies]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -270,6 +288,7 @@ jobs:
           }
           [[ "${{ needs.changes.result }}" == success ]] || { echo "::error::changes=${{ needs.changes.result }}"; exit 1; }
           be="${{ needs.changes.outputs.backend }}"; fe="${{ needs.changes.outputs.frontend }}"
+          [[ "${{ needs.fast-checks.result }}" == success ]] || { echo "::error::fast-checks=${{ needs.fast-checks.result }}"; exit 1; }
           check fast-checks-backend "${{ needs.fast-checks-backend.result }}" "$be"
           check backend-unit "${{ needs.backend-unit.result }}" "$be"
           check backend-integration "${{ needs.backend-integration.result }}" "$be"
