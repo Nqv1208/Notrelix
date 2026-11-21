@@ -1,6 +1,7 @@
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Security;
 using Notrelix.Domain.Identity.Tokens;
+using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.Architecture.Tests.Authorization;
 
@@ -61,6 +62,83 @@ public sealed class ApiTokenScopeArchitectureTests
                 descriptor.ApiTokenScope.Should().BeNull(
                     $"{descriptor.RequestType.FullName} is in a context refused to every token");
             }
+        }
+    }
+
+    /// <summary>
+    /// Collaboration requests a token can still not send, by name. Each either names no host resource kind (it is keyed by a
+    /// comment or attachment id, so the host would need a database read), or is person-level or a feed (activity, watchers,
+    /// inbox). A new Collaboration request must join this list or <see cref="ApiTokenScopeMap.ResourceHostedRequests"/>.
+    /// </summary>
+    private static readonly string[] RefusedCollaborationRequests = [
+        "Notrelix.Application.Features.Collaboration.Activity.Queries.GetPageActivity.GetPageActivityQuery",
+        "Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity.GetResourceActivityQuery",
+        "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment.DeleteAttachmentCommand",
+        "Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment.DeleteCommentCommand",
+        "Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment.ReopenCommentCommand",
+        "Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment.ResolveCommentCommand",
+        "Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment.UpdateCommentCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryDone.MarkInboxEntryDoneCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead.MarkInboxEntryReadCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryUnread.MarkInboxEntryUnreadCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkWorkspaceInboxReadCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.MuteInboxThread.MuteInboxThreadCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.ReopenInboxEntry.ReopenInboxEntryCommand",
+        "Notrelix.Application.Features.Collaboration.Notifications.Commands.SnoozeInboxEntry.SnoozeInboxEntryCommand",
+        "Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem.FollowBoardItemCommand",
+        "Notrelix.Application.Features.Collaboration.Watchers.Commands.UnfollowBoardItem.UnfollowBoardItemCommand",
+        "Notrelix.Application.Features.Collaboration.Watchers.Queries.GetBoardItemFollowing.GetBoardItemFollowingQuery",
+    ];
+
+    private static IReadOnlyList<RequestDescriptor> Collaboration() =>
+        TokenReachable().Where(d => ApiTokenScopeMap.ContextOf(d.RequestType) == "Collaboration").ToList();
+
+    [Fact]
+    public void EveryCollaborationRequest_IsMappedByItsResourceKind_OrExplicitlyRefused()
+    {
+        var requests = Collaboration();
+        requests.Count.Should().BeGreaterThan(20, "an empty scan proves nothing");
+
+        var neither = requests
+            .Select(d => d.RequestType.FullName!)
+            .Where(n => !ApiTokenScopeMap.ResourceHostedRequests.Contains(n) && !RefusedCollaborationRequests.Contains(n))
+            .ToList();
+        neither.Should().BeEmpty(
+            "a Collaboration request must be in ApiTokenScopeMap.ResourceHostedRequests (scope from its resource kind) or named in "
+            + "RefusedCollaborationRequests: " + string.Join("; ", neither));
+
+        ApiTokenScopeMap.ResourceHostedRequests.Intersect(RefusedCollaborationRequests).Should().BeEmpty();
+        var names = requests.Select(d => d.RequestType.FullName!).ToHashSet();
+        ApiTokenScopeMap.ResourceHostedRequests.Concat(RefusedCollaborationRequests)
+            .Should().OnlyContain(n => names.Contains(n), "a renamed or removed request must leave both lists");
+    }
+
+    [Fact]
+    public void ACollaborationRequestMappedByResource_IsResourceScoped_HasNoFixedScope_AndNamesAMappedHostKind()
+    {
+        foreach (var descriptor in Collaboration())
+        {
+            var hosted = ApiTokenScopeMap.ResourceHostedRequests.Contains(descriptor.RequestType.FullName!);
+            descriptor.ApiTokenScopeFollowsResource.Should().Be(hosted, descriptor.RequestType.FullName);
+            descriptor.ApiTokenScope.Should().BeNull("a Collaboration request has no fixed scope: " + descriptor.RequestType.FullName);
+            if (hosted)
+            {
+                descriptor.Scope.Should().Be(ApplicationScopeKind.Resource, descriptor.RequestType.FullName);
+            }
+        }
+
+        ApiTokenScopeMap.ResourceKindContexts.Keys.Should().BeEquivalentTo("work-management.board-item", "documents.page");
+        ApiTokenScopeMap.ResourceKindContexts.Values.Should().OnlyContain(prefix => ApiTokenScopes.Vocabulary.Contains(prefix + ":read"));
+    }
+
+    [Fact]
+    public void ACommentOrAttachmentOnAnotherKindThanBoardItemOrPage_IsRefused()
+    {
+        foreach (var kind in new[] { "work-management.board", "collaboration.comment", "collaboration.attachment", "chat.message", "documents.block" })
+        {
+            ApiTokenScopeMap.RequiredScopeForResource(
+                    ResourceKind.Create(kind), ApplicationRequestKind.Query, ApplicationDataAccessKind.Read)
+                .Should().BeNull(kind);
         }
     }
 

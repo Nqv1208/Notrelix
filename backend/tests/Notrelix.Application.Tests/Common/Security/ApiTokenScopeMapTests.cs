@@ -1,6 +1,10 @@
 using Notrelix.Application.Features.Chat.Messages.Commands.SendMessage;
 using Notrelix.Application.Features.Chat.Messages.Queries.ListMessages;
+using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
+using Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
+using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
 using Notrelix.Application.Features.Documents.Pages.Commands.PublishPage;
 using Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.GetBoard;
@@ -37,10 +41,40 @@ public sealed class ApiTokenScopeMapTests
     [Theory]
     [InlineData(typeof(CreateSpaceCommand))]
     [InlineData(typeof(ListApiTokensQuery))]
-    [InlineData(typeof(CreateCommentCommand))]
+    [InlineData(typeof(ResolveCommentCommand))]
+    [InlineData(typeof(DeleteAttachmentCommand))]
     public void A_request_of_a_context_no_scope_covers_is_refused_to_every_token(Type requestType)
     {
         ScopeOf(requestType).Should().BeNull();
+    }
+
+    [Fact]
+    public void A_comment_or_attachment_takes_the_scope_of_the_kind_of_resource_it_names()
+    {
+        var itemComment = CreateCommentCommand.ForBoardItem(Guid.NewGuid(), "hi", null);
+        var pageComment = CreateCommentCommand.ForPage(Guid.NewGuid(), "hi", null);
+
+        ScopeFor(itemComment).Should().Be("work:write");
+        ScopeFor(pageComment).Should().Be("docs:write");
+        ScopeFor(GetCommentsQuery.ForBoardItem(Guid.NewGuid())).Should().Be("work:read");
+        ScopeFor(GetCommentsQuery.ForPage(Guid.NewGuid())).Should().Be("docs:read");
+        ScopeFor(new UploadPageAttachmentCommand(Guid.NewGuid(), "a.txt", Stream.Null)).Should().Be("docs:write");
+    }
+
+    [Fact]
+    public void A_hosted_request_has_no_fixed_scope_and_one_that_names_no_host_kind_stays_refused()
+    {
+        var descriptor = RequestDescriptorValidator.Create(typeof(CreateCommentCommand));
+
+        descriptor.ApiTokenScopeFollowsResource.Should().BeTrue();
+        descriptor.ApiTokenScope.Should().BeNull();
+        RequestDescriptorValidator.Create(typeof(ResolveCommentCommand)).ApiTokenScopeFollowsResource.Should().BeFalse();
+    }
+
+    private static string? ScopeFor(IResourceScopedRequest request)
+    {
+        var descriptor = RequestDescriptorValidator.Create(request.GetType());
+        return ApiTokenScopeMap.RequiredScopeForResource(request.Resource.Kind, descriptor.Kind, descriptor.DataAccess);
     }
 
     [Fact]

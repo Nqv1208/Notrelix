@@ -13,6 +13,11 @@ namespace Notrelix.Application.Common.Security;
 /// <c>:write</c>. Write does not imply read.</item>
 /// <item>Every other context is refused to every token (<see cref="RefusedContexts"/>), except the named
 /// <see cref="WorkspaceReadRequests"/>, which need <c>workspace:read</c>.</item>
+/// <item>A named <see cref="ResourceHostedRequests"/> request of Collaboration (a comment, attachment or reaction) takes the
+/// scope of the resource it sits on, read from the kind of the resource the request names
+/// (<see cref="ResourceKindContexts"/>): a board item is <c>work</c>, a page is <c>docs</c>. The kind is the request's own
+/// value, so nothing is read from the database; any other kind, and every Collaboration request that does not name its host
+/// resource, stays refused.</item>
 /// </list>
 /// A request that maps to no scope (null) is refused to every token, so a context added later reaches no token
 /// until it is mapped here; the architecture test names every context of the workspace-scoped requests.
@@ -37,6 +42,36 @@ public static class ApiTokenScopeMap
     {
         "Accounts", "Analytics", "Automation", "Billing", "Collaboration", "Governance", "Identity",
         "Integrations", "Notifications", "Operators", "Workspaces",
+    };
+
+    /// <summary>
+    /// Collaboration requests that name the resource they sit on (a board item or a page) in their own <c>Resource</c>:
+    /// their scope follows that resource's kind (<see cref="RequiredScopeForResource"/>). A Collaboration request not
+    /// listed here stays refused, among them those keyed by a comment or attachment id (the host is not in the request),
+    /// activity, watchers, notifications and preferences.
+    /// </summary>
+    public static readonly IReadOnlySet<string> ResourceHostedRequests = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment.CreateCommentCommand",
+        "Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments.GetCommentsQuery",
+        "Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction.AddReactionCommand",
+        "Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction.RemoveReactionCommand",
+        "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQuery",
+        "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachmentContent.GetBoardItemAttachmentContentQuery",
+        "Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand",
+        "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment.UploadBoardItemAttachmentCommand",
+        "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachments.GetPageAttachmentsQuery",
+        "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetPageAttachmentContent.GetPageAttachmentContentQuery",
+        "Notrelix.Application.Features.Collaboration.Attachments.Commands.CreatePageAttachment.CreatePageAttachmentCommand",
+        "Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment.UploadPageAttachmentCommand",
+        "Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment.DeletePageAttachmentCommand",
+    };
+
+    /// <summary>Resource kind (exact value) to the scope prefix of the context that owns it; any other kind is refused.</summary>
+    public static readonly IReadOnlyDictionary<string, string> ResourceKindContexts = new Dictionary<string, string>
+    {
+        ["work-management.board-item"] = "work",
+        ["documents.page"] = "docs",
     };
 
     /// <summary>
@@ -83,7 +118,19 @@ public static class ApiTokenScopeMap
             return null;
         }
 
-        var reads = kind == ApplicationRequestKind.Query && dataAccess == ApplicationDataAccessKind.Read;
-        return $"{prefix}:{(reads ? "read" : "write")}";
+        return Scope(prefix, kind, dataAccess);
     }
+
+    /// <summary>
+    /// The scope a token needs for a <see cref="ResourceHostedRequests"/> request on a resource of this kind; null (refused)
+    /// for a kind no context owns here. Decided from the kind alone, never from the database.
+    /// </summary>
+    public static string? RequiredScopeForResource(
+        ResourceKind resourceKind,
+        ApplicationRequestKind kind,
+        ApplicationDataAccessKind dataAccess) =>
+        ResourceKindContexts.TryGetValue(resourceKind.Value, out var prefix) ? Scope(prefix, kind, dataAccess) : null;
+
+    private static string Scope(string prefix, ApplicationRequestKind kind, ApplicationDataAccessKind dataAccess) =>
+        $"{prefix}:{(kind == ApplicationRequestKind.Query && dataAccess == ApplicationDataAccessKind.Read ? "read" : "write")}";
 }
