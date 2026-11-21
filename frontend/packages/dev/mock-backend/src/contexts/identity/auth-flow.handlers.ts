@@ -390,7 +390,7 @@ export const authFlowOperations = [
     unknown
   >({
     id: "auth.sso.start",
-    contract: { kind: "gap", gapId: "CTR-GAP-IDN-SSO" },
+    contract: { kind: "openapi", operationId: "Identity.Auth.Sso.Start" },
     method: "POST",
     route: "/auth/sso/start",
     async handle({ body, store }) {
@@ -415,7 +415,7 @@ export const authFlowOperations = [
 
   defineMockOperation<Record<string, never>, never, unknown>({
     id: "auth.sso.callback",
-    contract: { kind: "gap", gapId: "CTR-GAP-IDN-SSO" },
+    contract: { kind: "openapi", operationId: "Identity.Auth.Sso.Callback" },
     method: "GET",
     route: "/auth/sso/callback",
     async handle({ query, store }) {

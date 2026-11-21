@@ -313,6 +313,8 @@ export const en = {
         "That provider address cannot be used. Check it and try again.",
       invalid: "Some details are not valid. Check them and try again.",
       inUse: 'Turn off "Require single sign-on" before removing the provider.',
+      inUseReplace:
+        "Single sign-on is required, so the provider cannot be replaced by one that does not validate. Turn it off first.",
     },
     domains: {
       title: "Domains",
@@ -690,6 +692,8 @@ export const vi: AccountSecurityCopy = {
         "Không dùng được địa chỉ nhà cung cấp này. Hãy kiểm tra rồi thử lại.",
       invalid: "Một số thông tin chưa hợp lệ. Hãy kiểm tra rồi thử lại.",
       inUse: 'Hãy tắt "Bắt buộc đăng nhập một lần" trước khi gỡ nhà cung cấp.',
+      inUseReplace:
+        "Đang bắt buộc đăng nhập một lần nên không thể thay nhà cung cấp bằng một nhà cung cấp chưa hợp lệ. Hãy tắt bắt buộc trước.",
     },
     domains: {
       title: "Tên miền",

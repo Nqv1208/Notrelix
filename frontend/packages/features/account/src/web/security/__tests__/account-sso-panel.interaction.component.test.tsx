@@ -277,6 +277,43 @@ describe("provider setup", () => {
     expect(screen.getByRole("button", { name: t.provider.save })).toBeTruthy();
   });
 
+  it.each([
+    ["invalid-name", t.provider.name, t.provider.nameRequired],
+    ["invalid-client", t.provider.clientId, t.provider.clientIdRequired],
+    ["client-secret-required", t.provider.secret, t.provider.secretRequired],
+  ] as const)(
+    "shows the server's %s refusal next to its field",
+    async (failure, label, text) => {
+      render(
+        ready({ provider: activeProvider }),
+        actionsOf({
+          saveProvider: vi.fn(async () => ({ ok: false as const, failure })),
+        }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: t.provider.edit }));
+      fireEvent.click(screen.getByRole("button", { name: t.provider.save }));
+      await screen.findByText(text);
+      expect(document.activeElement).toBe(screen.getByLabelText(label));
+    },
+  );
+
+  it("says the provider cannot be replaced while single sign-on is required (409)", async () => {
+    render(
+      ready({ provider: activeProvider, requireSso: true }),
+      actionsOf({
+        saveProvider: vi.fn(async () => ({
+          ok: false as const,
+          failure: "in-use" as const,
+        })),
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: t.provider.edit }));
+    fireEvent.click(screen.getByRole("button", { name: t.provider.save }));
+    expect(
+      (await screen.findByText(t.provider.inUseReplace)).getAttribute("role"),
+    ).toBe("alert");
+  });
+
   it("asks before it removes the provider, then removes it", async () => {
     const actions = render(ready({ provider: activeProvider }));
     fireEvent.click(screen.getByRole("button", { name: t.provider.remove }));
@@ -376,6 +413,20 @@ describe("domains", () => {
         verifyDomain: vi.fn(async () => ({
           ok: true as const,
           value: { ...pendingDomain, claimed: true },
+        })),
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Verify minhan.vn" }));
+    await screen.findByText(/already claimed by another account/);
+  });
+
+  it("turns a verify refused 409 'claimed' into the conflict note", async () => {
+    render(
+      ready({ domains: [pendingDomain] }),
+      actionsOf({
+        verifyDomain: vi.fn(async () => ({
+          ok: false as const,
+          failure: "claimed" as const,
         })),
       }),
     );

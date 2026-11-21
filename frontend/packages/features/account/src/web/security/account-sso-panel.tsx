@@ -225,17 +225,29 @@ function ProviderBlock({
         ? t.secretRequired
         : null,
   };
+  // The server checks the same fields again; its refusal lands next to the field.
+  const nameText =
+    (tried ? problems.name : null) ??
+    (serverError === "invalid-name" ? t.nameRequired : null);
+  const clientText =
+    (tried ? problems.clientId : null) ??
+    (serverError === "invalid-client" ? t.clientIdRequired : null);
+  const secretText =
+    (tried ? problems.secret : null) ??
+    (serverError === "client-secret-required" ? t.secretRequired : null);
   const issuerText =
     (tried ? problems.issuer : null) ??
     (serverError === "invalid-issuer" ? t.invalidIssuer : null);
   const formError =
     serverError === "invalid"
       ? t.invalid
-      : serverError === "failed"
-        ? copy.sso.failed
-        : serverError === "forbidden"
-          ? copy.sso.forbiddenAction
-          : null;
+      : serverError === "in-use"
+        ? t.inUseReplace
+        : serverError === "failed"
+          ? copy.sso.failed
+          : serverError === "forbidden"
+            ? copy.sso.forbiddenAction
+            : null;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -264,6 +276,10 @@ function ProviderBlock({
     } else {
       setServerError(result.failure);
       if (result.failure === "invalid-issuer") issuerRef.current?.focus();
+      else if (result.failure === "invalid-name") nameRef.current?.focus();
+      else if (result.failure === "invalid-client") clientRef.current?.focus();
+      else if (result.failure === "client-secret-required")
+        secretRef.current?.focus();
     }
   };
 
@@ -400,7 +416,7 @@ function ProviderBlock({
               id={ids.name}
               label={t.name}
               hint={t.nameHint}
-              error={tried ? problems.name : null}
+              error={nameText}
             >
               <input
                 ref={nameRef}
@@ -408,12 +424,8 @@ function ProviderBlock({
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                aria-invalid={tried && problems.name ? true : undefined}
-                aria-describedby={describedBy(
-                  ids.name,
-                  true,
-                  tried && !!problems.name,
-                )}
+                aria-invalid={nameText ? true : undefined}
+                aria-describedby={describedBy(ids.name, true, !!nameText)}
                 className={cn(INPUT, FOCUS)}
               />
             </Field>
@@ -438,11 +450,7 @@ function ProviderBlock({
             </Field>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Field
-              id={ids.clientId}
-              label={t.clientId}
-              error={tried ? problems.clientId : null}
-            >
+            <Field id={ids.clientId} label={t.clientId} error={clientText}>
               <input
                 ref={clientRef}
                 id={ids.clientId}
@@ -450,11 +458,11 @@ function ProviderBlock({
                 autoComplete="off"
                 value={clientId}
                 onChange={(event) => setClientId(event.target.value)}
-                aria-invalid={tried && problems.clientId ? true : undefined}
+                aria-invalid={clientText ? true : undefined}
                 aria-describedby={describedBy(
                   ids.clientId,
                   false,
-                  tried && !!problems.clientId,
+                  !!clientText,
                 )}
                 className={cn(INPUT, FOCUS)}
               />
@@ -463,7 +471,7 @@ function ProviderBlock({
               id={ids.secret}
               label={t.secret}
               hint={provider?.hasClientSecret ? t.secretKeep : t.secretHint}
-              error={tried ? problems.secret : null}
+              error={secretText}
             >
               <input
                 ref={secretRef}
@@ -472,12 +480,8 @@ function ProviderBlock({
                 autoComplete="new-password"
                 value={secret}
                 onChange={(event) => setSecret(event.target.value)}
-                aria-invalid={tried && problems.secret ? true : undefined}
-                aria-describedby={describedBy(
-                  ids.secret,
-                  true,
-                  tried && !!problems.secret,
-                )}
+                aria-invalid={secretText ? true : undefined}
+                aria-describedby={describedBy(ids.secret, true, !!secretText)}
                 className={cn(INPUT, FOCUS)}
               />
             </Field>
@@ -813,9 +817,14 @@ function DomainsBlock({
     const result = await actions.verifyDomain(domain.id);
     setRowBusy(null);
     if (!result.ok) {
+      // Another Account has proved the domain first: 409 `accounts.domain.claimed`.
       setNote(
         domain.id,
-        result.failure === "forbidden" ? "forbidden" : "failed",
+        result.failure === "claimed"
+          ? "claimed"
+          : result.failure === "forbidden"
+            ? "forbidden"
+            : "failed",
       );
       return;
     }

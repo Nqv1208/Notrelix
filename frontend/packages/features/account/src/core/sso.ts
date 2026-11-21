@@ -154,6 +154,9 @@ export type SsoFailure =
   | "invalid-domain"
   | "public-provider"
   | "invalid-issuer"
+  | "invalid-name"
+  | "invalid-client"
+  | "client-secret-required"
   | "invalid"
   | "not-ready"
   | "in-use"
@@ -170,6 +173,9 @@ const FAILURE_BY_CODE: Readonly<Record<string, SsoFailure>> = {
   "accounts.domain.invalid": "invalid-domain",
   "accounts.domain.public-provider": "public-provider",
   "accounts.sso.invalid-issuer": "invalid-issuer",
+  "accounts.sso.invalid-name": "invalid-name",
+  "accounts.sso.invalid-client": "invalid-client",
+  "accounts.sso.client-secret-required": "client-secret-required",
   "accounts.sso.not-ready": "not-ready",
   "accounts.sso.required-in-use": "in-use",
 };

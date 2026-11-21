@@ -9,7 +9,6 @@
  *   DELETE /accounts/security-policy/sso/domains/:id
  *   PUT    /accounts/security-policy/sso/require               409 until the provider is Active and a domain Verified
  *
- * The OpenAPI operations are not generated yet, so each is a contract gap until `pnpm codegen` carries them.
  */
 import { defineMockOperation } from "../../operations/types";
 import { MOCK_SSO, type MockSsoDomain } from "../../state/mock-sso";
@@ -22,7 +21,6 @@ import {
 import type { MockStore } from "../../state/mock-store";
 import { identityProblem } from "../identity/auth-flow.handlers";
 
-const GAP = { kind: "gap", gapId: "CTR-GAP-IDN-SSO" } as const;
 const BASE = "/accounts/security-policy/sso";
 
 /** Only the Account Owner reads or changes it: everyone else answers 403 with the usual problem body. */
@@ -75,7 +73,7 @@ function settingsWire(store: MockStore) {
 export const accountSsoOperations = [
   defineMockOperation({
     id: "account.sso.get",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.GetSso" },
     method: "GET",
     route: BASE,
     async handle({ store }) {
@@ -96,7 +94,7 @@ export const accountSsoOperations = [
     unknown
   >({
     id: "account.sso.provider.save",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.SaveSsoProvider" },
     method: "PUT",
     route: `${BASE}/provider`,
     async handle({ body, store }) {
@@ -108,11 +106,23 @@ export const accountSsoOperations = [
           "accounts.sso.invalid-issuer",
           "The provider address cannot be used.",
         );
-      if (result.kind === "invalid")
+      if (result.kind === "invalid-name")
         return problem(
           422,
-          "accounts.sso.invalid",
-          "The details are not valid.",
+          "accounts.sso.invalid-name",
+          "The provider needs a display name.",
+        );
+      if (result.kind === "invalid-client")
+        return problem(
+          422,
+          "accounts.sso.invalid-client",
+          "The provider needs a client id.",
+        );
+      if (result.kind === "client-secret-required")
+        return problem(
+          422,
+          "accounts.sso.client-secret-required",
+          "The provider needs a client secret.",
         );
       return ok({
         status: result.status,
@@ -123,7 +133,7 @@ export const accountSsoOperations = [
 
   defineMockOperation({
     id: "account.sso.provider.remove",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.RemoveSsoProvider" },
     method: "DELETE",
     route: `${BASE}/provider`,
     async handle({ store }) {
@@ -140,7 +150,7 @@ export const accountSsoOperations = [
 
   defineMockOperation<Record<string, never>, { domain?: string }, unknown>({
     id: "account.sso.domains.add",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.AddSsoDomain" },
     method: "POST",
     route: `${BASE}/domains`,
     async handle({ body, store }) {
@@ -167,19 +177,27 @@ export const accountSsoOperations = [
 
   defineMockOperation<{ id: string }, never, unknown>({
     id: "account.sso.domains.verify",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.VerifySsoDomain" },
     method: "POST",
     route: `${BASE}/domains/:id/verify`,
     async handle({ params, store }) {
       if (!store.auth.accountOwner) return forbidden();
       const row = store.auth.sso.verifyDomain(params.id);
-      return row ? ok(domainWire(row)) : notFound("Domain not found");
+      if (!row) return notFound("Domain not found");
+      // Another Account has proved the domain first: refused, the DNS check is not the question.
+      if (row.claimed && row.status !== "Verified")
+        return problem(
+          409,
+          "accounts.domain.claimed",
+          "Another account has already verified this domain.",
+        );
+      return ok(domainWire(row));
     },
   }),
 
   defineMockOperation<{ id: string }, never, unknown>({
     id: "account.sso.domains.remove",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.RemoveSsoDomain" },
     method: "DELETE",
     route: `${BASE}/domains/:id`,
     async handle({ params, store }) {
@@ -198,7 +216,7 @@ export const accountSsoOperations = [
 
   defineMockOperation<Record<string, never>, { required?: boolean }, unknown>({
     id: "account.sso.require",
-    contract: GAP,
+    contract: { kind: "openapi", operationId: "Accounts.SetSsoRequired" },
     method: "PUT",
     route: `${BASE}/require`,
     async handle({ body, store }) {

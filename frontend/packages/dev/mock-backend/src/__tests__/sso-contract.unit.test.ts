@@ -97,7 +97,17 @@ describe("the setup (Owner only)", () => {
     const { clientSecret: _secret, ...withoutSecret } = provider;
     const first = await call("PUT", `${SSO}/provider`, withoutSecret);
     expect(first.status).toBe(422);
-    expect(first.body?.errorCode).toBe("accounts.sso.invalid");
+    expect(first.body?.errorCode).toBe("accounts.sso.client-secret-required");
+    const noName = await call("PUT", `${SSO}/provider`, {
+      ...provider,
+      name: " ",
+    });
+    expect(noName.body?.errorCode).toBe("accounts.sso.invalid-name");
+    const noClient = await call("PUT", `${SSO}/provider`, {
+      ...provider,
+      clientId: "",
+    });
+    expect(noClient.body?.errorCode).toBe("accounts.sso.invalid-client");
     await call("PUT", `${SSO}/provider`, provider);
     expect((await call("PUT", `${SSO}/provider`, withoutSecret)).status).toBe(
       200,
@@ -192,13 +202,14 @@ describe("domains", () => {
     ).toBe("Verified");
   });
 
-  it("answers a lost race as Pending with the claimed flag", async () => {
+  it("answers 409 accounts.domain.claimed when another Account got there first", async () => {
     const { call } = world();
     const row = (
       await call("POST", `${SSO}/domains`, { domain: "race.example" })
     ).body!;
     const lost = await call("POST", `${SSO}/domains/${row.id}/verify`);
-    expect(lost.body).toMatchObject({ status: "Pending", claimed: true });
+    expect(lost.status).toBe(409);
+    expect(lost.body?.errorCode).toBe("accounts.domain.claimed");
   });
 
   it("removes a domain, 404 for an unknown one", async () => {

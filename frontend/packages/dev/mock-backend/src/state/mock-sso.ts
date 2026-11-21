@@ -88,7 +88,9 @@ export type MockSsoProviderResult =
       validationError: string | null;
     }
   | { kind: "invalid-issuer" }
-  | { kind: "invalid" };
+  | { kind: "invalid-name" }
+  | { kind: "invalid-client" }
+  | { kind: "client-secret-required" };
 
 export type MockSsoDomainAdd =
   | { kind: "added"; domain: MockSsoDomain }
@@ -198,9 +200,11 @@ export class MockSsoState {
     }
     if (!secure || isPrivateHost(host)) return { kind: "invalid-issuer" };
     const secret = input.clientSecret?.trim() ?? "";
+    if (!name) return { kind: "invalid-name" };
+    if (!clientId) return { kind: "invalid-client" };
     // The secret is optional on an update (keep the stored one) but needed for the first save.
-    if (!name || !clientId || (!this.provider?.hasClientSecret && !secret))
-      return { kind: "invalid" };
+    if (!this.provider?.hasClientSecret && !secret)
+      return { kind: "client-secret-required" };
     const draft = host.startsWith(MOCK_SSO.badIssuerPrefix);
     this.provider = {
       name,

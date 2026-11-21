@@ -107,6 +107,13 @@ describe("ssoFailureOf", () => {
       "public-provider",
     ],
     [{ status: 422, code: "accounts.sso.invalid-issuer" }, "invalid-issuer"],
+    [{ status: 422, code: "accounts.sso.invalid-name" }, "invalid-name"],
+    [{ status: 422, code: "accounts.sso.invalid-client" }, "invalid-client"],
+    [
+      { status: 422, code: "accounts.sso.client-secret-required" },
+      "client-secret-required",
+    ],
+    [{ status: 409, code: "accounts.sso.required-in-use" }, "in-use"],
     [{ status: 422, details: { errorCode: "accounts.sso.x" } }, "invalid"],
     [{ status: 500 }, "failed"],
     [undefined, "failed"],
