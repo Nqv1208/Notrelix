@@ -59,11 +59,16 @@ jobs:
 
   # Cheap checks run first and alone: a failure here stops every heavy job below (needs:), so a format slip costs ~2 minutes, not a full run.
   fast-checks-backend:
-    name: Fast checks (backend)
+    name: Fast checks (backend ${{ matrix.check }})
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      # Format and the build-based checks are each ~2.5 min, so they run side by side.
+      matrix:
+        check: [format, contract]
     defaults:
       run:
         working-directory: backend
@@ -77,13 +82,14 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/**/Directory.*.props', 'backend/global.json') }}
           restore-keys: nuget-${{ runner.os }}-
       - run: dotnet restore backend.slnx
-      # Every light check runs and reports even when an earlier one fails.
-      - run: dotnet format backend.slnx --verify-no-changes --no-restore
+      - name: Format
+        if: matrix.check == 'format'
+        run: dotnet format backend.slnx --verify-no-changes --no-restore
       - name: Architecture tests
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.check == 'contract' }}
         run: dotnet test tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m
       - name: OpenAPI contract has no drift
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.check == 'contract' }}
         env:
           DOTNET_ENVIRONMENT: Development
           Messaging__Transport: InMemory
@@ -95,31 +101,36 @@ jobs:
           cmp contracts/openapi/notrelix.v1.json /tmp/notrelix.v1.json
 
   fast-checks-frontend:
-    name: Fast checks (frontend)
+    name: Fast checks (frontend ${{ matrix.check }})
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      # typecheck alone is ~2 min, so it gets its own runner.
+      matrix:
+        check: [typecheck, rest]
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-frontend
-      # Every light check runs and reports even when an earlier one fails.
-      - if: ${{ !cancelled() }}
-        run: pnpm format:check
-      - if: ${{ !cancelled() }}
+      - if: matrix.check == 'typecheck'
         run: pnpm typecheck
-      - if: ${{ !cancelled() }}
+      # Every light check runs and reports even when an earlier one fails.
+      - if: ${{ !cancelled() && matrix.check == 'rest' }}
+        run: pnpm format:check
+      - if: ${{ !cancelled() && matrix.check == 'rest' }}
         run: pnpm lint
-      - if: ${{ !cancelled() }}
+      - if: ${{ !cancelled() && matrix.check == 'rest' }}
         run: pnpm check:architecture
-      - if: ${{ !cancelled() }}
+      - if: ${{ !cancelled() && matrix.check == 'rest' }}
         run: pnpm check:i18n
-      - if: ${{ !cancelled() }}
+      - if: ${{ !cancelled() && matrix.check == 'rest' }}
         run: pnpm check:mock-consumer-surface
-      - if: ${{ !cancelled() }}
+      - if: ${{ !cancelled() && matrix.check == 'rest' }}
         run: pnpm codegen:check
 
   backend-unit:
