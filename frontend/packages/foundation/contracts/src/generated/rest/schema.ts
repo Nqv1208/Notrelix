@@ -6412,6 +6412,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/{formId}/public-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether a form is public, and its public key (workspace Owner or Admin) */
+        get: operations["WorkManagement.Forms.GetPublicAccess"];
+        /** Switch a form public or private (workspace Owner or Admin) */
+        put: operations["WorkManagement.Forms.SetPublicAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/form-submissions/{submissionId}/process": {
         parameters: {
             query?: never;
@@ -6547,6 +6565,40 @@ export interface paths {
         get: operations["WorkManagement.Limits.Get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/forms/{publicKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The form an anonymous visitor fills */
+        get: operations["WorkManagement.PublicForms.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/forms/{publicKey}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit answers to a public form anonymously, with a captcha token */
+        post: operations["WorkManagement.PublicForms.Submit"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9472,10 +9524,20 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest": {
             reason?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SetFormPublicAccessRequest": {
+            enabled?: boolean;
+        };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest": {
             answers?: {
                 [key: string]: unknown;
             } | null;
+            website?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitPublicFormRequest": {
+            answers?: {
+                [key: string]: unknown;
+            } | null;
+            captchaToken?: string | null;
             website?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
@@ -30101,6 +30163,54 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Forms.GetPublicAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Forms.SetPublicAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.SetFormPublicAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "WorkManagement.Forms.ProcessSubmission": {
         parameters: {
             query?: never;
@@ -30496,6 +30606,54 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "WorkManagement.PublicForms.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.PublicForms.Submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitPublicFormRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
                 };
             };
         };

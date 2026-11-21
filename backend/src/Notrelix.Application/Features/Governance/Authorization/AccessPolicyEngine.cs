@@ -313,6 +313,28 @@ public sealed class AccessPolicyEngine : IAccessPolicyEvaluator
             return AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
         }
 
+        // Switching a form public exposes it to people with no account, so it is a workspace-level right (Owner
+        // and Admin by default, ManageWorkspaceSettings), never a Board level: a Board Manager who is only a
+        // Member cannot do it. A form is a Board child, so this is decided here, before the Board path would
+        // refuse a workspace-level action. A missing form is NotFound; a Guest learns nothing about it.
+        if (permission.Resource?.Kind.Value == "work-management.form"
+            && permission.Action == PermissionAction.ManageWorkspaceSettings)
+        {
+            if (!facts.ResourceExists)
+            {
+                return AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.");
+            }
+
+            if (!removedByRole && WorkspaceRoleBaseline.Decide(role, permission.Action) == BaselineDecision.Allow)
+            {
+                return AccessDecision.Allow();
+            }
+
+            return string.Equals(role, "Guest", StringComparison.Ordinal)
+                ? AccessDecision.Deny(AccessDecisionKind.NotFound, "Resource not found.")
+                : AccessDecision.Deny(AccessDecisionKind.Forbidden, "You do not have permission to perform this action.");
+        }
+
         // A Board child resource is decided on its parent Board (GOV-033): the
         // facts are the Board's, so the Board policy applies to the child's action.
         if (permission.Resource?.Kind.Value == "work-management.board" || facts.ParentBoardId is not null)

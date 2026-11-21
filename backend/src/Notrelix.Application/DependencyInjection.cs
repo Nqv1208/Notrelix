@@ -225,6 +225,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceReachReader,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceReachReader>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAccessChangeLog>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Forms.Services.PublicFormScope>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,

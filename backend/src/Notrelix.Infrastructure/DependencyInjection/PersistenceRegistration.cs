@@ -107,6 +107,10 @@ public static class PersistenceRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>, Notrelix.Infrastructure.Chat.ChatCallMediaOptionsValidator>();
         services.AddHttpClient(Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway.HttpClientName);
+        services.AddOptions<Notrelix.Infrastructure.Captcha.CaptchaOptions>()
+            .Bind(configuration.GetSection(Notrelix.Infrastructure.Captcha.CaptchaOptions.SectionName));
+        services.AddHttpClient<Notrelix.Application.Features.WorkManagement.Forms.Services.ICaptchaVerifier,
+            Notrelix.Infrastructure.Captcha.TurnstileCaptchaVerifier>(client => client.Timeout = TimeSpan.FromSeconds(5));
         services.AddSingleton<Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>();
         services.AddSingleton<Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway>();
         // Chat:Calls:Media:Provider picks the adapter (InMemory is the default for tests and the mock stack).
@@ -160,6 +164,8 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker,
             Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Sharing.IWorkspaceSharingFacts,
+            Notrelix.Infrastructure.Workspaces.Sharing.WorkspaceSharingFactsReader>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberOtherAccountFacts,
             Notrelix.Infrastructure.Workspaces.Members.MemberOtherAccountFacts>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Navigation.Services.IWorkspaceNavigationStore,

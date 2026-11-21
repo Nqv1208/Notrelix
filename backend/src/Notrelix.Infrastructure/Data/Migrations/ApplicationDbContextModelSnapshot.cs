@@ -7953,6 +7953,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
 
+                    b.Property<string>("PublicKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("public_key");
+
                     b.Property<string>("SettingsJson")
                         .IsRequired()
                         .HasColumnType("text")
@@ -8006,6 +8011,11 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.HasIndex("BoardId")
                         .HasDatabaseName("idx_forms_board_id")
                         .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("PublicKey")
+                        .IsUnique()
+                        .HasDatabaseName("idx_forms_public_key")
+                        .HasFilter("public_key IS NOT NULL");
 
                     b.HasIndex("Slug")
                         .IsUnique()

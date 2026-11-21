@@ -4662,6 +4662,46 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
   {
     context: "WorkManagement",
     classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getFormPublicAccess",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.GetPublicAccess",
+    operationId: "WorkManagement.Forms.GetPublicAccess",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "setFormPublicAccess",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.Forms.SetPublicAccess",
+    operationId: "WorkManagement.Forms.SetPublicAccess",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "getPublicForm",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.PublicForms.Get",
+    operationId: "WorkManagement.PublicForms.Get",
+    mutation: false,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "submitPublicForm",
+    consumerFile:
+      "frontend/packages/product/work-management/state/src/api/form.api.ts",
+    capability: "WorkManagement.PublicForms.Submit",
+    operationId: "WorkManagement.PublicForms.Submit",
+    mutation: true,
+  },
+  {
+    context: "WorkManagement",
+    classification: "CANONICAL_MOCKED",
     consumerSymbol: "BoardImportDialog",
     consumerFile:
       "frontend/apps/web/src/shell/workspace/board-import-dialog.tsx",

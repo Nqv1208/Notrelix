@@ -39,6 +39,12 @@ describe("workspace address route", () => {
       expect(leaf(`${page}?account=${ACCOUNT}`)).not.toBe("/$slug");
     }
     expect(leaf("/invite/some-token")).toBe("/invite/$token");
+    // A public form is outside the app shell and the auth guard: its own top-level route.
+    expect(leaf("/f/some-public-key")).toBe("/f/$publicKey");
+    expect(match("/f/some-public-key").map((m) => m.routeId)).toEqual([
+      "__root__",
+      "/f/$publicKey",
+    ]);
     expect(leaf("/welcome/ws-1")).toBe("/welcome/$workspaceId");
     expect(leaf("/workspaces/ws-1")).toBe("/workspaces/$workspaceId/");
   });

@@ -1096,6 +1096,9 @@ work-management.form-details-updated|1|Notrelix.Domain.WorkManagement.Forms.Even
 work-management.form-details-updated|1|Notrelix.Domain.WorkManagement.Forms.Events.FormDetailsUpdatedDomainEvent|Workspace|SettingsJson|System.String|False
 work-management.form-details-updated|1|Notrelix.Domain.WorkManagement.Forms.Events.FormDetailsUpdatedDomainEvent|Workspace|SubmitterPolicyJson|System.String|False
 work-management.form-details-updated|1|Notrelix.Domain.WorkManagement.Forms.Events.FormDetailsUpdatedDomainEvent|Workspace|UpdatedBy|System.Guid|False
+work-management.form-public-access-changed|1|Notrelix.Domain.WorkManagement.Forms.Events.FormPublicAccessChangedDomainEvent|Workspace|BoardId|System.Guid|False
+work-management.form-public-access-changed|1|Notrelix.Domain.WorkManagement.Forms.Events.FormPublicAccessChangedDomainEvent|Workspace|FormId|System.Guid|False
+work-management.form-public-access-changed|1|Notrelix.Domain.WorkManagement.Forms.Events.FormPublicAccessChangedDomainEvent|Workspace|IsPublic|System.Boolean|False
 work-management.form-published|1|Notrelix.Domain.WorkManagement.Forms.Events.FormPublishedDomainEvent|Workspace|FormId|System.Guid|False
 work-management.form-question-added|1|Notrelix.Domain.WorkManagement.Forms.Events.FormQuestionAddedDomainEvent|Workspace|FormId|System.Guid|False
 work-management.form-question-added|1|Notrelix.Domain.WorkManagement.Forms.Events.FormQuestionAddedDomainEvent|Workspace|QuestionKey|System.String|False

@@ -66,9 +66,11 @@ public sealed class PublicAndSystemPrincipalTests
         requests.Select(t => t.Name).Order().Should().Equal(
             "AcceptInvitationWithRegistrationCommand", "CompleteMfaChallengeCommand", "CompleteOAuthLoginCommand",
             "CompleteOAuthStepUpCommand", "CompleteRequiredMfaEnrollmentCommand", "ConfirmEmailCommand", "DeclineInvitationByTokenCommand",
-            "ForgotPasswordCommand", "GetInvitationByTokenQuery", "HandleCalendarWebhookCommand", "HandleCallMediaWebhookCommand",
+            "ForgotPasswordCommand", "GetInvitationByTokenQuery", "GetPublicFormQuery", "HandleCalendarWebhookCommand", "HandleCallMediaWebhookCommand",
             "IdentifySignInQuery", "LoginCommand", "ProvisionPersonalWorkspaceCommand", "RefreshTokenCommand",
             "RegisterCommand", "ResendEmailVerificationCommand", "ResetPasswordCommand", "ResolveSlugQuery",
-            "SendWelcomeEmailCommand", "StartOAuthLoginCommand", "StartRequiredMfaEnrollmentCommand");
+            "SendWelcomeEmailCommand", "StartOAuthLoginCommand", "StartRequiredMfaEnrollmentCommand",
+            // Public form (anonymous principal): both are bound by the database to ONE form from its public key (RLS 034).
+            "SubmitPublicFormCommand");
     }
 }
