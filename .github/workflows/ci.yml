@@ -338,7 +338,7 @@ jobs:
   release-plan:
     name: Release plan
     needs: ci-gate
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success'
+    if: ${{ !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') && needs.ci-gate.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -366,7 +366,7 @@ jobs:
   release-images:
     name: Release images (amd64 and arm64)
     needs: release-plan
-    if: needs.release-plan.outputs.release_candidate == 'true'
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-plan.outputs.release_candidate == 'true' }}
     permissions:
       contents: read
       packages: write
@@ -382,6 +382,7 @@ jobs:
   release-candidate:
     name: Build release candidate
     needs: [release-plan, release-images]
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-images.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -415,6 +416,7 @@ jobs:
   release-stack:
     name: Release stack on the published digests
     needs: [release-plan, release-candidate]
+    if: ${{ !cancelled() && needs.release-plan.result == 'success' && needs.release-candidate.result == 'success' }}
     permissions:
       contents: read
       packages: read
@@ -427,6 +429,7 @@ jobs:
   release-seal:
     name: Attest release candidate
     needs: [release-candidate, release-stack]
+    if: ${{ !cancelled() && needs.release-candidate.result == 'success' && needs.release-stack.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
