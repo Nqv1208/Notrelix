@@ -26,7 +26,13 @@ import type {
 } from "../types/account";
 
 export interface AccountApiClient {
-  get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
+  get<T>(
+    url: string,
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
+  ): Promise<T>;
   post<T>(
     url: string,
     body?: unknown,
@@ -35,7 +41,10 @@ export interface AccountApiClient {
   put<T>(
     url: string,
     body?: unknown,
-    options?: { skipGlobalErrorToast?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   patch<T>(
     url: string,
@@ -92,6 +101,8 @@ export interface AccountEndpoints {
   /** `Workspaces.Workspaces.GetDeletedWorkspaces`: the Owner's Recently deleted list. */
   accounts: {
     deletedWorkspaces: (accountId: string) => string;
+    securityPolicy: string;
+    mfaPolicy: string;
   };
   workspaces: {
     apiTokens: (workspaceId: string) => string;
@@ -401,6 +412,14 @@ export function createAccountService(
   api: AccountApiClient,
   endpoints: AccountEndpoints,
 ) {
+  /** Account-scoped routes name the Account in `X-Account-Id`; the bootstrap names the member's own. */
+  const accountHeader = async (): Promise<Record<string, string>> => {
+    const bootstrap = await api.get<{ accountId?: string | null }>(
+      endpoints.auth.bootstrap,
+      PAGE_QUIET,
+    );
+    return bootstrap?.accountId ? { "X-Account-Id": bootstrap.accountId } : {};
+  };
   return {
     async getProfile(): Promise<UserProfile> {
       return toUserProfile(await api.get<UserWire>(endpoints.auth.profile));
@@ -821,6 +840,30 @@ export function createAccountService(
         QUIET,
       );
       return { pendingEmail: wire.pendingEmail ?? null };
+    },
+
+    /** The Account's MFA requirement (every member reads it) and whether the caller is the Account Owner who may change it. */
+    async getAccountMfaPolicy(): Promise<{
+      required: boolean;
+      canManage: boolean;
+    }> {
+      const wire = await api.get<{ requireMfa?: boolean; canManage?: boolean }>(
+        endpoints.accounts.securityPolicy,
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
+      return {
+        required: wire?.requireMfa === true,
+        canManage: wire?.canManage === true,
+      };
+    },
+
+    /** Only the Account Owner may: Admin and Member answer 403. */
+    async setAccountMfaPolicy(required: boolean): Promise<void> {
+      await api.put<void>(
+        endpoints.accounts.mfaPolicy,
+        { required },
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
     },
 
     async disableTwoFactor(stepUpToken: string): Promise<void> {

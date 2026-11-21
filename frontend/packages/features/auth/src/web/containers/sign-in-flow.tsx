@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   IDENTITY_ERROR,
@@ -53,7 +53,8 @@ type EmailError =
   | "provider-email-in-use"
   | "provider-email-unverified"
   | "session-ended"
-  | "password-reset";
+  | "password-reset"
+  | "mfa-enrollment";
 
 /** What the sign-in page says for each code the backend puts on `?error=`; any other code reads as a plain failure. */
 const PROVIDER_ERROR: Readonly<Record<string, EmailError>> = {
@@ -90,6 +91,23 @@ type Phase =
       challengeToken: string | null;
       error: "wrong" | "expired" | "inactive" | "locked" | "unreachable" | null;
       backup: boolean;
+    }
+  | {
+      kind: "enroll";
+      /** Null after a provider sign-in: the token is the backend's cookie and the page never holds it. */
+      enrollmentToken: string | null;
+      /** Null until the start answers. */
+      enrollment: {
+        methodId: string;
+        secret: string;
+        otpAuthUri: string;
+      } | null;
+      error: "wrong" | "expired" | "locked" | "unreachable" | null;
+    }
+  | {
+      kind: "codes";
+      session: SessionResult;
+      codes: readonly string[];
     };
 
 /**
@@ -105,6 +123,7 @@ export function SignInFlow({
   providerError = null,
   sessionEnded = false,
   passwordReset = false,
+  mfaEnrollmentRequired = false,
   initialStep = null,
 }: {
   service: AuthFlowService;
@@ -118,35 +137,43 @@ export function SignInFlow({
   sessionEnded?: boolean;
   /** The page opened after a password reset: it says so above the form. */
   passwordReset?: boolean;
+  /** The page opened because a refresh was refused: the Account now requires two-step verification. */
+  mfaEnrollmentRequired?: boolean;
   /**
    * `"mfa"` when the backend sent the browser here after a provider sign-in that needs a second
    * step: the challenge is in its httpOnly cookie, so the page asks for the code alone.
+   * `"enroll"` (the `enroll=1` mark) is the same for a person who has no factor yet and whose
+   * Account requires one: the enrolment token is in the cookie, so the step starts with no token.
    */
-  initialStep?: "mfa" | null;
+  initialStep?: "mfa" | "enroll" | null;
 }) {
   const copy = useAuthCopy();
   const queryClient = useQueryClient();
   // Only an internal path is ever navigated to or handed to the provider round trip.
   const returnTo = safeReturnPath(redirect);
   const [phase, setPhase] = useState<Phase>(() =>
-    !providerError && initialStep === "mfa"
-      ? {
-          kind: "otp",
-          email: "",
-          challengeToken: null,
-          error: null,
-          backup: false,
-        }
-      : {
-          kind: "email",
-          error: providerError
-            ? (PROVIDER_ERROR[providerError] ?? "provider-failed")
-            : passwordReset
-              ? "password-reset"
-              : sessionEnded
-                ? "session-ended"
-                : null,
-        },
+    !providerError && initialStep === "enroll"
+      ? { kind: "enroll", enrollmentToken: null, enrollment: null, error: null }
+      : !providerError && initialStep === "mfa"
+        ? {
+            kind: "otp",
+            email: "",
+            challengeToken: null,
+            error: null,
+            backup: false,
+          }
+        : {
+            kind: "email",
+            error: providerError
+              ? (PROVIDER_ERROR[providerError] ?? "provider-failed")
+              : passwordReset
+                ? "password-reset"
+                : mfaEnrollmentRequired
+                  ? "mfa-enrollment"
+                  : sessionEnded
+                    ? "session-ended"
+                    : null,
+          },
   );
   const [typedEmail, setTypedEmail] = useState(initialEmail);
   const [lock, setLock] = useState<Lock>(null);
@@ -193,6 +220,56 @@ export function SignInFlow({
       }),
   });
 
+  const startEnroll = useMutation({
+    mutationFn: (enrollmentToken: string | null) =>
+      service.startRequiredEnrollment(enrollmentToken),
+    onSuccess: (enrollment) =>
+      setPhase((current) =>
+        current.kind === "enroll" ? { ...current, enrollment } : current,
+      ),
+    onError: (error) =>
+      setPhase((current) =>
+        current.kind === "enroll"
+          ? {
+              ...current,
+              error:
+                enrollFailure(error) === "unreachable"
+                  ? "unreachable"
+                  : "expired",
+            }
+          : current,
+      ),
+  });
+
+  const completeEnroll = useMutation({
+    mutationFn: (input: {
+      enrollmentToken: string | null;
+      methodId: string;
+      code: string;
+    }) => service.completeRequiredEnrollment(input),
+    onSuccess: ({ recoveryCodes, ...session }) =>
+      setPhase({ kind: "codes", session, codes: recoveryCodes }),
+    onError: (error) =>
+      setPhase((current) =>
+        current.kind === "enroll"
+          ? { ...current, error: enrollFailure(error) }
+          : current,
+      ),
+  });
+
+  // After a provider sign-in the page opens on the step with the backend's cookie: start it once.
+  const startedFromCookie = useRef(false);
+  useEffect(() => {
+    if (
+      initialStep === "enroll" &&
+      !providerError &&
+      !startedFromCookie.current
+    ) {
+      startedFromCookie.current = true;
+      startEnroll.mutate(null);
+    }
+  });
+
   const login = useMutation({
     mutationFn: (input: { email: string; password: string }) =>
       service.login(input),
@@ -206,7 +283,16 @@ export function SignInFlow({
           error: null,
           backup: false,
         });
-      else signedIn(result);
+      else if (result.kind === "enroll") {
+        // No session yet: the authenticator is prepared at once, with the token held in memory only.
+        setPhase({
+          kind: "enroll",
+          enrollmentToken: result.enrollmentToken,
+          enrollment: null,
+          error: null,
+        });
+        startEnroll.mutate(result.enrollmentToken);
+      } else signedIn(result);
     },
     onError: (error, input) => {
       const failure = readFlowError(error);
@@ -232,6 +318,18 @@ export function SignInFlow({
       });
     },
   });
+
+  const enrollFailure = (error: unknown) => {
+    const failure = readFlowError(error);
+    setLock(isThrottled(failure) ? lockOf(failure.retryAfterSeconds) : null);
+    return failure.network
+      ? ("unreachable" as const)
+      : isThrottled(failure)
+        ? ("locked" as const)
+        : failure.code === IDENTITY_ERROR.challengeInvalid
+          ? ("expired" as const)
+          : ("wrong" as const);
+  };
 
   const verify = useMutation({
     mutationFn: (input: { challengeToken: string | null; code: string }) =>
@@ -282,6 +380,7 @@ export function SignInFlow({
     identify.isPending ||
     login.isPending ||
     verify.isPending ||
+    completeEnroll.isPending ||
     redirecting !== null;
 
   const step: AuthSignInStep =
@@ -300,7 +399,17 @@ export function SignInFlow({
             lockedSeconds,
             backup: phase.backup,
           }
-        : phase;
+        : phase.kind === "enroll"
+          ? {
+              kind: "enroll",
+              secret: phase.enrollment?.secret ?? null,
+              otpAuthUri: phase.enrollment?.otpAuthUri ?? null,
+              error: phase.error,
+              lockedSeconds,
+            }
+          : phase.kind === "codes"
+            ? { kind: "codes", codes: phase.codes }
+            : phase;
 
   const backToEmail = () => {
     setLock(null);
@@ -337,6 +446,16 @@ export function SignInFlow({
         phase.kind === "otp" &&
         verify.mutate({ challengeToken: phase.challengeToken, code })
       }
+      onEnroll={({ code }) =>
+        phase.kind === "enroll" &&
+        phase.enrollment &&
+        completeEnroll.mutate({
+          enrollmentToken: phase.enrollmentToken,
+          methodId: phase.enrollment.methodId,
+          code,
+        })
+      }
+      onCodesDone={() => phase.kind === "codes" && signedIn(phase.session)}
       onToggleBackup={() =>
         setPhase((current) =>
           current.kind === "otp"

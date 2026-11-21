@@ -3,6 +3,7 @@ import {
   KeyRound,
   Laptop,
   Lock,
+  ShieldCheck,
   Smartphone,
   Tablet,
   type LucideIcon,
@@ -68,7 +69,8 @@ export type AccountSecurityFlow =
       readonly kind: "enroll";
       readonly secret: string;
       readonly otpAuthUri: string;
-      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
+      readonly error:
+        "wrong" | "wait" | "failed" | "expired" | "requiredByAccount" | null;
       readonly wait?: number;
     }
   | {
@@ -88,8 +90,9 @@ export type AccountSecurityFlow =
       readonly factor: "code" | "password" | "provider";
       /** `provider`: the linked providers the person can confirm with (the producer names them). */
       readonly providers?: readonly string[];
-      /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. */
-      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
+      /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. `requiredByAccount`: turning two-factor off is refused while an Account requires it. */
+      readonly error:
+        "wrong" | "wait" | "failed" | "expired" | "requiredByAccount" | null;
       readonly wait?: number;
     }
   | {
@@ -136,6 +139,12 @@ export interface AccountSecurityData {
   readonly activity?: readonly AccountActivityView[];
   /** More activity lines can be loaded. */
   readonly activityHasMore?: boolean;
+  /** The Account's MFA requirement; absent = the page could not read it, so no block is drawn. */
+  readonly accountMfaPolicy?: {
+    readonly required: boolean;
+    /** Only the Account Owner turns it on or off; anyone else reads it. */
+    readonly canChange: boolean;
+  };
 }
 
 export interface AccountSecuritySurfaceProps {
@@ -149,6 +158,8 @@ export interface AccountSecuritySurfaceProps {
   /** The step of two-factor or a sensitive change in progress; `null`/absent = none. */
   readonly flow?: AccountSecurityFlow | null;
   readonly onSetTwoFactor: (enabled: boolean) => void;
+  /** The Owner requires (or stops requiring) two-factor for the whole Account. */
+  readonly onSetAccountMfaPolicy?: (required: boolean) => void;
   /** Opens the change of password; absent = the account cannot change it here. */
   readonly onChangePassword?: () => void;
   /** Starts setting a first password (the proof comes first); absent = the page cannot do it. */
@@ -380,11 +391,15 @@ export function FlowPanel({
         ? t.expired
         : flow.error === "wait"
           ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
-          : flow.error === "failed" || flow.error === "expired"
-            ? usesProvider && providers.length > 0
-              ? fillCopy(t.providerFailed, { provider: providers.join(" / ") })
-              : copy.actionError
-            : null;
+          : flow.error === "requiredByAccount"
+            ? t.requiredByAccount
+            : flow.error === "failed" || flow.error === "expired"
+              ? usesProvider && providers.length > 0
+                ? fillCopy(t.providerFailed, {
+                    provider: providers.join(" / "),
+                  })
+                : copy.actionError
+              : null;
   const title =
     flow.kind === "enroll"
       ? t.enrollTitle
@@ -619,6 +634,7 @@ function SecurityBody({
   onSubmitNewPassword,
   onPasswordChangedContinue,
   onSetTwoFactor,
+  onSetAccountMfaPolicy,
   onSubmitCode,
   onSubmitPassword,
   onStartProviderStepUp,
@@ -634,6 +650,7 @@ function SecurityBody({
   const ids = {
     password: React.useId(),
     twoFactor: React.useId(),
+    policy: React.useId(),
     sessions: React.useId(),
     others: React.useId(),
     othersText: React.useId(),
@@ -789,6 +806,51 @@ function SecurityBody({
           />
         ) : null}
       </Block>
+
+      {data.accountMfaPolicy ? (
+        <Block
+          titleId={ids.policy}
+          title={copy.policy.title}
+          aside={
+            <Tag tone={data.accountMfaPolicy.required ? "ok" : "neutral"}>
+              {data.accountMfaPolicy.required
+                ? copy.policy.required
+                : copy.policy.notRequired}
+            </Tag>
+          }
+        >
+          <Row
+            icon={ShieldCheck}
+            title={copy.policy.rowTitle}
+            text={
+              data.accountMfaPolicy.canChange
+                ? copy.policy.ownerText
+                : copy.policy.memberText
+            }
+            control={
+              data.accountMfaPolicy.canChange && onSetAccountMfaPolicy ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    onSetAccountMfaPolicy(!data.accountMfaPolicy?.required)
+                  }
+                  className={cn(
+                    data.accountMfaPolicy.required
+                      ? LINK_BUTTON_DANGER
+                      : BTN_SM,
+                    FOCUS,
+                  )}
+                >
+                  {data.accountMfaPolicy.required
+                    ? copy.policy.stop
+                    : copy.policy.require}
+                </button>
+              ) : null
+            }
+          />
+        </Block>
+      ) : null}
 
       {flow?.kind === "setPassword" ? (
         <AccountSetPasswordPanel

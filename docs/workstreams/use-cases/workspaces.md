@@ -47,22 +47,22 @@ Letters A to J follow the Workspaces list in the team spec (section 4, items 1 t
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
 | A | Workspace create | 4 | 1 | 0 | 0 | 0 | 3 | 0 |
-| B | Workspace read / resolve | 4 | 0 | 1 | 0 | 0 | 3 | 0 |
+| B | Workspace read / resolve | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
 | C | Workspace update | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
 | D | Workspace lifecycle transition | 6 | 1 | 0 | 0 | 0 | 5 | 0 |
 | E | Membership read | 2 | 0 | 0 | 0 | 0 | 2 | 0 |
 | F | Membership add / remove / change | 10 | 0 | 0 | 0 | 0 | 9 | 1 |
-| G | Invitation create | 9 | 0 | 0 | 0 | 1 | 8 | 0 |
+| G | Invitation create | 9 | 0 | 0 | 0 | 0 | 9 | 0 |
 | H | Invitation accept / reject / revoke | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
 | I | Workspace selection / switch integration | 6 | 0 | 1 | 0 | 0 | 5 | 0 |
-| J | Workspace settings | 4 | 0 | 0 | 0 | 0 | 3 | 1 |
+| J | Workspace settings | 4 | 0 | 0 | 0 | 0 | 4 | 0 |
 | K | Spaces (added by this catalog) | 15 | 0 | 0 | 0 | 0 | 15 | 0 |
-| L | Teams (added by this catalog) | 10 | 0 | 0 | 1 | 0 | 9 | 0 |
+| L | Teams (added by this catalog) | 10 | 0 | 0 | 0 | 0 | 10 | 0 |
 | M | Getting started and onboarding (added by this catalog) | 7 | 0 | 0 | 0 | 0 | 7 | 0 |
-| N | Home, navigation, search and activity (added by this catalog) | 6 | 0 | 1 | 0 | 0 | 5 | 0 |
-|  | Total | 91 | 2 | 3 | 1 | 1 | 82 | 2 |
+| N | Home, navigation, search and activity (added by this catalog) | 6 | 0 | 0 | 0 | 0 | 6 | 0 |
+|  | Total | 91 | 2 | 1 | 0 | 0 | 87 | 1 |
 
-Eighty-two use cases are DONE in the index; the other nine are DEFINED (2: A03, D06), IMPLEMENTING (4: B02, I05, J04, N03), INTEGRATING (1: L10), HARDENING (1: G02) and BLOCKED (1: F10) (`make uc-counts` prints the live numbers). Four of the DONE rows (F05, G01, I04 and K01) were accepted 2026-11-02 by an independent acceptance agent (see their Evidence lines). The rest of this section predates the current index rows; the index rows and State lines are the state of record. The Real e2e column of the index names a real spec for 41 use cases, in 14 files under `frontend/e2e/real`: `workspace-read-and-lists` (B01, B04, I02, I04), `workspace-delete-restore` (D03, D04), `workspace-members` (E01, E02), `workspace-member-changes` (F02, F05), `workspace-invitations-manage` (G01, G03 to G06), `workspace-invitation-link` (H01, H03), `workspace-invitations-answer` (H02, H05, H06), `workspace-isolation` (I01), `workspace-spaces` (K01, K02, K15), `workspace-space-read` (K03), `workspace-space-manage` (K04, K06, K08, K11 to K13), `workspace-space-move` (K07), `workspace-space-trash` (K09) and `workspace-teams` (L01 to L08). The other rows name none: real e2e is not required by the 0.1.0 DoD (2026-11-19), and their proof is the tests on their State lines, with mock end-to-end specs under `frontend/e2e/mock` exercising the screens. The use cases with a producer and no frontend caller are listed in 1.3.
+Eighty-seven use cases are DONE in the index; the other four are DEFINED (2: A03, D06), IMPLEMENTING (1: I05) and BLOCKED (1: F10) (`make uc-counts` prints the live numbers). Four of the DONE rows (F05, G01, I04 and K01) were accepted 2026-11-02 by an independent acceptance agent (see their Evidence lines). The rest of this section predates the current index rows; the index rows and State lines are the state of record. The Real e2e column of the index names a real spec for 41 use cases, in 14 files under `frontend/e2e/real`: `workspace-read-and-lists` (B01, B04, I02, I04), `workspace-delete-restore` (D03, D04), `workspace-members` (E01, E02), `workspace-member-changes` (F02, F05), `workspace-invitations-manage` (G01, G03 to G06), `workspace-invitation-link` (H01, H03), `workspace-invitations-answer` (H02, H05, H06), `workspace-isolation` (I01), `workspace-spaces` (K01, K02, K15), `workspace-space-read` (K03), `workspace-space-manage` (K04, K06, K08, K11 to K13), `workspace-space-move` (K07), `workspace-space-trash` (K09) and `workspace-teams` (L01 to L08). The other rows name none: real e2e is not required by the 0.1.0 DoD (2026-11-19), and their proof is the tests on their State lines, with mock end-to-end specs under `frontend/e2e/mock` exercising the screens. The use cases with a producer and no frontend caller are listed in 1.3.
 
 The geometry specs (`design-fidelity-*.mock.e2e.spec.ts`) cover Shell, Home, Members, Space and Command at 1440 px and some narrower sizes. The canvas draws no Workspaces screen at 1440, 1024 and 390 px in both themes, so line 3 is met by a measured diff where an artboard exists (Shell, Space) and by reviewed screenshots at all three widths in both themes where it does not.
 
@@ -187,7 +187,7 @@ Products compared and what was taken:
 | UC-WSP-J01 | Read workspace settings | J | Any active member | yes | yes | Final-Settings | none | DONE | Every state and rule of the row is covered by tests that ran in this PR; see the State line. |
 | UC-WSP-J02 | Change workspace settings | J | Owner | yes | yes | Final-Settings | none | DONE | Every state and rule of the row is covered by tests that ran in this PR; the accepted gaps are on the State line. |
 | UC-WSP-J03 | Read sharing and security extras | J | Owner, Admin, Member | yes | yes | Final-Settings, Final-Teams | none | DONE | Every state and rule of the row is covered by tests that ran in this PR; the accepted gaps are on the State line. |
-| UC-WSP-J04 | Keep Account-wide policy out of workspace settings | J | Owner, Admin | yes | no | none | none | IMPLEMENTING | The settings write no longer takes `enforceMfa`; the read returns the Account fact (UC-IDN-J05). The web settings surface still hides the switch and has no read-only Account note. |
+| UC-WSP-J04 | Keep Account-wide policy out of workspace settings | J | Owner, Admin | yes | no | none | none | DONE | The settings write no longer takes `enforceMfa`; the read returns the Account fact (UC-IDN-J05); the web settings surface shows it as a read-only "required by your account" note, with no switch. |
 | UC-WSP-K01 | Create a Space (department) | K | Owner, Admin | yes | yes | Final-Space, Final-M-Space | workspace-spaces.real.e2e.spec.ts | DONE | accepted 2026-11-02, see the Evidence line |
 | UC-WSP-K02 | Read the Space tree and list Spaces | K | Any non-Guest member | yes | yes | Final-Space | workspace-spaces.real.e2e.spec.ts | DONE | closed 2026-11-03, see the Evidence line |
 | UC-WSP-K03 | Read one Space | K | Any member who can see the Space | yes | yes | Final-Space | workspace-space-read.real.e2e.spec.ts | DONE | closed 2026-11-16, see the Evidence line |
@@ -989,11 +989,11 @@ The label of each part is its capability. Ids are `UC-WSP-<letter><nn>`. UI stat
 - Output: the settings write never carries or changes the MFA requirement; the settings read returns the Account's fact as `enforceMfa`, read-only here. A client that still sends `enforceMfa` is accepted and the field is ignored.
 - Main flow: 1. The settings write stores the other settings and leaves the stored workspace column as it is. 2. The settings read asks the Accounts public port for the requirement of the workspace's Account. 3. The requirement is enforced at sign-in and refresh by Identity (UC-IDN-J05), not here.
 - No-op / rejection / concurrency / retry: unchanged for the other settings; an audit entry for a settings change is a warning only when public sharing opens (dropping the MFA flag no longer exists as a workspace change).
-- UI states: The web settings surface still hides the enforce-MFA switch; no read-only Account note yet. The save payload no longer carries `enforceMfa`.
+- UI states: The web settings surface has no enforce-MFA switch; it shows the Account fact as a read-only note ("Required by your account" or "Not required by your account") to Owner, Admin and Member alike. The save payload no longer carries `enforceMfa`.
 - Rules: [workspaces](../../product/workspaces.md) sections 39, 40; WSP-012.
 - Acceptance: Given the Account requires MFA, when the workspace settings are read, then `enforceMfa` is true; when the settings are written with any `enforceMfa`, then the Account fact and the stored column do not change.
-- Evidence: BE `UpdateWorkspaceSettingsCommand` (no `EnforceMfa`), `GetWorkspaceSettingsQueryHandler` (reads `IAccountSecurityPolicyFacts`) · FE service no longer sends it · Design none · Tests `UpdateWorkspaceSettingsCommandHandlerTests`, `WorkspaceSettingsAccessIntegrationTests`, `workspace-settings-service.unit.test.ts` · Real e2e none
-- State: IMPLEMENTING — backend and payload done; the settings surface shows no Account note and there is no Account-level screen for the Owner to turn the requirement on or off yet (UC-IDN-J05).
+- Evidence: BE `UpdateWorkspaceSettingsCommand` (no `EnforceMfa`), `GetWorkspaceSettingsQueryHandler` (reads `IAccountSecurityPolicyFacts`) · FE service no longer sends it; `workspace-settings-surface.tsx` (`DefaultsForm`, the read-only Account note) · Design none · Tests `UpdateWorkspaceSettingsCommandHandlerTests`, `WorkspaceSettingsAccessIntegrationTests`, `workspace-settings-service.unit.test.ts`, `workspace-settings.interaction.component.test.tsx` (the note for Owner, Admin and Member, on and off, no switch) · Real e2e none
+- State: DONE. Backend, payload and the settings note are built and tested at component level; the Owner turns the requirement on or off in the Security page's "Account policy" block (UC-IDN-J05). Not run in a browser or on the real stack.
 
 ## K. Spaces (added by this catalog)
 
@@ -1554,7 +1554,7 @@ Lead decisions of this catalog (2026-10-30). Each is written as a rule in Part 5
 - Lead decision (2026-10-30), LD-08: the Billing seat gate is mandatory and fails closed for invitation acceptance, direct add and member activation.
 - Lead decision (2026-10-30), LD-09: adding a member directly requires the person to be an active member of the same Account; anyone else is invited.
 - Lead decision (2026-10-30), LD-10: Owner and Admin may change the workspace address; the old address is released at once and not redirected; links by id keep working.
-- Lead decision (2026-10-30), LD-11: `EnforceMfa` leaves workspace settings when the owner decides (J04); until then the control stays hidden.
+- Lead decision (2026-10-30), LD-11: `EnforceMfa` leaves workspace settings (J04, done): the settings page shows the Account fact read-only.
 - Lead decision (2026-10-30), LD-12: removal and leave delete the person's Space and Team entries in the same transaction; a Team left without a Lead is flagged "needs a lead" and the last-Lead rule applies only to explicit role changes.
 - Lead decision (2026-10-30), LD-13: bulk invite takes at most 50 emails; each is handled on its own and the answer lists each outcome.
 - Lead decision (2026-10-30), LD-14: the dead dashboard query is fixed (count only active members) and shown to Owner and Admin in a header, or deleted if no artboard asks for it.

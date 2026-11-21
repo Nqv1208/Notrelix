@@ -65,6 +65,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAccountService",
     consumerFile:
       "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Accounts.GetSecurityPolicy",
+    operationId: "Accounts.GetSecurityPolicy",
+    mutation: false,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
+    capability: "Accounts.SetMfaPolicy",
+    operationId: "Accounts.SetMfaPolicy",
+    mutation: true,
+  },
+  {
+    context: "Account",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAccountService",
+    consumerFile:
+      "frontend/packages/features/account/src/core/api/account.service.ts",
     capability: "Identity.Profile.GetPreferences",
     operationId: "Identity.Profile.GetPreferences",
     mutation: false,
@@ -1453,6 +1473,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
       "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
     capability: "Identity.Auth.Login",
     operationId: "Identity.Auth.Login",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Mfa.StartRequiredEnrollment",
+    operationId: "Identity.Mfa.StartRequiredEnrollment",
+    mutation: true,
+  },
+  {
+    context: "Identity",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAuthFlowService",
+    consumerFile:
+      "frontend/packages/features/auth/src/core/api/auth-flow.service.ts",
+    capability: "Identity.Mfa.CompleteRequiredEnrollment",
+    operationId: "Identity.Mfa.CompleteRequiredEnrollment",
     mutation: true,
   },
   {
