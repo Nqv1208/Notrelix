@@ -33,7 +33,7 @@ identify the owning job (fast-checks-backend | fast-checks-frontend | backend-un
 
 ## 2. Which job owns a change
 
-- `fast-checks-backend` — `format` and `contract` (Architecture tests, OpenAPI drift). Cheap checks go here, so a slip costs minutes and stops the heavy jobs. A new check is a step in one of the two matrix entries, or a new entry.
+- `fast-checks-backend` — `format` (format check, pre-push hook self-test) and `contract` (Architecture tests, OpenAPI drift). Cheap checks go here, so a slip costs minutes and stops the heavy jobs. A new check is a step in one of the two matrix entries, or a new entry.
 - `fast-checks-frontend` — `typecheck` and `rest` (`format:check`, `lint`, `check:architecture`, `check:i18n`, `check:mock-consumer-surface`, `codegen:check`).
 - `backend-build` — the single Release build of the solution. A heavy backend job takes this build through `./.github/actions/use-backend-build` and runs `dotnet test --no-build --no-restore`; it never restores or builds again.
 - `backend-unit` — the Domain, Application, Infrastructure, Platform and API test projects.

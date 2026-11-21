@@ -61,7 +61,7 @@ every job above -> CI gate (required, if: always())
 ```
 
 - `changes` selects the backend and frontend side from the changed paths. A change under `.github/` or `backend/contracts/` counts as both sides.
-- `fast-checks-backend` — two parallel checks: `format` (`dotnet format --verify-no-changes`) and `contract` (the Architecture tests and the OpenAPI export compared with `backend/contracts/openapi/notrelix.v1.json`). It keeps its own restore and build.
+- `fast-checks-backend` — two parallel checks: `format` (`dotnet format --verify-no-changes`, then the self-test of the pre-push hook, `bash .githooks/test/pre-push.test.sh`) and `contract` (the Architecture tests and the OpenAPI export compared with `backend/contracts/openapi/notrelix.v1.json`). It keeps its own restore and build.
 - `fast-checks-frontend` — `typecheck`, and `rest` (`format:check`, `lint`, `check:architecture`, `check:i18n`, `check:mock-consumer-surface`, `codegen:check`).
 - `fast-checks` — one verdict: every fast check of a changed side must be success and a side with no change must be skipped. Any failure keeps every heavy job below from starting.
 - `backend-build` — the only restore and build of `backend.slnx` in Release for the heavy jobs. It saves the NuGet package cache and uploads `bin/` and `obj/` as one tar artifact (`backend-build`, kept one day).

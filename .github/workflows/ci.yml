@@ -85,6 +85,11 @@ jobs:
       - name: Format
         if: matrix.check == 'format'
         run: dotnet format backend.slnx --verify-no-changes --no-restore
+      # The pre-push hook's own tests: a throw-away repo, only the .NET SDK needed. It runs from the repository root, not from backend.
+      - name: Pre-push hook self-test
+        if: ${{ !cancelled() && matrix.check == 'format' }}
+        working-directory: .
+        run: bash .githooks/test/pre-push.test.sh
       - name: Architecture tests
         if: ${{ !cancelled() && matrix.check == 'contract' }}
         run: dotnet test tests/Notrelix.Architecture.Tests/Notrelix.Architecture.Tests.csproj --no-restore --configuration "$DOTNET_CONFIGURATION" --blame-hang-timeout 5m

@@ -1430,7 +1430,7 @@ This optimizes feedback without reducing final proof.
 `ci.yml` runs these jobs, aggregated by the required check `CI gate`:
 
 ```text
-fast-checks-backend  → format, then contract (Architecture tests, OpenAPI drift)
+fast-checks-backend  → format (format check, pre-push hook self-test), then contract (Architecture tests, OpenAPI drift)
 fast-checks-frontend → typecheck, then format:check, lint, check:architecture, check:i18n, check:mock-consumer-surface, codegen:check
 fast-checks          → one verdict: a failure of either side stops every heavy job
 backend-build        → restore and build backend.slnx once in Release; uploads bin and obj
