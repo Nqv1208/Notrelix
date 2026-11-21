@@ -22,14 +22,20 @@ export class UnknownFormVersionError extends Error {
   }
 }
 
-function failure(error: unknown): FormWriteResult {
+const isAccountSuspended = (caught: { status?: number; code?: string }) =>
+  caught.status === 403 && caught.code === "account.suspended";
+
+export function formWriteFailure(error: unknown): FormWriteResult {
   // Nothing was sent: the form is read again and the change can be repeated.
   if (error instanceof UnknownFormVersionError)
     return { ok: false, reason: "conflict" };
   const caught = (error ?? {}) as {
     status?: number;
+    code?: string;
     validationErrors?: Record<string, string[]>;
   };
+  // Not "forbidden": the person has the permission, the Account is paused (the shell says so once).
+  if (isAccountSuspended(caught)) return { ok: false, reason: "failed" };
   if (caught.status === 403) return { ok: false, reason: "forbidden" };
   if (caught.status === 404) return { ok: false, reason: "missing" };
   if (caught.status === 429) return { ok: false, reason: "limited" };
@@ -109,7 +115,7 @@ export function useFormWrites(boardId: string, workspaceId: string) {
           await refresh(formId, submissions);
           return typeof id === "string" ? { ok: true, id } : { ok: true };
         } catch (caught) {
-          const result = failure(caught);
+          const result = formWriteFailure(caught);
           // A stale save keeps the form the person edited from, so the builder can
           // show what changed; they pick Keep mine or Use the new version first.
           if (!(result.ok === false && result.conflict))
@@ -215,7 +221,7 @@ export function useSubmitForm(formId: string, workspaceId: string) {
         });
         return { ok: true, id };
       } catch (caught) {
-        return failure(caught);
+        return formWriteFailure(caught);
       }
     },
     [formId, forms, queryClient, workspaceId],
@@ -228,9 +234,14 @@ const PUBLIC_SHARING_OFF = "WorkManagement_Form_PublicSharingDisabled";
 export function publicAccessFailure(
   error: unknown,
 ): Extract<FormPublicAccessResult, { ok: false }> {
-  const caught = (error ?? {}) as { status?: number; ruleCode?: string };
+  const caught = (error ?? {}) as {
+    status?: number;
+    code?: string;
+    ruleCode?: string;
+  };
   if (caught.ruleCode === PUBLIC_SHARING_OFF)
     return { ok: false, reason: "linksOff" };
+  if (isAccountSuspended(caught)) return { ok: false, reason: "failed" };
   if (caught.status === 403 || caught.status === 404)
     return { ok: false, reason: "denied" };
   return { ok: false, reason: "failed" };

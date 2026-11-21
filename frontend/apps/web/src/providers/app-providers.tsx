@@ -19,6 +19,7 @@ import {
 } from "../composition/application-services-context";
 import { GlobalErrorBoundary } from "../components/global-error-boundary";
 import { webCatalogs } from "../i18n/catalogs";
+import { AccountSuspensionBridge } from "../shell/workspace/account-suspension-bridge";
 import { EmailConfirmationToastBridge } from "../shell/workspace/email-confirmation-toast-bridge";
 
 const browserLocales =
@@ -124,6 +125,7 @@ export function AppProviders({
                       </WorkManagementUiPortsHost>
                       <Toaster />
                       <EmailConfirmationToastBridge />
+                      <AccountSuspensionBridge />
                     </WorkManagementServicesProvider>
                   </ThemeProvider>
                 </I18nProvider>

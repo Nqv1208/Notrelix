@@ -18,6 +18,10 @@ import {
 import { RealtimeClient, type RealtimeTransport } from "@notrelix/realtime";
 import type { ClockPort, KeyValueStorage } from "@notrelix/platform";
 import {
+  createAccountSuspensionSignal,
+  type AccountSuspensionSignal,
+} from "./account-suspension-signal";
+import {
   createSessionEventBus,
   type SessionEventBus,
 } from "./session-event-bus";
@@ -56,6 +60,8 @@ export interface AppRuntime {
   readonly api: NotrelixClient;
   readonly realtime: RealtimeTransport;
   readonly sessionEvents: SessionEventBus;
+  /** Raised when the producer refuses a write because the Account is Suspended or Closed. */
+  readonly accountSuspension: AccountSuspensionSignal;
   readonly clock: ClockPort;
   readonly telemetry: TelemetryPort;
   readonly featureFlags: FeatureFlagsPort;
@@ -89,6 +95,8 @@ export function createAppRuntime(
     telemetry.reportError(err, ctx),
   );
 
+  const accountSuspension = createAccountSuspensionSignal();
+
   const client = factories.createApiClient
     ? factories.createApiClient({
         baseUrl: resolvedEnv.apiUrl,
@@ -97,6 +105,7 @@ export function createAppRuntime(
         onSessionExpired: (event: SessionExpiredEvent) => {
           sessionEvents.publish(event);
         },
+        onAccountSuspended: () => accountSuspension.notify(),
       })
     : createNotrelixClient({
         baseUrl: resolvedEnv.apiUrl,
@@ -105,6 +114,7 @@ export function createAppRuntime(
         onSessionExpired: (event: SessionExpiredEvent) => {
           sessionEvents.publish(event);
         },
+        onAccountSuspended: () => accountSuspension.notify(),
       });
 
   const realtimeClient = factories.createRealtimeClient
@@ -132,6 +142,7 @@ export function createAppRuntime(
     api: client,
     realtime: realtimeClient,
     sessionEvents,
+    accountSuspension,
     clock,
     telemetry,
     featureFlags,

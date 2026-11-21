@@ -255,6 +255,7 @@ function workspaceDto(store: MockStore, workspaceId: string) {
       ).length,
     isPersonal: w.isPersonal,
     isArchived: store.isWorkspaceArchived(w.id),
+    accountStatus: store.accountStatusOf(w.id),
     version: store.getWorkspaceVersion(w.id),
   };
 }

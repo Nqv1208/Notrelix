@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Events.Automation;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,6 +30,7 @@ public sealed class N8nAutomationRuleEvaluator
     private readonly AutomationGuardOptions _guards;
     private readonly ILogger<N8nAutomationRuleEvaluator> _logger;
     private readonly IWorkActionPort? _workActions;
+    private readonly IAccountStatusFacts? _accountStatus;
 
     private const string NoExecutorReason = "The rule has no executor and cannot run; recreate it.";
 
@@ -38,14 +40,25 @@ public sealed class N8nAutomationRuleEvaluator
         IDateTimeProvider clock,
         IOptions<AutomationGuardOptions>? guards = null,
         ILogger<N8nAutomationRuleEvaluator>? logger = null,
-        IWorkActionPort? workActions = null)
+        IWorkActionPort? workActions = null,
+        IAccountStatusFacts? accountStatus = null)
     {
+        _accountStatus = accountStatus;
         _workActions = workActions;
         _context = context;
         _events = events;
         _clock = clock;
         _guards = guards?.Value ?? new AutomationGuardOptions();
         _logger = logger ?? NullLogger<N8nAutomationRuleEvaluator>.Instance;
+    }
+
+    private bool? _accountOperating;
+
+    private async Task<bool> AccountIsOperatingAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        // Read once per evaluation. Without the port (a host that does not register Accounts) nothing is blocked.
+        if (_accountStatus is null) return true;
+        return _accountOperating ??= (await _accountStatus.GetAsync(accountId, cancellationToken)).IsOperating();
     }
 
     public async Task ExecuteAsync(
@@ -108,6 +121,23 @@ public sealed class N8nAutomationRuleEvaluator
                     cancellationToken);
 
             if (exists) continue;
+
+            // A suspended or closed Account is read-only (UC-WSP-D06): the rule does not run and nothing is
+            // dispatched; the fact is kept as a Skipped execution with the reason, once per fact (the check above).
+            if (!await AccountIsOperatingAsync(accountId, cancellationToken))
+            {
+                _context.AutomationExecutions.Add(AutomationExecution.CreateSkipped(
+                    accountId,
+                    workspaceId,
+                    rule.Id,
+                    trigger.SourceEventId,
+                    trigger.OccurredAt,
+                    rule.ConfigurationVersion,
+                    AutomationRuleSnapshot.From(rule).Serialize(),
+                    _clock.UtcNow,
+                    AccountStatusReasons.Suspended));
+                continue;
+            }
 
             // AU-5: the rule's conditions (all must hold) are read from the triggering item now.
             // UC-AUT-C02: conditions that were evaluated and not met are kept as a Skipped execution;

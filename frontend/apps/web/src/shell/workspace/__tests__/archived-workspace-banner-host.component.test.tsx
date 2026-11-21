@@ -91,6 +91,18 @@ describe("ArchivedWorkspaceBannerHost", () => {
     expect(text()).toBe("");
   });
 
+  it("FUI[account.suspended:wins-over-archived] a Suspended Account shows its own banner, not the archived one", async () => {
+    h.workspace = {
+      id: "w1",
+      name: "Minh An",
+      version: 7,
+      isArchived: true,
+      accountStatus: "Suspended",
+    };
+    await mount();
+    expect(text()).toBe("");
+  });
+
   it("FUI[workspace.archived:member-no-action] an Admin or Member sees the banner and no Unarchive, and nothing is sent", async () => {
     for (const role of ["admin", "member", "guest"]) {
       h.role = role;

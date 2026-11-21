@@ -12414,6 +12414,7 @@ export interface components {
             version?: number;
             size?: string | null;
             language?: string | null;
+            accountStatus?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto": {
             /** Format: uuid */

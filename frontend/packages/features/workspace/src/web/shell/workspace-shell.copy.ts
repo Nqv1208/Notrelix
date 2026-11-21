@@ -151,6 +151,18 @@ export const en = {
     deniedText: "Only the owner can unarchive this workspace.",
     failedText: "It wasn't unarchived. Nothing changed; try again.",
   },
+  accountReadOnly: {
+    suspendedTitle: "This Account is suspended.",
+    closedTitle: "This Account is closed.",
+    suspendedText:
+      "Everyone can still read everything here. Changes are paused until an Account Owner restores the Account.",
+    closedText:
+      "Everyone can still read everything here. Changes stay paused until an Account Owner restores the Account.",
+    billingHint: "You can review the plan and billing.",
+    billing: "Open billing",
+    refused:
+      "The Account is suspended. Changes are paused; you can still read.",
+  },
   scope: {
     loadingTitle: "Opening workspace",
     loadingDescription: "Checking your access…",
@@ -342,6 +354,18 @@ export const vi: WorkspaceShellCopy = {
     reload: "Tải lại",
     deniedText: "Chỉ chủ sở hữu mới bỏ lưu trữ được workspace này.",
     failedText: "Chưa bỏ lưu trữ được. Chưa có gì thay đổi; hãy thử lại.",
+  },
+  accountReadOnly: {
+    suspendedTitle: "Tài khoản này đang bị tạm ngưng.",
+    closedTitle: "Tài khoản này đã đóng.",
+    suspendedText:
+      "Mọi người vẫn xem được toàn bộ nội dung. Mọi thay đổi tạm dừng cho đến khi Chủ sở hữu tài khoản khôi phục.",
+    closedText:
+      "Mọi người vẫn xem được toàn bộ nội dung. Mọi thay đổi vẫn tạm dừng cho đến khi Chủ sở hữu tài khoản khôi phục.",
+    billingHint: "Bạn xem được gói và thanh toán.",
+    billing: "Mở thanh toán",
+    refused:
+      "Tài khoản đang bị tạm ngưng. Mọi thay đổi tạm dừng; bạn vẫn xem được.",
   },
   scope: {
     loadingTitle: "Đang mở không gian làm việc",

@@ -195,13 +195,35 @@ public sealed class PublicFormAppRoleTests : IAsyncLifetime
     [InlineData("UPDATE work.boards SET is_archived = true WHERE id = '{board}'", "board archived")]
     [InlineData("UPDATE workspace.workspaces SET status = 'Archived' WHERE id = '{ws}'", "workspace archived")]
     [InlineData("UPDATE workspace.workspaces SET settings_allow_public_sharing = false WHERE id = '{ws}'", "public links off")]
+    [InlineData("UPDATE account.accounts SET status = 'Suspended' WHERE id = '{acct}'", "account suspended")]
+    [InlineData("UPDATE account.accounts SET status = 'Closed' WHERE id = '{acct}'", "account closed")]
     public async Task AFormTheWorkspaceNoLongerServes_IsRefused_AsNotFound(string sql, string why)
     {
-        await OwnerSqlAsync(sql.Replace("{form}", _form.Id.ToString()).Replace("{board}", _a.BoardId.ToString()).Replace("{ws}", _a.WorkspaceId.ToString()));
+        await OwnerSqlAsync(sql.Replace("{form}", _form.Id.ToString()).Replace("{board}", _a.BoardId.ToString()).Replace("{ws}", _a.WorkspaceId.ToString()).Replace("{acct}", _a.AccountId.ToString()));
 
         (await GetAsync()).StatusCode.Should().Be(HttpStatusCode.NotFound, why);
         (await PostAsync(Valid())).StatusCode.Should().Be(HttpStatusCode.NotFound, why);
         (await StoredAsync()).Should().BeEmpty(why);
+    }
+
+    [Fact]
+    public async Task ATrialingAccount_StillServesItsPublicForm()
+    {
+        await OwnerSqlAsync($"UPDATE account.accounts SET status = 'Trialing' WHERE id = '{_a.AccountId}'");
+
+        (await GetAsync()).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await PostAsync(Valid())).StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task ASuspendedAccount_ThatIsActiveAgain_ServesItsPublicFormAgain()
+    {
+        await OwnerSqlAsync($"UPDATE account.accounts SET status = 'Suspended' WHERE id = '{_a.AccountId}'");
+        (await GetAsync()).StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        await OwnerSqlAsync($"UPDATE account.accounts SET status = 'Active' WHERE id = '{_a.AccountId}'");
+
+        (await GetAsync()).StatusCode.Should().Be(HttpStatusCode.OK, "suspension deletes nothing, so lifting it restores the link");
     }
 
     [Fact]

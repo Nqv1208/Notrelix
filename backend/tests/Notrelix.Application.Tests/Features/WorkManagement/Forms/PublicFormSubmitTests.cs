@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Common.Data.Rls;
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Common.SystemOperations;
 using Notrelix.Application.Features.WorkManagement.Forms.Commands.SubmitPublicForm;
 using Notrelix.Application.Features.WorkManagement.Forms.Queries.GetPublicForm;
@@ -23,6 +24,7 @@ public class PublicFormSubmitTests : WorkManagementHandlerTestBase
     private readonly Mock<IRlsSessionContext> _rls = new();
     private readonly Mock<ICurrentTenantContext> _tenant = new();
     private readonly Mock<IWorkspaceSharingFacts> _sharing = new();
+    private readonly Mock<IAccountStatusFacts> _account = new();
     private readonly List<FormSubmission> _added = [];
 
     public PublicFormSubmitTests()
@@ -31,13 +33,14 @@ public class PublicFormSubmitTests : WorkManagementHandlerTestBase
         _captcha.Setup(c => c.VerifyAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string? token, string? _, CancellationToken _) => token == "good");
         _captcha.SetupGet(c => c.SiteKey).Returns("site-key");
+        _account.Setup(a => a.GetAsync(TestAccountId, It.IsAny<CancellationToken>())).ReturnsAsync(AccountStatusFact.Active);
         _sharing.Setup(s => s.FindAsync(TestWorkspaceId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new WorkspaceSharingFacts(IsActive: true, AllowsPublicLinks: true));
         DbContextMock.Setup(c => c.FormSubmissions).Returns(CreateAsyncDbSet(new List<FormSubmission>()));
         DbContextMock.Setup(c => c.BoardFields).Returns(CreateAsyncDbSet(new List<Notrelix.Domain.WorkManagement.Fields.BoardField>()));
     }
 
-    private PublicFormScope Scope() => new(DbContextMock.Object, _tenant.Object, _rls.Object, _sharing.Object);
+    private PublicFormScope Scope() => new(DbContextMock.Object, _tenant.Object, _rls.Object, _sharing.Object, _account.Object);
 
     private SubmitPublicFormCommandHandler Handler() => new(Scope(), _captcha.Object, DbContextMock.Object, DateTimeProviderMock.Object);
 
@@ -144,6 +147,24 @@ public class PublicFormSubmitTests : WorkManagementHandlerTestBase
         var act = () => Handler().Handle(Submit(), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Theory]
+    [InlineData(AccountStatusFact.Suspended)]
+    [InlineData(AccountStatusFact.Closed)]
+    public async Task ASuspendedOrClosedAccount_RefusesTheAnonymousReadAndSubmit_AsNotFound_AndStoresNothing(AccountStatusFact status)
+    {
+        OpenForm();
+        _account.Setup(a => a.GetAsync(TestAccountId, It.IsAny<CancellationToken>())).ReturnsAsync(status);
+
+        var submit = () => Handler().Handle(Submit(), CancellationToken.None);
+        var read = () => new GetPublicFormQueryHandler(Scope(), _captcha.Object).Handle(new GetPublicFormQuery(Key), CancellationToken.None);
+
+        await submit.Should().ThrowAsync<NotFoundException>();
+        await read.Should().ThrowAsync<NotFoundException>();
+        _added.Should().BeEmpty();
+        _captcha.Verify(c => c.VerifyAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never,
+            "a suspended Account spends no captcha check and reveals nothing");
     }
 
     [Theory]

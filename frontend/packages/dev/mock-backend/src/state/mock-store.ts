@@ -265,6 +265,8 @@ export interface MockBoardPlan {
   readonly groups: Readonly<Record<string, string>>;
 }
 
+export type MockAccountStatus = "Active" | "Suspended" | "Closed";
+
 export class MockStore {
   /** Sign-in attempts, second steps and guest invitations (gap `CTR-GAP-AUTH-FLOW`). */
   readonly auth = new MockAuthDirectory();
@@ -344,6 +346,7 @@ export class MockStore {
   private workspaceDescriptionById = new Map<string, string>();
   /** Archived workspaces drop out of the list and detail reads. */
   private archivedWorkspaceIds = new Set<string>();
+  private accountStatusByWorkspaceId = new Map<string, MockAccountStatus>();
   /** Deleted workspaces (id -> when): hidden from everyone, restorable by an Owner for 30 days. */
   private deletedWorkspaceAt = new Map<
     string,
@@ -2162,6 +2165,7 @@ export class MockStore {
     this.workspaceVersionById.clear();
     this.workspaceDescriptionById.clear();
     this.archivedWorkspaceIds.clear();
+    this.accountStatusByWorkspaceId.clear();
     this.deletedWorkspaceAt.clear();
     this.boardMembersByBoardId.clear();
     this.boardGrantsByBoardId.clear();
@@ -4426,6 +4430,22 @@ export class MockStore {
 
   isWorkspaceArchived(workspaceId: string): boolean {
     return this.archivedWorkspaceIds.has(workspaceId);
+  }
+
+  /**
+   * The Account's status for a workspace: set on that workspace, else from the world's business state
+   * (`account-suspended`, `account-closed`), else Active.
+   */
+  accountStatusOf(workspaceId: string): MockAccountStatus {
+    const own = this.accountStatusByWorkspaceId.get(workspaceId);
+    if (own) return own;
+    if (this.config.state === "account-suspended") return "Suspended";
+    if (this.config.state === "account-closed") return "Closed";
+    return "Active";
+  }
+
+  setAccountStatus(workspaceId: string, status: MockAccountStatus): void {
+    this.accountStatusByWorkspaceId.set(workspaceId, status);
   }
 
   isWorkspaceDeleted(workspaceId: string): boolean {
