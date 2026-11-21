@@ -35,7 +35,7 @@ stateful = true
 [images.redis]
 class = "runtime"
 source = "redis:7-bookworm"
-ref = "redis@sha256:4fa24486b8bcca8eec45ee0eb166edc674795e53a2b53d1a9ef263eecebaac85"
+ref = "redis@sha256:2e3eb11462c4e3759e6972678dd051d150ff54b1e60714b3c33b701260172a90"
 compose_service = "redis"
 deploy_env_var = "NOTRELIX_REDIS_IMAGE"
 stateful = true
@@ -43,7 +43,7 @@ stateful = true
 [images.rabbitmq]
 class = "runtime"
 source = "rabbitmq:4.3-management"
-ref = "rabbitmq@sha256:54cb013d76cd1fd6c0a0708f34062ad61c452bb6f016b434c6c33f1a765d2b58"
+ref = "rabbitmq@sha256:bd0c7c94bca9cad4c3eaecd82a8b5afb67e5d529e5eab52ab10a42c1622156e9"
 compose_service = "rabbitmq"
 deploy_env_var = "NOTRELIX_RABBITMQ_IMAGE"
 stateful = true
