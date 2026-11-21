@@ -48,12 +48,12 @@ Letters follow the Accounts list in the team spec (section 4).
 | E | Account-context resolution | 3 | 0 | 2 | 1 | 0 | 0 | 0 |
 | F | Account switch / transition behavior | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | G | Account-scoped frontend state isolation | 3 | 1 | 2 | 0 | 0 | 0 | 0 |
-| H | Account-level administration integration | 20 | 6 | 14 | 0 | 0 | 0 | 0 |
-| | Total | 42 | 16 | 22 | 2 | 2 | 0 | 0 |
+| H | Account-level administration integration | 20 | 5 | 12 | 1 | 0 | 2 | 0 |
+| | Total | 42 | 15 | 20 | 3 | 2 | 2 | 0 |
 
-No use case is DONE: none has an owner check or a 1-px design diff. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
+Two use cases are DONE, H10 and H14, built with the company sign-in (UC-IDN-B08): their acceptance lines are proven by tests, by the application-login HTTP stack and by a fake DNS resolver and provider, with no owner check and no Playwright run on the real stack. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
 
-How "IMPLEMENTING" is used here: for lifecycle, member, invitation, domain, IdP, SCIM, region and route use cases the Domain aggregate and its tests exist, but no Application command, query or endpoint exists. They cannot run at all.
+How "IMPLEMENTING" is used here: for lifecycle, member, invitation, SCIM, region and route use cases the Domain aggregate and its tests exist, but no Application command, query or endpoint exists. They cannot run at all.
 
 ## 1.2 The ten most important gaps
 
@@ -145,11 +145,11 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-H07 | Change a member's Account role | H | Owner, Admin | domain only | no | none | none | IMPLEMENTING | Command, lock, screen |
 | UC-ACC-H08 | Suspend, reactivate or remove a member | H | Owner, Admin | domain only | no | none | none | IMPLEMENTING | Command, lock, downstream reactions |
 | UC-ACC-H09 | Transfer Account ownership (enterprise baseline) | H | Account Owner | no | no | none | none | DEFINED | Operation, step-up, screen |
-| UC-ACC-H10 | Add and verify an organization domain (enterprise baseline) | H | Owner, SecurityAdmin | domain only | no | none | none | IMPLEMENTING | Proof mechanism, command, screen |
+| UC-ACC-H10 | Add and verify an organization domain (enterprise baseline) | H | Owner, SecurityAdmin | yes | yes | none | none | DONE | built 2026-11-21, see the Evidence line (no Reject command, no retry job, no entitlement) |
 | UC-ACC-H11 | Publish the primary verified domain to consumers | H | Workspaces (consumer) | yes | n/a | none | none | IMPLEMENTING | No producer test file; no domain writer yet |
 | UC-ACC-H12 | Turn domain auto-join on or off | H | Owner, SecurityAdmin | domain only | no | none | none | IMPLEMENTING | Command, screen |
-| UC-ACC-H13 | Configure the Account identity provider | H | Owner, SecurityAdmin | domain only | no | none | none | IMPLEMENTING | Command, validation state, Identity link |
-| UC-ACC-H14 | Route sign-in to the Account IdP by domain | H | Identity (consumer) | no | no | none | none | DEFINED | Public fact, deterministic rule |
+| UC-ACC-H13 | Configure the Account identity provider | H | Owner, SecurityAdmin | yes | yes | none | none | INTEGRATING | OIDC only: no SAML, no separate enable step, no expectedVersion, no audit row |
+| UC-ACC-H14 | Route sign-in to the Account IdP by domain | H | Identity (consumer) | yes | yes | none | none | DONE | built 2026-11-21, see the Evidence line |
 | UC-ACC-H15 | Configure a SCIM directory and its token | H | Owner, SecurityAdmin | domain only | no | none | none | IMPLEMENTING | Command, token shown once |
 | UC-ACC-H16 | Run a SCIM sync and deprovision people | H | System | domain only | no | none | none | IMPLEMENTING | Worker, per-owner calls, status |
 | UC-ACC-H17 | Set the default data region | H | Owner, Admin | domain only | no | none | none | IMPLEMENTING | Region list, command, screen |
@@ -626,8 +626,8 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: loading, pending, validation error, conflict (already claimed), success, permission denied.
 - Rules: accounts sections 31 to 34, 77, ACC-010; R-ACC-DOMAIN (Part 5).
 - Acceptance: Given the TXT record exists, When Verify runs, Then status is Verified. Given another Account holds it, When this Account verifies, Then it stays Pending with "already claimed".
-- Evidence: BE `AccountDomain.Create`, `Verify`, `Reject` (no command) · FE none · Design none · Tests `AccountDomainTests` · Real e2e none
-- State: IMPLEMENTING — DNS check port, command, screen, uniqueness of Verified domain. Reference product: Atlassian verify-a-domain (Part 1).
+- Evidence: BE `Features/Accounts/Sso/Commands/AddSsoDomain`, `VerifySsoDomain`, `RemoveSsoDomain` and `GetAccountSsoQuery` (domain rows with the TXT host and value), `AccountSsoSupport` (domain normalisation, public mail provider list, TXT helper), `SsoDomainClaims` (claimed check, unique-violation mapping), port `IDomainTxtResolver` (`DnsDomainTxtResolver` over DnsClient with a 3 second timeout; `FakeDomainTxtResolver` in tests), Domain `AccountDomain` (protected token, hash kept, cleared on Verify), migration `AddAccountSso` (partial unique index on Verified domains), RLS `035_sso_scope.sql` · FE Account security, Single sign-on panel: domain list with the TXT instructions, Verify, the claimed note, remove · Design none · Tests: Domain `AccountDomainTests` (+3); Application `AccountSsoAdminTests` 43 (claim, a domain held by another Account refused on add and on verify, public mail provider, malformed domain, verify on a match, a miss and a timeout stays Pending, a Verified domain is a no-op), `AccountSsoFactsTests` 28; Integration `AccountSsoAppRoleTests` 31 on the application login (every admin endpoint refused for Admin, Member and another tenant, the database refuses a second Verified row), `SsoDomainConcurrentVerifyTests` 1; frontend panel and section tests · Real e2e none
+- State: DONE. Built with the company sign-in (2026-11-21): the Owner adds a domain (Pending, with a DNS TXT record `notrelix-verify=<token>` on the domain itself), presses Verify, and the server looks the record up through the resolver port; a match makes it Verified, a miss, a timeout or a resolver error leaves it Pending ("not verified yet"), verifying a Verified domain is a no-op, a domain Verified by another Account is refused with 409 `accounts.domain.claimed` (the row stays Pending and reads `claimed: true`), and the database refuses a second Verified row (a Pending claim never blocks the real owner). Public mail providers are refused. Both acceptance lines are proven by tests. Deviations: the token is stored protected (not only hashed) so the instructions can be shown again while Pending; the actor is the Account Owner only (`ManageAccountSecurity` is Owner-locked, there is no SecurityAdmin role). Not built: the Reject command (the aggregate method exists), a retry job, the plan entitlement (H20), a run against live DNS (the resolver is faked in CI), a Playwright run on the real stack.
 
 ### UC-ACC-H11 Publish the primary verified domain to consumers
 - Capability: H Account-level administration integration
@@ -641,7 +641,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts ACC-010, section 32.
 - Acceptance: Given domains "b.com" verified first and "a.com" later, When asked, Then "b.com". Given only pending domains, When asked, Then null.
 - Evidence: BE `AccountDomainFactsProvider`, `IAccountDomainFacts` · FE Workspaces share page (consumer) · Design none · Tests none for the provider (consumer tests in Workspaces) · Real e2e none
-- State: IMPLEMENTING — a producer test; a writer (H10) so the fact is ever non-null.
+- State: IMPLEMENTING — a producer test (the writer, H10, now exists).
 
 ### UC-ACC-H12 Turn domain auto-join on or off
 - Capability: H Account-level administration integration
@@ -668,8 +668,8 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: loading, validation error, pending (validation), permission denied, conflict, success.
 - Rules: accounts sections 35, 36, 78, ACC-011; Part 5 R-ACC-SSO. Authentication itself is Identity: [identity.md](identity.md).
 - Acceptance: Given valid metadata, When saved, Then status is Draft and no sign-in routes to it. Given validation passes and the admin enables it, Then H14 routes to it.
-- Evidence: BE `AccountIdentityProvider.Create`, `Enable`, `Disable`, `UpdateCertificate` (no command) · FE none · Design none · Tests `AccountIdentityProviderTests` · Real e2e none
-- State: IMPLEMENTING — command, validation port, closed status set (enum), screen.
+- Evidence: BE `Features/Accounts/Sso/Commands/SaveSsoProvider` and `RemoveSsoProvider`, `GetAccountSsoQuery`, Domain `AccountIdentityProvider` (`CreateOidc`, `UpdateOidc`, `MarkValidated`, `MarkValidationFailed`; client id, client secret stored protected through `ISecretEncryptor` and never returned, validation error), `IOidcDiscoveryClient` (SSRF-guarded: https only, resolved addresses checked and pinned, no redirects, 5 seconds, 256 KB, issuer must match), migration `AddAccountSso` · FE Account security, Single sign-on panel: provider setup form, write-only secret, redirect address to register, status and validation error · Design none · Tests: Domain provider tests (+5); Application `AccountSsoAdminTests` (provider and secret protection, require-SSO guards, validators), Infrastructure `OidcDiscoveryClientTests` 31 (private and metadata addresses, non-https, redirect, size cap, timeout, issuer mismatch); Integration `AccountSsoAppRoleTests` (the secret is ciphertext in the table and in no response, Admin and Member refused); frontend panel tests · Real e2e none
+- State: INTEGRATING. Built with the company sign-in (2026-11-21): the Owner saves one OpenID Connect provider per Account (name, issuer address, client id, client secret, a switch to add new people automatically); the server reads the provider's discovery document through a guarded client and, when it is good, the provider becomes Active; a bad document leaves it Draft with the stated reason; removing it is refused while require-SSO is on; the secret is stored protected and is never returned, logged or put in an event. Missing, so the first acceptance line is not met as written ("valid metadata, saved, then Draft and no sign-in routes": a passing validation activates in the same call): SAML (OIDC only); a separate admin enable step and the separate "validation pending" state (validation is synchronous); `expectedVersion` concurrency on the provider; the audit record row; the SSO address and certificate reference fields (OIDC uses the issuer and its discovery document); the plan entitlement (H20); a Playwright run on the real stack. The second acceptance line (an Active provider on a Verified domain routes sign-in, H14) is proven.
 
 ### UC-ACC-H14 Route sign-in to the Account IdP by domain
 - Capability: H Account-level administration integration
@@ -682,8 +682,8 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - UI states: none in Accounts.
 - Rules: accounts sections 37, 70, ACC-010, ACC-011.
 - Acceptance: Given domain "acme.com" Verified and an Enabled IdP, When "a@acme.com" is identified, Then SSO is offered. Given an unknown domain, When identified, Then the response equals the no-SSO response.
-- Evidence: BE none in Accounts (Identity `IdentifySignIn` returns `SsoSignInDto`) · FE sign-in (Identity) · Design none · Tests none · Real e2e none
-- State: DEFINED — Accounts public fact; see [identity.md](identity.md) for the sign-in side.
+- Evidence: BE `Features/Accounts/Public/Sso/IAccountSsoFacts.FindRouteAsync` and `AccountSsoFactsProvider` (database function `ops.sso_route` in `035_sso_scope.sql` on the application login), Identity `Auth/Queries/IdentifySignIn` · FE sign-in page (Identity, UC-IDN-B08) · Design none · Tests: Application `AccountSsoFactsTests` 28 (the route is null for eight different reasons, identically), `IdentifySignInTests` 10 (a Verified domain with an Active provider answers `sso`; an unverified domain, a Draft provider and an unclaimed domain answer `password` with the same shape); Integration `AccountSsoAppRoleTests` (the route on the SQL path, no cross-account read) · Real e2e none
+- State: DONE. Built with the company sign-in (2026-11-21): `IAccountSsoFacts.FindRouteAsync(email)` answers the Account, its name, the provider's display name and whether sign-in is required, only for a Verified domain of an open Account that has an Active provider, and null for every other reason with no hint of which Accounts exist; one Verified domain maps to at most one Account (partial unique index) and one provider. Both acceptance lines are proven (a Verified domain with an Active provider is offered `sso`; an unknown domain, an unverified one, a Draft provider and a Suspended or Closed Account all give the same `password` answer). Not built or run: a Playwright run on the real stack.
 
 ### UC-ACC-H15 Configure a SCIM directory and its token
 - Capability: H Account-level administration integration
@@ -771,7 +771,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 
 # 4. Product decisions applied
 
-Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 was BLOCKED on this; the delete rule is decided 2026-11-01, README §9 decision 3, and not built); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (job title, device as session, IP and user agent, accent and sidebar) belong to Identity.
+Product decision (owner, 2026-10-26): Account decisions A1 to A8 are accepted. Used here: no Account deletion and no data export in this release (D05 was BLOCKED on this; the delete rule is decided 2026-11-01, README §9 decision 3, and not built); high-impact actions need recent step-up authentication (the "revoke others needs step-up" pattern is reused for D03, D04 and H09). The other items (device as session, IP and user agent, accent and sidebar) belong to Identity; job title stays a Workspaces fact (lead decision 2026-11-20).
 
 Lead decision (2026-10-30): A new Account permission set is defined. `ManageAccount` (exists): Owner and Admin. `ManageAccountSecurity` (new): Owner and SecurityAdmin, for domains, SSO and SCIM. `ManageAccountLifecycle` (new): Owner only, for close, reopen and ownership transfer. `ViewAccountAudit` (new): Owner and SecurityAdmin. `BillingAdmin` keeps only Billing-owned actions (see [billing.md](billing.md)); it gets no other Account action.
 

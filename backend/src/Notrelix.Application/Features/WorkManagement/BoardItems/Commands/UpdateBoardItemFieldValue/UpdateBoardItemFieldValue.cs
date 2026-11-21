@@ -27,9 +27,11 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
     private readonly IActorLookupService? _actors;
     private readonly ICurrentRequestContext? _requestContext;
     private readonly IResourceVisibility? _visibility;
+    private readonly IWorkspaceAccessResolver? _workspaceAccess;
 
-    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null, IResourceVisibility? visibility = null)
+    public UpdateBoardItemFieldValueCommandHandler(IWorkManagementDbContext context, ICurrentUser currentUser, IDateTimeProvider timeProvider, IBoardRealtimeNotifier? realtime = null, IActorLookupService? actors = null, ICurrentRequestContext? requestContext = null, IResourceVisibility? visibility = null, IWorkspaceAccessResolver? workspaceAccess = null)
     {
+        _workspaceAccess = workspaceAccess;
         _visibility = visibility;
         _actors = actors;
         _requestContext = requestContext;
@@ -65,7 +67,7 @@ public class UpdateBoardItemFieldValueCommandHandler : IRequestHandler<UpdateBoa
         if (field == null)
             throw _requestContext is null
                 ? new NotFoundException("BoardField", request.FieldId)
-                : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _requestContext, item.BoardId, request.FieldId, cancellationToken);
+                : await BoardFields.StaleFieldGuard.MissingAsync(_context, _actors, _workspaceAccess, _requestContext, item.BoardId, request.FieldId, cancellationToken);
 
         // A person field names who the work is for. The value is validated first (shape, size, at most 50 people),
         // so only a well-formed set reaches the checks: each person must be able to view the board (share it

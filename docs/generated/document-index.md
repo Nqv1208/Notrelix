@@ -30,21 +30,23 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 99
+Document count: 102
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
 | `architecture` | 22 |
-| `architecture-decision` | 18 |
+| `architecture-decision` | 19 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
 | `delivery-handbook` | 1 |
+| `delivery-playbook` | 1 |
 | `delivery-policy` | 10 |
 | `generated` | 3 |
 | `governance` | 5 |
 | `index-router` | 1 |
+| `infrastructure-runbook` | 1 |
 | `infrastructure-standard` | 3 |
 | `operations` | 3 |
 | `operations-standard` | 4 |
@@ -58,8 +60,8 @@ Document count: 99
 
 | Value | Count |
 |:---|---:|
-| `Accepted` | 16 |
-| `active` | 78 |
+| `Accepted` | 17 |
+| `active` | 80 |
 | `generated` | 3 |
 | `Superseded` | 2 |
 
@@ -103,6 +105,7 @@ Document count: 99
 | `DEL-PRODUCT-LIFECYCLE` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `use-case-catalog`, `releases`, `lanes`, `acceptance` | [`docs/delivery/product-delivery-lifecycle.md`](../delivery/product-delivery-lifecycle.md) |
 | `DEL-RELEASE-ROLLOUT` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `backend`, `frontend`, `mobile`, `workers`, `infrastructure`, `feature-flags`, `releases` | [`docs/delivery/release-and-rollout.md`](../delivery/release-and-rollout.md) |
 | `DEL-TEAM-OWNERSHIP` | `delivery-policy` | `active` | `engineering-delivery` | `repository`, `product-contexts`, `backend`, `frontend`, `platform`, `quality`, `delivery`, `operations`, `infrastructure` | [`docs/delivery/team-ownership.md`](../delivery/team-ownership.md) |
+| `DEL-USE-CASE-PLAYBOOK` | `delivery-playbook` | `active` | `engineering-delivery` | `use-case-catalog`, `lanes`, `pull-requests`, `agents` | [`docs/delivery/use-case-playbook.md`](../delivery/use-case-playbook.md) |
 | `DOC-AUTHORITY` | `governance` | `active` | `documentation-governance` | `repository` | [`docs/governance/documentation-authority.md`](../governance/documentation-authority.md) |
 | `DOC-DECISION-EXCEPTION` | `governance` | `active` | `documentation-governance` | `repository` | [`docs/governance/decision-and-exception-policy.md`](../governance/decision-and-exception-policy.md) |
 | `DOC-GEN-RULE-INDEX` | `generated` | `generated` | `documentation-governance` | `repository-rule-inventory`, `architecture-rule-discovery`, `documentation-governance-evidence` | [`docs/generated/rule-index.md`](./rule-index.md) |
@@ -129,6 +132,7 @@ Document count: 99
 | `INFRA-CONTAINERIZATION-LOCAL-SERVICES` | `infrastructure-standard` | `active` | `infrastructure` | `container-builds`, `container-images`, `docker-compose`, `local-services`, `local-networking`, `local-volumes`, `development-tooling`, `packaging-ci` | [`docs/infrastructure/containerization-and-local-services.md`](../infrastructure/containerization-and-local-services.md) |
 | `INFRA-DEPLOYMENT-RUNTIME` | `infrastructure-standard` | `active` | `infrastructure` | `deployment`, `runtime`, `processes`, `networking`, `persistence`, `cache`, `messaging`, `object-storage`, `external-providers`, `promotion` | [`docs/infrastructure/deployment-runtime.md`](../infrastructure/deployment-runtime.md) |
 | `INFRA-ENVIRONMENT-MODEL` | `infrastructure-standard` | `active` | `infrastructure` | `local`, `ci`, `staging`, `production`, `configuration`, `secrets`, `feature-flags`, `environment-data` | [`docs/infrastructure/environment-model.md`](../infrastructure/environment-model.md) |
+| `INFRA-ORACLE-VM-RUNBOOK` | `infrastructure-runbook` | `active` | `infrastructure` | `staging`, `deployment`, `single-host-runtime` | [`docs/infrastructure/oracle-vm-runbook.md`](../infrastructure/oracle-vm-runbook.md) |
 | `OPS-INCIDENT-READINESS` | `operations-standard` | `active` | `operations` | `runtime`, `incidents`, `production`, `security-events`, `data-integrity-events`, `release-failures`, `dependency-failures` | [`docs/operations/incident-readiness.md`](../operations/incident-readiness.md) |
 | `OPS-OBSERVABILITY` | `operations-standard` | `active` | `operations` | `runtime`, `api`, `background-processing`, `messaging`, `realtime`, `database`, `integrations`, `frontend`, `mobile` | [`docs/operations/observability.md`](../operations/observability.md) |
 | `OPS-RECOVERY-DATA-SAFETY` | `operations-standard` | `active` | `operations` | `production-data`, `database`, `migrations`, `background-processing`, `messaging`, `integrations`, `object-storage`, `projections`, `recovery` | [`docs/operations/recovery-and-data-safety.md`](../operations/recovery-and-data-safety.md) |
@@ -154,6 +158,7 @@ Document count: 99
 | `QLT-SECURITY` | `quality-standard` | `active` | `engineering-security` | `repository`, `backend`, `frontend`, `api`, `background-processing`, `integrations`, `ci` | [`docs/quality/security-quality-standard.md`](../quality/security-quality-standard.md) |
 | `QLT-TESTING` | `testing-strategy` | `active` | `engineering-quality` | `repository`, `backend`, `frontend`, `ci` | [`docs/quality/testing-strategy.md`](../quality/testing-strategy.md) |
 | `SYS-ADR-001` | `architecture-decision` | `Accepted` | `architecture` | `chat`, `collaboration`, `bounded-context-map`, `realtime-gateway`, `backend`, `frontend` | [`docs/decisions/SYS-ADR-001-chat-bounded-context.md`](../decisions/SYS-ADR-001-chat-bounded-context.md) |
+| `SYS-ADR-002` | `architecture-decision` | `Accepted` | `architecture` | `chat`, `collaboration`, `realtime-gateway`, `platform`, `backend`, `frontend` | [`docs/decisions/SYS-ADR-002-chat-rich-media-and-calls.md`](../decisions/SYS-ADR-002-chat-rich-media-and-calls.md) |
 | `SYS-BOUNDED-CONTEXT-MAP` | `architecture` | `active` | `system-architecture` | `product`, `backend`, `frontend`, `cross-context-contracts` | [`docs/architecture/bounded-context-map.md`](../architecture/bounded-context-map.md) |
 | `SYS-CAPABILITY-EXTRACTION` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `bounded-contexts`, `deployment`, `data-ownership`, `public-contracts`, `operations` | [`docs/architecture/capability-extraction-strategy.md`](../architecture/capability-extraction-strategy.md) |
 | `SYS-CONTRACT-BOUNDARIES` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `public-contracts`, `integration-contracts`, `realtime-contracts`, `generated-contracts` | [`docs/architecture/contract-boundaries.md`](../architecture/contract-boundaries.md) |

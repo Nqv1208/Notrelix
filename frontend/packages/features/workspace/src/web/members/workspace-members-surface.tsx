@@ -3,10 +3,13 @@ import {
   Info,
   Mail,
   MoreHorizontal,
+  Pencil,
+  Plus,
   RotateCw,
   Search,
   Trash2,
   UserPlus,
+  X,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -17,6 +20,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   Badge,
   Button,
   DropdownMenu,
@@ -57,14 +64,36 @@ import {
 } from "../../core/model/navigation";
 import type {
   CreateWorkspaceInvitationInput,
+  InvitationEntryInput,
   WorkspaceInvitation,
   WorkspaceMember,
   WorkspaceRole,
 } from "../../core/types/workspace";
+import type { InviteManyOutcome } from "../../core/api/invitations.service";
+import type { InvitationEntryRefusalReason } from "../../core/model/errors";
 import type { SectionState, SurfaceFormatters } from "../home/home-models";
 import { IdentityMark } from "../shell/shell-link";
 import { formatCopy } from "../shell/shell-models";
+import {
+  EditJobTitleDialog,
+  type JobTitleOutcome,
+} from "./edit-job-title-dialog";
 import type { WorkspaceMembersCopy } from "./workspace-members.copy";
+
+/** A Team or Space the inviter may put an invited person into. */
+export interface InvitationEntryTarget {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * What the inviter may assign (WSP-026): `null` for a kind they hold no action for, so it is not offered.
+ * The producer decides again on the invitation; this only shapes the picker.
+ */
+export interface InvitationEntryOptions {
+  readonly teams: readonly InvitationEntryTarget[] | null;
+  readonly spaces: readonly InvitationEntryTarget[] | null;
+}
 
 export type MembersTab = "members" | "invitations";
 
@@ -95,11 +124,26 @@ export interface WorkspaceMembersSurfaceProps {
   readonly onRemove: (member: WorkspaceMember) => void;
   readonly onSuspend: (member: WorkspaceMember) => void;
   readonly onActivate: (member: WorkspaceMember) => void;
+  /** Sets another member's job title; absent hides the action (Owner and Admin only). */
+  readonly onSaveJobTitle?: (
+    member: WorkspaceMember,
+    title: string | null,
+  ) => Promise<JobTitleOutcome>;
+  /** Teams and Spaces the inviter may name on an invitation; absent hides the picker. */
+  readonly entryOptions?: InvitationEntryOptions | null;
+  /**
+   * Entries the producer refused, by `kind:targetId` (`Wsp-Var-Invites-Entry-Denied`): the reason shows under the
+   * entry it belongs to.
+   */
+  readonly entryRefusals?: ReadonlyMap<string, InvitationEntryRefusalReason>;
   readonly onInvite: (input: CreateWorkspaceInvitationInput) => void;
   /** Invites several addresses typed at once; absent, one address at a time. */
   readonly onInviteMany?: (
     inputs: readonly CreateWorkspaceInvitationInput[],
   ) => void;
+  /** The per-address outcomes of the last batch (`Wsp-Var-Invites-Bulk`); `null` or absent shows no dialog. */
+  readonly inviteResults?: readonly InviteManyOutcome[] | null;
+  readonly onDismissInviteResults?: () => void;
   /** Changes the role a waiting invitation offers; absent shows the role as text. */
   readonly onChangeInvitationRole?: (
     invitation: WorkspaceInvitation,
@@ -188,6 +232,7 @@ function MemberRow({
   pending,
   onChangeRole,
   onActivate,
+  onEditJobTitle,
   onConfirm,
 }: {
   member: WorkspaceMember;
@@ -198,6 +243,8 @@ function MemberRow({
   pending: boolean;
   onChangeRole: WorkspaceMembersSurfaceProps["onChangeRole"];
   onActivate: WorkspaceMembersSurfaceProps["onActivate"];
+  /** Set only when the viewer may edit job titles (Owner and Admin). */
+  onEditJobTitle: ((member: WorkspaceMember) => void) | null;
   onConfirm: (confirmation: Confirmation) => void;
 }) {
   const caps = memberCapabilities(member, viewer, ownerCount);
@@ -207,7 +254,11 @@ function MemberRow({
     caps.roleBlockedBy && caps.roleBlockedBy !== "not-admin"
       ? copy.blocked[caps.roleBlockedBy]
       : null;
-  const hasActions = caps.canRemove || caps.canSuspend || caps.canActivate;
+  // A job title is a profile fact, not a role change: it does not follow the actor-versus-target guard.
+  // Everyone else's title is edited here; your own title has its own profile page.
+  const canEditTitle = onEditJobTitle !== null && !isSelf;
+  const hasActions =
+    caps.canRemove || caps.canSuspend || caps.canActivate || canEditTitle;
 
   return (
     <>
@@ -228,7 +279,7 @@ function MemberRow({
             />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-label text-foreground max-md:line-clamp-2 max-md:whitespace-normal max-md:break-words">
+                <span className="truncate text-label text-foreground @max-2xl:line-clamp-2 @max-2xl:whitespace-normal @max-2xl:break-words">
                   {member.name}
                 </span>
                 {isSelf ? (
@@ -238,14 +289,14 @@ function MemberRow({
                 ) : null}
               </span>
               {member.jobTitle ? (
-                <span className="truncate text-metadata text-muted-foreground max-md:whitespace-normal max-md:break-words">
+                <span className="truncate text-metadata text-muted-foreground @max-2xl:whitespace-normal @max-2xl:break-words">
                   {member.jobTitle}
                 </span>
               ) : null}
               {blockedReason ? (
                 <span
                   id={reasonId}
-                  className="flex items-start gap-1 text-metadata text-muted-foreground max-md:hidden"
+                  className="flex items-start gap-1 text-metadata text-muted-foreground @max-2xl:hidden"
                 >
                   <Info
                     aria-hidden="true"
@@ -306,7 +357,7 @@ function MemberRow({
         </td>
         <td
           role="cell"
-          className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground md:table-cell"
+          className="hidden px-2 py-2.5 align-middle whitespace-nowrap text-metadata tabular-nums text-muted-foreground @2xl:table-cell"
         >
           {member.joinedAt
             ? formatters.date(member.joinedAt, DATE_FORMAT)
@@ -361,6 +412,12 @@ function MemberRow({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                {canEditTitle ? (
+                  <DropdownMenuItem onSelect={() => onEditJobTitle?.(member)}>
+                    <Pencil aria-hidden="true" />
+                    {copy.actions.editJobTitle}
+                  </DropdownMenuItem>
+                ) : null}
                 {caps.canActivate ? (
                   <DropdownMenuItem onSelect={() => onActivate(member)}>
                     {copy.actions.activate}
@@ -393,7 +450,7 @@ function MemberRow({
       {blockedReason ? (
         // On a phone the member column is too narrow for the sentence: it takes the full row width below.
         // The cell above keeps the hidden copy the role is described by.
-        <tr aria-hidden="true" className="md:hidden">
+        <tr aria-hidden="true" className="@2xl:hidden">
           <td colSpan={5} className="px-4 pb-3">
             <span className="flex items-start gap-1 text-metadata text-muted-foreground">
               <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
@@ -406,6 +463,280 @@ function MemberRow({
   );
 }
 
+/**
+ * The Teams and Spaces an invitation puts the person into on acceptance (`Wsp-Var-Invites-Invite`): a picker
+ * of what the inviter may assign, each chosen entry with its role and a remove button. A kind the inviter
+ * holds no action for is not offered and says why; the producer checks every entry again.
+ */
+function InvitationEntries({
+  copy,
+  options,
+  guest,
+  entries,
+  refusals,
+  onChange,
+}: {
+  copy: WorkspaceMembersCopy;
+  options: InvitationEntryOptions;
+  guest: boolean;
+  entries: readonly InvitationEntryInput[];
+  refusals?: ReadonlyMap<string, InvitationEntryRefusalReason>;
+  onChange: (entries: readonly InvitationEntryInput[]) => void;
+}) {
+  const t = copy.invitations.entries;
+  const pickerId = React.useId();
+  const nameOf = (entry: InvitationEntryInput) =>
+    (entry.kind === "team" ? options.teams : options.spaces)?.find(
+      (target) => target.id === entry.targetId,
+    )?.name ?? "";
+  const key = (kind: "team" | "space", id: string) => `${kind}:${id}`;
+  const refusalOf = (entry: InvitationEntryInput) =>
+    refusals?.get(key(entry.kind, entry.targetId));
+  const taken = new Set(
+    entries.map((entry) => key(entry.kind, entry.targetId)),
+  );
+  const choices = [
+    // A Guest is not a Team member, so no Team is offered while Guest is selected.
+    ...(guest ? [] : (options.teams ?? [])).map((target) => ({
+      kind: "team" as const,
+      target,
+    })),
+    ...(options.spaces ?? []).map((target) => ({
+      kind: "space" as const,
+      target,
+    })),
+  ].filter((choice) => !taken.has(key(choice.kind, choice.target.id)));
+  const rolesFor = (kind: "team" | "space") =>
+    kind === "team"
+      ? guest
+        ? (["member"] as const)
+        : (["member", "lead"] as const)
+      : guest
+        ? (["viewer", "member"] as const)
+        : (["viewer", "member", "admin"] as const);
+  const roleLabel = (entry: InvitationEntryInput) =>
+    entry.kind === "team"
+      ? t.teamRoles[entry.role as "member" | "lead"]
+      : t.spaceRoles[entry.role as "viewer" | "member" | "admin"];
+
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-2 border-0 p-0">
+      <legend className="text-label text-foreground">{t.label}</legend>
+      <p className="text-metadata text-muted-foreground">{t.hint}</p>
+      {options.teams === null ? (
+        <p className="text-metadata text-muted-foreground">{t.teamsDenied}</p>
+      ) : null}
+      {options.spaces === null ? (
+        <p className="text-metadata text-muted-foreground">{t.spacesDenied}</p>
+      ) : null}
+      {guest ? (
+        <p className="text-metadata text-muted-foreground">{t.guestNote}</p>
+      ) : null}
+      {entries.length > 0 ? (
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {entries.map((entry) => {
+            const name = nameOf(entry);
+            return (
+              <li
+                key={key(entry.kind, entry.targetId)}
+                className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2"
+              >
+                <span className="min-w-0 flex-1 truncate text-body text-foreground">
+                  <span className="text-muted-foreground">
+                    {entry.kind === "team" ? t.team : t.space} ·{" "}
+                  </span>
+                  {name}
+                </span>
+                <Select
+                  value={entry.role}
+                  onValueChange={(next) =>
+                    onChange(
+                      entries.map((item) =>
+                        item === entry
+                          ? {
+                              ...item,
+                              role: next as InvitationEntryInput["role"],
+                            }
+                          : item,
+                      ),
+                    )
+                  }
+                >
+                  <SelectTrigger
+                    aria-label={formatCopy(t.roleLabel, { name })}
+                    className="w-36 max-md:h-touch!"
+                  >
+                    <SelectValue>{roleLabel(entry)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rolesFor(entry.kind).map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {entry.kind === "team"
+                          ? t.teamRoles[option as "member" | "lead"]
+                          : t.spaceRoles[
+                              option as "viewer" | "member" | "admin"
+                            ]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={formatCopy(t.remove, { name })}
+                  className="max-md:size-touch"
+                  onClick={() =>
+                    onChange(entries.filter((item) => item !== entry))
+                  }
+                >
+                  <X aria-hidden="true" />
+                </Button>
+                {refusalOf(entry) ? (
+                  <p
+                    role="alert"
+                    className="m-0 basis-full text-metadata text-destructive"
+                  >
+                    {formatCopy(
+                      {
+                        "not-active": t.notActive,
+                        "guest-too-privileged": t.guestTooPrivileged,
+                        "guest-cannot-join-team": t.guestCannotJoinTeam,
+                      }[refusalOf(entry) as InvitationEntryRefusalReason],
+                      { name },
+                    )}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      {choices.length > 0 ? (
+        <Select
+          value=""
+          onValueChange={(value) => {
+            const choice = choices.find(
+              (item) => key(item.kind, item.target.id) === value,
+            );
+            if (!choice) return;
+            onChange([
+              ...entries,
+              {
+                kind: choice.kind,
+                targetId: choice.target.id,
+                role: "member",
+              },
+            ]);
+          }}
+        >
+          <SelectTrigger
+            id={pickerId}
+            aria-label={t.addLabel}
+            className="w-full sm:w-64 max-md:h-touch!"
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            <SelectValue placeholder={t.add} />
+          </SelectTrigger>
+          <SelectContent>
+            {choices.map((choice) => (
+              <SelectItem
+                key={key(choice.kind, choice.target.id)}
+                value={key(choice.kind, choice.target.id)}
+              >
+                {choice.kind === "team" ? t.team : t.space} ·{" "}
+                {choice.target.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
+    </fieldset>
+  );
+}
+
+/**
+ * Each address of a batch invitation with what became of it (`Wsp-Var-Invites-Bulk`): the batch is not
+ * all-or-nothing, so some are sent while others are skipped or refused, each for its own reason.
+ */
+// The rule codes a refused initial entry answers with (a Team or Space that is not active, a Guest naming a Team).
+const ENTRY_REFUSAL_CODES = new Set([
+  "Workspaces_Invitation_EntryTargetNotActive",
+  "Workspaces_Invitation_GuestEntryRoleTooPrivileged",
+  "Workspaces_Invitation_InitialEntryInvalid",
+]);
+
+function InviteResultsDialog({
+  copy,
+  results,
+  onClose,
+}: {
+  copy: WorkspaceMembersCopy;
+  results: readonly InviteManyOutcome[] | null;
+  onClose: () => void;
+}) {
+  const labels = copy.invitations.results;
+  const sent = results?.filter((row) => row.outcome === "sent").length ?? 0;
+  const total = results?.length ?? 0;
+  const reason = (row: InviteManyOutcome) =>
+    row.outcome === "sent"
+      ? labels.sent
+      : row.outcome === "already-member"
+        ? labels.alreadyMember
+        : row.outcome === "already-pending"
+          ? labels.alreadyPending
+          : row.outcome === "invalid"
+            ? labels.invalid
+            : row.code === "workspace.guest_invites_off"
+              ? labels.guestInvitesOff
+              : row.code && ENTRY_REFUSAL_CODES.has(row.code)
+                ? labels.entryRefused
+                : labels.refused;
+  return (
+    <AlertDialog
+      open={results !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{labels.title}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {formatCopy(labels.summary, { sent, total })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <ul
+          aria-label={labels.title}
+          className="flex max-h-72 flex-col gap-2 overflow-y-auto"
+        >
+          {(results ?? []).map((row) => (
+            <li
+              key={row.email}
+              className="flex items-start justify-between gap-3 text-body"
+            >
+              <span className="min-w-0 break-all">{row.email}</span>
+              <span
+                className={cn(
+                  "shrink-0 text-metadata",
+                  row.outcome === "sent"
+                    ? "text-success-text"
+                    : "text-danger-text",
+                )}
+              >
+                {reason(row)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <AlertDialogFooter>
+          <AlertDialogAction onClick={onClose}>{labels.done}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function InviteForm({
   copy,
   inviting,
@@ -413,6 +744,9 @@ function InviteForm({
   inviteResetKey,
   onInvite,
   onInviteMany,
+  entryOptions,
+  entryRefusals,
+  onCancel,
 }: Pick<
   WorkspaceMembersSurfaceProps,
   | "copy"
@@ -421,11 +755,16 @@ function InviteForm({
   | "inviteResetKey"
   | "onInvite"
   | "onInviteMany"
->) {
+  | "entryOptions"
+  | "entryRefusals"
+> & { onCancel: () => void }) {
   const [email, setEmail] = React.useState("");
   const [role, setRole] =
     React.useState<CreateWorkspaceInvitationInput["role"]>("member");
   const [touched, setTouched] = React.useState(false);
+  const [entries, setEntries] = React.useState<readonly InvitationEntryInput[]>(
+    [],
+  );
   const emailId = React.useId();
   const roleId = React.useId();
   const errorId = React.useId();
@@ -433,7 +772,28 @@ function InviteForm({
   React.useEffect(() => {
     setEmail("");
     setTouched(false);
+    setEntries([]);
   }, [inviteResetKey]);
+
+  // A Guest is not a Team member (the Team entries are dropped) and never manages (a Space admin entry falls back
+  // to the plain member role).
+  const entriesFor = (
+    chosen: Extract<WorkspaceRole, "member" | "guest">,
+    list: readonly InvitationEntryInput[],
+  ) =>
+    chosen === "guest"
+      ? list
+          .filter((entry) => entry.kind !== "team")
+          .map((entry) =>
+            entry.role === "admin"
+              ? { ...entry, role: "member" as const }
+              : entry,
+          )
+      : list;
+  const initialEntries = entriesFor(role, entries);
+  const withEntries = <T extends CreateWorkspaceInvitationInput>(
+    input: T,
+  ): T => (initialEntries.length > 0 ? { ...input, initialEntries } : input);
 
   const parsed = parseInviteList(email);
   const many = Boolean(onInviteMany);
@@ -462,19 +822,24 @@ function InviteForm({
         setTouched(true);
         if (unusable || inviting) return;
         if (parsed.valid.length === 1 || !onInviteMany) {
-          onInvite({ email: parsed.valid[0]!, role });
+          onInvite(withEntries({ email: parsed.valid[0]!, role }));
           return;
         }
-        onInviteMany(parsed.valid.map((address) => ({ email: address, role })));
+        onInviteMany(
+          parsed.valid.map((address) => withEntries({ email: address, role })),
+        );
       }}
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface-panel p-4"
+      className="flex flex-col gap-4"
       aria-label={copy.invitations.formTitle}
     >
-      <h2 className="text-subheading text-foreground">
-        {copy.invitations.formTitle}
-      </h2>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <Field data-invalid={message ? true : undefined} className="sm:flex-1">
+      <div className="flex flex-col gap-1">
+        <DialogTitle>{copy.invitations.formTitle}</DialogTitle>
+        <DialogDescription>
+          {copy.invitations.dialogDescription}
+        </DialogDescription>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Field data-invalid={message ? true : undefined}>
           <FieldLabel htmlFor={emailId}>
             {copy.invitations.emailLabel}
           </FieldLabel>
@@ -512,13 +877,15 @@ function InviteForm({
             </p>
           ) : null}
         </Field>
-        <Field className="sm:w-40">
+        <Field className="sm:w-48">
           <FieldLabel htmlFor={roleId}>{copy.invitations.roleLabel}</FieldLabel>
           <Select
             value={role}
-            onValueChange={(value) =>
-              setRole(value as CreateWorkspaceInvitationInput["role"])
-            }
+            onValueChange={(value) => {
+              const next = value as CreateWorkspaceInvitationInput["role"];
+              setRole(next);
+              setEntries((list) => entriesFor(next, list));
+            }}
           >
             <SelectTrigger id={roleId} className="w-full max-md:h-touch!">
               <SelectValue />
@@ -532,10 +899,30 @@ function InviteForm({
             </SelectContent>
           </Select>
         </Field>
+      </div>
+      {entryOptions ? (
+        <InvitationEntries
+          copy={copy}
+          options={entryOptions}
+          guest={role === "guest"}
+          entries={initialEntries}
+          refusals={entryRefusals}
+          onChange={setEntries}
+        />
+      ) : null}
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="max-md:h-touch"
+          onClick={onCancel}
+        >
+          {copy.invitations.cancel}
+        </Button>
         <Button
           type="submit"
           disabled={inviting}
-          className="hover:bg-primary/90 max-md:h-touch sm:mt-8"
+          className="hover:bg-primary/90 max-md:h-touch"
         >
           <Mail aria-hidden="true" />
           {inviting ? copy.invitations.sending : copy.invitations.send}
@@ -564,6 +951,15 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
     onTabChange,
   } = props;
   const [filter, setFilter] = React.useState("");
+  const [jobTitleFor, setJobTitleFor] = React.useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = React.useState(false);
+  // The dialog closes when the host clears the form after a send; a failed or partial send leaves it open.
+  const lastResetKey = React.useRef(props.inviteResetKey);
+  React.useEffect(() => {
+    if (lastResetKey.current === props.inviteResetKey) return;
+    lastResetKey.current = props.inviteResetKey;
+    setInviteOpen(false);
+  }, [props.inviteResetKey]);
   const [confirmation, setConfirmation] = React.useState<Confirmation | null>(
     null,
   );
@@ -692,7 +1088,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
               {formatCopy(copy.filter.noResults, { query: filter.trim() })}
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-border bg-surface-panel">
+            <div className="@container overflow-x-auto rounded-lg border border-border bg-surface-panel">
               <table
                 role="table"
                 className="w-full border-collapse text-left max-sm:block"
@@ -716,7 +1112,7 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                     <th
                       role="columnheader"
                       scope="col"
-                      className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground md:table-cell"
+                      className="hidden h-9 px-2 text-metadata font-medium text-muted-foreground @2xl:table-cell"
                     >
                       {copy.columns.joined}
                     </th>
@@ -744,6 +1140,11 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
                       pending={props.pendingMemberIds.has(member.userId)}
                       onChangeRole={props.onChangeRole}
                       onActivate={props.onActivate}
+                      onEditJobTitle={
+                        admin && props.onSaveJobTitle
+                          ? (target) => setJobTitleFor(target.userId)
+                          : null
+                      }
                       onConfirm={setConfirmation}
                     />
                   ))}
@@ -763,14 +1164,31 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
 
   const invitationsPanel = invitations ? (
     <div className="flex flex-col gap-6">
-      <InviteForm
-        copy={copy}
-        inviting={props.inviting}
-        inviteError={props.inviteError}
-        inviteResetKey={props.inviteResetKey}
-        onInvite={props.onInvite}
-        onInviteMany={props.onInviteMany}
-      />
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          className="max-md:h-touch"
+          onClick={() => setInviteOpen(true)}
+        >
+          <Mail aria-hidden="true" />
+          {copy.invitations.invitePeople}
+        </Button>
+      </div>
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <InviteForm
+            copy={copy}
+            inviting={props.inviting}
+            inviteError={props.inviteError}
+            inviteResetKey={props.inviteResetKey}
+            onInvite={props.onInvite}
+            onInviteMany={props.onInviteMany}
+            entryOptions={props.entryOptions}
+            entryRefusals={props.entryRefusals}
+            onCancel={() => setInviteOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
       <section
         aria-labelledby="pending-invitations"
         className="flex flex-col gap-3"
@@ -1045,6 +1463,25 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
       ) : (
         membersPanel
       )}
+
+      <InviteResultsDialog
+        copy={copy}
+        results={props.inviteResults ?? null}
+        onClose={props.onDismissInviteResults ?? (() => undefined)}
+      />
+
+      {props.onSaveJobTitle ? (
+        <EditJobTitleDialog
+          copy={copy}
+          // The live row, so a reload after a stale version brings the newer version in.
+          member={
+            memberList.find((member) => member.userId === jobTitleFor) ?? null
+          }
+          onSave={props.onSaveJobTitle}
+          onReload={props.onRetryMembers}
+          onClose={() => setJobTitleFor(null)}
+        />
+      ) : null}
 
       <AlertDialog
         open={confirmation !== null}

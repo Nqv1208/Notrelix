@@ -12,7 +12,7 @@ public static class LoginEndpoint
         group.MapPublicPost("/login", HandleAsync)
             .WithName("Identity.Auth.Login")
             .Produces<AuthSessionResponse>(StatusCodes.Status200OK, "application/json")
-            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status429TooManyRequests)
+            .ProducesProblems(StatusCodes.Status400BadRequest, StatusCodes.Status401Unauthorized, StatusCodes.Status403Forbidden, StatusCodes.Status429TooManyRequests)
             .WithTags("Identity.Auth")
             .WithSummary("Login with email and password")
             .WithMetadata(new RateLimitPolicyAttribute("AuthCredentialByIp"));

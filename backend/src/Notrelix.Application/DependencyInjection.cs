@@ -100,6 +100,18 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<Notrelix.Application.Features.Chat.Voice.ChatVoiceOptions>,
             Notrelix.Application.Features.Chat.Voice.ChatVoiceOptionsValidator>();
 
+        // Chat calls (SPEC-CHAT-MEDIA-CALLS section 8): the caps, timers and region of the media plane.
+        services.AddOptions<Notrelix.Application.Features.Chat.Calls.ChatCallOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Chat.Calls.ChatCallOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<Notrelix.Application.Features.Chat.Calls.ChatCallOptions>,
+            Notrelix.Application.Features.Chat.Calls.ChatCallOptionsValidator>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallEnding>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallRevocation>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallPermissionRefresh>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallMediaEventApplier>();
+        services.AddScoped<Notrelix.Application.Features.Chat.Calls.Services.ChatCallSweeper>();
+
         // Chat rate limits (UC-CHT-H08): per person and per space, on the shared limiter store.
         services.AddOptions<Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions>()
             .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Chat.RateLimits.ChatRateLimitOptions.SectionName))
@@ -110,6 +122,13 @@ public static class DependencyInjection
         services.AddScoped<
             Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter,
             Notrelix.Application.Features.Chat.RateLimits.ChatRateLimiter>();
+
+        // Invitation email limits: per workspace and per inviter, on the shared limiter store.
+        services.AddOptions<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimitOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimitOptions.SectionName));
+        services.AddScoped<
+            Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter,
+            Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimiter>();
 
         // Scoped execution context: one instance is exposed as both the read and
         // the write contract so the transport can bind the key and the pipeline
@@ -125,6 +144,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Chat.Audit.Services.ChatAuditFacts>();
         services.AddScoped<Notrelix.Application.Features.Chat.Links.Services.ChatResourceViews>();
         services.AddScoped<Notrelix.Application.Features.Chat.Members.Services.ChatWorkspaceExit>();
+        services.AddSingleton<Notrelix.Application.Common.Realtime.Gateway.IRealtimePresenceRegistry, Notrelix.Application.Common.Realtime.Gateway.RealtimePresenceRegistry>();
         services.AddScoped<Notrelix.Application.Features.Chat.Notifications.Services.ChatNotificationHandoff>();
         services.AddScoped<Notrelix.Application.Features.Chat.Public.SpaceViewFacts.IChatSpaceViewFacts, Notrelix.Application.Features.Chat.Notifications.Services.ChatSpaceViewFacts>();
         services.AddScoped<Notrelix.Application.Features.Chat.Public.Digest.IChatDigestFacts, Notrelix.Application.Features.Chat.Notifications.Services.ChatDigestFacts>();
@@ -161,8 +181,20 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Identity.Auth.Services.CredentialScope>();
         services.AddScoped<Notrelix.Application.Features.Identity.Public.DefaultWorkspace.IIdentityDefaultWorkspace,
             Notrelix.Application.Features.Identity.Profiles.Services.IdentityDefaultWorkspaceProvider>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice,
+            Notrelix.Application.Features.Identity.Security.Services.SecurityNoticeService>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.ApiTokens.IIdentityApiTokens,
+            Notrelix.Application.Features.Identity.ApiTokens.Services.IdentityApiTokensProvider>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Public.Access.IIdentityUserAccess,
+            Notrelix.Application.Features.Identity.Users.Services.IdentityUserAccessProvider>();
         services.AddScoped<IAccountMembershipFacts, AccountMembershipFactsProvider>();
         services.AddScoped<IAccountDomainFacts, AccountDomainFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts,
+            Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Sso.IAccountSsoFacts,
+            Notrelix.Application.Features.Accounts.Sso.AccountSsoFactsProvider>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Sso.SsoDomainClaims>();
+        services.AddScoped<Notrelix.Application.Features.Identity.Sso.SsoPendingWrites>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberEmailDisclosure,
             Notrelix.Application.Features.Workspaces.Members.Services.MemberEmailDisclosure>();
 
@@ -184,6 +216,10 @@ public static class DependencyInjection
         services.AddScoped<IBoardItemSummaryBuilder, BoardItemSummaryBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.BoardExportBuilder>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Transfer.ImportPeopleDirectory>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationManageAuthorizer,
+            Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationManageAuthorizer>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Security.IAccountSecurityManageAuthorizer,
+            Notrelix.Application.Features.Accounts.Security.AccountSecurityManageAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Chat.Mentions.Services.IBroadcastAuthorizer,
             Notrelix.Application.Features.Chat.Mentions.Services.BroadcastAuthorizer>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceTargetAuthorizer,
@@ -193,6 +229,7 @@ public static class DependencyInjection
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceReachReader,
             Notrelix.Application.Features.Workspaces.Spaces.Services.SpaceReachReader>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.BoardAccessChangeLog>();
+        services.AddScoped<Notrelix.Application.Features.WorkManagement.Forms.Services.PublicFormScope>();
         services.AddScoped<Notrelix.Application.Features.WorkManagement.Boards.Services.IBoardSpacePlacement,
             Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
@@ -207,6 +244,8 @@ public static class DependencyInjection
             Notrelix.Application.Features.Collaboration.Attachments.Services.ChatMessageAttachmentTransfers>();
         services.AddScoped<Notrelix.Application.Features.Documents.Public.PageViewAccess.IPageViewAccess,
             Notrelix.Application.Features.Documents.Pages.Services.PageViewAccess>();
+        services.AddScoped<Notrelix.Application.Features.Documents.Pages.Services.IPageEditAccess,
+            Notrelix.Application.Features.Documents.Pages.Services.PageEditAccess>();
         services.AddScoped<Notrelix.Application.Features.Documents.Versions.Services.IPageVersionRecorder,
             Notrelix.Application.Features.Documents.Versions.Services.PageVersionRecorder>();
         services.AddScoped<Notrelix.Application.Features.Governance.Public.Access.IResourceAccessSummary,

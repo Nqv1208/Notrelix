@@ -12,7 +12,15 @@ public enum MfaChallengePurpose
     StepUpChangeSecurityIdentity,
     StepUpChangePassword,
     StepUpRevokeOtherSessions,
-    StepUpEnrollMfa
+    StepUpEnrollMfa,
+    StepUpTransferWorkspaceOwnership,
+    StepUpResetMemberMfa,
+
+    /// <summary>
+    /// Sign-in stopped because the person's Account requires MFA and they hold no factor. The token only
+    /// authorizes enrolling one (the two required-enrollment endpoints), then finishes the sign-in.
+    /// </summary>
+    RequiredEnrollment
 }
 
 /// <summary>

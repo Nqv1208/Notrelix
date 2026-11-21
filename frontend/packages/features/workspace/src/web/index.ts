@@ -10,6 +10,7 @@ export {
 export {
   createUseChangeInvitationRole,
   createUseCreateInvitation,
+  createUseInviteMembers,
   createUseResendInvitation,
   createUseRevokeInvitation,
 } from "./hooks/mutations/use-create-invitation";
@@ -18,6 +19,7 @@ export { createUseAcceptInvitation } from "./hooks/mutations/use-accept-invitati
 export { createUseDeclineInvitation } from "./hooks/mutations/use-decline-invitation";
 export { createUseWorkspaceList } from "./query/hooks/use-workspace-list";
 export { createUseWorkspace } from "./query/hooks/use-workspace";
+export { createUseWorkspaceFigures } from "./query/hooks/use-workspace-figures";
 export {
   createUseMyWorkspaceMembership,
   createUseWorkspaceMembers,
@@ -89,6 +91,19 @@ export {
   type WorkspaceScopeState,
   type WorkspaceScopeStateSurfaceProps,
 } from "./shell/workspace-scope-state-surface";
+export {
+  WorkspaceAddressGate,
+  type WorkspaceAddressGateProps,
+} from "./address/workspace-address-gate";
+export {
+  ArchivedWorkspaceBanner,
+  type ArchivedBannerState,
+  type ArchivedWorkspaceBannerProps,
+} from "./shell/archived-workspace-banner";
+export {
+  AccountReadOnlyBanner,
+  type AccountReadOnlyBannerProps,
+} from "./shell/account-read-only-banner";
 
 // ── Inbox (Final-Inbox) ───────────────────────────────────────────
 export { workspaceInboxCatalog } from "./inbox/workspace-inbox.catalog";
@@ -129,6 +144,10 @@ export {
 } from "./home/workspace-home.copy";
 export { useWorkspaceHomeCopy } from "./home/use-workspace-home-copy";
 export * from "./home/home-models";
+export {
+  describeActivity,
+  type HomeActivityView,
+} from "./home/workspace-activity";
 export {
   WorkspaceHomeSurface,
   type HomeAgenda,
@@ -176,7 +195,10 @@ export {
   WorkspaceMembersSurface,
   type MembersTab,
   type WorkspaceMembersSurfaceProps,
+  type InvitationEntryOptions,
+  type InvitationEntryTarget,
 } from "./members/workspace-members-surface";
+export type { JobTitleOutcome } from "./members/edit-job-title-dialog";
 
 // ── Settings (WX-SET-001) ─────────────────────────────────────────
 export { workspaceSettingsCatalog } from "./settings/workspace-settings.catalog";
@@ -187,10 +209,23 @@ export {
 export { useWorkspaceSettingsCopy } from "./settings/use-workspace-settings-copy";
 export {
   WorkspaceSettingsSurface,
+  type AddressCheckResult,
   type SaveStatus,
+  type WorkspaceAddressProps,
   type WorkspaceProfileValues,
   type WorkspaceSettingsSurfaceProps,
 } from "./settings/workspace-settings-surface";
+export {
+  TransferOwnershipFlow,
+  type TransferCandidate,
+  type TransferFailure,
+} from "./settings/transfer-ownership-flow";
+export type {
+  OwnershipProofFactor,
+  OwnershipProofRefusal,
+  OwnershipProofRequest,
+  OwnershipStepUp,
+} from "./settings/ownership-step-up";
 
 // ── Space org tree (OT-5) ─────────────────────────────────────────
 export { workspaceSpacesCatalog } from "./spaces/workspace-spaces.catalog";
@@ -198,10 +233,19 @@ export {
   workspaceSpacesCopy,
   type WorkspaceSpacesCopy,
 } from "./spaces/workspace-spaces.copy";
+export {
+  SpaceTrashSurface,
+  type DeletedSpaceFailure,
+  type DeletedSpaceRow,
+  type SpaceTrashSurfaceProps,
+} from "./spaces/space-trash-surface";
 export { useWorkspaceSpacesCopy } from "./spaces/use-workspace-spaces-copy";
 export {
   createUseSpaceMembers,
+  createUseSpaceMembersPage,
   createUseSpaceTree,
+  createUseSpace,
+  createUseDeletedSpaces,
 } from "./query/hooks/use-spaces";
 export {
   createUseSpaceMutations,
@@ -245,6 +289,7 @@ export type {
 
 // ── Teams (WX-TEAM-001) ───────────────────────────────────────────
 export {
+  createUseDeletedTeams,
   createUseTeam,
   createUseTeamMembers,
   createUseTeamsMembers,
@@ -284,6 +329,7 @@ export {
   type AddTeamMemberInput,
   type WorkspaceTeamSurfaceProps,
 } from "./teams/workspace-team-surface";
+export type { TeamDeleteOutcome } from "./teams/delete-team-dialog";
 export {
   WorkspaceSecuritySurface,
   type WorkspaceSecurityView,

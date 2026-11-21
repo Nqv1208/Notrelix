@@ -20,6 +20,18 @@ import { rememberMarkTone } from "../model/navigation";
 
 type SpaceTreePage = OperationResponse<"Workspaces.Spaces.GetSpaceTree", 200>;
 type SpaceTreeNodeDto = NonNullable<SpaceTreePage["items"]>[number];
+type DeletedSpaceDto = NonNullable<
+  OperationResponse<"Workspaces.Spaces.GetDeletedSpaces", 200>
+>[number];
+
+/** A deleted Space inside its restore window (ISO instants). */
+export interface DeletedSpace {
+  readonly id: string;
+  readonly name: string;
+  readonly parentSpaceId: string | null;
+  readonly deletedAt: string;
+  readonly restorableUntil: string;
+}
 type SpaceDetailDto = OperationResponse<"Workspaces.Spaces.GetSpace", 200>;
 type SpaceMembersPage = OperationResponse<
   "Workspaces.Spaces.GetSpaceMembers",
@@ -62,6 +74,7 @@ export interface SpacesEndpoints {
     spaceArchive: (workspaceId: string, spaceId: string) => string;
     spaceUnarchive: (workspaceId: string, spaceId: string) => string;
     spaceRestore: (workspaceId: string, spaceId: string) => string;
+    spacesDeleted: (workspaceId: string) => string;
     spaceMove: (workspaceId: string, spaceId: string) => string;
     spaceMembers: (workspaceId: string, spaceId: string) => string;
     spaceMember: (
@@ -121,6 +134,12 @@ export function parseSpaceMembers(items: unknown): SpaceMemberEntry[] {
   return entries;
 }
 
+/** The fields the single-Space read owns; the tree keeps position and my access. */
+export type SpaceDetail = Pick<
+  SpaceNode,
+  "name" | "description" | "type" | "visibility" | "isArchived" | "version"
+>;
+
 export interface CreateSpaceInput {
   readonly name: string;
   readonly type: SpaceType;
@@ -144,6 +163,24 @@ const TREE_PAGE_SIZE = 200;
 
 /** Members are read 200 entries at a time (the producer's largest page). */
 const MEMBER_PAGE_SIZE = 200;
+
+/** The members tab asks for 50 entries at a time (the producer's default page). */
+export const SPACE_MEMBERS_TAB_PAGE_SIZE = 50;
+
+/** One page of a Space's entries; the filters keep only matching entries before the page is cut. */
+export interface SpaceMembersPageQuery {
+  readonly role?: SpaceRole | null;
+  readonly kind?: SpaceSubjectType | null;
+  readonly cursor?: string | null;
+  readonly limit?: number;
+}
+
+export interface SpaceMembersPageResult {
+  /** Entries in the producer's subject id order, Admins first within this page. */
+  readonly entries: SpaceMemberEntry[];
+  /** Pass back as `cursor` for the next page; `null` on the last page. */
+  readonly nextCursor: string | null;
+}
 
 /** The order the members tab shows people in: Admins first, then Members, then Viewers. */
 const ROLE_RANK: Record<SpaceRole, number> = { Admin: 3, Member: 2, Viewer: 1 };
@@ -181,6 +218,23 @@ export function createSpacesService(
       return nodes;
     },
 
+    /** The live record of one Space; an outsider and a missing id both answer NotFound (thrown). */
+    async get(workspaceId: string, spaceId: string): Promise<SpaceDetail> {
+      const raw = await api.get<SpaceDetailDto>(e.space(workspaceId, spaceId));
+      const type = parseSpaceType(raw?.spaceType);
+      const visibility = parseSpaceVisibility(raw?.visibility);
+      if (!raw?.id || !type || !visibility)
+        throw new Error("The Space record is incomplete.");
+      return {
+        name: raw.name ?? "",
+        description: raw.description ?? null,
+        type,
+        visibility,
+        isArchived: raw.isArchived === true,
+        version: typeof raw.version === "number" ? raw.version : 0,
+      };
+    },
+
     /**
      * Reads every page of the direct entries, then orders them by role (Admins
      * first). The producer pages them in subject id order.
@@ -202,6 +256,32 @@ export function createSpacesService(
       return parseSpaceMembers(items).sort(
         (a, b) => ROLE_RANK[b.role] - ROLE_RANK[a.role],
       );
+    },
+
+    /**
+     * One page of the direct entries, narrowed by role and kind on the producer. Admins are listed
+     * first within the page, so a later page never moves a row above one already shown.
+     */
+    async getMembersPage(
+      workspaceId: string,
+      spaceId: string,
+      query: SpaceMembersPageQuery = {},
+    ): Promise<SpaceMembersPageResult> {
+      const params = new URLSearchParams({
+        limit: String(query.limit ?? SPACE_MEMBERS_TAB_PAGE_SIZE),
+      });
+      if (query.role) params.set("role", query.role);
+      if (query.kind) params.set("kind", query.kind);
+      if (query.cursor) params.set("cursor", query.cursor);
+      const page: SpaceMembersPage = await api.get<SpaceMembersPage>(
+        `${e.spaceMembers(workspaceId, spaceId)}?${params.toString()}`,
+      );
+      return {
+        entries: parseSpaceMembers(page?.items).sort(
+          (a, b) => ROLE_RANK[b.role] - ROLE_RANK[a.role],
+        ),
+        nextCursor: page?.nextCursor ?? null,
+      };
     },
 
     /**
@@ -312,9 +392,32 @@ export function createSpacesService(
       await api.post<void>(e.spaceUnarchive(workspaceId, spaceId), body);
     },
 
-    /** Soft-deletes a Space. The producer takes no expected version; it refuses a Space with content. */
-    async remove(workspaceId: string, spaceId: string): Promise<void> {
-      await api.delete<void>(e.space(workspaceId, spaceId));
+    /**
+     * Soft-deletes a Space; the producer checks `expectedVersion` (sent in the query string) and refuses a
+     * Space with content. A deleted Space can be restored for 30 days.
+     */
+    async remove(
+      workspaceId: string,
+      spaceId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      await api.delete<void>(
+        `${e.space(workspaceId, spaceId)}?expectedVersion=${encodeURIComponent(String(expectedVersion))}`,
+      );
+    },
+
+    /** The deleted Spaces that can still be restored, newest first (workspace Owner or Admin). */
+    async listDeleted(workspaceId: string): Promise<DeletedSpace[]> {
+      const rows = await api.get<DeletedSpaceDto[]>(
+        e.spacesDeleted(workspaceId),
+      );
+      return (rows ?? []).map((row) => ({
+        id: row.id ?? "",
+        name: row.name ?? "",
+        parentSpaceId: row.parentSpaceId ?? null,
+        deletedAt: row.deletedAt ?? "",
+        restorableUntil: row.restorableUntil ?? "",
+      }));
     },
 
     /** Restores a deleted Space under a live parent. The producer takes no expected version. */

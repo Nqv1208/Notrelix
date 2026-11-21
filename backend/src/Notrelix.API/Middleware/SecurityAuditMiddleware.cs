@@ -136,6 +136,7 @@ public static class SecuritySensitiveRoutes
         "forgot-password",
         "reset-password",
         "mfa/verify",
+        "mfa/required-enrollment/complete",
     };
 
     // Authenticated credential re-verification and credential changes.

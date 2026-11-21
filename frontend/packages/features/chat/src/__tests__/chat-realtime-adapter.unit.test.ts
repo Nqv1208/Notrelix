@@ -188,6 +188,75 @@ describe("ChatRealtimeAdapter: channel frames", () => {
     expect(ids()).toEqual([1, 2, 3, 4]);
   });
 
+  it("a contentOmitted created frame holds the row back (no blank bubble), fetches it by sequence and renders the full text", async () => {
+    const { adapter, context, listMessages, read, ids } = setup([
+      message(1),
+      message(2),
+    ]);
+    const full = "long text ".repeat(200);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    listMessages.mockImplementationOnce(async () => {
+      await gate;
+      return page([{ ...message(3), content: full }]);
+    });
+    const handled = adapter.validateAndHandle(
+      envelope(
+        "chat.message.created",
+        createMessagePayload(3, { content: null, contentOmitted: true }),
+      ),
+      context,
+    );
+    await Promise.resolve();
+    // While the fetch is in flight no row exists, so no frame can show an empty bubble.
+    expect(ids()).toEqual([1, 2]);
+    expect(
+      read()
+        .pages.flatMap((p) => p.items)
+        .filter((m) => !m.content),
+    ).toEqual([]);
+    release();
+    await handled;
+    expect(listMessages.mock.calls[0]![2]).toEqual({ after: 2 });
+    expect(ids()).toEqual([1, 2, 3]);
+    expect(read().pages[0]!.items[2]!.content).toBe(full);
+  });
+
+  it("a contentOmitted edit keeps the old text until the fetch brings the new full text", async () => {
+    const { adapter, context, listMessages, read } = setup([
+      message(1),
+      message(2),
+    ]);
+    const full = "edited long text ".repeat(100);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    listMessages.mockImplementationOnce(async () => {
+      await gate;
+      return page([{ ...message(2), content: full, version: 2, edited: true }]);
+    });
+    const handled = adapter.validateAndHandle(
+      envelope(
+        "chat.message.updated",
+        createMessagePayload(2, {
+          content: null,
+          contentOmitted: true,
+          version: 2,
+          editedAt: AT,
+        }),
+      ),
+      context,
+    );
+    await Promise.resolve();
+    expect(read().pages[0]!.items[1]!.content).toBe("text 2");
+    release();
+    await handled;
+    expect(read().pages[0]!.items[1]!.content).toBe(full);
+  });
+
   it("a contentOmitted edit fetches the message's range and does not patch with null text", async () => {
     const { adapter, context, listMessages, read } = setup([
       message(1),
@@ -280,6 +349,36 @@ describe("ChatRealtimeAdapter: channel frames", () => {
       context,
     );
     expect(queryClient.getQueryData<PendingMessage[]>(pendingKey)).toEqual([]);
+  });
+
+  it("a created frame of an own send that no loaded window holds keeps the pending bubble", async () => {
+    // The window on screen is an older one (newer pages behind it): the frame cannot join it.
+    const { adapter, context, queryClient } = setup([message(1)], true);
+    const pendingKey = chatQueryKeys.pending(WS, CH);
+    const entry: PendingMessage = {
+      clientMessageId: "cmid-9",
+      spaceId: CH,
+      content: "mine",
+      authorId: "me",
+      createdAt: AT,
+      status: "sending",
+      failure: null,
+    };
+    queryClient.setQueryData<PendingMessage[]>(pendingKey, [entry]);
+    await adapter.validateAndHandle(
+      envelope(
+        "chat.message.created",
+        createMessagePayload(9, {
+          id: "m-9",
+          authorId: "me",
+          clientMessageId: "cmid-9",
+        }),
+      ),
+      context,
+    );
+    expect(queryClient.getQueryData<PendingMessage[]>(pendingKey)).toEqual([
+      entry,
+    ]);
   });
 
   describe("a send swaps its pending bubble for the stored message in place", () => {
@@ -423,6 +522,28 @@ describe("ChatRealtimeAdapter: unread frames", () => {
       totalUnread: 3,
       totalMentions: 1,
     });
+  });
+
+  it("an unread frame of the channel the reader is looking at is skipped, so no badge flashes", async () => {
+    const { adapter, context, queryClient } = setup([message(1)]);
+    queryClient.setQueryData(chatQueryKeys.unread(WS), summary);
+    queryClient.setQueryData(chatQueryKeys.viewing(WS), CH);
+    await adapter.validateAndHandle(
+      envelope("chat.unread.changed", { spaceId: CH, unread: 3, mentions: 1 }),
+      context,
+    );
+    expect(
+      queryClient.getQueryData<ChatUnreadSummary>(chatQueryKeys.unread(WS)),
+    ).toBe(summary);
+    // Another channel still counts.
+    queryClient.setQueryData(chatQueryKeys.viewing(WS), "space-other");
+    await adapter.validateAndHandle(
+      envelope("chat.unread.changed", { spaceId: CH, unread: 3, mentions: 1 }),
+      context,
+    );
+    expect(
+      queryClient.getQueryData<ChatUnreadSummary>(chatQueryKeys.unread(WS)),
+    ).toMatchObject({ totalUnread: 3 });
   });
 
   it("a frame for a space the summary does not list refetches the summary and the channel list", async () => {

@@ -27,6 +27,13 @@ const callbacks = {
   onDelete: noop,
   onReload: noop,
   onRetryDefaults: noop,
+  ownershipStepUp: {
+    request: async () => ({ factor: "code" as const, challengeToken: "c" }),
+    withCode: async () => "proof",
+    withPassword: async () => "proof",
+  },
+  onTransfer: async () => null,
+  onInviteForTransfer: noop,
 };
 
 export const Default: Story = {

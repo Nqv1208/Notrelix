@@ -222,6 +222,47 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         invitation.Status.Should().Be(WorkspaceInvitationStatus.Pending);
     }
 
+    // ── Invitation email rate limit ──────────────────────────────────────────
+
+    private static Mock<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter> DeniedLimiter()
+    {
+        var limiter = new Mock<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>();
+        limiter.Setup(l => l.RequireAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Notrelix.Application.Common.Exceptions.TooManyRequestsException("slow down", "workspaces.invitation.rate-limited", TimeSpan.FromSeconds(30)));
+        return limiter;
+    }
+
+    [Fact]
+    public async Task Resend_OverTheInvitationLimit_IsRefusedAndSendsNoEmail()
+    {
+        var invitation = ResourceInvitation(invitedBy: TestUserId);
+        SetupInvitations(invitation);
+        SetupMembers(CreateMember(WorkspaceRole.Admin));
+        var handler = new ResendInvitationCommandHandler(
+            DbContextMock.Object, RequestContextMock.Object, _tokens.Object, _encryptor.Object,
+            _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object, DeniedLimiter().Object);
+
+        var act = () => handler.Handle(new ResendInvitationCommand(TestWorkspaceId, invitation.Id), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+        _published.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Invite_OverTheInvitationLimit_IsRefusedAndSendsNoEmail()
+    {
+        var handler = new InviteMemberCommandHandler(
+            DbContextMock.Object, _actors.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
+            _tokens.Object, _encryptor.Object, _events.Object,
+            new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
+            _memberEmails.Object, DeniedLimiter().Object, new Notrelix.Testing.Application.Fakes.FakeResourceVisibility());
+
+        var act = () => handler.Handle(new InviteMemberCommand(TestWorkspaceId, "a@example.com", WorkspaceRole.Member), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.TooManyRequestsException>();
+        _published.Should().BeEmpty();
+    }
+
     // ── Workspace Owner/Admin resend keeps the resource email ────────────────
 
     [Fact]
@@ -232,7 +273,8 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         SetupMembers(CreateMember(WorkspaceRole.Admin));
         var handler = new ResendInvitationCommandHandler(
             DbContextMock.Object, RequestContextMock.Object, _tokens.Object, _encryptor.Object,
-            _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object);
+            _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object,
+            Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
 
         var result = await handler.Handle(new ResendInvitationCommand(TestWorkspaceId, invitation.Id), CancellationToken.None);
 
@@ -252,7 +294,8 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         SetupMembers(CreateMember(WorkspaceRole.Admin));
         var handler = new ResendInvitationCommandHandler(
             DbContextMock.Object, RequestContextMock.Object, _tokens.Object, _encryptor.Object,
-            _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object);
+            _events.Object, DateTimeProviderMock.Object, _actors.Object, _facts.Object,
+            Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
 
         await handler.Handle(new ResendInvitationCommand(TestWorkspaceId, invitation.Id), CancellationToken.None);
 
@@ -282,6 +325,43 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
         published.RecipientEmail.Should().Be("guest@example.com");
     }
 
+    [Theory]
+    [InlineData("Commenter")]
+    [InlineData("Editor")]
+    [InlineData("Manager")]
+    [InlineData("Owner")]
+    public async Task InviteGuestToResource_AboveViewer_IsRejectedWithAStableRuleCode_AndQueuesNothing(string level)
+    {
+        var handler = new InviteGuestToResourceCommandHandler(
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _tokens.Object,
+            _encryptor.Object, _events.Object, _audit.Object, _actors.Object, _facts.Object);
+
+        var act = () => handler.Handle(
+            new InviteGuestToResourceCommand(BoardKind, BoardId, "guest@example.com", level), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Invitation_ResourceLevelAboveViewer);
+        _published.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task InviteGuestToResource_ForABoardTheTenantCannotResolve_IsNotFound_AndQueuesNothing()
+    {
+        // The facts adapter hides archived and deleted boards (GOV-033): a missing title is a NotFound, never an invite.
+        var archivedBoardId = Guid.CreateVersion7();
+        _facts.Setup(f => f.ResolveTitleAsync(BoardKind, archivedBoardId, TestWorkspaceId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
+        var handler = new InviteGuestToResourceCommandHandler(
+            DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object, _tokens.Object,
+            _encryptor.Object, _events.Object, _audit.Object, _actors.Object, _facts.Object);
+
+        var act = () => handler.Handle(
+            new InviteGuestToResourceCommand(BoardKind, archivedBoardId, "guest@example.com", "Viewer"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+        _published.Should().BeEmpty();
+    }
+
     // ── Admin is not invitable ───────────────────────────────────────────────
 
     [Fact]
@@ -291,7 +371,9 @@ public class ResourceInvitationLifecycleTests : WorkspaceHandlerTestBase
             DbContextMock.Object, _actors.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
             _tokens.Object, _encryptor.Object, _events.Object,
             new InvitationInitialEntries(DbContextMock.Object, new Mock<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore>().Object),
-            _memberEmails.Object);
+            _memberEmails.Object,
+            Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>(),
+            new Notrelix.Testing.Application.Fakes.FakeResourceVisibility());
 
         var act = () => handler.Handle(
             new InviteMemberCommand(TestWorkspaceId, "a@example.com", WorkspaceRole.Admin), CancellationToken.None);

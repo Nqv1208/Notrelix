@@ -325,7 +325,7 @@ Principal with ManageBoardPermission / ManagePagePermission on a resource
 - the stored subject of the resulting grant is the guest's User identity, so Governance keeps evaluating only User and Team subjects (GOV §16); an `ExternalEmail` subject is never created by this flow;
 - guest or member is a fact of the membership, never inferred from the email domain (§22).
 - the resource invitation is `POST /api/v1/resources/{resourceType}/{resourceId}/invitations` (Board or Page only); it is authorized as `ManageBoardPermission` / `ManagePagePermission` on the resource and the requested level may not exceed the inviter's own level; a level above Editor is rejected when the invitation is created;
-- naming initial Team or Space entries on a Workspace invitation is authorized as `ManageTeams` (Team entries) and `ManageSpaces` (Space entries), which are Workspace Owner/Admin by default (GOV-028); an invitation naming both kinds needs both actions, so a custom rule granting only one of them does not authorize it; a Guest invitation cannot name a Team lead or a Space admin entry;
+- naming initial Team or Space entries on a Workspace invitation is authorized as `ManageTeams` (Team entries) and `ManageSpaces` (Space entries), which are Workspace Owner/Admin by default (GOV-028); an invitation naming both kinds needs both actions, so a custom rule granting only one of them does not authorize it; a Guest invitation cannot name any Team entry (a Guest is not a Team member, section 46; refused per entry with the reason `guest-cannot-join-team`) or a Space admin entry, and an invitation already in flight that names a Team for a Guest skips that Team entry at acceptance and records it in the audit trail (`AcceptInvitationEntriesSkipped`);
 - issuing an invitation, adding a member directly, and removing, suspending or activating a member are Workspace Owner and Admin actions (decided 2026-10-23); an Admin adds only a member or guest and acts only on member and guest targets, never on an Owner or another Admin (rule codes `Workspaces_Member_ActorCannotAssignRole`, `Workspaces_Member_ActorCannotActOnMember`; matrix in `governance.md` section 44.1);
 - a Workspace invitation offers `member` or `guest` only (decided 2026-10-23): `admin` is granted by changing the role of an existing member after they join, never by an invitation. Creating an invitation or changing a pending invitation's role to `admin` is rejected with rule code `Workspaces_Invitation_CannotInviteAsAdmin`. An Admin invitation issued before this rule stays as stored: it can still be accepted, resent or revoked, and its role can be lowered to member or guest, but never kept or raised to admin through a role change; no data migration is needed;
 - the issuer of a resource invitation may resend and revoke their own: `POST /api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}/resend` and `DELETE /api/v1/resources/{resourceType}/{resourceId}/invitations/{invitationId}`. They are authorized as `ManageBoardPermission` / `ManagePagePermission` on the resource, so an issuer who lost that permission is denied, and they act only on an invitation they issued for that exact resource (another member's invitation, or one for another resource, is not found). A Workspace Owner/Admin resends or revokes any invitation through the workspace endpoints. A resend replaces the token (the old link stops working) and a revoked invitation can no longer be accepted or resent;
@@ -586,6 +586,10 @@ Creating a Team takes an `Idempotency-Key`: a retry returns the Team the first a
 the same key is refused. The Team list (`GET .../teams`) pages by cursor in name order (id on ties), 50 a page by default
 and at most 200, and includes archived Teams.
 
+A Team name is trimmed, up to 160 characters, and unique, case-insensitively, among the non-deleted Teams of the
+Workspace (`Workspaces_Team_DuplicateName`), on create and on rename. Creating and renaming lock the Workspace row until
+the write commits, so two writes of one name at the same time make one Team.
+
 # 46. WSP-014 — Team membership requires Workspace membership compatibility
 
 A Team belongs to a Workspace.
@@ -593,6 +597,9 @@ A Team belongs to a Workspace.
 A Team Member should reference a principal/member compatible with that Workspace.
 
 Do not allow cross-Workspace Team membership through raw IDs.
+
+A Guest of the Workspace is not a Team member: adding one is refused (`Workspaces_Team_GuestCannotJoin`), and a person who
+is no member of the Workspace is NotFound.
 
 # 47. Team role
 

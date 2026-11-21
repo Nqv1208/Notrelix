@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Notrelix.Application.Features.WorkManagement.BoardFields.Commands.CreateBoardField;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Commands.UpdateBoardItemFieldValue;
+using Notrelix.Application.Features.WorkManagement.BoardItems.Queries.GetBoardItem;
+using Notrelix.Domain.Workspaces.Members;
+using System.Text.Json;
 using Notrelix.Application.Features.WorkManagement.Ordering;
 using Notrelix.Domain.SharedKernel;
 using Notrelix.Domain.SharedKernel.Ordering;
@@ -100,13 +103,56 @@ public sealed class RelationFieldIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
     }
 
+    [Fact]
+    public async Task AViewerWhoCannotReadTheTargetBoard_GetsALockedLinkAndNoTitleOrKey()
+    {
+        var scene = await SeedAsync(BoardVisibility.Private);
+        var member = await _host.AddMemberAsync(scene.Stack, WorkspaceRole.Member, "Viewer");
+        await StoreLinkAsync(scene);
+
+        using var viewer = _host.CreateProvider(scene.Stack.AccountId, member);
+        var dto = (await OrgTreeTestHost.QueryAsync(viewer, new GetBoardItemQuery(scene.SourceItemId)));
+
+        var link = dto.RelationLinks![scene.FieldId.ToString()].Should().ContainSingle().Subject;
+        link.Locked.Should().BeTrue();
+        link.Title.Should().BeNull();
+        link.ItemKey.Should().BeNull();
+        JsonSerializer.Serialize(dto).Should().NotContain("Target item", "a viewer who cannot read the target board never sees its titles");
+    }
+
+    [Fact]
+    public async Task AViewerWhoCanReadTheTargetBoard_SeesTheTitle_AndATrashedTargetIsHidden()
+    {
+        var scene = await SeedAsync();
+        await StoreLinkAsync(scene);
+        using var owner = Provider(scene.Stack);
+
+        var shown = (await OrgTreeTestHost.QueryAsync(owner, new GetBoardItemQuery(scene.SourceItemId)));
+        shown.RelationLinks![scene.FieldId.ToString()].Should().ContainSingle().Which.Title.Should().Be("Target item");
+
+        await _host.WithSystemContextAsync(async c =>
+        {
+            (await c.BoardItems.SingleAsync(i => i.Id == scene.TargetItemId)).Delete(scene.Stack.OwnerId, OrgTreeTestHost.BaseTime);
+        });
+        var hidden = (await OrgTreeTestHost.QueryAsync(owner, new GetBoardItemQuery(scene.SourceItemId)));
+        hidden.RelationLinks![scene.FieldId.ToString()].Should().BeEmpty();
+    }
+
+    private Task StoreLinkAsync(Scene scene) =>
+        _host.WithSystemContextAsync(c =>
+        {
+            c.BoardItemValues.Add(BoardItemValue.Create(scene.SourceItemId, scene.FieldId,
+                FieldValue.Create(JsonValue.Create(JsonSerializer.Serialize(new[] { scene.TargetItemId }))!)));
+            return Task.CompletedTask;
+        });
+
     private sealed record Scene(OrgStack Stack, Guid SourceBoardId, Guid OtherBoardId, Guid SourceItemId, Guid TargetItemId, Guid FieldId);
 
-    private async Task<Scene> SeedAsync()
+    private async Task<Scene> SeedAsync(BoardVisibility targetVisibility = BoardVisibility.Workspace)
     {
         var stack = await _host.SeedWorkspaceAsync();
         var source = await _host.SeedBoardAsync(stack, "Source", BoardVisibility.Workspace);
-        var target = await _host.SeedBoardAsync(stack, "Target", BoardVisibility.Workspace);
+        var target = await _host.SeedBoardAsync(stack, "Target", targetVisibility);
         var other = await _host.SeedBoardAsync(stack, "Other", BoardVisibility.Workspace);
         var sourceItem = await SeedItemAsync(stack, source, "Source item");
         var targetItem = await SeedItemAsync(stack, target, "Target item");

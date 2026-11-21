@@ -26,9 +26,13 @@ export const AUTH_FLOW_PATHS = {
   login: "/auth/login",
   register: "/auth/register",
   mfaVerify: "/auth/mfa/verify",
+  mfaRequiredEnrollmentStart: "/auth/mfa/required-enrollment/start",
+  mfaRequiredEnrollmentComplete: "/auth/mfa/required-enrollment/complete",
   /** The browser is sent here (a redirect), never called with XHR. */
   oauthStart: (provider: string) =>
     `/auth/oauth/${encodeURIComponent(provider)}/start`,
+  /** `POST`: answers the provider's authorization address, which the browser is then sent to. */
+  ssoStart: "/auth/sso/start",
   forgotPassword: "/auth/forgot-password",
   resetPassword: "/auth/reset-password",
   confirmEmail: "/auth/email-verification/confirm",
@@ -47,6 +51,7 @@ interface IdentifyWire {
     readonly orgInitials?: string | null;
     readonly provider?: string | null;
     readonly providerLabel?: string | null;
+    readonly enforced?: boolean | null;
   } | null;
 }
 
@@ -59,6 +64,8 @@ export interface IdentifyResult {
     readonly provider: string;
     /** "Microsoft Entra". */
     readonly providerLabel: string;
+    /** The company requires single sign-on: only the account Owner can still use a password. */
+    readonly enforced: boolean;
   } | null;
 }
 
@@ -80,7 +87,20 @@ export type LoginResult =
       /** How the second step is answered ("totp"); the page asks for the app's digits or a recovery code. */
       readonly method: string | null;
       readonly expiresAt: string | null;
+    }
+  | {
+      /** The Account requires two-step verification and the person has none: no session, only this token (kept in memory). */
+      readonly kind: "enroll";
+      readonly enrollmentToken: string;
+      readonly expiresAt: string | null;
     };
+
+/** The authenticator the required enrolment adds: its key and setup address, shown once. */
+export interface RequiredEnrollment {
+  readonly methodId: string;
+  readonly secret: string;
+  readonly otpAuthUri: string;
+}
 
 /** `Identity.Auth.Login` / `Identity.Mfa.VerifyChallenge`: `AuthSessionResponse`. */
 interface AuthSessionWire {
@@ -95,6 +115,9 @@ interface AuthSessionWire {
   readonly mfaChallengeToken?: string | null;
   readonly mfaMethod?: string | null;
   readonly mfaExpiresAt?: string | null;
+  readonly mfaEnrollmentRequired?: boolean;
+  readonly mfaEnrollmentToken?: string | null;
+  readonly recoveryCodes?: readonly string[] | null;
 }
 
 function toUser(wire: AuthSessionWire["user"]): User {
@@ -113,6 +136,12 @@ export function toLoginResult(wire: AuthSessionWire): LoginResult {
       kind: "mfa",
       challengeToken: wire.mfaChallengeToken,
       method: wire.mfaMethod ?? null,
+      expiresAt: wire.mfaExpiresAt ?? null,
+    };
+  if (wire.mfaEnrollmentRequired && wire.mfaEnrollmentToken)
+    return {
+      kind: "enroll",
+      enrollmentToken: wire.mfaEnrollmentToken,
       expiresAt: wire.mfaExpiresAt ?? null,
     };
   return {
@@ -266,6 +295,7 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
               orgInitials: sso.orgInitials ?? "",
               provider: sso.provider ?? "",
               providerLabel: sso.providerLabel ?? "",
+              enforced: sso.enforced === true,
             },
           }
         : { method: "password", sso: null };
@@ -299,6 +329,51 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
       );
     },
     /**
+     * Starts the authenticator the Account requires. The token is the login's (in memory only);
+     * after a provider sign-in it is the backend's httpOnly cookie, so `null` sends no body token.
+     */
+    async startRequiredEnrollment(
+      enrollmentToken: string | null,
+    ): Promise<RequiredEnrollment> {
+      const wire = await api.post<{
+        mfaMethodId?: string;
+        secret?: string | null;
+        otpAuthUri?: string | null;
+      }>(
+        AUTH_FLOW_PATHS.mfaRequiredEnrollmentStart,
+        enrollmentToken ? { enrollmentToken } : {},
+        QUIET,
+      );
+      return {
+        methodId: wire.mfaMethodId ?? "",
+        secret: wire.secret ?? "",
+        otpAuthUri: wire.otpAuthUri ?? "",
+      };
+    },
+    /** The first code opens the session; the recovery codes come back once. */
+    async completeRequiredEnrollment(data: {
+      enrollmentToken: string | null;
+      methodId: string;
+      code: string;
+    }): Promise<SessionResult & { readonly recoveryCodes: readonly string[] }> {
+      const { enrollmentToken, methodId, code } = data;
+      const wire = await api.post<AuthSessionWire>(
+        AUTH_FLOW_PATHS.mfaRequiredEnrollmentComplete,
+        {
+          ...(enrollmentToken ? { enrollmentToken } : {}),
+          mfaMethodId: methodId,
+          // Authenticator apps group the digits ("123 456"); the backend wants six.
+          code: code.replace(/\s+/g, ""),
+        },
+        QUIET,
+      );
+      return {
+        user: toUser(wire.user),
+        expiresAt: wire.expiresAt ?? null,
+        recoveryCodes: wire.recoveryCodes ?? [],
+      };
+    },
+    /**
      * Where the browser goes to sign in with Google or Microsoft (path under
      * the API base). The provider's page and the way back are the backend's:
      * it sets the session cookies and redirects to the web `/auth/callback`
@@ -310,6 +385,25 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
       return isSafeReturnPath(returnUrl)
         ? `${path}?returnUrl=${encodeURIComponent(returnUrl)}`
         : path;
+    },
+    /**
+     * Starts the company sign-in for an email whose domain routes to a provider. The answer is the
+     * provider's address; the way back is the backend's callback, which sets the session cookies and
+     * redirects like the Google one (`/auth/callback`, `/sign-in?step=mfa`, or `/sign-in?error=<code>`).
+     * Not routable (unverified domain, no provider, provider off) answers 404 `identity.sso.unavailable`.
+     */
+    async startSso(
+      email: string,
+      returnUrl?: string | null,
+    ): Promise<{ authorizationUrl: string }> {
+      const wire = await api.post<{ authorizationUrl?: unknown }>(
+        AUTH_FLOW_PATHS.ssoStart,
+        isSafeReturnPath(returnUrl) ? { email, returnUrl } : { email },
+        QUIET,
+      );
+      if (typeof wire?.authorizationUrl !== "string" || !wire.authorizationUrl)
+        throw new Error("sso.start: no authorization address");
+      return { authorizationUrl: wire.authorizationUrl };
     },
     forgotPassword(email: string) {
       return api.post<void>(AUTH_FLOW_PATHS.forgotPassword, { email }, QUIET);

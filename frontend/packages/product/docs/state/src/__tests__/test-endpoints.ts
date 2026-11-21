@@ -5,11 +5,14 @@ export const testEndpoints: PageApiEndpoints = {
   pages: {
     list: (workspaceId) => `/workspaces/${workspaceId}/pages`,
     detail: (pageId) => `/pages/${pageId}`,
+    duplicate: (workspaceId, pageId) =>
+      `/workspaces/${workspaceId}/pages/${pageId}/duplicate`,
     breadcrumb: (pageId) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId) => `/pages/${pageId}/blocks`,
     comments: (pageId) => `/pages/${pageId}/comments`,
     commentsPage: (pageId) => `/pages/${pageId}/comments/page`,
     history: (pageId) => `/pages/${pageId}/history`,
+    activity: (pageId) => `/pages/${pageId}/activity`,
     search: (workspaceId) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId) => `/pages/${pageId}/move`,
     moveToSpace: (pageId) => `/pages/${pageId}/move-to-space`,
@@ -26,6 +29,10 @@ export const testEndpoints: PageApiEndpoints = {
     list: (workspaceId) => `/workspaces/${workspaceId}/page-templates`,
     createPage: (workspaceId, templateId) =>
       `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
+    detail: (workspaceId, templateId) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}`,
+    archive: (workspaceId, templateId) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/archive`,
   },
   resourcePermissions: {
     list: (kind, id) => `/resources/${kind}/${id}/permissions`,

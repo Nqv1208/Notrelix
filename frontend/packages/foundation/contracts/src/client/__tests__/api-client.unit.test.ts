@@ -246,6 +246,25 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
     return { client, sessionExpiredSpy };
   }
 
+  it("tells the session-expired listener when the refresh was refused because the Account now requires two-step verification", async () => {
+    const { client, sessionExpiredSpy } = refreshWith(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            errorCode: "identity.auth.mfa-enrollment-required",
+          }),
+          { status: 401 },
+        ),
+      ),
+    );
+
+    await expect(client.api.get("/resource")).rejects.toThrow();
+    expect(sessionExpiredSpy).toHaveBeenCalledTimes(1);
+    expect(sessionExpiredSpy.mock.calls[0]![0].reason).toBe(
+      "mfa-enrollment-required",
+    );
+  });
+
   it("keeps the session when the connection drops during the refresh: offline failure, no session-expired event", async () => {
     const { client, sessionExpiredSpy } = refreshWith(() =>
       Promise.reject(new TypeError("Failed to fetch")),
@@ -338,5 +357,51 @@ describe("createNotrelixClient — Instance-scoped API Client", () => {
 
     expect(client1Refresh).toBe(1);
     expect(client2Refresh).toBe(1);
+  });
+
+  describe("a write refused because the Account is suspended (D06)", () => {
+    const problem = (status: number, body: unknown) =>
+      vi
+        .fn()
+        .mockImplementation((url: string) =>
+          Promise.resolve(
+            url.includes("/auth/csrf")
+              ? new Response(JSON.stringify({ token: "t" }), { status: 200 })
+              : new Response(JSON.stringify(body), { status }),
+          ),
+        );
+    const make = (fetchImpl: ReturnType<typeof vi.fn>) => {
+      const onAccountSuspended = vi.fn();
+      const client = createNotrelixClient({
+        baseUrl: "http://api.test",
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        onAccountSuspended,
+      });
+      return { client, onAccountSuspended };
+    };
+
+    it("reports each 403 account.suspended once and still throws the error with its code", async () => {
+      const { client, onAccountSuspended } = make(
+        problem(403, { errorCode: "account.suspended", detail: "x" }),
+      );
+      await expect(client.api.post("/boards", {})).rejects.toMatchObject({
+        status: 403,
+        code: "account.suspended",
+      });
+      expect(onAccountSuspended).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not report any other 403, or the same code on another status", async () => {
+      const other = make(problem(403, { errorCode: "auth.forbidden" }));
+      await expect(other.client.api.post("/boards", {})).rejects.toBeDefined();
+      const wrongStatus = make(
+        problem(409, { errorCode: "account.suspended" }),
+      );
+      await expect(
+        wrongStatus.client.api.post("/boards", {}),
+      ).rejects.toBeDefined();
+      expect(other.onAccountSuspended).not.toHaveBeenCalled();
+      expect(wrongStatus.onAccountSuspended).not.toHaveBeenCalled();
+    });
   });
 });

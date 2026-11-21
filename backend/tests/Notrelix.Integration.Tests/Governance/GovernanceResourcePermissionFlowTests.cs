@@ -1927,6 +1927,23 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
             global::Notrelix.Application.Features.WorkManagement.Boards.Services.BoardSpacePlacement>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSpacePlacement,
             global::Notrelix.Application.Features.Documents.Pages.Services.PageSpacePlacement>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Public.Status.IAccountStatusFacts,
+            global::Notrelix.Infrastructure.Accounts.Status.AccountStatusFactsReader>();
+        // Public forms: the per-form scope, the workspace public-links fact and the captcha test double.
+        services.AddScoped<global::Notrelix.Application.Features.Workspaces.Public.Sharing.IWorkspaceSharingFacts,
+            global::Notrelix.Infrastructure.Workspaces.Sharing.WorkspaceSharingFactsReader>();
+        services.AddScoped<global::Notrelix.Application.Features.WorkManagement.Forms.Services.PublicFormScope>();
+        // Enterprise single sign-on: the public facts, the domain claim check, the secret store and the two outbound ports (fakes).
+        services.AddScoped<global::Notrelix.Infrastructure.Data.Authz.AccessGrantProjectionService>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Members.IAccountGrantProjectionService,
+            global::Notrelix.Infrastructure.Data.Authz.AccountGrantProjectionServiceAdapter>();
+        services.AddSingleton<global::Notrelix.Application.Common.Security.ISecretEncryptor, Notrelix.Testing.Application.Fakes.ReversibleSecretEncryptor>();
+        services.AddSingleton<global::Notrelix.Application.Features.Accounts.Abstractions.IDomainTxtResolver, Notrelix.Testing.Application.Fakes.FakeDomainTxtResolver>();
+        services.AddSingleton<global::Notrelix.Application.Common.Oidc.IOidcDiscoveryClient, Notrelix.Testing.Application.Fakes.FakeOidcDiscoveryClient>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Public.Sso.IAccountSsoFacts,
+            global::Notrelix.Application.Features.Accounts.Sso.AccountSsoFactsProvider>();
+        services.AddScoped<global::Notrelix.Application.Features.Accounts.Sso.SsoDomainClaims>();
+        services.AddSingleton<global::Notrelix.Application.Features.WorkManagement.Forms.Services.ICaptchaVerifier, Notrelix.Testing.Application.Fakes.FakeCaptchaVerifier>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Pages.Services.IPageSubtreeStore,
             global::Notrelix.Infrastructure.Documents.Pages.PageSubtreeStore>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Blocks.Services.IPageBlockWriteLock,

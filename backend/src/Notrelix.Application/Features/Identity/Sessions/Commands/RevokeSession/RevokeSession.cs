@@ -23,6 +23,7 @@ public sealed class RevokeSessionCommandHandler
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ISecurityActivityRecorder _activity;
+    private readonly ISecurityNotice _notice;
     private readonly ILogger<RevokeSessionCommandHandler> _logger;
 
     private static readonly TimeSpan SessionRevocationMarkerTtl = TimeSpan.FromHours(24);
@@ -32,7 +33,7 @@ public sealed class RevokeSessionCommandHandler
         ICurrentRequestContext currentUser,
         IJwtBlacklistService jwtBlacklist,
         IDateTimeProvider dateTimeProvider,
-        ISecurityActivityRecorder activity,
+        ISecurityActivityRecorder activity, ISecurityNotice notice,
         ILogger<RevokeSessionCommandHandler> logger)
     {
         _context = context;
@@ -40,6 +41,7 @@ public sealed class RevokeSessionCommandHandler
         _jwtBlacklist = jwtBlacklist;
         _dateTimeProvider = dateTimeProvider;
         _activity = activity;
+        _notice = notice;
         _logger = logger;
     }
 
@@ -68,6 +70,7 @@ public sealed class RevokeSessionCommandHandler
         session.Revoke(now, SessionRevocationReasons.UserRequested);
         await _jwtBlacklist.RevokeSessionBeforeAsync(session.Id, now, SessionRevocationMarkerTtl);
         _activity.Record(userId, SecurityActivityType.SessionRevoked, now, session.Id);
+        await _notice.QueueAsync(userId, SecurityNoticeKind.SessionRevoked, now, session.Id, cancellationToken);
 
         _logger.LogInformation("Session {SessionId} revoked by user {UserId}", session.Id, userId);
 

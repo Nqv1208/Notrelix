@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { startSignedOut } from "../support/sign-in-form";
 import { MOCK_AUTH } from "../../packages/dev/mock-backend/src/state/mock-auth-directory";
 
 /**
@@ -100,6 +101,7 @@ async function colour(locator: Locator, property: string): Promise<string> {
 }
 
 async function open(page: Page, path: string, dark: boolean) {
+  await startSignedOut(page);
   await page.addInitScript(
     ({ key, mode }) => {
       try {
@@ -576,7 +578,7 @@ for (const dark of [false, true]) {
       );
       await expectBox(
         "continue",
-        link(page, "Tiếp tục với Microsoft Entra"),
+        link(page, "Tiếp tục với Minh An Group"),
         { y: 467, width: 400, height: 44 },
         1.35,
       );

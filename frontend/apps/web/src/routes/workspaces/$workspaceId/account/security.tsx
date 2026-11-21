@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   AccountSecuritySurface,
+  AccountSsoSection,
   createUseProfile,
   createUseSecurity,
   passwordChangeFailureOf,
@@ -44,7 +45,9 @@ type Step =
     }
   | {
       kind: "stepUp";
-      purpose: "enroll" | "disable" | "renew" | "others";
+      purpose: StepPurpose;
+      /** `link` and `unlink`: the provider the proof is for. */
+      provider?: string;
       factor: "code" | "password" | "provider";
       /** `provider`: the linked providers the person can confirm with. */
       providers?: readonly string[];
@@ -52,21 +55,21 @@ type Step =
     }
   | { kind: "codes"; codes: readonly string[]; othersEnded?: number }
   | { kind: "password" }
+  /** A first password; `proof` is the single-use `ChangePassword` proof already bought. */
+  | { kind: "setPassword"; proof: string }
   | { kind: "passwordChanged" }
   | { kind: "twoFactorOff" }
   | { kind: "signOutThis" };
 
-const PURPOSE: Record<
-  "enroll" | "disable" | "renew" | "others",
-  StepUpPurpose
-> = {
+type StepPurpose = "enroll" | "disable" | "renew" | "others" | "setPassword";
+
+const PURPOSE: Record<StepPurpose, StepUpPurpose> = {
   enroll: "EnrollMfa",
   disable: "DisableMfa",
   renew: "RegenerateRecoveryCodes",
   others: "RevokeOtherSessions",
+  setPassword: "ChangePassword",
 };
-
-type StepPurpose = "enroll" | "disable" | "renew" | "others";
 
 const isStepPurpose = (value: unknown): value is StepPurpose =>
   typeof value === "string" && value in PURPOSE;
@@ -87,12 +90,18 @@ export function AccountSecurityPage() {
   const [notice, showNotice] = useToast();
   const [step, setStep] = useState<Step | null>(null);
   const [stepError, setStepError] = useState<{
-    error: "wrong" | "wait" | "failed" | "expired";
+    error: "wrong" | "wait" | "failed" | "expired" | "requiredByAccount";
     wait?: number;
   } | null>(null);
   const [passwordError, setPasswordError] = useState<{
     error: "wrongCurrent" | "wrongCode" | "rejected" | "wait" | "failed";
     wait?: number;
+  } | null>(null);
+  // The Account's requirement: `null` until read (or when it cannot be read: no block is drawn).
+  // The read says whether the person is the Account Owner; a 403 on the write still turns the control read-only.
+  const [policy, setPolicy] = useState<{
+    required: boolean;
+    canChange: boolean;
   } | null>(null);
   const [activityPages, setActivityPages] = useState<
     { items: AccountSecurityData["activity"]; next: string | null }[]
@@ -106,6 +115,41 @@ export function AccountSecurityPage() {
   const useSecurity = useMemo(() => createUseSecurity(deps), [deps]);
   const { profile } = useProfile();
   const { service, summary, sessions, activity, invalidate } = useSecurity();
+
+  useEffect(() => {
+    let live = true;
+    service
+      .getAccountMfaPolicy()
+      .then(({ required, canManage }) => {
+        if (live) setPolicy({ required, canChange: canManage });
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [service]);
+
+  const setAccountMfaPolicy = useCallback(
+    async (required: boolean) => {
+      setActionError(false);
+      setBusy(true);
+      try {
+        await service.setAccountMfaPolicy(required);
+        setPolicy({ required, canChange: true });
+        showNotice(required ? copy.policy.savedOn : copy.policy.savedOff);
+      } catch (error) {
+        // Not the Owner: the requirement stays as it is and the control goes away.
+        if ((error as { status?: number }).status === 403)
+          setPolicy((current) =>
+            current ? { ...current, canChange: false } : current,
+          );
+        else setActionError(true);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [copy.policy.savedOff, copy.policy.savedOn, service, showNotice],
+  );
 
   const activeSessions = useMemo(
     () => (sessions.data ?? []).filter((s) => s.status === "active"),
@@ -131,6 +175,8 @@ export function AccountSecurityPage() {
             data: {
               // The producer has no "managed by a company" fact for the password.
               ssoProvider: null,
+              hasPassword: summary.data.hasPassword,
+              linkedProviders: summary.data.linkedProviders,
               email: profile?.email ?? "",
               workspaceName,
               twoFactorEnabled: summary.data.twoFactorEnabled,
@@ -151,6 +197,7 @@ export function AccountSecurityPage() {
                 ipAddress: l.ipAddress,
               })),
               activityHasMore: nextCursor !== null,
+              accountMfaPolicy: policy ?? undefined,
             },
           }
         : summary.isError || sessions.isError
@@ -164,6 +211,7 @@ export function AccountSecurityPage() {
       activeSessions,
       lines,
       nextCursor,
+      policy,
       profile?.email,
       workspaceName,
     ],
@@ -227,7 +275,7 @@ export function AccountSecurityPage() {
 
   // Turning two-factor on or off asks for proof first.
   const beginStepUp = useCallback(
-    async (purpose: "enroll" | "disable" | "renew" | "others") => {
+    async (purpose: StepPurpose, provider?: string) => {
       setActionError(false);
       setStepError(null);
       setBusy(true);
@@ -238,6 +286,7 @@ export function AccountSecurityPage() {
         setStep({
           kind: "stepUp",
           purpose,
+          provider,
           factor:
             requirement.factor === "mfa"
               ? "code"
@@ -271,6 +320,10 @@ export function AccountSecurityPage() {
   const fail = (error: unknown, wrongStatus: boolean) => {
     const wait = waitOf(error);
     if (wait !== null) setStepError({ error: "wait", wait });
+    else if (
+      (error as { code?: string }).code === "identity.mfa.required-by-account"
+    )
+      setStepError({ error: "requiredByAccount" });
     else
       setStepError({
         error:
@@ -302,6 +355,11 @@ export function AccountSecurityPage() {
           await service.disableTwoFactor(token);
           // The producer ended every session, this one too: nothing more can be read here.
           setStep({ kind: "twoFactorOff" });
+        } else if (current.purpose === "setPassword") {
+          // The proof is kept for the form that follows; the password is not asked before the proof,
+          // because the provider round trip would lose it.
+          setPasswordError(null);
+          setStep({ kind: "setPassword", proof: token });
         } else if (current.purpose === "others") {
           const count = await service.revokeOtherSessions(token);
           setStep(null);
@@ -331,7 +389,7 @@ export function AccountSecurityPage() {
           (error as { code?: string }).code ===
           "identity.security.step-up-invalid"
         ) {
-          await beginStepUp(current.purpose);
+          await beginStepUp(current.purpose, current.provider);
           setStepError({ error: "expired" });
         } else fail(error, !proved);
       } finally {
@@ -344,9 +402,13 @@ export function AccountSecurityPage() {
       copy.others.doneCount_other,
       copy.others.nobody,
       copy.twoFactor.renewed,
+      env,
       invalidate,
+      navigate,
+      runtimeClient.api,
       service,
       showNotice,
+      workspaceId,
     ],
   );
 
@@ -424,26 +486,19 @@ export function AccountSecurityPage() {
   const startProviderStepUp = useCallback(
     (provider: string) => {
       if (step?.kind !== "stepUp") return;
-      const path = service.providerStepUpPath(
-        provider,
-        PURPOSE[step.purpose],
-        `/workspaces/${workspaceId}/account/security?stepUp=${step.purpose}`,
-      );
-      if (!env.mockApi) {
-        window.location.assign(`${env.apiUrl}${path}`);
-        return;
-      }
-      // No browser leaves in the mock world: the mock plays the round trip and says where the redirect lands.
-      void runtimeClient.api
-        .get<{ redirectTo?: string }>(path, {
-          skipAuthRefresh: true,
-          skipGlobalErrorToast: true,
-        })
-        .then((answer) => {
-          const landing = new URL(
-            answer.redirectTo ?? "/",
-            window.location.origin,
-          );
+      void service
+        .startProviderStepUp(
+          provider,
+          PURPOSE[step.purpose],
+          `/workspaces/${workspaceId}/account/security?stepUp=${step.purpose}${step.provider ? `&provider=${encodeURIComponent(step.provider)}` : ""}`,
+        )
+        .then((url) => {
+          if (!env.mockApi) {
+            window.location.assign(url);
+            return;
+          }
+          // No browser leaves in the mock world: the answer is the page the round trip lands on.
+          const landing = new URL(url, window.location.origin);
           void navigate({
             to: landing.pathname,
             search: Object.fromEntries(landing.searchParams),
@@ -452,7 +507,7 @@ export function AccountSecurityPage() {
         })
         .catch(() => setStepError({ error: "failed" }));
     },
-    [env, navigate, runtimeClient.api, service, step, workspaceId],
+    [env, navigate, service, step, workspaceId],
   );
 
   // Back from the provider: spend the proof it left on the action that asked for it.
@@ -564,8 +619,62 @@ export function AccountSecurityPage() {
     [service, summary.data?.twoFactorEnabled],
   );
 
+  const submitFirstPassword = useCallback(
+    async (next: string) => {
+      if (step?.kind !== "setPassword") return;
+      setBusy(true);
+      setPasswordError(null);
+      try {
+        await service.setFirstPassword({
+          newPassword: next,
+          stepUpToken: step.proof,
+        });
+        setStep(null);
+        await invalidate();
+        showNotice(copy.firstPassword.done);
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === "identity.security.step-up-invalid") {
+          // The proof is gone (too old): ask again for the same step.
+          await beginStepUp("setPassword");
+          setStepError({ error: "expired" });
+        } else if (code === "identity.auth.password-already-set") {
+          setStep(null);
+          await invalidate();
+          showNotice(copy.firstPassword.already);
+        } else {
+          const failure = passwordChangeFailureOf(error, "change");
+          setPasswordError(
+            failure.kind === "wait"
+              ? { error: "wait", wait: failure.seconds }
+              : {
+                  error: failure.kind === "rejected" ? "rejected" : "failed",
+                },
+          );
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [
+      beginStepUp,
+      copy.firstPassword.already,
+      copy.firstPassword.done,
+      invalidate,
+      service,
+      showNotice,
+      step,
+    ],
+  );
+
   const flow = useMemo<AccountSecurityFlow | null>(() => {
     if (!step) return null;
+    if (step.kind === "setPassword")
+      return {
+        kind: "setPassword",
+        error: passwordError?.error ?? null,
+        wait: passwordError?.wait,
+      };
     if (
       step.kind === "codes" ||
       step.kind === "passwordChanged" ||
@@ -621,9 +730,13 @@ export function AccountSecurityPage() {
       notice={notice}
       flow={flow}
       onChangePassword={startPasswordChange}
+      onSetPassword={() => void beginStepUp("setPassword")}
+      onSubmitFirstPassword={(next) => void submitFirstPassword(next)}
       onSubmitNewPassword={(submission) => void submitNewPassword(submission)}
       onPasswordChangedContinue={() => void signOutThisDevice()}
       onSetTwoFactor={(enabled) => void setTwoFactor(enabled)}
+      onSetAccountMfaPolicy={(required) => void setAccountMfaPolicy(required)}
+      ssoSlot={<AccountSsoSection copy={copy} service={service} />}
       onSubmitCode={(code) => void submitCode(code)}
       onSubmitPassword={(password) => void submitPassword(password)}
       onStartProviderStepUp={startProviderStepUp}

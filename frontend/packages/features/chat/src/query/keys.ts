@@ -11,6 +11,9 @@ export const chatQueryKeys = {
     workspaceQueryKey(workspaceId, "chat", "channels"),
   browse: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "channels", "browse"),
+  /** The deleted channels the caller may restore; under `channels`, so a channel list refresh reloads it. */
+  deleted: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "channels", "deleted"),
   channel: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "channel", channelId),
   /** The history of one channel; the anchor is appended by the infinite query. */
@@ -19,6 +22,9 @@ export const chatQueryKeys = {
   /** Client-only projection of the sends not yet confirmed (converges on the server copy). */
   pending: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pending", channelId),
+  /** Client-only: the channel the reader is looking at, newest message on screen and page visible (or null). */
+  viewing: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "viewing"),
   /** The mention picker of one space (people, broadcast permission, member count). */
   mentionables: (workspaceId: string, spaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "mentionables", spaceId),
@@ -68,6 +74,15 @@ export const chatQueryKeys = {
   /** The people the caller blocked (`Chat.Blocks.List`). */
   blocks: (workspaceId: string) =>
     workspaceQueryKey(workspaceId, "chat", "blocks"),
+  /** The ringing or active call of one space (`Chat.Calls.GetActive`); a call frame refetches it. */
+  activeCall: (workspaceId: string, spaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "active-call", spaceId),
+  /** Client-only projection: the newest frame seen of one call (its state and end reason survive the 204 of GetActive). */
+  callFrame: (workspaceId: string, callId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "call-frame", callId),
+  /** Client-only projection: the calls ringing this person, set by the per-person ring frames. */
+  incomingCalls: (workspaceId: string) =>
+    workspaceQueryKey(workspaceId, "chat", "incoming-calls"),
   pins: (workspaceId: string, channelId: string) =>
     workspaceQueryKey(workspaceId, "chat", "pins", channelId),
   /** The permission overrides of one channel (the settings Permissions tab). */

@@ -2,6 +2,7 @@ using Notrelix.API.Contracts.Collaboration.Notifications.Requests;
 using Notrelix.API.Extensions;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryDone;
+using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryUnread;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.MuteInboxThread;
 using Notrelix.Application.Features.Collaboration.Notifications.Commands.ReopenInboxEntry;
@@ -53,6 +54,12 @@ public static class MapInboxEndpoints
             .WithName("Collaboration.Notifications.MarkInboxEntryRead")
             .WithSummary("Mark one notification of the caller read")
             .WithDescription("A notification that is not the caller's, or already read, changes nothing and still answers success.");
+
+        workspaceInbox.MapWorkspacePost("/{notificationId:guid}/unread", async (Guid workspaceId, Guid notificationId, ISender sender) =>
+                (await sender.Send(new MarkInboxEntryUnreadCommand(workspaceId, notificationId))).ToApiResult())
+            .WithName("Collaboration.Notifications.MarkInboxEntryUnread")
+            .WithSummary("Mark one notification of the caller unread again")
+            .WithDescription("The entry stays in the list, unread. A notification that is not the caller's, already unread, done or snoozed, changes nothing and still answers success.");
 
         workspaceInbox.MapWorkspacePost("/{notificationId:guid}/done", async (Guid workspaceId, Guid notificationId, ISender sender) =>
                 (await sender.Send(new MarkInboxEntryDoneCommand(workspaceId, notificationId))).ToApiResult())

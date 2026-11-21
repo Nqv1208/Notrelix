@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   IDENTITY_ERROR,
@@ -13,16 +13,22 @@ import { useAuthCopy } from "../copy/use-auth-copy";
 import {
   AuthSignInSurface,
   type AuthSignInStep,
+  type SsoErrorKind,
 } from "../components/auth-sign-in-surface";
 import type { AuthFlowNavigation } from "./flow-navigation";
 
+/** A refusal's wait. A new object per refusal, so a second refusal with the same wait restarts the count. */
+type Lock = { readonly seconds: number } | null;
+const lockOf = (seconds: number | null): Lock =>
+  seconds && seconds > 0 ? { seconds } : null;
+
 /** Seconds the lock card counts down from a refusal that carries `retryAfterSeconds`. */
-function useCountdown(seconds: number | null): number {
+function useCountdown(lock: Lock): number {
   const [deadline, setDeadline] = useState<number | null>(null);
   const [left, setLeft] = useState(0);
   useEffect(() => {
-    setDeadline(seconds && seconds > 0 ? Date.now() + seconds * 1000 : null);
-  }, [seconds]);
+    setDeadline(lock ? Date.now() + lock.seconds * 1000 : null);
+  }, [lock]);
   useEffect(() => {
     if (deadline === null) {
       setLeft(0);
@@ -47,8 +53,10 @@ type EmailError =
   | "provider-denied"
   | "provider-email-in-use"
   | "provider-email-unverified"
+  | SsoErrorKind
   | "session-ended"
-  | "password-reset";
+  | "password-reset"
+  | "mfa-enrollment";
 
 /** What the sign-in page says for each code the backend puts on `?error=`; any other code reads as a plain failure. */
 const PROVIDER_ERROR: Readonly<Record<string, EmailError>> = {
@@ -58,6 +66,16 @@ const PROVIDER_ERROR: Readonly<Record<string, EmailError>> = {
   [IDENTITY_ERROR.oauthDenied]: "provider-denied",
   [IDENTITY_ERROR.oauthEmailInUse]: "provider-email-in-use",
   [IDENTITY_ERROR.oauthEmailUnverified]: "provider-email-unverified",
+  // The company sign-in. None of these says whether an account exists for the person.
+  [IDENTITY_ERROR.oauthSsoRequired]: "sso-required-social",
+  [IDENTITY_ERROR.ssoStateInvalid]: "sso-state",
+  [IDENTITY_ERROR.ssoDenied]: "sso-denied",
+  [IDENTITY_ERROR.ssoFailed]: "sso-failed",
+  [IDENTITY_ERROR.ssoEmailUnverified]: "sso-email-unverified",
+  [IDENTITY_ERROR.ssoDomainMismatch]: "sso-domain-mismatch",
+  [IDENTITY_ERROR.ssoIdentityConflict]: "sso-identity-conflict",
+  [IDENTITY_ERROR.ssoNotProvisioned]: "sso-not-provisioned",
+  [IDENTITY_ERROR.ssoUnavailable]: "sso-unavailable",
 };
 
 type Phase =
@@ -76,7 +94,9 @@ type Phase =
         provider: string;
         providerLabel: string;
         domain: string;
+        enforced: boolean;
       };
+      error: "unreachable" | "refused" | null;
     }
   | {
       kind: "otp";
@@ -85,6 +105,23 @@ type Phase =
       challengeToken: string | null;
       error: "wrong" | "expired" | "inactive" | "locked" | "unreachable" | null;
       backup: boolean;
+    }
+  | {
+      kind: "enroll";
+      /** Null after a provider sign-in: the token is the backend's cookie and the page never holds it. */
+      enrollmentToken: string | null;
+      /** Null until the start answers. */
+      enrollment: {
+        methodId: string;
+        secret: string;
+        otpAuthUri: string;
+      } | null;
+      error: "wrong" | "expired" | "locked" | "unreachable" | null;
+    }
+  | {
+      kind: "codes";
+      session: SessionResult;
+      codes: readonly string[];
     };
 
 /**
@@ -100,6 +137,7 @@ export function SignInFlow({
   providerError = null,
   sessionEnded = false,
   passwordReset = false,
+  mfaEnrollmentRequired = false,
   initialStep = null,
 }: {
   service: AuthFlowService;
@@ -113,52 +151,68 @@ export function SignInFlow({
   sessionEnded?: boolean;
   /** The page opened after a password reset: it says so above the form. */
   passwordReset?: boolean;
+  /** The page opened because a refresh was refused: the Account now requires two-step verification. */
+  mfaEnrollmentRequired?: boolean;
   /**
    * `"mfa"` when the backend sent the browser here after a provider sign-in that needs a second
    * step: the challenge is in its httpOnly cookie, so the page asks for the code alone.
+   * `"enroll"` (the `enroll=1` mark) is the same for a person who has no factor yet and whose
+   * Account requires one: the enrolment token is in the cookie, so the step starts with no token.
    */
-  initialStep?: "mfa" | null;
+  initialStep?: "mfa" | "enroll" | null;
 }) {
   const copy = useAuthCopy();
   const queryClient = useQueryClient();
   // Only an internal path is ever navigated to or handed to the provider round trip.
   const returnTo = safeReturnPath(redirect);
   const [phase, setPhase] = useState<Phase>(() =>
-    !providerError && initialStep === "mfa"
-      ? {
-          kind: "otp",
-          email: "",
-          challengeToken: null,
-          error: null,
-          backup: false,
-        }
-      : {
-          kind: "email",
-          error: providerError
-            ? (PROVIDER_ERROR[providerError] ?? "provider-failed")
-            : passwordReset
-              ? "password-reset"
-              : sessionEnded
-                ? "session-ended"
-                : null,
-        },
+    !providerError && initialStep === "enroll"
+      ? { kind: "enroll", enrollmentToken: null, enrollment: null, error: null }
+      : !providerError && initialStep === "mfa"
+        ? {
+            kind: "otp",
+            email: "",
+            challengeToken: null,
+            error: null,
+            backup: false,
+          }
+        : {
+            kind: "email",
+            error: providerError
+              ? (PROVIDER_ERROR[providerError] ?? "provider-failed")
+              : passwordReset
+                ? "password-reset"
+                : mfaEnrollmentRequired
+                  ? "mfa-enrollment"
+                  : sessionEnded
+                    ? "session-ended"
+                    : null,
+          },
   );
   const [typedEmail, setTypedEmail] = useState(initialEmail);
-  const [lockSeconds, setLockSeconds] = useState<number | null>(null);
-  const lockedSeconds = useCountdown(lockSeconds);
+  const [lock, setLock] = useState<Lock>(null);
+  const lockedSeconds = useCountdown(lock);
 
   const signedIn = useMemo(
     () => (session: SessionResult) => {
       queryClient.setQueryData(authQueryKeys.profile, session.user);
-      navigation.navigate({ to: returnTo ?? "/home", replace: true });
+      navigation.navigate(
+        returnTo
+          ? { to: returnTo, replace: true }
+          : { to: "/home", search: { open: "default" }, replace: true },
+      );
     },
     [navigation, queryClient, returnTo],
   );
 
+  const passwordRefused = useRef(false);
   const identify = useMutation({
     mutationFn: (email: string) => service.identify(email),
     onSuccess: (result, email) => {
       setTypedEmail(email);
+      // A password refused for a company that requires single sign-on lands back here, saying so.
+      const refused = passwordRefused.current;
+      passwordRefused.current = false;
       setPhase(
         result.method === "sso" && result.sso
           ? {
@@ -170,7 +224,9 @@ export function SignInFlow({
                 provider: result.sso.provider,
                 providerLabel: result.sso.providerLabel,
                 domain: email.split("@")[1] ?? "",
+                enforced: result.sso.enforced,
               },
+              error: refused ? "refused" : null,
             }
           : { kind: "password", email, error: null },
       );
@@ -184,11 +240,61 @@ export function SignInFlow({
       }),
   });
 
+  const startEnroll = useMutation({
+    mutationFn: (enrollmentToken: string | null) =>
+      service.startRequiredEnrollment(enrollmentToken),
+    onSuccess: (enrollment) =>
+      setPhase((current) =>
+        current.kind === "enroll" ? { ...current, enrollment } : current,
+      ),
+    onError: (error) =>
+      setPhase((current) =>
+        current.kind === "enroll"
+          ? {
+              ...current,
+              error:
+                enrollFailure(error) === "unreachable"
+                  ? "unreachable"
+                  : "expired",
+            }
+          : current,
+      ),
+  });
+
+  const completeEnroll = useMutation({
+    mutationFn: (input: {
+      enrollmentToken: string | null;
+      methodId: string;
+      code: string;
+    }) => service.completeRequiredEnrollment(input),
+    onSuccess: ({ recoveryCodes, ...session }) =>
+      setPhase({ kind: "codes", session, codes: recoveryCodes }),
+    onError: (error) =>
+      setPhase((current) =>
+        current.kind === "enroll"
+          ? { ...current, error: enrollFailure(error) }
+          : current,
+      ),
+  });
+
+  // After a provider sign-in the page opens on the step with the backend's cookie: start it once.
+  const startedFromCookie = useRef(false);
+  useEffect(() => {
+    if (
+      initialStep === "enroll" &&
+      !providerError &&
+      !startedFromCookie.current
+    ) {
+      startedFromCookie.current = true;
+      startEnroll.mutate(null);
+    }
+  });
+
   const login = useMutation({
     mutationFn: (input: { email: string; password: string }) =>
       service.login(input),
     onSuccess: (result, input) => {
-      setLockSeconds(null);
+      setLock(null);
       if (result.kind === "mfa")
         setPhase({
           kind: "otp",
@@ -197,11 +303,23 @@ export function SignInFlow({
           error: null,
           backup: false,
         });
-      else signedIn(result);
+      else if (result.kind === "enroll") {
+        // No session yet: the authenticator is prepared at once, with the token held in memory only.
+        setPhase({
+          kind: "enroll",
+          enrollmentToken: result.enrollmentToken,
+          enrollment: null,
+          error: null,
+        });
+        startEnroll.mutate(result.enrollmentToken);
+      } else signedIn(result);
     },
     onError: (error, input) => {
       const failure = readFlowError(error);
-      if (failure.code === "SSO_REQUIRED") {
+      // Only a correct password on a company that requires single sign-on is told so (403);
+      // the page goes back to the company step instead of showing a wrong-password message.
+      if (failure.code === IDENTITY_ERROR.authSsoRequired) {
+        passwordRefused.current = true;
         identify.mutate(input.email);
         return;
       }
@@ -214,7 +332,7 @@ export function SignInFlow({
         return;
       }
       const throttled = isThrottled(failure);
-      setLockSeconds(throttled ? failure.retryAfterSeconds : null);
+      setLock(throttled ? lockOf(failure.retryAfterSeconds) : null);
       setPhase({
         kind: "password",
         email: input.email,
@@ -224,6 +342,18 @@ export function SignInFlow({
     },
   });
 
+  const enrollFailure = (error: unknown) => {
+    const failure = readFlowError(error);
+    setLock(isThrottled(failure) ? lockOf(failure.retryAfterSeconds) : null);
+    return failure.network
+      ? ("unreachable" as const)
+      : isThrottled(failure)
+        ? ("locked" as const)
+        : failure.code === IDENTITY_ERROR.challengeInvalid
+          ? ("expired" as const)
+          : ("wrong" as const);
+  };
+
   const verify = useMutation({
     mutationFn: (input: { challengeToken: string | null; code: string }) =>
       service.verifyMfa(input),
@@ -232,7 +362,7 @@ export function SignInFlow({
     },
     onError: (error) => {
       const failure = readFlowError(error);
-      setLockSeconds(isThrottled(failure) ? failure.retryAfterSeconds : null);
+      setLock(isThrottled(failure) ? lockOf(failure.retryAfterSeconds) : null);
       setPhase((current) =>
         current.kind === "otp"
           ? {
@@ -269,10 +399,32 @@ export function SignInFlow({
     navigation.startProviderSignIn(service.oauthStartPath(name, returnTo));
   };
 
+  const startSso = useMutation({
+    mutationFn: (email: string) => service.startSso(email, returnTo),
+    onSuccess: ({ authorizationUrl }) => {
+      setRedirecting("sso");
+      navigation.startSsoSignIn(authorizationUrl);
+    },
+    onError: (error) => {
+      const failure = readFlowError(error);
+      // The address no longer routes to a provider (changed since the page asked): same answer for every cause.
+      if (failure.code === IDENTITY_ERROR.ssoUnavailable)
+        setPhase({ kind: "email", error: "sso-unavailable" });
+      else
+        setPhase((current) =>
+          current.kind === "sso"
+            ? { ...current, error: "unreachable" }
+            : current,
+        );
+    },
+  });
+
   const pending =
     identify.isPending ||
+    startSso.isPending ||
     login.isPending ||
     verify.isPending ||
+    completeEnroll.isPending ||
     redirecting !== null;
 
   const step: AuthSignInStep =
@@ -291,10 +443,20 @@ export function SignInFlow({
             lockedSeconds,
             backup: phase.backup,
           }
-        : phase;
+        : phase.kind === "enroll"
+          ? {
+              kind: "enroll",
+              secret: phase.enrollment?.secret ?? null,
+              otpAuthUri: phase.enrollment?.otpAuthUri ?? null,
+              error: phase.error,
+              lockedSeconds,
+            }
+          : phase.kind === "codes"
+            ? { kind: "codes", codes: phase.codes }
+            : phase;
 
   const backToEmail = () => {
-    setLockSeconds(null);
+    setLock(null);
     setPhase({ kind: "email", error: null });
   };
 
@@ -323,11 +485,25 @@ export function SignInFlow({
           search: typedEmail ? { email: typedEmail } : undefined,
         })
       }
-      onSso={() => phase.kind === "sso" && startProvider(phase.org.provider)}
+      onSso={() => phase.kind === "sso" && startSso.mutate(phase.email)}
+      onUsePassword={() =>
+        phase.kind === "sso" &&
+        setPhase({ kind: "password", email: phase.email, error: null })
+      }
       onVerify={({ code }) =>
         phase.kind === "otp" &&
         verify.mutate({ challengeToken: phase.challengeToken, code })
       }
+      onEnroll={({ code }) =>
+        phase.kind === "enroll" &&
+        phase.enrollment &&
+        completeEnroll.mutate({
+          enrollmentToken: phase.enrollmentToken,
+          methodId: phase.enrollment.methodId,
+          code,
+        })
+      }
+      onCodesDone={() => phase.kind === "codes" && signedIn(phase.session)}
       onToggleBackup={() =>
         setPhase((current) =>
           current.kind === "otp"

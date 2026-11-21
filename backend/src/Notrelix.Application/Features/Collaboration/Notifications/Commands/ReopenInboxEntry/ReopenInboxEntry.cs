@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Public.Notifications;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Collaboration.Notifications.Commands.ReopenInboxEntry;
 
@@ -9,7 +10,7 @@ namespace Notrelix.Application.Features.Collaboration.Notifications.Commands.Reo
 /// Any member of the Workspace may do it (<c>ViewWorkspace</c>).
 /// </summary>
 public record ReopenInboxEntryCommand(Guid WorkspaceId, Guid NotificationId)
-    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

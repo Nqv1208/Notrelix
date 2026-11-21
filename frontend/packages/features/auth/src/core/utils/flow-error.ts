@@ -36,6 +36,20 @@ export const IDENTITY_ERROR = {
   oauthEmailUnverified: "identity.oauth.email-unverified",
   /** The provider's verified email belongs to an account that is not linked to it. */
   oauthEmailInUse: "identity.oauth.email-in-use",
+  /** The company requires single sign-on: the Google sign-in of an address on its domain is refused. */
+  oauthSsoRequired: "identity.oauth.sso-required",
+  /** A correct password on a domain that requires single sign-on (HTTP 403): only the account Owner may. */
+  authSsoRequired: "identity.auth.sso-required",
+  /** The address is not routable to a company provider (unverified domain, no provider, provider off). */
+  ssoUnavailable: "identity.sso.unavailable",
+  /** The company sign-in callback's failures (`/sign-in?error=`). */
+  ssoStateInvalid: "identity.sso.state-invalid",
+  ssoDenied: "identity.sso.denied",
+  ssoFailed: "identity.sso.failed",
+  ssoEmailUnverified: "identity.sso.email-unverified",
+  ssoDomainMismatch: "identity.sso.domain-mismatch",
+  ssoIdentityConflict: "identity.sso.identity-conflict",
+  ssoNotProvisioned: "identity.sso.not-provisioned",
   /** A confirmation link that was valid and has run out (an unknown or used one answers no code). */
   emailVerificationExpired: "identity.email-verification.token-expired",
 } as const;

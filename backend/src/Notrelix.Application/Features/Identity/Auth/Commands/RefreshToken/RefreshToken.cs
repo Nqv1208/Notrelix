@@ -1,5 +1,7 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Scoping;
+using Notrelix.Application.Features.Accounts.Public.Security;
+using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Application.Features.Identity.Abstractions;
 using Notrelix.Application.Features.Identity.Auth.Services;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
@@ -26,6 +28,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     private const int RacePolls = 20;
 
     private readonly IIdentityDbContext _context;
+    private readonly IAccountSecurityPolicyFacts _securityPolicy;
     private readonly IJwtService _jwtService;
     private readonly IJwtBlacklistService _jwtBlacklist;
     private readonly IRefreshRotationLedger _ledger;
@@ -35,6 +38,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 
     public RefreshTokenCommandHandler(
         IIdentityDbContext context,
+        IAccountSecurityPolicyFacts securityPolicy,
         IJwtService jwtService,
         IJwtBlacklistService jwtBlacklist,
         IRefreshRotationLedger ledger,
@@ -44,6 +48,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     {
         _credentialScope = credentialScope;
         _context = context;
+        _securityPolicy = securityPolicy;
         _jwtService = jwtService;
         _jwtBlacklist = jwtBlacklist;
         _ledger = ledger;
@@ -94,6 +99,12 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         {
             session.Revoke(now);
             return Result<AuthResult>.Failure(InvalidRefreshTokenError);
+        }
+
+        // An Account that came to require MFA after this session began stops it at its next refresh.
+        if (await MfaEnrollmentRequiredAsync(user.Id, cancellationToken))
+        {
+            return Result<AuthResult>.Failure(MfaEnrollmentRequiredError);
         }
 
         // Two requests presenting one credential at the same moment: one rotates, the other is served
@@ -201,7 +212,24 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return Result<AuthResult>.Failure(InvalidRefreshTokenError);
         }
 
+        if (await MfaEnrollmentRequiredAsync(user.Id, cancellationToken))
+        {
+            return Result<AuthResult>.Failure(MfaEnrollmentRequiredError);
+        }
+
         return Result<AuthResult>.Success(BuildResult(user, sessionId, successor));
+    }
+
+    /// <summary>The person is in an Account that requires MFA and holds no active factor.</summary>
+    private async Task<bool> MfaEnrollmentRequiredAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (!await _securityPolicy.IsMfaRequiredForPersonAsync(userId, cancellationToken))
+        {
+            return false;
+        }
+
+        return !await _context.UserMfaMethods
+            .AnyAsync(m => m.UserId == userId && m.Status == MfaMethodStatus.Active, cancellationToken);
     }
 
     private AuthResult BuildResult(User user, Guid sessionId, string refreshToken) => new()
@@ -218,6 +246,11 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             EmailConfirmed = user.EmailConfirmed
         }
     };
+
+    private static readonly ApplicationError MfaEnrollmentRequiredError = new(
+        "identity.auth.mfa-enrollment-required",
+        "Your account requires multi-factor authentication. Sign in again to set it up.",
+        ApplicationErrorType.Authentication);
 
     private static readonly ApplicationError InvalidRefreshTokenError = new(
         "identity.auth.invalid-refresh-token",

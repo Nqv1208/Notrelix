@@ -18,16 +18,29 @@ const webPort = process.env.REAL_E2E_WEB_PORT ?? "5173";
 // The operator console is its own host on its own origin (its origin is in the backend's CORS list).
 const operatorPort = process.env.REAL_E2E_OPERATOR_PORT ?? "5180";
 
+const oidcPort = process.env.REAL_E2E_OIDC_PORT ?? "58090";
+
 export const realBackend = {
   project: "notrelix-fe-real-e2e",
   apiUrl: "http://127.0.0.1:58000/api/v1",
   healthUrl: "http://127.0.0.1:58000/health/live",
+  // The mail sink shares the backend's network, so its API is published on the backend's ports.
+  mailUrl: "http://127.0.0.1:58025/api/v1/info",
   webPort,
   appUrl: `http://127.0.0.1:${webPort}`,
   operatorPort,
   operatorUrl: `http://127.0.0.1:${operatorPort}`,
   operatorApiUrl: "http://127.0.0.1:58000/operator/v1",
-  ports: [55432, 56379, 55672, 58000, Number(webPort), Number(operatorPort)],
+  ports: [
+    55432,
+    56379,
+    55672,
+    58000,
+    Number(oidcPort),
+    Number(webPort),
+    Number(operatorPort),
+    ...(process.env.REAL_E2E_CALLS === "1" ? [7880, 7881] : []),
+  ],
 };
 
 const composeEnv = {
@@ -43,6 +56,7 @@ const composeEnv = {
   POSTGRES_PORT: "55432",
   REDIS_PORT: "56379",
   BACKEND_PORT: "58000",
+  REAL_E2E_OIDC_PORT: oidcPort,
   FRONTEND_PORT: webPort,
   REAL_E2E_WEB_PORT: webPort,
   FRONTEND_WEB_PORT: webPort,
@@ -145,20 +159,31 @@ export async function stopProcess(child) {
   if (child.exitCode === null) signalGroup(child, "SIGKILL");
 }
 
+// REAL_E2E_CALLS=1 also starts the LiveKit media plane (compose profile `calls`); the backend then needs
+// CHAT_CALLS_MEDIA_PROVIDER=LiveKit and LIVEKIT_CLIENT_URL=ws://127.0.0.1:7880 in the environment.
+const withCalls = process.env.REAL_E2E_CALLS === "1";
+const profiles = [
+  "--profile",
+  "messaging",
+  ...(withCalls ? ["--profile", "calls"] : []),
+];
+
 export async function down() {
-  await compose(["--profile", "messaging", "down", "-v", "--remove-orphans"]);
+  await compose([...profiles, "down", "-v", "--remove-orphans"]);
 }
 
 export async function up() {
   await compose([
-    "--profile",
-    "messaging",
+    ...profiles,
     "up",
     "-d",
     "postgres",
     "redis",
     "rabbitmq",
+    "oidc-mock",
     "backend",
+    "mailpit",
+    ...(withCalls ? ["livekit"] : []),
   ]);
 }
 
@@ -169,7 +194,10 @@ export async function logs() {
     "postgres",
     "redis",
     "rabbitmq",
+    "oidc-mock",
     "backend",
+    "mailpit",
+    ...(withCalls ? ["livekit"] : []),
   ]);
 }
 

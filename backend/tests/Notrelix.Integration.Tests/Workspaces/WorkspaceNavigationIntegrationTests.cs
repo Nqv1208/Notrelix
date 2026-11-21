@@ -245,6 +245,47 @@ public sealed class WorkspaceNavigationIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Pin_PrunesStoredPinsTheMemberCanNoLongerReadInTheSameTransaction_AndUnpinByIdAlwaysWorks()
+    {
+        var stack = await SeedWorkspaceStackAsync();
+        var boards = await SeedBoardsAsync(stack.AccountId, stack.WorkspaceId, stack.OwnerId, WorkspaceNavigationRules.PinLimit + 1);
+        var gone = Enumerable.Range(0, 10).Select(_ => Guid.CreateVersion7()).ToList();
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            // 40 pins on Boards the member reads, 10 on Boards that no longer exist: 50 stored, so the old count refused a 51st.
+            for (var i = 0; i < 40; i++)
+                seed.PinnedResources.Add(PinnedResource.Create(
+                    stack.AccountId, stack.WorkspaceId, stack.MemberId, NavigationResourceKinds.Board, boards[i], i, BaseTime.AddSeconds(i)));
+            for (var i = 0; i < gone.Count; i++)
+                seed.PinnedResources.Add(PinnedResource.Create(
+                    stack.AccountId, stack.WorkspaceId, stack.MemberId, NavigationResourceKinds.Board, gone[i], 40 + i, BaseTime.AddSeconds(40 + i)));
+            await seed.SaveChangesAsync();
+        }
+        (await CountRowsAsync()).Pins.Should().Be(WorkspaceNavigationRules.PinLimit);
+        using var member = CreateProvider(stack.AccountId, stack.MemberId);
+
+        await SendAsync(member, new PinResourceCommand(stack.WorkspaceId, NavigationResourceKinds.Board, boards[^1]));
+
+        await using (var check = _db.CreateOwnerContext(SystemTenant()))
+        {
+            var stored = await check.PinnedResources.Where(p => p.UserId == stack.MemberId).Select(p => p.ResourceId).ToListAsync();
+            stored.Should().HaveCount(41, "the 10 unreadable pins were deleted with the new pin");
+            stored.Should().NotIntersectWith(gone);
+            stored.Should().Contain(boards[^1]);
+        }
+
+        // A Board the member loses access to keeps its pin until the next pin, and the member can still unpin it by id.
+        await using (var change = _db.CreateOwnerContext(SystemTenant()))
+        {
+            var stored = await change.Boards.SingleAsync(b => b.Id == boards[0]);
+            stored.ChangeVisibility(BoardVisibility.Private, stack.OwnerId, BaseTime);
+            await change.SaveChangesAsync();
+        }
+        await SendAsync(member, new UnpinResourceCommand(stack.WorkspaceId, NavigationResourceKinds.Board, boards[0]));
+        (await CountRowsAsync()).Pins.Should().Be(40);
+    }
+
+    [Fact]
     public async Task ConcurrentPinsAtTheCapBoundary_AdmitExactlyOne()
     {
         var stack = await SeedWorkspaceStackAsync();

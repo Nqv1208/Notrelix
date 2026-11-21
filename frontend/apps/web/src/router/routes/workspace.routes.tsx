@@ -4,6 +4,7 @@ import { workspaceRoute } from "./base.routes";
 import { HomePage } from "../../routes/workspaces/$workspaceId/home";
 import { LibraryPage } from "../../routes/workspaces/$workspaceId/library";
 import { ArchivedBoardsPage } from "../../routes/workspaces/$workspaceId/archived-boards";
+import { DeletedSpacesPage } from "../../routes/workspaces/$workspaceId/deleted-spaces";
 import { SettingsPage } from "../../routes/workspaces/$workspaceId/settings";
 import { MembersPage } from "../../routes/workspaces/$workspaceId/members";
 import { TeamsPage } from "../../routes/workspaces/$workspaceId/teams";
@@ -51,6 +52,13 @@ export const archivedBoardsRoute = createRoute({
     const { tab, spaceId } = archivedBoardsRoute.useSearch();
     return <ArchivedBoardsPage tab={tab} spaceId={spaceId} />;
   },
+});
+
+/** Deleted departments inside their 30-day window (restore). */
+export const deletedSpacesRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/deleted-spaces",
+  component: DeletedSpacesPage,
 });
 
 const membersSearchSchema = z.object({

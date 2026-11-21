@@ -13,6 +13,7 @@ import {
   usePeopleDirectory,
   useSavedViews,
   useWorkspaceAutomations,
+  useWorkspaceBoards,
 } from "@notrelix/work-management-state";
 import type { BoardSettingsFieldType } from "@notrelix/work-management-core";
 import {
@@ -125,6 +126,16 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
     previewFormula,
   } = useBoardSettings(boardId, workspaceId);
   const deletedList = useDeletedFields(boardId, workspaceId, !forbidden);
+  const workspaceBoards = useWorkspaceBoards(workspaceId);
+  const relationBoards = useMemo(
+    () =>
+      workspaceBoards.data?.map((b) => ({
+        id: b.id,
+        title: b.title,
+        locked: b.isArchived,
+      })),
+    [workspaceBoards.data],
+  );
   const readDeletedAgain = deletedList.refetch;
 
   const actions = useMemo<BoardSettingsActions>(
@@ -400,6 +411,7 @@ export function BoardSettingsPage(props: BoardSettingsPageProps) {
       workspaceRules={workspaceRules}
       labels={labels}
       deletedFields={deletedFields}
+      relationBoards={relationBoards}
       forms={forms}
       formBuilder={
         props.formId ? (

@@ -12,8 +12,8 @@ namespace Notrelix.Application.Features.Chat.Links.Services;
 /// Chat's one answer to "what is this Board or Page called, for this person": the title only when the person can view the resource now,
 /// otherwise null, the same answer whether it is hidden, trashed or gone (UC-CHT-H10, CHT-023). It uses the producing contexts' published
 /// facts (the Governance collection visibility, the Page view decision, the title facts) and never another context's persistence. A
-/// Team has no published visibility fact yet, so it is never viewable here (a recorded gap): a Team link cannot be set and one that
-/// exists degrades to a generic chip.
+/// Team is viewable by whoever Governance lists it for (<see cref="IResourceVisibility.VisibleTeamsAsync"/>) and its name is the title
+/// (UC-CHT-H11), so the chip names a Team only to its viewers.
 /// </summary>
 public sealed class ChatResourceViews(
     IResourceVisibility visibility,
@@ -21,8 +21,8 @@ public sealed class ChatResourceViews(
     IPageTitleFacts pageTitles,
     IBoardTitleFacts boardTitles)
 {
-    /// <summary>The kinds a channel can be linked to now; a Team is a gap until Governance publishes its visibility.</summary>
-    public static bool IsLinkable(string? kind) => kind is ChannelLinkKinds.Board or ChannelLinkKinds.Page;
+    /// <summary>The kinds a channel can be linked to.</summary>
+    public static bool IsLinkable(string? kind) => kind is ChannelLinkKinds.Board or ChannelLinkKinds.Page or ChannelLinkKinds.Team;
 
     /// <summary>The title of one resource when the person may view it, else null.</summary>
     public async Task<string?> TitleAsync(Guid accountId, Guid workspaceId, Guid userId, string kind, Guid resourceId, CancellationToken ct)
@@ -46,6 +46,16 @@ public sealed class ChatResourceViews(
             {
                 foreach (var (id, title) in await boardTitles.TitlesAsync(workspaceId, allowed, ct))
                     result[(ChannelLinkKinds.Board, id)] = title;
+            }
+        }
+
+        var teamIds = refs.Where(r => r.Kind == ChannelLinkKinds.Team).Select(r => r.Id).ToHashSet();
+        if (teamIds.Count > 0)
+        {
+            foreach (var team in await visibility.VisibleTeamsAsync(workspaceId, userId, ct))
+            {
+                if (teamIds.Contains(team.TeamId))
+                    result[(ChannelLinkKinds.Team, team.TeamId)] = team.Name;
             }
         }
 

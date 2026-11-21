@@ -44,6 +44,20 @@ describe("toastFailure", () => {
     unregister();
   });
 
+  it("FUI[account.suspended:no-second-toast] leaves a refused write to the one Account message", () => {
+    const failure = toastFailure(
+      "Could not invite",
+      {
+        kind: "forbidden",
+        status: 403,
+        details: { errorCode: "account.suspended" },
+      },
+      "Ask a workspace owner.",
+    );
+    expect(failure.reason).toBe("account-suspended");
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
   it("keeps the page's own hint for an ordinary permission denial", () => {
     const unregister = registerEmailConfirmationRecovery({
       description: "Confirm your email first, then try again.",
@@ -63,6 +77,23 @@ describe("toastFailure", () => {
     toastFailure("Could not invite", unconfirmed, "Ask a workspace owner.");
     expect(toastError).toHaveBeenCalledWith("Could not invite", {
       description: "Ask a workspace owner.",
+    });
+  });
+
+  it("FUI[workspace.navigation:pin-limit] says why the 51st pin was refused, in the producer's own words", () => {
+    const limit = {
+      kind: "unknown",
+      status: 400,
+      details: {
+        errorCode: "business_rule.violation",
+        detail: "A member can pin at most 50 resources in a workspace.",
+      },
+    };
+
+    toastFailure("Some pins couldn't be updated.", limit, "Try again.");
+
+    expect(toastError).toHaveBeenCalledWith("Some pins couldn't be updated.", {
+      description: "A member can pin at most 50 resources in a workspace.",
     });
   });
 });

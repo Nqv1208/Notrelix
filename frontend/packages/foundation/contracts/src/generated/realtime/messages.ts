@@ -21,6 +21,18 @@ export interface BoardItemUpdatedPayload {
   "value"?: string;
 }
 
+export interface ChatCallChangedPayload {
+  "callId": string;
+  "endReason"?: string | null;
+  "initiatorId": string;
+  "kind": string;
+  "participants": ReadonlyArray<string>;
+  "participantsOmitted": boolean;
+  "spaceId": string;
+  "state": string;
+  "version": number;
+}
+
 export interface ChatMessageAttachmentChangedPayload {
   "attachmentId": string;
   "change": string;
@@ -37,49 +49,49 @@ export interface ChatMessageAttachmentChangedPayload {
 export interface ChatMessageCreatedPayload {
   "authorId": string;
   "clientMessageId"?: string;
-  "content": string | null;
+  "content"?: string | null;
   "contentOmitted": boolean;
-  "createdAt": string | null;
+  "createdAt"?: string | null;
   "deleted": boolean;
-  "editedAt": string | null;
+  "editedAt"?: string | null;
   "id": string;
   "kind": "user" | "system";
-  "replyToId": string | null;
+  "replyToId"?: string | null;
   "sequence": number;
-  "threadRootId": string | null;
-  "threadSequence": number | null;
+  "threadRootId"?: string | null;
+  "threadSequence"?: number | null;
   "version": number;
 }
 
 export interface ChatMessageDeletedPayload {
   "authorId": string;
-  "content": string | null;
+  "content"?: string | null;
   "contentOmitted": boolean;
-  "createdAt": string | null;
+  "createdAt"?: string | null;
   "deleted": boolean;
-  "editedAt": string | null;
+  "editedAt"?: string | null;
   "id": string;
   "kind": "user" | "system";
-  "replyToId": string | null;
+  "replyToId"?: string | null;
   "sequence": number;
-  "threadRootId": string | null;
-  "threadSequence": number | null;
+  "threadRootId"?: string | null;
+  "threadSequence"?: number | null;
   "version": number;
 }
 
 export interface ChatMessageUpdatedPayload {
   "authorId": string;
-  "content": string | null;
+  "content"?: string | null;
   "contentOmitted": boolean;
-  "createdAt": string | null;
+  "createdAt"?: string | null;
   "deleted": boolean;
-  "editedAt": string | null;
+  "editedAt"?: string | null;
   "id": string;
   "kind": "user" | "system";
-  "replyToId": string | null;
+  "replyToId"?: string | null;
   "sequence": number;
-  "threadRootId": string | null;
-  "threadSequence": number | null;
+  "threadRootId"?: string | null;
+  "threadSequence"?: number | null;
   "version": number;
 }
 
@@ -123,6 +135,7 @@ export interface RealtimePresenceServerFrame {
 }
 
 export interface RealtimeTypingClientFrame {
+  "state"?: "start" | "stop";
   "subscriptionId": string;
   "type": "typing";
 }
@@ -138,6 +151,7 @@ export type GeneratedRealtimeMessage =
   | { eventType: "board.item.created"; payload: BoardItemCreatedPayload }
   | { eventType: "board.item.moved"; payload: BoardItemMovedPayload }
   | { eventType: "board.item.updated"; payload: BoardItemUpdatedPayload }
+  | { eventType: "chat.call.changed"; payload: ChatCallChangedPayload }
   | { eventType: "chat.message.attachment.changed"; payload: ChatMessageAttachmentChangedPayload }
   | { eventType: "chat.message.created"; payload: ChatMessageCreatedPayload }
   | { eventType: "chat.message.deleted"; payload: ChatMessageDeletedPayload }

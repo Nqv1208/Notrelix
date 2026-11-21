@@ -165,11 +165,11 @@ test("the link-copied toast keeps the Final-States padding and rhythm", async ({
 }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/workspaces/mock-workspace-primary/boards/mock-board-erp");
-  const card = page.locator("article").first();
-  await card.hover();
-  await card
-    .getByRole("button", { name: /tuỳ chọn|Thao tác|Thêm/i })
-    .first()
+  // The board card has no menu of its own: "Copy link" is in the actions menu of the card popup.
+  await page.locator("article button[data-card-id]").first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Thao tác trên thẻ" })
     .click();
   await page.getByRole("menuitem", { name: /Sao chép liên kết/ }).click();
   const toast = page.locator("[data-sonner-toast]").first();

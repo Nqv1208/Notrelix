@@ -122,6 +122,11 @@ public static class EndpointExtensions
                 ErrorCodes.Unauthorized,
                 "Unauthorized",
                 primary.Message),
+            ApplicationErrorType.Forbidden => (
+                StatusCodes.Status403Forbidden,
+                ErrorCodes.Forbidden,
+                "Forbidden",
+                primary.Message),
             ApplicationErrorType.NotFound => (
                 StatusCodes.Status404NotFound,
                 ErrorCodes.ResourceNotFound,

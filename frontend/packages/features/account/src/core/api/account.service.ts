@@ -1,5 +1,15 @@
 import { resolveApiAssetUrl } from "@notrelix/contracts";
+import {
+  parseSsoDomain,
+  parseSsoProviderSaved,
+  parseSsoSettings,
+  type SsoDomain,
+  type SsoProviderInput,
+  type SsoProviderSaved,
+  type SsoSettings,
+} from "../sso";
 import type {
+  AccountApiTokenRevokedReason,
   AccountLeaveFailure,
   AccountPhotoFailure,
   AccountWorkspaceEntry,
@@ -17,22 +27,39 @@ import type {
   StepUpFactor,
   StepUpPurpose,
   StepUpRequirement,
+  StepUpTarget,
   TwoFactorActivation,
   TwoFactorEnrollment,
   UserProfile,
+  AccountApiTokenPage,
+  AccountTokenScope,
 } from "../types/account";
+import { ACCOUNT_TOKEN_SCOPES } from "../types/account";
 
 export interface AccountApiClient {
-  get<T>(url: string, options?: { skipGlobalErrorToast?: boolean }): Promise<T>;
+  get<T>(
+    url: string,
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
+  ): Promise<T>;
   post<T>(
     url: string,
     body?: unknown,
-    options?: { skipGlobalErrorToast?: boolean; skipAuthRefresh?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      skipAuthRefresh?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   put<T>(
     url: string,
     body?: unknown,
-    options?: { skipGlobalErrorToast?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   patch<T>(
     url: string,
@@ -41,7 +68,10 @@ export interface AccountApiClient {
   ): Promise<T>;
   delete<T>(
     url: string,
-    options?: { skipGlobalErrorToast?: boolean },
+    options?: {
+      skipGlobalErrorToast?: boolean;
+      headers?: Record<string, string>;
+    },
   ): Promise<T>;
   /** Multipart upload; `PUT` replaces a resource. */
   upload<T>(
@@ -63,6 +93,8 @@ export interface AccountEndpoints {
     stepUpCompletePassword: string;
     stepUpClaimProvider: string;
     oauthStepUpStart: (provider: string) => string;
+    oauthLinkStart: (provider: string) => string;
+    oauthUnlink: (provider: string) => string;
     sessions: string;
     sessionRevoke: (sessionId: string) => string;
     sessionsRevokeOthers: string;
@@ -71,9 +103,11 @@ export interface AccountEndpoints {
     mfaDisable: string;
     mfaRecoveryCodes: string;
     changePassword: string;
+    setPassword: string;
   };
   users: {
     updateProfile: string;
+    email: string;
     preferences: string;
     avatar: string;
   };
@@ -85,8 +119,18 @@ export interface AccountEndpoints {
   /** `Workspaces.Workspaces.GetDeletedWorkspaces`: the Owner's Recently deleted list. */
   accounts: {
     deletedWorkspaces: (accountId: string) => string;
+    securityPolicy: string;
+    mfaPolicy: string;
+    sso: string;
+    ssoProvider: string;
+    ssoDomains: string;
+    ssoDomain: (domainId: string) => string;
+    ssoDomainVerify: (domainId: string) => string;
+    ssoRequire: string;
   };
   workspaces: {
+    apiTokens: (workspaceId: string) => string;
+    apiToken: (workspaceId: string, tokenId: string) => string;
     detail: (workspaceId: string) => string;
     unarchive: (workspaceId: string) => string;
     restore: (workspaceId: string) => string;
@@ -327,6 +371,54 @@ export function toActivityPage(wire: ActivityPageWire): AccountActivityPage {
   return { items, nextCursor: wire.nextCursor ?? null };
 }
 
+interface ApiTokenPageWire {
+  readonly items?:
+    | readonly {
+        readonly id?: string;
+        readonly name?: string;
+        readonly status?: string;
+        readonly lastUsedAt?: string | null;
+        readonly expiresAt?: string | null;
+        readonly createdAt?: string;
+        readonly suffix?: string | null;
+        readonly scopes?: readonly string[] | null;
+        readonly revokedReason?: string | null;
+      }[]
+    | null;
+  readonly nextCursor?: string | null;
+}
+
+/** The producer names the reason (`ApiTokenRevokedReason`, serialized as a string). */
+const REVOKED_REASONS: Readonly<Record<string, AccountApiTokenRevokedReason>> =
+  {
+    Manual: "manual",
+    MemberRemoved: "member-removed",
+    MemberSuspended: "member-suspended",
+    MemberLeft: "member-left",
+  };
+
+export function toApiTokenPage(wire: ApiTokenPageWire): AccountApiTokenPage {
+  return {
+    items: (wire.items ?? []).map((item) => ({
+      id: item.id ?? "",
+      name: item.name ?? "",
+      status:
+        item.status === "Revoked" || item.status === "Expired"
+          ? (item.status.toLowerCase() as "revoked" | "expired")
+          : "active",
+      lastUsedAt: item.lastUsedAt ?? null,
+      expiresAt: item.expiresAt ?? null,
+      createdAt: item.createdAt ?? "",
+      suffix: item.suffix ?? null,
+      scopes: ACCOUNT_TOKEN_SCOPES.filter((scope) =>
+        (item.scopes ?? []).includes(scope),
+      ),
+      revokedReason: REVOKED_REASONS[item.revokedReason ?? ""] ?? null,
+    })),
+    nextCursor: wire.nextCursor ?? null,
+  };
+}
+
 /** The producer names the factor (`StepUpRequiredFactor`, serialized as a string). */
 const FACTORS: Readonly<Record<string, StepUpFactor>> = {
   MfaChallenge: "mfa",
@@ -348,6 +440,14 @@ export function createAccountService(
   api: AccountApiClient,
   endpoints: AccountEndpoints,
 ) {
+  /** Account-scoped routes name the Account in `X-Account-Id`; the bootstrap names the member's own. */
+  const accountHeader = async (): Promise<Record<string, string>> => {
+    const bootstrap = await api.get<{ accountId?: string | null }>(
+      endpoints.auth.bootstrap,
+      PAGE_QUIET,
+    );
+    return bootstrap?.accountId ? { "X-Account-Id": bootstrap.accountId } : {};
+  };
   return {
     async getProfile(): Promise<UserProfile> {
       return toUserProfile(await api.get<UserWire>(endpoints.auth.profile));
@@ -526,6 +626,50 @@ export function createAccountService(
       });
     },
 
+    /** Metadata only, newest first; `cursor` is the previous page's `nextCursor`. */
+    async listApiTokens(
+      workspaceId: string,
+      cursor?: string | null,
+    ): Promise<AccountApiTokenPage> {
+      const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+      return toApiTokenPage(
+        await api.get<ApiTokenPageWire>(
+          `${endpoints.workspaces.apiTokens(workspaceId)}${query}`,
+          QUIET,
+        ),
+      );
+    },
+
+    /** Spends an `IssueApiToken` proof. The secret is in this answer alone: hold it in memory, never store it. */
+    async issueApiToken(
+      workspaceId: string,
+      input: {
+        name: string;
+        expiresAt: string;
+        scopes: readonly AccountTokenScope[];
+        stepUpToken: string;
+      },
+    ): Promise<{ id: string; secret: string; name: string }> {
+      const wire = await api.post<{
+        id?: string;
+        rawSecret?: string;
+        name?: string;
+      }>(endpoints.workspaces.apiTokens(workspaceId), input, QUIET);
+      return {
+        id: wire.id ?? "",
+        secret: wire.rawSecret ?? "",
+        name: wire.name ?? input.name,
+      };
+    },
+
+    /** Takes effect at once; revoking a revoked token is a success. */
+    async revokeApiToken(workspaceId: string, tokenId: string): Promise<void> {
+      await api.delete<void>(
+        endpoints.workspaces.apiToken(workspaceId, tokenId),
+        QUIET,
+      );
+    },
+
     async getSecuritySummary(): Promise<AccountSecuritySummary> {
       return toSecuritySummary(
         await api.get<SummaryWire>(endpoints.auth.securitySummary, QUIET),
@@ -609,16 +753,46 @@ export function createAccountService(
     },
 
     /**
-     * Where the browser goes to confirm with a linked provider (a path under the API base). The
-     * provider's page and the way back are the backend's: it keeps the proof in an httpOnly cookie
-     * and returns to `returnUrl` (an internal path), adding `stepUpResult=failed` when it could not.
+     * Starts confirming with a linked provider and answers where the browser goes next (the provider's page).
+     * A POST behind the CSRF check, so no link or form on another site can start it. The way back is the
+     * backend's: it keeps the proof in an httpOnly cookie and returns to `returnUrl` (an internal path),
+     * adding `stepUpResult=failed` when it could not. A handover names its `target`: the proof is refused
+     * for any other workspace or person.
      */
-    providerStepUpPath(
+    async startProviderStepUp(
       provider: string,
       purpose: StepUpPurpose,
       returnUrl: string,
+      target?: StepUpTarget,
+    ): Promise<string> {
+      const wire = await api.post<{ authorizationUrl?: string | null }>(
+        endpoints.auth.oauthStepUpStart(provider),
+        { purpose, returnUrl, ...target },
+        QUIET,
+      );
+      return wire.authorizationUrl ?? "";
+    },
+
+    /**
+     * Where the browser goes to link a provider (a path under the API base): the backend spends the
+     * proof, sends the person to the provider, and returns to `returnUrl` (an internal path) with
+     * `link=linked|already|collision|failed&provider=...` added.
+     */
+    providerLinkPath(
+      provider: string,
+      stepUpToken: string,
+      returnUrl: string,
     ): string {
-      return `${endpoints.auth.oauthStepUpStart(provider)}?purpose=${encodeURIComponent(purpose)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+      return `${endpoints.auth.oauthLinkStart(provider)}?stepUpToken=${encodeURIComponent(stepUpToken)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+    },
+
+    /** Removes a linked provider; the proof is spent. Refused (409) when it is the last way to sign in. */
+    async unlinkProvider(provider: string, stepUpToken: string): Promise<void> {
+      await api.post(
+        endpoints.auth.oauthUnlink(provider),
+        { stepUpToken },
+        QUIET,
+      );
     },
 
     /** Reads, once, the proof(s) the provider re-authentication left; enrollment gets a second for its activation. */
@@ -641,10 +815,11 @@ export function createAccountService(
       purpose: StepUpPurpose,
       challengeToken: string,
       code: string,
+      target?: StepUpTarget,
     ): Promise<string> {
       const wire = await api.post<{ proofToken?: string | null }>(
         endpoints.auth.stepUpCompleteMfa,
-        { purpose, challengeToken, code },
+        { purpose, challengeToken, code, ...target },
         QUIET,
       );
       return wire.proofToken ?? "";
@@ -653,10 +828,11 @@ export function createAccountService(
     async completeStepUpWithPassword(
       purpose: StepUpPurpose,
       password: string,
+      target?: StepUpTarget,
     ): Promise<string> {
       const wire = await api.post<{ proofToken?: string | null }>(
         endpoints.auth.stepUpCompletePassword,
-        { purpose, password },
+        { purpose, password, ...target },
         QUIET,
       );
       return wire.proofToken ?? "";
@@ -673,6 +849,119 @@ export function createAccountService(
       stepUpToken?: string;
     }): Promise<void> {
       await api.post<void>(endpoints.auth.changePassword, input, QUIET);
+    },
+
+    /** A first password for a person who signs in with a provider; the proof is a `ChangePassword` one. */
+    async setFirstPassword(input: {
+      newPassword: string;
+      stepUpToken: string;
+    }): Promise<void> {
+      await api.post<void>(endpoints.auth.setPassword, input, QUIET);
+    },
+
+    /**
+     * Asks for a new sign-in email (`ChangeSecurityIdentity` proof). The producer answers the same for a free
+     * and a taken address; the link goes to the new inbox and the old address keeps working until it is opened.
+     */
+    async requestEmailChange(input: {
+      email: string;
+      stepUpToken: string;
+    }): Promise<{ pendingEmail: string | null }> {
+      const wire = await api.post<{ pendingEmail?: string | null }>(
+        endpoints.users.email,
+        input,
+        QUIET,
+      );
+      return { pendingEmail: wire.pendingEmail ?? null };
+    },
+
+    /** The Account's MFA requirement (every member reads it) and whether the caller is the Account Owner who may change it. */
+    async getAccountMfaPolicy(): Promise<{
+      required: boolean;
+      canManage: boolean;
+    }> {
+      const wire = await api.get<{ requireMfa?: boolean; canManage?: boolean }>(
+        endpoints.accounts.securityPolicy,
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
+      return {
+        required: wire?.requireMfa === true,
+        canManage: wire?.canManage === true,
+      };
+    },
+
+    /** Only the Account Owner may: Admin and Member answer 403. */
+    async setAccountMfaPolicy(required: boolean): Promise<void> {
+      await api.put<void>(
+        endpoints.accounts.mfaPolicy,
+        { required },
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
+    },
+
+    /** The Account's single sign-on setup. Owner only: anyone else answers 403. The secret is never in the answer. */
+    async getSso(): Promise<SsoSettings> {
+      return parseSsoSettings(
+        await api.get<unknown>(endpoints.accounts.sso, {
+          ...PAGE_QUIET,
+          headers: await accountHeader(),
+        }),
+      );
+    },
+
+    /** Saves (or replaces) the one provider; the answer says whether it is Active or still a Draft and why. */
+    async saveSsoProvider(input: SsoProviderInput): Promise<SsoProviderSaved> {
+      return parseSsoProviderSaved(
+        await api.put<unknown>(endpoints.accounts.ssoProvider, input, {
+          ...PAGE_QUIET,
+          headers: await accountHeader(),
+        }),
+      );
+    },
+
+    async removeSsoProvider(): Promise<void> {
+      await api.delete<void>(endpoints.accounts.ssoProvider, {
+        ...PAGE_QUIET,
+        headers: await accountHeader(),
+      });
+    },
+
+    /** Adding a domain this Account already has answers the existing row. */
+    async addSsoDomain(domain: string): Promise<SsoDomain> {
+      return parseSsoDomain(
+        await api.post<unknown>(
+          endpoints.accounts.ssoDomains,
+          { domain },
+          { ...PAGE_QUIET, headers: await accountHeader() },
+        ),
+      );
+    },
+
+    /** A DNS miss is not an error: the row comes back still Pending. */
+    async verifySsoDomain(domainId: string): Promise<SsoDomain> {
+      return parseSsoDomain(
+        await api.post<unknown>(
+          endpoints.accounts.ssoDomainVerify(domainId),
+          undefined,
+          { ...PAGE_QUIET, headers: await accountHeader() },
+        ),
+      );
+    },
+
+    async removeSsoDomain(domainId: string): Promise<void> {
+      await api.delete<void>(endpoints.accounts.ssoDomain(domainId), {
+        ...PAGE_QUIET,
+        headers: await accountHeader(),
+      });
+    },
+
+    /** 409 `accounts.sso.not-ready` until the provider is Active and a domain is Verified. */
+    async setSsoRequired(required: boolean): Promise<void> {
+      await api.put<void>(
+        endpoints.accounts.ssoRequire,
+        { required },
+        { ...PAGE_QUIET, headers: await accountHeader() },
+      );
     },
 
     async disableTwoFactor(stepUpToken: string): Promise<void> {

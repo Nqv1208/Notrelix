@@ -69,6 +69,11 @@ export function isWorkspaceAdmin(role: WorkspaceRole | null): boolean {
   return role === "owner" || role === "admin";
 }
 
+/** `ManageWorkspace` (settings, sharing switch, archive, handover) is the Owner's alone; the role baseline gives an Admin no write here. */
+export function canManageWorkspace(role: WorkspaceRole | null): boolean {
+  return role === "owner";
+}
+
 /** Owners who still hold the role actively (suspended owners do not count). */
 export function countOwners(members: readonly WorkspaceMember[]): number {
   return members.filter(
@@ -77,7 +82,13 @@ export function countOwners(members: readonly WorkspaceMember[]): number {
 }
 
 export type MemberActionBlock =
-  "not-admin" | "self" | "last-owner" | "owner-by-transfer" | "suspended";
+  | "not-admin"
+  | "self"
+  | "last-owner"
+  | "owner-by-transfer"
+  | "admin-by-owner"
+  | "owner-only"
+  | "suspended";
 
 export interface MemberCapabilities {
   /** Roles the viewer may pick for this member (empty = read-only). */
@@ -121,16 +132,22 @@ export function memberCapabilities(
     return blocked("self");
   // Only an owner may change another owner; admins manage non-owners.
   if (isOwner && viewer.role !== "owner") return blocked("owner-by-transfer");
+  // The producer lets only an Owner remove, suspend or activate an Admin (actor-versus-target guard).
+  if (member.role === "admin" && viewer.role !== "owner")
+    return blocked("admin-by-owner");
 
   const suspended = member.membership === "suspended";
+  // Changing a role is Owner-only (`ChangeMemberRole`): an Admin reads the role as text.
+  const ownerOnly = viewer.role !== "owner";
   return {
     // The producer rejects role changes of suspended members.
-    assignableRoles: suspended
-      ? []
-      : isOwner
-        ? ["owner", ...ASSIGNABLE_ROLES]
-        : [...ASSIGNABLE_ROLES],
-    roleBlockedBy: suspended ? "suspended" : null,
+    assignableRoles:
+      suspended || ownerOnly
+        ? []
+        : isOwner
+          ? ["owner", ...ASSIGNABLE_ROLES]
+          : [...ASSIGNABLE_ROLES],
+    roleBlockedBy: ownerOnly ? "owner-only" : suspended ? "suspended" : null,
     canRemove: true,
     removeBlockedBy: null,
     // Driven by the producer's status: an active member can be suspended, a

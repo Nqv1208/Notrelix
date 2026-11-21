@@ -1,4 +1,4 @@
-import { Pin, PinOff } from "lucide-react";
+import { Pin } from "lucide-react";
 import { Avatar, AvatarFallback, Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMessage, ChatPin } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
@@ -6,6 +6,7 @@ import type { ChatCopy } from "./chat.copy";
 import { avatarToneOf, initialsOf } from "./chat-initials";
 import { formatClock } from "./chat-message-row";
 import { ChatPanelHeader } from "./chat-panel-header";
+import { PinRowMenu } from "./chat-pin-ui";
 import { fillCopy, pluralCopy } from "./use-chat-copy";
 
 export interface PinnedBarProps {
@@ -74,9 +75,14 @@ export interface PinsPanelProps {
   readonly authorName: (userId: string) => string;
   /** The channel as the header names it, such as "# erp-rollout". */
   readonly spaceLabel: string;
-  readonly onClose: () => void;
+  /** Needed only when the panel draws its own header. */
+  readonly onClose?: () => void;
+  /** Inside a section of the info panel: no header, the section names it. */
+  readonly embedded?: boolean;
   readonly canUnpin: (pin: ChatPin) => boolean;
+  /** Asks to unpin; the workspace confirms first. */
   readonly onUnpin: (message: ChatMessage) => void;
+  readonly onOpenMessage: (message: ChatMessage) => void;
   readonly unpinBusy: boolean;
 }
 
@@ -91,8 +97,10 @@ export function PinsPanel({
   authorName,
   spaceLabel,
   onClose,
+  embedded = false,
   canUnpin,
   onUnpin,
+  onOpenMessage,
   unpinBusy,
 }: PinsPanelProps) {
   const pins = hooks.usePins(workspaceId, channelId);
@@ -104,16 +112,18 @@ export function PinsPanel({
       className="flex min-h-0 flex-1 flex-col"
       data-testid="chat-pins-panel"
     >
-      <ChatPanelHeader
-        title={copy.pins.title}
-        subtitle={fillCopy(copy.pins.subtitle, {
-          space: spaceLabel,
-          count: String(items.length),
-        })}
-        closeLabel={copy.pins.close}
-        onClose={onClose}
-      />
-      {items.length > 0 ? (
+      {embedded ? null : (
+        <ChatPanelHeader
+          title={copy.pins.title}
+          subtitle={fillCopy(copy.pins.subtitle, {
+            space: spaceLabel,
+            count: String(items.length),
+          })}
+          closeLabel={copy.pins.close}
+          onClose={onClose ?? (() => undefined)}
+        />
+      )}
+      {items.length > 0 && !embedded ? (
         <p className="border-b border-border px-4 py-2.5 text-compact text-muted-foreground max-md:hidden">
           {fillCopy(copy.pins.summary, { count: String(items.length) })}
         </p>
@@ -177,20 +187,15 @@ export function PinsPanel({
                     {pinDayLabel(pin.message.createdAt, locale, timeZone)}
                   </time>
                   <span className="flex-1" />
-                  {canUnpin(pin) ? (
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      className="size-7 text-muted-foreground"
-                      disabled={unpinBusy}
-                      title={copy.toolbar.unpin}
-                      aria-label={`${copy.toolbar.unpin}: ${pin.message.content ?? ""}`}
-                      onClick={() => onUnpin(pin.message)}
-                    >
-                      <PinOff aria-hidden="true" />
-                    </Button>
-                  ) : null}
+                  <PinRowMenu
+                    copy={copy}
+                    snippet={pin.message.content ?? ""}
+                    disabled={unpinBusy}
+                    onOpenMessage={() => onOpenMessage(pin.message)}
+                    onUnpin={
+                      canUnpin(pin) ? () => onUnpin(pin.message) : undefined
+                    }
+                  />
                 </div>
                 <p className="mt-1.5 mb-1 line-clamp-3 text-sm leading-[1.5] break-words whitespace-pre-wrap">
                   {pin.message.deleted

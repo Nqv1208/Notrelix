@@ -30,8 +30,8 @@ const CHIP =
 
 /**
  * The link of a channel in its header (UC-CHT-H10). With a title the chip opens the resource; without access it is a generic,
- * non-clickable chip that names only the kind (a hidden, a deleted and a missing resource look the same); a kind with no route
- * here (a Team) is the same generic chip. The resource's own page decides access again when it is opened.
+ * non-clickable chip that names only the kind (a hidden, a deleted and a missing resource look the same, a Team included); a kind
+ * with no route here is the same generic chip. The resource's own page decides access again when it is opened.
  */
 export function ChatLinkChip({
   link,

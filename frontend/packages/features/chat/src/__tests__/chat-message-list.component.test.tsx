@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@notrelix/testing";
+import { fireEvent, render, screen, waitFor, within } from "@notrelix/testing";
 import {
   ChatMessageList,
   type ChatMessageListProps,
 } from "../web/components/chat-message-list";
 import { buildChatRows, type PendingMessage } from "../core/model/chat-model";
 import type { ChatMessage } from "../core/types/chat";
-import { en } from "../web/components/chat.copy";
+import { en, vi as viCopy } from "../web/components/chat.copy";
+import { systemTextOf } from "../web/components/use-chat-copy";
 
 const ME = "user-me";
 const OTHER = "user-other";
@@ -176,6 +177,51 @@ describe("ChatMessageList", () => {
     render(<ChatMessageList {...props({ messages })} />);
     expect(screen.getByText("joined the channel")).not.toBeNull();
     expect(screen.getByText(/^System:/)).not.toBeNull();
+  });
+
+  it("says group, not channel, for the announcements of a group, in both languages", () => {
+    const messages = [
+      message(1, { kind: "system", content: "added a member to the group" }),
+    ];
+    render(<ChatMessageList {...props({ messages })} />);
+    expect(screen.getByText("added a member to the group")).not.toBeNull();
+    expect(Object.keys(viCopy.list.systemText)).toEqual(
+      Object.keys(en.list.systemText),
+    );
+    expect(viCopy.list.systemText["added a member to the group"]).toMatch(
+      /nhóm/,
+    );
+    expect(viCopy.list.systemText["left the group"]).toMatch(/nhóm/);
+    expect(viCopy.list.systemText["left the channel"]).toMatch(/kênh/);
+  });
+
+  it("renders every system message kind through the copy files, in both languages", () => {
+    // The lines the backend stores (ChatSystemMessages); each must read in Vietnamese and keep its English twin.
+    const stored = [
+      "created the channel",
+      "joined the channel",
+      "left the channel",
+      "was removed from the channel",
+      "added a member to the channel",
+      "archived the channel",
+      "unarchived the channel",
+      "pinned a message",
+      "unpinned a message",
+      "added a member to the group",
+      "left the group",
+      "renamed the channel to erp-rollout",
+    ];
+    for (const line of stored) {
+      expect(systemTextOf(en, line)).toBe(line);
+      const vietnamese = systemTextOf(viCopy, line);
+      expect(vietnamese, line).not.toBe(line);
+      expect(vietnamese, line).toMatch(/^đã /);
+    }
+    expect(systemTextOf(viCopy, "renamed the channel to erp-rollout")).toBe(
+      "đã đổi tên kênh thành erp-rollout",
+    );
+    // A line the copy does not know shows as stored, never blank.
+    expect(systemTextOf(viCopy, "something new")).toBe("something new");
   });
 
   it("offers edit and delete in the More menu only on the caller's own message", async () => {
@@ -375,5 +421,116 @@ describe("ChatMessageList: the thread chip of a root", () => {
     expect(screen.getByTestId("chat-thread-chip").textContent).toContain(
       "5 replies",
     );
+  });
+});
+
+describe("ChatMessageList: the Archived mark on the thread chip", () => {
+  const daysAgo = (days: number) =>
+    new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  it("marks a thread inactive for 7 days, and not one with a reply inside the week", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          onOpenThread: vi.fn(),
+          messages: [
+            message(1, {
+              threadReplyCount: 2,
+              threadLastReplyAt: daysAgo(8),
+            }),
+            message(2, {
+              threadReplyCount: 1,
+              threadLastReplyAt: daysAgo(2),
+            }),
+          ],
+        })}
+      />,
+    );
+    const chips = screen.getAllByTestId("chat-thread-chip");
+    expect(chips[0]!.textContent).toContain(en.thread.archivedChip);
+    expect(chips[0]!.getAttribute("aria-label")).toContain(
+      en.thread.archivedChip,
+    );
+    expect(chips[1]!.textContent).not.toContain(en.thread.archivedChip);
+  });
+
+  it("drops the mark when a live reply moves the last reply time (a reply reopens the thread)", () => {
+    render(
+      <ChatMessageList
+        {...props({
+          onOpenThread: vi.fn(),
+          messages: [
+            message(1, {
+              threadReplyCount: 2,
+              threadLastReplyAt: daysAgo(9),
+            }),
+          ],
+          threadCounts: {
+            "m-1": { replyCount: 3, lastReplyAt: new Date().toISOString() },
+          },
+        })}
+      />,
+    );
+    const chip = screen.getByTestId("chat-thread-chip");
+    expect(chip.textContent).toContain("3 replies");
+    expect(chip.textContent).not.toContain(en.thread.archivedChip);
+  });
+});
+
+describe("ChatMessageList jump to latest", () => {
+  function scrolledUp(top: number) {
+    const log = screen.getByRole("log");
+    Object.defineProperty(log, "scrollHeight", {
+      configurable: true,
+      value: 5000,
+    });
+    Object.defineProperty(log, "clientHeight", {
+      configurable: true,
+      value: 500,
+    });
+    log.scrollTop = top;
+    const scrollTo = vi.fn();
+    log.scrollTo = scrollTo as unknown as typeof log.scrollTo;
+    fireEvent.scroll(log);
+    return { log, scrollTo };
+  }
+
+  it("is a floating pill that is hidden at the bottom and counts new messages while scrolled up", () => {
+    const { rerender } = render(
+      <ChatMessageList {...props({ messages: [message(1)] })} />,
+    );
+    const layer = screen.getByTestId("chat-jump-latest-layer");
+    expect(layer.className).toContain("absolute");
+    expect(layer.querySelector("button")?.getAttribute("data-visible")).toBe(
+      "false",
+    );
+    scrolledUp(0);
+    expect(
+      screen
+        .getByRole("button", { name: en.list.jumpLatest })
+        .getAttribute("data-visible"),
+    ).toBe("true");
+    rerender(
+      <ChatMessageList
+        {...props({ messages: [message(1), message(2), message(3)] })}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: en.list.jumpLatest }).textContent,
+    ).toBe("2 new messages");
+  });
+
+  it("glides to the newest message and hands focus to the log; far away it lands one screen above first", async () => {
+    const onJumpLatest = vi.fn();
+    render(
+      <ChatMessageList {...props({ messages: [message(1)], onJumpLatest })} />,
+    );
+    const { log, scrollTo } = scrolledUp(0);
+    fireEvent.click(screen.getByRole("button", { name: en.list.jumpLatest }));
+    expect(onJumpLatest).toHaveBeenCalledTimes(1);
+    expect(log.scrollTop).toBe(4000);
+    await waitFor(() => expect(log.scrollTop).toBe(4500));
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(log);
   });
 });

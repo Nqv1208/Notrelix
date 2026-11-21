@@ -103,6 +103,7 @@ public sealed class DocumentsNonMemberNotFoundTests : IAsyncLifetime
         yield return ("trash a page", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/archive", null);
         yield return ("restore a page", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/restore", null);
         yield return ("delete a page", HttpMethod.Delete, i => $"/api/v1/pages/{i.Page}", null);
+        yield return ("duplicate a page", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/pages/{i.Page}/duplicate", i => "{}");
         yield return ("breadcrumb", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/breadcrumb", null);
         yield return ("page history", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/history", null);
         yield return ("backlinks", HttpMethod.Get, i => $"/api/v1/pages/{i.Page}/backlinks", null);
@@ -122,6 +123,9 @@ public sealed class DocumentsNonMemberNotFoundTests : IAsyncLifetime
         yield return ("restore a version", HttpMethod.Post, i => $"/api/v1/pages/{i.Page}/versions/{i.Version}/restore", i => "{\"currentBlocks\":[]}");
         yield return ("list templates", HttpMethod.Get, i => $"/api/v1/workspaces/{i.Workspace}/page-templates", null);
         yield return ("save a template", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/page-templates", i => $"{{\"pageId\":\"{i.Page}\",\"name\":\"x\"}}");
+        yield return ("rename a template", HttpMethod.Patch, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}", i => "{\"name\":\"x\",\"expectedVersion\":1}");
+        yield return ("archive a template", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}/archive", i => "{\"expectedVersion\":1}");
+        yield return ("delete a template", HttpMethod.Delete, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}?expectedVersion=1", null);
         yield return ("create a page from a template", HttpMethod.Post, i => $"/api/v1/workspaces/{i.Workspace}/page-templates/{i.Template}/pages", i => "{}");
     }
 

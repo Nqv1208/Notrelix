@@ -10,6 +10,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Requests;
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Documents.Abstractions;
@@ -107,7 +108,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         afterStale.Version.Should().Be(renamed.Version);
 
         _now = BaseTime.AddMinutes(2);
-        await SendAsync(owner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, false, true, "Guest", 14, renamed.Version));
+        await SendAsync(owner, new UpdateWorkspaceSettingsCommand(stack.WorkspaceId, true, true, "Guest", 14, renamed.Version));
         var afterSettings = await GetWorkspaceAsync(owner, stack.WorkspaceId);
         afterSettings.Version.Should().BeGreaterThan(renamed.Version);
 
@@ -525,6 +526,7 @@ public sealed class WorkspaceAdministrationReadIntegrationTests : IAsyncLifetime
         services.AddScoped<IIdempotencyExecutionContextWriter>(sp =>
             sp.GetRequiredService<IdempotencyExecutionContext>());
 
+        services.AddScoped<IAccountStatusFacts, Notrelix.Infrastructure.Accounts.Status.AccountStatusFactsReader>();
         services.AddScoped<IRequestHandler<GetWorkspaceQuery, Result<WorkspaceDto>>, GetWorkspaceQueryHandler>();
         services.AddScoped<IRequestHandler<GetUserWorkspacesQuery, Result<List<WorkspaceDto>>>, GetUserWorkspacesQueryHandler>();
         services.AddScoped<IRequestHandler<GetWorkspaceMembersQuery, Result<CursorPage<WorkspaceMemberDto>>>, GetWorkspaceMembersQueryHandler>();

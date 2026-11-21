@@ -117,7 +117,13 @@ export function useCommandSearch(
   workspaceId: string,
   typed: string,
   enabled: boolean,
-): { readonly term: string; readonly data: CommandSearchDto | null } {
+): {
+  readonly term: string;
+  readonly data: CommandSearchDto | null;
+  /** `loading` while the search is in flight, `error` when it failed; `ready` otherwise. */
+  readonly status: "ready" | "loading" | "error";
+  readonly retry: () => void;
+} {
   const { api } = useAppRuntime();
   const [term, setTerm] = useState("");
   useEffect(() => {
@@ -140,5 +146,17 @@ export function useCommandSearch(
     staleTime: 15_000,
     retry: false,
   });
-  return { term, data: searchable ? (query.data ?? null) : null };
+  const status = !searchable
+    ? "ready"
+    : query.isError
+      ? "error"
+      : query.isPending
+        ? "loading"
+        : "ready";
+  return {
+    term,
+    data: searchable ? (query.data ?? null) : null,
+    status,
+    retry: () => void query.refetch(),
+  };
 }

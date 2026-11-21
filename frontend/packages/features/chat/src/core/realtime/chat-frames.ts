@@ -42,6 +42,8 @@ export interface ChatMessageFramePayload {
   readonly threadRootId: string | null;
   /** The reply's thread sequence (null for the main flow). */
   readonly threadSequence: number | null;
+  /** The Notrelix sticker of a sticker message (null for any other message). */
+  readonly stickerId?: string | null;
 }
 
 /** chat.reaction.v1: one reaction of a message was added or removed (compact: no counts). */
@@ -67,6 +69,9 @@ export interface ChatAttachmentFramePayload {
   readonly uploadedBy: string | null;
   readonly createdAt: string | null;
   readonly downloadPath: string | null;
+  /** An added image's pixel size, so a reader reserves its box before the bytes load. */
+  readonly width: number | null;
+  readonly height: number | null;
 }
 
 /**
@@ -105,8 +110,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isNonEmpty = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
-const isNullableString = (value: unknown): value is string | null =>
-  value === null || typeof value === "string";
+/** The server leaves a null field out of the frame, so an absent field reads as null. */
+const isNullableString = (value: unknown): value is string | null | undefined =>
+  value === null || value === undefined || typeof value === "string";
+
+const isPositiveInt = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value > 0;
 
 const isCount = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0;
@@ -139,12 +148,12 @@ export function parseChatMessageFrame(
     sequence,
     authorId,
     kind,
-    content,
+    content: content ?? null,
     contentOmitted,
     deleted,
-    createdAt: payload.createdAt,
-    editedAt: payload.editedAt,
-    replyToId: payload.replyToId,
+    createdAt: payload.createdAt ?? null,
+    editedAt: payload.editedAt ?? null,
+    replyToId: payload.replyToId ?? null,
     version: payload.version,
     clientMessageId: isNonEmpty(payload.clientMessageId)
       ? payload.clientMessageId
@@ -156,6 +165,7 @@ export function parseChatMessageFrame(
       isCount(payload.threadSequence) && payload.threadSequence >= 1
         ? payload.threadSequence
         : null,
+    stickerId: isNonEmpty(payload.stickerId) ? payload.stickerId : null,
   };
 }
 
@@ -213,6 +223,8 @@ export function parseChatAttachmentFrame(
     uploadedBy: isNonEmpty(uploadedBy) ? uploadedBy : null,
     createdAt: isNonEmpty(createdAt) ? createdAt : null,
     downloadPath: isNonEmpty(downloadPath) ? downloadPath : null,
+    width: isPositiveInt(payload.width) ? payload.width : null,
+    height: isPositiveInt(payload.height) ? payload.height : null,
   };
 }
 
@@ -271,5 +283,45 @@ export function parseChatUnreadFrame(
       ? { lastSequence: payload.lastSequence }
       : {}),
     ...(preview ? { preview } : {}),
+  };
+}
+
+export const CHAT_CALL_EVENT = "chat.call.changed";
+
+/**
+ * chat.call.v1: a call of a space changed. It rides the channel stream and, while the call rings, the per-person stream of each
+ * other member. An advisory: it carries no join token and no room name, so a reader refetches the call over REST by its version.
+ */
+export interface ChatCallFramePayload {
+  readonly callId: string;
+  readonly spaceId: string;
+  readonly state: "ringing" | "active" | "ended";
+  readonly kind: "voice" | "video";
+  readonly initiatorId: string;
+  readonly endReason: string | null;
+  readonly version: number;
+}
+
+export function parseChatCallFrame(
+  payload: unknown,
+): ChatCallFramePayload | null {
+  if (!isRecord(payload)) return null;
+  const { callId, spaceId, state, kind, initiatorId, endReason, version } =
+    payload;
+  if (!isNonEmpty(callId) || !isNonEmpty(spaceId) || !isNonEmpty(initiatorId))
+    return null;
+  if (state !== "ringing" && state !== "active" && state !== "ended")
+    return null;
+  if (kind !== "voice" && kind !== "video") return null;
+  if (!isNullableString(endReason)) return null;
+  if (!isCount(version)) return null;
+  return {
+    callId,
+    spaceId,
+    state,
+    kind,
+    initiatorId,
+    endReason: endReason ?? null,
+    version,
   };
 }

@@ -92,6 +92,10 @@ public class WorkspaceMember : AggregateRoot, IWorkspaceScoped
 
         if (Role == WorkspaceRole.Owner) return;
 
+        // A Guest is limited to shared resources; Owner is the workspace's final responsibility (LD-05).
+        if (Role == WorkspaceRole.Guest)
+            throw new BusinessRuleException(WorkspaceRuleCodes.Workspaces_Member_CannotPromoteGuestToOwner, "A guest cannot become the owner.");
+
         var audit = PrepareAuditUpdate(promotedBy, promotedAt);
         var oldRole = Role;
         Role = WorkspaceRole.Owner;

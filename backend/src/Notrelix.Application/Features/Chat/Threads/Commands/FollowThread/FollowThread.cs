@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Chat.Threads.DTOs;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Messages;
 using Space = Notrelix.Domain.Chat.Spaces.Space;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Chat.Threads.Commands.FollowThread;
 
@@ -15,7 +16,7 @@ namespace Notrelix.Application.Features.Chat.Threads.Commands.FollowThread;
 /// posted read, so only later replies count as unread.
 /// </summary>
 public record FollowThreadCommand(Guid WorkspaceId, Guid ThreadId, bool Following, bool Muted)
-    : ICommand<Result<ThreadFollowDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission
+    : ICommand<Result<ThreadFollowDto>>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IPersonalWorkspaceRequest
 {
     public PermissionAction Action => PermissionAction.ViewWorkspace;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
@@ -40,6 +41,9 @@ public class FollowThreadCommandHandler(
         ChannelAccess.RequireVisible(space, caller, userId);
         if (!space.IsActiveMember(userId))
             throw new NotFoundException(nameof(Space), thread.SpaceId);
+        var threadRoot = await db.ChatMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == thread.RootMessageId && m.SpaceId == thread.SpaceId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Message), thread.RootMessageId);
+        ChannelAccess.RequireInHistory(space, userId, threadRoot);
 
         var follower = await db.ChatThreadFollowers.FirstOrDefaultAsync(
             f => f.RootMessageId == request.ThreadId && f.UserId == userId, cancellationToken);

@@ -10,15 +10,21 @@
  *   docs.templates.list     — GET  /workspaces/:workspaceId/page-templates
  *   docs.templates.create   — POST /workspaces/:workspaceId/page-templates
  *   docs.templates.createPage — POST /workspaces/:workspaceId/page-templates/:templateId/pages
+ *   docs.templates.update   — PATCH /workspaces/:workspaceId/page-templates/:templateId
+ *   docs.templates.archive  — POST /workspaces/:workspaceId/page-templates/:templateId/archive
+ *   docs.templates.delete   — DELETE /workspaces/:workspaceId/page-templates/:templateId
  */
 
 import { defineMockOperation } from "../../operations/types";
 import {
   created,
+  forbidden,
+  noContent,
   notFound,
   ok,
   type MockHttpResult,
 } from "../../transport/create-response";
+import type { MockStore } from "../../state/mock-store";
 import type {
   MockPageTemplateRecord,
   MockPageVersionRecord,
@@ -78,7 +84,10 @@ function toVersionDto(entry: MockPageVersionRecord): Json {
   };
 }
 
-function toTemplateDto(template: MockPageTemplateRecord): Json {
+function toTemplateDto(
+  template: MockPageTemplateRecord,
+  canManage: boolean,
+): Json {
   return {
     id: template.id,
     name: template.name,
@@ -88,7 +97,23 @@ function toTemplateDto(template: MockPageTemplateRecord): Json {
     blockCount: template.blocks.length,
     createdBy: template.createdBy,
     createdAt: template.createdAt,
+    version: template.version,
+    canManage,
   };
+}
+
+/** The creator or a Workspace Owner or Admin manages a template. */
+function canManageTemplate(
+  store: MockStore,
+  workspaceId: string,
+  template: MockPageTemplateRecord,
+): boolean {
+  const role = store.getCurrentMemberRole(workspaceId);
+  return (
+    template.createdBy === store.getCurrentUser().id ||
+    role === "owner" ||
+    role === "admin"
+  );
 }
 
 /** A captured block: the producer's block shape without a concurrency version. */
@@ -107,6 +132,20 @@ function toVersionBlockDto(
     properties: body.properties,
     position: String(Math.round(block.position ?? 0)).padStart(12, "0"),
   };
+}
+
+/**
+ * Test hooks of the history panel, set by a spec init script. `globalThis.__mockVersions`: "empty" answers no
+ * entries, "fail" fails the list with a 500, "hold" never answers it (loading), or a list of entries the page
+ * shows instead of its own (any of them can be opened). `globalThis.__mockRestore`: "conflict" answers 412 as if
+ * the page changed since it was read.
+ */
+type VersionsHook = "empty" | "fail" | "hold" | readonly Json[];
+function versionsHook(): VersionsHook | undefined {
+  return (globalThis as { __mockVersions?: VersionsHook }).__mockVersions;
+}
+function restoreHook(): "conflict" | undefined {
+  return (globalThis as { __mockRestore?: "conflict" }).__mockRestore;
 }
 
 interface SeenBlock {
@@ -130,6 +169,13 @@ export const versionsOperations = [
     async handle({ params, query, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
+      const hook = versionsHook();
+      if (hook === "fail") {
+        return problem(500, "internal.error", "The history is unavailable.");
+      }
+      if (hook === "hold") return new Promise<never>(() => undefined);
+      if (hook === "empty") return ok({ items: [], nextCursor: null });
+      if (hook) return ok({ items: [...hook], nextCursor: null });
       // The producer's cursor is opaque; here it is the offset of the next entry.
       const limit = Math.min(Number(query.limit) || 50, 200);
       const from = Number(query.cursor) || 0;
@@ -152,6 +198,29 @@ export const versionsOperations = [
     async handle({ params, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
+      // Test hook: `globalThis.__mockSnapshot` "fail" refuses the read of one entry, "hold" never answers it.
+      const snapshot = (globalThis as { __mockSnapshot?: "fail" | "hold" })
+        .__mockSnapshot;
+      if (snapshot === "fail") {
+        return problem(500, "internal.error", "The version is unavailable.");
+      }
+      if (snapshot === "hold") return new Promise<never>(() => undefined);
+      const hook = versionsHook();
+      const fed = Array.isArray(hook)
+        ? (hook as readonly Json[]).find((item) => item.id === params.versionId)
+        : undefined;
+      if (fed) {
+        // A fed entry shows the page as it stands.
+        return ok<Json>({
+          version: fed,
+          title: page.title,
+          blocks: store
+            .getPageBlocks(params.pageId)
+            .slice()
+            .sort((a, b) => a.position - b.position)
+            .map(toVersionBlockDto),
+        });
+      }
       const entry = store.docsHistory.getVersion(
         params.pageId,
         params.versionId,
@@ -214,6 +283,20 @@ export const versionsOperations = [
     async handle({ params, body, store }) {
       const page = store.getPage(params.pageId);
       if (!page || page.trashedAt) return notFound("Page not found");
+      if (restoreHook() === "conflict") {
+        return problem(
+          412,
+          "documents.version.restore-conflict",
+          "The page changed since you looked at it.",
+          {
+            currentBlocks: store
+              .getPageBlocks(params.pageId)
+              .map((block) =>
+                toBlockDto({ ...block, version: block.version + 1 }),
+              ),
+          },
+        );
+      }
       const result = store.docsHistory.restoreVersion(
         params.pageId,
         params.versionId,
@@ -249,7 +332,14 @@ export const versionsOperations = [
         return notFound("Workspace not found");
       }
       return ok<Json[]>(
-        store.docsHistory.listTemplates(params.workspaceId).map(toTemplateDto),
+        store.docsHistory
+          .listTemplates(params.workspaceId)
+          .map((template) =>
+            toTemplateDto(
+              template,
+              canManageTemplate(store, params.workspaceId, template),
+            ),
+          ),
       );
     },
   }),
@@ -284,7 +374,36 @@ export const versionsOperations = [
         description: body?.description,
         userId: store.getCurrentUser().id,
       });
-      return created<Json>(toTemplateDto(template!));
+      return created<Json>(toTemplateDto(template!, true));
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; pageId: string },
+    { title?: string | null },
+    Json
+  >({
+    id: "docs.pages.duplicate",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Pages.DuplicatePage",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/pages/:pageId/duplicate",
+    async handle({ params, body, store }) {
+      const page = store.getPage(params.pageId);
+      if (!page || page.workspaceId !== params.workspaceId || page.trashedAt) {
+        return notFound("Page not found");
+      }
+      if ((body?.title?.trim().length ?? 0) > 200) {
+        return problem(
+          400,
+          "validation.failed",
+          "A title is at most 200 characters.",
+        );
+      }
+      const copy = store.docsHistory.duplicatePage(page.id, body?.title);
+      return created<Json>(copy!);
     },
   }),
 
@@ -336,4 +455,109 @@ export const versionsOperations = [
       );
     },
   }),
+
+  defineMockOperation<
+    { workspaceId: string; templateId: string },
+    { name?: string; description?: string | null; expectedVersion?: number },
+    Json
+  >({
+    id: "docs.templates.update",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Templates.UpdatePageTemplate",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/page-templates/:templateId",
+    async handle({ params, body, store }) {
+      const found = manageTarget(store, params);
+      if ("result" in found) return found.result;
+      const name = body?.name?.trim() ?? "";
+      if (!name || name.length > 256) {
+        return problem(
+          400,
+          "validation.failed",
+          "A template needs a name of at most 256 characters.",
+        );
+      }
+      if (body?.expectedVersion !== found.template.version) {
+        return stale();
+      }
+      store.docsHistory.renameTemplate(found.template, {
+        name,
+        description: body?.description,
+      });
+      return ok<Json>(toTemplateDto(found.template, true));
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; templateId: string },
+    { expectedVersion?: number },
+    never
+  >({
+    id: "docs.templates.archive",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Templates.ArchivePageTemplate",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/page-templates/:templateId/archive",
+    async handle({ params, body, store }) {
+      const found = manageTarget(store, params);
+      if ("result" in found) return found.result;
+      if (body?.expectedVersion !== found.template.version) return stale();
+      store.docsHistory.archiveTemplate(found.template);
+      return noContent();
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string; templateId: string },
+    never,
+    never
+  >({
+    id: "docs.templates.delete",
+    contract: {
+      kind: "openapi",
+      operationId: "Documents.Templates.DeletePageTemplate",
+    },
+    method: "DELETE",
+    route: "/workspaces/:workspaceId/page-templates/:templateId",
+    async handle({ params, query, store }) {
+      const found = manageTarget(store, params);
+      if ("result" in found) return found.result;
+      if (Number(query?.expectedVersion) !== found.template.version) {
+        return stale();
+      }
+      store.docsHistory.deleteTemplate(found.template.id);
+      return noContent();
+    },
+  }),
 ];
+
+/** An outsider and an unknown template are the same NotFound; a member who may not manage it is refused. */
+function manageTarget(
+  store: MockStore,
+  params: { workspaceId: string; templateId: string },
+): { template: MockPageTemplateRecord } | { result: MockHttpResult<unknown> } {
+  if (!store.isCurrentMemberOf(params.workspaceId)) {
+    return { result: notFound("Workspace not found") };
+  }
+  const template = store.docsHistory.findTemplate(
+    params.workspaceId,
+    params.templateId,
+  );
+  if (!template) return { result: notFound("Template not found") };
+  if (!canManageTemplate(store, params.workspaceId, template)) {
+    return { result: forbidden() };
+  }
+  return { template };
+}
+
+function stale(): MockHttpResult<unknown> {
+  return problem(
+    412,
+    "common.precondition-failed",
+    "The template was changed by another request. Reload and retry.",
+  );
+}

@@ -20,7 +20,8 @@ public sealed record ChatMessageCreatedIntegrationEvent(
     DateTimeOffset OccurredAt = default,
     Guid? ReplyToId = null,
     Guid? ThreadRootId = null,
-    long? ThreadSequence = null
+    long? ThreadSequence = null,
+    string? StickerId = null
 ) : IntegrationEvent(
     eventId: EventId,
     messageName: "chat.message.created",

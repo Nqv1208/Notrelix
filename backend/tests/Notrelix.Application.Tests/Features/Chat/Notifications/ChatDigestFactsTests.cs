@@ -70,7 +70,7 @@ public class ChatDigestFactsTests
         var fact = facts.Should().ContainSingle().Subject;
         fact.SpaceName.Should().Be("general");
         fact.Preview.Should().Be("ping @Ana about the release");
-        fact.Path.Should().Be($"/workspaces/{_workspaceId}/chat/{channel.Id}");
+        fact.Path.Should().Be($"/workspaces/{_workspaceId}/chat/{channel.Id}?m={message.Sequence}", "the link opens the message, not only the channel");
         fact.MessageId.Should().Be(message.Id);
     }
 
@@ -193,6 +193,20 @@ public class ChatDigestFactsTests
     }
 
     [Fact]
+    public async Task AThreadReplyLinksToTheMessageThatStartedTheThread()
+    {
+        var channel = Channel();
+        var root = Send(channel, "root");
+        var reply = Message.CreateThreadReply(_accountId, _workspaceId, channel.Id, 2, root.Id, 1, _author, "a reply", "c-reply", false, Now.AddHours(-2));
+        _messages.Add(reply);
+        _followers.Add(ThreadFollower.Follow(_accountId, _workspaceId, root.Id, _ana, false));
+
+        var fact = (await Facts(Candidate(reply, ChatNotificationReasons.ThreadReply))).Single();
+
+        fact.Path.Should().Be($"/workspaces/{_workspaceId}/chat/{channel.Id}?m={root.Sequence}");
+    }
+
+    [Fact]
     public async Task AConversationHasNoNameAndItsOwnPath()
     {
         var direct = Space.CreateDirect(_accountId, _workspaceId, _author, _ana, Now.AddDays(-1));
@@ -202,7 +216,7 @@ public class ChatDigestFactsTests
         var fact = (await Facts(Candidate(message, ChatNotificationReasons.DirectMessage))).Single();
 
         fact.SpaceName.Should().BeNull();
-        fact.Path.Should().Be($"/workspaces/{_workspaceId}/chat/dm/{direct.Id}");
+        fact.Path.Should().Be($"/workspaces/{_workspaceId}/chat/dm/{direct.Id}?m={message.Sequence}");
     }
 
     [Fact]

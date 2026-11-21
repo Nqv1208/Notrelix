@@ -1,5 +1,6 @@
 using Notrelix.Application.Features.Identity.Auth.Commands.RefreshToken;
 using Notrelix.Application.Features.Identity.Auth.Services;
+using Notrelix.Domain.Identity.Mfa;
 using Notrelix.Domain.Identity.Sessions;
 using Notrelix.Domain.Identity.Users;
 
@@ -14,13 +15,53 @@ public class RefreshTokenTests : IdentityHandlerTestBase
         _ledger.Setup(l => l.TryClaimAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
     }
 
+    private readonly Mock<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts> _policy = new();
+
     private RefreshTokenCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
+        _policy.Object,
         JwtServiceMock.Object,
         JwtBlacklistMock.Object,
         _ledger.Object,
         ActivityMock.Object,
         DateTimeProviderMock.Object);
+
+    [Fact]
+    public async Task Handle_WhenTheAccountRequiresMfaAndThePersonHasNoFactor_RefusesAndKeepsTheCredential()
+    {
+        var user = CreateUser();
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        SetupUsers(user);
+        SetupSessions(session);
+        SetupUserMfaMethods();
+        _policy.Setup(p => p.IsMfaRequiredForPersonAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await CreateSut().Handle(new RefreshTokenCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.auth.mfa-enrollment-required");
+        session.RefreshTokenHash.Should().Be(RefreshTokenHash.Create(TestRefreshToken), "a refused refresh rotates nothing");
+        JwtServiceMock.Verify(j => j.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheAccountRequiresMfaAndThePersonHasAFactor_Refreshes()
+    {
+        var user = CreateUser();
+        var session = CreateSession(rawRefreshToken: TestRefreshToken);
+        SetupUsers(user);
+        SetupSessions(session);
+        var method = UserMfaMethod.Create(user.Id, MfaMethodType.AuthenticatorApp, TestNow, SecretRef.Create("secret"));
+        method.Verify(TestNow);
+        SetupUserMfaMethods(method);
+        _policy.Setup(p => p.IsMfaRequiredForPersonAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        JwtServiceMock.Setup(j => j.GenerateAccessToken(user, It.IsAny<Guid?>())).Returns("new-access-token");
+        JwtServiceMock.Setup(j => j.GenerateRefreshToken()).Returns("new-refresh-token");
+
+        var result = await CreateSut().Handle(new RefreshTokenCommand { RefreshToken = TestRefreshToken }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+    }
 
     [Fact]
     public async Task Handle_WhenValidSession_ReturnsNewTokens()

@@ -26,19 +26,21 @@ public static class ChatRealtime
     public const string SpaceChangedEvent = "chat.space.changed";
     public const string ReactionChangedEvent = "chat.reaction.changed";
     public const string AttachmentChangedEvent = "chat.message.attachment.changed";
+    public const string CallChangedEvent = "chat.call.changed";
 
     public const string MessagePayloadContract = "chat.message.v1";
     public const string UnreadPayloadContract = "chat.unread.v1";
     public const string SpaceChangedPayloadContract = "chat.space.v1";
     public const string ReactionPayloadContract = "chat.reaction.v1";
     public const string AttachmentPayloadContract = "chat.attachment.v1";
+    public const string CallPayloadContract = "chat.call.v1";
 
     /// <summary>
-    /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is under 1 KiB,
-    /// so a payload this size keeps the whole frame under the 4096-byte limit. Content that does not fit is left out
-    /// (contentOmitted = true) and the client fetches it by sequence.
+    /// The largest message payload in bytes. The frame envelope (ids, stream key, names, timestamps) is about 650 bytes,
+    /// so a payload this size keeps the whole frame under 2 KiB (the gateway limit is 4096). Content that does not fit
+    /// is left out (contentOmitted = true) and the client fetches it by sequence.
     /// </summary>
-    public const int MaxPayloadBytes = 3000;
+    public const int MaxPayloadBytes = 1300;
 
     /// <summary>
     /// The most recipients one message's unread fan-out reaches (one realtime publish each). A channel above it is
@@ -46,7 +48,13 @@ public static class ChatRealtime
     /// </summary>
     public const int MaxUnreadRecipients = 2000;
 
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
+    // A null field is left out (the client reads an absent field as null) and '+' and non-ASCII text are not escaped, so a
+    // payload is as small as its content allows; the payload is JSON text in a websocket frame, never embedded in HTML.
+    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>
     /// The message payload of the channel stream (contract <see cref="MessagePayloadContract"/>). ThreadRootId is set for a
@@ -69,8 +77,8 @@ public static class ChatRealtime
         long Version,
         Guid? ThreadRootId = null,
         long? ThreadSequence = null,
-        [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        string? ClientMessageId = null);
+        string? ClientMessageId = null,
+        string? StickerId = null);
 
     /// <summary>The longest preview text of an unread frame, in characters.</summary>
     public const int PreviewMaxLength = 140;
@@ -107,7 +115,7 @@ public static class ChatRealtime
         var frame = new MessageFrame(
             e.MessageId, e.Sequence, e.AuthorId, e.Kind, e.Content, ContentOmitted: false, Deleted: false,
             CreatedAt: e.OccurredAt, EditedAt: null, ReplyToId: e.ReplyToId, Version: e.Version,
-            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence, ClientMessageId: e.ClientMessageId);
+            ThreadRootId: e.ThreadRootId, ThreadSequence: e.ThreadSequence, ClientMessageId: e.ClientMessageId, StickerId: e.StickerId);
         return Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
             e.OccurredAt, MessageCreatedEvent, Fit(frame), now);
     }
@@ -173,7 +181,9 @@ public static class ChatRealtime
             added ? e.UploadedBy : null,
             added ? e.AttachmentCreatedAt : null,
             added && e.WorkspaceId is { } workspaceId ? MessageAttachments.DownloadPath(workspaceId, e.MessageId, e.AttachmentId) : null,
-            DetailsOmitted: false);
+            DetailsOmitted: false,
+            Width: added ? e.Width : null,
+            Height: added ? e.Height : null);
         var payload = Serialize(frame);
         if (Encoding.UTF8.GetByteCount(payload.GetRawText()) > MaxPayloadBytes)
             payload = Serialize(new AttachmentChangedFrame(e.MessageId, e.ChangeKind, e.AttachmentId, null, null, null, null, null, null, DetailsOmitted: true));
@@ -193,7 +203,60 @@ public static class ChatRealtime
         Guid? UploadedBy,
         DateTimeOffset? CreatedAt,
         string? DownloadPath,
-        bool DetailsOmitted);
+        bool DetailsOmitted,
+        int? Width = null,
+        int? Height = null);
+
+    /// <summary>
+    /// A call changed (SPEC-CHAT-MEDIA-CALLS section 7): the compact state of the call on the channel stream of its space. A roster too
+    /// large for the frame sends ids only up to the limit and sets ParticipantsOmitted, so a reader refetches the call over REST. The
+    /// frame carries no join token and no room name. Contract <see cref="CallPayloadContract"/>.
+    /// </summary>
+    public static RealtimeResourceChangedV1 ForCallChanged(ChatCallChangedIntegrationEvent e, DateTimeOffset now)
+        => Channel(e.EventId, e.AccountId, e.WorkspaceId, e.SpaceId, e.ActorUserId, e.CorrelationId, e.CausationId,
+            e.OccurredAt, CallChangedEvent, Serialize(CallFrameOf(e)), now, CallPayloadContract);
+
+    /// <summary>The same call payload on the per-person stream of one invited person, so a person with no channel open still rings.</summary>
+    public static RealtimeResourceChangedV1 CallRing(ChatCallChangedIntegrationEvent e, Guid userId, DateTimeOffset now)
+    {
+        var scope = new RealtimeScope(RealtimeScopeKind.User, userId);
+        return new RealtimeResourceChangedV1(
+            Guid.CreateVersion7(),
+            e.AccountId,
+            e.WorkspaceId,
+            e.ActorUserId,
+            e.CorrelationId != Guid.Empty ? e.CorrelationId : Guid.NewGuid(),
+            e.CausationId ?? e.EventId,
+            e.OccurredAt,
+            UserTopicNamespace,
+            UserResourceKind,
+            userId,
+            scope.StreamKey,
+            RealtimeStreamClock.Next(now),
+            CallChangedEvent,
+            CallPayloadContract,
+            Serialize(CallFrameOf(e)));
+    }
+
+    /// <summary>The most roster ids one call frame carries; 25 people at 36 characters stay far below the 4096 byte gateway limit.</summary>
+    public const int CallFrameMaxParticipants = 25;
+
+    private static CallFrame CallFrameOf(ChatCallChangedIntegrationEvent e) => new(
+        e.CallId, e.SpaceId, e.State, e.Kind, e.InitiatorId, e.EndReason,
+        e.ParticipantIds.Take(CallFrameMaxParticipants).ToList(),
+        e.ParticipantIds.Count > CallFrameMaxParticipants, e.Version);
+
+    /// <summary>The call payload (contract <see cref="CallPayloadContract"/>): <c>{ callId, state, kind, initiatorId, participants[], version }</c>.</summary>
+    public sealed record CallFrame(
+        Guid CallId,
+        Guid SpaceId,
+        string State,
+        string Kind,
+        Guid InitiatorId,
+        string? EndReason,
+        IReadOnlyList<Guid> Participants,
+        bool ParticipantsOmitted,
+        long Version);
 
     /// <summary>One space's unread counts for one person, for the per-user stream (the badge refresh).</summary>
     public static RealtimeResourceChangedV1 Unread(

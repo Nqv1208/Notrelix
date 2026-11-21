@@ -107,25 +107,48 @@ describe("ChatLinkChip (UC-CHT-H10)", () => {
     ).toBe("no-access");
   });
 
-  it("is generic and unavailable for a kind with no route here (a Team), in Vietnamese too", () => {
-    const { container } = render(
+  it("opens a linked Team with its name for a viewer of that Team, in Vietnamese too", () => {
+    render(
       <ChatLinkChip
         link={link({
           kind: "governance.team",
-          accessible: true,
+          resourceId: "t-1",
           title: "Platform",
         })}
         workspaceId={WORKSPACE}
         copy={viCopy}
       />,
     );
+    const chip = screen.getByRole("link", {
+      name: "Mở Nhóm đã liên kết Platform",
+    });
+    expect(chip.getAttribute("href")).toBe(
+      `/workspaces/${WORKSPACE}/teams/t-1`,
+    );
+    expect(chip.getAttribute("data-channel-link")).toBe("resolved");
+  });
+
+  it("shows no Team name and no link to a viewer who cannot view the Team", () => {
+    const { container } = render(
+      <ChatLinkChip
+        link={link({
+          kind: "governance.team",
+          resourceId: "t-1",
+          accessible: false,
+          title: null,
+        })}
+        workspaceId={WORKSPACE}
+        copy={en}
+      />,
+    );
     expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByText("Platform")).toBeNull();
+    expect(screen.getByText("Team you cannot view")).toBeTruthy();
     expect(
       container
         .querySelector("[data-channel-link]")
         ?.getAttribute("data-channel-link"),
-    ).toBe("unavailable");
-    expect(screen.getByText("Nhóm đã liên kết")).toBeTruthy();
+    ).toBe("no-access");
   });
 });
 
@@ -147,11 +170,11 @@ describe("ChatHeader link entries (UC-CHT-H10)", () => {
   };
   const props = {
     channel,
-    members: [],
-    viewerId: "me",
     canManage: true,
     joining: false,
-    authorName: () => "x",
+    infoOpen: false,
+    onToggleInfo: () => undefined,
+    onOpenSection: () => undefined,
     copy: en,
     onOpenList: () => undefined,
     onRename: () => undefined,
@@ -175,7 +198,7 @@ describe("ChatHeader link entries (UC-CHT-H10)", () => {
       screen.getByRole("link", { name: /Open the linked Board Roadmap/ }),
     ).toBeTruthy();
 
-    fireEvent.keyDown(screen.getByRole("button", { name: en.header.manage }), {
+    fireEvent.keyDown(screen.getByRole("button", { name: en.panel.more }), {
       key: "Enter",
     });
     fireEvent.click(
@@ -189,7 +212,15 @@ describe("ChatHeader link entries (UC-CHT-H10)", () => {
   it("offers no link entries without the handlers (a viewer), but still shows the chip", () => {
     render(<ChatHeader {...props} canManage={false} />);
     expect(screen.getByRole("link", { name: /Roadmap/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: en.header.manage })).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: en.panel.more }), {
+      key: "Enter",
+    });
+    expect(
+      screen.queryByRole("menuitem", { name: /linked resource/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("menuitem", { name: "Remove the link" }),
+    ).toBeNull();
   });
 });
 

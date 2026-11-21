@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Identity.Public.ApiTokens;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 using Notrelix.Application.Features.Workspaces.Members.Services;
 using Notrelix.Domain.Workspaces.Rules;
@@ -31,9 +32,11 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
     private readonly IWorkspaceOwnerUpdateLocker _locker;
 
     private readonly IAccessChangeSignal _access;
+    private readonly IIdentityApiTokens _apiTokens;
 
-    public SuspendMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IWorkspaceOwnerUpdateLocker locker, IAccessChangeSignal access)
+    public SuspendMemberCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IWorkspaceGrantProjectionService grantProjection, IWorkspaceOwnerUpdateLocker locker, IAccessChangeSignal access, IIdentityApiTokens apiTokens)
     {
+        _apiTokens = apiTokens;
         _access = access;
         _context = context;
         _requestContext = requestContext;
@@ -72,6 +75,10 @@ public class SuspendMemberCommandHandler : IRequestHandler<SuspendMemberCommand,
             request.UserId,
             _dateTimeProvider.UtcNow,
             ct);
+
+        // The person's API tokens in this workspace stop with the suspension, in the same transaction.
+        await _apiTokens.RevokeForMemberAsync(
+            request.UserId, request.WorkspaceId, _requestContext.UserId, MemberAccessEnd.Suspended, ct);
 
         _access.WorkspacePerson(request.WorkspaceId, request.UserId);
         return Result.Success();

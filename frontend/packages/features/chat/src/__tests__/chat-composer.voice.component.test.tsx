@@ -108,7 +108,7 @@ describe("ChatComposer microphone and send (UC-CHT-I04)", () => {
     ).toBeNull();
   });
 
-  it("has no microphone where a voice message cannot be sent (a thread reply)", () => {
+  it("has no microphone where a voice message cannot be sent", () => {
     const { recorder } = fakeRecorder();
     render(<Harness onSend={vi.fn()} recorder={recorder} voice={false} />);
 

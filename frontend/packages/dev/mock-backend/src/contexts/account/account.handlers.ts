@@ -15,7 +15,9 @@ import { ok, validationError } from "../../transport/create-response";
 import { TIME_ZONES } from "../../state/mock-account-pages";
 import { identityProblem } from "../identity/auth-flow.handlers";
 import { accountPagesOperations } from "./account-pages.handlers";
+import { accountApiTokenOperations } from "./account-api-tokens.handlers";
 import { accountSecurityOperations } from "./account-security.handlers";
+import { accountSsoOperations } from "./account-sso.handlers";
 
 const LOCALES = ["vi", "en"] as const;
 const THEMES = ["light", "dark", "system"] as const;
@@ -27,9 +29,47 @@ function normalizePhone(raw: string): string | null | "invalid" {
   return /^\+[1-9]\d{7,14}$/.test(stripped) ? stripped : "invalid";
 }
 
+const accountPolicyOperations = [
+  defineMockOperation<Record<string, never>, never, unknown>({
+    id: "account.securityPolicy.get",
+    contract: { kind: "openapi", operationId: "Accounts.GetSecurityPolicy" },
+    method: "GET",
+    route: "/accounts/security-policy",
+    async handle({ store }) {
+      return ok({
+        requireMfa: store.auth.accountMfaRequired,
+        canManage: store.auth.accountOwner,
+      });
+    },
+  }),
+  defineMockOperation<Record<string, never>, { required?: boolean }, unknown>({
+    id: "account.securityPolicy.setMfa",
+    contract: { kind: "openapi", operationId: "Accounts.SetMfaPolicy" },
+    method: "PUT",
+    route: "/accounts/security-policy/mfa",
+    async handle({ body, store }) {
+      // Only the Account Owner turns it on or off.
+      if (!store.auth.accountOwner)
+        return {
+          status: 403,
+          body: {
+            title: "Forbidden",
+            status: 403,
+            detail: "Only an account Owner can change this.",
+          },
+        };
+      store.auth.accountMfaRequired = body?.required === true;
+      return { status: 204 };
+    },
+  }),
+];
+
 export const accountOperations = [
+  ...accountPolicyOperations,
+  ...accountSsoOperations,
   ...accountPagesOperations,
   ...accountSecurityOperations,
+  ...accountApiTokenOperations,
   defineMockOperation({
     id: "account.preferences.get",
     contract: {

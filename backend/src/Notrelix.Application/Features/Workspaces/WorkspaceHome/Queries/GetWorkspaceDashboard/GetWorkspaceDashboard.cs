@@ -14,11 +14,17 @@ public record WorkspaceDashboardDto(
     bool IsArchived
 );
 
+/// <summary>
+/// The workspace figures for Owner and Admin: active members, the Spaces the caller can see, Teams and pending
+/// invitations. Needs <c>ManageWorkspaceSettings</c> through the policy engine (Owner and Admin by default), so a Member
+/// or Guest is forbidden and a person outside the workspace is told it does not exist. Read-only: an archived
+/// workspace still answers.
+/// </summary>
 public record GetWorkspaceDashboardQuery(
     Guid WorkspaceId
 ) : IQuery<Result<WorkspaceDashboardDto>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
-    PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
+    PermissionAction IRequirePermission.Action => PermissionAction.ManageWorkspaceSettings;
     ResourceRef IRequirePermission.Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
 }
 
@@ -46,7 +52,7 @@ public class GetWorkspaceDashboardQueryHandler : IRequestHandler<GetWorkspaceDas
 
         var memberCount = await _context.WorkspaceMembers
             .AsNoTracking()
-            .CountAsync(m => m.WorkspaceId == request.WorkspaceId, ct);
+            .CountAsync(m => m.WorkspaceId == request.WorkspaceId && m.Status == WorkspaceMemberStatus.Active, ct);
 
         // Counts only the Spaces the caller can see; a Private Space's existence
         // is not disclosed through the dashboard (GOV-029).

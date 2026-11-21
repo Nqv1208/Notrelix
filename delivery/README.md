@@ -1,6 +1,6 @@
 # Notrelix Delivery Control Plane
 
-This directory is the machine-readable authority for release composition, deployment policy and immutable image inputs, interpreted by `tools/deliveryctl`. `ci.yml` does not consume it; the release path (`release.yml`, `promote-release.yml`, `deploy.yml`) does and is dormant until `ci.yml` produces the release-candidate input.
+This directory is the machine-readable authority for release composition, deployment policy and immutable image inputs, interpreted by `tools/deliveryctl`. `ci.yml` does not consume it; the release path (`release.yml`, `promote-release.yml`, `deploy.yml`) does and runs after the `release-*` jobs of `ci.yml` produce the release-candidate input on a push to a `release/**` branch (never `main`).
 
 - `catalog.toml` — component IDs, providers, roots/workspaces, build/container/deploy contracts and the component proof profile.
 - `policy.toml` — change routing, proof profiles/bindings, release intent and migration/rollback policy.

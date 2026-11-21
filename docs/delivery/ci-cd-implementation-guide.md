@@ -37,7 +37,7 @@ review_on:
 
 ## 2. Required repository checks
 
-Protected trunk requires the single check `CI gate` (it aggregates `changes`, `backend-unit`, `backend-integration`, `frontend` and `dependencies`), plus the CodeQL checks GitHub emits. Do not require per-job names.
+Protected trunk requires the single check `CI gate` (it aggregates `changes`, the fast checks, `backend-build`, `backend-unit`, `backend-integration`, `frontend`, `frontend-web` and `dependencies`), plus the CodeQL checks GitHub emits. Do not require per-job names.
 
 ## 3. Local validation
 
@@ -70,7 +70,7 @@ Current Compose/SSH adapter expects values such as deployment host/user/key/know
 
 ## 6. Release lifecycle
 
-Dormant until `ci.yml` produces the release-candidate input `release.yml` waits for. Intended flow for a releaseable `main` push:
+Active: the `release-*` jobs of `ci.yml` produce the release-candidate input `release.yml` waits for. Flow for a releaseable `main` push:
 
 ```text
 CI gate

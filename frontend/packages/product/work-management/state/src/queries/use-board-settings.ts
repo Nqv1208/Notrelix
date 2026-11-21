@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { workspaceQueryKey } from "@notrelix/query";
+import { limitOf } from "@notrelix/work-management-core";
 import type {
   BoardSettingsDto,
   BoardSettingsWriteResult,
@@ -72,20 +73,8 @@ export function conflictOf(error: unknown): {
   };
 }
 
-/** The published board limit a 409 named (D78.8): `work-management.limit.*` with limit and max. */
-export function limitOf(
-  error: unknown,
-): { name: string; max: number | null } | null {
-  const code = (error as { code?: unknown } | null)?.code;
-  if (typeof code !== "string" || !code.startsWith("work-management.limit."))
-    return null;
-  const body = (error as { details?: unknown } | null)?.details as
-    Record<string, unknown> | null | undefined;
-  return {
-    name: typeof body?.limit === "string" ? body.limit : "other",
-    max: typeof body?.max === "number" ? body.max : null,
-  };
-}
+/** Moved to core so pure surfaces can read it; kept here for the state package's callers. */
+export { limitOf };
 
 function invalidField(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;

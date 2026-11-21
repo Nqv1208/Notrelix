@@ -83,10 +83,11 @@ export function linkRefKey(ref: ChatLinkRef): string {
   return "url" in ref ? `url:${ref.url}` : `${ref.kind}:${ref.resourceId}`;
 }
 
-/** The kinds a channel can be linked to by the app: a Board and a Page (a Team has no visibility fact yet, so it is never offered). */
+/** The kinds a channel can be linked to by the app: a Board, a Page and a Team (the server checks the manager may view it). */
 export const CHAT_LINKABLE_KINDS = [
   "work-management.board",
   "documents.page",
+  "governance.team",
 ] as const satisfies readonly ChatLinkKind[];
 
 export type ChatLinkableKind = (typeof CHAT_LINKABLE_KINDS)[number];
@@ -99,7 +100,7 @@ const BARE_ID = new RegExp(`^${GUID}$`);
 
 /**
  * What a manager pasted into the "Link resource" dialog, as a reference the resolver takes: a product address of this Workspace
- * (`/workspaces/{id}/boards/{id}` or `/docs/{id}`, relative or on any host; a Board address with an item still names the Board)
+ * (`/workspaces/{id}/boards/{id}`, `/docs/{id}` or `/teams/{id}`, relative or on any host; a Board address with an item still names the Board)
  * or a bare id with the kind chosen by the manager. Null when it is neither (another Workspace, another site, an unknown route).
  * Pure: the server resolves what the person may see.
  */
@@ -112,7 +113,7 @@ export function parseLinkInput(
   if (text.length === 0 || text.length > 2048) return null;
   if (BARE_ID.test(text)) return { kind: fallbackKind, resourceId: text };
   const pattern = new RegExp(
-    `^(?:https?://[^\\s/<>"')]{1,255})?/workspaces/(${GUID})/(docs|boards)/(${GUID})(?:[?#][^\\s<>"')]{0,512})?$`,
+    `^(?:https?://[^\\s/<>"')]{1,255})?/workspaces/(${GUID})/(docs|boards|teams)/(${GUID})(?:[?#][^\\s<>"')]{0,512})?$`,
   );
   const match = pattern.exec(text);
   if (!match) return null;
@@ -125,7 +126,12 @@ export function parseLinkInput(
     return null;
   }
   return {
-    kind: route === "docs" ? "documents.page" : "work-management.board",
+    kind:
+      route === "docs"
+        ? "documents.page"
+        : route === "teams"
+          ? "governance.team"
+          : "work-management.board",
     resourceId,
   };
 }
@@ -140,5 +146,6 @@ export function resourceHref(
   const id = encodeURIComponent(resourceId);
   if (kind === "documents.page") return `/workspaces/${ws}/docs/${id}`;
   if (kind === "work-management.board") return `/workspaces/${ws}/boards/${id}`;
+  if (kind === "governance.team") return `/workspaces/${ws}/teams/${id}`;
   return null;
 }

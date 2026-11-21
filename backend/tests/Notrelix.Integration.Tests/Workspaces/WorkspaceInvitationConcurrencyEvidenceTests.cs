@@ -286,7 +286,8 @@ public sealed class WorkspaceInvitationConcurrencyEvidenceTests : IAsyncLifetime
             new IntegrationEventCollector(),
             resendClock.Object,
             new Mock<Notrelix.Application.Common.Tenancy.IActorLookupService>().Object,
-            new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts>().Object);
+            new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceInvitationFacts>().Object,
+            Moq.Mock.Of<Notrelix.Application.Features.Workspaces.Invitations.Services.IInvitationRateLimiter>());
 
         var resent = await resendHandler.Handle(
             new ResendInvitationCommand(graph.WorkspaceId, graph.InvitationId),

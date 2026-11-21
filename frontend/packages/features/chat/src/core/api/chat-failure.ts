@@ -11,6 +11,8 @@ export type ChatFailureKind =
   | "archived"
   /** 409 name-conflict: the name is taken by a live channel. */
   | "name-conflict"
+  /** 409 restore-window-elapsed: the 30 days to restore a deleted channel have passed. */
+  | "restore-window-elapsed"
   /** 422 last-manager: the last manager cannot leave. */
   | "last-manager"
   /** 409 message-deleted or system-message-immutable: the message cannot change. */
@@ -69,6 +71,7 @@ const CODE_KINDS: Readonly<Record<string, ChatFailureKind>> = {
   "common.precondition-failed": "stale",
   "channel-archived": "archived",
   "name-conflict": "name-conflict",
+  "restore-window-elapsed": "restore-window-elapsed",
   "last-manager": "last-manager",
   "message-deleted": "message-locked",
   "system-message-immutable": "message-locked",

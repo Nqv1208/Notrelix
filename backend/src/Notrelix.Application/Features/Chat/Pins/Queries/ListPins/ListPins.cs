@@ -53,8 +53,10 @@ public class ListPinsQueryHandler(
         var page = rows.Take(request.Limit).ToList();
 
         var messageIds = page.Select(p => p.MessageId).ToList();
+        var floor = ChannelAccess.HistoryFloor(space, userId);
         var messages = await db.ChatMessages.AsNoTracking()
             .Where(m => m.SpaceId == space.Id && messageIds.Contains(m.Id))
+            .Where(m => floor == null || m.CreatedAt >= floor)
             .ToListAsync(cancellationToken);
         var pinnedMessages = messages.ToDictionary(m => m.Id);
         var ordered = page.Where(p => pinnedMessages.ContainsKey(p.MessageId)).Select(p => pinnedMessages[p.MessageId]).ToList();

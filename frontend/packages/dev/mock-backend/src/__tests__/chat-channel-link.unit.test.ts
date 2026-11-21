@@ -76,7 +76,7 @@ describe("MFB-CHAT-S3.5: Chat mock handlers (link a channel to a Board or Page, 
     expect(again.body.version).toBe(first.body.version);
   });
 
-  it("refuses a manager who cannot view the resource (403), a stale version (412), a Team and a bad kind (400)", async () => {
+  it("refuses a manager who cannot view the resource (403), a stale version (412) and a bad kind (400)", async () => {
     const store = storeAs("owner");
     const board = store.getBoard(BOARD)!;
     board.visibility = "private";
@@ -93,8 +93,24 @@ describe("MFB-CHAT-S3.5: Chat mock handlers (link a channel to a Board or Page, 
     const stale = await link(store, LINK_KIND.board, BOARD, version(store) + 5);
     expect(stale.status).toBe(412);
 
-    expect((await link(store, LINK_KIND.team, "mock-team-1")).status).toBe(400);
     expect((await link(store, "chat.message", "mock-x")).status).toBe(400);
+  });
+
+  it("links a Team the manager may view, with its name, and refuses a Team that is missing or of another Workspace (403, UC-CHT-H11)", async () => {
+    const store = storeAs("owner");
+    const team = store.spaces.teamsOf(WORKSPACE_ID)[0]!;
+
+    const res = await link(store, LINK_KIND.team, team.id);
+    expect(res.status).toBe(200);
+    expect(res.body.link).toEqual({
+      kind: LINK_KIND.team,
+      resourceId: team.id,
+      accessible: true,
+      title: team.name,
+    });
+    expect((await link(store, LINK_KIND.team, "mock-team-nobody")).status).toBe(
+      403,
+    );
   });
 
   it("is for a manager, an Owner or an Admin: a plain member gets 403 and a Guest gets 403", async () => {

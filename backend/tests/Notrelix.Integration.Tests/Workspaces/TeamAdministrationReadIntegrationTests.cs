@@ -273,6 +273,7 @@ public sealed class TeamAdministrationReadIntegrationTests : IAsyncLifetime
 
         services.AddSingleton(new MediatRServiceConfiguration());
         services.AddScoped<IMediator, Mediator>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker, Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
         services.AddScoped<ISender>(sp => sp.GetRequiredService<IMediator>());
 
         services.AddSingleton(requestContextMock.Object);

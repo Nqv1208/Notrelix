@@ -92,6 +92,42 @@ test("a page is created once per key, renamed against its version, shown under i
     `Renamed ${stamp}`,
   );
 
+  // Icon: stored with a version bump, the same icon is a no-op, over 32 characters is 400, a stale version is 412.
+  const icon = await apiWrite(page, "PATCH", `/pages/${docId}`, {
+    icon: "🚀",
+    expectedVersion: after.version,
+  });
+  expect(icon.status).toBeLessThan(300);
+  const withIcon = await apiRead<PageRow & { icon: string }>(
+    page,
+    `/pages/${docId}`,
+  );
+  expect(withIcon.icon).toBe("🚀");
+  expect(withIcon.version).toBe(after.version + 1);
+  await apiWrite(page, "PATCH", `/pages/${docId}`, {
+    icon: "🚀",
+    expectedVersion: withIcon.version,
+  });
+  expect((await apiRead<PageRow>(page, `/pages/${docId}`)).version).toBe(
+    withIcon.version,
+  );
+  expect(
+    (
+      await apiWrite(page, "PATCH", `/pages/${docId}`, {
+        icon: "x".repeat(33),
+        expectedVersion: withIcon.version,
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await apiWrite(page, "PATCH", `/pages/${docId}`, {
+        icon: "🔥",
+        expectedVersion: after.version,
+      })
+    ).status,
+  ).toBe(412);
+
   // Breadcrumb: root, parent, page.
   const parent = (
     await createDoc(page, workspace.id, { title: `Parent ${stamp}` })
@@ -109,17 +145,24 @@ test("a page is created once per key, renamed against its version, shown under i
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
   await signIn(guest, realUsers.workspaceGuest);
-  const missing = await apiRead<unknown>(
-    guest,
-    `/pages/${crypto.randomUUID()}`,
-  ).catch((error: Error) => error.message);
-  const hidden = await apiRead<unknown>(guest, `/pages/${docId}`).catch(
-    (error: Error) => error.message,
-  );
-  expect(hidden).toBe(missing);
+  const apiUrl = process.env.VITE_API_URL ?? "http://127.0.0.1:58000/api/v1";
+  const answer = async (id: string) => {
+    const response = await guest.request.get(`${apiUrl}/pages/${id}`);
+    // Only the per-request trace and correlation ids may differ.
+    const { traceId, correlationId, ...body } = JSON.parse(
+      (await response.text()).replaceAll(id, "<id>"),
+    );
+    void traceId;
+    void correlationId;
+    return { status: response.status(), body };
+  };
+  const missing = await answer(crypto.randomUUID());
+  const hidden = await answer(docId);
+  expect(missing.status).toBe(404);
+  expect(hidden).toEqual(missing);
   const guestRename = await apiWrite(guest, "PATCH", `/pages/${docId}`, {
     title: "nope",
-    expectedVersion: after.version + 1,
+    expectedVersion: withIcon.version,
   });
   expect(guestRename.status).toBe(404);
   const outsiderCreate = await apiWrite(

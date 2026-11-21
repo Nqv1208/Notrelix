@@ -8,6 +8,7 @@
 
 import { attachmentsOperations } from "./attachments.handlers";
 import { blocksOperations } from "./blocks.handlers";
+import { callsOperations } from "./calls.handlers";
 import { channelsOperations } from "./channels.handlers";
 import { channelGroupsOperations } from "./channel-groups.handlers";
 import { conversationsOperations } from "./conversations.handlers";
@@ -40,6 +41,7 @@ export const chatOperations = [
   ...attachmentsOperations,
   ...channelGroupsOperations,
   ...blocksOperations,
+  ...callsOperations,
   ...channelsOperations,
   ...conversationsOperations,
   ...linksOperations,

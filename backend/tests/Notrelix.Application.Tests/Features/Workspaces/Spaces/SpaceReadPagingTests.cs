@@ -276,13 +276,14 @@ public sealed class SpaceReadPagingTests : WorkspaceHandlerTestBase
         return space;
     }
 
-    private Task<Result<CursorPage<SpaceMemberDto>>> MemberPage(Space space, string? cursor = null, int? limit = null)
+    private Task<Result<CursorPage<SpaceMemberDto>>> MemberPage(
+        Space space, string? cursor = null, int? limit = null, string? role = null, string? kind = null)
     {
         var actors = new Mock<IActorLookupService>();
         actors.Setup(a => a.FindManyAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ActorSnapshot>());
         return new GetSpaceMembersQueryHandler(_store, _visibility, actors.Object, RequestContextMock.Object)
-            .Handle(new GetSpaceMembersQuery(TestWorkspaceId, space.Id, cursor, limit), CancellationToken.None);
+            .Handle(new GetSpaceMembersQuery(TestWorkspaceId, space.Id, cursor, limit, role, kind), CancellationToken.None);
     }
 
     [Fact]
@@ -331,4 +332,119 @@ public sealed class SpaceReadPagingTests : WorkspaceHandlerTestBase
         validator.Validate(new GetSpaceMembersQuery(TestWorkspaceId, Guid.NewGuid(), null, 201)).IsValid.Should().BeFalse();
         validator.Validate(new GetSpaceMembersQuery(TestWorkspaceId, Guid.NewGuid(), null, 200)).IsValid.Should().BeTrue();
     }
+
+    // ── Members: a large Space and the role / kind filter ───
+
+    /// <summary>500 entries: 1 creator Admin, 50 Admin Users, 299 Member Users, 100 Viewer Users, 50 Viewer Teams.</summary>
+    private Space SeedLargeSpace()
+    {
+        var space = Seed("Operations");
+        void Add(SpaceMemberSubjectType type, SpaceRole role, int count)
+        {
+            for (var n = 0; n < count; n++)
+                space.AddMember(type, Guid.CreateVersion7(), role, TestUserId, TestNow);
+        }
+
+        Add(SpaceMemberSubjectType.User, SpaceRole.Admin, 49);
+        Add(SpaceMemberSubjectType.User, SpaceRole.Member, 299);
+        Add(SpaceMemberSubjectType.User, SpaceRole.Viewer, 100);
+        Add(SpaceMemberSubjectType.Team, SpaceRole.Viewer, 51);
+        return space;
+    }
+
+    [Fact]
+    public async Task Members_ALargeSpace_PageOneHoldsFifty_AndWalkingTheCursorReadsEveryEntryOnce()
+    {
+        var space = SeedLargeSpace();
+        space.Members.Should().HaveCount(500, "the creator plus 499 others");
+
+        var first = (await MemberPage(space)).Data!;
+        first.Items.Should().HaveCount(50);
+        first.NextCursor.Should().NotBeNullOrEmpty();
+
+        var second = (await MemberPage(space, first.NextCursor)).Data!;
+        second.Items.Should().HaveCount(50);
+        var lastOfFirst = first.Items[^1].SubjectId;
+        second.Items.Select(m => m.SubjectId).Should().BeInAscendingOrder().And.OnlyContain(id => id.CompareTo(lastOfFirst) > 0);
+
+        var walked = await Walk(async c => (await MemberPage(space, c)).Data!);
+
+        walked.Should().HaveCount(500);
+        walked.Select(m => m.SubjectId).Distinct().Should().HaveCount(500, "no entry repeats or is skipped");
+        walked.Select(m => m.SubjectId).Should().BeEquivalentTo(space.Members.Select(m => m.SubjectId));
+        walked.Select(m => m.SubjectId).Should().BeInAscendingOrder();
+        walked.Count(m => m.Role == "Admin").Should().Be(50);
+        walked.Count(m => m.Role == "Member").Should().Be(299);
+        walked.Count(m => m.Role == "Viewer").Should().Be(151);
+    }
+
+    [Theory]
+    [InlineData("Admin", null, 50)]
+    [InlineData("Member", null, 299)]
+    [InlineData("viewer", null, 151)]
+    [InlineData(null, "User", 449)]
+    [InlineData(null, "Team", 51)]
+    [InlineData("Viewer", "Team", 51)]
+    [InlineData("Admin", "Team", 0)]
+    public async Task Members_ARoleAndKindFilter_WalksOnlyMatchingEntries_OnceEach(string? role, string? kind, int expected)
+    {
+        var space = SeedLargeSpace();
+
+        var walked = await Walk(async c => (await MemberPage(space, c, 40, role, kind)).Data!);
+
+        walked.Should().HaveCount(expected);
+        walked.Select(m => m.SubjectId).Distinct().Should().HaveCount(expected);
+        walked.Select(m => m.SubjectId).Should().BeInAscendingOrder();
+        if (role is not null) walked.Should().OnlyContain(m => m.Role.Equals(role, StringComparison.OrdinalIgnoreCase));
+        if (kind is not null) walked.Should().OnlyContain(m => m.SubjectType.Equals(kind, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Members_AFilteredPageIsCutAfterTheFilter_SoItIsFullAndCarriesACursor()
+    {
+        var space = SeedLargeSpace();
+
+        var page = (await MemberPage(space, limit: 50, role: "Member")).Data!;
+
+        page.Items.Should().HaveCount(50, "the page is cut from matching entries, not from all entries");
+        page.NextCursor.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task Members_AFilterOnASpaceTheCallerCannotSee_IsStillNotFound()
+    {
+        var hidden = Seed("Hidden", visible: false);
+        hidden.AddMember(SpaceMemberSubjectType.User, Guid.CreateVersion7(), SpaceRole.Member, TestUserId, TestNow);
+
+        Func<Task> act = () => MemberPage(hidden, role: "Admin", kind: "User");
+
+        await act.Should().ThrowAsync<NotFoundException>("a filter must not turn a hidden Space into an empty list");
+    }
+
+    [Fact]
+    public async Task Members_AFilterNeverReadsAnotherSpacesEntries()
+    {
+        var space = SeedWithMembers(5);
+        var other = SeedWithMembers(5);
+
+        var walked = await Walk(async c => (await MemberPage(space, c, 2, role: "Member", kind: "User")).Data!);
+
+        walked.Select(m => m.SubjectId).Should().BeEquivalentTo(space.Members.Where(m => m.Role == SpaceRole.Member).Select(m => m.SubjectId));
+        walked.Select(m => m.SubjectId).Should().NotIntersectWith(other.Members.Select(m => m.SubjectId));
+    }
+
+    [Theory]
+    [InlineData("Admin", "User", true)]
+    [InlineData("member", "team", true)]
+    [InlineData(null, null, true)]
+    [InlineData("", "", true)]
+    [InlineData("Owner", null, false)]
+    [InlineData("1", null, false)]
+    [InlineData("99", null, false)]
+    [InlineData(null, "Group", false)]
+    [InlineData(null, "7", false)]
+    public void Members_Validator_AcceptsOnlyARoleAndKindTheListKnows(string? role, string? kind, bool valid) =>
+        new GetSpaceMembersQueryValidator()
+            .Validate(new GetSpaceMembersQuery(TestWorkspaceId, Guid.NewGuid(), null, null, role, kind))
+            .IsValid.Should().Be(valid);
 }

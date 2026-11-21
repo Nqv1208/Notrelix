@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  canManageWorkspace,
   describeWorkspaceFailure,
   isWorkspaceAdmin,
+  type WorkspaceFailure,
   type WorkspaceSettings,
 } from "@notrelix/features-workspace/core";
 import {
@@ -16,6 +18,8 @@ import {
   WorkspaceSetupFrame,
   WorkspaceSettingsSurface,
   type SaveStatus,
+  type TransferCandidate,
+  type TransferFailure,
   type WorkspaceProfileValues,
   type WorkspaceSettingsCopy,
 } from "@notrelix/features-workspace/web";
@@ -24,7 +28,12 @@ import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { toastFailure } from "@/shell/workspace/failure-toast";
 import { sectionState } from "@/shell/workspace/section-state";
 import { useSetupFrame } from "@/shell/workspace/use-setup-frame";
+import { createOwnershipStepUp } from "@/shell/workspace/ownership-step-up";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
+import { useOnboardingApi } from "@/routes/onboarding/use-onboarding-api";
+
+/** The producer's code for an address another workspace of the Account holds. */
+const SLUG_TAKEN_CODE = "workspaces.workspace.slug-taken";
 
 /** Maps a failed write to the section's status (inline, never toast-only). */
 function failureStatus(
@@ -32,6 +41,7 @@ function failureStatus(
   copy: WorkspaceSettingsCopy,
 ): SaveStatus {
   const failure = describeWorkspaceFailure(error);
+  if (failure.errorCode === SLUG_TAKEN_CODE) return { state: "taken" };
   if (failure.kind === "conflict") return { state: "conflict" };
   const fieldMessage = Object.values(failure.fieldErrors).flat()[0] ?? null;
   const message =
@@ -47,6 +57,31 @@ function failureStatus(
   return { state: "error", message };
 }
 
+/** What the handover dialog says about a refused write: a stale list or a person who is gone is one case. */
+function transferFailure(
+  failure: WorkspaceFailure,
+  code: string | undefined,
+): TransferFailure {
+  // The producer's two step-up refusals share statuses with a stale version (412) and a rule (400): the code decides.
+  if (code === "identity.security.step-up-required")
+    return { kind: "step-up-required" };
+  if (code === "identity.security.step-up-invalid")
+    return { kind: "step-up-invalid" };
+  switch (failure.kind) {
+    case "conflict":
+    case "not-found":
+      return { kind: "conflict" };
+    case "rule":
+      return { kind: "rejected", message: failure.detail ?? null };
+    case "forbidden":
+      return { kind: "forbidden" };
+    case "network":
+      return { kind: "network" };
+    default:
+      return { kind: "unknown" };
+  }
+}
+
 /**
  * Workspace settings (WX-SET-001). Profile and defaults save separately and
  * carry the workspace version the member last read; without a reported
@@ -60,7 +95,7 @@ export function SettingsPage() {
   const frame = useSetupFrame("general");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { api: runtimeClient } = useAppRuntime();
+  const { api: runtimeClient, env } = useAppRuntime();
   const hooks = useMemo(() => {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
@@ -78,6 +113,14 @@ export function SettingsPage() {
   const [defaultsStatus, setDefaultsStatus] = useState<SaveStatus>({
     state: "idle",
   });
+  const [addressStatus, setAddressStatus] = useState<SaveStatus>({
+    state: "idle",
+  });
+  const onboardingApi = useOnboardingApi();
+  const checkAddress = useCallback(
+    (slug: string) => onboardingApi.slugCheck(slug),
+    [onboardingApi],
+  );
 
   const version = workspace?.version;
   const profile = useMemo(
@@ -111,6 +154,21 @@ export function SettingsPage() {
     );
   };
 
+  const onSaveAddress = (slug: string) => {
+    if (version === undefined) return;
+    setAddressStatus({ state: "saving" });
+    mutations.changeSlug.mutate(
+      { slug, expectedVersion: version },
+      {
+        onSuccess: () => {
+          setAddressStatus({ state: "saved" });
+          toast.success(copy.toasts.addressSaved);
+        },
+        onError: (error) => setAddressStatus(failureStatus(error, copy)),
+      },
+    );
+  };
+
   const onSaveDefaults = (next: WorkspaceSettings) => {
     if (version === undefined) return;
     setDefaultsStatus({ state: "saving" });
@@ -139,9 +197,31 @@ export function SettingsPage() {
           formatCopy(copy.toasts.archiveFailed, values),
           error,
           (failure) =>
-            failure.kind === "forbidden"
-              ? copy.toasts.forbidden
-              : copy.toasts.unknown,
+            failure.kind === "conflict"
+              ? formatCopy(copy.toasts.archiveConflict, values)
+              : failure.kind === "forbidden"
+                ? copy.toasts.forbidden
+                : copy.toasts.unknown,
+        ),
+    });
+  };
+
+  const onUnarchive = () => {
+    if (version === undefined || !workspace) return;
+    const values = { workspace: workspace.name };
+    mutations.unarchive.mutate(version, {
+      onSuccess: () =>
+        toast.success(formatCopy(copy.toasts.unarchived, values)),
+      onError: (error) =>
+        toastFailure(
+          formatCopy(copy.toasts.unarchiveFailed, values),
+          error,
+          (failure) =>
+            failure.kind === "conflict"
+              ? formatCopy(copy.toasts.unarchiveConflict, values)
+              : failure.kind === "forbidden"
+                ? copy.toasts.forbidden
+                : copy.toasts.unknown,
         ),
     });
   };
@@ -176,6 +256,67 @@ export function SettingsPage() {
     toast.success(formatCopy(copy.toasts.deleted, values));
   };
 
+  // Active members who are not Guests and not yet Owners; Admins first, as the handover dialog lists them.
+  const transferCandidates = useMemo<TransferCandidate[]>(
+    () =>
+      (viewer.members.data ?? [])
+        .filter(
+          (member) =>
+            member.userId !== viewer.userId &&
+            member.membership !== "suspended" &&
+            (member.role === "admin" || member.role === "member"),
+        )
+        .map((member) => ({
+          userId: member.userId,
+          name: member.name,
+          role:
+            member.role === "admin" ? ("admin" as const) : ("member" as const),
+          detail: member.jobTitle ?? null,
+        }))
+        .sort(
+          (a, b) =>
+            Number(b.role === "admin") - Number(a.role === "admin") ||
+            a.name.localeCompare(b.name),
+        ),
+    [viewer.members.data, viewer.userId],
+  );
+
+  const ownershipStepUp = useMemo(
+    () =>
+      createOwnershipStepUp(
+        runtimeClient.api,
+        runtimeClient.endpoints,
+        workspaceId,
+        env,
+      ),
+    [runtimeClient, workspaceId, env],
+  );
+
+  const onTransfer = async (
+    userId: string,
+    stepUpToken: string,
+  ): Promise<TransferFailure | null> => {
+    if (version === undefined || !workspace) return { kind: "conflict" };
+    try {
+      await mutations.transferOwnership.mutateAsync({
+        newOwnerId: userId,
+        expectedVersion: version,
+        stepUpToken,
+      });
+    } catch (error) {
+      return transferFailure(
+        describeWorkspaceFailure(error),
+        (error as { code?: string }).code,
+      );
+    }
+    const name =
+      transferCandidates.find((person) => person.userId === userId)?.name ?? "";
+    toast.success(
+      formatCopy(copy.toasts.transferred, { name, workspace: workspace.name }),
+    );
+    return null;
+  };
+
   return (
     <WorkspaceSetupFrame
       copy={teamsCopy}
@@ -185,16 +326,42 @@ export function SettingsPage() {
       <WorkspaceSettingsSurface
         copy={copy}
         workspaceName={workspace?.name ?? null}
-        canManage={isWorkspaceAdmin(viewer.role)}
+        canManage={canManageWorkspace(viewer.role)}
         versionAvailable={version !== undefined}
         profile={profile}
         defaults={sectionState(settings, settings.data)}
         profileStatus={profileStatus}
         defaultsStatus={defaultsStatus}
+        address={
+          workspace?.slug
+            ? {
+                slug: workspace.slug,
+                canChange: viewer.role === "owner",
+                status: addressStatus,
+                onCheck: checkAddress,
+                onSave: onSaveAddress,
+              }
+            : undefined
+        }
         archiving={mutations.archive.isPending}
+        archived={workspace?.isArchived === true}
+        canUnarchive={viewer.role === "owner"}
+        unarchiving={mutations.unarchive.isPending}
+        onUnarchive={onUnarchive}
         canDelete={viewer.role === "owner"}
         isPersonal={workspace?.isPersonal === true}
         deleting={mutations.remove.isPending}
+        canTransfer={viewer.role === "owner"}
+        transferCandidates={transferCandidates}
+        ownershipStepUp={ownershipStepUp}
+        onTransfer={onTransfer}
+        onInviteForTransfer={() =>
+          void navigate({
+            to: "/workspaces/$workspaceId/members",
+            params: { workspaceId },
+            search: { tab: "invitations" },
+          })
+        }
         onSaveProfile={onSaveProfile}
         onSaveDefaults={onSaveDefaults}
         onArchive={onArchive}
@@ -202,6 +369,7 @@ export function SettingsPage() {
         onReload={() => {
           setProfileStatus({ state: "idle" });
           setDefaultsStatus({ state: "idle" });
+          setAddressStatus({ state: "idle" });
           void refetch();
           void settings.refetch();
         }}

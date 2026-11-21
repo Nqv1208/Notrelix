@@ -26,13 +26,23 @@ public static class WorkspaceMemberRules
     }
 
     /// <summary>
-    /// Role cap for adding a member directly: a workspace Owner is not capped here (the Owner
-    /// transfer workflow owns Owner assignment elsewhere); any other actor may assign only Member
-    /// or Guest. The actor's role is an explicit fact supplied by Application.
+    /// Role cap for adding a member directly: a workspace Owner may assign Admin, Member or Guest but
+    /// never Owner (the ownership transfer workflow owns Owner assignment); any other actor may assign
+    /// only Member or Guest. The actor's role is an explicit fact supplied by Application.
     /// </summary>
     public static void EnsureActorCanAssignRole(WorkspaceRole actorRole, WorkspaceRole assignedRole)
     {
-        if (actorRole == WorkspaceRole.Owner) return;
+        if (actorRole == WorkspaceRole.Owner)
+        {
+            if (assignedRole == WorkspaceRole.Owner)
+            {
+                throw new BusinessRuleException(
+                    WorkspaceRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner,
+                    "Ownership must be transferred through the ownership transfer workflow.");
+            }
+
+            return;
+        }
 
         if (assignedRole is not (WorkspaceRole.Member or WorkspaceRole.Guest))
         {

@@ -102,6 +102,24 @@ public static class PersistenceRegistration
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IDirectConversationLock, Notrelix.Infrastructure.Data.Chat.ChatDirectConversationLock>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatReadStateStore, Notrelix.Infrastructure.Data.Chat.ChatReadStateStore>();
         services.AddScoped<Notrelix.Application.Features.Chat.Abstractions.IChatThreadReadStore, Notrelix.Infrastructure.Data.Chat.ChatThreadReadStore>();
+        services.AddOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>()
+            .Bind(configuration.GetSection(Notrelix.Infrastructure.Chat.ChatCallMediaOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>, Notrelix.Infrastructure.Chat.ChatCallMediaOptionsValidator>();
+        services.AddHttpClient(Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway.HttpClientName);
+        services.AddOptions<Notrelix.Infrastructure.Captcha.CaptchaOptions>()
+            .Bind(configuration.GetSection(Notrelix.Infrastructure.Captcha.CaptchaOptions.SectionName));
+        services.AddHttpClient<Notrelix.Application.Features.WorkManagement.Forms.Services.ICaptchaVerifier,
+            Notrelix.Infrastructure.Captcha.TurnstileCaptchaVerifier>(client => client.Timeout = TimeSpan.FromSeconds(5));
+        services.AddSingleton<Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>();
+        services.AddSingleton<Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway>();
+        // Chat:Calls:Media:Provider picks the adapter (InMemory is the default for tests and the mock stack).
+        services.AddSingleton<Notrelix.Application.Features.Chat.Calls.IChatCallMediaGateway>(sp =>
+            sp.GetRequiredService<IOptions<Notrelix.Infrastructure.Chat.ChatCallMediaOptions>>().Value.Provider == Notrelix.Infrastructure.Chat.ChatCallMediaProvider.LiveKit
+                ? sp.GetRequiredService<Notrelix.Infrastructure.Chat.LiveKitChatCallMediaGateway>()
+                : sp.GetRequiredService<Notrelix.Infrastructure.Chat.InMemoryChatCallMediaGateway>());
+        services.AddScoped<Notrelix.Infrastructure.BackgroundJobs.ChatCallMediaWebhookRunner>();
+        services.AddSingleton<Notrelix.Application.Features.Chat.Calls.Commands.HandleCallMediaWebhook.IChatCallMediaWebhookProcessor, Notrelix.Infrastructure.BackgroundJobs.ChatCallMediaWebhookProcessor>();
         services.AddScoped<IAutomationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IIntegrationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
@@ -146,6 +164,12 @@ public static class PersistenceRegistration
         services.AddScoped<IWorkspaceGrantProjectionService, WorkspaceGrantProjectionServiceAdapter>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Members.Services.IWorkspaceOwnerUpdateLocker,
             Notrelix.Infrastructure.Workspaces.Members.WorkspaceOwnerUpdateLocker>();
+        services.AddScoped<Notrelix.Application.Features.Accounts.Public.Status.IAccountStatusFacts,
+            Notrelix.Infrastructure.Accounts.Status.AccountStatusFactsReader>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Sharing.IWorkspaceSharingFacts,
+            Notrelix.Infrastructure.Workspaces.Sharing.WorkspaceSharingFactsReader>();
+        services.AddScoped<Notrelix.Application.Features.Workspaces.Public.Members.IMemberOtherAccountFacts,
+            Notrelix.Infrastructure.Workspaces.Members.MemberOtherAccountFacts>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Navigation.Services.IWorkspaceNavigationStore,
             Notrelix.Infrastructure.Workspaces.Navigation.WorkspaceNavigationStore>();
         services.AddScoped<Notrelix.Application.Features.Workspaces.Spaces.Services.ISpaceStore,
@@ -180,6 +204,8 @@ public static class PersistenceRegistration
             global::Notrelix.Infrastructure.CrossContext.Collaboration.Automation.AutomationActivityFactsAdapter>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Activity.Ports.IResourceActivityReader,
             global::Notrelix.Infrastructure.Data.Collaboration.ResourceActivityReader>();
+        services.AddScoped<global::Notrelix.Application.Features.Collaboration.Public.WorkspaceActivity.IWorkspaceActivityFeed,
+            global::Notrelix.Infrastructure.Data.Collaboration.WorkspaceActivityFeed>();
         services.AddScoped<global::Notrelix.Application.Features.Collaboration.Comments.Ports.ICommentTombstoneReader,
             global::Notrelix.Infrastructure.Data.Collaboration.CommentTombstoneReader>();
         services.AddScoped<global::Notrelix.Application.Features.Documents.Public.SpaceOverview.IPageSpaceOverviewFacts,

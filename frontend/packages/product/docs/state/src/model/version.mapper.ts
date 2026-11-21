@@ -66,6 +66,8 @@ export function mapTemplate(dto: PageTemplateDtoApi): PageTemplate {
     blockCount: dto.blockCount,
     createdBy: dto.createdBy ?? null,
     createdAt: dto.createdAt,
+    version: dto.version,
+    canManage: dto.canManage,
   };
 }
 

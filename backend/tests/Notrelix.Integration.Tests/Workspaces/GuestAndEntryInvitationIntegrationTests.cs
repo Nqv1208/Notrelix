@@ -22,6 +22,7 @@ using Notrelix.Infrastructure.Data.Authz;
 using Notrelix.Infrastructure.Data.Rls;
 using Notrelix.Infrastructure.Security.Tokens;
 using Notrelix.Infrastructure.Workspaces.Spaces;
+using AppForbidden = Notrelix.Application.Common.Exceptions.ForbiddenException;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
 
@@ -57,13 +58,15 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         Guid AccountId, Guid WorkspaceId, Guid OwnerId, Guid UserId,
         Guid BoardId, Guid TeamId, Guid SpaceId, Guid OtherWorkspaceBoardId);
 
-    private async Task<World> SeedWorldAsync(string userEmail = InviteeEmail)
+    private async Task<World> SeedWorldAsync(string userEmail = InviteeEmail, bool guestInvites = true)
     {
         var ownerId = Guid.CreateVersion7();
         var account = Account.Create("Guest Account", $"guest-{Guid.CreateVersion7():N}", AccountType.Team, ownerId, Now);
         var user = User.Create(userEmail, "Guest User", "hashed", Now, true);
         user.ConfirmEmail(user.Id, Now);
         var ws = Workspace.Create(account.Id, ownerId, "Guest WS", $"gws-{Guid.CreateVersion7():N}", Now);
+        if (guestInvites)
+            ws.UpdateSettings(WorkspaceSettings.Create(allowGuestInvites: true), ownerId, Now);
         var other = Workspace.Create(account.Id, ownerId, "Other WS", $"ows-{Guid.CreateVersion7():N}", Now);
         var board = Board.Create(account.Id, ws.Id, ownerId, "Shared board", null, Now);
         var otherBoard = Board.Create(account.Id, other.Id, ownerId, "Other board", null, Now);
@@ -99,6 +102,19 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         SeedInvitationAsync(w, (hash, v) => WorkspaceInvitation.Create(
             w.AccountId, w.WorkspaceId, InviteeEmail, role, hash, v, w.OwnerId,
             createdAt ?? Now.AddHours(-1), initialEntries: entries));
+
+    /// <summary>
+    /// A Guest invitation that names Team entries was possible before a Guest invitation could not name a Team: the domain
+    /// now refuses to create one, so an invitation already in flight is stored as a Member invitation and its role set to
+    /// Guest directly.
+    /// </summary>
+    private async Task<string> SeedInFlightGuestInvitationAsync(World w, IReadOnlyList<WorkspaceInvitationInitialEntry> entries)
+    {
+        var token = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Member, entries);
+        await using var ctx = _db.CreateOwnerContext(SystemTenant());
+        await ctx.Database.ExecuteSqlRawAsync("UPDATE workspace.workspace_invitations SET role = 'Guest' WHERE workspace_id = {0}", w.WorkspaceId);
+        return token;
+    }
 
     private Task<string> SeedResourceInvitationAsync(World w, Guid boardId, string level) =>
         SeedInvitationAsync(w, (hash, v) => WorkspaceInvitation.CreateForResource(
@@ -167,7 +183,7 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
     public async Task WorkspaceInvitation_AppliesMembershipAndInitialEntriesAtomically()
     {
         var w = await SeedWorldAsync();
-        var token = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Guest, Entries(w));
+        var token = await SeedInFlightGuestInvitationAsync(w, Entries(w));
 
         var (result, _) = await AcceptAsync(w.UserId, token);
 
@@ -175,8 +191,10 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         await using var probe = _db.CreateOwnerContext(SystemTenant());
         (await probe.WorkspaceMembers.SingleAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId))
             .Role.Should().Be(WorkspaceRole.Guest, "guest is the membership fact the invitation names");
-        (await probe.TeamMembers.CountAsync(m => m.TeamId == w.TeamId && m.UserId == w.UserId && m.Status == TeamMemberStatus.Active))
-            .Should().Be(1);
+        // A Guest is not a Team member (Workspaces_Team_GuestCannotJoin, workspaces.md section 46): the Team entry of an
+        // invitation already in flight is skipped, the Space entry is applied.
+        (await probe.TeamMembers.CountAsync(m => m.TeamId == w.TeamId && m.UserId == w.UserId))
+            .Should().Be(0);
         (await probe.SpaceMembers.CountAsync(m => m.SpaceId == w.SpaceId && m.SubjectId == w.UserId && m.Role == SpaceRole.Viewer))
             .Should().Be(1);
     }
@@ -322,6 +340,69 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
         var notGuest = async () => await ctx.Database.ExecuteSqlRawAsync(
             "UPDATE workspace.workspace_invitations SET role = 'Member'");
         await notGuest.Should().ThrowAsync<Exception>("a resource invitation never creates a member");
+    }
+
+    // ── AllowGuestInvites off: an invitation issued earlier cannot be accepted ─────────
+
+    [Fact]
+    public async Task ResourceInvitation_IssuedBeforeGuestInvitesWereTurnedOff_IsRefusedAtAccept_AndStaysPending()
+    {
+        var w = await SeedWorldAsync(guestInvites: false);
+        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
+
+        var accept = () => AcceptAsync(w.UserId, token);
+
+        (await accept.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be("workspace.guest_invites_off");
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId))
+            .Should().Be(0, "the refused Guest gets no membership");
+        (await probe.ResourcePermissions.CountAsync()).Should().Be(0, "and no entry on the resource");
+        (await probe.WorkspaceInvitations.SingleAsync(i => i.WorkspaceId == w.WorkspaceId)).Status
+            .Should().Be(WorkspaceInvitationStatus.Pending, "the invitation stays usable if the setting comes back on");
+    }
+
+    [Fact]
+    public async Task ResourceInvitation_IsAcceptedAgain_WhenGuestInvitesAreTurnedBackOn()
+    {
+        var w = await SeedWorldAsync(guestInvites: false);
+        var token = await SeedResourceInvitationAsync(w, w.BoardId, "Viewer");
+        var refused = () => AcceptAsync(w.UserId, token);
+        await refused.Should().ThrowAsync<AppForbidden>();
+        await using (var ctx = _db.CreateOwnerContext(SystemTenant()))
+        {
+            var ws = await ctx.Workspaces.SingleAsync(x => x.Id == w.WorkspaceId);
+            ws.UpdateSettings(WorkspaceSettings.Create(allowGuestInvites: true), w.OwnerId, Now);
+            await ctx.SaveChangesAsync();
+        }
+
+        var (result, _) = await AcceptAsync(w.UserId, token);
+
+        result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
+        await using var probe = _db.CreateOwnerContext(SystemTenant());
+        (await probe.ResourcePermissions.CountAsync(p => p.ResourceId == w.BoardId && p.SubjectId == w.UserId)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task WorkspaceGuestInvitation_IssuedBeforeGuestInvitesWereTurnedOff_IsRefusedAtAccept_AndAMemberInvitationIsNot()
+    {
+        var w = await SeedWorldAsync(guestInvites: false);
+        var guestToken = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Guest);
+
+        var accept = () => AcceptAsync(w.UserId, guestToken);
+
+        (await accept.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be("workspace.guest_invites_off");
+        await using (var probe = _db.CreateOwnerContext(SystemTenant()))
+        {
+            (await probe.WorkspaceMembers.CountAsync(m => m.WorkspaceId == w.WorkspaceId && m.UserId == w.UserId)).Should().Be(0);
+            (await probe.WorkspaceInvitations.SingleAsync(i => i.WorkspaceId == w.WorkspaceId)).Status
+                .Should().Be(WorkspaceInvitationStatus.Pending);
+        }
+
+        await using (var clear = _db.CreateOwnerContext(SystemTenant()))
+            await clear.WorkspaceInvitations.ExecuteDeleteAsync();
+        var memberToken = await SeedWorkspaceInvitationAsync(w, WorkspaceRole.Member);
+        var (result, _) = await AcceptAsync(w.UserId, memberToken);
+        result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
     }
 
     // ── Shared negative cases ──────────────────────────────────────────────

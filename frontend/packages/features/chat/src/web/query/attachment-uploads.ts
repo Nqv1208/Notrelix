@@ -55,6 +55,7 @@ async function sendFile(
   ctx: UploadContext,
   item: ChatUploadItem,
   onProgress: (progress: { loaded: number; total: number }) => void,
+  signal: AbortSignal,
 ): Promise<ChatAttachment> {
   if (directUploadsAvailable(ctx.service)) {
     let ticket: ChatAttachmentUpload | null = null;
@@ -75,6 +76,7 @@ async function sendFile(
         contentType: ticket.contentType,
         body: item.file,
         onProgress,
+        signal,
       });
       return ctx.service.commitAttachmentUpload(
         ctx.workspaceId,
@@ -90,6 +92,7 @@ async function sendFile(
     {
       idempotencyKey: item.idempotencyKey,
       onProgress,
+      signal,
     },
   );
 }
@@ -166,24 +169,38 @@ export function detachFromCachedMessage(
   );
 }
 
+/** The request of each running upload, so Cancel can abort it. */
+const running = new Map<string, AbortController>();
+
 async function runOne(ctx: UploadContext, id: string): Promise<void> {
   const item = readUploads(ctx).find((entry) => entry.id === id);
   if (!item || item.status === "uploading") return;
   patchUpload(ctx, id, { status: "uploading", progress: 0, reason: null });
+  const controller = new AbortController();
+  running.set(id, controller);
   try {
-    const attachment = await sendFile(ctx, item, ({ loaded, total }) =>
-      patchUpload(ctx, id, {
-        progress: total > 0 ? Math.min(loaded / total, 1) : 0,
-      }),
+    const attachment = await sendFile(
+      ctx,
+      item,
+      ({ loaded, total }) =>
+        patchUpload(ctx, id, {
+          progress: total > 0 ? Math.min(loaded / total, 1) : 0,
+        }),
+      controller.signal,
     );
+    // Cancelled while the commit was in flight: the tile is already gone.
+    if (controller.signal.aborted) return;
     writeUploads(ctx, (items) => items.filter((entry) => entry.id !== id));
     attachToCachedMessage(ctx, item.messageId, attachment);
   } catch (error) {
+    // A cancelled upload was already removed; patching a missing item changes nothing.
     patchUpload(ctx, id, {
       status: "failed",
       progress: 0,
       reason: uploadFailureOf(error),
     });
+  } finally {
+    running.delete(id);
   }
 }
 
@@ -245,6 +262,12 @@ export function retryUpload(ctx: UploadContext, id: string): void {
   const item = readUploads(ctx).find((entry) => entry.id === id);
   if (!item || item.status !== "failed") return;
   void runOne(ctx, id);
+}
+
+/** Cancels a queued or running upload: the request is aborted and the tile goes (a voice-only message goes with it). */
+export function cancelUpload(ctx: UploadContext, id: string): void {
+  running.get(id)?.abort();
+  dismissUpload(ctx, id);
 }
 
 /**

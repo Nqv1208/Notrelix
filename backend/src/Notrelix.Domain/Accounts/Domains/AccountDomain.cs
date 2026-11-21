@@ -8,6 +8,13 @@ public class AccountDomain : AggregateRoot, IAccountScoped
     public string Domain { get; private set; } = null!;
     public DomainVerificationStatus VerificationStatus { get; private set; } = DomainVerificationStatus.Pending;
     public string? VerificationTokenHash { get; private set; }
+
+    /// <summary>
+    /// The DNS TXT token, protected, so the instructions can be shown again while the claim is Pending. The token is
+    /// published in public DNS, it is not a secret. Cleared once the domain is Verified or Rejected; the SHA-256
+    /// hash in <see cref="VerificationTokenHash"/> stays for audit.
+    /// </summary>
+    public string? VerificationTokenProtected { get; private set; }
     public DateTimeOffset? VerifiedAt { get; private set; }
     public bool AutoJoinEnabled { get; private set; }
 
@@ -18,7 +25,8 @@ public class AccountDomain : AggregateRoot, IAccountScoped
         string domain,
         Guid createdBy,
         DateTimeOffset createdAt,
-        string? verificationTokenHash = null)
+        string? verificationTokenHash = null,
+        string? protectedToken = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotNullOrWhiteSpace(domain);
@@ -30,6 +38,7 @@ public class AccountDomain : AggregateRoot, IAccountScoped
             Domain = domain.Trim().ToLowerInvariant(),
             VerificationStatus = DomainVerificationStatus.Pending,
             VerificationTokenHash = verificationTokenHash,
+            VerificationTokenProtected = protectedToken,
             AutoJoinEnabled = false
         };
 
@@ -46,6 +55,7 @@ public class AccountDomain : AggregateRoot, IAccountScoped
         var pending = PrepareAuditUpdate(verifiedBy, verifiedAt);
         VerificationStatus = DomainVerificationStatus.Verified;
         VerifiedAt = verifiedAt;
+        VerificationTokenProtected = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDomainVerifiedDomainEvent(AccountId, Id, Domain, verifiedAt));
@@ -56,6 +66,7 @@ public class AccountDomain : AggregateRoot, IAccountScoped
         if (VerificationStatus == DomainVerificationStatus.Rejected) return;
         var pending = PrepareAuditUpdate(rejectedBy, rejectedAt);
         VerificationStatus = DomainVerificationStatus.Rejected;
+        VerificationTokenProtected = null;
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new AccountDomainRejectedDomainEvent(AccountId, Id, Domain, rejectedAt));

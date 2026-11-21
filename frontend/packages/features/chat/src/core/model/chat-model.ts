@@ -76,6 +76,13 @@ export interface PendingMessage {
   /** The mentions that travel with the content, kept so a retry sends the same ones. */
   readonly mentions?: readonly ChatMentionInput[];
   readonly confirmBroadcast?: boolean;
+  /** The quoted message and the voice flag of the send, kept so a retry sends the same target and kind. */
+  readonly replyToId?: string | null;
+  readonly voiceMessage?: boolean;
+  /** A sticker send (UC-CHT-I06): kept so a retry sends the same sticker. */
+  readonly stickerId?: string | null;
+  /** Set once the server stored the send: the bubble waits for that message in a window, then goes. */
+  readonly storedMessageId?: string;
 }
 
 /** The pending sends that the server has not already stored, oldest first. */
@@ -121,15 +128,22 @@ export type ChatRow =
       readonly groupEnd: boolean;
     };
 
+const dayFormats = new Map<string, Intl.DateTimeFormat>();
 /** The calendar day of an instant in the viewer's zone, as YYYY-MM-DD. */
 export function dayKeyOf(iso: string, timeZone?: string): string {
   const date = new Date(iso);
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    timeZone,
-  }).formatToParts(date);
+  // One formatter per zone: building one per message made every row rebuild of a long channel cost tens of ms.
+  let format = dayFormats.get(timeZone ?? "");
+  if (!format) {
+    format = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone,
+    });
+    dayFormats.set(timeZone ?? "", format);
+  }
+  const parts = format.formatToParts(date);
   const pick = (type: string) =>
     parts.find((p) => p.type === type)?.value ?? "";
   return `${pick("year")}-${pick("month")}-${pick("day")}`;
@@ -235,7 +249,7 @@ export function buildChatRows(input: {
     const member = memberOf(message);
     rows.push({
       kind: "message",
-      key: `m-${message.id}`,
+      key: `m-${message.clientMessageId ?? message.id}`,
       message,
       continued: continuesGroup(previous, member),
       groupEnd: true,
@@ -252,7 +266,7 @@ export function buildChatRows(input: {
     };
     rows.push({
       kind: "pending",
-      key: `p-${entry.clientMessageId}`,
+      key: `m-${entry.clientMessageId}`,
       clientMessageId: entry.clientMessageId,
       pending: entry,
       continued: continuesGroup(previous, member),

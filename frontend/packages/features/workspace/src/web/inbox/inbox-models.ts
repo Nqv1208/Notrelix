@@ -124,6 +124,8 @@ export interface InboxActions {
   readonly onMute: (item: InboxItemView) => void;
   /** Moves the notification to Done; omitted draws the button inert. */
   readonly onDone?: (item: InboxItemView) => void;
+  /** Marks a read notification unread again; it stays in the list. */
+  readonly onMarkUnread?: (item: InboxItemView) => void;
   /** Takes a done notification back into the inbox. */
   readonly onReopen?: (item: InboxItemView) => void;
 }

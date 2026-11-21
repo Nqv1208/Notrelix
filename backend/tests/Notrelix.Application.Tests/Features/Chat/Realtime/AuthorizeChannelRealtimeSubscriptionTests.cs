@@ -61,6 +61,16 @@ public class AuthorizeChannelRealtimeSubscriptionTests
     }
 
     [Fact]
+    public async Task The_grant_says_when_the_workspace_is_archived()
+    {
+        _members.Setup(m => m.IsArchivedAsync(_workspaceId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await Authorize(_channel.Id);
+
+        result.Data!.WorkspaceArchived.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task A_non_member_of_a_public_channel_is_denied_as_a_missing_channel_is()
     {
         AsUser(_outsider);

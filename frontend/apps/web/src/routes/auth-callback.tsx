@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { safeReturnPath } from "@notrelix/features-auth";
+import { SIGN_IN_LANDING_PATH } from "../routing/sign-in-landing";
 
 /**
  * Where the backend sends the browser after a Google or Microsoft sign-in
@@ -15,7 +16,7 @@ export function AuthCallbackPage() {
     const returnTo = safeReturnPath(
       new URLSearchParams(window.location.search).get("returnTo"),
     );
-    router.history.replace(returnTo ?? "/home");
+    router.history.replace(returnTo ?? SIGN_IN_LANDING_PATH);
   }, [router]);
   return null;
 }

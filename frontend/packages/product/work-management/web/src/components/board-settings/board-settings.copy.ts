@@ -253,6 +253,14 @@ export const en = {
       rollup: "Rollup",
       progress: "Progress",
     },
+    relationKind: {
+      title: "Which board does this field link to?",
+      back: "Back to the types",
+      locked: "Archived or deleted",
+      none: "No board to link to.",
+      loading: "Loading boards…",
+      note: "Only boards you can see. Readers see a linked item only if they can see its board; otherwise it shows as “No access”.",
+    },
     personKind: {
       title: "How many people can this field hold?",
       one: "One person",
@@ -1045,6 +1053,14 @@ export const vi: BoardSettingsCopy = {
       formula: "Công thức",
       rollup: "Tổng hợp",
       progress: "Tiến độ",
+    },
+    relationKind: {
+      title: "Trường này nối tới board nào?",
+      back: "Quay lại danh sách loại",
+      locked: "Đã lưu trữ hoặc đã xoá",
+      none: "Chưa có board để nối tới.",
+      loading: "Đang tải board…",
+      note: "Chỉ hiện board bạn xem được. Người xem chỉ thấy việc đã nối khi xem được board của việc đó; nếu không, việc hiện là “Không có quyền xem”.",
     },
     personKind: {
       title: "Trường này chứa được bao nhiêu người?",

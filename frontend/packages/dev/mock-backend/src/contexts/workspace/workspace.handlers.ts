@@ -21,6 +21,7 @@ import type {
   WorkspaceView,
 } from "@notrelix/features-workspace";
 import { defineMockOperation } from "../../operations/types";
+import { spendStepUpProof } from "../account/account-security.handlers";
 import { spacesOperations } from "./spaces.handlers";
 import { onboardingOperations } from "./onboarding.handlers";
 import {
@@ -254,6 +255,7 @@ function workspaceDto(store: MockStore, workspaceId: string) {
       ).length,
     isPersonal: w.isPersonal,
     isArchived: store.isWorkspaceArchived(w.id),
+    accountStatus: store.accountStatusOf(w.id),
     version: store.getWorkspaceVersion(w.id),
   };
 }
@@ -380,6 +382,40 @@ export const workspaceOperations = [
     },
   }),
 
+  // The workspace figures (Workspaces.Workspaces.GetWorkspaceDashboard): Owner and Admin only, active members only.
+  defineMockOperation<{ workspaceId: string }, never, unknown>({
+    id: "workspace.dashboard.get",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.GetWorkspaceDashboard",
+    },
+    method: "GET",
+    route: "/workspaces/:workspaceId/dashboard",
+    async handle({ params, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner" && role !== "admin") return forbidden();
+      const workspace = store.getWorkspace(params.workspaceId);
+      if (!workspace) return notFound();
+      return ok({
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        memberCount: store
+          .getWorkspaceMembers(params.workspaceId)
+          .filter((member) => !store.isMembershipSuspended(member.id)).length,
+        spaceCount: store.spaces.visibleTree(
+          params.workspaceId,
+          store.spaceViewer(params.workspaceId),
+        ).length,
+        teamCount: store.spaces.teamsOf(params.workspaceId).length,
+        invitationCount: store
+          .getInvitations(params.workspaceId)
+          .filter((invitation) => invitation.status === "pending").length,
+        isArchived: store.isWorkspaceArchived(params.workspaceId),
+      });
+    },
+  }),
+
   // ─── Profile, defaults and archive (WX-SET-001) ────────────────────────────
   // Versioned like the producer: each write carries `expectedVersion`; a stale
   // one is a 412 and changes nothing; success advances the workspace version.
@@ -419,11 +455,77 @@ export const workspaceOperations = [
     },
   }),
 
+  // Anonymous. The mock has one account, so the path's account id is not matched; an unknown or
+  // deleted address is the producer's 400 refusal.
+  defineMockOperation<{ accountId: string }, never, unknown>({
+    id: "workspace.slug.resolve",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.ResolveSlug",
+    },
+    method: "GET",
+    route: "/accounts/:accountId/resolve",
+    async handle({ store, request }) {
+      const slug = (request.searchParams.get("slug") ?? "")
+        .trim()
+        .toLowerCase();
+      const found = store
+        .getWorkspaces()
+        .find((w) => w.slug === slug && !store.isWorkspaceDeleted(w.id));
+      return found
+        ? ok(workspaceDto(store, found.id))
+        : ruleViolation("Workspace not found.");
+    },
+  }),
+
+  defineMockOperation<
+    { workspaceId: string },
+    { slug?: string; expectedVersion?: number },
+    void
+  >({
+    id: "workspace.slug.change",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.ChangeWorkspaceSlug",
+    },
+    method: "PATCH",
+    route: "/workspaces/:workspaceId/slug",
+    async handle({ params, body, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner") return forbidden();
+      const slug = (body?.slug ?? "").trim().toLowerCase();
+      if (!slug) return validationError({ Slug: ["Slug must not be empty."] });
+      if (
+        slug.length < 3 ||
+        slug.length > 63 ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+      )
+        return ruleViolation("The workspace address is not valid.");
+      const written = store.changeWorkspaceSlug(
+        params.workspaceId,
+        body?.expectedVersion,
+        slug,
+      );
+      if (written === "taken")
+        return {
+          status: 409,
+          body: {
+            type: "https://docs.notrelix.com/problems/conflict",
+            title: "Conflict",
+            status: 409,
+            detail: "The workspace address is already taken in this account.",
+            errorCode: "workspaces.workspace.slug-taken",
+          },
+        } as MockHttpResult<unknown>;
+      return versionedWriteResult(written);
+    },
+  }),
+
   defineMockOperation<
     { workspaceId: string },
     {
       allowPublicSharing?: boolean;
-      enforceMfa?: boolean;
       allowGuestInvites?: boolean;
       defaultMemberRole?: string;
       invitationExpiryDays?: number;
@@ -472,7 +574,8 @@ export const workspaceOperations = [
           body?.expectedVersion,
           {
             allowPublicSharing: body?.allowPublicSharing === true,
-            enforceMfa: body?.enforceMfa === true,
+            // The Account owns the requirement; a settings write leaves the stored value alone.
+            enforceMfa: kept.enforceMfa,
             allowGuestInvites: body?.allowGuestInvites === true,
             defaultMemberRole: role,
             invitationExpiryDays: days,
@@ -521,6 +624,52 @@ export const workspaceOperations = [
       return versionedWriteResult(
         store.unarchiveWorkspace(params.workspaceId, body?.expectedVersion),
       );
+    },
+  }),
+
+  // ─── Hand the workspace over (LD-05: an active Owner, to an active non-Guest member) ───
+
+  defineMockOperation<
+    { workspaceId: string },
+    { newOwnerId?: string; expectedVersion?: number; stepUpToken?: string },
+    void
+  >({
+    id: "workspace.transferOwnership",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Workspaces.TransferOwnership",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/transfer-ownership",
+    async handle({ params, body, store }) {
+      const role = store.getCurrentMemberRole(params.workspaceId);
+      if (role === null) return notFound();
+      if (role !== "owner") return forbidden();
+      // The most sensitive account action: a fresh single-use proof for this purpose, like the producer.
+      const unproven = spendStepUpProof(
+        store,
+        body?.stepUpToken,
+        "TransferWorkspaceOwnership",
+        { workspaceId: params.workspaceId, newOwnerId: body?.newOwnerId },
+      );
+      if (unproven) return unproven;
+      const outcome = store.transferOwnership(
+        params.workspaceId,
+        body?.newOwnerId ?? "",
+        body?.expectedVersion,
+      );
+      switch (outcome) {
+        case "ok":
+          return noContent();
+        case "stale":
+          return preconditionFailed();
+        case "not-found":
+          return notFound();
+        case "self":
+          return ruleViolation("Cannot transfer ownership to yourself.");
+        case "guest":
+          return ruleViolation("A guest cannot become the owner.");
+      }
     },
   }),
 
@@ -822,6 +971,22 @@ export const workspaceOperations = [
           "A workspace invitation offers Member or Guest only; promote the member after they join.",
         );
       }
+      // The workspace setting AllowGuestInvites (off by default): the producer refuses a Guest invitation with 403.
+      if (
+        role === "guest" &&
+        !store.getWorkspaceSettings(params.workspaceId).allowGuestInvites
+      ) {
+        return {
+          status: 403,
+          body: {
+            type: "https://docs.notrelix.com/problems/workspace-guest_invites_off",
+            title: "Forbidden",
+            status: 403,
+            detail: "Guest invitations are turned off for this workspace.",
+            errorCode: "workspace.guest_invites_off",
+          },
+        };
+      }
       if (store.isActiveMemberEmail(params.workspaceId, email)) {
         return {
           status: 409,
@@ -845,6 +1010,88 @@ export const workspaceOperations = [
       made.set(key, id);
       invitedUnderKey.set(store, made);
       return created(id);
+    },
+  }),
+
+  // Many addresses at once (Workspaces.Members.InviteMembers): one outcome per address, not all-or-nothing.
+  defineMockOperation<
+    { workspaceId: string },
+    {
+      entries?: {
+        email?: string;
+        role?: string;
+        initialEntries?: { kind?: string }[];
+      }[];
+    },
+    unknown
+  >({
+    id: "workspace.members.inviteMany",
+    contract: {
+      kind: "openapi",
+      operationId: "Workspaces.Members.InviteMembers",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/members/bulk",
+    async handle({ params, body, store, request }) {
+      if (!canManageMembers(store, params.workspaceId)) return forbidden();
+      if (!request.headers.get("Idempotency-Key"))
+        return validationError({
+          "Idempotency-Key": ["The header is required."],
+        });
+      const entries = body?.entries ?? [];
+      if (entries.length < 1 || entries.length > 50)
+        return validationError({
+          Entries: ["Invite between 1 and 50 people at a time."],
+        });
+      const guestsAllowed = store.getWorkspaceSettings(
+        params.workspaceId,
+      ).allowGuestInvites;
+      const seen = new Set<string>();
+      const outcomes: {
+        email: string;
+        role: string;
+        outcome: string;
+        code: string | null;
+        invitationId: string | null;
+      }[] = [];
+      for (const entry of entries) {
+        const email = (entry.email ?? "").trim().toLowerCase();
+        if (email && seen.has(email)) continue;
+        seen.add(email);
+        const role = parseRole(entry.role);
+        const row = (
+          outcome: string,
+          code: string | null = null,
+          id: string | null = null,
+        ) =>
+          outcomes.push({
+            email,
+            role: entry.role ?? "",
+            outcome,
+            code,
+            invitationId: id,
+          });
+        if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email) || !role)
+          row("invalid");
+        else if (role === "owner" || role === "admin")
+          row("refused", "Workspaces_Invitation_CannotInviteAsAdmin");
+        else if (role === "guest" && !guestsAllowed)
+          row("refused", "workspace.guest_invites_off");
+        // A Guest is not a Team member: that address is refused on its own, the others still go out.
+        else if (
+          role === "guest" &&
+          entry.initialEntries?.some((e) => e.kind?.toLowerCase() === "team")
+        )
+          row("refused", "Workspaces_Invitation_GuestEntryRoleTooPrivileged");
+        else if (store.isActiveMemberEmail(params.workspaceId, email))
+          row("already-member", "workspaces.invitation.already-member");
+        else {
+          const id = store.createInvitation(params.workspaceId, email, role);
+          if (id) row("sent", null, id);
+          else row("already-pending", "workspaces.invitation.pending-exists");
+        }
+      }
+      return ok({ outcomes });
     },
   }),
 
@@ -1058,16 +1305,12 @@ export const workspaceOperations = [
     },
     method: "GET",
     route: "/workspaces/:workspaceId/activity",
-    async handle({ params, store, request }) {
+    async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      const query = request.searchParams;
-      // The producer records no activity entries yet; mirror its envelope.
-      return ok({
-        data: [],
-        total: 0,
-        page: Number(query.get("page") ?? 1),
-        pageSize: Number(query.get("pageSize") ?? 20),
-      });
+      // A Guest is forbidden (the feed names people); the mock records no activity facts, so it mirrors the empty envelope.
+      if (store.getCurrentMemberRole(params.workspaceId) === "guest")
+        return forbidden();
+      return ok({ items: [], nextCursor: null });
     },
   }),
 
@@ -1081,7 +1324,11 @@ export const workspaceOperations = [
     route: "/workspaces/:workspaceId/settings",
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
-      return ok({ ...store.getWorkspaceSettings(params.workspaceId) });
+      // The Account owns the MFA requirement: the read returns its fact.
+      return ok({
+        ...store.getWorkspaceSettings(params.workspaceId),
+        enforceMfa: store.auth.accountMfaRequired,
+      });
     },
   }),
 
@@ -1188,10 +1435,14 @@ export const workspaceOperations = [
       }
       if (!store.pinResource(params.workspaceId, kind, params.resourceId)) {
         return {
-          status: 422,
+          status: 400,
           body: {
-            message: "Pin limit reached",
-            code: "Workspaces_Navigation_PinLimitReached",
+            type: "https://docs.notrelix.com/problems/business_rule-violation",
+            title: "Business rule violation",
+            status: 400,
+            detail: "A member can pin at most 50 resources in a workspace.",
+            errorCode: "business_rule.violation",
+            ruleCode: "Workspaces_Navigation_PinLimitReached",
           },
         };
       }

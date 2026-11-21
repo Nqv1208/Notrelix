@@ -30,7 +30,11 @@ interface UnknownOutcome {
   readonly signature: string;
   readonly idempotencyKey: string;
   readonly expectedVersion: number;
+  readonly at: number;
 }
+
+/** A repeat is a retry of a click, not a later action: after this the server's replay (a day) must not answer it. */
+const REPEAT_WINDOW_MS = 2 * 60_000;
 
 const unknownByClient = new WeakMap<QueryClient, Map<string, UnknownOutcome>>();
 
@@ -69,9 +73,13 @@ export function applyCardPatch<T extends Card>(
       [`${card.boardId}-field-title`]:
         patch.title ?? card.fieldValues[`${card.boardId}-field-title`],
       [`${card.boardId}-field-due-date`]:
-        patch.dueDate ?? card.fieldValues[`${card.boardId}-field-due-date`],
+        patch.dueDate === undefined
+          ? card.fieldValues[`${card.boardId}-field-due-date`]
+          : patch.dueDate,
       [`${card.boardId}-field-priority`]:
-        patch.priority ?? card.fieldValues[`${card.boardId}-field-priority`],
+        patch.priority === undefined
+          ? card.fieldValues[`${card.boardId}-field-priority`]
+          : patch.priority,
     },
     updatedAt: new Date().toISOString(),
   };
@@ -104,7 +112,7 @@ export function runUpdateCardCommand(
   const kept = unknown.get(cardId);
   // The write is based on the item version the member last read.
   const expectedVersion =
-    kept?.signature === signature
+    kept?.signature === signature && Date.now() - kept.at < REPEAT_WINDOW_MS
       ? kept.expectedVersion
       : (
           findBoardCard(
@@ -133,7 +141,7 @@ export function runUpdateCardCommand(
     applyDetail: (detail) => applyCardPatch(detail, patch),
     send: (context) => {
       const idempotencyKey =
-        kept?.signature === signature
+        kept?.signature === signature && Date.now() - kept.at < REPEAT_WINDOW_MS
           ? kept.idempotencyKey
           : context.idempotencyKey;
       return cards
@@ -152,6 +160,7 @@ export function runUpdateCardCommand(
                 signature,
                 idempotencyKey,
                 expectedVersion,
+                at: Date.now(),
               });
             else unknown.delete(cardId);
             throw error;

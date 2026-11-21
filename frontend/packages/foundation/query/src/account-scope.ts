@@ -5,6 +5,7 @@ import {
   type ReactNode,
 } from "react";
 import type { QueryClient } from "@tanstack/react-query";
+import { runSessionReset } from "./session-reset";
 
 /**
  * Active Account scope for the client cache.
@@ -50,4 +51,5 @@ export function useAccountId(): string {
 export function resetCacheForAccountTransition(queryClient: QueryClient): void {
   void queryClient.cancelQueries();
   queryClient.clear();
+  runSessionReset();
 }

@@ -195,10 +195,16 @@ export function DocFileMenuSurface({
           unavailable={f.unavailable}
         />
         <Item
+          label={f.templates}
+          popup="dialog"
+          onClick={callbacks?.onTemplatesOpen}
+          unavailable={f.unavailable}
+        />
+        <Item
           label={f.importPage}
           popup="dialog"
           onClick={callbacks?.onImportOpen}
-          unavailable={f.unavailable}
+          unavailable={callbacks?.offline ? f.offline : f.unavailable}
         />
         <Item
           label={f.info}

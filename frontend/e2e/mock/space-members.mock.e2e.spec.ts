@@ -283,6 +283,11 @@ test.describe("Department members (owner)", () => {
     const ha = row(page, "Nguyễn Thu Hà");
     await expect(ha).toContainText("Trực tiếp · người tạo phòng");
     await expect(ha).toContainText("đang hoạt động");
+    // The producer pages by subject id, so the rows past the first ten sit behind "Hiện N người khác".
+    await expect(
+      page.getByRole("button", { name: "Hiện 13 người khác" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /^Hiện \d+ người khác$/ }).click();
     const quan = row(page, "quan.tran@minhan.vn");
     await expect(quan).toContainText("Trực tiếp");
     await expect(quan).toContainText("Kỹ sư ERP");
@@ -292,9 +297,6 @@ test.describe("Department members (owner)", () => {
     await expect(invite).toContainText("Ngô Đăng Khoa · mời 2 ngày trước");
     await expect(invite.getByText("Gửi lại")).toBeVisible();
     await expect(invite.getByText("Thu hồi")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Hiện 13 người khác" }),
-    ).toBeVisible();
     // The guest of a single Board, beside the roles.
     const aside = page.getByRole("complementary", {
       name: "Giải thích vai trò",

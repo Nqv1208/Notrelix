@@ -216,7 +216,9 @@ export function useMoveToSpace() {
             spaceId: moving.id,
             parentId: target,
             ...appendPlacement(index, target, moving.id),
-            expectedVersion: moving.version,
+            // The live tree, refreshed after a conflict, so a retry carries the current version.
+            expectedVersion:
+              index.byId.get(moving.id)?.version ?? moving.version,
           },
           { onSuccess: () => done(moving.name), onError: onFailure },
         );

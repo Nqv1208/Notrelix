@@ -31,7 +31,7 @@ review_on:
 > This file is generated discovery evidence.
 > Rule meaning remains owned by the canonical source document in which the rule is declared.
 
-Rule count: 2730
+Rule count: 2733
 
 ## Namespace summary
 
@@ -51,7 +51,7 @@ Rule count: 2730
 | `BE-SEC` | 59 |
 | `BE-TST` | 67 |
 | `BIL` | 33 |
-| `CHT` | 24 |
+| `CHT` | 27 |
 | `COL` | 30 |
 | `DCT` | 31 |
 | `DEC` | 26 |
@@ -834,6 +834,9 @@ Rule count: 2730
 | `CHT-022` | `CHT` | Search is derived and authorization-scoped | [`docs/product/chat.md`](../product/chat.md) |
 | `CHT-023` | `CHT` | Links to resources never mutate them | [`docs/product/chat.md`](../product/chat.md) |
 | `CHT-024` | `CHT` | Chat does not own Audit | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-025` | `CHT` | Images are shown in a gallery and never move the layout | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-026` | `CHT` | A voice message is a message with one audio attachment | [`docs/product/chat.md`](../product/chat.md) |
+| `CHT-027` | `CHT` | A call belongs to a space and follows its access | [`docs/product/chat.md`](../product/chat.md) |
 | `COL-001` | `COL` | Collaboration target is explicit and scoped | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `COL-002` | `COL` | Collaboration never mutates target aggregate implicitly | [`docs/product/collaboration.md`](../product/collaboration.md) |
 | `COL-003` | `COL` | Comment target existence/access is validated outside pure Domain | [`docs/product/collaboration.md`](../product/collaboration.md) |

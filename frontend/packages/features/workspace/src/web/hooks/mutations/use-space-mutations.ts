@@ -49,7 +49,12 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
     const queryClient = useQueryClient();
     const treeKey = workspaceQueryKeys.spaceTree(workspaceId);
     const refreshTree = () =>
-      queryClient.invalidateQueries({ queryKey: treeKey });
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceQueryKeys.spaceDetails(workspaceId),
+        }),
+        queryClient.invalidateQueries({ queryKey: treeKey }),
+      ]);
     const refreshMembers = async (spaceId: string) => {
       await queryClient.invalidateQueries({
         queryKey: workspaceQueryKeys.spaceMembers(workspaceId, spaceId),
@@ -121,19 +126,24 @@ export function createUseSpaceMutations({ api, endpoints }: SpaceMutationDeps) {
       onSettled: refreshTree,
     });
 
-    // Delete and restore carry no expected version: the producer takes none for a Space.
+    const refreshDeleted = () =>
+      queryClient.invalidateQueries({
+        queryKey: workspaceQueryKeys.deletedSpaces(workspaceId),
+      });
+
+    // Delete carries the Space version last read; restore addresses a deleted Space and carries none.
     const remove = useMutation({
-      mutationFn: ({ spaceId }: { spaceId: string }) =>
-        service.remove(workspaceId, spaceId),
+      mutationFn: ({ spaceId, expectedVersion }: SpaceVersionedWrite) =>
+        service.remove(workspaceId, spaceId, expectedVersion),
       retry: false,
-      onSettled: refreshTree,
+      onSettled: () => Promise.all([refreshTree(), refreshDeleted()]),
     });
 
     const restore = useMutation({
       mutationFn: ({ spaceId }: { spaceId: string }) =>
         service.restore(workspaceId, spaceId),
       retry: false,
-      onSettled: refreshTree,
+      onSettled: () => Promise.all([refreshTree(), refreshDeleted()]),
     });
 
     const addMember = useMutation({

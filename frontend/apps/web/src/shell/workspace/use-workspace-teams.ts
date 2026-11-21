@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { toast } from "sonner";
 import {
+  createUseDeletedTeams,
   createUseTeam,
   createUseTeamMembers,
   createUseTeamMutations,
@@ -20,6 +21,7 @@ export function useTeamHooks() {
     const deps = { api: runtimeClient.api, endpoints: runtimeClient.endpoints };
     return {
       useTeams: createUseTeams(deps),
+      useDeletedTeams: createUseDeletedTeams(deps),
       useTeam: createUseTeam(deps),
       useTeamMembers: createUseTeamMembers(deps),
       useTeamMutations: createUseTeamMutations(deps),

@@ -11,6 +11,7 @@ import { useMatches, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { resolveApiAssetUrl } from "@notrelix/contracts";
 import { createUsePageList } from "@notrelix/docs-state";
+import { runSessionReset } from "@notrelix/query";
 import { createUseLogout, useCurrentUser } from "@notrelix/features-auth";
 import { createChatHooks } from "@notrelix/features-chat/web";
 import { InboxBell } from "@notrelix/features-notifications";
@@ -74,6 +75,8 @@ import { useTabletSidebarPreference } from "./use-tablet-sidebar-preference";
 import { useInboxSummary } from "./work-feed-bridge";
 import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
+import { AccountReadOnlyBannerHost } from "./account-read-only-banner-host";
+import { ArchivedWorkspaceBannerHost } from "./archived-workspace-banner-host";
 import { useCommandSearch } from "./use-command-search";
 import { useWorkFeedWrites } from "./work-feed-bridge";
 import { useCreateResource } from "./use-create-resource";
@@ -117,6 +120,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         navigate: (options) =>
           navigate({ to: options.to, replace: options.replace }),
         getSearchParams: () => new URLSearchParams(window.location.search),
+        onSignedOut: runSessionReset,
       }),
     };
   }, [runtimeClient, featureDeps, navigate]);
@@ -766,6 +770,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             }
           />
         ) : null}
+        <AccountReadOnlyBannerHost navigation={navigation} />
+        <ArchivedWorkspaceBannerHost />
         {/* The one scroll container of the workspace shell (WX-SHELL-004). */}
         <main id="workspace-main" className="min-h-0 flex-1 overflow-y-auto">
           {children}
@@ -777,6 +783,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
         onQueryChange={setPaletteQuery}
+        search={
+          paletteSearch.status === "ready"
+            ? undefined
+            : { status: paletteSearch.status, onRetry: paletteSearch.retry }
+        }
         workspace={paletteData.workspace}
         work={paletteData.work}
         docs={paletteData.docs}

@@ -1,4 +1,5 @@
 import { wallClockMs } from "./clock";
+import { MOCK_SSO, MockSsoState, type MockSsoRoute } from "./mock-sso";
 
 /**
  * Who can sign in, and how, in the mock world: the accounts with a password and a second step, the company domains that
@@ -15,8 +16,16 @@ export const MOCK_AUTH = {
   otpCode: "482931",
   /** One of the recovery codes handed out when the second step was set up. */
   backupCode: "BK7Q-M2XN-91TD",
-  /** A company whose people sign in through the company identity provider. */
-  ssoDomain: "minhan.vn",
+  /** A person of an Account that requires two-step verification and has none yet: signs in to the enrolment step while the requirement is on. */
+  enrollEmail: "required-mfa@mock.test",
+  /** The key the enrolment step shows (and its setup address). */
+  enrollSecret: "JBSWY3DPEHPK3PXP",
+  /** A company whose people sign in through the company identity provider (the seeded, verified domain). */
+  ssoDomain: MOCK_SSO.seededDomain,
+  /** The Account Owner of that company: keeps the password sign-in while single sign-on is required. */
+  ssoOwnerEmail: MOCK_SSO.ownerEmail,
+  /** A member of that company: a correct password is refused while single sign-on is required. */
+  ssoMemberEmail: MOCK_SSO.memberEmail,
   /** The six digits the password-reset email carries for that account. */
   resetCode: "246810",
   /** A registration with this address is answered "too many requests" (the limit state). */
@@ -27,22 +36,6 @@ export const MOCK_AUTH = {
   maxAttempts: 10,
   lockSeconds: 900,
 } as const;
-
-export interface MockSsoDirectory {
-  readonly orgName: string;
-  readonly orgInitials: string;
-  readonly provider: "microsoft-entra";
-  readonly providerLabel: string;
-}
-
-const SSO_DOMAINS: Readonly<Record<string, MockSsoDirectory>> = {
-  [MOCK_AUTH.ssoDomain]: {
-    orgName: "Minh An Group",
-    orgInitials: "MA",
-    provider: "microsoft-entra",
-    providerLabel: "Microsoft Entra",
-  },
-};
 
 export type MockInviteState = "valid" | "expired" | "used";
 
@@ -154,9 +147,15 @@ const INVITES: readonly MockGuestInvite[] = [
 export type MockLoginOutcome =
   | { readonly kind: "signed-in" }
   | { readonly kind: "otp"; readonly challengeToken: string }
+  /** The Account requires two-step verification and this person has none: no session, only the enrolment token. */
+  | { readonly kind: "enroll"; readonly enrollmentToken: string }
   | { readonly kind: "invalid" }
   /** Too many wrong passwords: the attempt is throttled, not verified. */
   | { readonly kind: "locked"; readonly retryAfterSeconds: number };
+
+export type MockEnrollOutcome =
+  | { readonly kind: "started"; readonly mfaMethodId: string }
+  | { readonly kind: "invalid-token" };
 
 /** The answer to a second-step code (`identity.mfa.*`); no one is told how many tries are left. */
 export type MockOtpOutcome =
@@ -175,6 +174,14 @@ export class MockAuthDirectory {
   private acceptedInvites = new Set<string>();
   private declinedInvites = new Set<string>();
   private sequence = 0;
+  /** The Account's single sign-on setup and the company sign-in round trip. */
+  readonly sso = new MockSsoState();
+  /** The Account's MFA requirement (`security.require-mfa`) and whether the signed-in person may change it (the Owner). */
+  accountMfaRequired = false;
+  accountOwner = true;
+  /** Required enrolment: token -> wrong codes left; the backend's cookie after a provider sign-in. */
+  private enrollments = new Map<string, { triesLeft: number }>();
+  private enrollCookie: string | null = null;
 
   /**
    * The lock runs on the wall clock: the mock's own clock is frozen at the
@@ -187,18 +194,22 @@ export class MockAuthDirectory {
     this.lockedUntil.clear();
     this.challenges.clear();
     this.mfaChallengeCookie = null;
+    this.accountMfaRequired = false;
+    this.accountOwner = true;
+    this.enrollments.clear();
+    this.enrollCookie = null;
     this.acceptedInvites.clear();
     this.declinedInvites.clear();
     this.sequence = 0;
+    this.sso.reset();
   }
 
-  /** How this email signs in. A company domain goes to its provider; everything else uses a password. */
+  /** How this email signs in. A verified company domain with an Active provider goes to it; everything else uses a password. */
   identify(email: string): {
     method: "password" | "sso";
-    sso: MockSsoDirectory | null;
+    sso: MockSsoRoute | null;
   } {
-    const domain = email.trim().toLowerCase().split("@")[1] ?? "";
-    const sso = SSO_DOMAINS[domain] ?? null;
+    const sso = this.sso.routeOf(email);
     return { method: sso ? "sso" : "password", sso };
   }
 
@@ -217,6 +228,28 @@ export class MockAuthDirectory {
     const email = rawEmail.trim().toLowerCase();
     const locked = this.secondsLocked(email);
     if (locked > 0) return { kind: "locked", retryAfterSeconds: locked };
+    // The company's people: the Owner and a member, each with a password, until single sign-on is required.
+    if (
+      (email === MOCK_AUTH.ssoOwnerEmail ||
+        email === MOCK_AUTH.ssoMemberEmail) &&
+      password === MOCK_AUTH.personalPassword
+    ) {
+      this.attempts.delete(email);
+      return { kind: "signed-in" };
+    }
+    if (
+      email === MOCK_AUTH.enrollEmail &&
+      password === MOCK_AUTH.personalPassword &&
+      this.accountMfaRequired
+    ) {
+      this.attempts.delete(email);
+      return { kind: "enroll", enrollmentToken: this.issueEnrollmentToken() };
+    }
+    if (
+      email === MOCK_AUTH.enrollEmail &&
+      password === MOCK_AUTH.personalPassword
+    )
+      return { kind: "signed-in" };
     if (
       email === MOCK_AUTH.personalEmail &&
       password === MOCK_AUTH.personalPassword
@@ -255,6 +288,50 @@ export class MockAuthDirectory {
 
   clearMfaChallengeCookie(): void {
     this.mfaChallengeCookie = null;
+  }
+
+  /** A new single-use enrolment token (10 minutes in the backend; the mock never ages it). */
+  issueEnrollmentToken(): string {
+    const token = `enroll-${(this.sequence += 1)}`;
+    this.enrollments.set(token, { triesLeft: OTP_ATTEMPTS });
+    return token;
+  }
+
+  /** A provider sign-in that needs the enrolment step: the token goes into the cookie. */
+  startProviderEnrollment(): void {
+    this.enrollCookie = this.issueEnrollmentToken();
+  }
+
+  /** The token of a body, else the cookie's. */
+  private enrollmentToken(body: string | null | undefined): string {
+    return body?.trim() ? body.trim() : (this.enrollCookie ?? "");
+  }
+
+  startEnrollment(body: string | null | undefined): MockEnrollOutcome {
+    return this.enrollments.has(this.enrollmentToken(body))
+      ? { kind: "started", mfaMethodId: "mfa-method-required" }
+      : { kind: "invalid-token" };
+  }
+
+  /** The first code finishes the sign-in; the fifth wrong one kills the token. */
+  completeEnrollment(
+    body: string | null | undefined,
+    code: string,
+  ): "done" | "invalid" | "invalid-token" {
+    const token = this.enrollmentToken(body);
+    const entry = this.enrollments.get(token);
+    if (!entry) return "invalid-token";
+    if (code.replace(/\s+/g, "") === MOCK_AUTH.otpCode) {
+      this.enrollments.delete(token);
+      this.enrollCookie = null;
+      return "done";
+    }
+    entry.triesLeft -= 1;
+    if (entry.triesLeft <= 0) {
+      this.enrollments.delete(token);
+      return "invalid-token";
+    }
+    return "invalid";
   }
 
   /** The second step: the app's six digits, or a backup code. */

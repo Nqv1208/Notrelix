@@ -25,6 +25,8 @@ export interface ChatSpaceRecord {
   position: number;
   archivedAt: string | null;
   deletedAt: string | null;
+  /** Who deleted the channel; absent on a seeded space or one that is not deleted. */
+  deletedBy?: string | null;
   /** The least seconds between two messages of one person (UC-CHT-H08); absent or 0 is off. */
   slowModeSeconds?: number;
   /** The Board or Page this channel is linked to (UC-CHT-H10); absent or null when not linked. */
@@ -65,6 +67,8 @@ export interface ChatMessageRecord {
   /** Null for system messages. */
   readonly clientMessageId: string | null;
   readonly replyToId: string | null;
+  /** The Notrelix sticker of a sticker message (UC-CHT-I06); null for any other message. */
+  readonly stickerId?: string | null;
   /** The root of the thread a reply belongs to; null for a message of the main flow. */
   readonly threadRootId: string | null;
   /** The reply's place in its thread: 1 for the first reply, gap-free; null outside a thread. */
@@ -178,6 +182,25 @@ export const CHAT_LIMITS = {
   pageSizeDefault: 50,
   pageSizeMax: 100,
   clientMessageIdMaxLength: 128,
+  /** The Notrelix sticker ids and their preview text (the server StickerCatalog). */
+  stickers: {
+    "thumbs-up": "Thumbs up",
+    clap: "Clapping",
+    party: "Party",
+    heart: "Heart",
+    laugh: "Laughing",
+    wow: "Wow",
+    thinking: "Thinking",
+    sad: "Sad",
+    fire: "On fire",
+    rocket: "Rocket",
+    eyes: "Eyes on it",
+    check: "Done",
+    pray: "Thank you",
+    hundred: "100",
+    coffee: "Coffee break",
+    bug: "Bug",
+  } as Readonly<Record<string, string>>,
   channelNameMaxLength: 80,
   channelTopicMaxLength: 250,
   channelGroupNameMaxLength: 60,
@@ -197,7 +220,7 @@ export const CHAT_LIMITS = {
   /** Days without a reply after which a thread is archived (backend ChatLimits.ThreadInactivityDays). */
   threadInactivityDays: 7,
   /** The largest message payload of a realtime frame, in UTF-8 bytes (ChatRealtime.MaxPayloadBytes). */
-  realtimePayloadMaxBytes: 3000,
+  realtimePayloadMaxBytes: 1300,
   /** Recipients of one message's unread fan-out (ChatRealtime.MaxUnreadRecipients). */
   unreadRecipientsMax: 2000,
   /** The most mentions one message holds (ChatLimits.MentionsPerMessageMax). */
@@ -215,6 +238,7 @@ export const CHAT_ERROR = {
   lastManager: "last-manager",
   messageDeleted: "message-deleted",
   systemMessageImmutable: "system-message-immutable",
+  stickerInvalid: "sticker-invalid",
   notFound: "resource.not_found",
   forbidden: "auth.forbidden",
   validation: "validation.failed",
@@ -266,6 +290,7 @@ export const CHAT_REACTION_PALETTE: readonly string[] = [
 
 /** The announcements the backend writes as system messages (ChatSystemMessages). */
 export const CHAT_SYSTEM_TEXT = {
+  created: "created the channel",
   memberJoined: "joined the channel",
   memberLeft: "left the channel",
   memberRemoved: "was removed from the channel",
@@ -274,6 +299,9 @@ export const CHAT_SYSTEM_TEXT = {
   unarchived: "unarchived the channel",
   renamed: (name: string) => `renamed the channel to ${name}`,
   pinned: "pinned a message",
+  unpinned: "unpinned a message",
+  groupMemberAdded: "added a member to the group",
+  groupMemberLeft: "left the group",
 } as const;
 
 /** An export of one person's chat data (backend ChatExportJob). The file is kept as text; the real one is an object in storage. */

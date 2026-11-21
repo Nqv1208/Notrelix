@@ -72,6 +72,14 @@ public class WorkspaceMemberRulesTests
             .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_ActorCannotAssignRole);
     }
 
+    [Fact]
+    public void EnsureActorCanAssignRole_WhenAnOwnerAssignsOwner_ShouldThrowTheOwnershipCode()
+    {
+        var act = () => WorkspaceMemberRules.EnsureActorCanAssignRole(WorkspaceRole.Owner, WorkspaceRole.Owner);
+        act.Should().Throw<BusinessRuleException>()
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Member_CannotDirectlyAssignOwner);
+    }
+
     [Theory]
     [InlineData(WorkspaceRole.Owner, WorkspaceRole.Owner)]
     [InlineData(WorkspaceRole.Owner, WorkspaceRole.Admin)]

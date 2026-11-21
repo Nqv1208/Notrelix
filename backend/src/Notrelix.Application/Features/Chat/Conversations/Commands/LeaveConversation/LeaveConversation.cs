@@ -26,7 +26,8 @@ public class LeaveConversationCommandHandler(
     IWorkspaceMemberFacts members,
     IDateTimeProvider clock,
     ChatSystemMessages systemMessages,
-    IAccessChangeSignal access) : IRequestHandler<LeaveConversationCommand, Result>
+    IAccessChangeSignal access,
+    Notrelix.Application.Features.Chat.Calls.Services.ChatCallRevocation? calls = null) : IRequestHandler<LeaveConversationCommand, Result>
 {
     public async Task<Result> Handle(LeaveConversationCommand request, CancellationToken cancellationToken)
     {
@@ -39,13 +40,16 @@ public class LeaveConversationCommandHandler(
             return Result.Success();
 
         access.ChannelPerson(request.WorkspaceId, space.Id, userId);
+        // A live call of the conversation loses the person with their place in it.
+        if (calls is not null)
+            await calls.ReleaseAsync(request.WorkspaceId, space.Id, userId, now, cancellationToken);
         if (space.ActiveMemberCount() == 0)
         {
             space.CloseIfNoParticipants(userId, now);
             return Result.Success();
         }
 
-        await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.MemberLeft, cancellationToken);
+        await systemMessages.AnnounceAsync(space, userId, ChatSystemMessages.GroupMemberLeft, cancellationToken);
         return Result.Success();
     }
 }

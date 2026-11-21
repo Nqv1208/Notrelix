@@ -19,10 +19,12 @@ public static class OAuthLoginErrorCodes
     public const string EmailInUse = "identity.oauth.email-in-use";
     /// <summary>The account has a second factor: it signs in with its password, then the code.</summary>
     public const string MfaRequired = "identity.oauth.mfa-required";
+    /// <summary>The email is on a domain whose Account requires company single sign-on: no social sign-in.</summary>
+    public const string SsoRequired = "identity.oauth.sso-required";
 
     private static readonly HashSet<string> Known =
     [
-        Failed, ProviderUnavailable, StateInvalid, Denied, EmailUnverified, EmailInUse, MfaRequired,
+        Failed, ProviderUnavailable, StateInvalid, Denied, EmailUnverified, EmailInUse, MfaRequired, SsoRequired,
     ];
 
     /// <summary>The code of the first error when it is one of these, otherwise <see cref="Failed"/>.</summary>

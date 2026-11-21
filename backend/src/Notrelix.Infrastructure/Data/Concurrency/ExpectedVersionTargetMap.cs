@@ -1,5 +1,13 @@
+using Notrelix.Application.Features.Chat.Calls.Commands.AnswerCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.DeclineCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.CancelCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.EndCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.JoinCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.LeaveCall;
+using Notrelix.Application.Features.Chat.Calls.Commands.UpdateCallMediaState;
 using Notrelix.Application.Features.Chat.Channels.Commands.ArchiveChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.DeleteChannel;
+using Notrelix.Application.Features.Chat.Channels.Commands.RestoreChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.LinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UnlinkChannel;
 using Notrelix.Application.Features.Chat.Channels.Commands.UpdateChannel;
@@ -114,6 +122,7 @@ using Notrelix.Application.Features.Integrations.Connections.Commands.Regenerate
 using Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorkspaceSettings;
 using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
+using Notrelix.Application.Features.Workspaces.Workspaces.Commands.ChangeWorkspaceSlug;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.RestoreWorkspace;
 using Notrelix.Application.Features.Workspaces.Workspaces.Commands.TransferOwnership;
@@ -122,6 +131,7 @@ using Notrelix.Application.Features.Workspaces.Workspaces.Commands.UpdateWorkspa
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.AddSpaceMember;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ArchiveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceType;
+using Notrelix.Application.Features.Workspaces.Spaces.Commands.DeleteSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceVisibility;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RenameSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.UnarchiveSpace;
@@ -130,7 +140,11 @@ using Notrelix.Application.Features.WorkManagement.Boards.Commands.MoveBoardToSp
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
 using Notrelix.Application.Features.Documents.Pages.Commands.UpdatePage;
+using Notrelix.Application.Features.Documents.Templates.Commands.ArchivePageTemplate;
+using Notrelix.Application.Features.Documents.Templates.Commands.DeletePageTemplate;
+using Notrelix.Application.Features.Documents.Templates.Commands.UpdatePageTemplate;
 using Notrelix.Domain.Documents.Pages;
+using Notrelix.Domain.Documents.Templates;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.ChangeSpaceMemberRole;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.MoveSpace;
 using Notrelix.Application.Features.Workspaces.Spaces.Commands.RemoveSpaceMember;
@@ -216,6 +230,7 @@ public sealed class ExpectedVersionTargetMap
     private const string ChatChannelGroupKind = "chat.channel-group";
     private const string ChatMessageKind = "chat.message";
     private const string ChatRetentionKind = "chat.retention";
+    private const string ChatCallKind = "chat.call";
     private const string BoardKind = "work-management.board";
     private const string BoardFieldKind = "work-management.board-field";
     private const string LabelKind = "work-management.label";
@@ -356,6 +371,7 @@ public sealed class ExpectedVersionTargetMap
         [typeof(TransferOwnershipCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(DeleteWorkspaceCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceProfileCommand)] = new(WorkspaceKind, typeof(Workspace)),
+        [typeof(ChangeWorkspaceSlugCommand)] = new(WorkspaceKind, typeof(Workspace)),
         [typeof(UpdateWorkspaceSettingsCommand)] = new(WorkspaceKind, typeof(Workspace)),
         // Integrations — regenerating a webhook secret is protected by the connection's version
         [typeof(RegenerateWebhookSecretCommand)] = new(IntegrationConnectionKind, typeof(IntegrationConnection)),
@@ -368,7 +384,17 @@ public sealed class ExpectedVersionTargetMap
         [typeof(UpdateChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(ArchiveChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(DeleteChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
+        [typeof(RestoreChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),
         [typeof(UpdateChannelGroupCommand)] = new(ChatChannelGroupKind, typeof(Notrelix.Domain.Chat.Spaces.ChannelGroup)),
+
+        // Chat — call commands quote the call version the client read (SPEC-CHAT-MEDIA-CALLS section 6)
+        [typeof(AnswerCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(DeclineCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(CancelCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(EndCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(JoinCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(LeaveCallCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
+        [typeof(UpdateCallMediaStateCommand)] = new(ChatCallKind, typeof(Notrelix.Domain.Chat.Calls.Call)),
 
         // Chat — message edit and delete quote the message version the client read (UC-CHT-B04, B05)
         [typeof(EditMessageCommand)] = new(ChatMessageKind, typeof(Notrelix.Domain.Chat.Messages.Message)),
@@ -386,6 +412,10 @@ public sealed class ExpectedVersionTargetMap
         // Documents — page rename and move under another parent: the page version the editor read.
         [typeof(UpdatePageCommand)] = new("documents.page", typeof(Page)),
         [typeof(MovePageCommand)] = new("documents.page", typeof(Page)),
+        // Documents — template rename, archive and delete: the template version the manager read.
+        [typeof(UpdatePageTemplateCommand)] = new("documents.page-template", typeof(PageTemplate)),
+        [typeof(ArchivePageTemplateCommand)] = new("documents.page-template", typeof(PageTemplate)),
+        [typeof(DeletePageTemplateCommand)] = new("documents.page-template", typeof(PageTemplate)),
 
         // Accounts — Account rename quotes the Account version the settings screen read (UC-ACC-C01)
         [typeof(RenameAccountCommand)] = new(AccountKind, typeof(Account)),
@@ -398,6 +428,8 @@ public sealed class ExpectedVersionTargetMap
         [typeof(ChangeSpaceVisibilityCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ArchiveSpaceCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(UnarchiveSpaceCommand)] = new(SpaceKind, typeof(Space)),
+        // RestoreSpace addresses a deleted Space and stays version-less, as RestoreTeam does.
+        [typeof(DeleteSpaceCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(AddSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(RemoveSpaceMemberCommand)] = new(SpaceKind, typeof(Space)),
         [typeof(ChangeSpaceMemberRoleCommand)] = new(SpaceKind, typeof(Space)),

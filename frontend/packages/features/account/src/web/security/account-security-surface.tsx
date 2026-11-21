@@ -3,6 +3,7 @@ import {
   KeyRound,
   Laptop,
   Lock,
+  ShieldCheck,
   Smartphone,
   Tablet,
   type LucideIcon,
@@ -28,6 +29,7 @@ import {
 import {
   AccountPasswordChangedPanel,
   AccountPasswordPanel,
+  AccountSetPasswordPanel,
   type AccountPasswordError,
   type AccountPasswordSubmission,
 } from "./account-password-panel";
@@ -67,18 +69,30 @@ export type AccountSecurityFlow =
       readonly kind: "enroll";
       readonly secret: string;
       readonly otpAuthUri: string;
-      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
+      readonly error:
+        "wrong" | "wait" | "failed" | "expired" | "requiredByAccount" | null;
       readonly wait?: number;
     }
   | {
       readonly kind: "stepUp";
       /** What the proof is for: two-factor on or off, fresh backup codes, or ending every other device. */
-      readonly purpose: "enroll" | "disable" | "renew" | "others";
+      readonly purpose:
+        | "enroll"
+        | "disable"
+        | "renew"
+        | "others"
+        | "link"
+        | "unlink"
+        | "setPassword"
+        | "changeEmail";
+      /** `link` and `unlink`: the provider the proof is for. */
+      readonly provider?: string;
       readonly factor: "code" | "password" | "provider";
       /** `provider`: the linked providers the person can confirm with (the producer names them). */
       readonly providers?: readonly string[];
-      /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. */
-      readonly error: "wrong" | "wait" | "failed" | "expired" | null;
+      /** `expired`: the earlier verification is gone (out of tries or too old); a fresh one is open. `requiredByAccount`: turning two-factor off is refused while an Account requires it. */
+      readonly error:
+        "wrong" | "wait" | "failed" | "expired" | "requiredByAccount" | null;
       readonly wait?: number;
     }
   | {
@@ -94,6 +108,12 @@ export type AccountSecurityFlow =
       readonly error: AccountPasswordError | null;
       readonly wait?: number;
     }
+  /** Choosing a first password, the proof of presence already in hand. */
+  | {
+      readonly kind: "setPassword";
+      readonly error: AccountPasswordError | null;
+      readonly wait?: number;
+    }
   /** The password changed and every session, this one too, was ended. */
   | { readonly kind: "passwordChanged" }
   /** Two-factor is off and every session, this one too, was ended. */
@@ -102,6 +122,10 @@ export type AccountSecurityFlow =
   | { readonly kind: "signOutThis" };
 
 export interface AccountSecurityData {
+  /** The person has a password to sign in with (absent = yes). */
+  readonly hasPassword?: boolean;
+  /** The providers the person signed in with ("Google", "Microsoft"); absent = none. */
+  readonly linkedProviders?: readonly string[];
   /** The single sign-on provider that owns the password; `null` = none. */
   readonly ssoProvider: string | null;
   readonly email: string;
@@ -115,6 +139,12 @@ export interface AccountSecurityData {
   readonly activity?: readonly AccountActivityView[];
   /** More activity lines can be loaded. */
   readonly activityHasMore?: boolean;
+  /** The Account's MFA requirement; absent = the page could not read it, so no block is drawn. */
+  readonly accountMfaPolicy?: {
+    readonly required: boolean;
+    /** Only the Account Owner turns it on or off; anyone else reads it. */
+    readonly canChange: boolean;
+  };
 }
 
 export interface AccountSecuritySurfaceProps {
@@ -128,8 +158,15 @@ export interface AccountSecuritySurfaceProps {
   /** The step of two-factor or a sensitive change in progress; `null`/absent = none. */
   readonly flow?: AccountSecurityFlow | null;
   readonly onSetTwoFactor: (enabled: boolean) => void;
+  /** The Owner requires (or stops requiring) two-factor for the whole Account. */
+  readonly onSetAccountMfaPolicy?: (required: boolean) => void;
+  /** The Account's single sign-on block (`AccountSsoSection`), drawn under the two-factor policy; absent = none. */
+  readonly ssoSlot?: React.ReactNode;
   /** Opens the change of password; absent = the account cannot change it here. */
   readonly onChangePassword?: () => void;
+  /** Starts setting a first password (the proof comes first); absent = the page cannot do it. */
+  readonly onSetPassword?: () => void;
+  readonly onSubmitFirstPassword?: (next: string) => void;
   readonly onSubmitNewPassword?: (
     submission: AccountPasswordSubmission,
   ) => void;
@@ -251,15 +288,17 @@ function Row({
         </small>
       </span>
       {/* Narrow screens: the action drops under the text column, 48 px in (the icon and its gap). */}
-      <div className="contents max-sm:ml-12 max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-2">
-        {control}
-      </div>
+      {control ? (
+        <div className="contents max-sm:ml-12 max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-2">
+          {control}
+        </div>
+      ) : null}
     </div>
   );
 }
 
 /** The step in progress: add the authenticator, prove who is asking, or keep the new backup codes. */
-function FlowPanel({
+export function FlowPanel({
   copy,
   flow,
   busy,
@@ -272,6 +311,7 @@ function FlowPanel({
   flow: Exclude<
     AccountSecurityFlow,
     | { kind: "password" }
+    | { kind: "setPassword" }
     | { kind: "passwordChanged" }
     | { kind: "twoFactorOff" }
     | { kind: "signOutThis" }
@@ -353,11 +393,15 @@ function FlowPanel({
         ? t.expired
         : flow.error === "wait"
           ? fillCopy(t.wait, { seconds: flow.wait ?? 0 })
-          : flow.error === "failed" || flow.error === "expired"
-            ? usesProvider && providers.length > 0
-              ? fillCopy(t.providerFailed, { provider: providers.join(" / ") })
-              : copy.actionError
-            : null;
+          : flow.error === "requiredByAccount"
+            ? t.requiredByAccount
+            : flow.error === "failed" || flow.error === "expired"
+              ? usesProvider && providers.length > 0
+                ? fillCopy(t.providerFailed, {
+                    provider: providers.join(" / "),
+                  })
+                : copy.actionError
+              : null;
   const title =
     flow.kind === "enroll"
       ? t.enrollTitle
@@ -367,7 +411,15 @@ function FlowPanel({
           ? t.disableTitle
           : flow.purpose === "others"
             ? t.othersTitle
-            : t.renewTitle;
+            : flow.purpose === "link"
+              ? fillCopy(t.linkTitle, { provider: flow.provider ?? "" })
+              : flow.purpose === "unlink"
+                ? fillCopy(t.unlinkTitle, { provider: flow.provider ?? "" })
+                : flow.purpose === "setPassword"
+                  ? t.setPasswordTitle
+                  : flow.purpose === "changeEmail"
+                    ? copy.email.proofTitle
+                    : t.renewTitle;
   return (
     <section
       aria-label={title}
@@ -400,6 +452,9 @@ function FlowPanel({
         <p className="m-0 mt-1 text-crumb text-muted-foreground">
           {flow.purpose === "disable" ? `${t.disableText} ` : null}
           {flow.purpose === "enroll" ? `${t.enrollProofText} ` : null}
+          {flow.purpose === "unlink"
+            ? `${fillCopy(t.unlinkText, { provider: flow.provider ?? "" })} `
+            : null}
           {usesProvider
             ? providers.length > 0
               ? t.providerText
@@ -459,7 +514,8 @@ function FlowPanel({
             type="submit"
             disabled={busy || !value || flow.error === "wait"}
             className={cn(
-              flow.kind === "stepUp" && flow.purpose === "disable"
+              flow.kind === "stepUp" &&
+                (flow.purpose === "disable" || flow.purpose === "unlink")
                 ? BTN_DANGER
                 : BTN_PRIMARY,
               FOCUS,
@@ -575,9 +631,13 @@ function SecurityBody({
   notice,
   flow,
   onChangePassword,
+  onSetPassword,
+  onSubmitFirstPassword,
   onSubmitNewPassword,
   onPasswordChangedContinue,
   onSetTwoFactor,
+  onSetAccountMfaPolicy,
+  ssoSlot,
   onSubmitCode,
   onSubmitPassword,
   onStartProviderStepUp,
@@ -593,6 +653,7 @@ function SecurityBody({
   const ids = {
     password: React.useId(),
     twoFactor: React.useId(),
+    policy: React.useId(),
     sessions: React.useId(),
     others: React.useId(),
     othersText: React.useId(),
@@ -600,6 +661,9 @@ function SecurityBody({
   };
   const others = data.sessions.filter((session) => !session.isCurrent);
   const current = data.sessions.find((session) => session.isCurrent);
+  // Signs in with a provider only: there is no password to change, one can be set.
+  const noPassword =
+    data.hasPassword === false && (data.linkedProviders ?? []).length > 0;
   return (
     <>
       <Block
@@ -622,7 +686,9 @@ function SecurityBody({
               ? fillCopy(copy.password.ssoTitle, {
                   provider: data.ssoProvider,
                 })
-              : copy.password.localTitle
+              : noPassword
+                ? copy.password.noneTitle
+                : copy.password.localTitle
           }
           text={
             data.ssoProvider
@@ -630,7 +696,12 @@ function SecurityBody({
                   email: data.email,
                   provider: data.ssoProvider,
                 })
-              : copy.password.localText
+              : noPassword
+                ? fillCopy(copy.password.noneText, {
+                    providers: (data.linkedProviders ?? []).join(" / "),
+                    email: data.email,
+                  })
+                : copy.password.localText
           }
           control={
             data.ssoProvider ? (
@@ -646,6 +717,15 @@ function SecurityBody({
                 {copy.password.ssoLink}
                 <span className="sr-only">{copy.password.ssoLinkOpens}</span>
               </a>
+            ) : noPassword && onSetPassword ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onSetPassword}
+                className={cn(BTN_SM, FOCUS)}
+              >
+                {copy.password.set}
+              </button>
             ) : onChangePassword ? (
               <button
                 type="button"
@@ -730,7 +810,64 @@ function SecurityBody({
         ) : null}
       </Block>
 
-      {flow?.kind === "password" ? (
+      {data.accountMfaPolicy ? (
+        <Block
+          titleId={ids.policy}
+          title={copy.policy.title}
+          aside={
+            <Tag tone={data.accountMfaPolicy.required ? "ok" : "neutral"}>
+              {data.accountMfaPolicy.required
+                ? copy.policy.required
+                : copy.policy.notRequired}
+            </Tag>
+          }
+        >
+          <Row
+            icon={ShieldCheck}
+            title={copy.policy.rowTitle}
+            text={
+              data.accountMfaPolicy.canChange
+                ? copy.policy.ownerText
+                : copy.policy.memberText
+            }
+            control={
+              data.accountMfaPolicy.canChange && onSetAccountMfaPolicy ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    onSetAccountMfaPolicy(!data.accountMfaPolicy?.required)
+                  }
+                  className={cn(
+                    data.accountMfaPolicy.required
+                      ? LINK_BUTTON_DANGER
+                      : BTN_SM,
+                    FOCUS,
+                  )}
+                >
+                  {data.accountMfaPolicy.required
+                    ? copy.policy.stop
+                    : copy.policy.require}
+                </button>
+              ) : null
+            }
+          />
+        </Block>
+      ) : null}
+
+      {ssoSlot}
+
+      {flow?.kind === "setPassword" ? (
+        <AccountSetPasswordPanel
+          copy={copy}
+          email={data.email}
+          error={flow.error}
+          wait={flow.wait}
+          busy={busy}
+          onSubmit={onSubmitFirstPassword}
+          onClose={onCloseFlow}
+        />
+      ) : flow?.kind === "password" ? (
         <AccountPasswordPanel
           copy={copy}
           needsCode={flow.needsCode}

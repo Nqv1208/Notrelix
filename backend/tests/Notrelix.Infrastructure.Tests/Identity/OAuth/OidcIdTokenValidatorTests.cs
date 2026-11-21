@@ -1,5 +1,7 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.IdentityModel.Tokens;
 using Notrelix.Infrastructure.Identity.OAuth;
 
 namespace Notrelix.Infrastructure.Tests.Identity.OAuth;
@@ -56,15 +58,98 @@ public class OidcIdTokenValidatorTests
     public void AnExpiredToken_IsRefused() =>
         Refused(Token(exp: Now.AddMinutes(-5)), "id token expired");
 
-    private static void Refused(string token, string reason)
+    [Fact]
+    public void ATokenSignedWithAnotherKey_IsRefused() =>
+        Refused(Signed(Payload(), RSA.Create(2048)), "signature invalid");
+
+    [Fact]
+    public void ATokenWhosePayloadWasAltered_IsRefused()
     {
-        var act = () => Validate(token);
+        var parts = Signed(Payload(), TrustedKey).Split('.');
+        var altered = $"{parts[0]}.{B64(Payload().Replace("subject-1", "subject-2"))}.{parts[2]}";
+
+        Refused(altered, "signature invalid");
+    }
+
+    [Fact]
+    public void AnAlgNoneToken_IsRefused() =>
+        Refused($"{B64("{\"alg\":\"none\"}")}.{B64(Payload())}.", "signature invalid");
+
+    [Fact]
+    public void ATokenSignedWithTheTrustedKey_IsAccepted()
+    {
+        using var claims = Validate(Signed(Payload(), TrustedKey));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
+    [Fact]
+    public void ASignInOlderThanTheStepUpWindow_IsRefused() =>
+        Refused(
+            Signed(Payload(authTime: Now.AddMinutes(-30)), TrustedKey),
+            "authentication too old",
+            maxAuthenticationAge: TimeSpan.FromMinutes(5));
+
+    [Fact]
+    public void AFreshSignIn_IsAcceptedForAStepUp()
+    {
+        using var claims = Validate(
+            Signed(Payload(authTime: Now.AddSeconds(-20)), TrustedKey),
+            TimeSpan.FromMinutes(5));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
+    [Fact]
+    public void ATokenWithoutAuthTime_IsAcceptedForAStepUp_BecauseTheProviderWasAskedToSignInAgain()
+    {
+        using var claims = Validate(Signed(Payload(), TrustedKey), TimeSpan.FromMinutes(5));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
+    [Fact]
+    public void AnOldSignIn_IsAcceptedWhenNoStepUpWindowIsAsked()
+    {
+        using var claims = Validate(Signed(Payload(authTime: Now.AddDays(-3)), TrustedKey));
+
+        OidcIdTokenValidator.StringClaim(claims.RootElement, "sub").Should().Be("subject-1");
+    }
+
+    private static readonly RSA TrustedKey = RSA.Create(2048);
+
+    private static string Payload(DateTimeOffset? authTime = null)
+    {
+        var claims = new Dictionary<string, object?>
+        {
+            ["iss"] = Issuer,
+            ["aud"] = ClientId,
+            ["sub"] = "subject-1",
+            ["nonce"] = Nonce,
+            ["iat"] = Now.AddMinutes(-1).ToUnixTimeSeconds(),
+            ["exp"] = Now.AddMinutes(5).ToUnixTimeSeconds(),
+        };
+        if (authTime is { } at)
+            claims["auth_time"] = at.ToUnixTimeSeconds();
+        return JsonSerializer.Serialize(claims);
+    }
+
+    private static string Signed(string payload, RSA key)
+    {
+        var signingInput = $"{B64("{\"alg\":\"RS256\",\"kid\":\"k1\"}")}.{B64(payload)}";
+        var signature = key.SignData(Encoding.ASCII.GetBytes(signingInput), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        return $"{signingInput}.{Convert.ToBase64String(signature).TrimEnd('=').Replace('+', '-').Replace('/', '_')}";
+    }
+
+    private static void Refused(string token, string reason, TimeSpan? maxAuthenticationAge = null)
+    {
+        var act = () => Validate(token, maxAuthenticationAge);
 
         act.Should().Throw<OidcIdTokenException>().WithMessage(reason);
     }
 
-    private static JsonDocument Validate(string token) =>
-        OidcIdTokenValidator.Validate(token, Issuers, ClientId, Nonce, Now);
+    private static JsonDocument Validate(string token, TimeSpan? maxAuthenticationAge = null) =>
+        OidcIdTokenValidator.Validate(token, [new RsaSecurityKey(TrustedKey) { KeyId = "k1" }], Issuers, ClientId, Nonce, Now, maxAuthenticationAge);
 
     private static string Token(
         string iss = Issuer,
@@ -84,7 +169,7 @@ public class OidcIdTokenValidatorTests
         if (azp is not null) claims["azp"] = azp;
         if (nonce is not null) claims["nonce"] = nonce;
 
-        return $"{B64("{\"alg\":\"none\"}")}.{B64(JsonSerializer.Serialize(claims))}.sig";
+        return Signed(JsonSerializer.Serialize(claims), TrustedKey);
     }
 
     private static string B64(string json) =>

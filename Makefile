@@ -19,7 +19,7 @@ DOTNET_RUN_API := dotnet run --project $(BACKEND_PROJECT) --no-launch-profile --
 	db-up db-restore db-restore-force be-restore be-restore-force db-migrate db-seed db-init db-rls db-psql \
 	be-build be-test be-clean-nuget be-shell backend-image-build \
 	staging staging-up staging-down staging-logs prod prod-up prod-down prod-logs \
-	build build-staging ps config-dev docs-generate docs-check ci-validate clean
+	build build-staging ps config-dev docs-generate docs-check uc-counts ci-validate clean
 
 help:
 	@echo "Notrelix — local development"
@@ -33,6 +33,7 @@ help:
 dev: dev-up
 
 dev-up:
+	@git config core.hooksPath .githooks 2>/dev/null || true
 	$(COMPOSE_DEV) $(ENV_DEV) up -d
 
 dev-down:
@@ -147,8 +148,13 @@ docs-check:
 	node scripts/docs/check-metadata.mjs
 	node scripts/docs/check-authority.mjs
 	node scripts/docs/check-rule-ids.mjs
+	node scripts/docs/check-mangled-paths.mjs
 	node scripts/docs/check-source-inventory.mjs
 	node scripts/docs/check-generated.mjs
+	node scripts/docs/uc-counts.mjs --validate
+
+uc-counts:
+	node scripts/docs/uc-counts.mjs
 
 ci-validate:
 	python3 -m tools.deliveryctl validate

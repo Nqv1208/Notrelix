@@ -16,7 +16,13 @@ import {
   type IdentityTone,
   type WorkspaceDestination,
 } from "../../core/model/navigation";
+import type { WorkspaceFigures } from "../../core/types/workspace";
 import { ShellLink } from "../shell/shell-link";
+import { WorkspaceFiguresStrip } from "./workspace-figures";
+import {
+  WorkspaceActivitySection,
+  type HomeActivityView,
+} from "./workspace-activity";
 import {
   formatCopy,
   IDENTITY_MARK_CLASS,
@@ -96,6 +102,11 @@ export interface WorkspaceHomeSurfaceProps {
   readonly greetingName: string | null;
   /** Recently opened Boards and Docs. */
   readonly continueState: SectionState<readonly ContinueEntry[]>;
+  /**
+   * The member's pinned Boards and Docs, already limited to what they can read
+   * (Final-Home pinned card). `undefined`: no pins read, the card stays out.
+   */
+  readonly pinnedState?: SectionState<readonly ContinueEntry[]>;
   /** The member's open Items grouped by due window. */
   readonly myWork: SectionState<readonly MyWorkGroupView[]>;
   /** More assigned items exist than the groups hold. */
@@ -132,6 +143,17 @@ export interface WorkspaceHomeSurfaceProps {
   readonly onCreateBoard: () => void;
   readonly onCreateDoc: () => void;
   readonly onInvite: () => void;
+  /**
+   * The workspace figures for Owner and Admin (`Final-Home` figures row); `undefined`: the row stays out
+   * (a Member or Guest never sees it).
+   */
+  readonly figures?: SectionState<WorkspaceFigures>;
+  readonly onRetryFigures?: () => void;
+  /**
+   * Recent workspace activity (a member, never a Guest); `undefined`: the section stays out. A workspace still being
+   * set up shows onboarding instead.
+   */
+  readonly activity?: HomeActivityView;
   readonly onRetryContinue: () => void;
   readonly onRetryMyWork: () => void;
   /** The getting-started list of a workspace made through onboarding. */
@@ -415,19 +437,22 @@ function ContinueCard({
   formatters,
   now,
   navigation,
+  showTime = true,
 }: {
   copy: WorkspaceHomeCopy;
   entry: ContinueEntry;
   formatters: SurfaceFormatters;
   now: number;
   navigation: ShellNavigation;
+  /** A pinned row names where the resource lives, not when it was last opened. */
+  showTime?: boolean;
 }) {
   const isBoard = entry.kind === NAVIGATION_RESOURCE_KIND.board;
   const Icon = isBoard ? SquareKanban : FileText;
   const parts = [
     isBoard ? copy.home.continue.board : copy.home.continue.doc,
     ...(entry.location ? [entry.location] : []),
-    ...(entry.at ? [formatters.relativeTime(entry.at, now)] : []),
+    ...(showTime && entry.at ? [formatters.relativeTime(entry.at, now)] : []),
   ];
   return (
     <ShellLink
@@ -873,9 +898,14 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
   const showAgenda =
     agenda !== undefined &&
     (agenda.status !== "ready" || agenda.data.entries.length > 0);
+  const pinned = props.pinnedState;
+  const showPinned =
+    pinned !== undefined &&
+    (pinned.status !== "ready" || pinned.data.length > 0);
   const showRight =
     showReplies ||
     showAgenda ||
+    showPinned ||
     continueState.status !== "ready" ||
     continueState.data.length > 0;
 
@@ -925,6 +955,14 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
       </div>
 
       {props.gettingStarted ?? null}
+
+      {props.figures ? (
+        <WorkspaceFiguresStrip
+          copy={copy}
+          state={props.figures}
+          onRetry={props.onRetryFigures ?? (() => undefined)}
+        />
+      ) : null}
 
       {props.onboarding ? (
         <WorkspaceOnboardingSurface
@@ -1241,6 +1279,33 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
                   agenda.data.entries.length > 0 ? (
                   <AgendaCard copy={copy} agenda={agenda.data} />
                 ) : null}
+                {pinned?.status === "ready" && pinned.data.length > 0 ? (
+                  <section aria-labelledby="home-pinned" data-f="pinbox">
+                    <h2
+                      id="home-pinned"
+                      data-f="pinh2"
+                      className={HEADING_CLASS}
+                    >
+                      {copy.home.pinned.title}
+                      <span className="ml-2 font-normal tabular-nums text-meta-foreground">
+                        {pinned.data.length}
+                      </span>
+                    </h2>
+                    {pinned.data.map((entry) => (
+                      <ContinueCard
+                        key={`${entry.kind}:${entry.resourceId}`}
+                        copy={copy}
+                        entry={entry}
+                        formatters={formatters}
+                        now={now}
+                        navigation={navigation}
+                        showTime={false}
+                      />
+                    ))}
+                  </section>
+                ) : pinned?.status === "error" ? (
+                  <SectionError copy={copy} onRetry={props.onRetryContinue} />
+                ) : null}
                 {continueState.status === "ready" &&
                 continueState.data.length > 0 ? (
                   <section aria-labelledby="home-continue" data-f="contbox">
@@ -1268,6 +1333,14 @@ export function WorkspaceHomeSurface(props: WorkspaceHomeSurfaceProps) {
               </div>
             ) : null}
           </div>
+          {props.activity ? (
+            <WorkspaceActivitySection
+              copy={copy}
+              formatters={formatters}
+              now={now}
+              view={props.activity}
+            />
+          ) : null}
         </>
       )}
     </div>

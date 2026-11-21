@@ -21,6 +21,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts/security-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current account's security policy */
+        get: operations["Accounts.GetSecurityPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Require MFA for every member of the current account (Owner only) */
+        put: operations["Accounts.SetMfaPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the account's single sign-on setup (Owner only; never returns the client secret) */
+        get: operations["Accounts.GetSso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save and validate the account's OIDC provider (Owner only) */
+        put: operations["Accounts.SaveSsoProvider"];
+        post?: never;
+        /** Remove the account's OIDC provider (Owner only) */
+        delete: operations["Accounts.RemoveSsoProvider"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim a domain and get its DNS TXT instructions (Owner only) */
+        post: operations["Accounts.AddSsoDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/domains/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check the domain's DNS TXT record and verify it (Owner only) */
+        post: operations["Accounts.VerifySsoDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/domains/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a domain claim (Owner only) */
+        delete: operations["Accounts.RemoveSsoDomain"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/security-policy/sso/require": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Require single sign-on for the members of the verified domains (Owner only) */
+        put: operations["Accounts.SetSsoRequired"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/outbox/stats": {
         parameters: {
             query?: never;
@@ -537,6 +674,210 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/chat/calls/media-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receives a signed media server event
+         * @description Called by the media server only. The Authorization header carries a JWT signed with the media server key whose sha256 claim is the digest of the raw body; anything unsigned, tampered, wrongly keyed or expired is 401 and changes nothing. The event id makes a replay a no-op. participant_left leaves the call, room_finished ends it; other events are accepted and ignored.
+         */
+        post: operations["Chat.Calls.MediaWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the call history of a space
+         * @description Newest call first. cursor is the nextCursor of the previous page; limit is 1 to 100, default 50. A space the caller is not an active member of is 404.
+         */
+        get: operations["Chat.Calls.List"];
+        put?: never;
+        /**
+         * Start a voice or video call in a space
+         * @description Returns the call and the starter's short-lived join token with 201. The stored idempotent answer holds no token: a retry with the same key returns the call with a freshly minted token, or is refused when the caller is no longer in the call. kind is voice or video. Idempotency-Key is required: a retry returns the stored answer. A person who is not an active member of the space, or a direct call to someone who blocked the caller or was blocked by them, is 404. A Guest or a member the channel keeps from posting is 403. The space already has a ringing or active call: 409 call-already-active. The caller is already in another call: 409 call-busy. When the other person of a direct call is in a call, the call is stored as ended with reason busy, no ring is sent and joinToken is null. An archived channel is 409 channel-archived. The media plane cannot be reached, or calls are off: 503 chat.calls.unavailable and nothing is stored.
+         */
+        post: operations["Chat.Calls.Start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/calls/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the ringing or active call of a space
+         * @description For the banner and re-join. 204 when the space has no live call. A space the caller is not an active member of is 404.
+         */
+        get: operations["Chat.Calls.GetActive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a ringing call
+         * @description Ringing becomes active and the caller receives a join token. A repeat by someone already in the call changes nothing and returns the token again. A caller already in another call is 409 call-busy; a full call is 422 call-full. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        post: operations["Chat.Calls.Answer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline a ringing call
+         * @description A direct call ends as declined; in a group or channel call the call keeps ringing for the others and nothing changes. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        post: operations["Chat.Calls.Decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a ringing call (the starter)
+         * @description The call ends as cancelled. Anyone but the starter is 403 call-not-participant. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        post: operations["Chat.Calls.Cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End an active call for everyone
+         * @description In a direct call either person ends it; in a group or channel call only the starter does. A ringing call is cancelled or declined instead (409 call-state-invalid). A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        post: operations["Chat.Calls.End"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join a live group or channel call
+         * @description Returns a join token. A caller already in another call is 409 call-busy; a full call (25 voice, 12 video) is 422 call-full. A repeat changes nothing and returns the token again. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        post: operations["Chat.Calls.Join"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave an active call
+         * @description Leaving a direct call ends it; leaving a group or channel call keeps it alive, and the worker ends it after 60 seconds with nobody in it. A person who is not in the call changes nothing. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        post: operations["Chat.Calls.Leave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/calls/{callId}/participants/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the caller's microphone, camera and screen share
+         * @description A voice call carries no camera (400 call-media-not-allowed) but a screen may be shared in it. A caller who is not in the call is 403 call-not-participant. Only one person shares a screen at a time: a second share is 409 call-screen-share-taken unless replaceShare is true, and then the first share ends. Starting a share needs the right to take part (a Guest or a member the channel keeps from posting is 403). The same values change nothing. A stale expectedVersion is 412. A call that has ended is 409 call-ended. A person who is not an active member of the space is 404.
+         */
+        put: operations["Chat.Calls.UpdateMediaState"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/channel-groups": {
         parameters: {
             query?: never;
@@ -609,6 +950,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the deleted channels the caller can restore
+         * @description Only channels deleted in the last 30 days that the caller could delete (a channel manager, a Workspace Owner or Admin, and a member of a private channel). A private channel's name never reaches anyone else; a Member or Guest gets an empty list.
+         */
+        get: operations["Chat.Channels.ListDeleted"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}": {
         parameters: {
             query?: never;
@@ -667,7 +1028,7 @@ export interface paths {
         get?: never;
         /**
          * Link a channel to a Board or a Page
-         * @description Needs a channel manager, a Workspace Owner or Admin who can also view the resource now: kind is work-management.board or documents.page (a Team cannot be linked yet) and resourceId its id. A resource the caller cannot view, trashed or missing is 403. The resource is never changed. A channel has one link; a second replaces it, and the same link is a no-op. The change is announced to the channel as chat.space.changed with the change link. A stale expectedVersion is 412; an archived channel is 409 channel-archived.
+         * @description Needs a channel manager, a Workspace Owner or Admin who can also view the resource now: kind is work-management.board, documents.page or governance.team (a Team the caller may view: an active non-Guest member of the workspace) and resourceId its id. A resource the caller cannot view, trashed or missing is 403. The resource is never changed. A channel has one link; a second replaces it, and the same link is a no-op. The change is announced to the channel as chat.space.changed with the change link. A stale expectedVersion is 412; an archived channel is 409 channel-archived.
          */
         put: operations["Chat.Channels.Link"];
         post?: never;
@@ -695,6 +1056,26 @@ export interface paths {
          * @description An archived channel is read-only. Unarchiving checks the name again: a name taken meanwhile is 409 name-conflict.
          */
         post: operations["Chat.Channels.Archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore a deleted channel
+         * @description Allowed for whoever may delete the channel, inside 30 days of the delete; the channel comes back with its members and roles as they were. A name taken meanwhile is 409 name-conflict; past the window it is 409 restore-window-elapsed; a channel that is not deleted, or that the caller could not have deleted, is 404. A stale expectedVersion is 412.
+         */
+        post: operations["Chat.Channels.Restore"];
         delete?: never;
         options?: never;
         head?: never;
@@ -945,6 +1326,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/chat/channels/{channelId}/members/{userId}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Make a channel member a manager, or a manager a member
+         * @description Needs a manager, a Workspace Owner or Admin. The last manager of a live channel cannot be made a member: 422 last-manager. A person who is not in the channel is 404; the same role again changes nothing.
+         */
+        put: operations["Chat.Members.SetRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/mentionables": {
         parameters: {
             query?: never;
@@ -980,7 +1381,7 @@ export interface paths {
         put?: never;
         /**
          * Send a message to a space
-         * @description clientMessageId is the sender's key for the message: a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required. A new message is counted per person and per space (chat.send) and an @channel or @here also under chat.broadcast, from which a Workspace Admin is not exempt; a repeat of a stored send costs nothing. Over a limit the answer is 429 with a Retry-After header, errorCode rate_limit.exceeded and ruleCode rate-limited; a channel in slow mode answers 429 with ruleCode slow-mode and the seconds to wait. The sender keeps the text and retries after the wait.
+         * @description clientMessageId is the sender's key for the message: stickerId (one of the Notrelix catalog) sends a sticker alone: no text, no voice, no mentions, and a sticker is never edited; an unknown id is 400. a retry with the same one returns the stored message with 200 and stores nothing. The first send returns 201. Idempotency-Key is the transport key and is required on this endpoint. An archived channel is 409 channel-archived; a space the caller is not a member of is 404. mentions are the structured mentions of the text (person, channel link, @channel, @here): each is checked against the channel on the server and the response lists the stored ones in mentions and the ones not stored in mentionNotices (cannot-view: stored, nobody is notified; unknown, link-not-visible, broadcast-not-allowed, no-audience: shown as text). A malformed mention is 400 (mention-invalid, mention-limit-exceeded). An @channel or @here in a channel of more than 50 members needs confirmBroadcast true, otherwise 409 broadcast-confirmation-required. A new message is counted per person and per space (chat.send) and an @channel or @here also under chat.broadcast, from which a Workspace Admin is not exempt; a repeat of a stored send costs nothing. Over a limit the answer is 429 with a Retry-After header, errorCode rate_limit.exceeded and ruleCode rate-limited; a channel in slow mode answers 429 with ruleCode slow-mode and the seconds to wait. The sender keeps the text and retries after the wait.
          */
         post: operations["Chat.Messages.Send"];
         delete?: never;
@@ -1182,6 +1583,26 @@ export interface paths {
          * @description Idempotent. A sequence at or below the boundary changes nothing; a sequence above the space's last sequence is read to the end. Returns the boundary after the call. A space the caller is not a member of is 404.
          */
         put: operations["Chat.ReadState.MarkRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/chat/spaces/{spaceId}/unread-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark a space unread from a message
+         * @description Moves the caller's own boundary back to just before fromSequence, so that message and every later one count as unread again; the one call that lowers a boundary. A message already unread changes nothing, and a sequence above the space's last one changes nothing. Only the caller's own state moves. A space the caller is not a member of is 404.
+         */
+        put: operations["Chat.ReadState.MarkUnreadFrom"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1678,6 +2099,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification of the caller unread again
+         * @description The entry stays in the list, unread. A notification that is not the caller's, already unread, done or snoozed, changes nothing and still answers success.
+         */
+        post: operations["Collaboration.Notifications.MarkInboxEntryUnread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/inbox/{notificationId}/done": {
         parameters: {
             query?: never;
@@ -2035,6 +2476,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/pages/{pageId}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicate a page without its subpages */
+        post: operations["Documents.Pages.DuplicatePage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pages/{pageId}": {
         parameters: {
             query?: never;
@@ -2050,7 +2508,7 @@ export interface paths {
         delete: operations["Documents.Pages.DeletePage"];
         options?: never;
         head?: never;
-        /** Rename a page */
+        /** Rename a page or set its icon */
         patch: operations["Documents.Pages.UpdatePage"];
         trace?: never;
     };
@@ -2114,6 +2572,23 @@ export interface paths {
         };
         /** Get page history */
         get: operations["Documents.Pages.GetPageHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the activity feed of a page (rename, move, trash, restore) */
+        get: operations["Documents.Pages.GetPageActivity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2202,6 +2677,50 @@ export interface paths {
         put?: never;
         /** Create a page from a template */
         post: operations["Documents.Templates.CreatePageFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/page-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a template
+         * @description Pages made from it stay. Pass expectedVersion as a query parameter; 412 when it is stale.
+         */
+        delete: operations["Documents.Templates.DeletePageTemplate"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename a template or change its description
+         * @description The creator or a Workspace Admin. A stale expectedVersion is 412.
+         */
+        patch: operations["Documents.Templates.UpdatePageTemplate"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/page-templates/{templateId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive a template
+         * @description It leaves the gallery; pages already made from it are unchanged. Archiving an archived template is a no-op. A stale expectedVersion is 412.
+         */
+        post: operations["Documents.Templates.ArchivePageTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2542,7 +3061,7 @@ export interface paths {
         put?: never;
         /**
          * Issue a new API token for a workspace
-         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise). The raw secret is returned exactly once in this response; the issue is recorded in the audit log.
+         * @description Requires a single-use step-up proof for the IssueApiToken purpose. The token needs an expiry in the future, at most 365 days away (identity.api-tokens.lifetime-exceeded otherwise), and at least one scope from the published list (identity.api-tokens.scopes-required, identity.api-tokens.unknown-scope); scopes cannot be changed afterwards. A call with the token outside its scopes is answered 403 identity.token.scope-missing. The raw secret is returned exactly once in this response; the issue is recorded in the audit log.
          */
         post: operations["Identity.ApiTokens.Create"];
         delete?: never;
@@ -2739,6 +3258,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/sso/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a company sign-in for an email
+         * @description Routes the email's verified domain to its Account's identity provider and answers the provider's authorization address (authorization code with PKCE). Every email that cannot sign in through a company provider gets the same 404 identity.sso.unavailable. Rate limited per IP.
+         */
+        post: operations["Identity.Auth.Sso.Start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sso/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Complete a company sign-in
+         * @description The one callback address of every company identity provider. Uses up the state, exchanges the code, checks the provider's ID token and finds, links or provisions the person, then sets the auth cookies and redirects. Every failure redirects to the sign-in page with one code: identity.sso.state-invalid, denied, failed, email-unverified, domain-mismatch, identity-conflict, not-provisioned or unavailable (or identity.oauth.mfa-required when the second factor cannot start).
+         */
+        get: operations["Identity.Auth.Sso.Callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email-verification/confirm": {
         parameters: {
             query?: never;
@@ -2824,6 +3383,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/set-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set a first password for a person who signs in with a provider */
+        post: operations["Identity.Auth.SetFirstPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -2887,7 +3463,7 @@ export interface paths {
         };
         /**
          * Complete OAuth link callback
-         * @description Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user.
+         * @description Handles the OAuth provider callback for an authenticated link flow, validates state, and links the provider identity to the current user. The browser returns to the internal path given at start with link=linked|already|collision|failed and the provider appended.
          */
         get: operations["Identity.Auth.OAuth.LinkCallback"];
         put?: never;
@@ -2905,13 +3481,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
          * Start OAuth step-up (re-authentication) flow
-         * @description Redirects the authenticated user to the OAuth provider to re-authenticate for a security purpose. Completion grants a purpose-bound step-up proof; no new session is issued.
+         * @description Answers the provider URL the browser must go to, to re-authenticate for a security purpose; the provider is asked for a fresh sign-in (prompt=login, max_age=0). returnUrl, when given, must be an internal root-relative path (anything else answers 400). TransferWorkspaceOwnership also needs workspaceId and newOwnerId: the proof is bound to them and is refused for any other. Completion grants a purpose-bound step-up proof; no new session is issued.
          */
-        get: operations["Identity.Auth.OAuth.StepUpStart"];
-        put?: never;
-        post?: never;
+        post: operations["Identity.Auth.OAuth.StepUpStart"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2972,6 +3548,46 @@ export interface paths {
          * @description The challenge comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. A body token wins. The cookie is cleared on success and when the challenge is expired or exhausted.
          */
         post: operations["Identity.Mfa.VerifyChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/required-enrollment/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the authenticator the Account requires, before a session exists
+         * @description The enrollment token comes from the request body or, after an OAuth sign-in, from the httpOnly mfaChallenge cookie. Returns the secret and setup URI once.
+         */
+        post: operations["Identity.Mfa.StartRequiredEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/required-enrollment/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate the authenticator with its first code and finish the sign-in
+         * @description Issues the session and returns the one-time recovery codes. The token is consumed; the cookie is cleared on success and when the token is expired or exhausted.
+         */
+        post: operations["Identity.Mfa.CompleteRequiredEnrollment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5939,6 +6555,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/forms/{formId}/public-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether a form is public, and its public key (workspace Owner or Admin) */
+        get: operations["WorkManagement.Forms.GetPublicAccess"];
+        /** Switch a form public or private (workspace Owner or Admin) */
+        put: operations["WorkManagement.Forms.SetPublicAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/form-submissions/{submissionId}/process": {
         parameters: {
             query?: never;
@@ -6074,6 +6708,40 @@ export interface paths {
         get: operations["WorkManagement.Limits.Get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/forms/{publicKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The form an anonymous visitor fills */
+        get: operations["WorkManagement.PublicForms.Get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/forms/{publicKey}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit answers to a public form anonymously, with a captcha token */
+        post: operations["WorkManagement.PublicForms.Submit"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6549,7 +7217,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get workspace activity log */
+        /**
+         * Get workspace activity log
+         * @description Cursor-paginated (default 20, max 50), newest first. A Guest is forbidden. Facts about a Board or Page the caller cannot read are left out. Pass nextCursor back as cursor for the next page.
+         */
         get: operations["Workspaces.Activity.GetWorkspaceActivity"];
         put?: never;
         post?: never;
@@ -6834,7 +7505,7 @@ export interface paths {
         put?: never;
         /**
          * Invite a member to workspace
-         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again.
+         * @description Needs an Idempotency-Key: a retry with the same key returns the first invitation and sends no second email. A pending invitation for the same address answers 409 with the stable code workspaces.invitation.pending-exists. A person who is already an Active member of the workspace answers 409 with the code workspaces.invitation.already-member; no invitation is created and no email is sent. Someone removed or suspended may be invited again. An invitation whose initial Team or Space entries are refused answers 400 with a ruleCode (Workspaces_Invitation_EntryTargetNotActive when a Team or Space is not an active one of the workspace, Workspaces_Invitation_GuestEntryRoleTooPrivileged when a Guest invitation names a Team, a Team lead or a Space admin) and an entries list in the problem: each refused entry with its index in the request, its kind (team or space), its targetId and a reason (not-active, guest-too-privileged, or guest-cannot-join-team for a Team named on a Guest invitation); nothing is stored and no email is sent.
          */
         post: operations["Workspaces.Members.InviteMember"];
         delete?: never;
@@ -6857,6 +7528,26 @@ export interface paths {
         get: operations["Workspaces.Members.GetMyMembership"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/members/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite many people at once
+         * @description Owner or Admin, like a single invitation. Needs an Idempotency-Key: a retry with the same key returns the first result and sends no second email. Send 1 to 50 entries (email and role Member or Guest); more answers 400. An address repeated in the list is invited once. The batch is not all-or-nothing: the answer lists one outcome per address (sent, already-member, already-pending, invalid, refused). While the workspace has guest invitations off, the Guest entries are refused one by one with the code workspace.guest_invites_off and the Member entries still go out. An entry may name initial Team and Space entries, authorized as for a single invitation (ManageTeams, ManageSpaces; the whole request is refused with 403 when the caller lacks one); a Guest entry naming a Team is refused on its own with its rule code. No seat is checked, as for a single invitation. An archived workspace refuses the whole request.
+         */
+        post: operations["Workspaces.Members.InviteMembers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7267,6 +7958,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/spaces/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the deleted spaces that can still be restored (30 days), for a workspace Owner or Admin */
+        get: operations["Workspaces.Spaces.GetDeletedSpaces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/spaces/{spaceId}": {
         parameters: {
             query?: never;
@@ -7279,7 +7987,7 @@ export interface paths {
         /** Rename a space */
         put: operations["Workspaces.Spaces.RenameSpace"];
         post?: never;
-        /** Permanently delete a space */
+        /** Delete a space (restorable for 30 days) */
         delete: operations["Workspaces.Spaces.DeleteSpace"];
         options?: never;
         head?: never;
@@ -7414,7 +8122,7 @@ export interface paths {
         };
         /**
          * Get the user and team entries of a space
-         * @description Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page.
+         * @description Cursor-paginated (default 50, max 200) in subject id order. Pass nextCursor back as cursor for the next page. Optional role (Admin, Member, Viewer) and kind (User, Team) keep only matching entries before the page is cut.
          */
         get: operations["Workspaces.Spaces.GetSpaceMembers"];
         put?: never;
@@ -7505,6 +8213,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/teams/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the deleted teams of a workspace
+         * @description For Owners and Admins only (ManageTeams, the right to restore): a Member or Guest is refused with 403 and a person outside the workspace gets 404. Newest deletion first, at most 200. Restore a Team with POST .../teams/{teamId}/restore; its members return with it.
+         */
+        get: operations["Workspaces.Teams.GetDeletedTeams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/teams-ext": {
         parameters: {
             query?: never;
@@ -7537,7 +8265,10 @@ export interface paths {
         /** Rename a team */
         put: operations["Workspaces.Teams.RenameTeam"];
         post?: never;
-        /** Permanently delete a team */
+        /**
+         * Delete a team (restorable)
+         * @description A Team that Spaces still list is refused with 409 and the stable code workspaces.team.still-referenced; the problem carries references (only the Spaces the caller can see) and moreReferencesHidden (true when some referencing Space is hidden from the caller, no count). Remove the entries first, then delete. A Team with no references is deleted and can be restored.
+         */
         delete: operations["Workspaces.Teams.DeleteTeam"];
         options?: never;
         head?: never;
@@ -7716,6 +8447,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the workspace figures
+         * @description Owner or Admin. Active members only (suspended and removed people are not counted), the Spaces the caller can see, Teams and pending invitations, and whether the workspace is archived. A Member or Guest is forbidden; a person outside the workspace is told it does not exist. Read-only, so an archived workspace still answers.
+         */
+        get: operations["Workspaces.Workspaces.GetWorkspaceDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/profile": {
         parameters: {
             query?: never;
@@ -7734,6 +8485,26 @@ export interface paths {
          * @description Owner or Admin. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. An omitted field is left alone; an empty description clears it. A value that does not change bumps no version and raises no event; a name and a description that both change advance the version once. An archived workspace refuses the edit.
          */
         patch: operations["Workspaces.Workspaces.UpdateWorkspaceProfile"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the workspace address
+         * @description Owner only. Send the workspace version you read as expectedVersion: a stale version answers 412 and changes nothing. The address follows the same rule as creation (3 to 63 characters, lowercase letters, numbers and single hyphens, not reserved) and is unique within the Account: a taken one answers 409 workspaces.workspace.slug-taken. The same address is a no-op: no version bump, no event. Links use ids, so the old address is released and does not redirect. An archived workspace refuses the change.
+         */
+        patch: operations["Workspaces.Workspaces.ChangeWorkspaceSlug"];
         trace?: never;
     };
     "/api/v1/workspaces/{workspaceId}/archive": {
@@ -7796,8 +8567,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Transfer workspace ownership to another member */
+        /**
+         * Transfer workspace ownership to another member
+         * @description Needs a single-use step-up proof for the TransferWorkspaceOwnership purpose, bound to the caller, the session and the purpose. Without one it answers 412 identity.security.step-up-required; a stale, spent or foreign proof answers 400 identity.security.step-up-invalid. Ownership never changes on a refusal.
+         */
         post: operations["Workspaces.Workspaces.TransferOwnership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/members/{memberId}/reset-mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a member's second factor (Owner only)
+         * @description Only the workspace Owner may. Needs a single-use ResetMemberMfa step-up proof bound to this workspace and this member (412 identity.security.step-up-required without one; 400 identity.security.step-up-invalid when stale, spent or given for another member). Removes the member's factors and recovery codes, ends their sessions, records an activity line and mails them. An Owner's factors cannot be reset; a non-Owner caller gets 404.
+         */
+        post: operations["Workspaces.Workspaces.ResetMemberMfa"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7876,10 +8670,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        "Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest": {
+            domain?: string | null;
+        };
         "Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest": {
             name?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest": {
+            name?: string | null;
+            issuerUrl?: string | null;
+            clientId?: string | null;
+            clientSecret?: string | null;
+            jitProvisioning?: boolean;
+        };
+        "Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest": {
+            required?: boolean;
+        };
+        "Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest": {
+            required?: boolean;
         };
         "Notrelix.API.Contracts.Analytics.Dashboards.Requests.CreateDashboardRequest": {
             name?: string | null;
@@ -7960,6 +8770,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.CallVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest": {
             subject?: string | null;
             action?: string | null;
@@ -8027,6 +8841,10 @@ export interface components {
             /** Format: int64 */
             upToSequence?: number | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.MarkSpaceUnreadFromRequest": {
+            /** Format: int64 */
+            fromSequence?: number | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.MarkThreadReadRequest": {
             /** Format: int64 */
             upToReplySequence?: number | null;
@@ -8056,6 +8874,11 @@ export interface components {
             alsoSendToChannel?: boolean | null;
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
+            voiceMessage?: boolean | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest": {
+            /** Format: int64 */
+            expectedVersion?: number | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SendMessageRequest": {
             content?: string | null;
@@ -8065,6 +8888,10 @@ export interface components {
             mentions?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MentionRequest"][] | null;
             confirmBroadcast?: boolean | null;
             voiceMessage?: boolean | null;
+            stickerId?: string | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest": {
+            role?: string | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.SetChannelPermissionsRequest": {
             entries?: components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ChannelPermissionEntryRequest"][] | null;
@@ -8091,12 +8918,23 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number | null;
         };
+        "Notrelix.API.Contracts.Chat.Requests.StartCallRequest": {
+            kind?: string | null;
+        };
         "Notrelix.API.Contracts.Chat.Requests.StartConversationRequest": {
             kind?: string | null;
             /** Format: uuid */
             userId?: string | null;
             userIds?: string[] | null;
             name?: string | null;
+        };
+        "Notrelix.API.Contracts.Chat.Requests.UpdateCallMediaStateRequest": {
+            audioOn?: boolean;
+            videoOn?: boolean;
+            sharingScreen?: boolean;
+            /** Format: int64 */
+            expectedVersion?: number | null;
+            replaceShare?: boolean | null;
         };
         "Notrelix.API.Contracts.Chat.Requests.UpdateChannelGroupRequest": {
             name?: string | null;
@@ -8235,6 +9073,9 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
         };
+        "Notrelix.API.Contracts.Documents.Pages.Requests.DuplicatePageRequest": {
+            title?: string | null;
+        };
         "Notrelix.API.Contracts.Documents.Pages.Requests.MovePageRequest": {
             /** Format: uuid */
             parentId?: string | null;
@@ -8251,6 +9092,7 @@ export interface components {
             title?: string | null;
             /** Format: int64 */
             expectedVersion?: number;
+            icon?: string | null;
         };
         "Notrelix.API.Contracts.Documents.Templates.Requests.CreatePageFromTemplateRequest": {
             title?: string | null;
@@ -8264,6 +9106,16 @@ export interface components {
             pageId?: string;
             name?: string | null;
             description?: string | null;
+        };
+        "Notrelix.API.Contracts.Documents.Templates.Requests.PageTemplateVersionRequest": {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        "Notrelix.API.Contracts.Documents.Templates.Requests.UpdatePageTemplateRequest": {
+            name?: string | null;
+            description?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         "Notrelix.API.Contracts.Documents.Versions.Requests.CreatePageVersionRequest": {
             name?: string | null;
@@ -8327,6 +9179,9 @@ export interface components {
             mfaMethod?: string | null;
             /** Format: date-time */
             mfaExpiresAt?: string | null;
+            mfaEnrollmentRequired?: boolean;
+            mfaEnrollmentToken?: string | null;
+            recoveryCodes?: string[] | null;
         };
         "Notrelix.API.Contracts.Identity.OneTimeTokenRequest": {
             token?: string | null;
@@ -8825,10 +9680,20 @@ export interface components {
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.RejectFormSubmissionRequest": {
             reason?: string | null;
         };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SetFormPublicAccessRequest": {
+            enabled?: boolean;
+        };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitFormRequest": {
             answers?: {
                 [key: string]: unknown;
             } | null;
+            website?: string | null;
+        };
+        "Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitPublicFormRequest": {
+            answers?: {
+                [key: string]: unknown;
+            } | null;
+            captchaToken?: string | null;
             website?: string | null;
         };
         "Notrelix.API.Contracts.WorkManagement.Forms.Requests.UpdateFormDetailsRequest": {
@@ -8965,6 +9830,14 @@ export interface components {
             role?: string | null;
             initialEntries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"][] | null;
         };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersEntryRequest": {
+            email?: string | null;
+            role?: string | null;
+            initialEntries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InvitationInitialEntryRequest"][] | null;
+        };
+        "Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersRequest": {
+            entries?: components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersEntryRequest"][] | null;
+        };
         "Notrelix.API.Contracts.Workspaces.Members.Requests.MemberVersionRequest": {
             /** Format: int64 */
             expectedVersion?: number;
@@ -8992,7 +9865,6 @@ export interface components {
         };
         "Notrelix.API.Contracts.Workspaces.Settings.Requests.UpdateWorkspaceSettingsRequest": {
             allowPublicSharing?: boolean;
-            enforceMfa?: boolean;
             allowGuestInvites?: boolean;
             defaultMemberRole?: string | null;
             /** Format: int32 */
@@ -9099,6 +9971,11 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest": {
+            slug?: string | null;
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.CreateWorkspaceRequest": {
             name?: string | null;
             description?: string | null;
@@ -9116,6 +9993,7 @@ export interface components {
             newOwnerId?: string;
             /** Format: int64 */
             expectedVersion?: number;
+            stepUpToken?: string | null;
         };
         "Notrelix.API.Contracts.Workspaces.Workspaces.Requests.UpdateWorkspaceProfileRequest": {
             name?: string | null;
@@ -9127,6 +10005,7 @@ export interface components {
             name?: string | null;
             /** Format: date-time */
             expiresAt?: string | null;
+            scopes?: string[] | null;
             stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.ChangePasswordRequest": {
@@ -9142,10 +10021,22 @@ export interface components {
             purpose?: string | null;
             challengeToken?: string | null;
             code?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
+            /** Format: uuid */
+            memberId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.CompleteStepUpPasswordRequest": {
             purpose?: string | null;
             password?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
+            /** Format: uuid */
+            memberId?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.DisableMfaRequest": {
             stepUpToken?: string | null;
@@ -9171,11 +10062,38 @@ export interface components {
             password?: string | null;
             name?: string | null;
         };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentCompleteRequest": {
+            enrollmentToken?: string | null;
+            /** Format: uuid */
+            mfaMethodId?: string;
+            code?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentStartRequest": {
+            enrollmentToken?: string | null;
+        };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.RevokeOtherSessionsRequest": {
+            stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.SetFirstPasswordRequest": {
+            newPassword?: string | null;
             stepUpToken?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.StartMfaEnrollmentRequest": {
             stepUpToken?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest": {
+            purpose?: string | null;
+            returnUrl?: string | null;
+            /** Format: uuid */
+            workspaceId?: string | null;
+            /** Format: uuid */
+            newOwnerId?: string | null;
+            /** Format: uuid */
+            memberId?: string | null;
+        };
+        "Notrelix.API.Endpoints.Identity.Auth.Commands.StartSsoSignInRequest": {
+            email?: string | null;
+            returnUrl?: string | null;
         };
         "Notrelix.API.Endpoints.Identity.Auth.Commands.UnlinkOAuthRequest": {
             stepUpToken?: string | null;
@@ -9228,6 +10146,9 @@ export interface components {
         "Notrelix.API.Endpoints.Workspaces.Members.Commands.SetDefaultWorkspaceRequest": {
             /** Format: uuid */
             workspaceId?: string;
+        };
+        "Notrelix.API.Endpoints.Workspaces.Workspaces.Commands.ResetMemberMfaRequest": {
+            stepUpToken?: string | null;
         };
         "Notrelix.Application.Common.Models.CursorPageOfApiTokenSummaryDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Identity.ApiTokens.DTOs.ApiTokenSummaryDto"][] | null;
@@ -9306,6 +10227,11 @@ export interface components {
         };
         "Notrelix.Application.Common.Models.CursorPageOfWorkItemPlacementDto": {
             items?: components["schemas"]["Notrelix.Application.Features.Analytics.Placements.Queries.GetWorkspacePlacements.WorkItemPlacementDto"][] | null;
+            nextCursor?: string | null;
+            readonly hasNextPage?: boolean;
+        };
+        "Notrelix.Application.Common.Models.CursorPageOfWorkspaceActivityEntryDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.WorkspaceActivityEntryDto"][] | null;
             nextCursor?: string | null;
             readonly hasNextPage?: boolean;
         };
@@ -9678,6 +10604,52 @@ export interface components {
             userId?: string;
             blocked?: boolean;
         };
+        "Notrelix.Application.Features.Chat.Calls.DTOs.CallDto": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            spaceId?: string;
+            kind?: string | null;
+            state?: string | null;
+            endReason?: string | null;
+            /** Format: uuid */
+            initiatorId?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            answeredAt?: string | null;
+            /** Format: date-time */
+            endedAt?: string | null;
+            region?: string | null;
+            /** Format: int64 */
+            version?: number;
+            participants?: components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallParticipantDto"][] | null;
+        };
+        "Notrelix.Application.Features.Chat.Calls.DTOs.CallJoinDto": {
+            call?: components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"];
+            joinToken?: components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallJoinTokenDto"];
+        };
+        "Notrelix.Application.Features.Chat.Calls.DTOs.CallJoinTokenDto": {
+            url?: string | null;
+            token?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        "Notrelix.Application.Features.Chat.Calls.DTOs.CallPageDto": {
+            items?: components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"][] | null;
+            nextCursor?: string | null;
+        };
+        "Notrelix.Application.Features.Chat.Calls.DTOs.CallParticipantDto": {
+            /** Format: uuid */
+            personId?: string;
+            /** Format: date-time */
+            joinedAt?: string;
+            /** Format: date-time */
+            leftAt?: string | null;
+            audioOn?: boolean;
+            videoOn?: boolean;
+            sharingScreen?: boolean;
+        };
         "Notrelix.Application.Features.Chat.Conversations.DTOs.AddConversationParticipantsResultDto": {
             added?: string[] | null;
             skipped?: string[] | null;
@@ -9930,6 +10902,12 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string | null;
         };
+        "Notrelix.Application.Features.Documents.DTOs.DuplicatedPageDto": {
+            /** Format: uuid */
+            pageId?: string;
+            /** Format: int32 */
+            droppedBlockCount?: number;
+        };
         "Notrelix.Application.Features.Documents.DTOs.PageBacklinkDto": {
             /** Format: uuid */
             id?: string;
@@ -9968,6 +10946,7 @@ export interface components {
             /** Format: uuid */
             spaceId?: string | null;
             parentTitle?: string | null;
+            canEdit?: boolean | null;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageFromTemplateDto": {
             /** Format: uuid */
@@ -9998,6 +10977,9 @@ export interface components {
             createdBy?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            /** Format: int64 */
+            version?: number;
+            canManage?: boolean;
         };
         "Notrelix.Application.Features.Documents.DTOs.PageTreeItemDto": {
             /** Format: uuid */
@@ -10146,7 +11128,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             name?: string | null;
-            scopes?: string | null;
+            scopes?: string[] | null;
             status?: string | null;
             /** Format: date-time */
             lastUsedAt?: string | null;
@@ -10156,6 +11138,8 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             revokedAt?: string | null;
+            suffix?: string | null;
+            revokedReason?: string | null;
         };
         "Notrelix.Application.Features.Identity.ApiTokens.DTOs.CreatedApiTokenDto": {
             /** Format: uuid */
@@ -10204,6 +11188,7 @@ export interface components {
             orgInitials?: string | null;
             provider?: string | null;
             providerLabel?: string | null;
+            enforced?: boolean;
         };
         "Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentActivationResult": {
             /** Format: uuid */
@@ -10230,13 +11215,15 @@ export interface components {
             /** Format: int32 */
             recoveryCodesRemaining?: number;
         };
+        "Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult": {
+            authorizationUrl?: string | null;
+        };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailCommand": {
             email?: string | null;
             stepUpToken?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateEmail.UpdateEmailResultDto": {
-            emailConfirmed?: boolean;
-            sessionRefreshRequired?: boolean;
+            pendingEmail?: string | null;
         };
         "Notrelix.Application.Features.Identity.Profiles.Commands.UpdateProfile.UpdateProfileCommand": {
             name: string | null;
@@ -10311,6 +11298,9 @@ export interface components {
             ipAddress?: string | null;
             userAgent?: string | null;
             isCurrent?: boolean;
+        };
+        "Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult": {
+            authorizationUrl?: string | null;
         };
         "Notrelix.Application.Features.Identity.Verification.Commands.ConfirmEmail.ConfirmEmailResultDto": {
             emailConfirmed?: boolean;
@@ -11589,6 +12579,7 @@ export interface components {
             version?: number;
             size?: string | null;
             language?: string | null;
+            accountStatus?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.DTOs.WorkspaceInvitationDto": {
             /** Format: uuid */
@@ -11681,6 +12672,18 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
             issuedByYou?: boolean;
+            canManage?: boolean;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationBatchResultDto": {
+            outcomes?: components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationOutcomeDto"][] | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationOutcomeDto": {
+            email?: string | null;
+            role?: string | null;
+            outcome?: string | null;
+            code?: string | null;
+            /** Format: uuid */
+            invitationId?: string | null;
         };
         "Notrelix.Application.Features.Workspaces.Navigation.Queries.GetPinnedResources.PinnedResourceDto": {
             kind?: string | null;
@@ -11792,6 +12795,17 @@ export interface components {
             language?: string | null;
             timeZone?: string | null;
             weekStart?: string | null;
+        };
+        "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: uuid */
+            parentSpaceId?: string | null;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: date-time */
+            restorableUntil?: string;
         };
         "Notrelix.Application.Features.Workspaces.Spaces.Queries.GetSpace.SpaceDto": {
             /** Format: uuid */
@@ -11987,6 +13001,19 @@ export interface components {
             createdAt?: string;
             accessLevel?: string | null;
         };
+        "Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto": {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            description?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** Format: uuid */
+            deletedBy?: string | null;
+            deletedByName?: string | null;
+        };
         "Notrelix.Application.Features.Workspaces.Teams.Queries.GetTeam.TeamDto": {
             /** Format: uuid */
             id?: string;
@@ -12071,10 +13098,40 @@ export interface components {
             admins?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtAdminDto"][] | null;
             directory?: components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetWorkspaceTeamsExt.TeamsExtDirectoryDto"][] | null;
         };
+        "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceActivity.WorkspaceActivityEntryDto": {
+            /** Format: uuid */
+            id?: string;
+            type?: string | null;
+            /** Format: uuid */
+            actorUserId?: string | null;
+            actorName?: string | null;
+            actorAvatarUrl?: string | null;
+            title?: string | null;
+            subjectType?: string | null;
+            /** Format: uuid */
+            subjectId?: string;
+            subjectName?: string | null;
+            /** Format: date-time */
+            occurredAt?: string;
+        };
+        "Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto": {
+            /** Format: uuid */
+            workspaceId?: string;
+            workspaceName?: string | null;
+            /** Format: int32 */
+            memberCount?: number;
+            /** Format: int32 */
+            spaceCount?: number;
+            /** Format: int32 */
+            teamCount?: number;
+            /** Format: int32 */
+            invitationCount?: number;
+            isArchived?: boolean;
+        };
         /** @enum {string} */
         "Notrelix.Domain.Automation.Executions.AutomationExecutionStatus": "Queued" | "Running" | "Succeeded" | "Failed" | "Cancelled" | "Skipped";
         /** @enum {string} */
-        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked";
+        "Notrelix.Domain.Identity.Security.SecurityActivityType": "SignInSucceeded" | "SignInFailed" | "PasswordChanged" | "PasswordReset" | "MfaEnabled" | "MfaDisabled" | "SessionRevoked" | "OtherSessionsRevoked" | "ProviderLinked" | "ProviderUnlinked" | "MfaReset";
         /**
          * Format: int32
          * @enum {integer}
@@ -12145,6 +13202,188 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.RenameAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.GetSecurityPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.SetMfaPolicy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SetAccountMfaPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.GetSso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.SaveSsoProvider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SaveSsoProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.RemoveSsoProvider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.AddSsoDomain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.AddSsoDomainRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.VerifySsoDomain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.RemoveSsoDomain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "Accounts.SetSsoRequired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Accounts.Requests.SetSsoRequiredRequest"];
             };
         };
         responses: {
@@ -13528,6 +14767,742 @@ export interface operations {
             };
         };
     };
+    "Chat.Calls.MediaWebhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.List": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallPageDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.Start": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.StartCallRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallJoinDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.GetActive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.Answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CallVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallJoinDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.Decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CallVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.Cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CallVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.End": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CallVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.Join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CallVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallJoinDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.Leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.CallVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Calls.UpdateMediaState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                callId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.UpdateCallMediaStateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Chat.Calls.DTOs.CallDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Chat.ChannelGroups.List": {
         parameters: {
             query?: never;
@@ -13861,6 +15836,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "Chat.Channels.ListDeleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
         };
     };
@@ -14237,6 +16243,78 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.ArchiveChannelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Channels.Restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.RestoreChannelRequest"];
             };
         };
         responses: {
@@ -14924,6 +17002,70 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.Members.SetRole": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                channelId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.SetChannelMemberRoleRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -15983,6 +18125,60 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MarkSpaceReadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Chat.ReadState.MarkUnreadFrom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                spaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Chat.Requests.MarkSpaceUnreadFromRequest"];
             };
         };
         responses: {
@@ -17268,6 +19464,29 @@ export interface operations {
             };
         };
     };
+    "Collaboration.Notifications.MarkInboxEntryUnread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "Collaboration.Notifications.MarkInboxEntryDone": {
         parameters: {
             query?: never;
@@ -18179,6 +20398,52 @@ export interface operations {
             };
         };
     };
+    "Documents.Pages.DuplicatePage": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Pages.Requests.DuplicatePageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.DuplicatedPageDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "Documents.Pages.GetPage": {
         parameters: {
             query?: never;
@@ -18333,6 +20598,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageHistoryDto"][];
+                };
+            };
+        };
+    };
+    "Documents.Pages.GetPageActivity": {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Activity.DTOs.ResourceActivityPageDto"];
                 };
             };
         };
@@ -18524,6 +20814,193 @@ export interface operations {
             };
         };
     };
+    "Documents.Templates.DeletePageTemplate": {
+        parameters: {
+            query?: {
+                expectedVersion?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Documents.Templates.UpdatePageTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Templates.Requests.UpdatePageTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageTemplateDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Documents.Templates.ArchivePageTemplate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Documents.Templates.Requests.PageTemplateVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Documents.Versions.ListPageVersions": {
         parameters: {
             query?: {
@@ -18552,7 +21029,10 @@ export interface operations {
     "Documents.Versions.CreatePageVersion": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 pageId: string;
             };
@@ -18567,11 +21047,27 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Documents.DTOs.PageVersionDto"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -18601,7 +21097,10 @@ export interface operations {
     "Documents.Versions.RestorePageVersion": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 pageId: string;
                 versionId: string;
@@ -18617,6 +21116,8 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
@@ -18632,6 +21133,13 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Precondition Failed */
             412: {
                 headers: {
@@ -18640,6 +21148,13 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -19418,6 +21933,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
             /** @description Too Many Requests */
             429: {
                 headers: {
@@ -19701,6 +22225,98 @@ export interface operations {
             };
         };
     };
+    "Identity.Auth.Sso.Start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartSsoSignInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Sso.Commands.StartSsoSignIn.SsoStartResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Auth.Sso.Callback": {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+                error_description?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Found */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Identity.Auth.ConfirmEmail": {
         parameters: {
             query?: never;
@@ -19913,6 +22529,73 @@ export interface operations {
             };
         };
     };
+    "Identity.Auth.SetFirstPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.SetFirstPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Precondition Failed */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
     "Identity.Auth.GetCurrentUser": {
         parameters: {
             query?: never;
@@ -20093,17 +22776,18 @@ export interface operations {
     };
     "Identity.Auth.OAuth.StepUpStart": {
         parameters: {
-            query?: {
-                purpose?: string;
-                returnUrl?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 provider: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.StartOAuthStepUpRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -20111,15 +22795,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.OAuth.DTOs.OAuthLoginStartResult"];
                 };
-            };
-            /** @description Found */
-            302: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Bad Request */
             400: {
@@ -20313,6 +22990,90 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.StartRequiredEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Identity.Mfa.DTOs.MfaEnrollmentStartResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "Identity.Mfa.CompleteRequiredEnrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Identity.Auth.Commands.RequiredMfaEnrollmentCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.API.Contracts.Identity.AuthSessionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27810,6 +30571,54 @@ export interface operations {
             };
         };
     };
+    "WorkManagement.Forms.GetPublicAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.Forms.SetPublicAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.SetFormPublicAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
     "WorkManagement.Forms.ProcessSubmission": {
         parameters: {
             query?: never;
@@ -28205,6 +31014,54 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
+            };
+        };
+    };
+    "WorkManagement.PublicForms.Get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "WorkManagement.PublicForms.Submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.WorkManagement.Forms.Requests.SubmitPublicFormRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
                 };
             };
         };
@@ -29312,8 +32169,8 @@ export interface operations {
     "Workspaces.Activity.GetWorkspaceActivity": {
         parameters: {
             query?: {
-                page?: number;
-                pageSize?: number;
+                cursor?: string;
+                limit?: number;
             };
             header?: never;
             path: {
@@ -29329,7 +32186,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System.Void"];
+                    "application/json": components["schemas"]["Notrelix.Application.Common.Models.CursorPageOfWorkspaceActivityEntryDto"];
                 };
             };
         };
@@ -29869,6 +32726,51 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.DTOs.WorkspaceMemberDto"];
                 };
+            };
+        };
+    };
+    "Workspaces.Members.InviteMembers": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Members.Requests.InviteMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Invitations.Services.MemberInvitationBatchResultDto"];
+                };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -30613,6 +33515,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Spaces.GetDeletedSpaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Spaces.Queries.GetDeletedSpaces.DeletedSpaceDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Spaces.GetSpace": {
         parameters: {
             query?: never;
@@ -30665,7 +33589,9 @@ export interface operations {
     };
     "Workspaces.Spaces.DeleteSpace": {
         parameters: {
-            query?: never;
+            query: {
+                expectedVersion: number;
+            };
             header?: never;
             path: {
                 workspaceId: string;
@@ -30876,6 +33802,8 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: number;
+                role?: string;
+                kind?: string;
             };
             header?: never;
             path: {
@@ -31098,6 +34026,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Teams.GetDeletedTeams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.Teams.Queries.GetDeletedTeams.DeletedTeamDto"][];
+                };
+            };
+        };
+    };
     "Workspaces.Teams.GetWorkspaceTeamsExt": {
         parameters: {
             query?: never;
@@ -31188,6 +34138,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Microsoft.AspNetCore.Mvc.ProblemDetails"];
+                };
             };
         };
     };
@@ -31477,6 +34436,28 @@ export interface operations {
             };
         };
     };
+    "Workspaces.Workspaces.GetWorkspaceDashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Workspaces.WorkspaceHome.Queries.GetWorkspaceDashboard.WorkspaceDashboardDto"];
+                };
+            };
+        };
+    };
     "Workspaces.Workspaces.UpdateWorkspaceProfile": {
         parameters: {
             query?: never;
@@ -31489,6 +34470,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Workspaces.Requests.UpdateWorkspaceProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Workspaces.ChangeWorkspaceSlug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Workspaces.Requests.ChangeWorkspaceSlugRequest"];
             };
         };
         responses: {
@@ -31593,6 +34600,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Notrelix.API.Contracts.Workspaces.Workspaces.Requests.TransferOwnershipRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Workspaces.Workspaces.ResetMemberMfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Notrelix.API.Endpoints.Workspaces.Workspaces.Commands.ResetMemberMfaRequest"];
             };
         };
         responses: {

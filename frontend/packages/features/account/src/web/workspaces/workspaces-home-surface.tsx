@@ -424,17 +424,33 @@ export function WorkspacesHomeSurface({
                 title={view.name}
                 meta={metaOf(copy, view)}
                 action={
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={fillCopy(copy.unarchiveLabel, {
-                      name: view.name,
-                    })}
-                    onClick={() => onUnarchive(view.id)}
-                    className={cn(BTN_SM, FOCUS)}
-                  >
-                    {copy.unarchive}
-                  </button>
+                  <>
+                    {view.role === "owner" ? (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label={fillCopy(copy.unarchiveLabel, {
+                          name: view.name,
+                        })}
+                        onClick={() => onUnarchive(view.id)}
+                        className={cn(BTN_SM, FOCUS)}
+                      >
+                        {copy.unarchive}
+                      </button>
+                    ) : null}
+                    <a
+                      href={view.open.href}
+                      aria-label={fillCopy(copy.openLabel, { name: view.name })}
+                      onClick={(event) => {
+                        if (!isPlainClick(event)) return;
+                        event.preventDefault();
+                        view.open.onNavigate();
+                      }}
+                      className={cn(BTN_SM, FOCUS)}
+                    >
+                      {copy.open}
+                    </a>
+                  </>
                 }
               />
             ))}

@@ -119,7 +119,7 @@ function SetupFlow() {
       setAddress({ kind: "idle" });
       return;
     }
-    if (slug.length < 3 || slug.length > 30 || !SLUG_SHAPE.test(slug)) {
+    if (slug.length < 3 || slug.length > 63 || !SLUG_SHAPE.test(slug)) {
       setAddress({ kind: "invalid" });
       return;
     }

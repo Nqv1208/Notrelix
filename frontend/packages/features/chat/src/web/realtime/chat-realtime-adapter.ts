@@ -24,6 +24,7 @@ import type {
 } from "../../core/types/chat";
 import type { PendingMessage } from "../../core/model/chat-model";
 import {
+  readOncePerWindow,
   setConversationUnread,
   touchConversation,
 } from "../query/conversation-cache";
@@ -34,10 +35,13 @@ import {
   parseChatReactionFrame,
   parseChatSpaceFrame,
   parseChatUnreadFrame,
+  parseChatCallFrame,
+  CHAT_CALL_EVENT,
   CHAT_ATTACHMENT_EVENT,
   CHAT_REACTION_EVENT,
   CHAT_SPACE_EVENT,
   CHAT_UNREAD_EVENT,
+  type ChatCallFramePayload,
   type ChatMessageFramePayload,
 } from "../../core/realtime/chat-frames";
 import { chatQueryKeys } from "../../query/keys";
@@ -59,6 +63,7 @@ import {
 } from "../query/interaction-cache";
 import { applyStoredReply } from "../query/thread-writes";
 import { mergeAttachment } from "../../core/model/attachment-model";
+import type { ChatIncomingCall } from "../../core/model/call-model";
 
 export interface ChatRealtimeEnvelope {
   readonly eventType: string;
@@ -180,7 +185,14 @@ export function createChatRealtimeAdapter(
       threadRootId: rootId,
       threadSequence: frame.threadSequence,
     };
-    applyStoredReply(queryClient, workspaceId, reply);
+    if (frame.contentOmitted) {
+      // The reply's text did not fit the frame: the open thread refetches instead of showing a blank reply.
+      void queryClient.invalidateQueries({
+        queryKey: chatQueryKeys.thread(workspaceId, rootId),
+      });
+    } else {
+      applyStoredReply(queryClient, workspaceId, reply);
+    }
     return backfill(workspaceId, channelId, frame.sequence - 1);
   }
 
@@ -202,25 +214,31 @@ export function createChatRealtimeAdapter(
       if (envelope.eventType === "chat.message.created") {
         return applyThreadReplyCreated(frame, envelope, workspaceId, channelId);
       }
-      queryClient.setQueriesData(
-        { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
-        (data: unknown) =>
-          patchMessageInData(data, frame.id, (message) =>
-            message.version >= frame.version
-              ? message
-              : {
-                  ...message,
-                  content: frame.deleted ? null : frame.content,
-                  edited: frame.editedAt !== null || message.edited,
-                  editedAt: frame.editedAt ?? message.editedAt,
-                  deleted: frame.deleted,
-                  deletedAt: frame.deleted
-                    ? (message.deletedAt ?? envelope.timestamp)
-                    : message.deletedAt,
-                  version: frame.version,
-                },
-          ),
-      );
+      if (frame.contentOmitted) {
+        // An edit whose text did not fit keeps the old text until the thread refetches.
+        void queryClient.invalidateQueries({
+          queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId),
+        });
+      } else
+        queryClient.setQueriesData(
+          { queryKey: chatQueryKeys.thread(workspaceId, frame.threadRootId) },
+          (data: unknown) =>
+            patchMessageInData(data, frame.id, (message) =>
+              message.version >= frame.version
+                ? message
+                : {
+                    ...message,
+                    content: frame.deleted ? null : frame.content,
+                    edited: frame.editedAt !== null || message.edited,
+                    editedAt: frame.editedAt ?? message.editedAt,
+                    deleted: frame.deleted,
+                    deletedAt: frame.deleted
+                      ? (message.deletedAt ?? envelope.timestamp)
+                      : message.deletedAt,
+                    version: frame.version,
+                  },
+            ),
+        );
     }
 
     let refetchFrom: number | null = null;
@@ -255,7 +273,8 @@ export function createChatRealtimeAdapter(
     if (
       envelope.eventType === "chat.message.created" &&
       frame.threadRootId === null &&
-      !frame.deleted
+      !frame.deleted &&
+      !frame.contentOmitted
     ) {
       touchConversation(queryClient, workspaceId, channelId, {
         sequence: frame.sequence,
@@ -266,8 +285,20 @@ export function createChatRealtimeAdapter(
       });
     }
 
-    // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId).
-    if (frame.clientMessageId !== null) {
+    // The send of this client is stored: its pending entry is confirmed (matched by clientMessageId). Only once a loaded
+    // window holds the message: a frame that fell outside the window on screen (a send from an older window) must not
+    // take the bubble away, the send's own answer drops it when the newest window shows the stored copy.
+    const clientMessageId = frame.clientMessageId;
+    if (
+      clientMessageId !== null &&
+      queryClient
+        .getQueriesData<ChatMessagesCache>({ queryKey: prefix })
+        .some(([, cache]) =>
+          cache?.pages.some((page) =>
+            page.items.some((item) => item.clientMessageId === clientMessageId),
+          ),
+        )
+    ) {
       queryClient.setQueryData<PendingMessage[]>(pendingKey, (entries) =>
         entries
           ? entries.filter(
@@ -306,6 +337,12 @@ export function createChatRealtimeAdapter(
         createdAt: frame.preview.createdAt,
       });
     }
+    // The reader is looking at that space's newest message: the frame's count is already read (the read boundary moves
+    // with the message), so it is skipped instead of flashing a badge until the boundary lands.
+    const viewing = queryClient.getQueryData<string | null>(
+      chatQueryKeys.viewing(workspaceId),
+    );
+    if (viewing === frame.spaceId) return;
     const summary = queryClient.getQueryData<ChatUnreadSummary>(key);
     // Nothing loaded yet: the summary fetches on its first read.
     if (!summary) return;
@@ -319,11 +356,14 @@ export function createChatRealtimeAdapter(
         frame.unread,
       );
     } else if (outcome.kind === "unknown-space") {
-      // A channel the summary does not list yet: revalidate the list and the summary.
-      await context.invalidateQueries([
-        [...key],
-        [...chatQueryKeys.channels(workspaceId)],
-      ]);
+      // A channel the summary does not list yet: revalidate the list and the summary, once per window (a space the
+      // summary never lists would otherwise cost two reads per frame).
+      readOncePerWindow(queryClient, `unread:${workspaceId}`, () => {
+        void context.invalidateQueries([
+          [...key],
+          [...chatQueryKeys.channels(workspaceId)],
+        ]);
+      });
     }
   }
 
@@ -407,6 +447,8 @@ export function createChatRealtimeAdapter(
       uploadedBy: frame.uploadedBy!,
       createdAt: frame.createdAt!,
       downloadPath: frame.downloadPath!,
+      width: frame.width,
+      height: frame.height,
     };
     patchAll((message) => {
       const next = mergeAttachment(message.attachments, attachment);
@@ -414,6 +456,58 @@ export function createChatRealtimeAdapter(
         ? message
         : { ...message, attachments: next };
     });
+  }
+
+  /**
+   * A call changed (chat.call.v1, channel or per-person stream). The frame is an advisory: the space's active call is read again
+   * over REST. A ring for someone else's call joins the incoming list until the call leaves `ringing`.
+   */
+  function applyCallFrame(
+    envelope: ChatRealtimeEnvelope,
+    workspaceId: string,
+  ): void {
+    const frame = envelope.payloadOmitted
+      ? null
+      : parseChatCallFrame(envelope.payload);
+    if (!frame) return;
+    void queryClient.invalidateQueries({
+      queryKey: chatQueryKeys.activeCall(workspaceId, frame.spaceId),
+    });
+    queryClient.setQueryData(
+      chatQueryKeys.callFrame(workspaceId, frame.callId),
+      (known: ChatCallFramePayload | undefined) =>
+        known && known.version > frame.version ? known : frame,
+    );
+    // A channel call does not ring anyone (people see its banner and join); a direct or group conversation rings.
+    const isChannel = (
+      queryClient.getQueryData<readonly { readonly id: string }[]>(
+        chatQueryKeys.channels(workspaceId),
+      ) ?? []
+    ).some((channel) => channel.id === frame.spaceId);
+    const ringing =
+      frame.state === "ringing" && frame.initiatorId !== viewerId && !isChannel;
+    queryClient.setQueryData<ChatIncomingCall[]>(
+      chatQueryKeys.incomingCalls(workspaceId),
+      (list = []) => {
+        const rest = list.filter((entry) => entry.callId !== frame.callId);
+        const known = list.find((entry) => entry.callId === frame.callId);
+        if (known && known.version > frame.version) return list;
+        return ringing
+          ? [
+              ...rest,
+              {
+                callId: frame.callId,
+                spaceId: frame.spaceId,
+                kind: frame.kind,
+                initiatorId: frame.initiatorId,
+                version: frame.version,
+                // The arrival time, not the server's: a skewed clock must not end a ring early.
+                receivedAt: known?.receivedAt ?? new Date().toISOString(),
+              },
+            ]
+          : rest;
+      },
+    );
   }
 
   /** A pin of the channel changed: the pin list is read again (the header and the Pins panel follow it). */
@@ -495,6 +589,7 @@ export function createChatRealtimeAdapter(
       return (
         isChatMessageEvent(envelope.eventType) ||
         envelope.eventType === CHAT_UNREAD_EVENT ||
+        envelope.eventType === CHAT_CALL_EVENT ||
         envelope.eventType === CHAT_REACTION_EVENT ||
         envelope.eventType === CHAT_ATTACHMENT_EVENT ||
         envelope.eventType === CHAT_SPACE_EVENT
@@ -503,6 +598,10 @@ export function createChatRealtimeAdapter(
     async validateAndHandle(envelope, context): Promise<void> {
       // A frame of another workspace belongs to a previous scope (NRX-014).
       if (envelope.workspaceId !== context.workspaceId) return;
+      if (envelope.eventType === CHAT_CALL_EVENT) {
+        applyCallFrame(envelope, context.workspaceId);
+        return;
+      }
       if (
         isChatMessageEvent(envelope.eventType) ||
         envelope.eventType === CHAT_REACTION_EVENT ||

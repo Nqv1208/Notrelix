@@ -20,12 +20,15 @@ public static class MapWorkspaceEndpoints
             .WithOpenApi();
 
         byIdGroup.MapGetWorkspace();
+        byIdGroup.MapGetWorkspaceDashboard();
         byIdGroup.MapUpdateWorkspaceProfile();
+        byIdGroup.MapChangeWorkspaceSlug();
         byIdGroup.MapArchiveWorkspace();
         byIdGroup.MapUnarchiveWorkspace();
         byIdGroup.MapRestoreWorkspace();
         byIdGroup.MapDeleteWorkspace();
         byIdGroup.MapTransferOwnership();
+        byIdGroup.MapResetMemberMfa();
 
         var accountGroup = app
             .MapGroup("/api/v1/accounts/{accountId:guid}/workspaces")

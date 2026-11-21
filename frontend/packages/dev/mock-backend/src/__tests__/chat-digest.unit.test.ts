@@ -72,8 +72,10 @@ describe("MFB-CHAT-S3.5: Chat mock digest (UC-CHT-H09)", () => {
     expect(mail.subject).toBe("You missed 3 chat messages");
     expect(mail.windowKey).toMatch(/^\d{12}$/);
     expect(mail.lines).toHaveLength(3);
-    expect(mail.lines[0]!.path).toBe(
-      `/workspaces/${WORKSPACE_ID}/chat/${SPACES.general}`,
+    expect(mail.lines[0]!.path).toMatch(
+      new RegExp(
+        `^/workspaces/${WORKSPACE_ID}/chat/${SPACES.general}\\?m=\\d+$`,
+      ),
     );
   });
 

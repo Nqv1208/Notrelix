@@ -10,9 +10,11 @@ import {
   homeRoute,
   inviteRoute,
   inviteLinkRoute,
+  publicFormRoute,
   onboardingRoute,
   welcomeRoute,
   workspaceRoute,
+  workspaceAddressRoute,
 } from "./routes/base.routes";
 import {
   workspaceIndexRoute,
@@ -27,6 +29,7 @@ import {
   reportsRoute,
   libraryRoute,
   archivedBoardsRoute,
+  deletedSpacesRoute,
   spaceRoute,
 } from "./routes/workspace.routes";
 import {
@@ -52,6 +55,9 @@ import {
   accountSecurityRoute,
   accountAppearanceRoute,
   accountNotificationsRoute,
+  accountTokensRoute,
+  accountEmailRoute,
+  accountProvidersRoute,
   accountWorkspacesRoute,
   accountOutsideWorkspaceRoute,
 } from "./routes/account.routes";
@@ -67,9 +73,11 @@ export const routeTree = rootRoute.addChildren([
   homeRoute,
   inviteRoute,
   inviteLinkRoute,
+  publicFormRoute,
   onboardingRoute,
   welcomeRoute,
   accountOutsideWorkspaceRoute,
+  workspaceAddressRoute,
   workspaceRoute.addChildren([
     workspaceIndexRoute,
     boardRoute,
@@ -91,6 +99,7 @@ export const routeTree = rootRoute.addChildren([
     reportsRoute,
     libraryRoute,
     archivedBoardsRoute,
+    deletedSpacesRoute,
     spaceRoute,
     billingRoute,
     integrationsRoute,
@@ -103,6 +112,9 @@ export const routeTree = rootRoute.addChildren([
       accountSecurityRoute,
       accountAppearanceRoute,
       accountNotificationsRoute,
+      accountTokensRoute,
+      accountEmailRoute,
+      accountProvidersRoute,
       accountWorkspacesRoute,
     ]),
   ]),

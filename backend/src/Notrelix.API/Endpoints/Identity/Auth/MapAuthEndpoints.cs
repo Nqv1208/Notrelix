@@ -21,8 +21,11 @@ public static class MapAuthEndpoints
         publicGroup.MapRefreshToken();
         publicGroup.MapStartOAuthLogin();
         publicGroup.MapCompleteOAuthLogin();
+        publicGroup.MapStartSsoSignIn();
+        publicGroup.MapCompleteSsoSignIn();
         publicGroup.MapEmailVerification();
         publicGroup.MapCompleteMfaChallenge();
+        publicGroup.MapRequiredMfaEnrollment();
 
         var authGroup = app
             .MapGroup("/api/v1/auth")
@@ -31,6 +34,7 @@ public static class MapAuthEndpoints
 
         authGroup.MapLogout();
         authGroup.MapChangePassword();
+        authGroup.MapSetFirstPassword();
         authGroup.MapGetCurrentUser();
         authGroup.MapGetBootstrap();
         authGroup.MapStartOAuthLink();

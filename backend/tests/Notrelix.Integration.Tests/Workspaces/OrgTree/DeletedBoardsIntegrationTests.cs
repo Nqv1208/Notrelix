@@ -116,6 +116,52 @@ public sealed class DeletedBoardsIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Purge_RemovesItemsAndFieldsDeletedMoreThanThirtyDaysAgo_AndKeepsTheRest()
+    {
+        var stack = await _host.SeedWorkspaceAsync();
+        var board = await _host.SeedBoardAsync(stack, "Live");
+        var t = OrgTreeTestHost.BaseTime;
+        var expired = await SeedTrashAsync(stack, board, t);
+        var exactly30 = await SeedTrashAsync(stack, board, PurgeTime.AddDays(-30));
+        var recent = await SeedTrashAsync(stack, board, t.AddDays(5));
+        var active = await SeedTrashAsync(stack, board, null);
+
+        (await PurgeAsync()).Should().Be(2, "one expired item and one expired field");
+
+        (await TrashRowsAsync(expired)).Should().Be(new TrashRows(0, 0, 0, 0));
+        foreach (var kept in new[] { exactly30, recent, active })
+            (await TrashRowsAsync(kept)).Should().Be(new TrashRows(1, 1, 1, 1), "nothing inside the 30 days, or never deleted, is purged");
+
+        (await _host.ReadAsync(c => c.EnterpriseAuditLogs.CountAsync(a => a.Action == "PurgeItem" && a.ResourceId == expired.Item && a.WorkspaceId == stack.WorkspaceId)))
+            .Should().Be(1);
+        (await _host.ReadAsync(c => c.EnterpriseAuditLogs.CountAsync(a => a.Action == "PurgeField" && a.ResourceId == expired.Field && a.WorkspaceId == stack.WorkspaceId)))
+            .Should().Be(1);
+        (await _host.ReadAsync(c => c.EnterpriseAuditLogs.CountAsync(a => a.Action == "PurgeItem" || a.Action == "PurgeField")))
+            .Should().Be(2, "only the expired rows leave an audit fact");
+
+        (await PurgeAsync()).Should().Be(0, "a purged row is gone, so a second pass changes nothing");
+    }
+
+    [Fact]
+    public async Task Purge_AuditsEachExpiredRowUnderItsOwnWorkspace()
+    {
+        var first = await _host.SeedWorkspaceAsync();
+        var second = await _host.SeedWorkspaceAsync();
+        var a = await SeedTrashAsync(first, await _host.SeedBoardAsync(first, "A"), OrgTreeTestHost.BaseTime);
+        var b = await SeedTrashAsync(second, await _host.SeedBoardAsync(second, "B"), OrgTreeTestHost.BaseTime);
+
+        (await PurgeAsync()).Should().Be(4);
+
+        (await _host.ReadAsync(c => c.EnterpriseAuditLogs.Where(x => x.Action == "PurgeItem")
+                .Select(x => new { x.ResourceId, x.WorkspaceId }).ToListAsync()))
+            .Should().BeEquivalentTo(new[]
+            {
+                new { ResourceId = (Guid?)a.Item, WorkspaceId = (Guid?)first.WorkspaceId },
+                new { ResourceId = (Guid?)b.Item, WorkspaceId = (Guid?)second.WorkspaceId },
+            });
+    }
+
+    [Fact]
     public void PurgeOptions_AreOffByDefault_AndValidated()
     {
         var validator = new DeletedBoardPurgeOptionsValidator();
@@ -159,6 +205,50 @@ public sealed class DeletedBoardsIntegrationTests : IAsyncLifetime
         });
         return board;
     }
+
+    private int _seeded;
+
+    private sealed record Trash(Guid Item, Guid Field);
+
+    private sealed record TrashRows(int Items, int Fields, int Values, int ItemLabels);
+
+    /// <summary>An item (with a value and a label) and a field, each deleted at <paramref name="deletedAt"/> (null: kept).</summary>
+    private async Task<Trash> SeedTrashAsync(OrgStack stack, Guid board, DateTimeOffset? deletedAt)
+    {
+        var time = OrgTreeTestHost.BaseTime;
+        var n = ++_seeded;
+        var key = FractionalIndex.Create("a" + n);
+        Guid itemId = default, fieldId = default;
+        await _host.WithSystemContextAsync(c =>
+        {
+            var group = BoardGroup.Create(stack.AccountId, stack.WorkspaceId, board, $"Group {n}", Color.Create("#0079BF"), key, stack.OwnerId, time);
+            var item = BoardItem.CreateRoot(stack.AccountId, stack.WorkspaceId, board, group.Id, "Item", key, stack.OwnerId, time);
+            var field = BoardField.Create(stack.AccountId, stack.WorkspaceId, board, $"Effort {n}", FieldType.Number, FieldSettings.Empty(), key, stack.OwnerId, time);
+            var label = Label.Create(stack.AccountId, stack.WorkspaceId, board, $"Bug {n}", LabelColor.Create("#E53935"), stack.OwnerId, time);
+            c.BoardGroups.Add(group);
+            c.BoardItems.Add(item);
+            c.BoardFields.Add(field);
+            c.Labels.Add(label);
+            c.BoardItemValues.Add(BoardItemValue.Create(item.Id, field.Id, FieldValue.Create(JsonValue.Create("3")!)));
+            c.BoardItemLabels.Add(BoardItemLabel.Create(stack.AccountId, stack.WorkspaceId, board, item.Id, label.Id, stack.OwnerId, time));
+            if (deletedAt is { } at)
+            {
+                item.Delete(stack.OwnerId, at);
+                field.Delete(stack.OwnerId, at);
+            }
+            itemId = item.Id;
+            fieldId = field.Id;
+            return Task.CompletedTask;
+        });
+        return new Trash(itemId, fieldId);
+    }
+
+    private Task<TrashRows> TrashRowsAsync(Trash t) =>
+        _host.ReadAsync(async c => new TrashRows(
+            await c.BoardItems.IgnoreQueryFilters().CountAsync(i => i.Id == t.Item),
+            await c.BoardFields.IgnoreQueryFilters().CountAsync(f => f.Id == t.Field),
+            await c.BoardItemValues.IgnoreQueryFilters().CountAsync(v => v.FieldId == t.Field || v.ItemId == t.Item),
+            await c.BoardItemLabels.IgnoreQueryFilters().CountAsync(l => l.ItemId == t.Item)));
 
     private Task<BoardRows> CountAsync(Guid board) =>
         _host.ReadAsync(async c => new BoardRows(

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BellOff, BellRing, Check, Loader2 } from "lucide-react";
+import { Archive, Check, Loader2 } from "lucide-react";
 import { Button, Skeleton, cn } from "@notrelix/ui-web";
 import type { ChatMentionPayload, ChatMessage } from "../../core/types/chat";
 import type { ChatHooks } from "../query/create-chat-hooks";
@@ -7,6 +7,9 @@ import type { ChatCopy } from "./chat.copy";
 import { ChatComposer, type ChatComposerMentions } from "./chat-composer";
 import { ChatMessageRow } from "./chat-message-row";
 import { ChatPanelHeader } from "./chat-panel-header";
+import { ThreadMoreMenu } from "./chat-thread-menu";
+import { chatFailureOf } from "../../core/api/chat-failure";
+import type { ChatVoiceRecorder } from "../../core/api/chat-voice-recorder";
 import { AUTHOR_RUN_MINUTES } from "../../core/model/chat-model";
 import {
   RowActivityProvider,
@@ -41,6 +44,8 @@ export interface ChatThreadPanelProps {
   readonly onTogglePin?: (message: ChatMessage, pinned: boolean) => void;
   /** An archived channel is read-only: its files cannot be removed. */
   readonly attachmentsReadOnly?: boolean;
+  /** The voice recorder port (UC-CHT-I04); the browser recorder when the host gives none. Tests pass a fake. */
+  readonly voiceRecorder?: ChatVoiceRecorder;
 }
 
 /**
@@ -64,6 +69,7 @@ export function ChatThreadPanel({
   onReact,
   onTogglePin,
   attachmentsReadOnly = false,
+  voiceRecorder,
 }: ChatThreadPanelProps) {
   const thread = hooks.useThreadReplies(workspaceId, rootId);
   const replier = hooks.useReplyInThread(workspaceId, rootId);
@@ -103,27 +109,33 @@ export function ChatThreadPanel({
         onSuccess: () => {
           setDraft("");
         },
-        onError: () => setNotice(copy.thread.sendFailed),
+        onError: (error) =>
+          // A 429 says to wait; the draft stays either way.
+          setNotice(
+            chatFailureOf(error).kind === "rate-limited"
+              ? copy.feedback.rateLimited
+              : copy.thread.sendFailed,
+          ),
       },
     );
   }
 
   function toggleFollow() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: !summary.following,
-      muted: false,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: !summary.following, muted: false },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   function toggleMute() {
     if (!summary) return;
-    follower.mutate({
-      threadId: rootId,
-      following: true,
-      muted: !summary.muted,
-    });
+    setNotice(null);
+    follower.mutate(
+      { threadId: rootId, following: true, muted: !summary.muted },
+      { onError: () => setNotice(copy.thread.actionFailed) },
+    );
   }
 
   return (
@@ -135,43 +147,34 @@ export function ChatThreadPanel({
       <ChatPanelHeader
         title={copy.thread.title}
         subtitle={spaceLabel}
+        subtitleAlways
         closeLabel={copy.thread.close}
         onClose={onClose}
       >
         {summary ? (
-          <button
-            type="button"
-            aria-pressed={summary.following}
-            onClick={toggleFollow}
-            disabled={follower.isPending}
+          <span
             className={cn(
-              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:outline-none disabled:opacity-60",
+              "inline-flex h-[22px] shrink-0 items-center rounded-full px-[9px] text-xs font-semibold",
               summary.following
                 ? "bg-primary/10 text-link"
                 : "bg-muted text-muted-foreground",
             )}
+            data-testid="chat-thread-follow-state"
           >
-            {summary.following ? copy.thread.following : copy.thread.follow}
-          </button>
+            {summary.following
+              ? copy.thread.following
+              : copy.thread.notFollowing}
+          </span>
         ) : null}
-        {summary?.following ? (
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            className="text-muted-foreground"
-            aria-pressed={summary.muted}
-            aria-label={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            title={summary.muted ? copy.thread.unmute : copy.thread.mute}
-            onClick={toggleMute}
-            disabled={follower.isPending}
-          >
-            {summary.muted ? (
-              <BellOff aria-hidden="true" />
-            ) : (
-              <BellRing aria-hidden="true" />
-            )}
-          </Button>
+        {summary ? (
+          <ThreadMoreMenu
+            copy={copy}
+            following={summary.following}
+            muted={summary.muted}
+            busy={follower.isPending}
+            onToggleFollow={toggleFollow}
+            onToggleMute={toggleMute}
+          />
         ) : null}
       </ChatPanelHeader>
 
@@ -330,6 +333,16 @@ export function ChatThreadPanel({
         </div>
       )}
 
+      {summary?.archived ? (
+        <p
+          role="status"
+          data-testid="chat-thread-archived"
+          className="mx-0 flex items-start gap-2 bg-primary/10 px-4 py-2.5 text-xs leading-[1.45] font-semibold text-link"
+        >
+          <Archive className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          {copy.thread.archivedBanner}
+        </p>
+      ) : null}
       {notice ? (
         <p role="alert" className="mx-3 mb-1 text-xs text-destructive">
           {notice}
@@ -344,11 +357,15 @@ export function ChatThreadPanel({
         value={draft}
         disabledReason={null}
         copy={copy}
-        labelOverride={copy.thread.composerLabel}
+        labelOverride={
+          summary?.archived
+            ? copy.thread.reopenLabel
+            : copy.thread.composerLabel
+        }
         busy={replier.isPending}
         onChange={setDraft}
         onSend={send}
-        attachments={{ draftKey: `thread-${rootId}`, voice: false }}
+        attachments={{ draftKey: `thread-${rootId}`, voiceRecorder }}
         mentions={
           mentionBase
             ? {

@@ -6,5 +6,6 @@ public class DeleteSpaceCommandValidator : AbstractValidator<DeleteSpaceCommand>
     {
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.SpaceId).NotEmpty();
+        RuleFor(x => x.ExpectedVersion).GreaterThan(0);
     }
 }

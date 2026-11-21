@@ -34,6 +34,12 @@ import {
 import type { SectionState } from "../home/home-models";
 import { formatCopy } from "../shell/shell-models";
 import type { WorkspaceSettingsCopy } from "./workspace-settings.copy";
+import {
+  TransferOwnershipFlow,
+  type TransferCandidate,
+  type TransferFailure,
+} from "./transfer-ownership-flow";
+import type { OwnershipStepUp } from "./ownership-step-up";
 
 export interface WorkspaceProfileValues {
   readonly name: string;
@@ -46,7 +52,26 @@ export type SaveStatus =
   | { readonly state: "saving" }
   | { readonly state: "saved" }
   | { readonly state: "conflict" }
+  /** The address change was refused because another workspace of the Account holds it. */
+  | { readonly state: "taken" }
   | { readonly state: "error"; readonly message: string };
+
+/** What the address check answers for a well-formed address. */
+export interface AddressCheckResult {
+  readonly available: boolean;
+  readonly reason: "taken" | "invalid" | null;
+  readonly suggestion: string | null;
+}
+
+/** The workspace address field (`ChangeWorkspaceSlug`): only the Owner edits it. */
+export interface WorkspaceAddressProps {
+  readonly slug: string;
+  /** Only the Owner changes the address (`ManageWorkspace`); anyone else sees it read-only. */
+  readonly canChange: boolean;
+  readonly status: SaveStatus;
+  readonly onCheck: (slug: string) => Promise<AddressCheckResult>;
+  readonly onSave: (slug: string) => void;
+}
 
 export interface WorkspaceSettingsSurfaceProps {
   readonly copy: WorkspaceSettingsCopy;
@@ -63,12 +88,31 @@ export interface WorkspaceSettingsSurfaceProps {
   readonly defaults: SectionState<WorkspaceSettings>;
   readonly profileStatus: SaveStatus;
   readonly defaultsStatus: SaveStatus;
+  /** The address field under the profile; left out when the host has no address to show. */
+  readonly address?: WorkspaceAddressProps;
   readonly archiving: boolean;
+  /** The workspace is archived: the Danger zone offers Unarchive instead of Archive. */
+  readonly archived?: boolean;
+  /** Only the Owner unarchives (lifecycle is Owner-only, GOV-013). */
+  readonly canUnarchive?: boolean;
+  readonly unarchiving?: boolean;
+  readonly onUnarchive?: () => void;
   /** Only a workspace Owner deletes the workspace (`DeleteWorkspace`, owner decision 2026-11-01). */
   readonly canDelete: boolean;
   /** A personal workspace is never deleted: the action is explained and off. */
   readonly isPersonal: boolean;
   readonly deleting: boolean;
+  /** Only an Owner hands the workspace over (`TransferOwnership`, LD-05). */
+  readonly canTransfer: boolean;
+  /** Active members who are not Guests and not yet Owners; empty offers the invite path. */
+  readonly transferCandidates: readonly TransferCandidate[];
+  /** The host's proof of presence the handover asks for after the Owner confirms the choice. */
+  readonly ownershipStepUp: OwnershipStepUp;
+  readonly onTransfer: (
+    userId: string,
+    stepUpToken: string,
+  ) => Promise<TransferFailure | null>;
+  readonly onInviteForTransfer: () => void;
   readonly onSaveProfile: (values: WorkspaceProfileValues) => void;
   readonly onSaveDefaults: (settings: WorkspaceSettings) => void;
   readonly onArchive: () => void;
@@ -344,6 +388,187 @@ function ProfileForm({
   );
 }
 
+const SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SLUG_MIN = 3;
+const SLUG_MAX = 63;
+const SLUG_DELAY_MS = 350;
+
+type AddressAvailability =
+  | { readonly kind: "idle" }
+  | { readonly kind: "checking" }
+  | { readonly kind: "free" }
+  | { readonly kind: "invalid" }
+  | { readonly kind: "taken"; readonly suggestion: string | null };
+
+function AddressForm({
+  copy,
+  address,
+  locked,
+  onReload,
+}: {
+  copy: WorkspaceSettingsCopy;
+  address: WorkspaceAddressProps;
+  locked: boolean;
+  onReload: () => void;
+}) {
+  const [value, setValue] = React.useState(address.slug);
+  const [tried, setTried] = React.useState<string | null>(null);
+  const [availability, setAvailability] = React.useState<AddressAvailability>({
+    kind: "idle",
+  });
+  const inputId = React.useId();
+  const helpId = React.useId();
+  const messageId = React.useId();
+  const readOnly = locked || !address.canChange;
+  const { onCheck } = address;
+
+  React.useEffect(() => {
+    setValue(address.slug);
+  }, [address.slug]);
+
+  const normalized = value.trim().toLowerCase();
+  const dirty = normalized !== address.slug;
+  const wellFormed =
+    normalized.length >= SLUG_MIN &&
+    normalized.length <= SLUG_MAX &&
+    SLUG_SHAPE.test(normalized);
+  const saving = address.status.state === "saving";
+
+  React.useEffect(() => {
+    if (!dirty || readOnly) {
+      setAvailability({ kind: "idle" });
+      return;
+    }
+    if (!wellFormed) {
+      setAvailability({ kind: "invalid" });
+      return;
+    }
+    setAvailability({ kind: "checking" });
+    let stale = false;
+    const timer = setTimeout(() => {
+      onCheck(normalized).then(
+        (result) => {
+          if (stale) return;
+          setAvailability(
+            result.available
+              ? { kind: "free" }
+              : result.reason === "invalid"
+                ? { kind: "invalid" }
+                : { kind: "taken", suggestion: result.suggestion },
+          );
+        },
+        () => {
+          // The check is a convenience: the save still answers for itself.
+          if (!stale) setAvailability({ kind: "idle" });
+        },
+      );
+    }, SLUG_DELAY_MS);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [normalized, dirty, wellFormed, readOnly, onCheck]);
+
+  const refusedOnSave =
+    address.status.state === "taken" && tried === normalized;
+  const taken =
+    refusedOnSave || (availability.kind === "taken" && !refusedOnSave);
+  const suggestion =
+    availability.kind === "taken" ? availability.suggestion : null;
+  const invalid = dirty && availability.kind === "invalid";
+  const blocked = invalid || taken;
+
+  return (
+    <form
+      noValidate
+      aria-label={copy.address.title}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (readOnly || !dirty || !wellFormed || blocked || saving) return;
+        setTried(normalized);
+        address.onSave(normalized);
+      }}
+      className="flex flex-col gap-5"
+    >
+      <Field data-invalid={blocked ? true : undefined} className="gap-2">
+        <FieldLabel htmlFor={inputId}>{copy.address.label}</FieldLabel>
+        <div className="flex max-w-md items-center gap-2">
+          <span aria-hidden="true" className="text-body text-muted-foreground">
+            {copy.address.prefix}
+          </span>
+          <Input
+            id={inputId}
+            value={value}
+            disabled={readOnly || saving}
+            maxLength={SLUG_MAX + 10}
+            autoCapitalize="none"
+            spellCheck={false}
+            aria-invalid={blocked ? true : undefined}
+            aria-describedby={cn(helpId, (blocked || dirty) && messageId)}
+            onChange={(event) => setValue(event.target.value)}
+            className="min-w-0 flex-1 max-md:h-touch"
+          />
+        </div>
+        <FieldDescription id={helpId}>
+          {address.canChange ? copy.address.help : copy.address.ownerOnly}
+        </FieldDescription>
+        <div id={messageId} className="flex flex-col gap-2">
+          {invalid ? (
+            <FieldError>{copy.address.invalid}</FieldError>
+          ) : taken ? (
+            <FieldError>
+              {formatCopy(copy.address.taken, { slug: normalized })}
+            </FieldError>
+          ) : dirty && availability.kind === "checking" ? (
+            <p role="status" className="text-metadata text-muted-foreground">
+              {copy.address.checking}
+            </p>
+          ) : dirty && availability.kind === "free" ? (
+            <p
+              role="status"
+              className="inline-flex items-center gap-1 text-metadata text-success-text"
+            >
+              <Check aria-hidden="true" className="size-3.5" />
+              {copy.address.free}
+            </p>
+          ) : null}
+          {taken && suggestion ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-metadata text-muted-foreground">
+                {copy.address.suggestion}
+              </span>
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                onClick={() => setValue(suggestion)}
+                className="max-md:h-touch!"
+              >
+                {suggestion}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </Field>
+      {readOnly ? null : (
+        <SaveBar
+          copy={copy}
+          status={
+            address.status.state === "taken"
+              ? { state: "idle" }
+              : address.status
+          }
+          dirty={dirty}
+          invalid={!wellFormed || blocked}
+          disabled={readOnly}
+          onDiscard={() => setValue(address.slug)}
+          onReload={onReload}
+        />
+      )}
+    </form>
+  );
+}
+
 function SwitchField({
   label,
   help,
@@ -428,7 +653,6 @@ function DefaultsForm({
     next.invitationExpiryDays !== values.invitationExpiryDays ||
     next.allowGuestInvites !== values.allowGuestInvites ||
     next.allowPublicSharing !== values.allowPublicSharing ||
-    next.enforceMfa !== values.enforceMfa ||
     next.timeZone !== values.timeZone ||
     next.weekStart !== values.weekStart ||
     expiryText.trim() !== String(values.invitationExpiryDays);
@@ -578,15 +802,23 @@ function DefaultsForm({
             setDraft((current) => ({ ...current, allowPublicSharing: checked }))
           }
         />
-        <SwitchField
-          label={copy.defaults.mfaLabel}
-          help={copy.defaults.mfaHelp}
-          checked={draft.enforceMfa}
-          disabled={disabled}
-          onCheckedChange={(checked) =>
-            setDraft((current) => ({ ...current, enforceMfa: checked }))
-          }
-        />
+        {/* The Account owns the requirement: this is its fact, read-only (the Owner changes it in Account settings). */}
+        <Field
+          orientation="horizontal"
+          data-f="account-mfa"
+          className="items-start justify-between gap-4 max-md:min-h-touch"
+        >
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <FieldLabel>{copy.defaults.mfaLabel}</FieldLabel>
+            <FieldDescription>{copy.defaults.mfaHelp}</FieldDescription>
+          </div>
+          <span
+            role="status"
+            className="shrink-0 text-item-small font-medium text-muted-foreground"
+          >
+            {values.enforceMfa ? copy.defaults.mfaOn : copy.defaults.mfaOff}
+          </span>
+        </Field>
       </div>
       {locked ? null : (
         <SaveBar
@@ -732,6 +964,87 @@ function DangerFlow({
 }
 
 /**
+ * The Danger zone of an archived workspace (`Wsp-Var-Danger-Archived`): the Archive card gives way to
+ * Unarchive, a plain confirmation without a typed name because nothing is lost by it. Only the Owner
+ * holds the action; an Admin reads why it is not theirs.
+ */
+function UnarchiveCard({
+  copy,
+  workspaceName,
+  canUnarchive,
+  disabled,
+  pending,
+  onConfirm,
+}: {
+  copy: WorkspaceSettingsCopy;
+  workspaceName: string;
+  canUnarchive: boolean;
+  disabled: boolean;
+  pending: boolean;
+  onConfirm: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const values = { workspace: workspaceName };
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h3 className="text-label text-foreground">
+          {copy.danger.unarchiveTitle}
+        </h3>
+        <p className="text-metadata text-muted-foreground">
+          {formatCopy(copy.danger.unarchiveDescription, values)}
+        </p>
+        {canUnarchive ? null : (
+          <p className="text-metadata text-muted-foreground">
+            {copy.danger.unarchiveOwnerOnly}
+          </p>
+        )}
+      </div>
+      {canUnarchive ? (
+        <>
+          <Button
+            size="sm"
+            disabled={disabled || pending}
+            aria-busy={pending || undefined}
+            onClick={() => setOpen(true)}
+            className="shrink-0 max-md:h-touch!"
+          >
+            {pending ? copy.danger.unarchiving : copy.danger.unarchiveAction}
+          </Button>
+          <AlertDialog open={open} onOpenChange={setOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {formatCopy(copy.danger.unarchiveConfirmTitle, values)}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {copy.danger.unarchiveConfirmDescription}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel type="button" className="max-md:h-touch">
+                  {copy.danger.cancel}
+                </AlertDialogCancel>
+                <Button
+                  type="button"
+                  className="max-md:h-touch!"
+                  onClick={() => {
+                    setOpen(false);
+                    onConfirm();
+                  }}
+                >
+                  {copy.danger.unarchiveAction}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * Workspace settings (WX-SET-001) in grouped sections — Profile, Defaults,
  * Danger zone — each saved on its own with bound labels, inline validation
  * and conflict recovery. Archiving and deleting (Owner only) confirm by typing the workspace name.
@@ -745,10 +1058,20 @@ export function WorkspaceSettingsSurface({
   defaults,
   profileStatus,
   defaultsStatus,
+  address,
   archiving,
+  archived = false,
+  canUnarchive = false,
+  unarchiving = false,
+  onUnarchive,
   canDelete,
   isPersonal,
   deleting,
+  canTransfer,
+  transferCandidates,
+  ownershipStepUp,
+  onTransfer,
+  onInviteForTransfer,
   onSaveProfile,
   onSaveDefaults,
   onArchive,
@@ -756,12 +1079,14 @@ export function WorkspaceSettingsSurface({
   onReload,
   onRetryDefaults,
 }: WorkspaceSettingsSurfaceProps) {
-  const locked = !canManage || !versionAvailable;
+  const locked = !canManage || !versionAvailable || archived;
   const notice = !canManage
     ? copy.readOnly
-    : !versionAvailable
-      ? copy.versionUnavailable
-      : null;
+    : archived
+      ? copy.archivedReadOnly
+      : !versionAvailable
+        ? copy.versionUnavailable
+        : null;
 
   return (
     <div className="flex w-full max-w-5xl flex-col gap-6">
@@ -794,14 +1119,24 @@ export function WorkspaceSettingsSurface({
               {copy.loadError}
             </p>
           ) : (
-            <ProfileForm
-              copy={copy}
-              values={profile.data}
-              status={profileStatus}
-              locked={locked}
-              onSave={onSaveProfile}
-              onReload={onReload}
-            />
+            <>
+              <ProfileForm
+                copy={copy}
+                values={profile.data}
+                status={profileStatus}
+                locked={locked}
+                onSave={onSaveProfile}
+                onReload={onReload}
+              />
+              {address ? (
+                <AddressForm
+                  copy={copy}
+                  address={address}
+                  locked={locked}
+                  onReload={onReload}
+                />
+              ) : null}
+            </>
           )}
         </SettingsSection>
 
@@ -848,22 +1183,45 @@ export function WorkspaceSettingsSurface({
             description={copy.danger.description}
             tone="danger"
           >
-            <DangerFlow
-              copy={copy}
-              texts={{
-                title: copy.danger.archiveTitle,
-                description: copy.danger.archiveDescription,
-                action: copy.danger.archiveAction,
-                pending: copy.danger.archiving,
-                confirmTitle: copy.danger.confirmTitle,
-                confirmDescription: copy.danger.confirmDescription,
-                confirmAction: copy.danger.confirmAction,
-              }}
-              workspaceName={workspaceName ?? ""}
-              disabled={!versionAvailable || !workspaceName}
-              pending={archiving}
-              onConfirm={onArchive}
-            />
+            {archived ? (
+              <UnarchiveCard
+                copy={copy}
+                workspaceName={workspaceName ?? ""}
+                canUnarchive={canUnarchive && !!onUnarchive}
+                disabled={!versionAvailable || !workspaceName}
+                pending={unarchiving}
+                onConfirm={() => onUnarchive?.()}
+              />
+            ) : (
+              <DangerFlow
+                copy={copy}
+                texts={{
+                  title: copy.danger.archiveTitle,
+                  description: copy.danger.archiveDescription,
+                  action: copy.danger.archiveAction,
+                  pending: copy.danger.archiving,
+                  confirmTitle: copy.danger.confirmTitle,
+                  confirmDescription: copy.danger.confirmDescription,
+                  confirmAction: copy.danger.confirmAction,
+                }}
+                workspaceName={workspaceName ?? ""}
+                disabled={!versionAvailable || !workspaceName}
+                pending={archiving}
+                onConfirm={onArchive}
+              />
+            )}
+            {canTransfer ? (
+              <TransferOwnershipFlow
+                copy={copy}
+                workspaceName={workspaceName ?? ""}
+                candidates={transferCandidates}
+                disabled={!versionAvailable || !workspaceName}
+                stepUp={ownershipStepUp}
+                onTransfer={onTransfer}
+                onReload={onReload}
+                onInvite={onInviteForTransfer}
+              />
+            ) : null}
             {canDelete ? (
               <DangerFlow
                 copy={copy}

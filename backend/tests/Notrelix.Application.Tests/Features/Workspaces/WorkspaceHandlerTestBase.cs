@@ -44,6 +44,10 @@ public abstract class WorkspaceHandlerTestBase
             .ReturnsAsync(
                 (Guid workspaceId, CancellationToken _) =>
                     workspaces.SingleOrDefault(w => w.Id == workspaceId));
+        LockerMock.Setup(l => l.LockWorkspaceIncludingArchivedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                (Guid workspaceId, CancellationToken _) =>
+                    workspaces.SingleOrDefault(w => w.Id == workspaceId));
     }
 
     protected void SetupMembers(params WorkspaceMember[] members) =>
@@ -61,11 +65,13 @@ public abstract class WorkspaceHandlerTestBase
     protected void SetupTeamMembers(params TeamMember[] teamMembers) =>
         DbContextMock.Setup(c => c.TeamMembers).Returns(CreateAsyncDbSet(teamMembers.ToList()));
 
-    protected Workspace CreateWorkspace(Guid? id = null, bool isArchived = false)
+    protected Workspace CreateWorkspace(Guid? id = null, bool isArchived = false, bool guestInvites = false)
     {
         var ws = Workspace.Create(TestAccountId, TestUserId, "Test Workspace", "test-workspace", TestNow, "Description");
         if (id.HasValue)
             ws.GetType().GetProperty(nameof(Workspace.Id))!.SetValue(ws, id.Value);
+        if (guestInvites)
+            ws.UpdateSettings(WorkspaceSettings.Create(allowGuestInvites: true), TestUserId, TestNow);
         if (isArchived)
             ws.Archive(TestUserId, TestNow.AddDays(1));
         return ws;

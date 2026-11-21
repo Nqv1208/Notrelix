@@ -24,6 +24,7 @@ import {
   validationProblem,
 } from "./chat-access";
 import { CHAT_ERROR, CHAT_RULE } from "./chat-model";
+import { deliverRemovalNotification } from "./chat-notifications";
 import {
   PERMISSION_OVERRIDES_MAX,
   normalizeEntries,
@@ -208,6 +209,7 @@ export const permissionsOperations = [
         message.deletedBy = caller.userId;
         message.version += 1;
         announceMessageEvent(state, space, message, "chat.message.deleted");
+        deliverRemovalNotification(state, space, message, caller.userId);
         removePin(state, space, message.id);
         removeReactionsOf(state, message.id);
         removeAttachmentsOf(state, message.id);

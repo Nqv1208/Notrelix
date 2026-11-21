@@ -3,6 +3,7 @@ import { ChevronLeft, Search } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import type { BoardSettingsFieldType } from "@notrelix/work-management-core";
 import type { BoardSettingsCopy } from "./board-settings.copy";
+import type { RelationBoardChoice } from "./board-settings-types";
 import { TypeMark, fieldIcon } from "./board-settings-parts";
 
 type PickableType = keyof BoardSettingsCopy["picker"]["names"];
@@ -27,16 +28,19 @@ const GROUPS: readonly {
 export function FieldTypePicker({
   copy,
   allowed,
+  boards,
   onPick,
 }: {
   copy: BoardSettingsCopy;
   /** The types a field can be created as; absent = all. */
   allowed?: readonly BoardSettingsFieldType[];
+  /** The boards a Relation field can point at; absent while they are being read. */
+  boards?: readonly RelationBoardChoice[];
   /** `settings` is the settings JSON the type needs at creation (a People field's `{"multiple":true}`). */
   onPick: (type: BoardSettingsFieldType, settings?: string) => void;
 }) {
   // A People field asks one more question, in place: how many people it holds.
-  const [asking, setAsking] = useState(false);
+  const [asking, setAsking] = useState<"person" | "relation" | null>(null);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<PickableType>("date");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,8 +69,68 @@ export function FieldTypePicker({
   }
 
   function pick(type: PickableType) {
-    if (type === "person") setAsking(true);
+    if (type === "person" || type === "relation") setAsking(type);
     else onPick(type);
+  }
+
+  if (asking === "relation") {
+    const kind = copy.picker.relationKind;
+    return (
+      <div role="group" aria-label={kind.title}>
+        <div className="flex h-[43px] items-center gap-2 border-b border-line px-2.5 text-item-ui">
+          <button
+            type="button"
+            aria-label={kind.back}
+            onClick={() => setAsking(null)}
+            className="grid size-7.5 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <ChevronLeft aria-hidden="true" className="size-4" />
+          </button>
+          <b className="font-semibold">{kind.title}</b>
+        </div>
+        <div className="max-h-64 overflow-auto px-2.5 py-2.5">
+          {boards === undefined ? (
+            <p
+              role="status"
+              className="m-0 px-1.5 text-item-small text-meta-foreground"
+            >
+              {kind.loading}
+            </p>
+          ) : boards.length === 0 ? (
+            <p className="m-0 px-1.5 text-item-small text-meta-foreground">
+              {kind.none}
+            </p>
+          ) : (
+            boards.map((board) => (
+              <button
+                key={board.id}
+                type="button"
+                disabled={board.locked}
+                onClick={() =>
+                  onPick(
+                    "relation",
+                    JSON.stringify({ targetBoardId: board.id }),
+                  )
+                }
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent px-2 py-[7px] text-left text-item-small outline-none hover:bg-row-selected focus-visible:bg-row-selected focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                <b className="min-w-0 flex-1 truncate font-semibold">
+                  {board.title}
+                </b>
+                {board.locked ? (
+                  <small className="text-[11.5px] text-meta-foreground">
+                    {kind.locked}
+                  </small>
+                ) : null}
+              </button>
+            ))
+          )}
+        </div>
+        <p className="m-0 border-t border-line bg-background px-3.5 py-2.5 text-crumb leading-normal text-muted-foreground">
+          {kind.note}
+        </p>
+      </div>
+    );
   }
 
   if (asking) {
@@ -77,7 +141,7 @@ export function FieldTypePicker({
           <button
             type="button"
             aria-label={kind.back}
-            onClick={() => setAsking(false)}
+            onClick={() => setAsking(null)}
             className="grid size-7.5 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-meta-foreground outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <ChevronLeft aria-hidden="true" className="size-4" />

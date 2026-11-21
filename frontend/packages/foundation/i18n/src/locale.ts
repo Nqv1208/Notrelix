@@ -3,7 +3,7 @@
  *
  * Detection order (WX-FND-006): stored preference → browser languages →
  * Vietnamese. Host-neutral: the host passes storage and browser languages in;
- * this module never reads `navigator` or `localStorage` itself.
+ * this module never reads the browser's navigator or storage itself.
  */
 
 export const SUPPORTED_LOCALES = ["vi", "en"] as const;

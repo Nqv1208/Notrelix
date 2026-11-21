@@ -1,10 +1,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, Plus, X } from "lucide-react";
 import { Button, Input } from "@notrelix/ui-web";
-import { ITEM_TITLE_MAX_LENGTH } from "@notrelix/work-management-core";
+import { ITEM_TITLE_MAX_LENGTH, limitOf } from "@notrelix/work-management-core";
 import { fillCopy } from "./kanban-card.copy";
 import type { KanbanLaneCopy } from "./kanban-lane.copy";
-import { limitOf } from "@notrelix/work-management-state";
 
 /**
  * "Thêm vào {lane}": a lane footer button that opens an inline title field.

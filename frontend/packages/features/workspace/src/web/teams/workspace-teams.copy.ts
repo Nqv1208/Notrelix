@@ -35,6 +35,8 @@ export const en = {
     },
     peopleCount: "{{count}} people",
     unused: "Not used anywhere yet",
+    needsLead: "Needs a Team lead",
+    needsLeadSummary: "{{count}} without a Team lead",
     archivedSection: "Archived {{count}}",
     archivedNote:
       "The Team's access is paused; restore it and the access comes back",
@@ -57,6 +59,32 @@ export const en = {
     },
     departmentName: "{{name}}",
   },
+  deleted: {
+    viewLabel: "Show Teams",
+    inUse: "In use",
+    tab: "Deleted",
+    tableLabel: "Deleted Teams in {{workspace}}",
+    head: {
+      team: "Team",
+      deletedBy: "Deleted by",
+      people: "People",
+      deletedAt: "Deleted",
+    },
+    line: "Deleted {{date}}",
+    unknownPerson: "Someone who left",
+    summary: "{{count}} deleted",
+    restore: "Restore",
+    restoreLabel: "Restore {{name}}",
+    restoring: "Restoring…",
+    loading: "Loading deleted Teams",
+    error: "The deleted Teams couldn't load. Your Teams are unchanged.",
+    retry: "Try again",
+    empty: {
+      title: "No deleted Teams",
+      text: "A Team you delete waits here, so you can restore it together with its people.",
+    },
+    noMatches: "No deleted Team matches the search.",
+  },
   deny: {
     title: "Only workspace admins manage Teams.",
     text: "To create a Team, change who is in one or archive it, message one of the people below. You keep working in your departments and Boards as usual.",
@@ -72,6 +100,7 @@ export const en = {
     metaNoDescription: "Created {{date}} by {{name}}",
     edit: "Edit name and description",
     addPeople: "Add people",
+    addLabel: "Add people to the Team",
     more: "More actions for {{name}}",
     peopleTitle: "People in the Team",
     since: "since {{date}}",
@@ -90,6 +119,7 @@ export const en = {
     leadNote:
       "At least 1 Team lead is required. To change it, promote someone else to Team lead first.",
     addPlaceholder: "Add a person: type a name or email in {{workspace}}",
+    addPlaceholderShort: "Add a person: name or email",
     addHint:
       "Only active members of the workspace can be added. Guests and people who left the workspace are not listed; people outside need an invitation to the workspace first.",
     addNoMatch: "No active member matches “{{query}}”.",
@@ -110,6 +140,8 @@ export const en = {
     archive: "Archive Team",
     archivedBanner:
       "This Team is archived. Restore it to change its people or details.",
+    needsLeadBanner:
+      "This Team needs a Team lead: its last lead left the workspace. Make someone in the Team its lead.",
     restore: "Restore Team",
     editTitle: "Edit name and description",
     editName: "Team name",
@@ -140,22 +172,45 @@ export const en = {
     removeMember: "Remove {{name}}",
   },
   archiveDialog: {
-    title: "Archive {{team}} in {{workspace}}?",
+    title: "Archive {{team}}?",
     lose: "{{count}} people will lose access to {{where}}.{{keep}}",
     loseNone: "Nobody loses access: the Team is not used anywhere.",
     keep: " {{name}} keeps it because they were added directly.",
     lostLine: "lost access to {{where}}",
     keptLine: "stays {{role}}, added directly",
     footnote:
-      "Archiving doesn't delete the Team; restore it and the access comes back. Work assigned to them keeps its assignee.",
+      "Archiving doesn't delete the Team from {{workspace}}; restore it and the access comes back. Work assigned to them keeps its assignee.",
     cancel: "Cancel",
     confirm: "Archive Team",
     confirming: "Archiving…",
   },
+  deleteDialog: {
+    action: "Delete Team",
+    title: "Delete {{team}}?",
+    text: "{{team}} is not used by any Space. Its people keep every other kind of access. You can restore the Team after deleting it.",
+    confirm: "Delete Team",
+    confirming: "Deleting…",
+    cancel: "Cancel",
+    refusedTitle: "{{team}} can't be deleted yet",
+    refusedText:
+      "The Team is still used by the Spaces below. Remove it from them first, then delete it.",
+    spaceKind: "Space",
+    others: "and others you cannot see",
+    understood: "Got it",
+    conflict:
+      "This Team just changed. Reload to see the latest, then delete it again.",
+    reload: "Reload",
+    denied:
+      "You don't have permission to delete this Team. Only owners and admins can.",
+    failed: "The Team wasn't deleted. Nothing changed; try again.",
+  },
   security: {
     title: "Sharing and security",
     description:
-      "Rules for every Board and page in {{workspace}}. Only the owner and workspace admins can change them.",
+      "Rules for every Board and page in {{workspace}}. Only the workspace owner can change them.",
+    loading: "Loading sharing and security",
+    error: "Sharing and security couldn't load. Nothing was changed.",
+    retry: "Try again",
     link: {
       title: "Sharing links",
       text: "When off, every sharing link in the workspace stops working; links are not deleted, and turning it on again makes the unexpired ones work again.",
@@ -192,7 +247,7 @@ export const en = {
       title: "Company domain",
       text: "Only shown and suggested when inviting; it does not decide who is a guest. A guest is decided by the role in the workspace, so a person with a company email can still be a guest.",
     },
-    readOnly: "Only the owner and workspace admins change these rules.",
+    readOnly: "Only the workspace owner changes these rules.",
   },
   nav: { teams: "Teams" },
   list: {
@@ -343,6 +398,10 @@ export const en = {
     memberAdded: "{{name}} was added to the Team.",
     memberRemoved: "{{name}} was removed from the Team.",
     roleChanged: "{{name}} is now {{role}}.",
+    deleted: "{{name}} was deleted.",
+    restore: "Restore",
+    restored: "{{name}} was restored.",
+    restoreFailed: "{{name}} wasn't restored.",
   },
 };
 
@@ -381,6 +440,8 @@ export const vi: WorkspaceTeamsCopy = {
     },
     peopleCount: "{{count}} người",
     unused: "Chưa dùng ở đâu",
+    needsLead: "Chưa có trưởng nhóm",
+    needsLeadSummary: "{{count}} nhóm chưa có trưởng nhóm",
     archivedSection: "Đã lưu trữ {{count}}",
     archivedNote: "Quyền của nhóm tạm ngừng; khôi phục thì quyền quay lại",
     archivedLine: "Lưu trữ {{date}} · {{name}}",
@@ -406,6 +467,32 @@ export const vi: WorkspaceTeamsCopy = {
     },
     departmentName: "Phòng {{name}}",
   },
+  deleted: {
+    viewLabel: "Hiển thị nhóm",
+    inUse: "Đang dùng",
+    tab: "Đã xoá",
+    tableLabel: "Nhóm đã xoá trong {{workspace}}",
+    head: {
+      team: "Nhóm",
+      deletedBy: "Người xoá",
+      people: "Người",
+      deletedAt: "Xoá lúc",
+    },
+    line: "Xoá {{date}}",
+    unknownPerson: "Người đã rời đi",
+    summary: "{{count}} nhóm đã xoá",
+    restore: "Khôi phục",
+    restoreLabel: "Khôi phục {{name}}",
+    restoring: "Đang khôi phục…",
+    loading: "Đang tải nhóm đã xoá",
+    error: "Không tải được nhóm đã xoá. Các nhóm của bạn không thay đổi.",
+    retry: "Thử lại",
+    empty: {
+      title: "Chưa có nhóm nào bị xoá",
+      text: "Nhóm bị xoá nằm ở đây để khôi phục, cùng với các thành viên của nhóm.",
+    },
+    noMatches: "Không có nhóm đã xoá nào khớp.",
+  },
   deny: {
     title: "Chỉ quản trị workspace quản lý nhóm.",
     text: "Cần tạo nhóm, đổi người trong nhóm hay lưu trữ nhóm, nhắn một trong những người dưới đây. Bạn vẫn làm việc ở các phòng ban và board của mình như bình thường.",
@@ -421,6 +508,7 @@ export const vi: WorkspaceTeamsCopy = {
     metaNoDescription: "Tạo {{date}} bởi {{name}}",
     edit: "Sửa tên và mô tả",
     addPeople: "Thêm người",
+    addLabel: "Thêm người vào nhóm",
     more: "Thao tác khác với {{name}}",
     peopleTitle: "Người trong nhóm",
     since: "từ {{date}}",
@@ -439,6 +527,7 @@ export const vi: WorkspaceTeamsCopy = {
     leadNote:
       "Phải còn ít nhất 1 trưởng nhóm. Muốn đổi, nâng một người khác lên Trưởng nhóm trước.",
     addPlaceholder: "Thêm người: gõ tên hoặc email trong {{workspace}}",
+    addPlaceholderShort: "Thêm người: tên hoặc email",
     addHint:
       "Chỉ thêm được thành viên đang hoạt động của workspace. Khách và người đã rời workspace không có trong danh sách; người ngoài cần lời mời vào workspace trước.",
     addNoMatch: "Không có thành viên nào khớp “{{query}}”.",
@@ -459,6 +548,8 @@ export const vi: WorkspaceTeamsCopy = {
     archive: "Lưu trữ nhóm",
     archivedBanner:
       "Nhóm này đã lưu trữ. Khôi phục để đổi người hoặc thông tin của nhóm.",
+    needsLeadBanner:
+      "Nhóm cần một trưởng nhóm: trưởng nhóm cuối cùng đã rời workspace. Hãy chọn một người trong nhóm làm trưởng nhóm.",
     restore: "Khôi phục nhóm",
     editTitle: "Sửa tên và mô tả",
     editName: "Tên nhóm",
@@ -489,22 +580,44 @@ export const vi: WorkspaceTeamsCopy = {
     removeMember: "Bỏ {{name}}",
   },
   archiveDialog: {
-    title: "Lưu trữ {{team}} trong {{workspace}}?",
+    title: "Lưu trữ {{team}}?",
     lose: "{{count}} người sẽ mất quyền vào {{where}}.{{keep}}",
     loseNone: "Không ai mất quyền: nhóm chưa được dùng ở đâu.",
     keep: " {{name}} vẫn còn vì được thêm trực tiếp.",
     lostLine: "mất quyền vào {{where}}",
     keptLine: "vẫn là {{role}}, thêm trực tiếp",
     footnote:
-      "Lưu trữ không xoá nhóm; khôi phục thì quyền quay lại. Việc đang giao cho họ vẫn giữ người phụ trách.",
+      "Lưu trữ không xoá nhóm khỏi {{workspace}}; khôi phục thì quyền quay lại. Việc đang giao cho họ vẫn giữ người phụ trách.",
     cancel: "Huỷ",
     confirm: "Lưu trữ nhóm",
     confirming: "Đang lưu trữ…",
   },
+  deleteDialog: {
+    action: "Xoá nhóm",
+    title: "Xoá {{team}}?",
+    text: "{{team}} không còn được dùng ở phòng ban nào. Mọi người trong nhóm giữ nguyên các quyền khác. Bạn khôi phục được nhóm sau khi xoá.",
+    confirm: "Xoá nhóm",
+    confirming: "Đang xoá…",
+    cancel: "Huỷ",
+    refusedTitle: "Chưa xoá được {{team}}",
+    refusedText:
+      "Nhóm vẫn được dùng ở các phòng ban dưới đây. Gỡ nhóm khỏi chúng trước, rồi xoá lại.",
+    spaceKind: "Phòng ban",
+    others: "và các mục khác bạn không có quyền xem",
+    understood: "Đã hiểu",
+    conflict: "Nhóm vừa thay đổi. Tải lại để xem bản mới, rồi xoá lại.",
+    reload: "Tải lại",
+    denied:
+      "Bạn không có quyền xoá nhóm này. Chỉ chủ sở hữu và quản trị viên xoá được.",
+    failed: "Chưa xoá được nhóm. Chưa có gì thay đổi; hãy thử lại.",
+  },
   security: {
     title: "Chia sẻ và bảo mật",
     description:
-      "Quy định chung cho mọi board và trang trong {{workspace}}. Chỉ chủ sở hữu và quản trị workspace đổi được.",
+      "Quy định chung cho mọi board và trang trong {{workspace}}. Chỉ chủ sở hữu workspace đổi được.",
+    loading: "Đang tải chia sẻ và bảo mật",
+    error: "Không tải được chia sẻ và bảo mật. Chưa có gì thay đổi.",
+    retry: "Thử lại",
     link: {
       title: "Liên kết chia sẻ",
       text: "Khi tắt, mọi liên kết chia sẻ trong workspace ngừng hoạt động; liên kết không bị xoá, bật lại thì liên kết chưa hết hạn chạy lại.",
@@ -541,13 +654,13 @@ export const vi: WorkspaceTeamsCopy = {
       title: "Tên miền công ty",
       text: "Chỉ để hiển thị và gợi ý khi mời; không dùng để quyết định ai là khách. Ai là khách do vai trò trong workspace quyết định, nên người dùng email công ty vẫn có thể là khách.",
     },
-    readOnly: "Chỉ chủ sở hữu và quản trị workspace đổi được các quy định này.",
+    readOnly: "Chỉ chủ sở hữu workspace đổi được các quy định này.",
   },
   nav: { teams: "Nhóm" },
   list: {
     title: "Nhóm",
     description:
-      "Các nhóm người mà Không gian và chia sẻ có thể nhắm tới cùng lúc.",
+      "Các nhóm người mà phòng ban và chia sẻ có thể nhắm tới cùng lúc.",
     new: "Nhóm mới",
     filterLabel: "Hiển thị nhóm",
     filter: { active: "Đang hoạt động", archived: "Đã lưu trữ" },
@@ -558,7 +671,7 @@ export const vi: WorkspaceTeamsCopy = {
     empty: {
       title: "Chưa có nhóm nào",
       description:
-        "Nhóm gom mọi người lại để bạn thêm họ vào một Không gian chỉ bằng một bước.",
+        "Nhóm gom mọi người lại để bạn thêm họ vào một phòng ban chỉ bằng một bước.",
       archivedTitle: "Không có nhóm nào đã lưu trữ",
       archivedDescription: "Những nhóm bạn lưu trữ sẽ nằm ở đây.",
     },
@@ -693,6 +806,10 @@ export const vi: WorkspaceTeamsCopy = {
     memberAdded: "Đã thêm {{name}} vào nhóm.",
     memberRemoved: "Đã xóa {{name}} khỏi nhóm.",
     roleChanged: "{{name}} giờ là {{role}}.",
+    deleted: "Đã xoá {{name}}.",
+    restore: "Khôi phục",
+    restored: "Đã khôi phục {{name}}.",
+    restoreFailed: "Chưa khôi phục được {{name}}.",
   },
 };
 

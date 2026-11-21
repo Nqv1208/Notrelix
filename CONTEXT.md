@@ -1059,7 +1059,7 @@ RabbitMQ 4.3              optional messaging profile
 .NET SDK 9 backend
 Node 22 marketing host
 Node 22 web host
-Nginx 1.29 gateway
+Nginx 1.30.7 gateway
 pgAdmin 9                 optional tools profile
 ```
 

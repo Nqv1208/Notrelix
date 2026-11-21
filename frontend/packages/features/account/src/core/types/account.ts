@@ -74,7 +74,9 @@ export type AccountActivityType =
   | "MfaEnabled"
   | "MfaDisabled"
   | "SessionRevoked"
-  | "OtherSessionsRevoked";
+  | "OtherSessionsRevoked"
+  | "ProviderLinked"
+  | "ProviderUnlinked";
 
 export interface AccountActivityEntry {
   readonly id: string;
@@ -111,7 +113,55 @@ export type StepUpPurpose =
   | "RegenerateRecoveryCodes"
   | "ChangePassword"
   | "RevokeOtherSessions"
-  | "EnrollMfa";
+  | "EnrollMfa"
+  | "LinkOAuth"
+  | "UnlinkOAuth"
+  | "ChangeSecurityIdentity"
+  | "IssueApiToken"
+  | "TransferWorkspaceOwnership";
+
+/** What a handover proof is for: the workspace and the person who becomes Owner. The producer refuses the proof for any other. */
+export interface StepUpTarget {
+  readonly workspaceId: string;
+  readonly newOwnerId: string;
+}
+
+/** What a token may do: read or write one context (`work`, `docs`, `chat`), or read the workspace itself. Write does not imply read. */
+export const ACCOUNT_TOKEN_SCOPES = [
+  "work:read",
+  "work:write",
+  "docs:read",
+  "docs:write",
+  "chat:read",
+  "chat:write",
+  "workspace:read",
+] as const;
+export type AccountTokenScope = (typeof ACCOUNT_TOKEN_SCOPES)[number];
+
+/** One API token of a workspace; never the secret, only the last characters. */
+export interface AccountApiToken {
+  readonly id: string;
+  readonly name: string;
+  readonly status: "active" | "revoked" | "expired";
+  readonly lastUsedAt: string | null;
+  readonly expiresAt: string | null;
+  readonly createdAt: string;
+  /** `null` for a token issued before the suffix was kept. */
+  readonly suffix: string | null;
+  /** Fixed at issue. Empty only for a token that carries none, which reaches nothing. */
+  readonly scopes: readonly AccountTokenScope[];
+  /** Why a revoked token stopped; `null` while it is active or when it was revoked before the reason was kept. */
+  readonly revokedReason?: AccountApiTokenRevokedReason | null;
+}
+
+/** Revoked by a person from this page, or because its issuer was removed, suspended or left the workspace. */
+export type AccountApiTokenRevokedReason =
+  "manual" | "member-removed" | "member-suspended" | "member-left";
+
+export interface AccountApiTokenPage {
+  readonly items: readonly AccountApiToken[];
+  readonly nextCursor: string | null;
+}
 
 export interface StepUpRequirement {
   readonly factor: StepUpFactor;

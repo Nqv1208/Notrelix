@@ -574,7 +574,10 @@ export function SpaceHead({
             {copy.tree.archived}
           </span>
         ) : null}
-        <div data-f="acts" className="relative ml-auto flex items-center gap-2">
+        <div
+          data-f="acts"
+          className="relative ml-auto flex flex-wrap items-center gap-2 max-md:ml-0"
+        >
           {people ? (
             <AvatarStack
               people={people.avatars}

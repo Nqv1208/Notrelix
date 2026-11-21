@@ -1,6 +1,9 @@
 import * as React from "react";
 import {
   Bell,
+  KeyRound,
+  Mail,
+  Link2,
   LayoutGrid,
   Palette,
   Shield,
@@ -18,7 +21,14 @@ import { Avatar, FOCUS } from "../shared/account-parts";
  */
 
 export type AccountTab =
-  "profile" | "appearance" | "security" | "notifications" | "workspaces";
+  | "profile"
+  | "appearance"
+  | "security"
+  | "email"
+  | "providers"
+  | "notifications"
+  | "tokens"
+  | "workspaces";
 
 export interface AccountFrameLink {
   readonly href: string;
@@ -48,11 +58,22 @@ const ICONS: Record<AccountTab, LucideIcon> = {
   appearance: Palette,
   security: Shield,
   notifications: Bell,
+  email: Mail,
+  providers: Link2,
+  tokens: KeyRound,
   workspaces: LayoutGrid,
 };
 
 const GROUPS: readonly (readonly AccountTab[])[] = [
-  ["profile", "appearance", "security", "notifications"],
+  [
+    "profile",
+    "appearance",
+    "security",
+    "email",
+    "providers",
+    "notifications",
+    "tokens",
+  ],
   ["workspaces"],
 ];
 

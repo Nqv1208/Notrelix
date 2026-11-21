@@ -261,3 +261,71 @@ describe("useMarkRead", () => {
     expect(markRead).toHaveBeenCalledWith(WORKSPACE, general, 310);
   });
 });
+
+describe("useSendMessage while the first window loads", () => {
+  it("keeps the own bubble and lets the first window land, so the list is not left loading", async () => {
+    const store = new MockStore({ ...defaultConfig });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const client = createNotrelixClient({
+      baseUrl: "http://localhost:8000/api/v1",
+      fetchImpl: async (input, init) => {
+        const url = new URL(
+          String(input instanceof Request ? input.url : input),
+        );
+        if (
+          (init?.method ?? "GET") === "GET" &&
+          url.pathname.endsWith("/messages")
+        ) {
+          await gate;
+        }
+        return createMockFetch(store)(input, init);
+      },
+    });
+    const hooks = createChatHooks({
+      api: client.api,
+      endpoints: client.endpoints,
+    });
+    const viewer = store.getCurrentUser().id;
+    const general = await channelIdNamed(hooks, "general");
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(
+      () => ({
+        list: hooks.useMessages(WORKSPACE, general, { kind: "latest" }),
+        send: hooks.useSendMessage(WORKSPACE, general, viewer),
+        pending: hooks.usePendingSends(WORKSPACE, general),
+      }),
+      { wrapper: wrap },
+    );
+    expect(result.current.list.isPending).toBe(true);
+
+    act(() => {
+      result.current.send.send("sent during load");
+    });
+    await waitFor(() => expect(result.current.pending.data).toHaveLength(1));
+    await act(async () => {
+      release();
+    });
+    // The window lands: the send must not have cancelled the first fetch for good.
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true), {
+      timeout: 3000,
+    });
+    await waitFor(() =>
+      expect(
+        flattenPages(result.current.list.data).filter(
+          (m) => m.content === "sent during load",
+        ),
+      ).toHaveLength(1),
+    );
+  });
+});

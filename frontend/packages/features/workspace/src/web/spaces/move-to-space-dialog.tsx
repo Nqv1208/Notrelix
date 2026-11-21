@@ -73,6 +73,12 @@ export interface MoveToSpaceDialogProps {
   readonly submitBlocked?: boolean;
 }
 
+/** Why an option is disabled: the pill shows `short`, the tooltip and screen-reader note carry `full`. */
+interface MoveReason {
+  readonly full: string;
+  readonly short: string;
+}
+
 const ROOT_VALUE = "__root__";
 const INDENT = 16;
 /** Fixed option height (`h-9`), used by windowing. */
@@ -159,18 +165,24 @@ export function MoveToSpaceDialog({
     !pending && !submitBlocked && choice !== null && choice !== currentValue;
   const name = subject.kind === "space" ? subject.space.name : subject.name;
 
-  const reasonFor = (spaceId: string): string | null => {
-    if (spaceId === currentParent) return copy.move.current;
-    if (excluded.has(spaceId)) return copy.move.descendant;
-    if (!targets.spaceIds.has(spaceId)) return copy.move.unavailable;
+  const current: MoveReason = {
+    full: copy.move.current,
+    short: copy.move.currentShort,
+  };
+  const unavailable: MoveReason = {
+    full: copy.move.unavailable,
+    short: copy.move.unavailableShort,
+  };
+  const reasonFor = (spaceId: string): MoveReason | null => {
+    if (spaceId === currentParent) return current;
+    if (excluded.has(spaceId)) {
+      return { full: copy.move.descendant, short: copy.move.descendantShort };
+    }
+    if (!targets.spaceIds.has(spaceId)) return unavailable;
     return null;
   };
   const rootReason =
-    currentParent === null
-      ? copy.move.current
-      : targets.root
-        ? null
-        : copy.move.unavailable;
+    currentParent === null ? current : targets.root ? null : unavailable;
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -278,8 +290,8 @@ interface PickerListProps {
   readonly index: SpaceIndex;
   readonly selected: string;
   readonly onSelect: (value: string) => void;
-  readonly reasonFor: (spaceId: string) => string | null;
-  readonly rootReason: string | null;
+  readonly reasonFor: (spaceId: string) => MoveReason | null;
+  readonly rootReason: MoveReason | null;
   readonly rootLabel: string;
   readonly copy: WorkspaceSpacesCopy;
   readonly showNoMatches: boolean;
@@ -320,7 +332,7 @@ function PickerList({
   const entryCount = rows.length + 1;
   const valueAt = (position: number): string =>
     position === 0 ? ROOT_VALUE : rows[position - 1]!.node.id;
-  const reasonAt = (position: number): string | null =>
+  const reasonAt = (position: number): MoveReason | null =>
     position === 0 ? rootReason : reasonFor(valueAt(position));
   const positionByValue = React.useMemo(() => {
     const map = new Map<string, number>([[ROOT_VALUE, 0]]);
@@ -540,7 +552,7 @@ function PickerOption({
 }: {
   value: string;
   selected: boolean;
-  disabledReason: string | null;
+  disabledReason: MoveReason | null;
   level: number;
   label: string;
   path?: string;
@@ -555,7 +567,7 @@ function PickerOption({
       htmlFor={id}
       style={{ paddingInlineStart: `${level * INDENT + 8}px` }}
       className={cn(
-        "flex h-9 items-center gap-2 rounded-md pr-2 max-md:h-touch",
+        "flex h-9 min-w-0 items-center gap-2 rounded-md pr-2 max-md:h-touch",
         disabled
           ? "cursor-not-allowed text-muted-foreground"
           : "cursor-pointer hover:bg-state-hover",
@@ -579,13 +591,17 @@ function PickerOption({
         />
       ) : null}
       {disabledReason ? (
-        <Badge variant="outline" className="shrink-0 font-normal">
-          {disabledReason}
+        <Badge
+          variant="outline"
+          title={disabledReason.full}
+          className="min-w-0 max-w-[55%] justify-start font-normal max-md:max-w-[40%]"
+        >
+          <span className="min-w-0 truncate">{disabledReason.short}</span>
         </Badge>
       ) : null}
       {disabledReason || path ? (
         <span id={`${id}-note`} className="sr-only">
-          {[path, disabledReason].filter(Boolean).join(". ")}
+          {[path, disabledReason?.full].filter(Boolean).join(". ")}
         </span>
       ) : null}
     </label>

@@ -205,7 +205,7 @@ describe("auth sign-in surface", () => {
       "Minh An Group dùng đăng nhập một lần qua Microsoft Entra",
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Tiếp tục với Microsoft Entra" }),
+      screen.getByRole("button", { name: "Tiếp tục với Minh An Group" }),
     );
     fireEvent.click(screen.getByRole("button", { name: copy.sso.other }));
     expect(onSso).toHaveBeenCalledTimes(1);

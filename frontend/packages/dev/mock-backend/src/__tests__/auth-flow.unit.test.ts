@@ -20,7 +20,7 @@ describe("how an email signs in", () => {
       `Thu.Ha@${MOCK_AUTH.ssoDomain.toUpperCase()}`,
     );
     expect(company.method).toBe("sso");
-    expect(company.sso?.providerLabel).toBe("Microsoft Entra");
+    expect(company.sso?.providerLabel).toBe("OpenID Connect");
     expect(auth.identify("ai-do@example.com").method).toBe("password");
     // An unknown address is not told apart from a known one.
     expect(auth.identify("khong-co@gmail.com")).toEqual(

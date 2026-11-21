@@ -50,6 +50,13 @@ public sealed class ChatDigestFacts(IChatDbContext db) : IChatDigestFacts
                     .ToListAsync(cancellationToken))
                 .ToDictionary(f => f.RootMessageId);
 
+        // The link opens the message; a thread reply opens the message that started the thread (a reply has no address of its own).
+        var rootSequences = rootIds.Count == 0
+            ? new Dictionary<Guid, long>()
+            : await db.ChatMessages.AsNoTracking()
+                .Where(m => m.WorkspaceId == workspaceId && spaceIds.Contains(m.SpaceId) && rootIds.Contains(m.Id))
+                .ToDictionaryAsync(m => m.Id, m => m.Sequence, cancellationToken);
+
         var facts = new List<ChatDigestFact>();
         foreach (var candidate in candidates)
         {
@@ -89,7 +96,7 @@ public sealed class ChatDigestFacts(IChatDbContext db) : IChatDigestFacts
                 candidate.Reason,
                 candidate.At,
                 Shorten(message.Content),
-                Path(workspaceId, space)));
+                Path(workspaceId, space, message.ThreadRootId is { } threadRoot ? rootSequences.GetValueOrDefault(threadRoot) : message.Sequence)));
         }
 
         return facts;
@@ -98,6 +105,9 @@ public sealed class ChatDigestFacts(IChatDbContext db) : IChatDigestFacts
     private static string? Shorten(string? content) =>
         content is null || content.Length <= IChatDigestFacts.PreviewMaxLength ? content : content[..IChatDigestFacts.PreviewMaxLength];
 
-    private static string Path(Guid workspaceId, Space space) =>
-        space.IsConversation ? $"/workspaces/{workspaceId}/chat/dm/{space.Id}" : $"/workspaces/{workspaceId}/chat/{space.Id}";
+    private static string Path(Guid workspaceId, Space space, long sequence)
+    {
+        var path = space.IsConversation ? $"/workspaces/{workspaceId}/chat/dm/{space.Id}" : $"/workspaces/{workspaceId}/chat/{space.Id}";
+        return sequence > 0 ? $"{path}?m={sequence}" : path;
+    }
 }

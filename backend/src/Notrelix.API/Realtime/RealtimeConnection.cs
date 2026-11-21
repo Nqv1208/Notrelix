@@ -22,6 +22,8 @@ public sealed class RealtimeConnection
     private readonly IRealtimeAccessSignalSource? _accessSource;
     private readonly Dictionary<Guid, IAsyncDisposable> _accessHandles = new();
     private readonly IRealtimeEphemeralBus? _ephemeral;
+    private readonly IRealtimePresenceRegistry? _presenceRegistry;
+    private readonly Guid _connectionId = Guid.NewGuid();
     private readonly ILogger _logger;
     private readonly TimeProvider _clock;
     private readonly object _presenceSync = new();
@@ -53,8 +55,10 @@ public sealed class RealtimeConnection
         ILogger logger,
         TimeProvider? clock = null,
         IRealtimeAccessSignalSource? accessSource = null,
-        IRealtimeEphemeralBus? ephemeralBus = null)
+        IRealtimeEphemeralBus? ephemeralBus = null,
+        IRealtimePresenceRegistry? presenceRegistry = null)
     {
+        _presenceRegistry = presenceRegistry;
         _accessSource = accessSource;
         _ephemeral = ephemeralBus;
         _socket = socket;
@@ -102,7 +106,9 @@ public sealed class RealtimeConnection
 
         Enqueue(RealtimeProtocol.Ready(ConnectionId, _options));
 
-        var send = SendLoopAsync(sendLinked.Token);
+        // The send loop is not cancelled by a close request: cancelling a WebSocket write in flight aborts the socket
+        // and the peer would see a dropped connection instead of the close code. Completing the outbox ends it.
+        var send = SendLoopAsync(requestAborted);
         var receive = ReceiveLoopAsync(receiveLinked.Token);
         var maintain = MaintenanceLoopAsync(sendLinked.Token);
 
@@ -396,7 +402,10 @@ public sealed class RealtimeConnection
         RealtimeProtocol.SubscribeMessage message, RealtimeSubscriptionGrant grant, CancellationToken token)
     {
         await EnsureAccessSignalAsync(grant.WorkspaceId, token).ConfigureAwait(false);
-        var subscription = new Subscription(message.SubscriptionId, message.Scope, grant.WorkspaceId);
+        var subscription = new Subscription(message.SubscriptionId, message.Scope, grant.WorkspaceId)
+        {
+            WorkspaceArchived = grant.WorkspaceArchived,
+        };
         subscription.Handle = await _source.SubscribeAsync(
             message.Scope, notification => OnNotification(subscription, notification), token).ConfigureAwait(false);
 
@@ -539,6 +548,7 @@ public sealed class RealtimeConnection
     {
         // A closing connection tells its spaces the person left (another tab of theirs re-announces within a heartbeat).
         AnnouncePresenceOffline();
+        _presenceRegistry?.Drop(_connectionId);
 
         foreach (var handle in _accessHandles.Values)
         {
@@ -626,7 +636,7 @@ public sealed class RealtimeConnection
             _subscriptions.TryGetValue(message.SubscriptionId, out subscription);
         }
 
-        if (subscription is null || subscription.Scope.Kind != RealtimeScopeKind.Channel || subscription.Cancelled)
+        if (subscription is null || subscription.Scope.Kind != RealtimeScopeKind.Channel || subscription.Cancelled || subscription.WorkspaceArchived)
         {
             return;
         }
@@ -634,13 +644,39 @@ public sealed class RealtimeConnection
         var now = _clock.GetTimestamp();
         lock (subscription.Sync)
         {
-            if (subscription.HasTyped && _clock.GetElapsedTime(subscription.LastTypingTicks, now) < _options.TypingMinInterval)
+            // A stop is never throttled (it only ends an indicator that a start made), and it re-arms the start, so
+            // the next keystroke after a stop is always delivered. Only a start inside an active run is throttled.
+            if (message.Stopped)
+            {
+                if (!subscription.HasTyped)
+                {
+                    return;
+                }
+
+                subscription.HasTyped = false;
+            }
+            else
+            {
+                if (subscription.HasTyped && _clock.GetElapsedTime(subscription.LastTypingTicks, now) < _options.TypingMinInterval)
+                {
+                    return;
+                }
+
+                subscription.HasTyped = true;
+                subscription.LastTypingTicks = now;
+            }
+
+            // Flood bound for start/stop alternation: a window of at most 30 signals per 10 seconds per subscription.
+            if (_clock.GetElapsedTime(subscription.TypingWindowTicks, now) > TimeSpan.FromSeconds(10))
+            {
+                subscription.TypingWindowTicks = now;
+                subscription.TypingWindowCount = 0;
+            }
+
+            if (++subscription.TypingWindowCount > 30)
             {
                 return;
             }
-
-            subscription.HasTyped = true;
-            subscription.LastTypingTicks = now;
         }
 
         var authorization = await _authorizer.AuthorizeAsync(_principal, subscription.Scope, token).ConfigureAwait(false);
@@ -650,8 +686,15 @@ public sealed class RealtimeConnection
             return;
         }
 
+        // The grant just read is fresher than the flag kept on the subscription: an archive since the last pass ends typing now.
+        if (grant.WorkspaceArchived)
+        {
+            subscription.WorkspaceArchived = true;
+            return;
+        }
+
         PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
-            RealtimeEphemeralKinds.Typing, subscription.WorkspaceId, _principal.UserId));
+            RealtimeEphemeralKinds.Typing, subscription.WorkspaceId, _principal.UserId, message.Stopped ? RealtimeEphemeralStates.TypingStop : null));
     }
 
     /// <summary>A presence heartbeat: remembered in memory only, and announced to the channel subscriptions of this connection.</summary>
@@ -685,17 +728,18 @@ public sealed class RealtimeConnection
     {
         lock (_subscriptions)
         {
-            return [.. _subscriptions.Values.Where(s => s.EphemeralHandle is not null && !s.Cancelled)];
+            return [.. _subscriptions.Values.Where(s => s.EphemeralHandle is not null && !s.Cancelled && !s.WorkspaceArchived)];
         }
     }
 
     private void AnnouncePresenceTo(Subscription subscription, string? state, Guid? to = null)
     {
-        if (state is null)
+        if (state is null || subscription.WorkspaceArchived)
         {
             return;
         }
 
+        _presenceRegistry?.Mark(_connectionId, subscription.WorkspaceId, _principal.UserId, state == RealtimePresenceStates.Online);
         PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
             RealtimeEphemeralKinds.Presence, subscription.WorkspaceId, _principal.UserId, state, to));
     }
@@ -770,7 +814,8 @@ public sealed class RealtimeConnection
         {
             case RealtimeEphemeralKinds.Typing:
                 EnqueueEphemeral(subscription, RealtimeProtocol.Typing(
-                    subscription.Id, signal.UserId, (long)_options.TypingExpiry.TotalMilliseconds));
+                    subscription.Id, signal.UserId,
+                    signal.State == RealtimeEphemeralStates.TypingStop ? 0 : (long)_options.TypingExpiry.TotalMilliseconds));
                 break;
             case RealtimeEphemeralKinds.Presence when RealtimePresenceStates.IsValid(signal.State):
                 EnqueueEphemeral(subscription, RealtimeProtocol.Presence(
@@ -894,6 +939,7 @@ public sealed class RealtimeConnection
                     && grant.WorkspaceId == subscription.WorkspaceId;
                 if (stillGranted)
                 {
+                    subscription.WorkspaceArchived = result.Grant!.WorkspaceArchived;
                     continue;
                 }
 
@@ -924,7 +970,10 @@ public sealed class RealtimeConnection
         public IAsyncDisposable? EphemeralHandle { get; set; }
         public bool HasTyped { get; set; }
         public long LastTypingTicks { get; set; }
+        public long TypingWindowTicks { get; set; }
+        public int TypingWindowCount { get; set; }
         public volatile bool Acknowledged;
         public volatile bool Cancelled;
+        public volatile bool WorkspaceArchived;
     }
 }

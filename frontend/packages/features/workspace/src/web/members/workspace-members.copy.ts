@@ -56,6 +56,8 @@ export const en = {
     "last-owner":
       "The only owner. Transfer ownership before changing this role.",
     "owner-by-transfer": "Only an owner can change another owner.",
+    "admin-by-owner": "Only an owner can change an admin.",
+    "owner-only": "Only an owner can change roles.",
     self: "You can't change your own membership here.",
     "not-admin": "Only admins and owners can change this.",
     suspended: "Reactivate this member to change the role.",
@@ -65,6 +67,26 @@ export const en = {
     suspend: "Suspend access",
     activate: "Reactivate access",
     remove: "Remove from workspace",
+    editJobTitle: "Edit job title",
+  },
+  jobTitle: {
+    title: "Job title of {{name}}",
+    description:
+      "The title shows on their profile and in the member list. It changes no role or permission. At most {{max}} characters.",
+    label: "Job title",
+    placeholder: "For example, Engineering lead",
+    save: "Save",
+    saving: "Saving…",
+    cancel: "Cancel",
+    tooLong:
+      "A job title is at most {{max}} characters. Shorten it and save again.",
+    invalid: "That job title isn't valid. Remove line breaks and try again.",
+    conflict:
+      "This profile just changed. Reload to see the latest, then edit the title again.",
+    reload: "Reload",
+    denied:
+      "You don't have permission to edit this person's job title. Only owners and admins can.",
+    failed: "The job title wasn't saved. Nothing changed; try again.",
   },
   confirm: {
     removeTitle: "Remove {{name}}?",
@@ -86,7 +108,34 @@ export const en = {
     cancel: "Cancel",
   },
   invitations: {
+    entries: {
+      label: "Add on joining",
+      hint: "Optional. They join these Teams and Spaces when they accept.",
+      add: "Add a Team or Space",
+      addLabel: "Choose a Team or Space to add",
+      team: "Team",
+      space: "Space",
+      remove: "Remove {{name}}",
+      roleLabel: "Role in {{name}}",
+      teamRoles: { member: "Member", lead: "Lead" },
+      spaceRoles: { viewer: "Viewer", member: "Member", admin: "Admin" },
+      teamsDenied: "You can't add people to Teams, so none are offered.",
+      spacesDenied: "You can't add people to Spaces, so none are offered.",
+      guestNote: "A Guest can't join a Team or be a Space admin.",
+      refused:
+        "A Team or Space you chose can't take this person. Remove it or ask an owner.",
+      notActive:
+        "{{name}} isn't active any more, so it can't take this person. Remove it or choose another.",
+      guestTooPrivileged:
+        "A Guest can't have this role in {{name}}. Choose a lower role or remove it.",
+      guestCannotJoinTeam:
+        "A Guest can't join a Team, so {{name}} can't take this person. Remove it.",
+    },
     formTitle: "Invite by e-mail",
+    invitePeople: "Invite people",
+    cancel: "Cancel",
+    dialogDescription:
+      "They get an e-mail with a link to join. Paste up to 50 addresses, separated by commas or new lines.",
     emailLabel: "E-mail address",
     emailPlaceholder: "name@company.com",
     emailInvalid: "Enter an e-mail address like name@company.com.",
@@ -94,6 +143,8 @@ export const en = {
       "An invitation to {{email}} is already waiting for an answer. Revoke it to send a new one.",
     alreadyMember:
       "{{email}} is already a member of this workspace, so no invitation was sent.",
+    guestInvitesOff:
+      "Guest invites are off in this workspace. Ask the Owner to turn them on.",
     roleLabel: "Role",
     send: "Send invitation",
     sending: "Sending…",
@@ -115,6 +166,20 @@ export const en = {
     emailHint:
       "Invite several people at once: separate the addresses with commas, spaces or new lines.",
     emailInvalidMany: "Check these addresses: {{emails}}",
+    results: {
+      title: "Invitation results",
+      summary:
+        "{{sent}} of {{total}} invitations sent. Each address is handled on its own.",
+      sent: "Sent",
+      alreadyMember: "Already a member",
+      alreadyPending: "Already has a pending invitation",
+      invalid: "Not a valid address or role",
+      guestInvitesOff: "Guest invitations are off",
+      entryRefused:
+        "A Team or Space chosen for this address can't take them. Invite them on their own.",
+      refused: "Refused",
+      done: "Done",
+    },
     tooMany: "Invite up to {{max}} people at a time.",
     adminOnly: "Only workspace admins and owners can invite people.",
   },
@@ -130,6 +195,7 @@ export const en = {
   toasts: {
     roleChanged: "{{name}} is now {{role}}.",
     roleFailed: "{{name}}'s role wasn't changed.",
+    jobTitleSaved: "{{name}}'s job title was saved.",
     removed: "{{name}} was removed from the workspace.",
     removeFailed: "{{name}} wasn't removed.",
     suspended: "{{name}}'s access is suspended.",
@@ -145,8 +211,6 @@ export const en = {
       "The role in the invitation to {{email}} wasn't changed.",
     resent: "Invitation sent again to {{email}}.",
     resendFailed: "The invitation to {{email}} wasn't sent again.",
-    invitedMany: "{{count}} invitations sent.",
-    invitedSome: "{{count}} invitations sent. These were not sent: {{emails}}.",
     forbidden: "You don't have permission to do this. Ask a workspace owner.",
     conflict:
       "Someone else changed this just now. The list was refreshed; review it and try again.",
@@ -214,6 +278,8 @@ export const vi: WorkspaceMembersCopy = {
       "Chủ sở hữu duy nhất. Hãy chuyển quyền sở hữu trước khi đổi vai trò này.",
     "owner-by-transfer":
       "Chỉ chủ sở hữu mới đổi được vai trò của chủ sở hữu khác.",
+    "admin-by-owner": "Chỉ chủ sở hữu mới thay đổi được quản trị viên.",
+    "owner-only": "Chỉ chủ sở hữu đổi được vai trò.",
     self: "Bạn không thể tự thay đổi tư cách thành viên của mình ở đây.",
     "not-admin": "Chỉ quản trị viên và chủ sở hữu mới thay đổi được mục này.",
     suspended: "Hãy kích hoạt lại thành viên này để đổi vai trò.",
@@ -223,6 +289,25 @@ export const vi: WorkspaceMembersCopy = {
     suspend: "Tạm ngưng truy cập",
     activate: "Kích hoạt lại truy cập",
     remove: "Xóa khỏi không gian làm việc",
+    editJobTitle: "Sửa chức danh",
+  },
+  jobTitle: {
+    title: "Chức danh của {{name}}",
+    description:
+      "Chức danh hiện ở hồ sơ và danh sách thành viên. Nó không đổi vai trò hay quyền. Tối đa {{max}} ký tự.",
+    label: "Chức danh",
+    placeholder: "Ví dụ: Kỹ sư trưởng",
+    save: "Lưu",
+    saving: "Đang lưu…",
+    cancel: "Huỷ",
+    tooLong: "Chức danh tối đa {{max}} ký tự. Rút gọn rồi lưu lại.",
+    invalid: "Chức danh không hợp lệ. Bỏ các dấu xuống dòng rồi thử lại.",
+    conflict:
+      "Hồ sơ vừa được người khác sửa. Tải lại để xem bản mới, rồi sửa lại chức danh.",
+    reload: "Tải lại",
+    denied:
+      "Bạn không có quyền sửa chức danh của người này. Chỉ chủ sở hữu và quản trị viên sửa được.",
+    failed: "Chưa lưu được chức danh. Chưa có gì thay đổi; hãy thử lại.",
   },
   confirm: {
     removeTitle: "Xóa {{name}}?",
@@ -244,7 +329,40 @@ export const vi: WorkspaceMembersCopy = {
     cancel: "Hủy",
   },
   invitations: {
+    entries: {
+      label: "Vào cùng",
+      hint: "Tuỳ chọn. Họ vào các nhóm và phòng ban này khi nhận lời mời.",
+      add: "Thêm nhóm hoặc phòng ban",
+      addLabel: "Chọn nhóm hoặc phòng ban để thêm",
+      team: "Nhóm",
+      space: "Phòng ban",
+      remove: "Bỏ {{name}}",
+      roleLabel: "Vai trò trong {{name}}",
+      teamRoles: { member: "Thành viên", lead: "Trưởng nhóm" },
+      spaceRoles: {
+        viewer: "Người xem",
+        member: "Thành viên",
+        admin: "Quản trị",
+      },
+      teamsDenied:
+        "Bạn không thêm người vào nhóm được nên không có nhóm nào để chọn.",
+      spacesDenied:
+        "Bạn không thêm người vào phòng ban được nên không có phòng ban nào để chọn.",
+      guestNote: "Khách không tham gia được nhóm hay làm quản trị phòng ban.",
+      refused:
+        "Nhóm hoặc phòng ban bạn chọn không nhận được người này. Bỏ mục đó hoặc nhờ chủ sở hữu.",
+      notActive:
+        "{{name}} không còn hoạt động nên không nhận được người này. Bỏ mục đó hoặc chọn mục khác.",
+      guestTooPrivileged:
+        "Khách không giữ được vai trò này trong {{name}}. Chọn vai trò thấp hơn hoặc bỏ mục đó.",
+      guestCannotJoinTeam:
+        "Khách không tham gia được nhóm nên {{name}} không nhận được người này. Bỏ mục đó.",
+    },
     formTitle: "Mời qua e-mail",
+    invitePeople: "Mời người",
+    cancel: "Hủy",
+    dialogDescription:
+      "Người nhận được e-mail có liên kết tham gia. Dán tối đa 50 địa chỉ, cách nhau bằng dấu phẩy hoặc xuống dòng.",
     emailLabel: "Địa chỉ e-mail",
     emailPlaceholder: "ten@congty.com",
     emailInvalid: "Nhập địa chỉ e-mail dạng ten@congty.com.",
@@ -252,6 +370,8 @@ export const vi: WorkspaceMembersCopy = {
       "Đã có một lời mời tới {{email}} đang chờ trả lời. Thu hồi lời mời đó để gửi lời mời mới.",
     alreadyMember:
       "{{email}} đã là thành viên của không gian làm việc này nên chưa gửi lời mời.",
+    guestInvitesOff:
+      "Không gian làm việc này đang tắt lời mời khách. Hãy nhờ Chủ sở hữu bật lên.",
     roleLabel: "Vai trò",
     send: "Gửi lời mời",
     sending: "Đang gửi…",
@@ -273,6 +393,20 @@ export const vi: WorkspaceMembersCopy = {
     emailHint:
       "Mời nhiều người một lần: ngăn cách các địa chỉ bằng dấu phẩy, dấu cách hoặc xuống dòng.",
     emailInvalidMany: "Kiểm tra lại các địa chỉ này: {{emails}}",
+    results: {
+      title: "Kết quả gửi lời mời",
+      summary:
+        "Đã gửi {{sent}} trên {{total}} lời mời. Mỗi địa chỉ được xử lý riêng.",
+      sent: "Đã gửi",
+      alreadyMember: "Đã là thành viên",
+      alreadyPending: "Đã có lời mời đang chờ",
+      invalid: "Địa chỉ hoặc vai trò không hợp lệ",
+      guestInvitesOff: "Lời mời khách đang tắt",
+      entryRefused:
+        "Nhóm hoặc phòng ban chọn cho địa chỉ này không nhận được họ. Hãy mời riêng.",
+      refused: "Bị từ chối",
+      done: "Xong",
+    },
     tooMany: "Mỗi lần mời tối đa {{max}} người.",
     adminOnly: "Chỉ quản trị viên và chủ sở hữu mới mời được người khác.",
   },
@@ -289,6 +423,7 @@ export const vi: WorkspaceMembersCopy = {
   toasts: {
     roleChanged: "{{name}} giờ là {{role}}.",
     roleFailed: "Chưa đổi được vai trò của {{name}}.",
+    jobTitleSaved: "Đã lưu chức danh của {{name}}.",
     removed: "Đã xóa {{name}} khỏi không gian làm việc.",
     removeFailed: "Chưa xóa được {{name}}.",
     suspended: "Đã tạm ngưng truy cập của {{name}}.",
@@ -304,8 +439,6 @@ export const vi: WorkspaceMembersCopy = {
     invitationRoleFailed: "Chưa đổi được vai trò trong lời mời gửi {{email}}.",
     resent: "Đã gửi lại lời mời tới {{email}}.",
     resendFailed: "Chưa gửi lại được lời mời tới {{email}}.",
-    invitedMany: "Đã gửi {{count}} lời mời.",
-    invitedSome: "Đã gửi {{count}} lời mời. Chưa gửi được tới: {{emails}}.",
     forbidden:
       "Bạn không có quyền làm việc này. Hãy nhờ chủ sở hữu không gian làm việc.",
     conflict:

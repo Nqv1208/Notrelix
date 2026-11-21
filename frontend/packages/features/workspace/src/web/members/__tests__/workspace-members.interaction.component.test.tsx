@@ -82,8 +82,16 @@ describe("WorkspaceMembersSurface", () => {
     );
   });
 
-  it("FUI[workspace.members:last-owner] never offers demoting, suspending or removing the last owner", () => {
+  it("shows an admin every role as text with the reason, without a role picker", () => {
     renderMembers(membersAdminScenario());
+    const grace = rowOf("Grace Hopper");
+    expect(within(grace).queryByRole("combobox")).toBeNull();
+    expect(within(grace).getByText(copy.blocked["owner-only"])).toBeTruthy();
+  });
+
+  it("FUI[workspace.members:last-owner] never offers demoting, suspending or removing the last owner", () => {
+    // An owner viewer: the role picker is an owner's control.
+    renderMembers();
     const ada = rowOf("Ada Lovelace");
     expect(within(ada).queryByRole("combobox")).toBeNull();
     expect(within(ada).queryByRole("button")).toBeNull();
@@ -164,6 +172,70 @@ describe("WorkspaceMembersSurface", () => {
     expect(props.onActivate).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "u-sam" }),
     );
+  });
+
+  it("FUI[workspace.members:workspace-named] names the workspace in the remove, suspend, demote and revoke confirmations", () => {
+    const named = (description: string) => {
+      expect(description).toContain("Product");
+      expect(description).not.toContain("{{");
+    };
+    const first = renderMembers();
+    openMenu(
+      within(rowOf("Grace Hopper")).getByRole("button", {
+        name: "Actions for Grace Hopper",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.actions.remove }),
+    );
+    named(
+      within(
+        screen.getByRole("alertdialog", { name: "Remove Grace Hopper?" }),
+      ).getByText(/Their work stays/).textContent ?? "",
+    );
+    first.view.unmount();
+
+    const second = renderMembers();
+    openMenu(
+      within(rowOf("Alan Turing")).getByRole("button", {
+        name: "Actions for Alan Turing",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: copy.actions.suspend }),
+    );
+    named(
+      within(
+        screen.getByRole("alertdialog", { name: "Suspend Alan Turing?" }),
+      ).getByText(/Nothing is deleted/).textContent ?? "",
+    );
+    second.view.unmount();
+
+    const third = renderMembers();
+    fireEvent.keyDown(within(rowOf("Alan Turing")).getByRole("combobox"), {
+      key: "Enter",
+    });
+    fireEvent.click(screen.getByRole("option", { name: /Member/ }));
+    named(
+      within(
+        screen.getByRole("alertdialog", {
+          name: "Change Alan Turing to Member?",
+        }),
+      ).getByText(/fewer permissions/).textContent ?? "",
+    );
+    third.view.unmount();
+
+    const fourth = renderMembers(membersInvitationsScenario());
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Revoke invitation to minh.tran@example.com",
+      }),
+    );
+    named(
+      within(screen.getByRole("alertdialog")).getByText(/stops working/)
+        .textContent ?? "",
+    );
+    fourth.view.unmount();
   });
 
   it("FUI[workspace.members:permission] is read-only for members and hides invitations", () => {
@@ -268,6 +340,9 @@ describe("WorkspaceMembersSurface", () => {
 describe("WorkspaceMembersSurface invitations", () => {
   it("FUI[workspace.members:invite] validates the address and invites with the chosen role", () => {
     const { props } = renderMembers(membersInvitationsScenario());
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     fireEvent.change(email, { target: { value: "not-an-email" } });
     fireEvent.click(
@@ -291,6 +366,9 @@ describe("WorkspaceMembersSurface invitations", () => {
     const { props } = renderMembers(membersInvitationsScenario(), {
       onInviteMany,
     });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     fireEvent.change(email, {
       target: { value: "a@example.com, b@example.com\nA@example.com nope" },
@@ -383,6 +461,9 @@ describe("WorkspaceMembersSurface invitations", () => {
 
   it("FUI[workspace.members:invite-error] shows the producer's invite failure next to the field", () => {
     renderMembers(membersInvitationsEmptyScenario());
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.invitations.invitePeople }),
+    );
     const email = screen.getByLabelText(copy.invitations.emailLabel);
     expect(email.getAttribute("aria-invalid")).toBe("true");
     expect(

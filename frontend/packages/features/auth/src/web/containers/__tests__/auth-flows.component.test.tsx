@@ -31,6 +31,7 @@ function navigation() {
   return {
     navigate: vi.fn(),
     startProviderSignIn: vi.fn(),
+    startSsoSignIn: vi.fn(),
   } satisfies AuthFlowNavigation;
 }
 
@@ -160,12 +161,16 @@ describe("sign-in flow: second step after a provider sign-in", () => {
     });
   });
 
-  it("goes home when the return path is not an internal one", async () => {
+  it("goes home, asking to open the default workspace, when the return path is not an internal one", async () => {
     const service = { verifyMfa: vi.fn(async () => session) };
     const nav = renderSecondStep(service, "//evil.com");
     enterCode();
     await waitFor(() =>
-      expect(nav.navigate).toHaveBeenCalledWith({ to: "/home", replace: true }),
+      expect(nav.navigate).toHaveBeenCalledWith({
+        to: "/home",
+        search: { open: "default" },
+        replace: true,
+      }),
     );
   });
 
@@ -200,6 +205,47 @@ describe("sign-in flow: second step after a provider sign-in", () => {
       expect(screen.getByText(/Thử lại sau \d+ giây/)).toBeTruthy(),
     );
   });
+
+  it("shows the lock again when a second refused password carries the same wait", async () => {
+    const service = {
+      identify: vi.fn(async () => ({ method: "password" as const })),
+      login: vi.fn(async () => {
+        throw {
+          status: 429,
+          details: { errorCode: "rate_limit.exceeded", retryAfter: 1 },
+        };
+      }),
+    };
+    renderPureUi(
+      <Providers>
+        <SignInFlow service={asService(service)} navigation={navigation()} />
+      </Providers>,
+    );
+    fireEvent.change(screen.getByLabelText(copy.email.label), {
+      target: { value: "a@b.vn" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.email.continue }));
+    const password = await screen.findByLabelText(copy.password.label);
+    const attempt = () => {
+      fireEvent.change(password, { target: { value: "mat-khau-sai" } });
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.password.signIn }),
+      );
+    };
+    attempt();
+    await waitFor(() =>
+      expect(screen.getByText(/Thử lại sau \d+ giây/)).toBeTruthy(),
+    );
+    await waitFor(
+      () => expect(screen.queryByText(/Thử lại sau \d+ giây/)).toBeNull(),
+      { timeout: 3000 },
+    );
+    attempt();
+    await waitFor(() => expect(service.login).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.getByText(/Thử lại sau \d+ giây/)).toBeTruthy(),
+    );
+  }, 10_000);
 
   it("an error on /sign-in wins over the second step", () => {
     const nav = navigation();
@@ -253,6 +299,51 @@ function fillAndAccept() {
 }
 
 describe("invite flow", () => {
+  it("tells a person signed in as another account whom the invitation is for, and offers to switch", async () => {
+    const onSwitchAccount = vi.fn();
+    renderPureUi(
+      <Providers>
+        <InviteFlow
+          service={asService({
+            getInvite: vi.fn(async () => ({
+              ...preview,
+              hasAccount: true,
+            })),
+          })}
+          navigation={navigation()}
+          token="tok"
+          signedInEmail="khac@congty.vn"
+          onSwitchAccount={onSwitchAccount}
+        />
+      </Providers>,
+    );
+    expect(
+      await screen.findByText(
+        "Bạn đang đăng nhập là khac@congty.vn; lời mời dành cho tuan@doitac.vn.",
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Đổi tài khoản" }));
+    expect(onSwitchAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no banner when the signed-in account is the invited one, whatever the case", async () => {
+    renderPureUi(
+      <Providers>
+        <InviteFlow
+          service={asService({
+            getInvite: vi.fn(async () => ({ ...preview, hasAccount: true })),
+          })}
+          navigation={navigation()}
+          token="tok"
+          signedInEmail="Tuan@DoiTac.vn"
+          onSwitchAccount={vi.fn()}
+        />
+      </Providers>,
+    );
+    await screen.findByLabelText(copy.invite.emailLabel);
+    expect(screen.queryByRole("button", { name: "Đổi tài khoản" })).toBeNull();
+  });
+
   it("names the workspace and the role when the invitation is to the workspace, not a board", async () => {
     const service = {
       getInvite: vi.fn(async () => ({
@@ -677,5 +768,95 @@ describe("register flow", () => {
     expect(
       (screen.getByLabelText(copy.register.email) as HTMLInputElement).value,
     ).toBe("");
+  });
+});
+
+describe("invite flow: declining from the link", () => {
+  const declineButton = () =>
+    screen.getByRole("button", { name: copy.invite.decline });
+
+  it("shows the declining state with both buttons waiting, then the done page naming who to ask and the way back", async () => {
+    let finish!: () => void;
+    const service = {
+      getInvite: vi.fn(async () => preview),
+      declineInvite: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      ),
+    };
+    const nav = renderInvite(service);
+    await screen.findByLabelText(copy.invite.nameLabel);
+
+    fireEvent.click(declineButton());
+    const waiting = await screen.findByRole("button", {
+      name: copy.invite.declining,
+    });
+    expect((waiting as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: copy.invite.accept,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(service.declineInvite).toHaveBeenCalledTimes(1);
+
+    finish();
+    expect(await screen.findByText(copy.invite.declined.title)).toBeTruthy();
+    expect(
+      screen.getByText(
+        copy.invite.declined.body.replace("{{inviter}}", "Nguyễn Thu Hà"),
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.gone.toSignIn }));
+    expect(nav.navigate).toHaveBeenCalledWith({ to: "/sign-in" });
+  });
+
+  it("reads a link the producer no longer knows (404) as gone", async () => {
+    renderInvite({
+      getInvite: vi.fn(async () => preview),
+      declineInvite: vi.fn(async () => {
+        throw { status: 404 };
+      }),
+    });
+    await screen.findByLabelText(copy.invite.nameLabel);
+    fireEvent.click(declineButton());
+    expect(await screen.findByText(copy.gone.missingTitle)).toBeTruthy();
+  });
+
+  it("re-reads the invitation when the decline is refused (400) and shows what it became", async () => {
+    const getInvite = vi
+      .fn()
+      .mockResolvedValueOnce(preview)
+      .mockResolvedValueOnce({ ...preview, state: "used" });
+    renderInvite({
+      getInvite,
+      declineInvite: vi.fn(async () => {
+        throw { status: 400 };
+      }),
+    });
+    await screen.findByLabelText(copy.invite.nameLabel);
+    fireEvent.click(declineButton());
+    expect(await screen.findByText(copy.gone.usedTitle)).toBeTruthy();
+    expect(getInvite).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the invitation open and says it could not reach Notrelix when the decline fails on the network", async () => {
+    renderInvite({
+      getInvite: vi.fn(async () => preview),
+      declineInvite: vi.fn(async () => {
+        throw { status: 503, details: {} };
+      }),
+    });
+    await screen.findByLabelText(copy.invite.nameLabel);
+    fireEvent.click(declineButton());
+    expect(await screen.findByText(copy.invite.unreachable)).toBeTruthy();
+    expect(screen.queryByText(copy.invite.declined.title)).toBeNull();
+    expect(
+      (declineButton() as HTMLButtonElement).disabled,
+      "the person can try again",
+    ).toBe(false);
   });
 });

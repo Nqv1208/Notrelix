@@ -44,6 +44,7 @@ public static class WorkspaceRoleBaseline
         // workspace-request default (never requested against a workspace today).
         [PermissionAction.CreateWorkspace] = new(A, D, D, D),
         [PermissionAction.ManageAccount] = new(A, D, D, D),
+        [PermissionAction.ManageAccountSecurity] = new(A, D, D, D),
 
         // Workspace shell and membership.
         [PermissionAction.ViewWorkspace] = new(A, A, A, A),
@@ -119,6 +120,8 @@ public static class WorkspaceRoleBaseline
         [PermissionAction.ChatMessagePin] = new(A, A, A, D),
         [PermissionAction.ChatMessageReact] = new(A, A, A, A),
         [PermissionAction.ChatSearch] = new(A, A, A, A),
+        // A Guest never starts a call (SPEC-CHAT-MEDIA-CALLS invariant 3); answering and joining follow the post action.
+        [PermissionAction.ChatCallStart] = new(A, A, A, D),
     };
 
     /// <summary>The actions the table classifies (every <see cref="PermissionAction"/> must be one).</summary>

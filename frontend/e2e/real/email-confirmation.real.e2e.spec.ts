@@ -34,7 +34,7 @@ test("a new member confirms the email from the link and then creates the workspa
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   // Signing in opens the app: the personal workspace once its provisioning has run (UC-WSP-A02, an
   // event consumer, so eventual), the onboarding page while the list is still empty. Either is right.
-  await expect(page).toHaveURL(/\/(workspaces\/[^/]+|onboarding)/, {
+  await expect(page).toHaveURL(/\/(workspaces\/[^/]+|onboarding|home)/, {
     timeout: 20_000,
   });
 

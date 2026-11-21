@@ -61,7 +61,7 @@ export const vi = {
       "Xoá là xoá mềm; hoàn tác khôi phục câu hỏi và phản hồi chưa xử lý.",
     restoreFailed: "Chưa khôi phục được biểu mẫu {{name}}.",
     footnote:
-      "Phản hồi vào hộp thư của biểu mẫu; người chỉnh sửa board xử lý thành việc. Không có điền nặc danh: người điền phải đăng nhập.",
+      "Phản hồi vào hộp thư của biểu mẫu; người chỉnh sửa board xử lý thành việc. Mặc định người điền phải đăng nhập; Chủ sở hữu hoặc Quản trị viên workspace có thể bật liên kết công khai trong trình soạn.",
     loadError:
       "Chưa tải được danh sách biểu mẫu. Các thiết lập khác của board vẫn dùng được.",
     closeFailed: "Chưa đóng được biểu mẫu. Trạng thái vẫn là Đang nhận.",
@@ -307,6 +307,45 @@ export const vi = {
     networkError: "Chưa gửi được yêu cầu. Nội dung bạn điền vẫn còn.",
     crumbBoard: "Về board {{board}}",
   },
+  publicAccess: {
+    title: "Liên kết công khai",
+    loading: "Đang tải thiết lập liên kết công khai",
+    switchLabel: "Cho phép người không đăng nhập điền biểu mẫu",
+    stateOn: "Công khai",
+    stateOff: "Riêng tư",
+    offNote:
+      "Biểu mẫu đang riêng tư: chỉ thành viên đã đăng nhập mới điền được. Bật công khai để tạo liên kết cho người ngoài.",
+    onNote:
+      "Ai có liên kết đều điền được mà không cần đăng nhập, sau bước xác minh. Tắt công khai thì mọi người có liên kết mất quyền truy cập ngay.",
+    linkLabel: "Liên kết công khai của biểu mẫu",
+    copy: "Sao chép liên kết",
+    copied: "Đã sao chép",
+    copyFailed:
+      "Chưa sao chép được. Hãy chọn liên kết ở ô bên cạnh rồi sao chép bằng tay.",
+    saving: "Đang lưu…",
+    loadError: "Chưa tải được thiết lập liên kết công khai.",
+    saveError: "Chưa đổi được. Trạng thái liên kết vẫn như cũ.",
+    denied:
+      "Chỉ Chủ sở hữu hoặc Quản trị viên của workspace mới công khai được biểu mẫu.",
+    linksOff:
+      "Workspace này đang tắt liên kết công khai nên chưa công khai được biểu mẫu. Nhờ Chủ sở hữu hoặc Quản trị viên bật lại trong cài đặt workspace.",
+  },
+  public: {
+    unavailableTitle: "Biểu mẫu này không khả dụng",
+    unavailableBody: "Hãy kiểm tra lại liên kết bạn đã mở.",
+    submit: "Gửi phản hồi",
+    sending: "Đang gửi…",
+    captchaLabel: "Xác minh bạn không phải người máy",
+    captchaWaiting: "Hoàn thành bước xác minh để gửi.",
+    captchaError: "Chưa xác minh được. Hãy làm lại bước xác minh rồi gửi lại.",
+    captchaLoadError:
+      "Chưa tải được bước xác minh. Kiểm tra kết nối rồi thử lại.",
+    limited: "Bạn đã gửi quá nhiều lần. Vui lòng thử lại sau ít phút.",
+    failed: "Chưa gửi được phản hồi. Nội dung bạn điền vẫn còn.",
+    thanks: "Cảm ơn bạn, phản hồi đã được gửi",
+    thanksBody: "Bạn có thể đóng trang này.",
+    another: "Gửi phản hồi khác",
+  },
   inbox: {
     aria: "Hộp thư phản hồi",
     title: "{{name}} · phản hồi",
@@ -490,7 +529,7 @@ export const en: FormsCopy = {
       "Deleting is soft; undo restores the questions and the unprocessed responses.",
     restoreFailed: "The form {{name}} could not be restored.",
     footnote:
-      "Responses go to the form's inbox; people who can edit the board turn them into items. There are no anonymous responses: people must sign in to fill a form.",
+      "Responses go to the form's inbox; people who can edit the board turn them into items. People must sign in to fill a form unless a workspace Owner or Admin turns on the public link in the builder.",
     loadError:
       "The forms could not be loaded. The other board settings still work.",
     closeFailed: "The form could not be closed. It is still Accepting.",
@@ -739,6 +778,44 @@ export const en: FormsCopy = {
     networkError:
       "The request could not be sent. What you filled in is still here.",
     crumbBoard: "Back to the board {{board}}",
+  },
+  publicAccess: {
+    title: "Public link",
+    loading: "Loading public link settings",
+    switchLabel: "Let people who are not signed in fill this form",
+    stateOn: "Public",
+    stateOff: "Private",
+    offNote:
+      "The form is private: only signed-in members can fill it. Make it public to get a link for people outside.",
+    onNote:
+      "Anyone with the link can fill it without signing in, after a verification step. Everyone who has the link loses access at once when you make it private.",
+    linkLabel: "Public link of the form",
+    copy: "Copy link",
+    copied: "Copied",
+    copyFailed:
+      "Could not copy. Select the link in the box and copy it by hand.",
+    saving: "Saving…",
+    loadError: "Could not load the public link settings.",
+    saveError: "Could not change it. The link stays as it was.",
+    denied: "Only a workspace Owner or Admin can make a form public.",
+    linksOff:
+      "Public links are switched off in this workspace, so the form cannot be made public. Ask an Owner or Admin to turn them on in the workspace settings.",
+  },
+  public: {
+    unavailableTitle: "This form is not available",
+    unavailableBody: "Check the link you opened.",
+    submit: "Send response",
+    sending: "Sending…",
+    captchaLabel: "Verify that you are not a robot",
+    captchaWaiting: "Complete the verification to send.",
+    captchaError: "Verification failed. Do it again, then send.",
+    captchaLoadError:
+      "The verification step did not load. Check your connection and try again.",
+    limited: "You sent too many times. Please try again in a few minutes.",
+    failed: "Your response was not sent. What you filled in is still here.",
+    thanks: "Thank you, your response was sent",
+    thanksBody: "You can close this page.",
+    another: "Send another response",
   },
   inbox: {
     aria: "Response inbox",

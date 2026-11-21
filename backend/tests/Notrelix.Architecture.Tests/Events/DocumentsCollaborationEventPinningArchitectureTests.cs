@@ -15,6 +15,11 @@ public class DocumentsCollaborationEventPinningArchitectureTests
     [
         "page.created",
         "page.archived",
+        "page.renamed",
+        "page.moved",
+        "page.space-changed",
+        "page.restored",
+        "page.deleted",
     ];
 
     private static readonly string[] PinnedCollaborationEventNames =

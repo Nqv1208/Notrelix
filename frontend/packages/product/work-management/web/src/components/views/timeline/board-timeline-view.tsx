@@ -365,45 +365,42 @@ export function BoardTimelineView({
       ...("startDate" in patch ? { startDate: card.startDate } : {}),
     };
     const write = (next: typeof patch, back: typeof previous, undo: boolean) =>
-      updateCard.mutate(
-        { cardId: card.id, patch: next },
-        {
-          onSuccess: () =>
-            undo
-              ? toast.success(copy.reschedule.undone, {
-                  id: `timeline-undo-${card.id}`,
-                })
-              : toast.success(
-                  fill(copy.reschedule.moved, { title: card.title }),
-                  {
-                    id: `timeline-write-${card.id}`,
-                    duration: 8000,
-                    action: {
-                      label: copy.linkToast.undo,
-                      onClick: () => write(back as typeof patch, patch, true),
-                    },
+      // Promise callbacks, not per-call mutate callbacks: a second write on the same hook drops those.
+      void updateCard.mutateAsync({ cardId: card.id, patch: next }).then(
+        () =>
+          undo
+            ? toast.success(copy.reschedule.undone, {
+                id: `timeline-undo-${card.id}`,
+              })
+            : toast.success(
+                fill(copy.reschedule.moved, { title: card.title }),
+                {
+                  id: `timeline-write-${card.id}`,
+                  duration: 8000,
+                  action: {
+                    label: copy.linkToast.undo,
+                    onClick: () => write(back as typeof patch, patch, true),
                   },
-                ),
-          onError: (error: unknown) => {
-            const id = `timeline-write-${card.id}`;
-            if (!isStale(error)) {
-              toast.error(fill(copy.reschedule.failed, { title: card.title }), {
-                id,
-              });
-              return;
-            }
-            // The refetch brings the other person's version, which says who changed it.
-            void Promise.resolve(kanban.refetch()).then(() =>
-              toast.error(
-                fill(copy.reschedule.conflict, {
-                  actor:
-                    kanban.lastEditorOf(card.id) ?? copy.reschedule.someone,
-                  title: card.title,
-                }),
-                { id },
+                },
               ),
-            );
-          },
+        (error: unknown) => {
+          const id = `timeline-write-${card.id}`;
+          if (!isStale(error)) {
+            toast.error(fill(copy.reschedule.failed, { title: card.title }), {
+              id,
+            });
+            return;
+          }
+          // The refetch brings the other person's version, which says who changed it.
+          void Promise.resolve(kanban.refetch()).then(() =>
+            toast.error(
+              fill(copy.reschedule.conflict, {
+                actor: kanban.lastEditorOf(card.id) ?? copy.reschedule.someone,
+                title: card.title,
+              }),
+              { id },
+            ),
+          );
         },
       );
     write(patch, previous as typeof patch, false);
@@ -486,16 +483,16 @@ export function BoardTimelineView({
   const handleSchedule = (id: string, day: DayKey) => {
     const card = cardsById.get(id);
     if (!card || !canEdit) return;
-    updateCard.mutate(
-      {
+    void updateCard
+      .mutateAsync({
         cardId: id,
         patch: {
           startDate: zonedInstant(day, 8, 0, timeZone),
           dueDate: zonedInstant(day, 17, 0, timeZone),
         },
-      },
-      {
-        onSuccess: () =>
+      })
+      .then(
+        () =>
           toast.success(
             fill(copy.tray.scheduled, {
               key: card.itemKey ?? card.title,
@@ -514,12 +511,11 @@ export function BoardTimelineView({
               },
             },
           ),
-        onError: () =>
+        () =>
           toast.error(fill(copy.tray.failed, { title: card.title }), {
             id: `timeline-write-${id}`,
           }),
-      },
-    );
+      );
   };
 
   const restoreFocus = (cardId: string) => {

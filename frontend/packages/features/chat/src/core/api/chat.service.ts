@@ -1,10 +1,14 @@
 import type {
   ChatBlockedPerson,
   ChatChannelGroup,
+  ChatChannelPlacement,
+  ChatCreateChannelGroupInput,
+  ChatUpdateChannelGroupInput,
   ChatAddMembersResult,
   ChatAttachment,
   ChatChannel,
   ChatChannelDetail,
+  ChatDeletedChannel,
   ChatConversation,
   ChatLinkPreview,
   ChatLinkRef,
@@ -44,6 +48,7 @@ import type {
   ChatAttachmentUrl,
 } from "../types/chat";
 import { voiceFactsOf } from "../model/voice-model";
+import type { ChatCall, ChatCallJoin, ChatCallKind } from "../types/call";
 
 /** The transport the host passes in: the generated client's `api` (`createNotrelixClient`). */
 export interface ChatRequestOptions {
@@ -96,9 +101,16 @@ export interface ChatEndpoints {
     channels: (workspaceId: string) => string;
     channel: (workspaceId: string, channelId: string) => string;
     channelArchive: (workspaceId: string, channelId: string) => string;
+    channelsDeleted: (workspaceId: string) => string;
+    channelRestore: (workspaceId: string, channelId: string) => string;
     channelMembers: (workspaceId: string, channelId: string) => string;
     channelJoin: (workspaceId: string, channelId: string) => string;
     channelMember: (
+      workspaceId: string,
+      channelId: string,
+      userId: string,
+    ) => string;
+    channelMemberRole: (
       workspaceId: string,
       channelId: string,
       userId: string,
@@ -108,6 +120,7 @@ export interface ChatEndpoints {
     message: (workspaceId: string, messageId: string) => string;
     unread: (workspaceId: string) => string;
     markRead: (workspaceId: string, spaceId: string) => string;
+    markUnreadFrom: (workspaceId: string, spaceId: string) => string;
     markAllRead: (workspaceId: string) => string;
     notificationLevel: (workspaceId: string, spaceId: string) => string;
     threadReplies: (workspaceId: string, rootId: string) => string;
@@ -168,7 +181,12 @@ export interface ChatEndpoints {
       conversationId: string,
     ) => string;
     blocks: (workspaceId: string) => string;
+    spaceCalls: (workspaceId: string, spaceId: string) => string;
+    spaceActiveCall: (workspaceId: string, spaceId: string) => string;
+    callAction: (workspaceId: string, callId: string, action: string) => string;
     channelGroups: (workspaceId: string) => string;
+    channelGroup: (workspaceId: string, groupId: string) => string;
+    channelOrder: (workspaceId: string) => string;
   };
 }
 
@@ -203,6 +221,56 @@ export function createChatService(
     /** `Chat.ChannelGroups.List`: the sidebar categories with their names, in sidebar order. */
     listChannelGroups(workspaceId: string): Promise<ChatChannelGroup[]> {
       return api.get<ChatChannelGroup[]>(paths.channelGroups(workspaceId));
+    },
+
+    /** `Chat.ChannelGroups.Create`: the Idempotency-Key is required; a duplicate name is 409, no manage right is 403. */
+    createChannelGroup(
+      workspaceId: string,
+      input: ChatCreateChannelGroupInput,
+      idempotencyKey: string,
+    ): Promise<ChatChannelGroup> {
+      return api.post<ChatChannelGroup>(
+        paths.channelGroups(workspaceId),
+        input,
+        {
+          idempotencyKey,
+        },
+      );
+    },
+
+    /** `Chat.ChannelGroups.Update`: rename or move a category; a stale expectedVersion is 412. */
+    updateChannelGroup(
+      workspaceId: string,
+      groupId: string,
+      input: ChatUpdateChannelGroupInput,
+    ): Promise<ChatChannelGroup> {
+      return api.patch<ChatChannelGroup>(
+        paths.channelGroup(workspaceId, groupId),
+        input,
+      );
+    },
+
+    /** `Chat.ChannelGroups.Delete`: its channels stay and become ungrouped; the expected version travels in the query string. */
+    deleteChannelGroup(
+      workspaceId: string,
+      groupId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      return api.delete<void>(
+        withQuery(paths.channelGroup(workspaceId, groupId), {
+          expectedVersion,
+        }),
+      );
+    },
+
+    /** `Chat.Channels.Reorder`: moves channels between categories and positions in one request (at most 200); any stale version refuses all. */
+    reorderChannels(
+      workspaceId: string,
+      placements: readonly ChatChannelPlacement[],
+    ): Promise<void> {
+      return api.patch<void>(paths.channelOrder(workspaceId), {
+        placements: [...placements],
+      });
     },
 
     /** `Chat.Channels.List` with browse=true: the public channels the caller is not in. */
@@ -255,6 +323,22 @@ export function createChatService(
       );
     },
 
+    /** `Chat.Channels.ListDeleted`: the deleted channels the caller may restore (30-day window), newest delete first. */
+    listDeletedChannels(workspaceId: string): Promise<ChatDeletedChannel[]> {
+      return api.get<ChatDeletedChannel[]>(paths.channelsDeleted(workspaceId));
+    },
+
+    /** `Chat.Channels.Restore`: 409 name-conflict when the name was taken, 409 restore-window-elapsed past 30 days. */
+    restoreChannel(
+      workspaceId: string,
+      channelId: string,
+      expectedVersion: number,
+    ): Promise<void> {
+      return api.post<void>(paths.channelRestore(workspaceId, channelId), {
+        expectedVersion,
+      });
+    },
+
     /** `Chat.Channels.Delete`: the expected version travels in the query string. */
     deleteChannel(
       workspaceId: string,
@@ -294,6 +378,19 @@ export function createChatService(
       );
     },
 
+    /** `Chat.Members.SetRole`: a manager makes a member a manager, or a manager a member (422 last-manager). */
+    setMemberRole(
+      workspaceId: string,
+      channelId: string,
+      userId: string,
+      role: "manager" | "member",
+    ): Promise<void> {
+      return api.put<void>(
+        paths.channelMemberRole(workspaceId, channelId, userId),
+        { role },
+      );
+    },
+
     /** `Chat.Messages.List`: at most one of before, after and around. */
     listMessages(
       workspaceId: string,
@@ -325,6 +422,8 @@ export function createChatService(
         replyToId?: string | null;
         /** A voice message carries no text; its audio is uploaded to it next (UC-CHT-I04). */
         voiceMessage?: boolean;
+        /** A Notrelix sticker sent alone: no text (UC-CHT-I06). */
+        stickerId?: string | null;
       } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(
@@ -569,6 +668,18 @@ export function createChatService(
       });
     },
 
+    /** `Chat.ReadState.MarkUnreadFrom`: the caller's own boundary moves back to just before the message; never forward. */
+    markUnreadFrom(
+      workspaceId: string,
+      spaceId: string,
+      fromSequence: number,
+    ): Promise<ChatReadBoundary> {
+      return api.put<ChatReadBoundary>(
+        paths.markUnreadFrom(workspaceId, spaceId),
+        { fromSequence },
+      );
+    },
+
     /** `Chat.ReadState.MarkAllRead`: returns the unread summary after the change. */
     markAllRead(workspaceId: string): Promise<ChatUnreadSummary> {
       return api.post<ChatUnreadSummary>(paths.markAllRead(workspaceId));
@@ -603,6 +714,8 @@ export function createChatService(
         content: string;
         clientMessageId: string;
         alsoSendToChannel: boolean;
+        /** A voice reply carries no text; its audio is uploaded to it next (UC-CHT-I04). */
+        voiceMessage?: boolean;
       } & ChatMentionPayload,
     ): Promise<ChatMessage> {
       return api.post<ChatMessage>(
@@ -922,6 +1035,88 @@ export function createChatService(
         userId,
         blocked,
       });
+    },
+
+    /** `Chat.Calls.Start`: the Idempotency-Key is required; the answer carries the starter's join token (null for a busy call). */
+    startCall(
+      workspaceId: string,
+      spaceId: string,
+      kind: ChatCallKind,
+      idempotencyKey: string,
+    ): Promise<ChatCallJoin> {
+      return api.post<ChatCallJoin>(
+        paths.spaceCalls(workspaceId, spaceId),
+        { kind },
+        { idempotencyKey },
+      );
+    },
+
+    /** `Chat.Calls.GetActive`: the ringing or active call of a space, or null (204). */
+    async getActiveCall(
+      workspaceId: string,
+      spaceId: string,
+    ): Promise<ChatCall | null> {
+      const call = await api.get<ChatCall | null | undefined>(
+        paths.spaceActiveCall(workspaceId, spaceId),
+      );
+      return call ?? null;
+    },
+
+    /** `Chat.Calls.Answer` and `Chat.Calls.Join`: ring becomes active; the answer carries the join token. A stale version is 412. */
+    answerCall(
+      workspaceId: string,
+      callId: string,
+      expectedVersion: number,
+    ): Promise<ChatCallJoin> {
+      return api.post<ChatCallJoin>(
+        paths.callAction(workspaceId, callId, "answer"),
+        { expectedVersion },
+      );
+    },
+
+    /** `Chat.Calls.Join`: a member joins a live group or channel call; a full call is 422 `call-full`. A stale version is 412. */
+    joinCall(
+      workspaceId: string,
+      callId: string,
+      expectedVersion: number,
+    ): Promise<ChatCallJoin> {
+      return api.post<ChatCallJoin>(
+        paths.callAction(workspaceId, callId, "join"),
+        { expectedVersion },
+      );
+    },
+
+    /** `Chat.Calls.Decline`, `Cancel`, `End` and `Leave`: each takes the version the caller read; a stale one is 412. */
+    changeCall(
+      workspaceId: string,
+      callId: string,
+      action: "decline" | "cancel" | "end" | "leave",
+      expectedVersion: number,
+    ): Promise<ChatCall> {
+      return api.post<ChatCall>(paths.callAction(workspaceId, callId, action), {
+        expectedVersion,
+      });
+    },
+
+    /**
+     * `Chat.Calls.UpdateMediaState`: the caller's microphone, camera and screen share (a voice call carries neither camera nor screen).
+     * `replaceShare` confirms that starting a share ends another person's share; without it a second share is 409.
+     */
+    setCallMediaState(
+      workspaceId: string,
+      callId: string,
+      state: {
+        audioOn: boolean;
+        videoOn: boolean;
+        sharingScreen?: boolean;
+        replaceShare?: boolean;
+      },
+      expectedVersion: number,
+    ): Promise<ChatCall> {
+      return api.put<ChatCall>(
+        paths.callAction(workspaceId, callId, "participants/me"),
+        { sharingScreen: false, ...state, expectedVersion },
+      );
     },
   };
 }

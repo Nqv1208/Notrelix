@@ -1430,10 +1430,15 @@ This optimizes feedback without reducing final proof.
 `ci.yml` runs these jobs, aggregated by the required check `CI gate`:
 
 ```text
-backend-unit        → format, build, Domain/Application/Infrastructure/Architecture/Platform/API tests, OpenAPI drift
-backend-integration → 3 shards: workspaces-auth, work-rls, rest
-frontend            → format:check, typecheck, lint, check:architecture, check:i18n, codegen:check, test:node, test:web, app-web build
-dependencies        → security-ci.yml (NuGet and pnpm audit)
+fast-checks-backend  → format (format check, pre-push hook self-test), then contract (Architecture tests, OpenAPI drift)
+fast-checks-frontend → typecheck, then format:check, lint, check:architecture, check:i18n, check:mock-consumer-surface, codegen:check
+fast-checks          → one verdict: a failure of either side stops every heavy job
+backend-build        → restore and build backend.slnx once in Release; uploads bin and obj
+backend-unit         → Domain/Application/Infrastructure/Platform/API tests on that build (--no-build --no-restore)
+backend-integration  → 8 shards on that build: workspaces-auth, work-management, rls-1, rls-2, rls-3, rls-4, rls-rest, rest (exact complements, split by measured time)
+frontend             → test:node, app-web build
+frontend-web         → test:web in 4 shards (vitest --shard=1/4 to 4/4)
+dependencies         → security-ci.yml (NuGet and pnpm audit)
 ```
 
 Not in `ci.yml`: Storybook a11y/visual, Playwright e2e (mock or real), `make docs-check`, `scripts/ci/validate-infra.py`, the required-proof TRX check and Docker image build. They run locally.

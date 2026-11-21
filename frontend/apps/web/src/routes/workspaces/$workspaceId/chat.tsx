@@ -1,16 +1,43 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   ChatWorkspace,
   createChatHooks,
+  type ChatDraftStore,
   type ChatViewerRole,
 } from "@notrelix/features-chat/web";
-import type { ChatEphemeralPort } from "@notrelix/features-chat";
+import type { ChatEphemeralPort, ChatTaskDraft } from "@notrelix/features-chat";
 import { useIsMobile } from "@notrelix/ui-web";
 import { useAppRuntime } from "@notrelix/runtime-web";
+import { BoardCardCreate } from "@notrelix/work-management-web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
+import { useWorkspaceResources } from "@/shell/workspace/use-workspace-resources";
 import { useWorkspaceViewer } from "@/shell/workspace/use-workspace-viewer";
 import { useRealtimeConnection } from "../../../realtime/use-realtime-connection";
+
+/**
+ * Drafts survive a reload in this tab only (UC-CHT-B07): session storage, keyed by Workspace and person, never sent anywhere.
+ * Storage that is missing or full leaves the draft in memory.
+ */
+function sessionDraftStore(prefix: string): ChatDraftStore {
+  return {
+    read: (key) => {
+      try {
+        return window.sessionStorage.getItem(`${prefix}:${key}`);
+      } catch {
+        return null;
+      }
+    },
+    write: (key, text) => {
+      try {
+        if (text === null) window.sessionStorage.removeItem(`${prefix}:${key}`);
+        else window.sessionStorage.setItem(`${prefix}:${key}`, text);
+      } catch {
+        // Storage unavailable: the draft stays in memory.
+      }
+    },
+  };
+}
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -20,7 +47,7 @@ const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
  * supplies the transport, the caller and the Workspace member names.
  */
 export function ChatPage() {
-  const { workspaceId } = useWorkspaceContext();
+  const { workspaceId, workspace } = useWorkspaceContext();
   const { channelId: rawChannelId, conversationId: rawConversationId } =
     useParams({ strict: false }) as {
       channelId?: string;
@@ -34,8 +61,18 @@ export function ChatPage() {
     rawConversationId && SAFE_ID.test(rawConversationId)
       ? rawConversationId
       : undefined;
+  // `?m=` is the sequence of the message a link points at (UC-CHT-B10); anything that is not a positive whole number is no link.
+  const rawLinked = new URLSearchParams(window.location.search).get("m");
+  const linkedSequence =
+    rawLinked !== null && /^[1-9][0-9]{0,15}$/.test(rawLinked)
+      ? Number(rawLinked)
+      : null;
   const navigate = useNavigate();
-  const { api: runtimeClient, realtime: realtimeClient } = useAppRuntime();
+  const {
+    api: runtimeClient,
+    realtime: realtimeClient,
+    storage,
+  } = useAppRuntime();
   const viewer = useWorkspaceViewer(workspaceId);
   const realtime = useRealtimeConnection();
   // Only a connection that is down (not one that has not started yet) reads as reconnecting.
@@ -59,10 +96,28 @@ export function ChatPage() {
           { workspaceId, channelId: spaceId },
           listener,
         ),
-      sendTyping: (spaceId) => realtimeClient.sendTyping(spaceId),
+      sendTyping: (spaceId, stopped) =>
+        realtimeClient.sendTyping(spaceId, stopped),
       sendPresence: (state) => realtimeClient.sendPresence(state),
     }),
     [realtimeClient, workspaceId],
+  );
+  const draftStore = useMemo(
+    () =>
+      viewer.userId
+        ? sessionDraftStore(
+            `notrelix-chat-draft:${workspaceId}:${viewer.userId}`,
+          )
+        : undefined,
+    [workspaceId, viewer.userId],
+  );
+  // A task made from a message (UC-CHT-I08): Work Management's own create dialog opens with the draft.
+  const resources = useWorkspaceResources(workspaceId);
+  const [taskDraft, setTaskDraft] = useState<ChatTaskDraft | null>(null);
+  const taskBoards = useMemo(
+    () =>
+      resources.boards.map((board) => ({ id: board.id, label: board.name })),
+    [resources.boards],
   );
   const channels = hooks.useChannels(workspaceId);
   const firstChannelId = channels.data?.[0]?.id ?? null;
@@ -95,6 +150,14 @@ export function ChatPage() {
     return map;
   }, [viewer.members.data]);
 
+  const peopleDetails = useMemo(() => {
+    const map = new Map<string, { role?: string; jobTitle?: string }>();
+    for (const member of viewer.members.data ?? []) {
+      map.set(member.userId, { role: member.role, jobTitle: member.jobTitle });
+    }
+    return map;
+  }, [viewer.members.data]);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ChatWorkspace
@@ -117,14 +180,38 @@ export function ChatPage() {
           })
         }
         people={people}
+        peopleDetails={peopleDetails}
+        linkedSequence={linkedSequence}
+        draftStore={draftStore}
+        callDeviceStore={storage}
+        collapseStore={storage}
+        buildMessageLink={({ spaceId, conversation, sequence }) =>
+          `${window.location.origin}/workspaces/${workspaceId}/chat/${
+            conversation ? "dm/" : ""
+          }${spaceId}?m=${sequence}`
+        }
         connection={connection}
         ephemeral={ephemeral}
+        onCreateTask={setTaskDraft}
+        workspaceArchived={workspace?.isArchived === true}
         onOpenChannel={(id) =>
           void navigate({
             to: "/workspaces/$workspaceId/chat/$channelId",
             params: { workspaceId, channelId: id },
           })
         }
+      />
+      <BoardCardCreate
+        open={taskDraft !== null}
+        onOpenChange={(open) => {
+          if (!open) setTaskDraft(null);
+        }}
+        workspaceId={workspaceId}
+        boards={taskBoards}
+        initialBoardId={taskDraft?.boardId ?? null}
+        initialTitle={taskDraft?.title}
+        initialDescription={taskDraft?.descriptionMd}
+        assigneeId={viewer.userId}
       />
     </div>
   );

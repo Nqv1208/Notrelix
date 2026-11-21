@@ -30,6 +30,12 @@ public sealed class User : SoftDeletableAggregateRoot
     public DateTimeOffset? EmailConfirmedAt { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
 
+    /// <summary>
+    /// The normalized address a requested sign-in email change waits on. The sign-in email stays as it is until
+    /// the holder of this address opens the mailed link.
+    /// </summary>
+    public string? PendingEmail { get; private set; }
+
     private readonly List<OAuthAccount> _oauthAccounts = new();
     public IReadOnlyCollection<OAuthAccount> OAuthAccounts => _oauthAccounts.AsReadOnly();
 
@@ -179,6 +185,33 @@ public sealed class User : SoftDeletableAggregateRoot
             Email,
             updatedBy,
             updatedAt));
+    }
+
+    /// <summary>Parks a new sign-in address until its holder confirms it; the current address keeps working.</summary>
+    public void RequestEmailChange(string email, Guid requestedBy, DateTimeOffset requestedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(requestedBy);
+
+        var pendingEmail = NormalizeEmail(Email.Create(email).Value);
+        if (pendingEmail == NormalizedEmail || pendingEmail == PendingEmail) return;
+
+        var pending = PrepareAuditUpdate(requestedBy, requestedAt);
+        PendingEmail = pendingEmail;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+    }
+
+    /// <summary>Makes the pending address the sign-in email, already confirmed, and clears the wait.</summary>
+    public void ConfirmEmailChange(Guid confirmedBy, DateTimeOffset confirmedAt)
+    {
+        EnsureNotDeleted();
+        if (PendingEmail is null)
+            throw new InvalidOperationException("No email change is waiting for confirmation.");
+
+        UpdateEmail(PendingEmail, confirmedBy, confirmedAt);
+        PendingEmail = null;
+        ConfirmEmail(confirmedBy, confirmedAt);
     }
 
     public void UpdatePassword(

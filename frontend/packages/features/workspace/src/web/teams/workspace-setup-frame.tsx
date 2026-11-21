@@ -96,12 +96,15 @@ export function WorkspaceSetupFrame({
           </div>
         </div>
       </header>
-      <div data-f="body" className="flex min-h-0 flex-1 overflow-hidden">
+      <div
+        data-f="body"
+        className="flex min-h-0 flex-1 overflow-hidden max-md:flex-col"
+      >
         {hideNav ? null : (
           <nav
             data-f="snav"
             aria-label={copy.setup.label}
-            className="box-border flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4"
+            className="box-border flex w-[212px] shrink-0 flex-col gap-0.5 border-r border-line px-3 py-4 max-md:w-full max-md:flex-row max-md:overflow-x-auto max-md:border-r-0 max-md:border-b max-md:py-2"
           >
             {GROUPS.map((all, index) => {
               const group = only
@@ -113,7 +116,7 @@ export function WorkspaceSetupFrame({
                   {index > 0 && !only ? (
                     <div
                       data-f="sn-sep"
-                      className="mx-1.5 my-2 h-px bg-line"
+                      className="mx-1.5 my-2 h-px bg-line max-md:hidden"
                       role="separator"
                     />
                   ) : null}
@@ -122,17 +125,14 @@ export function WorkspaceSetupFrame({
                     const on = section === frame.active;
                     const count = frame.counts[section];
                     const className = cn(
-                      "flex h-[34px] items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground",
+                      "flex h-[34px] items-center gap-[9px] rounded-[7px] px-2.5 text-nav leading-[1.45] font-medium text-muted-foreground hover:bg-state-hover-strong hover:text-foreground max-md:shrink-0 max-md:whitespace-nowrap",
                       on &&
                         "bg-popover font-semibold text-foreground ring-1 ring-line hover:bg-popover dark:bg-card dark:hover:bg-card",
                       FOCUS,
                     );
                     const body = (
                       <>
-                        <Glyph
-                          name={ICONS[section]}
-                          className="size-[15px] text-meta-foreground"
-                        />
+                        <Glyph name={ICONS[section]} className="size-4" />
                         {copy.setup.items[section]}
                         {count !== undefined && count !== null ? (
                           <span className="ml-auto text-xs font-medium text-meta-foreground">

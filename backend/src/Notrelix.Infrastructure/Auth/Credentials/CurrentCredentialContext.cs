@@ -30,6 +30,12 @@ public class CurrentCredentialContext : ICurrentCredentialContext
 
     public Guid? BoundWorkspaceId => TryParseGuid(GetClaim(CredentialClaims.WorkspaceId));
 
+    public IReadOnlySet<string> ApiTokenScopes =>
+        Kind == CredentialKind.ApiToken
+            ? (Principal?.FindAll(CredentialClaims.ApiTokenScope).Select(claim => claim.Value).ToHashSet(StringComparer.Ordinal)
+               ?? [])
+            : new HashSet<string>();
+
     private static Guid? TryParseGuid(string? value)
         => Guid.TryParse(value, out var id) ? id : null;
 }

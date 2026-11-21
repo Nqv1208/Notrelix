@@ -13,6 +13,7 @@ export type {
   WorkspaceInvitationState,
   PendingInvitation,
   WorkspaceInvitation,
+  AccountStatus,
   WorkspaceSummary,
   WorkspaceViewTarget,
   WorkspaceViewConfig,
@@ -26,6 +27,7 @@ export type {
   CreateWorkspaceInput,
   UpdateWorkspaceInput,
   UpdateWorkspaceProfileInput,
+  WorkspaceFigures,
   WorkspaceSettings,
   CreateWorkspaceInvitationInput,
 } from "./types/workspace";
@@ -49,27 +51,39 @@ export {
   createInvitationsService,
   createWorkspaceInvitationsService,
   parseInvitations,
+  parseInviteManyOutcomes,
   parsePendingInvitations,
   PENDING_INVITATION_EXISTS_CODE,
   type AcceptedInvitation,
   type InvitationsEndpoints,
+  type InviteManyOutcome,
   type WorkspaceInvitationsEndpoints,
   type WorkspaceInvitationsService,
 } from "./api/invitations.service";
 export { createViewsService } from "./api/views.service";
 export {
+  createWorkspaceAddressService,
+  type WorkspaceAddressEndpoints,
+  type WorkspaceAddressResolution,
+  type WorkspaceAddressService,
+} from "./api/workspace-address.service";
+export {
   createActivityService,
   parseActivityPage,
   type ActivityEndpoints,
+  type WorkspaceActivityEntry,
   type WorkspaceActivityPage,
 } from "./api/activity.service";
 export {
   createSpacesService,
   parseSpaceMembers,
+  SPACE_MEMBERS_TAB_PAGE_SIZE,
   parseSpaceTree,
   type CreateSpaceInput,
   type MoveSpaceInput,
   type SpaceDetailsInput,
+  type SpaceMembersPageQuery,
+  type SpaceMembersPageResult,
   type SpacesApiClient,
   type SpacesEndpoints,
   type SpacesService,

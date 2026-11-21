@@ -114,9 +114,25 @@ public class AudioMetadataReaderTests
     }
 
     [Fact]
-    public void Ogg_has_no_duration_in_its_leading_bytes()
+    public void Ogg_has_no_duration_without_its_last_page()
     {
         AudioMetadataReader.TryReadDurationMs(Ogg(), Ogg).Should().BeNull();
+    }
+
+    [Fact]
+    public void An_ogg_opus_reads_its_duration_from_the_last_page_less_the_pre_skip()
+    {
+        var file = OggOpus(durationMs: 2_500);
+
+        AudioMetadataReader.TryReadDurationMs(file, Ogg, file).Should().Be(2_500);
+    }
+
+    [Fact]
+    public void An_ogg_whose_last_page_is_cut_short_has_no_duration()
+    {
+        var file = OggOpus(durationMs: 2_500);
+
+        AudioMetadataReader.TryReadDurationMs(file, Ogg, file[..^10]).Should().BeNull();
     }
 
     [Fact]

@@ -68,6 +68,8 @@ export interface SecurityDetails {
   proofs: Map<string, string>;
   /** The provider a person with no password signs in with (`null` = has a password). */
   signInProvider: string | null;
+  /** Every provider linked to the account ("Google", "Microsoft"). */
+  linkedProviders: string[];
   /** The proof(s) a provider re-authentication left in the (mock) httpOnly cookie, until claimed. */
   providerProofs: string[] | null;
 }
@@ -174,8 +176,72 @@ const defaultSecurity = (offsetMinutes: (m: number) => string) => {
     pendingEnrollment: null,
     proofs: new Map<string, string>(),
     signInProvider: null,
+    linkedProviders: [],
     providerProofs: null,
   } satisfies SecurityDetails;
+};
+
+/** One workspace API token as `Identity.ApiTokens.List` answers it (the secret is never kept). */
+export interface MockApiToken {
+  id: string;
+  name: string;
+  status: "Active" | "Revoked" | "Expired";
+  lastUsedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+  revokedAt: string | null;
+  revokedReason:
+    "Manual" | "MemberRemoved" | "MemberSuspended" | "MemberLeft" | null;
+  suffix: string;
+  /** The scopes it was issued with, fixed for its life (the producer's seven; none may be empty). */
+  scopes: string[];
+}
+
+/** The producer's scope vocabulary: read and write per context, and the workspace read. */
+export const MOCK_API_TOKEN_SCOPES = [
+  "work:read",
+  "work:write",
+  "docs:read",
+  "docs:write",
+  "chat:read",
+  "chat:write",
+  "workspace:read",
+] as const;
+
+/** Three tokens a workspace already holds, newest first; times are minutes from the mock clock's now. */
+const defaultApiTokens = (
+  offsetMinutes: (m: number) => string,
+): MockApiToken[] => {
+  const day = 24 * 60;
+  const token = (
+    n: number,
+    name: string,
+    suffix: string,
+    usedAgo: number | null,
+    left: number,
+    scopes: string[],
+  ): MockApiToken => ({
+    id: `00000000-0000-4000-8000-00000000000${n}`,
+    name,
+    status: "Active",
+    lastUsedAt: usedAgo === null ? null : offsetMinutes(-usedAgo),
+    expiresAt: offsetMinutes(left * day),
+    createdAt: offsetMinutes(-n * day),
+    revokedAt: null,
+    revokedReason: null,
+    suffix,
+    scopes,
+  });
+  return [
+    token(1, "CI triển khai ERP", "a41f", 120, 90, [...MOCK_API_TOKEN_SCOPES]),
+    token(2, "Báo cáo BI hằng tuần", "9c07", day, 30, [
+      "work:read",
+      "docs:read",
+    ]),
+    token(3, "Script dọn dẹp thẻ", "33be", null, 90, [
+      ...MOCK_API_TOKEN_SCOPES,
+    ]),
+  ];
 };
 
 export class MockAccountPages {
@@ -188,8 +254,10 @@ export class MockAccountPages {
   private notificationSets = new Map<string, NotificationPreferenceSet>();
   private defaultWorkspace = new Map<string, string>();
   private avatarVersions = new Map<string, number>();
+  private apiTokens = new Map<string, MockApiToken[]>();
 
   reset(): void {
+    this.apiTokens.clear();
     this.preferences.clear();
     this.memberProfiles.clear();
     this.security.clear();
@@ -224,6 +292,23 @@ export class MockAccountPages {
         version: 0,
       };
       this.memberProfiles.set(key, value);
+    }
+    return value;
+  }
+
+  /** The API tokens of one workspace, newest first. */
+  apiTokensOf(
+    workspaceId: string,
+    offsetMinutes: (m: number) => string,
+  ): MockApiToken[] {
+    let value = this.apiTokens.get(workspaceId);
+    if (!value) {
+      // The primary workspace already holds some; any other starts empty.
+      value =
+        workspaceId === "mock-workspace-primary"
+          ? defaultApiTokens(offsetMinutes)
+          : [];
+      this.apiTokens.set(workspaceId, value);
     }
     return value;
   }
@@ -272,6 +357,7 @@ export class MockAccountPages {
   ): void {
     const security = this.securityOf(userId, offsetMinutes);
     security.signInProvider = provider;
+    security.linkedProviders = [provider];
     security.twoFactorEnabled = false;
     security.recoveryCodesLeft = 0;
   }

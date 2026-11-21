@@ -22,4 +22,7 @@ public interface IAccountDbContext
     DbSet<ScimDirectory> ScimDirectories { get; }
     DbSet<ScimSyncRun> ScimSyncRuns { get; }
     DbSet<WorkspaceRoute> WorkspaceRoutes { get; }
+
+    /// <summary>Writes what the request has changed so far, for the one place that must answer a unique violation itself.</summary>
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -55,6 +55,13 @@ async function init(): Promise<void> {
         : mockBackend.defaultConfig;
 
     const store = new mockBackend.MockStore(resolvedConfig);
+    // Mock world only: a test that measures the pre-login pages starts signed out through this key.
+    try {
+      if (window.localStorage.getItem("notrelix-mock-signed-out") === "1")
+        store.logoutCurrentUser();
+    } catch {
+      // Private mode: the world starts signed in.
+    }
     const fetchImpl = mockBackend.createMockFetch(store);
 
     runtimeFactories = {
@@ -67,13 +74,13 @@ async function init(): Promise<void> {
 
   const services = createWebApplicationServices(runtime, {
     onSignedOutRoute: () => isSignedOutRoute(window.location.pathname),
-    navigateToSignedOut: () => {
+    navigateToSignedOut: (reason) => {
       if (isSignedOutRoute(window.location.pathname)) return;
       const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       const redirectPath = sanitizeInternalReturnUrl(currentUrl);
       void router.navigate({
         to: "/sign-in",
-        search: { redirect: redirectPath, reason: "session-ended" },
+        search: { redirect: redirectPath, reason: reason ?? "session-ended" },
         replace: true,
       });
     },

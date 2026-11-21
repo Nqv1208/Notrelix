@@ -11,9 +11,8 @@ public sealed class OidcIdTokenException(string reason) : Exception(reason);
 /// Checks the claims of an OpenID Connect ID token before any of them is believed: issuer, audience
 /// (and authorized party), expiry, issue time and the nonce bound to the sign-in. Any failure throws,
 /// so no account is found, linked or created from the token.
-/// shortcut: the signature is not verified. The token arrives straight from the provider's token
-/// endpoint over TLS in answer to our own code exchange (OpenID Connect Core 3.1.3.7); verify it against the
-/// provider's JWKS if an ID token ever reaches us by another channel.
+/// The signature is verified first, against the provider's published keys (see <see cref="OidcJwksCache"/>);
+/// an unsigned or <c>alg=none</c> token is refused.
 /// </summary>
 internal static class OidcIdTokenValidator
 {
@@ -44,14 +43,19 @@ internal static class OidcIdTokenValidator
     /// <returns>The validated claims; the caller disposes them.</returns>
     public static JsonDocument Validate(
         string idToken,
+        IReadOnlyCollection<SecurityKey> signingKeys,
         IReadOnlyList<string> issuers,
         string clientId,
         string? expectedNonce,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        TimeSpan? maxAuthenticationAge = null,
+        TimeSpan? clockSkew = null)
     {
         var parts = idToken.Split('.');
         if (parts.Length != 3 || parts[1].Length == 0)
             throw new OidcIdTokenException("malformed id token");
+
+        VerifySignature(idToken, signingKeys);
 
         JsonDocument document;
         try
@@ -71,8 +75,10 @@ internal static class OidcIdTokenValidator
 
             RequireIssuer(root, issuers);
             RequireAudience(root, clientId);
-            RequireTimes(root, now);
+            RequireTimes(root, now, clockSkew ?? ClockSkew);
             RequireNonce(root, expectedNonce);
+            if (maxAuthenticationAge is { } window)
+                RequireRecentAuthentication(root, now, window);
 
             if (string.IsNullOrWhiteSpace(StringClaim(root, "sub")))
                 throw new OidcIdTokenException("subject missing");
@@ -83,6 +89,36 @@ internal static class OidcIdTokenValidator
         {
             document.Dispose();
             throw;
+        }
+    }
+
+    private static readonly string[] SigningAlgorithms =
+    [
+        SecurityAlgorithms.RsaSha256, SecurityAlgorithms.RsaSha384, SecurityAlgorithms.RsaSha512,
+        SecurityAlgorithms.EcdsaSha256, SecurityAlgorithms.EcdsaSha384, SecurityAlgorithms.EcdsaSha512,
+    ];
+
+    /// <summary>Only the signature is checked here; the claims have their own rules below.</summary>
+    private static void VerifySignature(string idToken, IReadOnlyCollection<SecurityKey> signingKeys)
+    {
+        var parameters = new TokenValidationParameters
+        {
+            RequireSignedTokens = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeys = signingKeys,
+            ValidAlgorithms = SigningAlgorithms,
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = false,
+        };
+
+        try
+        {
+            new JwtSecurityTokenHandler().ValidateToken(idToken, parameters, out _);
+        }
+        catch (Exception ex) when (ex is SecurityTokenException or ArgumentException)
+        {
+            throw new OidcIdTokenException("signature invalid");
         }
     }
 
@@ -132,17 +168,28 @@ internal static class OidcIdTokenValidator
             throw new OidcIdTokenException("authorized party mismatch");
     }
 
-    private static void RequireTimes(JsonElement root, DateTimeOffset now)
+    private static void RequireTimes(JsonElement root, DateTimeOffset now, TimeSpan skew)
     {
         var expiresAt = SecondsClaim(root, "exp") ?? throw new OidcIdTokenException("expiry missing");
         var issuedAt = SecondsClaim(root, "iat") ?? throw new OidcIdTokenException("issue time missing");
 
-        if (expiresAt <= now - ClockSkew)
+        if (expiresAt <= now - skew)
             throw new OidcIdTokenException("id token expired");
-        if (issuedAt > now + ClockSkew)
+        if (issuedAt > now + skew)
             throw new OidcIdTokenException("id token issued in the future");
-        if (issuedAt < now - MaxAge - ClockSkew)
+        if (issuedAt < now - MaxAge - skew)
             throw new OidcIdTokenException("id token too old");
+    }
+
+    /// <summary>
+    /// A step-up needs the provider to have authenticated the person just now. When the token says when
+    /// (<c>auth_time</c>, OIDC Core 2), an older sign-in is refused; a provider that omits it was already
+    /// asked to re-authenticate (<c>prompt=login</c>).
+    /// </summary>
+    private static void RequireRecentAuthentication(JsonElement root, DateTimeOffset now, TimeSpan window)
+    {
+        if (SecondsClaim(root, "auth_time") is { } authenticatedAt && authenticatedAt < now - window - ClockSkew)
+            throw new OidcIdTokenException("authentication too old");
     }
 
     private static void RequireNonce(JsonElement root, string? expectedNonce)

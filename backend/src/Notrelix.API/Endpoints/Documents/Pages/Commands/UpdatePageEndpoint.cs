@@ -11,13 +11,13 @@ public static class UpdatePageEndpoint
         group.MapResourcePatch("/", HandleAsync)
             .WithName("Documents.Pages.UpdatePage")
             .WithTags("Documents.Pages")
-            .WithSummary("Rename a page");
+            .WithSummary("Rename a page or set its icon");
         return group;
     }
 
     private static async Task<IResult> HandleAsync(Guid pageId, UpdatePageRequest body, ISender sender)
     {
-        var result = await sender.Send(new UpdatePageCommand(pageId, body.Title, body.ExpectedVersion));
+        var result = await sender.Send(new UpdatePageCommand(pageId, body.Title, body.ExpectedVersion, body.Icon));
         return result.ToApiResult();
     }
 }

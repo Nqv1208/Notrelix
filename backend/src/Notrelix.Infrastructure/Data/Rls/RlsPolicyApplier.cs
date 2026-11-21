@@ -37,6 +37,12 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.028_deleted_workspaces.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.029_attachment_pending_uploads.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.030_chat_policy_fast_path.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.031_tenant_policy_fast_path.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.032_invitation_arm_prefilter.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.033_member_active_elsewhere.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.034_form_submit_scope.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.035_sso_scope.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.036_sso_identity_scope.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

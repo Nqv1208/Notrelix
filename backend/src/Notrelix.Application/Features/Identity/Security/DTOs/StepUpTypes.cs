@@ -14,7 +14,9 @@ public enum StepUpPurpose
     ChangeSecurityIdentity,
     ChangePassword,
     RevokeOtherSessions,
-    EnrollMfa
+    EnrollMfa,
+    TransferWorkspaceOwnership,
+    ResetMemberMfa
 }
 
 /// <summary>

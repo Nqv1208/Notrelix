@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Notrelix.Application.Features.Documents.Blocks;
+using Notrelix.Domain.Documents;
 using Notrelix.Domain.Documents.Versions;
 
 namespace Notrelix.Application.Features.Documents.Versions.Services;
@@ -120,7 +121,9 @@ public static class PageVersionSnapshot
     {
         var type = item.GetProperty("type").GetString()!;
         if (!BlockTypeNames.TryParse(type, out var blockType))
-            throw new InvalidOperationException($"A captured block has the unknown type '{type}'.");
+            throw new Notrelix.Domain.Common.Exceptions.BusinessRuleException(
+                DocumentRuleCodes.Documents_Version_BlockTypeInvalid,
+                $"A captured block has the type '{type}', which is no longer valid. Nothing was changed.");
 
         Guid? parent = item.TryGetProperty("parentId", out var p) && p.ValueKind == JsonValueKind.String ? p.GetGuid() : null;
         return new SnapshotBlock(

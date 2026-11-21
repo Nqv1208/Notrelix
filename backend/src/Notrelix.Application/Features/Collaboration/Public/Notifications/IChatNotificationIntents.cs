@@ -18,7 +18,10 @@ public static class ChatNotificationReasons
     /// <summary>The message carried an @channel broadcast.</summary>
     public const string Broadcast = "broadcast";
 
-    public static readonly IReadOnlyList<string> All = [Mention, DirectMessage, ThreadReply, Broadcast];
+    /// <summary>A moderator removed the person's own message (UC-CHT-H03).</summary>
+    public const string MessageRemoved = "message-removed";
+
+    public static readonly IReadOnlyList<string> All = [Mention, DirectMessage, ThreadReply, Broadcast, MessageRemoved];
 
     public static bool IsKnown(string? reason) => reason is not null && All.Contains(reason, StringComparer.Ordinal);
 }

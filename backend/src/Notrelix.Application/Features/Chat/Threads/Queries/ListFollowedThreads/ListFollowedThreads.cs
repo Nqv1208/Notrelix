@@ -7,6 +7,7 @@ using Notrelix.Application.Features.Chat.Threads.DTOs;
 using Notrelix.Application.Features.Chat.Threads.Services;
 using Notrelix.Application.Features.Workspaces.Public.Members;
 using Notrelix.Domain.Chat.Rules;
+using Notrelix.Domain.Chat.Spaces;
 
 namespace Notrelix.Application.Features.Chat.Threads.Queries.ListFollowedThreads;
 
@@ -51,7 +52,15 @@ public class ListFollowedThreadsQueryHandler(
         var query = db.ChatThreadFollowers.AsNoTracking()
             .Where(f => f.WorkspaceId == request.WorkspaceId && f.UserId == userId)
             .Join(db.ChatThreads.AsNoTracking(), f => f.RootMessageId, t => t.RootMessageId, (f, t) => new { f, t })
-            .Where(x => memberships.Any(m => m.SpaceId == x.t.SpaceId) && liveSpaces.Any(s => s.Id == x.t.SpaceId));
+            .Join(
+                db.ChatMessages.AsNoTracking().Where(m => m.WorkspaceId == request.WorkspaceId),
+                x => new { Id = x.t.RootMessageId, x.t.SpaceId },
+                r => new { r.Id, r.SpaceId },
+                (x, r) => new { x.f, x.t, RootAt = r.CreatedAt })
+            // A group member reads from their join point (ChannelAccess.HistoryFloor), so a thread rooted before it is not listed.
+            .Where(x => memberships.Any(m => m.SpaceId == x.t.SpaceId)
+                && liveSpaces.Any(s => s.Id == x.t.SpaceId
+                    && (s.Kind != SpaceKind.Group || memberships.Any(m => m.SpaceId == s.Id && x.RootAt >= m.JoinedAt))));
         if (before is { } cursor)
             query = query.Where(x => x.t.LastReplyAt < cursor);
 

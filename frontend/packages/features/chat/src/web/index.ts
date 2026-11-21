@@ -19,6 +19,7 @@ export {
   ChatWorkspace,
   type ChatViewerRole,
   type ChatWorkspaceProps,
+  type ChatDraftStore,
 } from "./components/chat-workspace";
 export {
   DiscussButton,
@@ -51,3 +52,19 @@ export {
   type MessageFrameOutcome,
   type UnreadFrameOutcome,
 } from "./query/chat-realtime-reducers";
+export {
+  useChatCalls,
+  type ChatCallsController,
+  type ChatCurrentCall,
+  type UseChatCallsOptions,
+} from "./calls/use-chat-calls";
+export {
+  ChatCallIncoming,
+  ChatCallStage,
+  ChatCallStrip,
+} from "./calls/chat-call-surfaces";
+export {
+  connectChatCallMedia,
+  type ChatCallMediaConnector,
+  type ChatCallMediaSession,
+} from "./calls/chat-call-media";

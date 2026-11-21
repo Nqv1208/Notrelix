@@ -482,6 +482,12 @@ export interface SpaceContentCounts {
  * Counts are what the caller can see; Spaces and resources hidden from the
  * caller can still block the archive, and the producer's answer decides.
  */
+/**
+ * How many days a deleted department can be restored. The producer's `Space.RestoreWindow` (30 days, the same
+ * window as a deleted Board); the producer enforces it, this only words it.
+ */
+export const SPACE_RESTORE_DAYS = 30;
+
 export function archiveBlocked(counts: SpaceContentCounts): boolean {
   return counts.childSpaces + counts.boards + counts.docs > 0;
 }

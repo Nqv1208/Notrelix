@@ -227,6 +227,7 @@ public sealed class WorkspaceRoleBaselineIntegrationTests : IAsyncLifetime
     public async Task InvitingAnAddressWithAPendingInvitation_IsAConflictWithTheStableCode_AndAddsNoSecondRow()
     {
         var (stack, admin, _, _) = await SeedAsync();
+        await _host.SetGuestInvitesAsync(stack, true);
         using var asAdmin = As(stack, admin);
         await OrgTreeTestHost.SendAsync(asAdmin, new InviteMemberCommand(stack.WorkspaceId, "twice@example.com", WorkspaceRole.Member));
 

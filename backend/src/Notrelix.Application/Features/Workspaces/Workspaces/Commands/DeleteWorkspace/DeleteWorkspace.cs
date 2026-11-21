@@ -1,12 +1,13 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.DeleteWorkspace;
 
 public record DeleteWorkspaceCommand(
     Guid WorkspaceId,
     long ExpectedVersion
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest, IWorkspaceLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.DeleteWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);

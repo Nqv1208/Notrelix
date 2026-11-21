@@ -8,10 +8,11 @@ namespace Notrelix.Application.Tests.Features.Workspaces.Members.Commands;
 public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
 {
     private readonly Mock<IIdentityDefaultWorkspace> _defaults = new();
+    private readonly Mock<Notrelix.Application.Features.Identity.Public.ApiTokens.IIdentityApiTokens> _apiTokens = new();
 
     private LeaveWorkspaceCommandHandler Leave() => new(
         DbContextMock.Object, RequestContextMock.Object, DateTimeProviderMock.Object,
-        GrantProjectionMock.Object, LockerMock.Object, _defaults.Object);
+        GrantProjectionMock.Object, LockerMock.Object, _defaults.Object, _apiTokens.Object);
 
     private SetDefaultWorkspaceCommandHandler SetDefault() => new(
         DbContextMock.Object, RequestContextMock.Object, _defaults.Object);
@@ -47,6 +48,8 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
             TestAccountId, TestWorkspaceId, TestUserId, TestNow, It.IsAny<CancellationToken>()), Times.Once);
         GrantProjectionMock.Verify(g => g.ClearCustomRoleAssignmentsAsync(
             TestAccountId, TestWorkspaceId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
+        _apiTokens.Verify(t => t.RevokeForMemberAsync(TestUserId, TestWorkspaceId, TestUserId,
+            Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd.Left, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -116,6 +119,8 @@ public class LeaveWorkspaceHandlerTests : WorkspaceHandlerTestBase
         await act.Should().ThrowAsync<NotFoundException>();
         GrantProjectionMock.Verify(g => g.RevokeLeavingMemberGrantAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        _apiTokens.Verify(t => t.RevokeForMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
+            It.IsAny<Notrelix.Application.Features.Identity.Public.ApiTokens.MemberAccessEnd>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

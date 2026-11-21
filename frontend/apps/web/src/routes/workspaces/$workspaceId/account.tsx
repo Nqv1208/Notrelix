@@ -14,6 +14,9 @@ const TABS: readonly AccountTab[] = [
   "appearance",
   "security",
   "notifications",
+  "email",
+  "providers",
+  "tokens",
   "workspaces",
 ];
 

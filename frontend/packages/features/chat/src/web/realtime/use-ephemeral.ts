@@ -50,11 +50,14 @@ export function useChatEphemeral(
     const stops = key.split("|").map((spaceId) =>
       port.subscribe(spaceId, (event) => {
         if (event.kind === "typing") {
-          typing.signal(
-            spaceId,
-            event.userId,
-            event.expiresInMs || TYPING_DEFAULT_EXPIRY_MS,
-          );
+          // A frame that expires at once ends the indicator: the person stopped typing.
+          if (event.expiresInMs === 0) typing.clear(spaceId, event.userId);
+          else
+            typing.signal(
+              spaceId,
+              event.userId,
+              event.expiresInMs || TYPING_DEFAULT_EXPIRY_MS,
+            );
         } else {
           presence.report(
             event.userId,
@@ -105,18 +108,29 @@ export function usePresenceOf(
 }
 
 /**
- * The caller's typing signal for a space: call it on each change of a
- * non-empty draft; the signal is sent at most once per 3 seconds per space.
+ * The caller's typing signals for a space. `start` goes on each change of a non-empty draft: the first keystroke
+ * is sent at once and a heartbeat follows at most every 3 seconds while typing goes on. `stop` goes when the draft
+ * empties, on send and on blur: it ends the indicator at once and re-arms the next start.
  */
 export function useTypingSignal(
   port: ChatEphemeralPort | undefined,
   spaceId: string | null,
-): () => void {
+): { readonly start: () => void; readonly stop: () => void } {
   const throttle = useMemo(() => createTypingThrottle(), []);
-  return useCallback(() => {
-    if (!port || !spaceId) return;
-    if (throttle(spaceId)) port.sendTyping(spaceId);
-  }, [port, spaceId, throttle]);
+  return useMemo(
+    () => ({
+      start: () => {
+        if (!port || !spaceId) return;
+        if (throttle(spaceId)) port.sendTyping(spaceId);
+      },
+      stop: () => {
+        if (!port || !spaceId) return;
+        // Nothing was started (no throttle entry) means nothing to stop.
+        if (throttle.reset(spaceId)) port.sendTyping(spaceId, true);
+      },
+    }),
+    [port, spaceId, throttle],
+  );
 }
 
 /**

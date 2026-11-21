@@ -1,4 +1,27 @@
-import type { WorkspaceMember, WorkspaceView } from "../types/workspace";
+import type {
+  AccountStatus,
+  WorkspaceMember,
+  WorkspaceView,
+} from "../types/workspace";
+
+/** Closed reads exactly like Suspended (the stricter reading); a missing or unknown status is Active. */
+export function isAccountReadOnly(
+  workspace?: { readonly accountStatus?: AccountStatus } | null,
+): boolean {
+  return (
+    workspace?.accountStatus === "Suspended" ||
+    workspace?.accountStatus === "Closed"
+  );
+}
+
+/** The workspace after the server refused a write because of the Account; Closed stays Closed. */
+export function markAccountSuspended<
+  T extends { readonly accountStatus?: AccountStatus },
+>(workspace: T): T {
+  return workspace.accountStatus === "Closed"
+    ? workspace
+    : { ...workspace, accountStatus: "Suspended" };
+}
 
 export function isOwner(member?: WorkspaceMember | null): boolean {
   return member?.role === "owner";

@@ -15,6 +15,14 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
     public string SettingsJson { get; private set; } = "{}";
     public string SubmitterPolicyJson { get; private set; } = "{}";
 
+    /// <summary>
+    /// The unguessable locator of the public form link; null while the form is private (the default). It is the
+    /// only thing an anonymous visitor holds: switching the form back to private clears it, so every copy of the
+    /// link stops working at once, and a new public key is never the old one.
+    /// </summary>
+    public string? PublicKey { get; private set; }
+    public bool IsPublic => PublicKey is not null;
+
     private readonly List<FormQuestion> _questions = new();
     public IReadOnlyCollection<FormQuestion> Questions => _questions.AsReadOnly();
 
@@ -89,6 +97,40 @@ public class Form : SoftDeletableAggregateRoot, IWorkspaceScoped
         ApplyAuditUpdate(pending);
         IncrementVersion();
         RaiseDomainEvent(new FormDetailsUpdatedDomainEvent(AccountId, WorkspaceId, Id, BoardId, Name, SettingsJson, SubmitterPolicyJson, updatedBy, updatedAt));
+    }
+
+    /// <summary>A fresh 128-bit URL-safe key for a public form link.</summary>
+    public static string NewPublicKey() =>
+        Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    public void MakePublic(string publicKey, Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (publicKey is null || publicKey.Length < 22 || !publicKey.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
+            throw new BusinessRuleException(WorkManagementRuleCodes.WorkManagement_Form_WeakPublicKey, "A public form key must be at least 22 URL-safe characters.");
+        // A link already shared never changes under the person who copied it.
+        if (IsPublic) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        PublicKey = publicKey;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new FormPublicAccessChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, true, updatedAt));
+    }
+
+    public void MakePrivate(Guid updatedBy, DateTimeOffset updatedAt)
+    {
+        EnsureNotDeleted();
+        Guard.NotEmpty(updatedBy);
+        if (!IsPublic) return;
+
+        var pending = PrepareAuditUpdate(updatedBy, updatedAt);
+        PublicKey = null;
+        ApplyAuditUpdate(pending);
+        IncrementVersion();
+        RaiseDomainEvent(new FormPublicAccessChangedDomainEvent(AccountId, WorkspaceId, Id, BoardId, false, updatedAt));
     }
 
     public void Publish(Guid updatedBy, DateTimeOffset updatedAt)

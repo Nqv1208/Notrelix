@@ -1,3 +1,4 @@
+using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Sessions.Commands.RevokeSession;
 using Notrelix.Domain.Identity.Security;
@@ -13,6 +14,7 @@ public class RevokeSessionTests : IdentityHandlerTestBase
         JwtBlacklistMock.Object,
         DateTimeProviderMock.Object,
         ActivityMock.Object,
+        SecurityNoticeMock.Object,
         new Mock<ILogger<RevokeSessionCommandHandler>>().Object);
 
     private static RevokeSessionCommand Revoke(Guid id) => new() { SessionId = id };
@@ -29,6 +31,7 @@ public class RevokeSessionTests : IdentityHandlerTestBase
         session.Status.Should().Be(SessionStatus.Revoked);
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(session.Id, TestNow, It.IsAny<TimeSpan>()), Times.Once);
         ActivityMock.Verify(a => a.Record(TestUserId, SecurityActivityType.SessionRevoked, TestNow, session.Id), Times.Once);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(TestUserId, SecurityNoticeKind.SessionRevoked, TestNow, session.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -43,6 +46,7 @@ public class RevokeSessionTests : IdentityHandlerTestBase
         session.Status.Should().Be(SessionStatus.Revoked);
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()), Times.Never);
         ActivityMock.Verify(a => a.Record(It.IsAny<Guid>(), It.IsAny<SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<SecurityNoticeKind>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -57,6 +61,7 @@ public class RevokeSessionTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         session.Status.Should().Be(SessionStatus.Expired);
         ActivityMock.Verify(a => a.Record(It.IsAny<Guid>(), It.IsAny<SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<SecurityNoticeKind>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -76,6 +81,7 @@ public class RevokeSessionTests : IdentityHandlerTestBase
         foreign.Status.Should().Be(SessionStatus.Active);
         JwtBlacklistMock.Verify(b => b.RevokeSessionBeforeAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<TimeSpan>()), Times.Never);
         ActivityMock.Verify(a => a.Record(It.IsAny<Guid>(), It.IsAny<SecurityActivityType>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>()), Times.Never);
+        SecurityNoticeMock.Verify(n => n.QueueAsync(It.IsAny<Guid>(), It.IsAny<SecurityNoticeKind>(), It.IsAny<DateTimeOffset>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

@@ -82,12 +82,23 @@ interface Pending {
  * dismissed. The server owns the attachment; a successful upload refreshes the
  * item's files and activity from it (no optimistic row).
  */
-export function useItemFileUploads(itemId: string, workspaceId: string) {
+export function useItemFileUploads(
+  itemId: string,
+  workspaceId: string,
+  /** Runs when a file ends after the sheet was closed: no row is left to show it. */
+  onFinished?: (result: {
+    name: string;
+    error: ItemFileUploadError | null;
+  }) => void,
+) {
   const { cards } = useWorkManagementServices();
   const queryClient = useQueryClient();
   const [uploads, setUploads] = useState<ItemFileUpload[]>([]);
   const pending = useRef(new Map<string, Pending>());
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const open = useRef(true);
+  const finished = useRef(onFinished);
+  finished.current = onFinished;
 
   const patch = useCallback((id: string, change: Partial<ItemFileUpload>) => {
     setUploads((list) =>
@@ -121,8 +132,12 @@ export function useItemFileUploads(itemId: string, workspaceId: string) {
         })
         .then(() => {
           pending.current.delete(id);
-          patch(id, { status: "done", progress: 100 });
           refresh();
+          if (!open.current) {
+            finished.current?.({ name: entry.file.name, error: null });
+            return;
+          }
+          patch(id, { status: "done", progress: 100 });
           const timer = setTimeout(() => {
             timers.current.delete(timer);
             setUploads((list) => list.filter((row) => row.id !== id));
@@ -135,10 +150,13 @@ export function useItemFileUploads(itemId: string, workspaceId: string) {
             refresh();
             return;
           }
-          patch(id, {
-            status: "error",
-            error: classifyItemFileUploadError(error),
-          });
+          const reason = classifyItemFileUploadError(error);
+          if (!open.current) {
+            pending.current.delete(id);
+            finished.current?.({ name: entry.file.name, error: reason });
+            return;
+          }
+          patch(id, { status: "error", error: reason });
         });
     },
     [cards, itemId, patch, refresh],
@@ -186,10 +204,11 @@ export function useItemFileUploads(itemId: string, workspaceId: string) {
   }, []);
 
   useEffect(() => {
-    const live = pending.current;
     const waiting = timers.current;
+    open.current = true;
     return () => {
-      for (const entry of live.values()) entry.controller?.abort();
+      // A file still sending is left to finish: the result is reported by `onFinished`.
+      open.current = false;
       for (const timer of waiting) clearTimeout(timer);
     };
   }, []);

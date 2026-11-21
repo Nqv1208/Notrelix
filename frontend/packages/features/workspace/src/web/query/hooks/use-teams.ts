@@ -55,6 +55,24 @@ export function createUseWorkspaceTeams({ api, endpoints }: UseTeamsDeps) {
   };
 }
 
+/**
+ * The Teams deleted from the Workspace, restorable (UC-WSP-L09). Only an Owner or Admin may read them, so the
+ * caller enables it for them alone; the producer refuses everyone else.
+ */
+export function createUseDeletedTeams({ api, endpoints }: UseTeamsDeps) {
+  const service = createTeamsService(api, endpoints);
+
+  return function useDeletedTeams(workspaceId: string, enabled = true) {
+    return useQuery({
+      queryKey: workspaceQueryKeys.deletedTeams(workspaceId),
+      queryFn: () => service.listDeleted(workspaceId),
+      enabled: !!workspaceId && enabled,
+      staleTime: 30_000,
+      retry: false,
+    });
+  };
+}
+
 /** One Team, carrying the `version` echoed back as `expectedVersion`. */
 export function createUseTeam({ api, endpoints }: UseTeamsDeps) {
   const service = createTeamsService(api, endpoints);

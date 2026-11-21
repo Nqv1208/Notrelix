@@ -94,6 +94,8 @@ export function parseMembers(payload: unknown): WorkspaceMember[] {
 
 type UpdateRoleBody =
   OperationRequestBody<"Workspaces.Members.UpdateMemberRole">;
+type JobTitleBody =
+  OperationRequestBody<"Workspaces.Members.UpdateMemberJobTitle">;
 type MemberVersionBody =
   OperationRequestBody<"Workspaces.Members.SuspendMember">;
 
@@ -185,6 +187,23 @@ export function createMembersService(api: WorkspaceApiClient) {
         expectedVersion: versionOf(expectedVersion),
       };
       await api.patch<void>(`${base(workspaceId)}/${userId}`, body);
+    },
+
+    /**
+     * PUT …/members/{userId}/job-title: sets another member's title (Owner and Admin, `ManageMemberProfile`);
+     * a blank title clears it. It quotes the member's version: a stale one answers 412 and nothing changes.
+     */
+    async updateJobTitle(
+      workspaceId: string,
+      userId: string,
+      jobTitle: string | null,
+      expectedVersion: number | undefined,
+    ): Promise<void> {
+      const body: JobTitleBody = {
+        jobTitle: jobTitle?.trim() ? jobTitle.trim() : null,
+        expectedVersion: versionOf(expectedVersion),
+      };
+      await api.put<void>(`${base(workspaceId)}/${userId}/job-title`, body);
     },
 
     async removeMember(

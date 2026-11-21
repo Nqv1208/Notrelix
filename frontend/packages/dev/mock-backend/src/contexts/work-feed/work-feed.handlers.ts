@@ -111,6 +111,7 @@ const CHAT_NOTIFICATION_TYPES: Readonly<Record<string, string>> = {
   chat_direct: "chat.direct-message",
   chat_thread: "chat.thread-reply",
   chat_broadcast: "chat.broadcast",
+  chat_removed: "chat.message-removed",
 };
 
 export const workFeedOperations = [
@@ -537,6 +538,20 @@ export const workFeedOperations = [
     async handle({ params, store }) {
       if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
       return outcome(markInbox(store, params.id, { type: "handled" }));
+    },
+  }),
+  defineMockOperation<{ workspaceId: string; id: string }>({
+    id: "wsFeed.inbox.unread",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Notifications.MarkInboxEntryUnread",
+    },
+    method: "POST",
+    route: "/workspaces/:workspaceId/inbox/:id/unread",
+    async handle({ params, store }) {
+      if (!store.isCurrentMemberOf(params.workspaceId)) return notFound();
+      markInbox(store, params.id, { type: "unread" });
+      return noContent();
     },
   }),
   defineMockOperation<{ workspaceId: string; id: string }>({

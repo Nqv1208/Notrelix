@@ -133,6 +133,18 @@ public sealed class PostgresNotificationInbox : INotificationInbox
         return changed > 0;
     }
 
+    public async Task<bool> MarkUnreadAsync(
+        Guid workspaceId, Guid userId, Guid notificationId, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        var changed = await OwnEntry(workspaceId, userId, notificationId)
+            .Where(r => r.ReadAt != null && r.DoneAt == null && (r.SnoozedUntil == null || r.SnoozedUntil <= at))
+            .ExecuteUpdateAsync(calls => calls
+                .SetProperty(r => r.Status, RecipientStatus.Unread)
+                .SetProperty(r => r.ReadAt, (DateTimeOffset?)null)
+                .SetProperty(r => r.UpdatedAt, (DateTimeOffset?)at), cancellationToken);
+        return changed > 0;
+    }
+
     public Task<int> MarkAllReadAsync(
         Guid workspaceId, Guid userId, DateTimeOffset readAt, CancellationToken cancellationToken) =>
         UnreadOf(workspaceId, userId).ExecuteUpdateAsync(MarkRead(readAt), cancellationToken);

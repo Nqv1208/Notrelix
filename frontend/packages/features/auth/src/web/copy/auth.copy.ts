@@ -51,6 +51,26 @@ export const en = {
     redirecting: "Taking you to {{provider}}…",
     passwordReset:
       "Your password was changed and every device was signed out. Sign in with the new password.",
+    mfaEnrollmentRequired:
+      "Your account now requires two-step verification. Sign in to set it up.",
+    ssoState:
+      "That company sign-in took too long or was already used. Start again.",
+    ssoDenied:
+      "You stopped signing in at your company's provider. Start again when you are ready.",
+    ssoFailed:
+      "Signing in through your company did not work. Try again, or ask your administrator.",
+    ssoEmailUnverified:
+      "Your company's provider has not verified your email, so Notrelix cannot sign you in. Ask your administrator.",
+    ssoDomainMismatch:
+      "The email your company's provider returned is not on a domain your company has verified in Notrelix. Ask your administrator.",
+    ssoIdentityConflict:
+      "This company sign-in cannot be used for this account. Ask your administrator.",
+    ssoNotProvisioned:
+      "Your company has not set up access for you in Notrelix yet. Ask your administrator to add you.",
+    ssoUnavailable:
+      "Single sign-on is not available for that address right now. Try again, or ask your administrator.",
+    ssoRequiredSocial:
+      "Your company requires single sign-on, so social sign-in cannot be used. Enter your work email and continue with your company.",
   },
   password: {
     title: "Enter your password",
@@ -77,11 +97,19 @@ export const en = {
     orgLine: "Single sign-on for @{{domain}} email",
     title: "{{org}} signs in with {{provider}}",
     lead: "You go to your company's sign-in page, then come back to Notrelix.",
-    continue: "Continue with {{provider}}",
+    continue: "Continue with {{org}}",
     redirecting: "Going to {{provider}}…",
-    noteTitle: "The company manages this password.",
-    noteBody:
-      " Notrelix does not store it. If you forget it, contact your company's IT department.",
+    optionalTitle: "You can also use a password.",
+    optionalBody:
+      " Single sign-on is the way your company set up; a Notrelix password still works.",
+    enforcedTitle: "Your company requires single sign-on.",
+    enforcedBody:
+      " Only the account owner can still use a password. If that is you, choose the password option below.",
+    usePassword: "Use a password instead",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
+    refused:
+      "{{org}} requires single sign-on, so a password does not open this account. Continue with {{org}}.",
     other: "Use another email",
   },
   otp: {
@@ -107,6 +135,27 @@ export const en = {
     inactive:
       "This account cannot sign in right now. Contact your administrator.",
     locked: "Too many wrong codes. Try again in {{seconds}} seconds.",
+  },
+  enroll: {
+    title: "Set up two-step verification",
+    lead: "Your account requires a second step at sign-in. Scan the QR code with an authenticator app, then enter the 6-digit code it shows.",
+    preparing: "Preparing your authenticator…",
+    qrLabel: "QR code for your authenticator app",
+    secretLabel: "Can't scan it? Enter this key in the app instead:",
+    codeLabel: "6-digit code",
+    verify: "Turn on and continue",
+    verifying: "Verifying…",
+    back: "Back to sign-in",
+    wrong:
+      "That code is not right, or it was already used. Wait for the next code and try again.",
+    expired: "This set-up expired. Sign in again.",
+    locked: "Too many wrong codes. Try again in {{seconds}} seconds.",
+    unreachable:
+      "Could not reach Notrelix. Check the connection and try again.",
+    codesTitle: "Save your recovery codes",
+    codesLead:
+      "Each code works once if you lose your phone. They are shown only now.",
+    codesContinue: "I saved them, continue",
   },
   forgot: {
     title: "Reset your password",
@@ -242,6 +291,9 @@ export const en = {
     seeBody: "This board only. You do not see the other departments or boards.",
     emailLabel: "Invited email",
     emailHint: "The invitation is tied to this email and cannot be changed.",
+    mismatch:
+      "You are signed in as {{current}}; the invitation is for {{invited}}.",
+    switchAccount: "Switch account",
     nameLabel: "Full name",
     passwordLabel: "Create a password",
     passwordHint: "At least {{count}} characters.",
@@ -259,6 +311,8 @@ export const en = {
     passwordShort: "Use at least {{count}} characters.",
     unreachable:
       "Could not reach Notrelix. Check the connection and try again.",
+    unreachableTitle: "Couldn't open the invitation",
+    retry: "Try again",
     mobile: {
       accept: "Accept",
       yourAccess: "Your access",
@@ -335,6 +389,26 @@ export const vi: AuthCopy = {
     redirecting: "Đang chuyển đến {{provider}}…",
     passwordReset:
       "Mật khẩu đã được đổi và mọi thiết bị đã bị đăng xuất. Hãy đăng nhập bằng mật khẩu mới.",
+    mfaEnrollmentRequired:
+      "Tài khoản của bạn nay bắt buộc xác minh hai bước. Hãy đăng nhập để thiết lập.",
+    ssoState:
+      "Lần đăng nhập qua công ty đã quá lâu hoặc đã được dùng rồi. Hãy bắt đầu lại.",
+    ssoDenied:
+      "Bạn đã dừng đăng nhập ở nhà cung cấp của công ty. Hãy bắt đầu lại khi sẵn sàng.",
+    ssoFailed:
+      "Đăng nhập qua công ty chưa thành công. Hãy thử lại, hoặc hỏi quản trị viên.",
+    ssoEmailUnverified:
+      "Nhà cung cấp của công ty chưa xác minh email của bạn nên Notrelix chưa cho đăng nhập. Hãy hỏi quản trị viên.",
+    ssoDomainMismatch:
+      "Email mà nhà cung cấp của công ty trả về không thuộc tên miền công ty đã xác minh trong Notrelix. Hãy hỏi quản trị viên.",
+    ssoIdentityConflict:
+      "Không dùng được lần đăng nhập công ty này cho tài khoản này. Hãy hỏi quản trị viên.",
+    ssoNotProvisioned:
+      "Công ty bạn chưa thiết lập quyền truy cập cho bạn trong Notrelix. Hãy nhờ quản trị viên thêm bạn.",
+    ssoUnavailable:
+      "Đăng nhập một lần chưa dùng được cho địa chỉ này. Hãy thử lại, hoặc hỏi quản trị viên.",
+    ssoRequiredSocial:
+      "Công ty bạn bắt buộc đăng nhập một lần nên không dùng được đăng nhập mạng xã hội. Hãy nhập email công việc và tiếp tục với công ty.",
   },
   password: {
     title: "Nhập mật khẩu",
@@ -360,11 +434,18 @@ export const vi: AuthCopy = {
     orgLine: "Đăng nhập một lần cho email @{{domain}}",
     title: "{{org}} dùng đăng nhập một lần qua {{provider}}",
     lead: "Bạn sẽ chuyển sang trang đăng nhập của công ty, rồi quay lại Notrelix.",
-    continue: "Tiếp tục với {{provider}}",
+    continue: "Tiếp tục với {{org}}",
     redirecting: "Đang chuyển sang {{provider}}…",
-    noteTitle: "Mật khẩu do công ty bạn quản lý.",
-    noteBody:
-      " Notrelix không lưu mật khẩu này. Quên mật khẩu thì liên hệ bộ phận CNTT của công ty.",
+    optionalTitle: "Bạn vẫn có thể dùng mật khẩu.",
+    optionalBody:
+      " Đăng nhập một lần là cách công ty bạn thiết lập; mật khẩu Notrelix vẫn dùng được.",
+    enforcedTitle: "Công ty bạn bắt buộc đăng nhập một lần.",
+    enforcedBody:
+      " Chỉ chủ sở hữu tài khoản mới còn dùng được mật khẩu. Nếu là bạn, hãy chọn dùng mật khẩu bên dưới.",
+    usePassword: "Dùng mật khẩu",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    refused:
+      "{{org}} bắt buộc đăng nhập một lần nên mật khẩu không mở được tài khoản này. Hãy tiếp tục với {{org}}.",
     other: "Dùng email khác",
   },
   otp: {
@@ -388,6 +469,26 @@ export const vi: AuthCopy = {
     inactive:
       "Tài khoản này tạm thời không đăng nhập được. Hãy liên hệ quản trị viên.",
     locked: "Nhập sai mã quá nhiều lần. Thử lại sau {{seconds}} giây.",
+  },
+  enroll: {
+    title: "Thiết lập xác minh hai bước",
+    lead: "Tài khoản của bạn yêu cầu bước thứ hai khi đăng nhập. Quét mã QR bằng ứng dụng xác thực, rồi nhập mã 6 số ứng dụng hiển thị.",
+    preparing: "Đang chuẩn bị ứng dụng xác thực…",
+    qrLabel: "Mã QR cho ứng dụng xác thực",
+    secretLabel: "Không quét được? Hãy nhập khóa này vào ứng dụng:",
+    codeLabel: "Mã 6 số",
+    verify: "Bật và tiếp tục",
+    verifying: "Đang xác minh…",
+    back: "Quay lại đăng nhập",
+    wrong:
+      "Mã chưa đúng hoặc đã được dùng rồi. Hãy chờ mã tiếp theo rồi thử lại.",
+    expired: "Phiên thiết lập đã hết hạn. Hãy đăng nhập lại.",
+    locked: "Nhập sai mã quá nhiều lần. Thử lại sau {{seconds}} giây.",
+    unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    codesTitle: "Lưu mã dự phòng của bạn",
+    codesLead:
+      "Mỗi mã dùng được một lần nếu bạn mất điện thoại. Các mã chỉ hiện lúc này.",
+    codesContinue: "Tôi đã lưu, tiếp tục",
   },
   forgot: {
     title: "Đặt lại mật khẩu",
@@ -518,6 +619,9 @@ export const vi: AuthCopy = {
     seeBody: "Chỉ board này. Bạn không thấy các phòng ban hay board khác.",
     emailLabel: "Email được mời",
     emailHint: "Lời mời gắn với email này, không đổi được.",
+    mismatch:
+      "Bạn đang đăng nhập là {{current}}; lời mời dành cho {{invited}}.",
+    switchAccount: "Đổi tài khoản",
     nameLabel: "Họ và tên",
     passwordLabel: "Tạo mật khẩu",
     passwordHint: "Ít nhất {{count}} ký tự.",
@@ -534,6 +638,8 @@ export const vi: AuthCopy = {
     nameRequired: "Nhập họ và tên của bạn.",
     passwordShort: "Dùng ít nhất {{count}} ký tự.",
     unreachable: "Chưa kết nối được Notrelix. Kiểm tra mạng rồi thử lại.",
+    unreachableTitle: "Chưa mở được lời mời",
+    retry: "Thử lại",
     mobile: {
       accept: "Chấp nhận",
       yourAccess: "Quyền của bạn",

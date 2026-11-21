@@ -23,6 +23,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDatabaseName("ux_users_normalized_email")
             .HasFilter("deleted_at IS NULL");
 
+        builder.Property(x => x.PendingEmail).HasColumnName("pending_email").HasMaxLength(320);
+
         builder.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
         builder.Property(x => x.Avatar).HasColumnName("avatar");
         builder.Property(x => x.AvatarStorageKey).HasColumnName("avatar_storage_key").HasMaxLength(200);

@@ -55,6 +55,17 @@ export interface CardVoteValue {
   voted: boolean;
 }
 
+/** One item a Relation field links to; `locked` = the reader cannot see its board, so no key and no title. */
+export interface RelationLink {
+  itemId: string;
+  itemKey: string | null;
+  title: string | null;
+  locked: boolean;
+}
+
+/** The most items one Relation field links to. */
+export const RELATION_LINK_LIMIT = 100;
+
 export interface Card {
   id: string;
   listId: string;
@@ -79,6 +90,8 @@ export interface Card {
   fieldValues: Record<string, unknown>;
   /** Formula and Rollup results by field id; never written back. */
   computedValues?: Record<string, ComputedValue>;
+  /** The items each Relation field links to, by field id. A locked link carries no key and no title. */
+  relationLinks?: Record<string, RelationLink[]>;
   _count: { comments: number; attachments: number; checklistItems: number };
   createdAt: string;
   updatedAt?: string;

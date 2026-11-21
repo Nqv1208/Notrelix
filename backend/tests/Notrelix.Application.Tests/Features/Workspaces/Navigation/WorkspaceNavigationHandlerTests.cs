@@ -29,9 +29,16 @@ public class WorkspaceNavigationHandlerTests
     private readonly Mock<IDateTimeProvider> _clock = new();
     private readonly Mock<IResourceVisibility> _visibility = new();
     private DateTimeOffset _now = Now;
+    private readonly List<Guid> _readableBoards = [];
+    private readonly List<Guid> _readablePages = [];
 
     public WorkspaceNavigationHandlerTests()
     {
+        // What the caller may open, for the writes: a resource the locator finds but the caller cannot read is NotFound.
+        _visibility.Setup(v => v.VisibleBoardIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync(() => _readableBoards.ToList());
+        _visibility.Setup(v => v.VisibleArchivedBoardIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        _visibility.Setup(v => v.VisiblePageIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync(() => _readablePages.ToList());
+        _visibility.Setup(v => v.VisibleTrashedPageIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync([]);
         _requestContext.Setup(c => c.UserId).Returns(UserId);
         _requestContext.Setup(c => c.RequireAccountId()).Returns(AccountId);
         _clock.Setup(c => c.UtcNow).Returns(() => _now);
@@ -45,8 +52,10 @@ public class WorkspaceNavigationHandlerTests
             .ReturnsAsync(pages.ToList());
     }
 
-    private void ResourceExistsIn(Guid resourceId, Guid accountId, Guid workspaceId, string kind = NavigationResourceKinds.Board)
+    private void ResourceExistsIn(Guid resourceId, Guid accountId, Guid workspaceId, string kind = NavigationResourceKinds.Board, bool readable = true)
     {
+        if (readable)
+            (kind == NavigationResourceKinds.Board ? _readableBoards : _readablePages).Add(resourceId);
         _locator
             .Setup(l => l.LocateAsync(
                 It.Is<ResourceRef>(r => r.ResourceId == resourceId && r.Kind.Value == kind),
@@ -62,8 +71,8 @@ public class WorkspaceNavigationHandlerTests
         return id;
     }
 
-    private RecordRecentResourceCommandHandler RecordHandler() => new(_store, _locator.Object, _requestContext.Object, _clock.Object);
-    private PinResourceCommandHandler PinHandler() => new(_store, _locator.Object, _requestContext.Object, _clock.Object);
+    private RecordRecentResourceCommandHandler RecordHandler() => new(_store, _locator.Object, _visibility.Object, _requestContext.Object, _clock.Object);
+    private PinResourceCommandHandler PinHandler() => new(_store, _locator.Object, _visibility.Object, _requestContext.Object, _clock.Object);
     private UnpinResourceCommandHandler UnpinHandler() => new(_store, _requestContext.Object);
 
     // ── Recents ───────────────────────────────────────────────────────────
@@ -145,6 +154,41 @@ public class WorkspaceNavigationHandlerTests
         var act = () => RecordHandler().Handle(new RecordRecentResourceCommand(WorkspaceId, NavigationResourceKinds.Page, Guid.CreateVersion7()), default);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Theory]
+    [InlineData(NavigationResourceKinds.Board)]
+    [InlineData(NavigationResourceKinds.Page)]
+    public async Task RecordRecentAndPin_AResourceTheCallerCannotRead_IsNotFoundAndStoresNothing(string kind)
+    {
+        var hidden = Guid.CreateVersion7();
+        ResourceExistsIn(hidden, AccountId, WorkspaceId, kind, readable: false);
+
+        var record = () => RecordHandler().Handle(new RecordRecentResourceCommand(WorkspaceId, kind, hidden), default);
+        var pin = () => PinHandler().Handle(new PinResourceCommand(WorkspaceId, kind, hidden), default);
+
+        await record.Should().ThrowAsync<NotFoundException>("a Private Board the caller cannot read answers like a made-up id");
+        await pin.Should().ThrowAsync<NotFoundException>();
+        _store.Recents.Should().BeEmpty();
+        _store.Pins.Should().BeEmpty();
+        _store.Locks.Should().BeEmpty("validation happens before any navigation state is touched");
+    }
+
+    [Fact]
+    public async Task RecordRecentAndPin_AnArchivedBoardAndATrashedPageTheCallerMayRead_StillWork()
+    {
+        var board = Guid.CreateVersion7();
+        var page = Guid.CreateVersion7();
+        ResourceExistsIn(board, AccountId, WorkspaceId, NavigationResourceKinds.Board, readable: false);
+        ResourceExistsIn(page, AccountId, WorkspaceId, NavigationResourceKinds.Page, readable: false);
+        _visibility.Setup(v => v.VisibleArchivedBoardIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync([board]);
+        _visibility.Setup(v => v.VisibleTrashedPageIdsAsync(WorkspaceId, UserId, It.IsAny<CancellationToken>())).ReturnsAsync([page]);
+
+        await RecordHandler().Handle(new RecordRecentResourceCommand(WorkspaceId, NavigationResourceKinds.Board, board), default);
+        await PinHandler().Handle(new PinResourceCommand(WorkspaceId, NavigationResourceKinds.Page, page), default);
+
+        _store.Recents.Should().ContainSingle();
+        _store.Pins.Should().ContainSingle();
     }
 
     [Fact]
@@ -255,14 +299,71 @@ public class WorkspaceNavigationHandlerTests
     [Fact]
     public async Task Pin_OverTheCap_IsRejectedWithStableRuleCode()
     {
+        // The cap counts pins the member can still read, so each stored pin points at a Board the caller may open.
         for (var i = 0; i < WorkspaceNavigationRules.PinLimit; i++)
-            _store.Pins.Add(PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, Guid.CreateVersion7(), i, Now));
+            _store.Pins.Add(PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, ExistingBoard(), i, Now));
 
         var act = () => PinHandler().Handle(new PinResourceCommand(WorkspaceId, NavigationResourceKinds.Board, ExistingBoard()), default);
 
         (await act.Should().ThrowAsync<DomainBusinessRuleException>())
             .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Navigation_PinLimitReached);
         _store.Pins.Should().HaveCount(WorkspaceNavigationRules.PinLimit);
+    }
+
+    [Fact]
+    public async Task Pin_FiftyStoredPinsSomeUnreadable_PrunesTheUnreadableOnesAndAdmitsTheNewPin()
+    {
+        var readable = new List<Guid>();
+        var unreadable = new List<Guid>();
+        for (var i = 0; i < WorkspaceNavigationRules.PinLimit; i++)
+        {
+            var kind = i % 2 == 0 ? NavigationResourceKinds.Board : NavigationResourceKinds.Page;
+            var resourceId = Guid.CreateVersion7();
+            // Every tenth pin points at something that is gone or no longer readable.
+            var isUnreadable = i % 5 == 0;
+            if (!isUnreadable)
+                (kind == NavigationResourceKinds.Board ? _readableBoards : _readablePages).Add(resourceId);
+            (isUnreadable ? unreadable : readable).Add(resourceId);
+            _store.Pins.Add(PinnedResource.Create(AccountId, WorkspaceId, UserId, kind, resourceId, i, Now));
+        }
+        var other = PinnedResource.Create(AccountId, WorkspaceId, Guid.CreateVersion7(), NavigationResourceKinds.Board, Guid.CreateVersion7(), 0, Now);
+        _store.Pins.Add(other);
+        var newBoard = ExistingBoard();
+
+        var result = await PinHandler().Handle(new PinResourceCommand(WorkspaceId, NavigationResourceKinds.Board, newBoard), default);
+
+        result.Succeeded.Should().BeTrue();
+        _store.Pins.Select(p => p.ResourceId).Should().NotIntersectWith(unreadable, "unreadable pins are deleted with the new pin");
+        _store.Pins.Where(p => p.UserId == UserId).Select(p => p.ResourceId)
+            .Should().BeEquivalentTo(readable.Append(newBoard));
+        _store.Pins.Should().Contain(other, "another member's pins are never touched");
+    }
+
+    [Fact]
+    public async Task Pin_AtTheTrueCapOfReadablePins_IsRefusedAndPrunesNothing()
+    {
+        for (var i = 0; i < WorkspaceNavigationRules.PinLimit; i++)
+            _store.Pins.Add(PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, ExistingBoard(), i, Now));
+        var before = _store.Pins.ToList();
+
+        var act = () => PinHandler().Handle(new PinResourceCommand(WorkspaceId, NavigationResourceKinds.Board, ExistingBoard()), default);
+
+        (await act.Should().ThrowAsync<DomainBusinessRuleException>())
+            .Which.RuleCode.Should().Be(WorkspaceRuleCodes.Workspaces_Navigation_PinLimitReached);
+        _store.Pins.Should().Equal(before);
+    }
+
+    [Fact]
+    public async Task Unpin_APinTheCallerCanNoLongerRead_StillRemovesIt()
+    {
+        var hiddenBoard = Guid.CreateVersion7();
+        ResourceExistsIn(hiddenBoard, AccountId, WorkspaceId, readable: false);
+        _store.Pins.Add(PinnedResource.Create(AccountId, WorkspaceId, UserId, NavigationResourceKinds.Board, hiddenBoard, 0, Now));
+
+        var result = await UnpinHandler().Handle(new UnpinResourceCommand(WorkspaceId, NavigationResourceKinds.Board, hiddenBoard), default);
+
+        result.Succeeded.Should().BeTrue();
+        _store.Pins.Should().BeEmpty();
     }
 
     [Fact]

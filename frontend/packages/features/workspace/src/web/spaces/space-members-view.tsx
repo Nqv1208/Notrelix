@@ -15,6 +15,7 @@ import {
 import {
   type SpaceMemberEntry,
   type SpaceRole,
+  type SpaceSubjectType,
   type SpaceTeam,
 } from "../../core/model/spaces";
 import type { SectionState } from "../home/home-models";
@@ -78,7 +79,7 @@ export function RoleTag({
 }
 
 const GRID =
-  "grid grid-cols-[minmax(0,1fr)_150px_210px_104px_36px] items-center gap-3.5 px-3.5";
+  "grid grid-cols-[minmax(0,1fr)_150px_210px_104px_36px] items-center gap-3.5 px-3.5 max-md:grid-cols-[minmax(0,1fr)_auto_36px]";
 
 export interface MemberMenuState {
   readonly key: string;
@@ -128,6 +129,20 @@ export interface SpaceMembersViewProps {
   readonly guests?: readonly SpaceGuestView[];
   /** Opens every team on the first load, asking for its people. */
   readonly expandTeams?: boolean;
+  /**
+   * The entries come from a server-paged read (K10): the role and kind filters run on the producer,
+   * more people load on demand, and the name search stays on the people loaded so far.
+   */
+  readonly paging?: {
+    readonly hasMore: boolean;
+    readonly loadingMore: boolean;
+    readonly loadMoreFailed: boolean;
+    readonly onLoadMore: () => void;
+    readonly onFilterChange: (filter: {
+      role: SpaceRole | null;
+      kind: SpaceSubjectType | null;
+    }) => void;
+  };
 }
 
 function Chevron({ className }: { className?: string }) {
@@ -473,7 +488,7 @@ function InviteRow({
       <span
         data-f="src"
         role="cell"
-        className="flex flex-wrap gap-1 text-xs text-muted-foreground"
+        className="flex flex-wrap gap-1 text-xs text-muted-foreground max-md:hidden"
       >
         <span
           data-f="srcc"
@@ -485,7 +500,7 @@ function InviteRow({
       <span
         data-f="act"
         role="cell"
-        className="flex gap-2.5 text-xs leading-[1.45] text-meta-foreground"
+        className="flex gap-2.5 text-xs leading-[1.45] text-meta-foreground max-md:hidden"
       >
         <button
           type="button"
@@ -675,7 +690,7 @@ function MemberRow({
         <span
           data-f="src"
           role="cell"
-          className="flex flex-wrap gap-1 text-xs leading-[1.45] text-muted-foreground"
+          className="flex flex-wrap gap-1 text-xs leading-[1.45] text-muted-foreground max-md:hidden"
         >
           {row.sources.map((source) => (
             <span
@@ -691,7 +706,7 @@ function MemberRow({
         <span
           data-f="act"
           role="cell"
-          className="text-xs leading-[1.45] text-meta-foreground"
+          className="text-xs leading-[1.45] text-meta-foreground max-md:hidden"
         >
           {row.pending ? m.pending : row.activity}
         </span>
@@ -855,7 +870,7 @@ function Aside({
     <aside
       data-f="aside"
       aria-label={a.label}
-      className="box-border flex w-[330px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line bg-popover px-5 pt-5 pb-7 dark:bg-card"
+      className="box-border flex w-[330px] shrink-0 flex-col gap-[22px] overflow-auto border-l border-line bg-popover px-5 pt-5 pb-7 max-md:w-full max-md:overflow-visible max-md:border-t max-md:border-l-0 dark:bg-card"
     >
       <div data-f="ab">
         <h3 data-f="abh" className={ASIDE_H3}>
@@ -1011,9 +1026,14 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
       props.teams,
     ],
   );
+  // On a paged read the producer already applied the role and kind: only the name search runs here.
   const filtered = useMemo(
-    () => filterMemberRows(rows, filters),
-    [rows, filters],
+    () =>
+      filterMemberRows(
+        rows,
+        props.paging ? { ...filters, role: "all", via: "any" } : filters,
+      ),
+    [rows, filters, props.paging],
   );
   const visible = filtered.slice(0, shown);
   // A waiting invitation is neither a team nor joined directly yet.
@@ -1083,6 +1103,37 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
   useLayoutEffect(() => {
     setShown(page);
   }, [filters, page]);
+  // The role and kind filters run on the producer: tell the host which list to read.
+  const onFilterChange = props.paging?.onFilterChange;
+  useEffect(() => {
+    onFilterChange?.({
+      role: filters.role === "all" ? null : filters.role,
+      kind:
+        filters.via === "direct"
+          ? "User"
+          : filters.via === "team"
+            ? "Team"
+            : null,
+    });
+  }, [filters.role, filters.via, onFilterChange]);
+  const loadMore = props.paging
+    ? () => {
+        setShown(Infinity);
+        props.paging?.onLoadMore();
+      }
+    : null;
+  const loadMoreButton = (className: string) =>
+    props.paging?.hasMore && loadMore ? (
+      <button
+        data-f="load-more"
+        type="button"
+        disabled={props.paging.loadingMore}
+        onClick={loadMore}
+        className={cn(className, FOCUS)}
+      >
+        {props.paging.loadingMore ? m.loadingMore : m.loadMore}
+      </button>
+    ) : null;
 
   const roleOptions: readonly { id: MemberRoleFilter; label: string }[] = [
     { id: "all", label: m.roleAll },
@@ -1146,7 +1197,7 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
             }
           />
           <span className="flex-1" />
-          {entries ? (
+          {entries && (props.summary || !props.paging) ? (
             <span
               data-f="sum"
               className="text-crumb leading-[1.45] text-meta-foreground"
@@ -1204,8 +1255,12 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
             >
               <span role="columnheader">{m.head.who}</span>
               <span role="columnheader">{m.head.role}</span>
-              <span role="columnheader">{m.head.via}</span>
-              <span role="columnheader">{m.head.activity}</span>
+              <span role="columnheader" className="max-md:hidden">
+                {m.head.via}
+              </span>
+              <span role="columnheader" className="max-md:hidden">
+                {m.head.activity}
+              </span>
               <span />
             </div>
             {visible.length === 0 && visibleInvites.length === 0 ? (
@@ -1215,8 +1270,25 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
                   role="cell"
                   className="m-0 px-4 py-6 text-center text-compact leading-[1.45] text-meta-foreground"
                 >
-                  {rows.length === 0 ? m.empty : m.noMatches}
+                  {rows.length === 0 &&
+                  filters.role === "all" &&
+                  filters.via === "any"
+                    ? m.empty
+                    : rows.length > 0 &&
+                        filters.query.trim() &&
+                        props.paging?.hasMore
+                      ? formatCopy(m.noMatchesLoaded, { count: rows.length })
+                      : m.noMatches}
                 </p>
+                {rows.length > 0 &&
+                filters.query.trim() &&
+                props.paging?.hasMore ? (
+                  <div role="cell" className="flex justify-center pb-4">
+                    {loadMoreButton(
+                      "inline-flex h-8 items-center rounded-[7px] border border-line-strong bg-popover px-3 text-compact leading-[1.45] font-medium text-foreground hover:bg-state-hover-strong disabled:opacity-60 dark:bg-card",
+                    )}
+                  </div>
+                ) : null}
               </div>
             ) : (
               visible.map((row, index) => (
@@ -1251,6 +1323,26 @@ export function SpaceMembersView(props: SpaceMembersViewProps) {
             {visibleInvites.map((invite) => (
               <InviteRow key={invite.id} copy={copy} invite={invite} />
             ))}
+            {filtered.length <= shown &&
+            props.paging?.hasMore &&
+            (visible.length > 0 || visibleInvites.length > 0) ? (
+              <div role="row" className="contents">
+                <div role="cell" className="contents">
+                  {loadMoreButton(
+                    "flex h-11 w-full items-center justify-center rounded-b-[12px] border-0 border-t border-line bg-transparent text-compact leading-[1.45] font-normal text-state-selected-foreground hover:bg-background disabled:opacity-60",
+                  )}
+                </div>
+                {props.paging.loadMoreFailed ? (
+                  <p
+                    role="alert"
+                    data-f="load-more-failed"
+                    className="m-0 border-t border-line px-4 py-2 text-center text-crumb leading-[1.45] text-danger-text"
+                  >
+                    {m.loadMoreFailed}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             {filtered.length > shown ? (
               <div role="row" className="contents">
                 <div role="cell" className="contents">

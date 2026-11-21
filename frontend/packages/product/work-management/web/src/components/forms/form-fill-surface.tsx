@@ -561,7 +561,7 @@ function FillForm(props: FormFillSurfaceProps & { form: FormDetail }) {
 
 const BOX = "h-11 sm:h-[34px]";
 
-function Question({
+export function Question({
   copy,
   q,
   id,

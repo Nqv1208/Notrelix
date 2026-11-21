@@ -301,58 +301,56 @@ export function BoardCalendarView({
     // removing the toast it sits on, and a result toast that reuses its id
     // inherits that removal and never shows.
     const toastId = `calendar-write-${card.id}-${++writeToasts}`;
-    updateCard.mutate(
-      { cardId: card.id, patch },
-      {
-        onSuccess: () => {
+    // A promise, not per-call mutate callbacks: a second move on the same hook would drop these.
+    void updateCard.mutateAsync({ cardId: card.id, patch }).then(
+      () => {
+        setUnsavedDays(card.id, null);
+        if (isUndo) {
+          toast.success(text.undone, { id: toastId });
+          return;
+        }
+        toast.success(message, {
+          id: toastId,
+          duration: 8000,
+          action: {
+            label: text.undo,
+            onClick: () =>
+              writeDates(card, previous, patch, shown, message, true),
+          },
+        });
+      },
+      (error: unknown) => {
+        if (isConflict(error)) {
           setUnsavedDays(card.id, null);
-          if (isUndo) {
-            toast.success(text.undone, { id: toastId });
-            return;
-          }
-          toast.success(message, {
-            id: toastId,
-            duration: 8000,
-            action: {
-              label: text.undo,
-              onClick: () =>
-                writeDates(card, previous, patch, shown, message, true),
-            },
-          });
-        },
-        onError: (error: unknown) => {
-          if (isConflict(error)) {
-            setUnsavedDays(card.id, null);
-            // The refetch brings the other person's version, which says who changed it.
-            void Promise.resolve(kanban.refetch()).then(() => {
-              const actor = kanban.lastEditorOf(card.id);
-              toast.error(
-                actor
-                  ? fillCopy(text.conflictBy, { actor, key: nameOf(card) })
-                  : fillCopy(text.conflict, { key: nameOf(card) }),
-                {
-                  id: toastId,
-                  description: text.conflictNote,
-                  action: {
-                    label: text.reload,
-                    onClick: () => void kanban.refetch(),
-                  },
+          // The refetch brings the other person's version, which says who changed it.
+          void Promise.resolve(kanban.refetch()).then(() => {
+            const actor = kanban.lastEditorOf(card.id);
+            toast.error(
+              actor
+                ? fillCopy(text.conflictBy, { actor, key: nameOf(card) })
+                : fillCopy(text.conflict, { key: nameOf(card) }),
+              {
+                id: toastId,
+                description: text.conflictNote,
+                action: {
+                  label: text.reload,
+                  onClick: () => void kanban.refetch(),
                 },
-              );
-            });
-            return;
-          }
-          setUnsavedDays(card.id, shown);
-          toast.error(fillCopy(text.failed, { key: nameOf(card) }), {
-            id: toastId,
-            description: text.failedNote,
-            action: {
-              label: text.retry,
-              onClick: () =>
-                writeDates(card, patch, previous, shown, message, isUndo),
-            },
+              },
+            );
           });
-        },
+          return;
+        }
+        setUnsavedDays(card.id, shown);
+        toast.error(fillCopy(text.failed, { key: nameOf(card) }), {
+          id: toastId,
+          description: text.failedNote,
+          action: {
+            label: text.retry,
+            onClick: () =>
+              writeDates(card, patch, previous, shown, message, isUndo),
+          },
+        });
       },
     );
   };

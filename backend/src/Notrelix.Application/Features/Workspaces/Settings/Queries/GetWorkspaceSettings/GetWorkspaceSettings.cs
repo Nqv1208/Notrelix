@@ -1,4 +1,5 @@
 using global::Notrelix.Application.Common.Models;
+using Notrelix.Application.Features.Accounts.Public.Security;
 using Notrelix.Application.Features.Workspaces.Abstractions;
 
 namespace Notrelix.Application.Features.Workspaces.Settings.Queries.GetWorkspaceSettings;
@@ -28,10 +29,12 @@ public record WorkspaceSettingsDto(
 public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSettingsQuery, Result<WorkspaceSettingsDto>>
 {
     private readonly IWorkspaceDbContext _context;
+    private readonly IAccountSecurityPolicyFacts _securityPolicy;
 
-    public GetWorkspaceSettingsQueryHandler(IWorkspaceDbContext context)
+    public GetWorkspaceSettingsQueryHandler(IWorkspaceDbContext context, IAccountSecurityPolicyFacts securityPolicy)
     {
         _context = context;
+        _securityPolicy = securityPolicy;
     }
 
     public async Task<Result<WorkspaceSettingsDto>> Handle(GetWorkspaceSettingsQuery request, CancellationToken ct)
@@ -46,7 +49,8 @@ public class GetWorkspaceSettingsQueryHandler : IRequestHandler<GetWorkspaceSett
         var s = workspace.Settings;
         return Result<WorkspaceSettingsDto>.Success(new WorkspaceSettingsDto(
             s.AllowPublicSharing,
-            s.EnforceMfa,
+            // Read-only here: the Account owns the requirement.
+            await _securityPolicy.IsMfaRequiredAsync(workspace.AccountId, ct),
             s.AllowGuestInvites,
             s.DefaultMemberRole.ToString(),
             s.InvitationExpiryDays,

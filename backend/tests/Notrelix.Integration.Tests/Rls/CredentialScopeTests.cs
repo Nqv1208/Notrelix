@@ -160,6 +160,40 @@ public sealed class CredentialScopeTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ConfirmEmail_OfAPendingChange_UnderTheAppRole_SwitchesTheSignInEmailAndEndsEverySessionOfThatUserOnly()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Create("change-cred@example.com", "Changer", _hash, now, hasPasswordCredential: true);
+        user.ConfirmEmail(null, now);
+        user.RequestEmailChange("changed-cred@example.com", user.Id, now);
+        var issued = new OneTimeTokenService().Generate(TokenPurpose.EmailVerification);
+        var token = EmailVerificationToken.Create(
+            user.Id, TokenHash.Create(issued.TokenHash), issued.HashVersion, "changed-cred@example.com", now.AddHours(1), now);
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using (var ctx = _fixture.CreateOwnerContext(system))
+        {
+            ctx.Users.Add(user);
+            ctx.EmailVerificationTokens.Add(token);
+            ctx.Sessions.Add(UserSession.Create(user.Id, RefreshTokenHash.Create("rt-" + Guid.NewGuid().ToString("N")), now.AddDays(30), now));
+            ctx.Sessions.Add(UserSession.Create(_b.User.Id, RefreshTokenHash.Create("rt-" + Guid.NewGuid().ToString("N")), now.AddDays(30), now));
+            await ctx.SaveChangesAsync();
+        }
+
+        var ok = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/email-verification/confirm", new { token = issued.RawToken }));
+        ok.IsSuccessStatusCode.Should().BeTrue(await ok.Content.ReadAsStringAsync());
+
+        (await OwnerScalarAsync("SELECT normalized_email FROM identity.users WHERE id = @u", ("u", user.Id))).Should().Be("changed-cred@example.com");
+        (await OwnerScalarAsync("SELECT coalesce(pending_email, 'none') FROM identity.users WHERE id = @u", ("u", user.Id))).Should().Be("none");
+        (await OwnerScalarAsync("SELECT email_confirmed FROM identity.users WHERE id = @u", ("u", user.Id))).Should().Be("True");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", user.Id))).Should().Be("0");
+        (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", _b.User.Id))).Should().Be("1", "another person's sessions stay");
+
+        var replay = await CallAsync(c => c.PostAsJsonAsync("/api/v1/auth/email-verification/confirm", new { token = issued.RawToken }));
+        replay.IsSuccessStatusCode.Should().BeFalse("a used link changes nothing");
+    }
+
+    [Fact]
     public async Task ResendVerification_UnderTheAppRole_IssuesATokenForThatUserOnly()
     {
         var (u, _) = await SeedUnconfirmedUserWithTokenAsync("resend-cred@example.com");
@@ -210,6 +244,30 @@ public sealed class CredentialScopeTests : IAsyncLifetime
         (await OwnerScalarAsync("SELECT password_hash FROM identity.users WHERE id = @u", ("u", _a.User.Id))).Should().NotBe(before);
         (await OwnerScalarAsync("SELECT password_hash FROM identity.users WHERE id = @u", ("u", _b.User.Id))).Should().Be(beforeB, "another user is untouched");
         (await OwnerScalarAsync("SELECT count(*) FROM identity.user_sessions WHERE user_id = @u AND status = 'Active'", ("u", _a.User.Id))).Should().Be("0");
+    }
+
+    [Fact]
+    public async Task ResetPassword_UnderTheAppRole_StagesTheNoticeWithTheChange_AndTheWorkerQueuesExactlyOneMail()
+    {
+        const string countMails =
+            "SELECT count(*) FROM notifications.email_outbox WHERE recipient_user_id = @u AND template_name = 'identity.security-notice'";
+        // One host for the whole flow: the request runs as the application login, the consumer as the worker login.
+        using var factory = AppRoleHost.CreateFactory(_fixture, _fixture.AppConnectionString);
+        string code;
+        using (var scope = factory.Services.CreateScope())
+            code = await scope.ServiceProvider.GetRequiredService<IOtpService>().GenerateAsync("forgot-password", "a-cred@example.com");
+        using var client = factory.CreateClient();
+
+        var reset = await client.PostAsJsonAsync("/api/v1/auth/reset-password",
+            new { email = "a-cred@example.com", code, newPassword = NewPassword });
+
+        reset.StatusCode.Should().Be(HttpStatusCode.OK, "the application login stages only the event; the mail is the worker's write");
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(45);
+        while (DateTimeOffset.UtcNow < deadline && await OwnerScalarAsync(countMails, ("u", _a.User.Id)) == "0")
+            await Task.Delay(500);
+        await Task.Delay(2000); // a second mail, if there were one, would land by now
+        (await OwnerScalarAsync(countMails, ("u", _a.User.Id))).Should().Be("1");
+        (await OwnerScalarAsync(countMails, ("u", _b.User.Id))).Should().Be("0", "another user gets nothing");
     }
 
     [Fact]

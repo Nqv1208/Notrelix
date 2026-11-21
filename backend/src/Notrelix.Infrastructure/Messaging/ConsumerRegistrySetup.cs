@@ -59,6 +59,16 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "SendSecurityNoticeEmailConsumer",
+                EventName = "identity.security-notice-requested",
+                EventVersion = 1,
+                EndpointName = "notrelix-identity-security-notice-v1",
+                BoundedContext = "Identity",
+                Description = "Tells the owner of an account that its sign-in security changed",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "SendRegistrationNoticeEmailConsumer",
                 EventName = "identity.registration-attempted-on-existing-account",
                 EventVersion = 1,
@@ -194,6 +204,46 @@ public static class ConsumerRegistrySetup
                 Maturity = ConsumerMaturity.Implemented
             },
 
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageRenamedActivityConsumer",
+                EventName = "page.renamed",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-renamed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page being renamed",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageMovedActivityConsumer",
+                EventName = "page.moved",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-moved-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page being moved",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageTrashedActivityConsumer",
+                EventName = "page.archived",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-trashed-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page going to the trash",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "PageRestoredActivityConsumer",
+                EventName = "page.restored",
+                EventVersion = 1,
+                EndpointName = "notrelix-activity-page-restored-v1",
+                BoundedContext = "Collaboration",
+                Description = "Records the page activity row for a page being restored",
+                Maturity = ConsumerMaturity.Implemented
+            },
             new ConsumerDefinition
             {
                 ConsumerName = "ItemCreatedActivityConsumer",
@@ -857,12 +907,52 @@ public static class ConsumerRegistrySetup
             },
             new ConsumerDefinition
             {
+                ConsumerName = "ChatCallRealtimeConsumer",
+                EventName = "chat.call.changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-realtime-v1",
+                BoundedContext = "Chat",
+                Description = "Publishes a call state change to the realtime gateway (chat.call.v1 on the channel stream of the space and, while a conversation call rings, on the stream of each invited person)",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatCallParticipantRevokedConsumer",
+                EventName = "chat.call.participant-revoked",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-call-participant-revoked-v1",
+                BoundedContext = "Chat",
+                Description = "Drops a person released from a call because their access ended from the media room through the media gateway; retried until it succeeds",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatCallParticipantPermissionChangedConsumer",
+                EventName = "chat.call.participant-permission-changed",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-call-participant-permission-changed-v1",
+                BoundedContext = "Chat",
+                Description = "Applies a changed right to publish to a person's live media connection through the media gateway; retried until it succeeds",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
                 ConsumerName = "ChatNotificationIntentConsumer",
                 EventName = "chat.message.created",
                 EventVersion = 1,
                 EndpointName = "notrelix-chat-notification-intent-v1",
                 BoundedContext = "Chat",
                 Description = "Maps a new message to notification intents (mention, direct or group message, followed thread reply, @channel) and hands them to Collaboration, which applies preferences and writes the Inbox notification once per message, recipient and reason",
+                Maturity = ConsumerMaturity.Implemented
+            },
+            new ConsumerDefinition
+            {
+                ConsumerName = "ChatMessageRemovedNotificationConsumer",
+                EventName = "chat.message.deleted",
+                EventVersion = 1,
+                EndpointName = "notrelix-chat-message-removed-notification-v1",
+                BoundedContext = "Chat",
+                Description = "Tells the author that a moderator removed their message and hands the notice to Collaboration, which writes the Inbox notification once per message and recipient",
                 Maturity = ConsumerMaturity.Implemented
             },
             new ConsumerDefinition

@@ -31,8 +31,9 @@ public class RuntimeRolesRegistrationTests
     [Fact]
     public void WithWorkerRole_EveryBackgroundJobIsRegistered()
     {
-        WorkerHostedServiceCount(RuntimeRoles.FromTokens(["worker"])).Should().Be(14);
-        WorkerHostedServiceCount(RuntimeRoles.All).Should().Be(14);
+        // The 15th hosted service is the page quiet-version sweep; the 18th is the deleted-channel purge.
+        WorkerHostedServiceCount(RuntimeRoles.FromTokens(["worker"])).Should().Be(18);
+        WorkerHostedServiceCount(RuntimeRoles.All).Should().Be(18);
     }
 
     [Fact]
@@ -41,6 +42,6 @@ public class RuntimeRolesRegistrationTests
         var services = new ServiceCollection();
         services.AddBackgroundJobs(EmptyConfig());
 
-        services.Count(d => d.ServiceType == typeof(IHostedService)).Should().Be(14);
+        services.Count(d => d.ServiceType == typeof(IHostedService)).Should().Be(18);
     }
 }

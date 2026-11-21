@@ -68,6 +68,8 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
     holder.version += 1;
     for (const listener of holder.listeners) listener();
   }, [holder, input.contextKey]);
+  const editableRef = useRef(input.editable);
+  editableRef.current = input.editable;
   const initialRef = useRef(input.initial);
   initialRef.current = input.initial;
   const onDraftsRef = useRef(input.onDrafts);
@@ -91,13 +93,15 @@ export function useDocRichEditor(input: UseDocRichEditorInput): DocRichEditor {
       immediatelyRender: false,
       shouldRerenderOnTransaction: false,
       editorProps: {
-        attributes: {
+        // A function, so setEditable re-reads it: a read-only page is announced as read-only.
+        attributes: (): Record<string, string> => ({
           class: "outline-none [&.resize-cursor]:cursor-col-resize",
           role: "textbox",
           "aria-multiline": "true",
           "aria-label": input.label,
           spellcheck: "true",
-        },
+          ...(editableRef.current ? {} : { "aria-readonly": "true" }),
+        }),
       },
       onUpdate: ({ editor: current, transaction }) => {
         if (!transaction.docChanged) return;

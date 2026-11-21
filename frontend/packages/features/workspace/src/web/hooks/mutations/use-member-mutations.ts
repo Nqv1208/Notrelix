@@ -59,6 +59,19 @@ export function createUseMemberMutations({ api }: MemberMutationDeps) {
       onSettled: refresh,
     });
 
+    // The title shows in the member list, so the list is read again whether it saved or not: a stale
+    // version then shows the newer row.
+    const updateJobTitle = useMutation({
+      mutationFn: ({
+        userId,
+        expectedVersion,
+        jobTitle,
+      }: MemberWriteTarget & { readonly jobTitle: string | null }) =>
+        service.updateJobTitle(workspaceId, userId, jobTitle, expectedVersion),
+      retry: false,
+      onSettled: refresh,
+    });
+
     const remove = useMutation({
       mutationFn: ({ userId, expectedVersion }: MemberWriteTarget) =>
         service.removeMember(workspaceId, userId, expectedVersion),
@@ -77,6 +90,6 @@ export function createUseMemberMutations({ api }: MemberMutationDeps) {
       onSettled: refresh,
     });
 
-    return { updateRole, remove, suspend, activate };
+    return { updateRole, updateJobTitle, remove, suspend, activate };
   };
 }

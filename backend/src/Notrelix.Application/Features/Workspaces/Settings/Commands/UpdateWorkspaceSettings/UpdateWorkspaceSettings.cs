@@ -6,7 +6,6 @@ namespace Notrelix.Application.Features.Workspaces.Settings.Commands.UpdateWorks
 public record UpdateWorkspaceSettingsCommand(
     Guid WorkspaceId,
     bool AllowPublicSharing,
-    bool EnforceMfa,
     bool AllowGuestInvites,
     string DefaultMemberRole,
     int InvitationExpiryDays,
@@ -50,7 +49,8 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
         var defaultRole = Enum.Parse<WorkspaceRole>(request.DefaultMemberRole, ignoreCase: true);
         var settings = WorkspaceSettings.Create(
             request.AllowPublicSharing,
-            request.EnforceMfa,
+            // The MFA requirement is the Account's now; the stored workspace flag is left as it is.
+            workspace.Settings.EnforceMfa,
             request.AllowGuestInvites,
             defaultRole,
             request.InvitationExpiryDays,
@@ -66,11 +66,10 @@ public class UpdateWorkspaceSettingsCommandHandler : IRequestHandler<UpdateWorks
         workspace.UpdateSettings(settings, _requestContext.UserId, _dateTimeProvider.UtcNow);
 
         // A settings change is recorded for Governance; an unchanged write is a no-op and records nothing.
-        // Opening sharing or dropping MFA enforcement weakens the workspace's posture, so it is a warning.
+        // Opening sharing weakens the workspace's posture, so it is a warning.
         if (workspace.Version != versionBefore)
         {
-            var weakened = (settings.AllowPublicSharing && !before.AllowPublicSharing)
-                || (before.EnforceMfa && !settings.EnforceMfa);
+            var weakened = settings.AllowPublicSharing && !before.AllowPublicSharing;
             await _auditService.RecordAsync(
                 workspace.Id,
                 _requestContext.UserId,

@@ -4,18 +4,21 @@ using Notrelix.Application.Features.Identity.ApiTokens.Abstractions;
 using Notrelix.Application.Features.Identity.ApiTokens.DTOs;
 using Notrelix.Application.Features.Identity.Security.Abstractions;
 using Notrelix.Application.Features.Identity.Security.DTOs;
+using Notrelix.Domain.Identity;
 using Notrelix.Domain.Identity.Tokens;
 
 namespace Notrelix.Application.Features.Identity.ApiTokens.Commands.CreateApiToken;
 
 /// <summary>
-/// Issues a new API token for the workspace. Protected by step-up verification
-/// (IssueApiToken purpose). The raw secret is returned exactly once.
+/// Issues a new API token for the workspace, limited to the scopes chosen here (at least one; they cannot be
+/// changed afterwards). Protected by step-up verification (IssueApiToken purpose). The raw secret is returned
+/// exactly once.
 /// </summary>
 public sealed record CreateApiTokenCommand(
     Guid WorkspaceId,
     string Name,
     DateTimeOffset? ExpiresAt,
+    IReadOnlyList<string> Scopes,
     string StepUpToken)
     : ICommand<Result<CreatedApiTokenDto>>,
       IWriteRequest,
@@ -32,6 +35,9 @@ public sealed class CreateApiTokenCommandHandler
 {
     public const int MaxTokenNameLength = 256;
 
+    /// <summary>How many trailing secret characters are kept for lists; the rest is only ever its digest.</summary>
+    public const int TokenSuffixLength = 4;
+
     /// <summary>Default maximum lifetime of an API token (Lead decision L7); a workspace may only shorten it (UC-GOV-H08).</summary>
     public const int MaxTokenLifetimeDays = 365;
 
@@ -42,6 +48,7 @@ public sealed class CreateApiTokenCommandHandler
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<CreateApiTokenCommandHandler> _logger;
     private readonly IAuditService _auditService;
+    private readonly ISecurityNotice _notice;
 
     public CreateApiTokenCommandHandler(
         IIdentityDbContext context,
@@ -50,8 +57,10 @@ public sealed class CreateApiTokenCommandHandler
         IApiTokenSecretService secretService,
         IDateTimeProvider dateTimeProvider,
         ILogger<CreateApiTokenCommandHandler> logger,
-        IAuditService auditService)
+        IAuditService auditService,
+        ISecurityNotice notice)
     {
+        _notice = notice;
         _context = context;
         _currentUser = currentUser;
         _stepUpService = stepUpService;
@@ -113,6 +122,28 @@ public sealed class CreateApiTokenCommandHandler
                 nameof(CreateApiTokenCommand.ExpiresAt)));
         }
 
+        ApiTokenScopes scopes;
+        try
+        {
+            scopes = ApiTokenScopes.Create(request.Scopes);
+        }
+        catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException ex) when (ex.RuleCode == IdentityRuleCodes.Identity_ApiToken_ScopesRequired)
+        {
+            return Result<CreatedApiTokenDto>.Failure(new ApplicationError(
+                "identity.api-tokens.scopes-required",
+                "An API token needs at least one scope.",
+                ApplicationErrorType.Validation,
+                nameof(CreateApiTokenCommand.Scopes)));
+        }
+        catch (Notrelix.Domain.Common.Exceptions.BusinessRuleException ex) when (ex.RuleCode == IdentityRuleCodes.Identity_ApiToken_UnknownScope)
+        {
+            return Result<CreatedApiTokenDto>.Failure(new ApplicationError(
+                "identity.api-tokens.unknown-scope",
+                ex.Message,
+                ApplicationErrorType.Validation,
+                nameof(CreateApiTokenCommand.Scopes)));
+        }
+
         var stepUp = await _stepUpService.ConsumeAsync(
             request.StepUpToken, userId, sessionId.Value, StepUpPurpose.IssueApiToken, ct);
         if (!stepUp.Succeeded)
@@ -127,12 +158,14 @@ public sealed class CreateApiTokenCommandHandler
             userId: userId,
             name: name,
             tokenHash: secret.TokenHash,
-            scopes: null,
+            scopes: scopes,
             createdBy: userId,
             createdAt: now,
-            expiresAt: request.ExpiresAt);
+            expiresAt: request.ExpiresAt,
+            tokenSuffix: secret.RawToken[^TokenSuffixLength..]);
 
         _context.ApiTokens.Add(token);
+        await _notice.QueueAsync(userId, SecurityNoticeKind.ApiTokenIssued, now, token.Id, ct);
         _logger.LogInformation(
             "Issued API token {TokenId} for workspace {WorkspaceId} by user {UserId}",
             token.Id, request.WorkspaceId, userId);
@@ -150,7 +183,7 @@ public sealed class CreateApiTokenCommandHandler
                 null,
                 null,
                 null,
-                new { tokenId = token.Id, name = token.Name, expiresAt = token.ExpiresAt }));
+                new { tokenId = token.Id, name = token.Name, expiresAt = token.ExpiresAt, scopes = scopes.Scopes.Order().ToList() }));
 
         return Result<CreatedApiTokenDto>.Success(new CreatedApiTokenDto(
             token.Id,

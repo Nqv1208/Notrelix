@@ -1,7 +1,11 @@
-import { useCallback, useMemo } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useCallback, useMemo, useRef } from "react";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { TeamRole } from "@notrelix/features-workspace/core";
+import {
+  describeWorkspaceFailure,
+  parseTeamReferencesRefusal,
+  type TeamRole,
+} from "@notrelix/features-workspace/core";
 import {
   archiveLoss,
   formatCopy,
@@ -9,6 +13,7 @@ import {
   WorkspaceTeamSurface,
   type AddTeamMemberInput,
   type TeamCandidate,
+  type TeamDeleteOutcome,
 } from "@notrelix/features-workspace/web";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { sectionState } from "@/shell/workspace/section-state";
@@ -33,6 +38,7 @@ export function TeamPage() {
   const { workspaceId } = useWorkspaceContext();
   const { teamId } = useParams({ strict: false }) as { teamId: string };
   const copy = useWorkspaceTeamsCopy();
+  const navigate = useNavigate();
   const navigation = useShellNavigation();
   const hooks = useTeamHooks();
   const viewer = useWorkspaceViewer(workspaceId);
@@ -77,34 +83,47 @@ export function TeamPage() {
     [copy],
   );
 
+  // The edit dialog can send a new name and a new description together: each write carries the version the
+  // one before it left, so they run one after the other and read the Team's version when their turn comes.
+  const writes = useRef<Promise<unknown>>(Promise.resolve());
+  const inTurn = useCallback(
+    (run: (expectedVersion: number) => Promise<unknown>) => {
+      writes.current = writes.current
+        .catch(() => undefined)
+        .then(async () => run(await mutations.readVersion(teamId)))
+        .catch(fail);
+    },
+    [fail, mutations, teamId],
+  );
+
   const onRename = useCallback(
     (next: string) => {
       if (version === null) return;
-      mutations.rename.mutate(
-        { teamId, name: next, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(formatCopy(copy.toasts.renamed, { name: next })),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.rename.mutateAsync({
+          teamId,
+          name: next,
+          expectedVersion,
+        });
+        toast.success(formatCopy(copy.toasts.renamed, { name: next }));
+      });
     },
-    [copy, fail, mutations.rename, teamId, version],
+    [copy, inTurn, mutations.rename, teamId, version],
   );
 
   const onDescribe = useCallback(
     (description: string | null) => {
       if (version === null) return;
-      mutations.describe.mutate(
-        { teamId, description, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(formatCopy(copy.toasts.described, { name })),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.describe.mutateAsync({
+          teamId,
+          description,
+          expectedVersion,
+        });
+        toast.success(formatCopy(copy.toasts.described, { name }));
+      });
     },
-    [copy, fail, mutations.describe, name, teamId, version],
+    [copy, inTurn, mutations.describe, name, teamId, version],
   );
 
   const onArchive = useCallback(() => {
@@ -131,43 +150,85 @@ export function TeamPage() {
     );
   }, [copy, fail, mutations.unarchive, name, teamId, version]);
 
+  // Delete is refused while Spaces still list the Team (LD-16): the refusal carries those Spaces and the
+  // dialog shows them. On success the person leaves the Team page; the toast offers the restore.
+  const onDelete = useCallback(async (): Promise<TeamDeleteOutcome> => {
+    if (version === null) return { kind: "failed" };
+    try {
+      await mutations.remove.mutateAsync({ teamId, expectedVersion: version });
+    } catch (error) {
+      const refusal = parseTeamReferencesRefusal(error);
+      if (refusal) return { kind: "refused", refusal };
+      const failure = describeWorkspaceFailure(error);
+      if (failure.kind === "conflict") return { kind: "conflict" };
+      if (failure.kind === "forbidden") return { kind: "denied" };
+      return { kind: "failed" };
+    }
+    toast.success(formatCopy(copy.toasts.deleted, { name }), {
+      action: {
+        label: copy.toasts.restore,
+        onClick: () =>
+          void mutations.restore
+            .mutateAsync({ teamId })
+            .then(() =>
+              toast.success(formatCopy(copy.toasts.restored, { name })),
+            )
+            .catch(() =>
+              toast.error(formatCopy(copy.toasts.restoreFailed, { name })),
+            ),
+      },
+    });
+    void navigate({
+      to: "/workspaces/$workspaceId/teams",
+      params: { workspaceId },
+    } as never);
+    return { kind: "deleted" };
+  }, [copy, mutations, name, navigate, teamId, version, workspaceId]);
+
+  // Member writes run in turn too: callbacks passed to `mutate` fire only for the latest call, so a second
+  // row's write would leave the first one busy and unreported, and both would quote the same Team version.
   const onAddMember = useCallback(
     ({ userId, role }: AddTeamMemberInput) => {
       if (version === null) return;
-      mutations.addMember.mutate(
-        { teamId, userId, role, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.memberAdded, { name: memberName(userId) }),
-            ),
-          onError: fail,
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        await mutations.addMember.mutateAsync({
+          teamId,
+          userId,
+          role,
+          expectedVersion,
+        });
+        toast.success(
+          formatCopy(copy.toasts.memberAdded, { name: memberName(userId) }),
+        );
+      });
     },
-    [copy, fail, memberName, mutations.addMember, teamId, version],
+    [copy, inTurn, memberName, mutations.addMember, teamId, version],
   );
 
   const onChangeRole = useCallback(
     (userId: string, role: TeamRole) => {
       if (version === null) return;
       pending.add(userId);
-      mutations.changeRole.mutate(
-        { teamId, userId, role, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.roleChanged, {
-                name: memberName(userId),
-                role: copy.roles[role],
-              }),
-            ),
-          onError: fail,
-          onSettled: () => pending.remove(userId),
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        try {
+          await mutations.changeRole.mutateAsync({
+            teamId,
+            userId,
+            role,
+            expectedVersion,
+          });
+          toast.success(
+            formatCopy(copy.toasts.roleChanged, {
+              name: memberName(userId),
+              role: copy.roles[role],
+            }),
+          );
+        } finally {
+          pending.remove(userId);
+        }
+      });
     },
-    [copy, fail, memberName, mutations.changeRole, pending, teamId, version],
+    [copy, inTurn, memberName, mutations.changeRole, pending, teamId, version],
   );
 
   const onRemove = useCallback(
@@ -175,19 +236,30 @@ export function TeamPage() {
       if (version === null) return;
       const removed = memberName(userId);
       pending.add(userId);
-      mutations.removeMember.mutate(
-        { teamId, userId, expectedVersion: version },
-        {
-          onSuccess: () =>
-            toast.success(
-              formatCopy(copy.toasts.memberRemoved, { name: removed }),
-            ),
-          onError: fail,
-          onSettled: () => pending.remove(userId),
-        },
-      );
+      inTurn(async (expectedVersion) => {
+        try {
+          await mutations.removeMember.mutateAsync({
+            teamId,
+            userId,
+            expectedVersion,
+          });
+          toast.success(
+            formatCopy(copy.toasts.memberRemoved, { name: removed }),
+          );
+        } finally {
+          pending.remove(userId);
+        }
+      });
     },
-    [copy, fail, memberName, mutations.removeMember, pending, teamId, version],
+    [
+      copy,
+      inTurn,
+      memberName,
+      mutations.removeMember,
+      pending,
+      teamId,
+      version,
+    ],
   );
 
   const candidates = useMemo<readonly TeamCandidate[]>(
@@ -226,6 +298,7 @@ export function TeamPage() {
       onDescribe={onDescribe}
       onArchive={onArchive}
       onUnarchive={onUnarchive}
+      onDelete={onDelete}
       onAddMember={onAddMember}
       onChangeRole={onChangeRole}
       onRemove={onRemove}

@@ -18,9 +18,17 @@ public record SpaceMemberDto(
 /// <summary>
 /// The direct member entries (Users and Teams) of one Space the caller can see (WSP-024) as a cursor page in
 /// subject id order (LD-06; default 50, at most 200). Pass <c>NextCursor</c> back as <c>Cursor</c> for the next page.
-/// A Space the caller cannot see is NotFound.
+/// A Space the caller cannot see is NotFound. <c>Role</c> (<c>Admin</c>, <c>Member</c>, <c>Viewer</c>) and
+/// <c>Kind</c> (<c>User</c>, <c>Team</c>) narrow the entries before the page is cut; they only ever remove rows,
+/// so a filter never widens who can read the list.
 /// </summary>
-public record GetSpaceMembersQuery(Guid WorkspaceId, Guid SpaceId, string? Cursor = null, int? Limit = null)
+public record GetSpaceMembersQuery(
+    Guid WorkspaceId,
+    Guid SpaceId,
+    string? Cursor = null,
+    int? Limit = null,
+    string? Role = null,
+    string? Kind = null)
     : IQuery<Result<CursorPage<SpaceMemberDto>>>, IAuthenticatedRequest, IReadRequest, IWorkspaceRequest, IRequirePermission
 {
     PermissionAction IRequirePermission.Action => PermissionAction.ViewWorkspace;
@@ -54,7 +62,9 @@ public class GetSpaceMembersQueryHandler : IRequestHandler<GetSpaceMembersQuery,
 
         var limit = request.Limit ?? SpaceIdCursor.DefaultLimit;
         Guid? after = SpaceIdCursor.TryDecode(request.Cursor, out var cursorId) ? cursorId : null;
-        var rows = await _spaces.ListMemberPageAsync(request.WorkspaceId, request.SpaceId, after, limit + 1, ct);
+        SpaceRole? role = Enum.TryParse<SpaceRole>(request.Role, ignoreCase: true, out var parsedRole) ? parsedRole : null;
+        SpaceMemberSubjectType? kind = Enum.TryParse<SpaceMemberSubjectType>(request.Kind, ignoreCase: true, out var parsedKind) ? parsedKind : null;
+        var rows = await _spaces.ListMemberPageAsync(request.WorkspaceId, request.SpaceId, after, limit + 1, role, kind, ct);
 
         var hasMore = rows.Count > limit;
         var page = rows.Take(limit).ToList();

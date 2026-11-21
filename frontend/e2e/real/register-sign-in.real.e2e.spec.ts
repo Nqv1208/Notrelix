@@ -51,7 +51,7 @@ async function signInThroughThePage(
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
-const SIGNED_IN = /\/(workspaces\/[^/]+|onboarding)/;
+const SIGNED_IN = /\/(workspaces\/[^/]+|onboarding|home)/;
 
 test("a new person registers, sees the neutral step, confirms the email and signs in; registering the same address again changes nothing and says the same", async ({
   page,
@@ -87,14 +87,18 @@ test("a new person registers, sees the neutral step, confirms the email and sign
   expect(me.email).toBe(person.email);
   expect(me.emailConfirmed).toBe(true);
 
-  // The registration fact made exactly one personal workspace and sign-in lands inside it (not on onboarding).
+  // The registration fact made exactly one personal workspace. Sign-in lands on Home, the overview of
+  // a person's workspaces (a6624b18d), not on onboarding, and Home offers that workspace.
   const mine = async () =>
     (await apiRead<readonly { id: string }[]>(page, "/workspaces")).map(
       (workspace) => workspace.id,
     );
   await expect.poll(async () => (await mine()).length).toBe(1);
   const [personal] = await mine();
-  await expect(page).toHaveURL(new RegExp(`/workspaces/${personal}`));
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(
+    page.locator(`a[href*="/workspaces/${personal}"]`).first(),
+  ).toBeVisible();
 
   // The same address again, with another password, in a signed-out browser.
   await page.context().clearCookies();

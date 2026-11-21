@@ -11,6 +11,7 @@
  *                                               and activating ends every other session (`otherSessionsEnded`)
  *   POST /auth/security/step-up/*               proof of presence; throttled with 429
  *   POST /auth/change-password                  current + new password; the proof only with two-factor on
+ *   POST /auth/set-password                     a first password for a provider-only person; needs a ChangePassword proof
  *   POST /auth/mfa/disable, /auth/mfa/recovery-codes/regenerate   need a single-use proof
  */
 import { defineMockOperation } from "../../operations/types";
@@ -31,6 +32,11 @@ const PURPOSES = [
   "ChangePassword",
   "RevokeOtherSessions",
   "EnrollMfa",
+  "LinkOAuth",
+  "UnlinkOAuth",
+  "ChangeSecurityIdentity",
+  "IssueApiToken",
+  "TransferWorkspaceOwnership",
 ];
 
 function securityOf(store: MockStore): SecurityDetails {
@@ -75,6 +81,32 @@ function checkProof(
   return identityProblem(400, wrongCode, "The proof is not right.");
 }
 
+/** What a handover proof names, besides the purpose: the workspace and the incoming Owner. */
+interface ProofTarget {
+  workspaceId?: string;
+  newOwnerId?: string;
+}
+
+const HANDOVER = "TransferWorkspaceOwnership";
+
+/**
+ * What a proof is held under: the purpose, and for a handover the workspace and the person too, so a proof given
+ * for one person is refused for another, like the producer. `null` when a handover names neither.
+ */
+function proofKey(purpose: string, target?: ProofTarget): string | null {
+  if (purpose !== HANDOVER) return purpose;
+  return target?.workspaceId && target.newOwnerId
+    ? `${purpose}|${target.workspaceId}|${target.newOwnerId}`
+    : null;
+}
+
+const targetRequired = () =>
+  identityProblem(
+    400,
+    "common.validation",
+    "workspaceId and newOwnerId are required for TransferWorkspaceOwnership.",
+  );
+
 /** Issues a single-use proof; the token never repeats while an earlier one is unspent. */
 function issueProof(security: SecurityDetails, purpose: string): string {
   let n = security.proofs.size + 1;
@@ -97,14 +129,33 @@ function invalidProof(
   security: SecurityDetails,
   token: string,
   purpose: string,
+  target?: ProofTarget,
 ) {
-  return security.proofs.get(token) === purpose
+  return security.proofs.get(token) === proofKey(purpose, target)
     ? null
     : identityProblem(
         400,
         "identity.security.step-up-invalid",
         "Step-up verification is invalid or expired.",
       );
+}
+
+/**
+ * Spends the proof an action outside this file carries (the ownership handover): none sent is 412, one that is
+ * missing, spent or issued for another purpose is 400. Proofs live per person, so another person's never matches.
+ */
+export function spendStepUpProof(
+  store: MockStore,
+  token: string | undefined,
+  purpose: string,
+  target?: ProofTarget,
+) {
+  if (!token) return proofRequired();
+  const security = securityOf(store);
+  const refused = invalidProof(security, token, purpose, target);
+  // Spent by the try, whatever the answer: a refused target does not leave the proof to try again.
+  security.proofs.delete(token);
+  return refused;
 }
 
 /** The path the browser lands on after a provider re-authentication; `failed` is how the backend says it could not. */
@@ -134,9 +185,7 @@ export const accountSecurityOperations = [
         activeSessionCount: security.sessions.filter(
           (s) => s.status === "Active",
         ).length,
-        linkedProviders: security.signInProvider
-          ? [security.signInProvider]
-          : [],
+        linkedProviders: security.linkedProviders,
       });
     },
   }),
@@ -360,34 +409,138 @@ export const accountSecurityOperations = [
     },
   }),
 
-  defineMockOperation<{ provider: string }, never, unknown>({
+  defineMockOperation<
+    { provider: string },
+    ProofTarget & { purpose?: string; returnUrl?: string },
+    unknown
+  >({
     id: "account.security.oauthStepUpStart",
     contract: {
       kind: "openapi",
       operationId: "Identity.Auth.OAuth.StepUpStart",
     },
-    method: "GET",
+    method: "POST",
     route: "/auth/oauth/:provider/step-up/start",
-    async handle({ params, query, store }) {
-      // The real call redirects the browser to the provider and back; the mock plays the round trip
-      // and says where the backend's redirect lands (`redirectTo`): the page that asked.
-      const returnUrl = query.returnUrl?.startsWith("/")
-        ? query.returnUrl
-        : "/";
+    async handle({ params, body, store }) {
+      // The real call answers the provider's URL and the browser leaves for it; the mock plays the round trip
+      // and answers where it lands: the page that asked.
+      const asked = body?.returnUrl;
+      if (
+        asked !== undefined &&
+        (!asked.startsWith("/") ||
+          asked.startsWith("//") ||
+          asked.includes("\\"))
+      )
+        return identityProblem(
+          400,
+          "common.validation",
+          "returnUrl must be an internal path.",
+        );
+      const returnUrl = asked ?? "/";
+      const purpose = body?.purpose ?? "";
+      if (!PURPOSES.includes(purpose))
+        return identityProblem(400, "common.validation", "Unknown purpose.");
+      const key = proofKey(purpose, body);
+      if (key === null) return targetRequired();
       const security = securityOf(store);
       const linked =
         security.signInProvider?.toLowerCase() ===
         params.provider.toLowerCase();
-      if (!linked || !PURPOSES.includes(query.purpose ?? ""))
-        return ok({ redirectTo: providerLanding(returnUrl, true) });
+      if (!linked)
+        return identityProblem(
+          409,
+          "identity.oauth.provider-not-linked",
+          "This provider is not linked to your account.",
+        );
       // Turning two-factor on spends two proofs: one re-authentication buys both.
       security.providerProofs = [
-        issueProof(security, query.purpose!),
-        ...(query.purpose === "EnrollMfa"
-          ? [issueProof(security, query.purpose)]
-          : []),
+        issueProof(security, key),
+        ...(purpose === "EnrollMfa" ? [issueProof(security, key)] : []),
       ];
-      return ok({ redirectTo: providerLanding(returnUrl, false) });
+      return ok({ authorizationUrl: providerLanding(returnUrl, false) });
+    },
+  }),
+
+  defineMockOperation<{ provider: string }, never, unknown>({
+    id: "account.security.oauthLinkStart",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.OAuth.LinkStart",
+    },
+    method: "GET",
+    route: "/auth/oauth/:provider/link/start",
+    async handle({ params, query, store }) {
+      // The real call spends the proof, redirects to the provider and comes back through the link
+      // callback; the mock plays the round trip and says where the redirect lands.
+      const security = securityOf(store);
+      const returnUrl = query.returnUrl?.startsWith("/")
+        ? query.returnUrl
+        : "/";
+      const token = query.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "LinkOAuth");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      const provider =
+        params.provider.charAt(0).toUpperCase() +
+        params.provider.slice(1).toLowerCase();
+      const already = security.linkedProviders.includes(provider);
+      if (!already) {
+        security.linkedProviders.push(provider);
+        security.activity.unshift({
+          id: `activity-${security.activity.length + 1}`,
+          type: "ProviderLinked",
+          occurredAt: store.getClock().isoNow(),
+          ipAddress: null,
+          userAgent: null,
+        });
+      }
+      const sep = returnUrl.includes("?") ? "&" : "?";
+      return ok({
+        redirectTo: `${returnUrl}${sep}link=${already ? "already" : "linked"}&provider=${provider}`,
+      });
+    },
+  }),
+
+  defineMockOperation<{ provider: string }, { stepUpToken?: string }>({
+    id: "account.security.oauthUnlink",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.OAuth.Unlink",
+    },
+    method: "POST",
+    route: "/auth/oauth/:provider/unlink",
+    async handle({ params, body, store }) {
+      const security = securityOf(store);
+      const token = body?.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "UnlinkOAuth");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      const at = security.linkedProviders.findIndex(
+        (name) => name.toLowerCase() === params.provider.toLowerCase(),
+      );
+      // Not linked: nothing changes.
+      if (at < 0) return ok({});
+      // The last way to sign in cannot go.
+      if (
+        security.signInProvider !== null &&
+        security.linkedProviders.length <= 1
+      )
+        return identityProblem(
+          409,
+          "identity.auth.last-primary-auth-method",
+          "Cannot unlink the last authentication method.",
+        );
+      security.linkedProviders.splice(at, 1);
+      security.activity.unshift({
+        id: `activity-${security.activity.length + 1}`,
+        type: "ProviderUnlinked",
+        occurredAt: store.getClock().isoNow(),
+        ipAddress: null,
+        userAgent: null,
+      });
+      return ok({});
     },
   }),
 
@@ -416,7 +569,7 @@ export const accountSecurityOperations = [
 
   defineMockOperation<
     Record<string, never>,
-    { purpose?: string; challengeToken?: string; code?: string }
+    ProofTarget & { purpose?: string; challengeToken?: string; code?: string }
   >({
     id: "account.security.stepUpCompleteMfa",
     contract: {
@@ -426,6 +579,8 @@ export const accountSecurityOperations = [
     method: "POST",
     route: "/auth/security/step-up/complete-mfa",
     async handle({ body, store }) {
+      const key = proofKey(body?.purpose ?? "", body);
+      if (key === null) return targetRequired();
       const security = securityOf(store);
       const code = (body?.code ?? "").replace(/[\s-]/g, "").toUpperCase();
       const right =
@@ -438,14 +593,14 @@ export const accountSecurityOperations = [
         "identity.security.step-up-invalid-code",
       );
       if (refusal) return refusal;
-      const proofToken = issueProof(security, body?.purpose ?? "");
+      const proofToken = issueProof(security, key);
       return ok({ proofToken, expiresAt: store.getClock().offsetMinutes(5) });
     },
   }),
 
   defineMockOperation<
     Record<string, never>,
-    { purpose?: string; password?: string }
+    ProofTarget & { purpose?: string; password?: string }
   >({
     id: "account.security.stepUpCompletePassword",
     contract: {
@@ -455,6 +610,8 @@ export const accountSecurityOperations = [
     method: "POST",
     route: "/auth/security/step-up/complete-password",
     async handle({ body, store }) {
+      const key = proofKey(body?.purpose ?? "", body);
+      if (key === null) return targetRequired();
       const security = securityOf(store);
       const refusal = checkProof(
         security,
@@ -462,7 +619,7 @@ export const accountSecurityOperations = [
         "identity.security.step-up-invalid-password",
       );
       if (refusal) return refusal;
-      const proofToken = issueProof(security, body?.purpose ?? "");
+      const proofToken = issueProof(security, key);
       return ok({ proofToken, expiresAt: store.getClock().offsetMinutes(5) });
     },
   }),
@@ -546,6 +703,105 @@ export const accountSecurityOperations = [
     },
   }),
 
+  defineMockOperation<
+    Record<string, never>,
+    { newPassword?: string; stepUpToken?: string }
+  >({
+    id: "account.auth.setFirstPassword",
+    contract: {
+      kind: "openapi",
+      operationId: "Identity.Auth.SetFirstPassword",
+    },
+    method: "POST",
+    route: "/auth/set-password",
+    async handle({ body, store }) {
+      const security = securityOf(store);
+      const next = body?.newPassword ?? "";
+      if (next.length < PASSWORD_MIN_LENGTH)
+        return {
+          status: 400,
+          body: {
+            type: "https://notrelix.dev/problems/validation.failed",
+            title: "Validation failed",
+            status: 400,
+            detail: "One or more validation errors occurred.",
+            errorCode: "validation.failed",
+            errors: {
+              NewPassword: [
+                `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+              ],
+            },
+          },
+        };
+      // A person who has a password changes it instead.
+      if (security.signInProvider === null)
+        return identityProblem(
+          409,
+          "identity.auth.password-already-set",
+          "A password is already set. Change it instead.",
+        );
+      const token = body?.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "ChangePassword");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      const now = store.getClock().isoNow();
+      security.passwordChangedAt = now;
+      // The person has a password now: the sign-in provider no longer stands alone.
+      security.signInProvider = null;
+      // This device stays signed in; every other one ends.
+      for (const session of security.sessions)
+        if (session.status === "Active" && !session.isCurrent) {
+          session.status = "Revoked";
+          session.revokedAt = now;
+        }
+      security.activity.unshift({
+        id: `activity-${security.activity.length + 1}`,
+        type: "PasswordChanged",
+        occurredAt: now,
+        ipAddress: null,
+        userAgent: null,
+      });
+      return { status: 200 };
+    },
+  }),
+
+  defineMockOperation<
+    Record<string, never>,
+    { email?: string; stepUpToken?: string }
+  >({
+    id: "account.profile.requestEmailChange",
+    contract: { kind: "openapi", operationId: "Identity.Profile.UpdateEmail" },
+    method: "POST",
+    route: "/profile/email",
+    async handle({ body, store }) {
+      const security = securityOf(store);
+      const email = (body?.email ?? "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        return {
+          status: 400,
+          body: {
+            type: "https://notrelix.dev/problems/validation.failed",
+            title: "Validation failed",
+            status: 400,
+            detail: "One or more validation errors occurred.",
+            errorCode: "validation.failed",
+            errors: { Email: ["Email is not valid"] },
+          },
+        };
+      // The address already is the sign-in email: nothing to prove, nothing to change.
+      if (email === store.getCurrentUser().email.toLowerCase())
+        return ok({ pendingEmail: null });
+      const token = body?.stepUpToken ?? "";
+      if (!token) return proofRequired();
+      const invalid = invalidProof(security, token, "ChangeSecurityIdentity");
+      if (invalid) return invalid;
+      security.proofs.delete(token);
+      // Same answer for a free and a taken address; the sign-in email stays until the link is opened.
+      return ok({ pendingEmail: email });
+    },
+  }),
+
   defineMockOperation<Record<string, never>, { stepUpToken?: string }>({
     id: "account.mfa.disable",
     contract: { kind: "openapi", operationId: "Identity.Mfa.Disable" },
@@ -555,6 +811,13 @@ export const accountSecurityOperations = [
       const security = securityOf(store);
       // An off factor stays off: nothing changes and no session ends.
       if (!security.twoFactorEnabled) return { status: 200 };
+      // An Account the person belongs to requires it: the factor stays, the proof is kept.
+      if (store.auth.accountMfaRequired)
+        return identityProblem(
+          409,
+          "identity.mfa.required-by-account",
+          "Your account requires two-step verification, so it cannot be turned off.",
+        );
       if (security.proofs.get(body?.stepUpToken ?? "") !== "DisableMfa")
         return identityProblem(
           412,

@@ -106,15 +106,15 @@ public sealed class WorkspaceSecurityExtIntegrationTests : IAsyncLifetime
             .LinksOffSince.Should().BeNull("links are on");
 
         _host.Now = OrgTreeTestHost.BaseTime.AddDays(3);
-        await UpdateAsync(asOwner, stack.WorkspaceId, allowPublicSharing: true, enforceMfa: true);
+        await UpdateAsync(asOwner, stack.WorkspaceId, allowPublicSharing: true);
         _host.Now = OrgTreeTestHost.BaseTime.AddDays(5);
-        await UpdateAsync(asOwner, stack.WorkspaceId, allowPublicSharing: false, enforceMfa: true);
+        await UpdateAsync(asOwner, stack.WorkspaceId, allowPublicSharing: false);
 
         (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId)))
             .LinksOffSince.Should().Be(OrgTreeTestHost.BaseTime.AddDays(5), "the instant of the flip that turned links off");
 
         _host.Now = OrgTreeTestHost.BaseTime.AddDays(9);
-        await UpdateAsync(asOwner, stack.WorkspaceId, allowPublicSharing: false, enforceMfa: false);
+        await UpdateAsync(asOwner, stack.WorkspaceId, allowPublicSharing: false);
         (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceSecurityExtQuery(stack.WorkspaceId)))
             .LinksOffSince.Should().Be(OrgTreeTestHost.BaseTime.AddDays(5), "a write that leaves the policy alone does not move the instant");
     }
@@ -136,7 +136,7 @@ public sealed class WorkspaceSecurityExtIntegrationTests : IAsyncLifetime
 
         var version = await VersionAsync(stack.WorkspaceId);
         var invalid = () => OrgTreeTestHost.SendAsync(asOwner, new UpdateWorkspaceSettingsCommand(
-            stack.WorkspaceId, false, false, true, "Guest", 14, version, 45));
+            stack.WorkspaceId, false, true, "Guest", 14, version, 45));
         await invalid.Should().ThrowAsync<DomainBusinessRuleException>();
         (await OrgTreeTestHost.QueryAsync(asOwner, new GetWorkspaceSettingsQuery(stack.WorkspaceId)))
             .GuestDefaultExpiryDays.Should().Be(90, "a rejected value changes nothing");
@@ -180,7 +180,6 @@ public sealed class WorkspaceSecurityExtIntegrationTests : IAsyncLifetime
         ServiceProvider provider,
         Guid workspaceId,
         bool allowPublicSharing = false,
-        bool enforceMfa = false,
         bool allowGuestInvites = false,
         string defaultRole = "Member",
         int invitationExpiryDays = 7,
@@ -188,7 +187,7 @@ public sealed class WorkspaceSecurityExtIntegrationTests : IAsyncLifetime
     {
         var version = await VersionAsync(workspaceId);
         await OrgTreeTestHost.SendAsync(provider, new UpdateWorkspaceSettingsCommand(
-            workspaceId, allowPublicSharing, enforceMfa, allowGuestInvites, defaultRole, invitationExpiryDays, version, guestDefaultExpiryDays));
+            workspaceId, allowPublicSharing, allowGuestInvites, defaultRole, invitationExpiryDays, version, guestDefaultExpiryDays));
     }
 
     private Task<long> VersionAsync(Guid workspaceId) =>

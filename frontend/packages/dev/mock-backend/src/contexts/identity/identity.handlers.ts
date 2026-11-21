@@ -102,14 +102,19 @@ export const identityOperations = [
         store.loginCurrentUser();
         return ok(sessionOf(store));
       }
-      if (store.auth.identify(body.email).method === "sso")
-        return {
-          status: 400,
-          body: {
-            message: "This company signs in through its own provider.",
-            code: "SSO_REQUIRED",
-          },
-        };
+      // Only a correct password of a non-Owner on a company that requires single sign-on is told
+      // so (403); a wrong one answers invalid-credentials exactly as everywhere else.
+      if (
+        store.auth.sso.isEnforcedFor(body.email) &&
+        !store.auth.sso.isOwner(body.email) &&
+        body.email.trim().toLowerCase() === MOCK_AUTH.ssoMemberEmail &&
+        body.password === MOCK_AUTH.personalPassword
+      )
+        return identityProblem(
+          403,
+          "identity.auth.sso-required",
+          "This company requires single sign-on.",
+        );
       const outcome = store.auth.login(body.email, body.password ?? "");
       if (outcome.kind === "locked")
         return identityProblem(
@@ -124,6 +129,16 @@ export const identityOperations = [
           "identity.auth.invalid-credentials",
           "Invalid credentials",
         );
+      if (outcome.kind === "enroll")
+        return ok({
+          ...sessionOf(store),
+          user: undefined,
+          expiresAt: null,
+          mfaEnrollmentRequired: true,
+          mfaEnrollmentToken: outcome.enrollmentToken,
+          mfaMethod: "totp",
+          mfaExpiresAt: store.getClock().offsetMinutes(10),
+        });
       if (outcome.kind === "otp")
         return ok({
           ...sessionOf(store),
@@ -149,6 +164,18 @@ export const identityOperations = [
       if (store.isCurrentUserLoggedOut()) {
         return unauthorized();
       }
+      // The Account requires two-step verification and this person has none: no new token.
+      if (
+        store.auth.accountMfaRequired &&
+        !store.accountPages.securityOf(store.getCurrentUser().id, (minutes) =>
+          store.getClock().offsetMinutes(minutes),
+        ).twoFactorEnabled
+      )
+        return identityProblem(
+          401,
+          "identity.auth.mfa-enrollment-required",
+          "Set up two-step verification to continue.",
+        );
       return ok(sessionOf(store));
     },
   }),

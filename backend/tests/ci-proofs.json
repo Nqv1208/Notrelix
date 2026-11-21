@@ -307,7 +307,9 @@
     },
     "backend.rls.api-token-scope": {
       "tests": [
-        "Notrelix.Integration.Tests.Rls.ApiTokenScopeTests"
+        "Notrelix.Integration.Tests.Rls.ApiTokenScopeTests",
+        "Notrelix.Integration.Tests.Rls.ApiTokenScopesAppRoleTests",
+        "Notrelix.Integration.Tests.Rls.ApiTokenCollaborationAppRoleTests"
       ]
     },
     "backend.rls.security-event-write": {

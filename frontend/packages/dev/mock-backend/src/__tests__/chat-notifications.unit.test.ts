@@ -88,6 +88,32 @@ describe("MFB-CHAT-S2.8: chat notifications in the mock Inbox (UC-CHT-G09)", () 
     });
   });
 
+  it("tells the author, with no text, when a moderator removes their message (UC-CHT-H03)", async () => {
+    const store = storeAs("admin");
+    const target = store.chat
+      .messagesOf(SPACES.general)
+      .find(
+        (m) =>
+          m.kind === "user" &&
+          m.deletedAt === null &&
+          m.authorId === USERS.member,
+      )!;
+    const res = await chat(store, "POST", `/messages/${target.id}/moderation`, {
+      body: { reason: "spam", expectedVersion: target.version },
+    });
+    expect(res.status).toBe(204);
+
+    expect(await inbox(store)).toEqual([]);
+    actAs(store, "member");
+    const items = await inbox(store);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      type: "chat.message-removed",
+      excerpt: null,
+      target: { kind: "chat", id: SPACES.general },
+    });
+  });
+
   it("gives nothing for a muted space and stops showing it after the member leaves", async () => {
     const store = storeAs("owner");
     const membership = store.chat.activeMembershipOf(

@@ -85,6 +85,9 @@ public static class NotificationTypes
     /// <summary>A chat message carried an @channel broadcast; maps to <see cref="Mention"/>.</summary>
     public const string ChatBroadcastProducedType = "chat.broadcast";
 
+    /// <summary>A moderator removed the person's chat message (UC-CHT-H03); maps to <see cref="Mention"/>.</summary>
+    public const string ChatMessageRemovedProducedType = "chat.message-removed";
+
     /// <summary>The resource kind of a chat notification: the space the message was sent in.</summary>
     public const string ChatSpaceResourceKind = "chat.space";
 
@@ -94,7 +97,7 @@ public static class NotificationTypes
     /// </summary>
     public static string? FromProducedType(string? producedType) => producedType switch
     {
-        MentionProducedType or ChatMentionProducedType or ChatDirectMessageProducedType or ChatBroadcastProducedType => Mention,
+        MentionProducedType or ChatMentionProducedType or ChatDirectMessageProducedType or ChatBroadcastProducedType or ChatMessageRemovedProducedType => Mention,
         ChatThreadReplyProducedType => Watching,
         ItemAssignedProducedType or AutomationProducedType or ItemReminderProducedType or ExportReadyProducedType
             or FormSubmissionCreatedProducedType => Assigned,

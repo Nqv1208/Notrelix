@@ -10,17 +10,24 @@ export const endpoints = {
     profile: "/auth/me",
     bootstrap: "/auth/bootstrap",
     changePassword: "/auth/change-password",
+    setPassword: "/auth/set-password",
     // Identity.Security.* / Identity.Sessions.* / Identity.Mfa.*
     securitySummary: "/auth/security/summary",
     securityActivity: "/auth/security/activity",
     stepUpRequirement: "/auth/security/step-up/requirement",
     stepUpCompleteMfa: "/auth/security/step-up/complete-mfa",
     stepUpCompletePassword: "/auth/security/step-up/complete-password",
-    // The provider re-authentication: the browser leaves for `oauthStepUpStart`, the backend hands the
-    // proof back in an httpOnly cookie, and `stepUpClaimProvider` reads it once.
+    // The provider re-authentication: `oauthStepUpStart` (a POST) answers the provider's URL, the browser
+    // leaves for it, the backend hands the proof back in an httpOnly cookie, and `stepUpClaimProvider` reads it once.
     stepUpClaimProvider: "/auth/security/step-up/claim-provider",
     oauthStepUpStart: (provider: string) =>
       `/auth/oauth/${encodeURIComponent(provider)}/step-up/start`,
+    // Linking leaves for the provider (a browser navigation that carries a spent step-up proof);
+    // unlinking is a plain write.
+    oauthLinkStart: (provider: string) =>
+      `/auth/oauth/${encodeURIComponent(provider)}/link/start`,
+    oauthUnlink: (provider: string) =>
+      `/auth/oauth/${encodeURIComponent(provider)}/unlink`,
     sessions: "/auth/sessions",
     sessionRevoke: (sessionId: string) =>
       `/auth/sessions/${encodeURIComponent(sessionId)}/revoke`,
@@ -32,6 +39,8 @@ export const endpoints = {
   },
   users: {
     updateProfile: "/profile",
+    // Identity.Profile.UpdateEmail: asks for a new sign-in email; the answer is the same for every address.
+    email: "/profile/email",
     // Identity.Profile.GetPreferences / UpdatePreferences.
     preferences: "/profile/preferences",
     // Identity.Profile.UploadAvatar (PUT, multipart part `file`) / RemoveAvatar (DELETE).
@@ -46,7 +55,13 @@ export const endpoints = {
   },
   workspaces: {
     list: "/workspaces",
+    // Identity.ApiTokens.List / Create (the issue) and Revoke.
+    apiTokens: (workspaceId: string) => `/workspaces/${workspaceId}/api-tokens`,
+    apiToken: (workspaceId: string, tokenId: string) =>
+      `/workspaces/${workspaceId}/api-tokens/${tokenId}`,
     detail: (workspaceId: string) => `/workspaces/${workspaceId}`,
+    // Workspaces.Workspaces.GetWorkspaceDashboard: the figures for Owner and Admin.
+    dashboard: (workspaceId: string) => `/workspaces/${workspaceId}/dashboard`,
     invitationByToken: (token: string) =>
       `/workspaces/invitations/by-token/${token}`,
     // The signed-in person's own invitations (Workspaces.Invitations.GetUserPendingInvitations,
@@ -63,6 +78,8 @@ export const endpoints = {
       `/workspaces/${workspaceId}/pins/${encodeURIComponent(kind)}/${resourceId}`,
     // Workspace profile, settings and lifecycle (producer: Workspaces.Workspaces.*).
     profile: (workspaceId: string) => `/workspaces/${workspaceId}/profile`,
+    // Workspaces.Workspaces.ChangeWorkspaceSlug (Owner only, expectedVersion in the body).
+    slug: (workspaceId: string) => `/workspaces/${workspaceId}/slug`,
     // The signed-in member's own job title (Workspaces.Members.UpdateMyJobTitle).
     myJobTitle: (workspaceId: string) =>
       `/workspaces/${workspaceId}/members/me/job-title`,
@@ -77,9 +94,15 @@ export const endpoints = {
     remove: (workspaceId: string, expectedVersion: number) =>
       `/workspaces/${workspaceId}?expectedVersion=${expectedVersion}`,
     restore: (workspaceId: string) => `/workspaces/${workspaceId}/restore`,
+    // Workspaces.Workspaces.TransferOwnership (an active Owner only, to an active non-Guest member).
+    transferOwnership: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/transfer-ownership`,
     activity: (workspaceId: string) => `/workspaces/${workspaceId}/activity`,
     // Members (Workspaces.Members.*). Inviting is POST on the members route.
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`,
+    // Workspaces.Members.InviteMembers: one to 50 addresses, one outcome each.
+    inviteMembers: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/members/bulk`,
     member: (workspaceId: string, userId: string) =>
       `/workspaces/${workspaceId}/members/${userId}`,
     suspendMember: (workspaceId: string, userId: string) =>
@@ -114,7 +137,10 @@ export const endpoints = {
       `/workspaces/${workspaceId}/spaces/${spaceId}/archive`,
     spaceUnarchive: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/unarchive`,
-    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace).
+    // Workspaces.Spaces.GetDeletedSpaces: the deleted Spaces inside the 30-day restore window.
+    spacesDeleted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/spaces/deleted`,
+    // Workspaces.Spaces.RestoreSpace (POST, no expected version; DELETE on `space` is Workspaces.Spaces.DeleteSpace and sends `?expectedVersion=`).
     spaceRestore: (workspaceId: string, spaceId: string) =>
       `/workspaces/${workspaceId}/spaces/${spaceId}/restore`,
     spaceMove: (workspaceId: string, spaceId: string) =>
@@ -138,6 +164,9 @@ export const endpoints = {
       `/workspaces/${workspaceId}/teams/${teamId}/archive`,
     teamUnarchive: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/unarchive`,
+    // Workspaces.Teams.GetDeletedTeams (Owner or Admin): the Teams deleted from the Workspace, newest first.
+    teamsDeleted: (workspaceId: string) =>
+      `/workspaces/${workspaceId}/teams/deleted`,
     // Workspaces.Teams.RestoreTeam (POST, no expected version; DELETE on `team` takes expectedVersion in the query).
     teamRestore: (workspaceId: string, teamId: string) =>
       `/workspaces/${workspaceId}/teams/${teamId}/restore`,
@@ -152,11 +181,14 @@ export const endpoints = {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/pages`,
     tree: (workspaceId: string) => `/workspaces/${workspaceId}/pages/tree`,
     detail: (pageId: string) => `/pages/${pageId}`,
+    duplicate: (workspaceId: string, pageId: string) =>
+      `/workspaces/${workspaceId}/pages/${pageId}/duplicate`,
     breadcrumb: (pageId: string) => `/pages/${pageId}/breadcrumb`,
     blocks: (pageId: string) => `/pages/${pageId}/blocks`,
     comments: (pageId: string) => `/pages/${pageId}/comments`,
     commentsPage: (pageId: string) => `/pages/${pageId}/comments/page`,
     history: (pageId: string) => `/pages/${pageId}/history`,
+    activity: (pageId: string) => `/pages/${pageId}/activity`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
     move: (pageId: string) => `/pages/${pageId}/move`,
     moveToSpace: (pageId: string) => `/pages/${pageId}/move-to-space`,
@@ -176,6 +208,10 @@ export const endpoints = {
     list: (workspaceId: string) => `/workspaces/${workspaceId}/page-templates`,
     createPage: (workspaceId: string, templateId: string) =>
       `/workspaces/${workspaceId}/page-templates/${templateId}/pages`,
+    detail: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}`,
+    archive: (workspaceId: string, templateId: string) =>
+      `/workspaces/${workspaceId}/page-templates/${templateId}/archive`,
   },
   // WorkManagement.Templates.*: workspace board templates.
   boardTemplates: {
@@ -265,11 +301,25 @@ export const endpoints = {
   // Workspaces.Workspaces.* routes under an Account.
   accounts: {
     workspaces: (accountId: string) => `/accounts/${accountId}/workspaces`,
+    // Workspaces.Workspaces.ResolveSlug: anonymous, the address in the `slug` query.
+    resolve: (accountId: string) => `/accounts/${accountId}/resolve`,
     workspaceSlugCheck: (accountId: string) =>
       `/accounts/${accountId}/workspaces/slug-check`,
     // Workspaces.Workspaces.GetDeletedWorkspaces: the "Recently deleted" list of the Owner.
     deletedWorkspaces: (accountId: string) =>
       `/accounts/${accountId}/workspaces/deleted`,
+    // Accounts.GetSecurityPolicy / Accounts.SetMfaPolicy: the Account's MFA requirement (the X-Account-Id header names it).
+    securityPolicy: "/accounts/security-policy",
+    mfaPolicy: "/accounts/security-policy/mfa",
+    // The Account's single sign-on (Owner only): the provider, the verified domains, the require switch.
+    sso: "/accounts/security-policy/sso",
+    ssoProvider: "/accounts/security-policy/sso/provider",
+    ssoDomains: "/accounts/security-policy/sso/domains",
+    ssoDomain: (domainId: string) =>
+      `/accounts/security-policy/sso/domains/${domainId}`,
+    ssoDomainVerify: (domainId: string) =>
+      `/accounts/security-policy/sso/domains/${domainId}/verify`,
+    ssoRequire: "/accounts/security-policy/sso/require",
   },
   onboarding: {
     draft: "/workspaces/onboarding-draft",
@@ -334,6 +384,10 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}`,
     channelOrder: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/order`,
+    channelsDeleted: (workspaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/deleted`,
+    channelRestore: (workspaceId: string, channelId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/restore`,
     channelArchive: (workspaceId: string, channelId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/archive`,
     channelMembers: (workspaceId: string, channelId: string) =>
@@ -342,6 +396,12 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/me`,
     channelMember: (workspaceId: string, channelId: string, userId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}`,
+    channelMemberRole: (
+      workspaceId: string,
+      channelId: string,
+      userId: string,
+    ) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/channels/${encodeURIComponent(channelId)}/members/${encodeURIComponent(userId)}/role`,
     channelGroups: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/channel-groups`,
     channelGroup: (workspaceId: string, groupId: string) =>
@@ -354,6 +414,8 @@ export const endpoints = {
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/unread`,
     markRead: (workspaceId: string, spaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/read`,
+    markUnreadFrom: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/unread-from`,
     markAllRead: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/read-all`,
     notificationLevel: (workspaceId: string, spaceId: string) =>
@@ -459,6 +521,15 @@ export const endpoints = {
     /** PUT blocks or unblocks a person for the caller. */
     blocks: (workspaceId: string) =>
       `/workspaces/${encodeURIComponent(workspaceId)}/chat/me/blocks`,
+    /** POST starts a call in a space (Idempotency-Key); GET lists the space's call history. */
+    spaceCalls: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/calls`,
+    /** GET the ringing or active call of a space (204 when none). */
+    spaceActiveCall: (workspaceId: string, spaceId: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/spaces/${encodeURIComponent(spaceId)}/calls/active`,
+    /** POST answer, decline, cancel, end, join or leave a call; PUT `participants/me` sets the caller's media state. */
+    callAction: (workspaceId: string, callId: string, action: string) =>
+      `/workspaces/${encodeURIComponent(workspaceId)}/chat/calls/${encodeURIComponent(callId)}/${action}`,
   },
 
   boardGroups: {
@@ -574,6 +645,7 @@ export const endpoints = {
     questions: (formId: string) => `/forms/${formId}/questions`,
     question: (formId: string, questionId: string) =>
       `/forms/${formId}/questions/${questionId}`,
+    publicAccess: (formId: string) => `/forms/${formId}/public-access`,
     submissions: (formId: string) => `/forms/${formId}/submissions`,
     submissionsPage: (formId: string) => `/forms/${formId}/submissions/page`,
     submissionCounts: (formId: string) => `/forms/${formId}/submissions/counts`,
@@ -585,6 +657,13 @@ export const endpoints = {
     spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
     reopen: (submissionId: string) =>
       `/form-submissions/${submissionId}/reopen`,
+  },
+  // WorkManagement.PublicForms.*: the anonymous face of a public form, addressed by its key alone.
+  publicForms: {
+    detail: (publicKey: string) =>
+      `/public/forms/${encodeURIComponent(publicKey)}`,
+    submissions: (publicKey: string) =>
+      `/public/forms/${encodeURIComponent(publicKey)}/submissions`,
   },
   // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
   boardPreferences: {

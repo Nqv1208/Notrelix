@@ -93,6 +93,19 @@ public sealed record AccessFacts(
     /// refuses every write once the normal decision is Allow, so a caller without access still gets NotFound.
     /// </summary>
     public bool AccountSuspended { get; init; }
+
+    /// <summary>
+    /// The request's Workspace is Archived (and not deleted). Reads stay open; the policy refuses every write once the
+    /// normal decision is Allow, except the workspace lifecycle requests (<see cref="IWorkspaceLifecycleRequest"/>).
+    /// </summary>
+    public bool WorkspaceArchived { get; init; }
+
+    /// <summary>
+    /// The workspace setting <c>AllowGuestInvites</c> is on. Fails closed: false when the workspace row cannot be read
+    /// (and for facts built without it), so an <see cref="Notrelix.Application.Features.Workspaces.Public.Invitations.IGuestInvitationRequest"/>
+    /// is refused rather than waved through.
+    /// </summary>
+    public bool GuestInvitesAllowed { get; init; }
 }
 
 /// <summary>A custom role as access facts: its fixed built-in base and the actions it adds and removes.</summary>

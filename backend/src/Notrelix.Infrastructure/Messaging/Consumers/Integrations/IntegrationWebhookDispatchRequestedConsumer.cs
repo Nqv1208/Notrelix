@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Notrelix.Application.Events.Integrations;
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.Integrations.Public.Secrets;
 using Notrelix.Domain.Integrations.Connections;
 using Notrelix.Domain.Integrations.Webhooks;
@@ -29,6 +30,7 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
     private readonly IIntegrationSecretStore _secrets;
     private readonly OutboundWebhookSender _sender;
     private readonly IDateTimeProvider _clock;
+    private readonly IAccountStatusFacts _accountStatus;
     private readonly ILogger<IntegrationWebhookDispatchRequestedConsumer> _logger;
 
     public IntegrationWebhookDispatchRequestedConsumer(
@@ -36,8 +38,10 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
         IIntegrationSecretStore secrets,
         OutboundWebhookSender sender,
         IDateTimeProvider clock,
+        IAccountStatusFacts accountStatus,
         ILogger<IntegrationWebhookDispatchRequestedConsumer> logger)
     {
+        _accountStatus = accountStatus;
         _db = db;
         _secrets = secrets;
         _sender = sender;
@@ -67,10 +71,13 @@ public sealed class IntegrationWebhookDispatchRequestedConsumer : IConsumer<Inte
             && c.Provider == IntegrationProvider.Webhook, ct);
 
         var isTest = message.DeliveryType == IntegrationWebhookDispatchRequestedV1.TestType;
-        var skip = SkipReasonFor(connection, isTest);
+        // A suspended or closed Account is read-only: nothing leaves it, a test delivery included.
+        var skip = (await _accountStatus.GetAsync(message.AccountIdValue, ct)).IsOperating()
+            ? SkipReasonFor(connection, isTest)
+            : OutboundDeliverySkipReason.AccountSuspended;
         if (skip is { } reason)
         {
-            _logger.LogDebug("Webhook delivery {DeliveryId} skipped: {Reason}", message.DeliveryId, reason);
+            _logger.LogDebug("Webhook delivery {DeliveryId} skipped: {Reason}", message.DeliveryId, reason.Code());
             log.RecordSkipped(reason, now);
             await _db.SaveChangesAsync(ct);
             return;

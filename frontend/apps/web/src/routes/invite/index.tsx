@@ -1,6 +1,7 @@
 import { InviteFlow } from "@notrelix/features-auth";
 import { AuthLayout } from "../auth-layout";
 import { useAuthFlowDeps } from "../auth-flow-deps";
+import { useInviteAccount } from "./use-invite-account";
 
 /** The token of the link in the invitation email: `#token=` (the backend's link, kept out of server logs). */
 function readToken(): string {
@@ -13,12 +14,14 @@ function readToken(): string {
 /** Opened from the link in a workspace invitation email. */
 export function InviteLinkPage() {
   const { service, navigation } = useAuthFlowDeps();
+  const account = useInviteAccount();
   return (
     <AuthLayout>
       <InviteFlow
         service={service}
         navigation={navigation}
         token={readToken()}
+        {...account}
       />
     </AuthLayout>
   );

@@ -40,6 +40,12 @@ public class Message : AggregateRoot, IWorkspaceScoped
     /// <summary>A thread reply the author also sent to the channel's main flow ("also send to channel"). Always false outside a thread.</summary>
     public bool AlsoSentToChannel { get; private set; }
 
+    /// <summary>The call a call system message reports; null for every other message. One message per (space, call) (SPEC-CHAT-MEDIA-CALLS invariant 6).</summary>
+    public Guid? CallId { get; private set; }
+
+    /// <summary>The Notrelix sticker this message is (UC-CHT-I06); null for every other message. A sticker message has no typed text: its content is the catalog preview text.</summary>
+    public string? StickerId { get; private set; }
+
     public DateTimeOffset? EditedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public Guid? DeletedBy { get; private set; }
@@ -75,6 +81,32 @@ public class Message : AggregateRoot, IWorkspaceScoped
     }
 
     /// <summary>
+    /// A sticker a person sent (UC-CHT-I06). The id must be in the Notrelix catalog; the content is the catalog preview text, never typed
+    /// text, so a sticker is never edited and never carries mentions.
+    /// </summary>
+    public static Message CreateStickerMessage(
+        Guid accountId,
+        Guid workspaceId,
+        Guid spaceId,
+        long sequence,
+        Guid authorId,
+        string stickerId,
+        string clientMessageId,
+        Guid? replyToId,
+        DateTimeOffset createdAt)
+    {
+        if (!StickerCatalog.Exists(stickerId))
+            throw new BusinessRuleException(ChatRuleCodes.StickerInvalid, "This sticker does not exist.");
+        Guard.NotNullOrWhiteSpace(clientMessageId);
+        if (clientMessageId.Trim().Length > ChatLimits.ClientMessageIdMaxLength)
+            throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
+
+        return Create(
+            accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, StickerCatalog.PreviewText(stickerId), createdAt,
+            clientMessageId.Trim(), replyToId, stickerId: stickerId);
+    }
+
+    /// <summary>
     /// A reply in the thread of a root message (UC-CHT-F01). The space sequence orders it with the rest of the space;
     /// the thread sequence orders it inside its thread. Replies to a reply or to a system message are refused by the
     /// handler, which knows the root.
@@ -90,7 +122,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
         string content,
         string clientMessageId,
         bool alsoSentToChannel,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool voiceMessage = false)
     {
         Guard.NotEmpty(rootMessageId);
         if (threadSequence < 1)
@@ -100,7 +133,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.MessageContentInvalid, "The client message id is too long.");
 
         return Create(accountId, workspaceId, spaceId, sequence, authorId, MessageKind.User, content, createdAt,
-            clientMessageId.Trim(), replyToId: null, rootMessageId, threadSequence, alsoSentToChannel);
+            clientMessageId.Trim(), replyToId: null, rootMessageId, threadSequence, alsoSentToChannel, allowEmptyContent: voiceMessage);
     }
 
     /// <summary>A system message, attributed to the person whose change it announces (UC-CHT-B09).</summary>
@@ -113,6 +146,26 @@ public class Message : AggregateRoot, IWorkspaceScoped
         string content,
         DateTimeOffset createdAt)
         => Create(accountId, workspaceId, spaceId, sequence, actorId, MessageKind.System, content, createdAt);
+
+    /// <summary>
+    /// The system message a call writes when it ends (SPEC-CHAT-MEDIA-CALLS invariant 6), attributed to the person whose change ended it.
+    /// It is a system message today (clients render it as one); a unique index on (space, call) keeps a retry from writing two.
+    /// </summary>
+    public static Message CreateCallMessage(
+        Guid accountId,
+        Guid workspaceId,
+        Guid spaceId,
+        long sequence,
+        Guid actorId,
+        Guid callId,
+        string content,
+        DateTimeOffset createdAt)
+    {
+        Guard.NotEmpty(callId);
+        var message = CreateSystemMessage(accountId, workspaceId, spaceId, sequence, actorId, content, createdAt);
+        message.CallId = callId;
+        return message;
+    }
 
     private static Message Create(
         Guid accountId,
@@ -128,7 +181,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
         Guid? threadRootId = null,
         long? threadSequence = null,
         bool alsoSentToChannel = false,
-        bool allowEmptyContent = false)
+        bool allowEmptyContent = false,
+        string? stickerId = null)
     {
         Guard.NotEmpty(accountId);
         Guard.NotEmpty(workspaceId);
@@ -152,6 +206,7 @@ public class Message : AggregateRoot, IWorkspaceScoped
             ThreadRootId = threadRootId,
             ThreadSequence = threadSequence,
             AlsoSentToChannel = alsoSentToChannel,
+            StickerId = stickerId,
         };
 
         message.SetAuditOnCreate(authorId, createdAt);
@@ -169,7 +224,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
             createdAt,
             replyToId,
             threadRootId,
-            threadSequence));
+            threadSequence,
+            stickerId));
 
         return message;
     }
@@ -195,12 +251,13 @@ public class Message : AggregateRoot, IWorkspaceScoped
     /// lets other readers patch its file list. The caller has stored the file and checked the standing.
     /// </summary>
     public void RecordAttachmentAdded(
-        Guid actorId, Guid attachmentId, string fileName, long sizeBytes, string contentType, Guid uploadedBy, DateTimeOffset createdAt, DateTimeOffset now)
+        Guid actorId, Guid attachmentId, string fileName, long sizeBytes, string contentType, Guid uploadedBy, DateTimeOffset createdAt, DateTimeOffset now,
+        int? width = null, int? height = null)
     {
         Guard.NotEmpty(actorId);
         Guard.NotEmpty(attachmentId);
         RaiseDomainEvent(new MessageAttachmentChangedDomainEvent(
-            AccountId, WorkspaceId, SpaceId, Id, actorId, Added: true, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, now));
+            AccountId, WorkspaceId, SpaceId, Id, actorId, Added: true, attachmentId, fileName, sizeBytes, contentType, uploadedBy, createdAt, now, width, height));
     }
 
     /// <summary>Records that a file was removed from this message (UC-CHT-G08); the message does not change.</summary>
@@ -325,6 +382,8 @@ public class Message : AggregateRoot, IWorkspaceScoped
             throw new BusinessRuleException(ChatRuleCodes.SystemMessageImmutable, "A system message cannot be edited.");
         if (IsDeleted)
             throw new BusinessRuleException(ChatRuleCodes.MessageDeleted, "A deleted message cannot be edited.");
+        if (StickerId is not null)
+            throw new BusinessRuleException(ChatRuleCodes.StickerInvalid, "A sticker cannot be edited.");
         if (editedBy != AuthorId)
             throw new BusinessRuleException(ChatRuleCodes.MessageNotAuthor, "Only the author can edit this message.");
     }

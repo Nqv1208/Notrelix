@@ -133,6 +133,22 @@ public class ThreadHandlerTests
     // ---- Reply (UC-CHT-F01) ----------------------------------------------------------------------
 
     [Fact]
+    public async Task A_member_added_to_a_group_later_cannot_reply_in_the_thread_of_a_message_from_before_the_join()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, "Team", [_member, _owner], Guid.NewGuid(), Now.AddHours(-3));
+        group.AddMember(_outsider, MembershipRole.Member, Now);
+        _spaces.Add(group);
+        var before = Root(group);
+
+        AsUser(_outsider);
+        var act = () => ReplyHandler().Handle(Command(_workspaceId, before.Id), CancellationToken.None);
+        await act.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.NotFoundException>();
+
+        AsUser(_member);
+        (await ReplyHandler().Handle(Command(_workspaceId, before.Id), CancellationToken.None)).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task A_reply_takes_the_space_sequence_and_the_thread_sequence_and_the_lock_comes_first()
     {
         var space = Channel();
@@ -146,6 +162,20 @@ public class ThreadHandlerTests
         result.Data.Message.ThreadSequence.Should().Be(1);
         result.Data.Message.Sequence.Should().Be(2, "the root is sequence 1 and the reply takes the next space sequence");
         _order.Should().Equal("lock", "next");
+    }
+
+    [Fact]
+    public async Task A_voice_reply_may_have_no_text_and_any_other_empty_reply_is_refused()
+    {
+        var validator = new ReplyInThreadCommandValidator();
+        var root = Root(Channel());
+        var voice = Command(_workspaceId, root.Id, "", "c-v") with { VoiceMessage = true };
+
+        validator.Validate(voice).IsValid.Should().BeTrue();
+        validator.Validate(voice with { VoiceMessage = false }).IsValid.Should().BeFalse();
+        var result = await ReplyHandler().Handle(voice, CancellationToken.None);
+        result.Data!.Message.ThreadRootId.Should().Be(root.Id);
+        result.Data.Message.Content.Should().BeEmpty();
     }
 
     [Fact]
@@ -535,6 +565,26 @@ public class ThreadHandlerTests
         var result = await FollowedHandler().Handle(new ListFollowedThreadsQuery(_workspaceId, null, 50), CancellationToken.None);
 
         result.Data!.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_thread_rooted_before_a_group_member_rejoined_is_not_listed_but_a_later_one_is()
+    {
+        var group = Space.CreateGroup(_accountId, _workspaceId, null, [_owner, _member, _other], _owner, Now.AddDays(-1));
+        _spaces.Add(group);
+        var before = Root(group); // Now - 2 h
+        Thread(group, before, replies: 1);
+        group.RemoveMember(_member, Now.AddHours(-90d / 60));
+        group.AddParticipant(_member, Now.AddHours(-1)); // the join point is after the first root
+        var after = Message.CreateUserMessage(_accountId, _workspaceId, group.Id, ++_lastSequence, _other, "later root", $"root-{Guid.NewGuid():N}", null, Now.AddMinutes(-30));
+        _messages.Add(after);
+        Thread(group, after, replies: 1, lastReplyAt: Now.AddMinutes(-10));
+        _followers.Add(ThreadFollower.Follow(_accountId, _workspaceId, before.Id, _member, false));
+        _followers.Add(ThreadFollower.Follow(_accountId, _workspaceId, after.Id, _member, false));
+
+        var result = await FollowedHandler().Handle(new ListFollowedThreadsQuery(_workspaceId, null, 50), CancellationToken.None);
+
+        result.Data!.Items.Select(i => i.Root.Id).Should().Equal(after.Id);
     }
 
     [Fact]

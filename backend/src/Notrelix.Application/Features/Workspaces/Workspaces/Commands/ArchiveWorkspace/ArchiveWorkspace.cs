@@ -1,12 +1,13 @@
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Workspaces.Abstractions;
+using Notrelix.Application.Features.Workspaces.Public.Lifecycle;
 
 namespace Notrelix.Application.Features.Workspaces.Workspaces.Commands.ArchiveWorkspace;
 
 public record ArchiveWorkspaceCommand(
     Guid WorkspaceId,
     long ExpectedVersion
-) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest
+) : ICommand<Result>, IWriteRequest, IAuthenticatedRequest, IWorkspaceRequest, IRequirePermission, IExpectedVersionRequest, IWorkspaceLifecycleRequest
 {
     public PermissionAction Action => PermissionAction.ManageWorkspace;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("workspaces.workspace"), WorkspaceId, WorkspaceId);
@@ -19,9 +20,11 @@ public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCo
     private readonly IWorkspaceDbContext _context;
     private readonly ICurrentRequestContext _requestContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAccessChangeSignal _access;
 
-    public ArchiveWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider)
+    public ArchiveWorkspaceCommandHandler(IWorkspaceDbContext context, ICurrentRequestContext requestContext, IDateTimeProvider dateTimeProvider, IAccessChangeSignal access)
     {
+        _access = access;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -36,6 +39,8 @@ public class ArchiveWorkspaceCommandHandler : IRequestHandler<ArchiveWorkspaceCo
             throw new NotFoundException(nameof(Workspace), request.WorkspaceId);
 
         workspace.Archive(_requestContext.UserId, _dateTimeProvider.UtcNow);
+        // Live typing and presence subscriptions learn the new state now, not at the next periodic pass.
+        _access.Workspace(request.WorkspaceId);
         return Result.Success();
     }
 }

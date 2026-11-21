@@ -1,7 +1,7 @@
 # Notrelix authenticated web container. Build/runtime bases are digest-pinned
 # and updated centrally through delivery/images.lock.toml.
 ARG NODE_BASE_IMAGE=node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
-ARG NGINX_BASE_IMAGE=nginx:alpine@sha256:1ed1b0e1d7652937d6cbdaf4018c7b6fc009a7dd6c3047351e2eddda745de43f
+ARG NGINX_BASE_IMAGE=nginx:1.30.7-alpine@sha256:bef154735288bc38d99fac41ae63730684bcc661503673a04a0f9bc526ba8598
 
 FROM ${NODE_BASE_IMAGE} AS base
 RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
@@ -24,21 +24,6 @@ COPY --from=pruner /repo/frontend/out/full/ ./
 RUN pnpm --filter @notrelix/app-web build
 
 FROM ${NGINX_BASE_IMAGE} AS production
-# CVE-2026-93990 (HIGH): the locked nginx:alpine digest (alpine 3.24.2) still
-# bakes libexpat 2.8.4-r0 while alpine v3.24 publishes the fixed 2.8.5-r0 and no
-# newer upstream digest is available yet. The floor constraint rolls forward with
-# the repository instead of hard-breaking the build on the next point release;
-# remove this layer once the base-image lock advances past libexpat 2.8.5-r0.
-# CVE-2026-103111 (pcre2, HIGH) and CVE-2026-4775 (tiff, HIGH): the same locked
-# digest still bakes pcre2 10.48-r0 and tiff 4.7.1-r0; the repository publishes
-# the fixed 10.49-r0 and 4.7.2-r0. Same floor approach, same removal condition.
-# CVE-2026-88806 (libx11, HIGH): the digest bakes libx11 1.8.13-r0; the
-# repository publishes the fixed 1.8.14-r0. Same floor approach and condition.
-# CVE-2026-111497 (brotli, HIGH): the digest bakes brotli-libs 1.2.0-r1; the
-# repository publishes the fixed 1.2.1-r0. Same floor approach and condition.
-# CVE-2026-92392 (curl and libcurl, HIGH): the digest bakes 8.22.0-r0; the
-# repository publishes the fixed 8.23.0-r0. Same floor approach and condition.
-RUN apk add --no-cache "libexpat>=2.8.5" "pcre2>=10.49-r0" "tiff>=4.7.2-r0" "libx11>=1.8.14-r0" "brotli-libs>=1.2.1-r0" "curl>=8.23.0-r0" "libcurl>=8.23.0-r0"
 # Full nginx configuration authority: pid and all writable temp paths live in
 # tmpfs-backed /tmp, so the image can run entirely as the unprivileged nginx
 # user without relying on upstream internal directory ownership.

@@ -33,9 +33,43 @@ afterEach(() => {
   host = null;
 });
 
+const INVITATIONS = [
+  {
+    id: "inv-own",
+    email: "khach@doitac-erp.vn",
+    level: "Viewer",
+    invitedBy: "me",
+    invitedByName: "Nguyễn Thu Hà",
+    expiresAt: "2026-11-26T00:00:00Z",
+    issuedByYou: true,
+    canManage: true,
+  },
+  {
+    id: "inv-other",
+    email: "ketoan@doitac-erp.vn",
+    level: "Viewer",
+    invitedBy: "phuc",
+    invitedByName: "Lê Hoàng Phúc",
+    expiresAt: "2026-11-24T00:00:00Z",
+    issuedByYou: false,
+    canManage: true,
+  },
+  {
+    id: "inv-locked",
+    email: "ke@doitac-erp.vn",
+    level: "Viewer",
+    invitedBy: "phuc",
+    invitedByName: "Lê Hoàng Phúc",
+    expiresAt: "2026-11-24T00:00:00Z",
+    issuedByYou: false,
+    canManage: false,
+  },
+];
+
 function renderSharing(options: { failFirstRead?: boolean } = {}) {
   const store = new MockStore({ ...defaultConfig });
   const requests: string[] = [];
+  const bodies: Record<string, unknown> = {};
   const mockFetch = createMockFetch(store);
   let failures = options.failFirstRead ? 1 : 0;
   runtime.api = createNotrelixClient({
@@ -47,9 +81,19 @@ function renderSharing(options: { failFirstRead?: boolean } = {}) {
         failures -= 1;
         return new Response(null, { status: 500 });
       }
-      requests.push(
-        `${init?.method ?? "GET"} ${new URL(String(input instanceof Request ? input.url : input)).pathname}`,
-      );
+      const method = init?.method ?? "GET";
+      requests.push(`${method} ${path}`);
+      if (typeof init?.body === "string")
+        bodies[`${method} ${path}`] = JSON.parse(init.body);
+      // The mock backend has no resource-invitation operations: this read and its writes are answered here.
+      if (path.includes("/invitations")) {
+        return method === "GET" && path.endsWith("/invitations")
+          ? new Response(JSON.stringify(INVITATIONS), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            })
+          : new Response(null, { status: 204 });
+      }
       return mockFetch(input, init);
     },
   });
@@ -70,7 +114,7 @@ function renderSharing(options: { failFirstRead?: boolean } = {}) {
   document.body.append(host);
   root = createRoot(host);
   act(() => root!.render(wrap(<Probe />)));
-  return { result, requests, store };
+  return { result, requests, bodies, store };
 }
 
 async function settled(check: () => boolean) {
@@ -178,5 +222,80 @@ describe("useBoardSharing", () => {
     });
     expect(requests).toContain(`POST /api/v1/boards/${BOARD}/sharing/private`);
     await settled(() => result.current.data?.visibility === "Private");
+  });
+
+  it("UC-WM-A19 invites a guest by email at Viewer with the resource endpoint and reads the pending list again", async () => {
+    const { result, requests, bodies } = renderSharing();
+    await settled(() => result.current.pendingInvitations.length === 3);
+    const reads = () =>
+      requests.filter(
+        (request) =>
+          request ===
+          `GET /api/v1/resources/work-management.board/${BOARD}/invitations`,
+      ).length;
+    const before = reads();
+    await act(async () => {
+      await result.current.inviteGuest("moi@doitac-erp.vn");
+    });
+    const post = `POST /api/v1/resources/work-management.board/${BOARD}/invitations`;
+    expect(requests).toContain(post);
+    expect(bodies[post]).toEqual({
+      email: "moi@doitac-erp.vn",
+      level: "Viewer",
+    });
+    await settled(() => reads() > before);
+  });
+
+  it("UC-WM-A20 maps who may manage each pending invitation", async () => {
+    const { result } = renderSharing();
+    await settled(() => result.current.pendingInvitations.length === 3);
+    expect(
+      result.current.pendingInvitations.map((row) => [
+        row.id,
+        row.issuedByYou,
+        row.canManage,
+      ]),
+    ).toEqual([
+      ["inv-own", true, true],
+      ["inv-other", false, true],
+      ["inv-locked", false, false],
+    ]);
+  });
+
+  it("UC-WM-A20 resends and revokes the issuer's own invitation with the resource endpoints", async () => {
+    const { result, requests } = renderSharing();
+    await settled(() => result.current.pendingInvitations.length === 3);
+    await act(async () => {
+      await result.current.resendInvitation("inv-own");
+      await result.current.revokeInvitation("inv-own");
+    });
+    expect(requests).toContain(
+      `POST /api/v1/resources/work-management.board/${BOARD}/invitations/inv-own/resend`,
+    );
+    expect(requests).toContain(
+      `DELETE /api/v1/resources/work-management.board/${BOARD}/invitations/inv-own`,
+    );
+  });
+
+  it("UC-WM-A20 resends and cancels another person's invitation with the workspace endpoints", async () => {
+    const { result, requests } = renderSharing();
+    await settled(() => result.current.pendingInvitations.length === 3);
+    await act(async () => {
+      await result.current.resendInvitation("inv-other");
+      await result.current.revokeInvitation("inv-other");
+    });
+    expect(requests).toContain(
+      `POST /api/v1/workspaces/${WORKSPACE}/invitations/inv-other/resend`,
+    );
+    expect(requests).toContain(
+      `DELETE /api/v1/workspaces/${WORKSPACE}/invitations/inv-other`,
+    );
+    expect(
+      requests.some(
+        (request) =>
+          request.includes(`/invitations/inv-other`) &&
+          request.includes("/resources/"),
+      ),
+    ).toBe(false);
   });
 });

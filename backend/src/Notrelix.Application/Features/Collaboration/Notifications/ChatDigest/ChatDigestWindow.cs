@@ -23,5 +23,15 @@ public readonly record struct ChatDigestWindow(DateTimeOffset Start, DateTimeOff
         return new ChatDigestWindow(end - length, end);
     }
 
+    /// <summary>
+    /// The latest window and the <paramref name="catchUp"/> windows before it, oldest first. A pass that covers more than the latest window
+    /// sends a window the job missed (it was down, or failed): the per-window deduplication key keeps a window already sent from going twice.
+    /// </summary>
+    public static IReadOnlyList<ChatDigestWindow> Recent(DateTimeOffset now, TimeSpan length, int catchUp)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(catchUp);
+        return Enumerable.Range(0, catchUp + 1).Reverse().Select(back => Latest(now - back * length, length)).ToList();
+    }
+
     public string DeduplicationKey(Guid workspaceId, Guid userId) => $"chat-digest:{workspaceId:N}:{userId:N}:{Key}";
 }

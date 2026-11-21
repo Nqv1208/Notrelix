@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   convertBlockProperties,
@@ -47,6 +47,18 @@ export function createUseDocEditor(
     const [failed, setFailed] = useState(false);
     const [titleConflict, setTitleConflict] = useState(false);
     const pendingRetry = useRef<(() => void) | null>(null);
+    // A save that settles after the editor closed must not touch state or refetch.
+    const alive = useRef(true);
+    useEffect(() => {
+      alive.current = true;
+      return () => {
+        alive.current = false;
+        pendingRetry.current = null;
+      };
+    }, []);
+    const fail = useCallback(() => {
+      if (alive.current) setFailed(true);
+    }, []);
 
     /** The version of a block as the page cache last read it. */
     const cachedVersion = (blockId: string): number | undefined =>
@@ -132,8 +144,13 @@ export function createUseDocEditor(
           throw new PageVersionConflict(current);
         }
       },
-      onSuccess: () => {
+      onSuccess: (updated) => {
         setFailed(false);
+        // The next rename quotes this version, not the one a refetch has yet to replace.
+        queryClient.setQueryData(
+          docsQueryKeys.detail(workspaceId, pageId),
+          updated,
+        );
         refreshPage();
       },
     });
@@ -171,26 +188,23 @@ export function createUseDocEditor(
     const updateBlock = useCallback(
       (blockId: string, payload: UpdateBlockPayload) => {
         const attempt = () =>
-          update.mutate(
-            { blockId, payload },
-            { onError: () => setFailed(true) },
-          );
+          void update.mutateAsync({ blockId, payload }).catch(() => fail());
         run(attempt);
         attempt();
       },
-      [run, update],
+      [run, update, fail],
     );
     const createBlock = useCallback(
       (payload: CreateBlockPayload) => {
         const attempt = () =>
           create.mutateAsync(payload).catch((error: unknown) => {
-            setFailed(true);
+            fail();
             throw error;
           });
         run(() => void attempt().catch(() => undefined));
         return attempt();
       },
-      [create, run],
+      [create, run, fail],
     );
     const convertBlock = useCallback(
       (
@@ -202,41 +216,38 @@ export function createUseDocEditor(
           convert
             .mutateAsync({ block, type, properties })
             .catch((error: unknown) => {
-              setFailed(true);
+              fail();
               throw error;
             });
         run(() => void attempt().catch(() => undefined));
         return attempt();
       },
-      [convert, run],
+      [convert, run, fail],
     );
     const deleteBlock = useCallback(
       (blockId: string) => {
         const attempt = () =>
-          remove.mutate(blockId, { onError: () => setFailed(true) });
+          void remove.mutateAsync(blockId).catch(() => fail());
         run(attempt);
         attempt();
       },
-      [remove, run],
+      [remove, run, fail],
     );
     const updateTitle = useCallback(
       (title: string) => {
         const attempt = () =>
-          rename.mutate(
-            { title },
-            {
-              onError: (error) => {
-                if (error instanceof PageVersionConflict) {
-                  setTitleConflict(true);
-                  refreshPage();
-                } else setFailed(true);
-              },
-            },
-          );
+          // mutateAsync: a rename that overlaps another keeps its own outcome.
+          void rename.mutateAsync({ title }).catch((error: unknown) => {
+            if (error instanceof PageVersionConflict) {
+              if (!alive.current) return;
+              setTitleConflict(true);
+              refreshPage();
+            } else fail();
+          });
         run(attempt);
         attempt();
       },
-      [rename, run],
+      [rename, run, fail],
     );
     const clearTitleConflict = useCallback(() => setTitleConflict(false), []);
     const retry = useCallback(() => {

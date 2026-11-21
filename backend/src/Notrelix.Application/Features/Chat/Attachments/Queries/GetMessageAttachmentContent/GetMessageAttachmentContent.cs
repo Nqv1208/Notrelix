@@ -37,6 +37,7 @@ public class GetMessageAttachmentContentQueryHandler(
 
         var space = await ChannelAccess.LoadLiveAsync(db, request.WorkspaceId, message.SpaceId, cancellationToken);
         ChannelAccess.RequireVisible(space, caller, userId);
+        ChannelAccess.RequireInHistory(space, userId, message);
         if (message.IsDeleted)
             throw new NotFoundException(nameof(Message), request.MessageId);
 

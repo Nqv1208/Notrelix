@@ -1,0 +1,307 @@
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
+
+import { accountTokensCopy } from "../account-tokens.copy";
+import {
+  AccountTokensSurface,
+  type AccountTokensSurfaceProps,
+} from "../account-tokens-surface";
+
+const NOW = Date.parse("2026-11-17T10:00:00Z");
+
+function props(
+  locale: "vi" | "en",
+  over: Partial<AccountTokensSurfaceProps> = {},
+): AccountTokensSurfaceProps {
+  return {
+    copy: accountTokensCopy(locale),
+    locale,
+    section: {
+      status: "ready",
+      data: {
+        tokens: [
+          {
+            id: "t1",
+            name: "CI deploy",
+            status: "active",
+            lastUsedAt: null,
+            expiresAt: "2027-02-12T00:00:00Z",
+            createdAt: "2026-11-01T00:00:00Z",
+            suffix: "a41f",
+            scopes: [
+              "work:read",
+              "work:write",
+              "docs:read",
+              "docs:write",
+              "chat:read",
+              "chat:write",
+              "workspace:read",
+            ],
+          },
+          {
+            id: "t2",
+            name: "Old job",
+            status: "active",
+            lastUsedAt: null,
+            expiresAt: null,
+            createdAt: "2026-10-01T00:00:00Z",
+            suffix: null,
+            scopes: ["work:read", "docs:write"],
+          },
+        ],
+        hasMore: false,
+      },
+    },
+    denied: false,
+    now: NOW,
+    flow: null,
+    busy: false,
+    loadingMore: false,
+    notice: null,
+    actionError: false,
+    onStart: vi.fn(),
+    onSubmitForm: vi.fn(),
+    onSubmitProof: vi.fn(),
+    onProvider: vi.fn(),
+    onCloseFlow: vi.fn(),
+    onRevoke: vi.fn().mockResolvedValue(undefined),
+    onLoadMore: vi.fn(),
+    onRetry: vi.fn(),
+    ...over,
+  };
+}
+
+describe.each(["vi", "en"] as const)("API tokens (%s)", (locale) => {
+  const copy = accountTokensCopy(locale);
+
+  it("lists a token by its last four characters and flags one issued without an expiry", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale)} />);
+    expect(screen.getByText(/••••••a41f/)).toBeTruthy();
+    expect(screen.getAllByText(copy.noExpiry).length).toBeGreaterThan(0);
+  });
+
+  it("shows no way to create for a person who may not manage tokens", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale, { denied: true })} />);
+    expect(screen.getByText(copy.denied.title)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: copy.create })).toBeNull();
+  });
+
+  it("asks before revoking and only then revokes the chosen token", async () => {
+    const shown = props(locale);
+    renderPureUi(<AccountTokensSurface {...shown} />);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: copy.revokeLabel.replace("{{name}}", "CI deploy"),
+      }),
+    );
+    expect(shown.onRevoke).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.confirmRevoke.action }),
+    );
+    await vi.waitFor(() => expect(shown.onRevoke).toHaveBeenCalledTimes(1));
+    expect(
+      (shown.onRevoke as ReturnType<typeof vi.fn>).mock.calls[0]?.[0].id,
+    ).toBe("t1");
+  });
+
+  it("holds the secret in the one-time step, which Escape does not leave", () => {
+    const shown = props(locale, {
+      flow: {
+        kind: "reveal",
+        secret: "ntk_v1.SECRET-VALUE-0001",
+        name: "CI deploy",
+        expiresAt: "2027-02-12T00:00:00Z",
+      },
+    });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+    expect(screen.getByText("ntk_v1.SECRET-VALUE-0001")).toBeTruthy();
+    expect(screen.getByText(copy.reveal.warnTitle)).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(shown.onCloseFlow).not.toHaveBeenCalled();
+  });
+
+  it("never prints the secret outside the one-time step", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale)} />);
+    expect(document.body.textContent).not.toMatch(/ntk_v1\.[A-Za-z]/);
+  });
+
+  const dateIn = (days: number) =>
+    new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date(NOW + days * 86_400_000));
+
+  it("offers lives of at most 365 days and says the cap", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          flow: { kind: "form", name: "", days: 90, scopes: [], error: null },
+        })}
+      />,
+    );
+    const options = screen
+      .getAllByRole("option")
+      .map((option) => (option as HTMLOptionElement).value);
+    expect(options).toEqual(["30", "90", "365"]);
+    expect(screen.getByText(new RegExp(copy.form.hint))).toBeTruthy();
+  });
+
+  it("names the limit when the producer refuses the life", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          flow: {
+            kind: "proof",
+            factor: "password",
+            providers: [],
+            error: "lifetime",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText(copy.proof.lifetime)).toBeTruthy();
+    expect(copy.proof.lifetime).toContain("365");
+  });
+
+  it("shows the date the new token ends in the one-time step", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          flow: {
+            kind: "reveal",
+            secret: "ntk_v1.SECRET-VALUE-0001",
+            name: "CI deploy",
+            expiresAt: new Date(NOW + 365 * 86_400_000).toISOString(),
+          },
+        })}
+      />,
+    );
+    expect(
+      screen.getByText(
+        copy.reveal.detail
+          .replace("{{name}}", "CI deploy")
+          .replace("{{date}}", dateIn(365)),
+      ),
+    ).toBeTruthy();
+  });
+});
+
+describe.each(["vi", "en"] as const)("API token scopes (%s)", (locale) => {
+  const copy = accountTokensCopy(locale);
+  const form = (over: { name?: string; scopes?: readonly string[] } = {}) =>
+    ({
+      kind: "form",
+      name: over.name ?? "CI deploy",
+      days: 90,
+      scopes: over.scopes ?? [],
+      error: null,
+    }) as AccountTokensSurfaceProps["flow"];
+
+  it("offers every scope, read and write apart, and the workspace readable alone, none ticked", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale, { flow: form() })} />);
+    const boxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+    expect(boxes.map((box) => box.getAttribute("aria-label"))).toEqual([
+      copy.scopes.label["work:read"],
+      copy.scopes.label["work:write"],
+      copy.scopes.label["docs:read"],
+      copy.scopes.label["docs:write"],
+      copy.scopes.label["chat:read"],
+      copy.scopes.label["chat:write"],
+      copy.scopes.label["workspace:read"],
+    ]);
+    expect(boxes.every((box) => !box.checked)).toBe(true);
+  });
+
+  it("says a scope is needed and asks for no proof when none is chosen", () => {
+    const shown = props(locale, { flow: form() });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+    expect(screen.queryByText(copy.scopes.required)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: copy.form.submit }));
+
+    expect(screen.getByText(copy.scopes.required)).toBeTruthy();
+    expect(shown.onSubmitForm).not.toHaveBeenCalled();
+  });
+
+  it("hands the chosen scopes, and only those, to the issue; write does not tick read", () => {
+    const shown = props(locale, { flow: form() });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: copy.scopes.label["docs:write"] }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: copy.scopes.label["work:read"] }),
+    );
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: copy.scopes.label["docs:read"],
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(false);
+    expect(screen.queryByText(copy.scopes.required)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: copy.form.submit }));
+
+    expect(shown.onSubmitForm).toHaveBeenCalledWith({
+      name: "CI deploy",
+      days: 90,
+      scopes: ["work:read", "docs:write"],
+    });
+  });
+
+  it("unticking the last scope brings the message back", () => {
+    const shown = props(locale, { flow: form({ scopes: ["chat:read"] }) });
+    renderPureUi(<AccountTokensSurface {...shown} />);
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: copy.scopes.label["chat:read"] }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.form.submit }));
+
+    expect(screen.getByText(copy.scopes.required)).toBeTruthy();
+    expect(shown.onSubmitForm).not.toHaveBeenCalled();
+  });
+
+  it("lists on each row what the token may do: all scopes, or the chosen ones", () => {
+    renderPureUi(<AccountTokensSurface {...props(locale)} />);
+    const rows = screen.getAllByRole("row");
+    const first = rows.find((row) => row.textContent?.includes("CI deploy"));
+    const second = rows.find((row) => row.textContent?.includes("Old job"));
+    expect(first?.textContent).toContain(copy.scopes.all);
+    expect(second?.textContent).toContain(
+      `${copy.scopes.label["work:read"]}, ${copy.scopes.label["docs:write"]}`,
+    );
+  });
+
+  it("says plainly that a token with no scope reaches nothing", () => {
+    renderPureUi(
+      <AccountTokensSurface
+        {...props(locale, {
+          section: {
+            status: "ready",
+            data: {
+              tokens: [
+                {
+                  id: "t9",
+                  name: "Unscoped",
+                  status: "active",
+                  lastUsedAt: null,
+                  expiresAt: "2027-02-12T00:00:00Z",
+                  createdAt: "2026-11-01T00:00:00Z",
+                  suffix: "zz99",
+                  scopes: [],
+                },
+              ],
+              hasMore: false,
+            },
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole("row", { name: /Unscoped/ }).textContent).toContain(
+      copy.scopes.none,
+    );
+  });
+});

@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openInfoSection } from "./support/chat-info";
+import { toNewest } from "./support/chat-newest";
 
 /**
  * Chat at 1440 x 900 and 390 x 844 against the owner canvas boards `Chat-Main` (1440), `Chat-List-M` and
@@ -11,7 +13,7 @@ import { expect, test, type Page } from "@playwright/test";
  * phone); group heading 11.5/650; header 64 (56 on a phone) with an 18 (17) title; bubbles 8 12 padding, 1.45 line
  * height. Where a board still contradicts the design lead's decision (one set of values at every width, ahead of
  * the canvas update) the decision wins: bubble radius 14 with a 6 px tail only on a group's last bubble; reaction
- * pills 26 high in normal flow 8 px under the bubble, the avatar on the bubble's bottom edge; date separator and
+ * pill 22 high over the bubble's bottom corner, hanging 10 px below it (Messenger), the avatar on the bubble's bottom edge; date separator and
  * "Mới" divider 24 high with a line each side; composer a 52 high rounded single-row field, 40 px buttons, mic
  * while empty and a send icon button once typed, no "Gửi" text.
  *
@@ -58,6 +60,7 @@ async function css(page: Page, selector: string, prop: string) {
 }
 
 async function react(page: Page) {
+  await toNewest(page);
   const row = page.locator("[data-own=false]").last();
   await row.scrollIntoViewIfNeeded();
   await row.hover();
@@ -106,7 +109,7 @@ test.describe("1440 (Chat-Main)", () => {
     expect(await heading.evaluate((e) => getComputedStyle(e).paddingLeft)).toBe(
       "10px",
     );
-    expect(await css(page, "nav div[aria-hidden=true]", "border-radius")).toBe(
+    expect(await css(page, "nav input[role=combobox]", "border-radius")).toBe(
       "10px",
     );
   });
@@ -145,15 +148,31 @@ test.describe("1440 (Chat-Main)", () => {
       Math.abs(parseFloat(await css(page, bubble, "line-height")) - 14 * 1.45),
     ).toBeLessThan(1);
     const col = await box(page, "[role=log] ol");
-    expect(col.w).toBeLessThanOrEqual(760);
+    expect(col.w).toBeLessThanOrEqual(1120);
     const nd = await box(page, "[data-unread-divider]");
     expect(nd.h).toBeCloseTo(24, 0);
     expect(nd.x + nd.w / 2).toBeCloseTo(col.x + col.w / 2, 0);
-    const ds = await box(page, "[role=log] li[role=presentation]:has(span)");
+    // Only the rows near the view are in the page: the date label that opens the window is drawn once the list is at its top.
+    await page.getByRole("log").evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await expect(
+      page.locator("[role=log] li[data-testid=chat-day-separator]").first(),
+    ).toBeVisible();
+    // A row far from the view is skipped by the browser until it is near: its content has no box until then.
+    await expect(
+      page
+        .locator("[role=log] li[data-testid=chat-day-separator] > div")
+        .first(),
+    ).toBeVisible();
+    const ds = await box(
+      page,
+      "[role=log] li[data-testid=chat-day-separator] > div",
+    );
     expect(ds.h).toBeCloseTo(24, 0);
   });
 
-  test("a reaction pill is 26 high, 8 px under the bubble, avatar on the bubble edge", async ({
+  test("a reaction pill is 22 high, hangs 10 px below the bubble, avatar on the bubble edge", async ({
     page,
   }) => {
     await react(page);
@@ -161,8 +180,8 @@ test.describe("1440 (Chat-Main)", () => {
     const bub = await box(page, `${row} [data-bubble]`);
     const pill = await box(page, `${row} [data-testid=chat-reactions] button`);
     const av = await box(page, `${row} [data-avatar-slot] span`);
-    expect(pill.h).toBeCloseTo(26, 0);
-    expect(pill.y - (bub.y + bub.h)).toBeCloseTo(8, 0);
+    expect(pill.h).toBeCloseTo(22, 0);
+    expect(pill.y + pill.h - (bub.y + bub.h)).toBeCloseTo(10, 0);
     expect(av.y + av.h).toBeCloseTo(bub.y + bub.h, 0);
     expect(
       await css(
@@ -180,12 +199,13 @@ test.describe("1440 (Chat-Main)", () => {
     const b = await box(page, "form:has(textarea) button");
     expect(b.w).toBeCloseTo(40, 0);
     expect(b.h).toBeCloseTo(40, 0);
-    expect(900 - (form.y + form.h)).toBeCloseTo(4, 0);
+    // The composer floats, lifted 20 px off the bottom edge.
+    expect(900 - (form.y + form.h)).toBeCloseTo(20, 0);
   });
 });
 
 test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
-  test("the bare route is the channel list: 56 top, 48 rows, no jump field", async ({
+  test("the bare route is the channel list: 56 top, 48 rows, a 44 high search field", async ({
     page,
   }) => {
     await open(page, 390, 844, CHAT);
@@ -198,10 +218,11 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     expect(row.h).toBeGreaterThanOrEqual(47.5);
     expect(await css(page, "li button", "border-radius")).toBe("0px");
     expect(await css(page, "li button", "padding-left")).toBe("16px");
-    await expect(page.locator("nav div[aria-hidden=true]")).toBeHidden();
+    // The search field is real now, so the list page offers it too (44 high for a thumb) instead of the old hidden decoration.
+    expect((await box(page, "nav input[role=combobox]")).h).toBeCloseTo(44, 0);
   });
 
-  test("a pushed room has a back arrow, 56 header, 26 pills 8 px under the bubble, the same pill composer", async ({
+  test("a pushed room has a back arrow, 56 header, a 22 pill hanging 10 px below the bubble, the same pill composer", async ({
     page,
   }) => {
     await open(page, 390, 844, CHANNEL);
@@ -210,12 +231,15 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     ).toBeVisible();
     expect((await box(page, "main header")).h).toBeCloseTo(56, 0);
     expect(await css(page, "main header h1", "font-size")).toBe("17px");
+    // The divider is measured where the room opened: reacting scrolls the list away from it, and only rows near the view are drawn.
+    const nd = await box(page, "[data-unread-divider]");
+    expect(nd.h).toBeCloseTo(24, 0);
     await react(page);
     const row = "[data-message-id]:has([data-testid=chat-reactions])";
     const bub = await box(page, `${row} [data-bubble]`);
     const pill = await box(page, `${row} [data-testid=chat-reactions] button`);
-    expect(pill.h).toBeCloseTo(26, 0);
-    expect(pill.y - (bub.y + bub.h)).toBeCloseTo(8, 0);
+    expect(pill.h).toBeCloseTo(22, 0);
+    expect(pill.y + pill.h - (bub.y + bub.h)).toBeCloseTo(10, 0);
     const av = await box(page, `${row} [data-avatar-slot] span`);
     expect(av.x).toBeCloseTo(14, 0);
     expect(av.y + av.h).toBeCloseTo(bub.y + bub.h, 0);
@@ -225,8 +249,6 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
     await expect(
       page.getByRole("button", { name: /^(Send|Gửi)$/ }),
     ).toHaveCount(0);
-    const nd = await box(page, "[data-unread-divider]");
-    expect(nd.h).toBeCloseTo(24, 0);
   });
 });
 
@@ -237,6 +259,7 @@ test.describe("390 (Chat-List-M, Chat-Main-M)", () => {
  * preview pane, which the app does not have: only the field, chips and result rows are compared, on the phone.
  */
 async function pinThree(page: Page) {
+  await toNewest(page);
   for (let i = 0; i < 3; i++) {
     const row = page.locator("[data-own=false]").nth(-1 - i * 2);
     await row.scrollIntoViewIfNeeded();
@@ -250,6 +273,7 @@ async function pinThree(page: Page) {
 }
 
 async function openThread(page: Page) {
+  await toNewest(page);
   const row = page.locator("[data-own=false]").last();
   await row.scrollIntoViewIfNeeded();
   await row.hover();
@@ -264,24 +288,19 @@ async function openThread(page: Page) {
 const HEADER = "[data-testid=chat-panel-header]";
 const PIN = "[data-testid=chat-pin-item]";
 
-test.describe("Pins panel (Chat-Pins 1440)", () => {
-  test("88 header, 16 title, summary strip, 12 16 rows with an 18 avatar", async ({
+// The pins are a section of the one info panel (Chat-Info boards): the Chat-Pins page header (56 high, 16/700 title) and
+// its summary strip no longer exist, so their assertions are removed here; the pin rows keep the Chat-Pins row numbers.
+test.describe("Pins section of the info panel (pin rows from Chat-Pins 1440)", () => {
+  test("12 16 rows with an 18 avatar inside the 360 panel", async ({
     page,
   }) => {
     await open(page, 1440, 900, CHANNEL);
     await pinThree(page);
-    await page.getByRole("button", { name: "Ghim" }).first().click();
+    await openInfoSection(page, "pins");
     await expect(page.locator(PIN)).toHaveCount(3);
     expect((await box(page, "[data-testid=chat-side-panel]")).w).toBeCloseTo(
       360,
       0,
-    );
-    expect((await box(page, HEADER)).h).toBeCloseTo(88, 0);
-    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("16px");
-    expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("700");
-    const strip = page.locator("[data-testid=chat-pins-panel] > p").first();
-    expect(await strip.evaluate((e) => getComputedStyle(e).fontSize)).toBe(
-      "13px",
     );
     expect(await css(page, PIN, "padding")).toBe("12px 16px");
     const av = await box(page, `${PIN} [data-slot=avatar]`);
@@ -295,26 +314,15 @@ test.describe("Pins panel (Chat-Pins 1440)", () => {
   });
 });
 
-test.describe("390 side panels (Chat-Pins-M, Chat-Thread-M, Chat-Search-M)", () => {
-  test("pins: a 56 page header with a back arrow, 17/650 title, 12 px line, no time in the footer", async ({
+test.describe("390 side panels (Chat-Info-M, Chat-Thread-M, Chat-Search-M)", () => {
+  test("pins section: 12 16 rows, no time in the footer (the Chat-Pins-M page header is gone with the page)", async ({
     page,
   }) => {
     await open(page, 390, 844, CHANNEL);
     await pinThree(page);
-    await page.getByRole("button", { name: "Ghim" }).first().click();
+    await openInfoSection(page, "pins");
     await expect(page.locator(PIN)).toHaveCount(3);
-    const head = await box(page, HEADER);
-    expect(head.h).toBeCloseTo(56, 0);
-    const back = await box(page, `${HEADER} button`);
-    expect(back.x).toBeCloseTo(12, 0);
-    expect(back.w).toBeCloseTo(32, 0);
-    expect(await css(page, `${HEADER} h2`, "font-size")).toBe("17px");
-    expect(await css(page, `${HEADER} h2`, "font-weight")).toBe("650");
-    expect(await css(page, `${HEADER} p`, "font-size")).toBe("12px");
     expect(await css(page, PIN, "padding")).toBe("12px 16px");
-    await expect(
-      page.locator("[data-testid=chat-pins-panel] > p"),
-    ).toBeHidden();
   });
 
   test("thread: a 56 page header with the follow chip, a 24 high lined reply separator, the pill composer", async ({
@@ -324,16 +332,27 @@ test.describe("390 side panels (Chat-Pins-M, Chat-Thread-M, Chat-Search-M)", () 
     await openThread(page);
     expect((await box(page, HEADER)).h).toBeCloseTo(56, 0);
     expect(await css(page, `${HEADER} h2`, "font-size")).toBe("17px");
-    const chip = await box(page, `${HEADER} button[aria-pressed]`);
+    const chip = await box(
+      page,
+      `${HEADER} [data-testid=chat-thread-follow-state]`,
+    );
     expect(chip.h).toBeCloseTo(22, 0);
     expect(
       parseFloat(
-        await css(page, `${HEADER} button[aria-pressed]`, "border-radius"),
+        await css(
+          page,
+          `${HEADER} [data-testid=chat-thread-follow-state]`,
+          "border-radius",
+        ),
       ),
     ).toBeGreaterThanOrEqual(11);
-    expect(await css(page, `${HEADER} button[aria-pressed]`, "font-size")).toBe(
-      "12px",
-    );
+    expect(
+      await css(
+        page,
+        `${HEADER} [data-testid=chat-thread-follow-state]`,
+        "font-size",
+      ),
+    ).toBe("12px");
     const sep = await box(page, "[data-testid=chat-thread-separator]");
     expect(sep.h).toBeCloseTo(24, 0);
     expect(

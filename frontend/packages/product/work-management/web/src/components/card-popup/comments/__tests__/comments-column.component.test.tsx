@@ -29,7 +29,19 @@ function show({
   updates = [comment],
   onRefreshUpdates = vi.fn(),
   onDeleteUpdate = vi.fn(),
+  canComment = true,
+  readOnly = null,
+  frozen = false,
+  updatesLoading = false,
+  viewerUserId = "user-b",
+  onCreateUpdate = vi.fn(),
 }: {
+  canComment?: boolean;
+  readOnly?: string | null;
+  frozen?: boolean;
+  updatesLoading?: boolean;
+  viewerUserId?: string;
+  onCreateUpdate?: (...args: unknown[]) => void;
   canModerateComments?: boolean;
   updatesError?: boolean;
   updates?: unknown[];
@@ -39,12 +51,13 @@ function show({
   const model = {
     mode: "view",
     copy: en,
-    readOnly: null,
+    readOnly,
     now: new Date("2026-11-08T10:00:00.000Z"),
     timeZone: "UTC",
     capabilities: {
       canEditFields: true,
-      canComment: true,
+      canComment,
+      frozen,
       canModerateComments,
     },
     card: {
@@ -56,20 +69,20 @@ function show({
     },
     data: {
       updates,
-      updatesLoading: false,
+      updatesLoading,
       updatesError,
       activity: [],
       activityLoading: false,
       activityFetching: false,
       files: [],
       filesLoading: false,
-      viewerUserId: "user-b",
+      viewerUserId,
       people: undefined,
     },
     callbacks: {
       onRefreshUpdates,
       onDeleteUpdate,
-      onCreateUpdate: vi.fn(),
+      onCreateUpdate,
       onUpdateUpdate: vi.fn(),
       onToggleReaction: vi.fn(),
       onRefreshActivity: vi.fn(),
@@ -159,5 +172,81 @@ describe("comment body is text, never markup (UC-COL-H04)", () => {
     expect(row.querySelector("a")).toBeNull();
     expect(row.querySelector('[href^="javascript"]')).toBeNull();
     expect(row.textContent).toContain("<script>alert(1)</script>");
+  });
+});
+
+describe("comment on an item (R01)", () => {
+  it("disables the composer for a viewer and names the reason", () => {
+    show({ canComment: false });
+    const note = screen.getByText(en.related.comments.readOnlyPermission);
+    expect(note.closest('[aria-disabled="true"]')).not.toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("disables the composer on an archived board with its own reason", () => {
+    show({ canComment: false, frozen: true });
+    expect(screen.getByText(en.related.comments.readOnlyArchived)).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("shows the empty state when there is no comment", () => {
+    show({ updates: [] });
+    expect(screen.getByText(en.related.comments.emptyTitle)).toBeTruthy();
+  });
+
+  it("opens the composer for a commenter, keeps Post off while empty, and posts the text", () => {
+    const onCreateUpdate = vi.fn();
+    show({ updates: [], onCreateUpdate });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: en.related.comments.composerPlaceholder,
+      }),
+    );
+    const box = screen.getByRole("textbox", {
+      name: en.related.comments.composerLabel,
+    });
+    const send = screen.getByRole("button", { name: en.related.comments.send });
+    expect((send as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(box, { target: { value: "Looks good" } });
+    expect((send as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(send);
+    expect(onCreateUpdate).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(onCreateUpdate.mock.calls[0])).toContain(
+      "Looks good",
+    );
+  });
+});
+
+describe("reply, edit or delete a comment (R02)", () => {
+  it("offers Edit and Delete to the author and not to another member", () => {
+    show({ viewerUserId: "user-a" });
+    const row = document.querySelector('[data-comment="c-1"]') as HTMLElement;
+    expect(
+      within(row).getByRole("button", { name: en.related.comments.edit }),
+    ).toBeTruthy();
+    expect(
+      within(row).getByRole("button", { name: en.related.comments.delete }),
+    ).toBeTruthy();
+  });
+
+  it("attaches a reply written under a reply to the top-level comment", () => {
+    const onCreateUpdate = vi.fn();
+    show({
+      updates: [
+        comment,
+        { ...comment, id: "r-1", body: "first reply", parentId: "c-1" },
+      ],
+      onCreateUpdate,
+    });
+    const reply = document.querySelector('[data-comment="r-1"]') as HTMLElement;
+    fireEvent.click(
+      within(reply).getByRole("button", { name: en.related.comments.reply }),
+    );
+    const box = screen.getByRole("textbox");
+    fireEvent.change(box, { target: { value: "answer" } });
+    fireEvent.keyDown(box, { key: "Enter", ctrlKey: true });
+    expect(JSON.stringify(onCreateUpdate.mock.calls[0])).toContain(
+      '"parentCommentId":"c-1"',
+    );
   });
 });

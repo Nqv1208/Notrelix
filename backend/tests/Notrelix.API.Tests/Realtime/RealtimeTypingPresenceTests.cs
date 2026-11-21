@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Notrelix.API.Realtime;
@@ -56,6 +58,22 @@ public sealed class RealtimeTypingPresenceTests
         }
     }
 
+    /// <summary>
+    /// Reads presence frames until the wanted state arrives. A late "who is here" request answered after the heartbeat
+    /// is one more "online" frame, which is valid, so earlier frames of another state are skipped.
+    /// </summary>
+    private static async Task<JsonElement> PresenceUntilAsync(RealtimeGatewayHarness harness, string state)
+    {
+        while (true)
+        {
+            var frame = await harness.ReceiveAsync("presence");
+            if (frame.GetProperty("state").GetString() == state)
+            {
+                return frame;
+            }
+        }
+    }
+
     [Fact]
     public async Task Typing_reaches_the_other_subscribers_and_never_the_sender()
     {
@@ -103,6 +121,40 @@ public sealed class RealtimeTypingPresenceTests
     }
 
     [Fact]
+    public async Task A_stop_reaches_the_others_at_once_inside_the_rate_limit_and_the_next_start_is_delivered()
+    {
+        var bus = NewBus();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, Options(o => o.TypingMinInterval = TimeSpan.FromSeconds(30)));
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
+        (await alice.ReceiveAsync("typing")).GetProperty("expiresInMs").GetInt64().Should().Be(5000);
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp", state = "stop" });
+        var stop = await alice.ReceiveAsync("typing");
+        stop.GetProperty("userId").GetGuid().Should().Be(Bob);
+        stop.GetProperty("expiresInMs").GetInt64().Should().Be(0);
+
+        // The stop re-armed the start: it is not held back by the 30 s limit.
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
+        (await alice.ReceiveAsync("typing")).GetProperty("expiresInMs").GetInt64().Should().Be(5000);
+    }
+
+    [Fact]
+    public async Task A_stop_without_a_start_and_a_stop_with_an_unknown_state_are_not_delivered()
+    {
+        var bus = NewBus();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob);
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp", state = "stop" });
+        (await NothingArrivesAsync(alice, "typing")).Should().BeTrue("nothing was started");
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp", state = "bogus" });
+        await NothingArrivesAsync(alice, "typing");
+    }
+
+    [Fact]
     public async Task Typing_on_an_unknown_subscription_or_a_non_channel_scope_is_ignored_without_a_reply()
     {
         var bus = NewBus();
@@ -129,6 +181,51 @@ public sealed class RealtimeTypingPresenceTests
         await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
 
         (await NothingArrivesAsync(alice, "typing")).Should().BeTrue("an archived or left space ignores typing");
+    }
+
+    private static RealtimeAuthorizationResult ArchivedGrant() => RealtimeAuthorizationResult.Granted(
+        new RealtimeSubscriptionGrant(RealtimeGatewayHarness.AccountId, RealtimeGatewayHarness.WorkspaceId) { WorkspaceArchived = true });
+
+    [Fact]
+    public async Task Typing_is_dropped_once_the_workspace_is_archived()
+    {
+        var bus = NewBus();
+        var authorizer = new FakeAuthorizer();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, Options(o => o.ReauthorizationInterval = TimeSpan.FromMinutes(10)), authorizer);
+
+        authorizer.Set(new RealtimeScope(RealtimeScopeKind.Channel, SpaceId), ArchivedGrant());
+        await bob.SendAsync(new { type = "typing", subscriptionId = "sp" });
+
+        (await NothingArrivesAsync(alice, "typing")).Should().BeTrue("an archived workspace takes no typing");
+    }
+
+    [Fact]
+    public async Task Presence_is_dropped_for_a_subscription_made_in_an_archived_workspace()
+    {
+        var bus = NewBus();
+        var authorizer = new FakeAuthorizer { Default = ArchivedGrant() };
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, authorizer: authorizer);
+
+        await bob.SendAsync(new { type = "presence", state = "online" });
+
+        (await NothingArrivesAsync(alice, "presence")).Should().BeTrue("an archived workspace takes no presence");
+    }
+
+    [Fact]
+    public async Task Presence_is_dropped_after_a_reauthorization_pass_finds_the_workspace_archived()
+    {
+        var bus = NewBus();
+        var authorizer = new FakeAuthorizer();
+        await using var alice = await JoinAsync(bus, Alice);
+        await using var bob = await JoinAsync(bus, Bob, Options(o => o.ReauthorizationInterval = TimeSpan.FromMilliseconds(100)), authorizer);
+
+        authorizer.Set(new RealtimeScope(RealtimeScopeKind.Channel, SpaceId), ArchivedGrant());
+        await Task.Delay(600);
+        await bob.SendAsync(new { type = "presence", state = "online" });
+
+        (await NothingArrivesAsync(alice, "presence")).Should().BeTrue("the pass refreshed the archived flag");
     }
 
     [Fact]
@@ -184,14 +281,13 @@ public sealed class RealtimeTypingPresenceTests
         await bob.SendAsync(new { type = "presence", state = "online" });
         (await alice.ReceiveAsync("presence")).GetProperty("state").GetString().Should().Be("online");
 
-        var expired = await alice.ReceiveAsync("presence");
+        var expired = await PresenceUntilAsync(alice, "offline");
         expired.GetProperty("userId").GetGuid().Should().Be(Bob);
-        expired.GetProperty("state").GetString().Should().Be("offline");
 
         await bob.SendAsync(new { type = "presence", state = "online" });
         await alice.ReceiveAsync("presence");
         bob.Connection.RequestClose(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "tab_closed");
-        (await alice.ReceiveAsync("presence")).GetProperty("state").GetString().Should().Be("offline");
+        (await PresenceUntilAsync(alice, "offline")).GetProperty("userId").GetGuid().Should().Be(Bob);
     }
 
     [Fact]

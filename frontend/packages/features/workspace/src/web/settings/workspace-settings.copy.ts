@@ -9,7 +9,9 @@ export const en = {
   descriptionLoading:
     "How this workspace is named, set up for new people, and retired.",
   readOnly:
-    "Only workspace admins and owners can change these settings. You can see them here.",
+    "Only the workspace owner can change these settings. You can see them here.",
+  archivedReadOnly:
+    "This workspace is archived, so its settings are read-only until the owner unarchives it.",
   versionUnavailable:
     "Saving is turned off for now: this server doesn't report the workspace version that is needed to save changes safely.",
   save: "Save changes",
@@ -34,6 +36,19 @@ export const en = {
     descriptionTooLong: "Use 1,024 characters or fewer.",
     counter: "{{count}} / {{max}}",
   },
+  address: {
+    title: "Address",
+    label: "Address",
+    prefix: "notrelix.app/",
+    help: "3 to 63 characters: lowercase letters, numbers and single hyphens. Links inside Notrelix keep working; the old address is not redirected.",
+    ownerOnly: "Only the Owner changes the workspace address.",
+    invalid:
+      "Use 3 to 63 lowercase letters, numbers and single hyphens, and not a reserved word.",
+    checking: "Checking the address...",
+    free: "This address is free.",
+    taken: "The address {{slug}} is already used by another workspace.",
+    suggestion: "Try",
+  },
   defaults: {
     title: "Defaults",
     description: "What new members and invitations start with.",
@@ -47,9 +62,11 @@ export const en = {
     sharingLabel: "Allow public links",
     sharingHelp:
       "Members can share a read-only link to a Board or Doc with anyone.",
-    mfaLabel: "Require two-step verification",
+    mfaLabel: "Two-step verification",
     mfaHelp:
-      "Members must turn on two-step verification to open this workspace.",
+      "Set for the whole account by its Owner, in Account settings, Security.",
+    mfaOn: "Required by your account",
+    mfaOff: "Not required by your account",
     timeZoneLabel: "Time zone",
     timeZoneHelp: "Every board of the workspace uses it for dates and times.",
     timeZonePlaceholder: "Search a time zone, such as Europe/Paris",
@@ -77,6 +94,15 @@ export const en = {
     archiveDescription:
       "Archiving makes {{workspace}} read-only for every member and stops all work in it. An owner can restore it later.",
     archiveAction: "Archive workspace",
+    unarchiveTitle: "This workspace is archived",
+    unarchiveDescription:
+      "{{workspace}} is read-only for every member and its automations are paused. Unarchive it to let everyone work again.",
+    unarchiveAction: "Unarchive workspace",
+    unarchiving: "Unarchiving…",
+    unarchiveConfirmTitle: "Unarchive {{workspace}}?",
+    unarchiveConfirmDescription:
+      "Everyone can edit and comment again. Automations and integration sync run again from now on.",
+    unarchiveOwnerOnly: "Only the owner can unarchive this workspace.",
     confirmTitle: "Archive {{workspace}}?",
     confirmDescription:
       "Every member can still read this workspace, but nothing in it can change until an owner restores it. Type the workspace name to confirm.",
@@ -95,19 +121,82 @@ export const en = {
     deleteConfirmAction: "Delete workspace",
     deleting: "Deleting…",
     deletePersonal: "A personal workspace can't be deleted.",
+    transferTitle: "Transfer ownership",
+    transferDescription:
+      "Choose a member to become the owner of {{workspace}}. You become an admin.",
+    transferAction: "Transfer ownership",
+    transferDialogTitle: "Transfer ownership of {{workspace}}",
+    transferPick: "New owner",
+    transferEffect:
+      "{{name}} becomes the owner and can manage the plan and delete the workspace. You become an admin and can't take ownership back yourself.",
+    transferConfirm: "Transfer to {{name}}",
+    transferPending: "Transferring…",
+    transferNoneTitle: "There is nobody to hand the workspace to yet",
+    transferNoneBody:
+      "Only an active member who isn't a guest can become the owner. Add or invite a member first.",
+    transferInvite: "Invite a member",
+    transferConflictTitle: "The member list has changed.",
+    transferConflictBody:
+      "The workspace or the person you chose changed since you opened this. Reload the list and choose again.",
+    transferRejected:
+      "That person can't become the owner. Choose another member.",
+    transferReload: "Reload the list",
+    transferRoleAdmin: "Admin",
+    transferRoleMember: "Member",
+    stepUpTitle: "Confirm it's you",
+    stepUpText:
+      "Handing {{workspace}} to {{name}} needs you to confirm it's you, even though you're signed in.",
+    stepUpCodeLabel: "6-digit code from your authenticator app",
+    stepUpUseRecovery: "Use a recovery code",
+    stepUpUseCode: "Use the authenticator code",
+    stepUpRecoveryLabel: "Recovery code",
+    stepUpPasswordLabel: "Current password",
+    stepUpConfirm: "Confirm and transfer",
+    stepUpChecking: "Confirming…",
+    stepUpWrongCode: "That code isn't right. Check it and try again.",
+    stepUpWrongPassword: "That password isn't right. Try again.",
+    stepUpWait: "Too many tries. Wait {{seconds}} seconds, then try again.",
+    stepUpExpiredTitle: "The confirmation expired.",
+    stepUpExpiredBody:
+      "A confirmation lasts 5 minutes. Start again to hand the workspace over.",
+    stepUpRestart: "Start again",
+    stepUpClose: "Close",
+    stepUpRefusedTitle: "Ownership was not transferred.",
+    stepUpRefusedBody:
+      "The confirmation expired or was already used. Confirm again to transfer ownership.",
+    stepUpProviderTitle: "Add a way to confirm first",
+    stepUpProviderBody:
+      "You sign in with a provider and have no password or two-factor yet. Add one in Account settings, Security, then come back to hand the workspace over.",
+    stepUpProviderText:
+      "Confirm with the account you signed in with. The browser leaves for it and comes back here, where you press Transfer to finish the handover.",
+    stepUpProviderBack:
+      "Your provider confirmed you. Ownership of {{workspace}} moves to {{name}} only when you press Transfer.",
+    stepUpProviderButton: "Confirm with {{provider}}",
+    stepUpProviderPending: "Confirming…",
+    stepUpProviderFailed:
+      "The provider could not confirm you. Ownership was not transferred; try again or close.",
   },
   toasts: {
     profileSaved: "Profile saved.",
+    addressSaved: "Address changed.",
     defaultsSaved: "Defaults saved.",
     saveFailed: "Your changes weren't saved.",
     archived: "{{workspace}} was archived.",
+    unarchived: "{{workspace}} was unarchived.",
+    unarchiveFailed: "{{workspace}} wasn't unarchived.",
+    unarchiveConflict:
+      "{{workspace}} changed since you opened this page. Reload and try again.",
     archiveFailed: "{{workspace}} wasn't archived.",
+    archiveConflict:
+      "{{workspace}} changed since you opened this page. Reload and try again.",
     deleted:
       "{{workspace}} was deleted. You can restore it from Recently deleted for 30 days.",
     deleteFailed: "{{workspace}} wasn't deleted.",
     deleteConflict:
       "{{workspace}} changed since you opened this page. Reload and try again.",
     deletePersonal: "A personal workspace can't be deleted.",
+    transferred:
+      "{{name}} is now the owner of {{workspace}}. You are an admin.",
     forbidden: "You don't have permission to change these settings.",
     network: "The server couldn't be reached. Nothing was changed; try again.",
     unknown:
@@ -123,7 +212,9 @@ export const vi: WorkspaceSettingsCopy = {
   descriptionLoading:
     "Tên, thiết lập cho người mới và việc lưu trữ không gian làm việc này.",
   readOnly:
-    "Chỉ quản trị viên và chủ sở hữu mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
+    "Chỉ chủ sở hữu workspace mới thay đổi được các cài đặt này. Bạn có thể xem chúng tại đây.",
+  archivedReadOnly:
+    "Không gian làm việc này đang được lưu trữ nên cài đặt chỉ xem được cho đến khi chủ sở hữu bỏ lưu trữ.",
   versionUnavailable:
     "Tạm thời chưa lưu được: máy chủ này chưa cung cấp phiên bản của không gian làm việc, thông tin cần để lưu thay đổi an toàn.",
   save: "Lưu thay đổi",
@@ -149,6 +240,19 @@ export const vi: WorkspaceSettingsCopy = {
     descriptionTooLong: "Dùng tối đa 1.024 ký tự.",
     counter: "{{count}} / {{max}}",
   },
+  address: {
+    title: "Địa chỉ",
+    label: "Địa chỉ",
+    prefix: "notrelix.app/",
+    help: "3 đến 63 ký tự: chữ thường, số và dấu gạch ngang đơn. Liên kết trong Notrelix vẫn hoạt động; địa chỉ cũ không được chuyển hướng.",
+    ownerOnly: "Chỉ Chủ sở hữu đổi được địa chỉ không gian làm việc.",
+    invalid:
+      "Dùng 3 đến 63 chữ thường, số và dấu gạch ngang đơn, không phải từ dành riêng.",
+    checking: "Đang kiểm tra địa chỉ...",
+    free: "Địa chỉ này còn trống.",
+    taken: "Địa chỉ {{slug}} đã có không gian làm việc khác dùng.",
+    suggestion: "Thử",
+  },
   defaults: {
     title: "Mặc định",
     description: "Thiết lập ban đầu cho thành viên mới và lời mời.",
@@ -162,9 +266,11 @@ export const vi: WorkspaceSettingsCopy = {
     sharingLabel: "Cho phép liên kết công khai",
     sharingHelp:
       "Thành viên có thể chia sẻ liên kết chỉ xem của một Bảng hoặc Tài liệu cho bất kỳ ai.",
-    mfaLabel: "Bắt buộc xác minh hai bước",
+    mfaLabel: "Xác minh hai bước",
     mfaHelp:
-      "Thành viên phải bật xác minh hai bước để mở không gian làm việc này.",
+      "Chủ sở hữu tài khoản đặt cho cả tài khoản, trong Cài đặt tài khoản, mục Bảo mật.",
+    mfaOn: "Tài khoản của bạn bắt buộc",
+    mfaOff: "Tài khoản của bạn không bắt buộc",
     timeZoneLabel: "Múi giờ",
     timeZoneHelp:
       "Mọi bảng của không gian làm việc dùng múi giờ này cho ngày và giờ.",
@@ -194,6 +300,16 @@ export const vi: WorkspaceSettingsCopy = {
     archiveDescription:
       "Lưu trữ sẽ chuyển {{workspace}} sang chỉ đọc với mọi thành viên và dừng mọi công việc trong đó. Chủ sở hữu có thể khôi phục sau.",
     archiveAction: "Lưu trữ không gian làm việc",
+    unarchiveTitle: "Không gian làm việc này đang được lưu trữ",
+    unarchiveDescription:
+      "{{workspace}} chỉ xem được với mọi thành viên và tự động hoá đã tạm dừng. Bỏ lưu trữ để mọi người làm việc lại.",
+    unarchiveAction: "Bỏ lưu trữ không gian làm việc",
+    unarchiving: "Đang bỏ lưu trữ…",
+    unarchiveConfirmTitle: "Bỏ lưu trữ {{workspace}}?",
+    unarchiveConfirmDescription:
+      "Mọi người sửa và bình luận lại được. Tự động hoá và đồng bộ tích hợp chạy lại từ lúc này.",
+    unarchiveOwnerOnly:
+      "Chỉ chủ sở hữu mới bỏ lưu trữ được không gian làm việc này.",
     confirmTitle: "Lưu trữ {{workspace}}?",
     confirmDescription:
       "Mọi thành viên vẫn xem được không gian làm việc này nhưng không ai chỉnh sửa được cho đến khi chủ sở hữu khôi phục. Nhập tên không gian làm việc để xác nhận.",
@@ -212,19 +328,82 @@ export const vi: WorkspaceSettingsCopy = {
     deleteConfirmAction: "Xóa không gian làm việc",
     deleting: "Đang xóa…",
     deletePersonal: "Không thể xóa không gian làm việc cá nhân.",
+    transferTitle: "Chuyển quyền sở hữu",
+    transferDescription:
+      "Chọn một thành viên làm Chủ sở hữu mới của {{workspace}}. Bạn trở thành Quản trị.",
+    transferAction: "Chuyển quyền",
+    transferDialogTitle: "Chuyển quyền sở hữu {{workspace}}",
+    transferPick: "Chủ sở hữu mới",
+    transferEffect:
+      "{{name}} thành Chủ sở hữu, quản lý được gói và xóa được không gian làm việc. Bạn thành Quản trị và không tự lấy lại quyền được.",
+    transferConfirm: "Chuyển cho {{name}}",
+    transferPending: "Đang chuyển…",
+    transferNoneTitle: "Chưa có ai để nhận quyền sở hữu",
+    transferNoneBody:
+      "Chỉ thành viên đang hoạt động và không phải Khách mới nhận được quyền Chủ sở hữu. Hãy thêm hoặc mời một thành viên trước.",
+    transferInvite: "Mời thành viên",
+    transferConflictTitle: "Danh sách thành viên đã thay đổi.",
+    transferConflictBody:
+      "Không gian làm việc hoặc người bạn chọn đã thay đổi từ lúc bạn mở hộp thoại. Tải lại danh sách rồi chọn lại.",
+    transferRejected:
+      "Người này không nhận được quyền Chủ sở hữu. Hãy chọn người khác.",
+    transferReload: "Tải lại danh sách",
+    transferRoleAdmin: "Quản trị",
+    transferRoleMember: "Thành viên",
+    stepUpTitle: "Xác nhận lại danh tính",
+    stepUpText:
+      "Chuyển quyền sở hữu {{workspace}} cho {{name}} cần xác nhận lại danh tính, dù bạn đã đăng nhập.",
+    stepUpCodeLabel: "Mã 6 số từ ứng dụng xác thực",
+    stepUpUseRecovery: "Dùng mã khôi phục",
+    stepUpUseCode: "Dùng mã từ ứng dụng xác thực",
+    stepUpRecoveryLabel: "Mã khôi phục",
+    stepUpPasswordLabel: "Mật khẩu hiện tại",
+    stepUpConfirm: "Xác nhận và chuyển quyền",
+    stepUpChecking: "Đang xác nhận…",
+    stepUpWrongCode: "Mã chưa đúng. Kiểm tra lại rồi thử tiếp.",
+    stepUpWrongPassword: "Mật khẩu chưa đúng. Hãy thử lại.",
+    stepUpWait: "Thử quá nhiều lần. Đợi {{seconds}} giây rồi thử lại.",
+    stepUpExpiredTitle: "Yêu cầu xác nhận đã hết hạn.",
+    stepUpExpiredBody:
+      "Phiên xác nhận chỉ có hiệu lực 5 phút. Bắt đầu lại để chuyển quyền.",
+    stepUpRestart: "Bắt đầu lại",
+    stepUpClose: "Đóng",
+    stepUpRefusedTitle: "Chưa chuyển quyền.",
+    stepUpRefusedBody:
+      "Xác nhận đã hết hạn hoặc đã được dùng. Hãy xác nhận lại để chuyển quyền.",
+    stepUpProviderTitle: "Thêm cách xác nhận trước",
+    stepUpProviderBody:
+      "Bạn đăng nhập bằng nhà cung cấp và chưa có mật khẩu hay xác thực hai bước. Hãy thêm một trong hai ở Cài đặt tài khoản, mục Bảo mật, rồi quay lại để chuyển quyền.",
+    stepUpProviderText:
+      "Hãy xác nhận bằng tài khoản bạn đã dùng để đăng nhập. Trình duyệt rời đi rồi quay lại đây, nơi bạn bấm Chuyển để hoàn tất việc chuyển quyền.",
+    stepUpProviderBack:
+      "Nhà cung cấp đã xác nhận bạn. Quyền sở hữu {{workspace}} chỉ chuyển cho {{name}} khi bạn bấm Chuyển.",
+    stepUpProviderButton: "Xác nhận với {{provider}}",
+    stepUpProviderPending: "Đang xác nhận…",
+    stepUpProviderFailed:
+      "Nhà cung cấp không xác nhận được. Bạn chưa chuyển quyền; thử lại hoặc đóng.",
   },
   toasts: {
     profileSaved: "Đã lưu hồ sơ.",
+    addressSaved: "Đã đổi địa chỉ.",
     defaultsSaved: "Đã lưu mặc định.",
     saveFailed: "Chưa lưu được thay đổi.",
     archived: "Đã lưu trữ {{workspace}}.",
+    unarchived: "Đã bỏ lưu trữ {{workspace}}.",
+    unarchiveFailed: "Chưa bỏ lưu trữ được {{workspace}}.",
+    unarchiveConflict:
+      "{{workspace}} đã thay đổi từ lúc bạn mở trang. Hãy tải lại rồi thử lại.",
     archiveFailed: "Chưa lưu trữ được {{workspace}}.",
+    archiveConflict:
+      "{{workspace}} đã thay đổi từ khi bạn mở trang này. Hãy tải lại rồi thử lại.",
     deleted:
       "Đã xóa {{workspace}}. Bạn có thể khôi phục trong mục Đã xóa gần đây trong 30 ngày.",
     deleteFailed: "Chưa xóa được {{workspace}}.",
     deleteConflict:
       "{{workspace}} đã thay đổi từ khi bạn mở trang này. Hãy tải lại rồi thử lại.",
     deletePersonal: "Không thể xóa không gian làm việc cá nhân.",
+    transferred:
+      "{{name}} giờ là Chủ sở hữu của {{workspace}}. Bạn là Quản trị.",
     forbidden: "Bạn không có quyền thay đổi các cài đặt này.",
     network: "Không kết nối được máy chủ. Chưa có gì thay đổi; hãy thử lại.",
     unknown: "Máy chủ gặp sự cố. Chưa có gì thay đổi; hãy thử lại.",

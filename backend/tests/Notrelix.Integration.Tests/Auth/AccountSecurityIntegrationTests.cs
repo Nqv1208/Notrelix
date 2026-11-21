@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Email;
 using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Identity.Auth.Commands.ChangePassword;
 using Notrelix.Application.Features.Identity.Auth.Throttling;
@@ -111,7 +110,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
     {
         await using var context = _fixture.CreatePostgresOwnerContext();
         return await StepUp(context, CreateThrottle())
-            .CompletePasswordAsync(user.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, password, CancellationToken.None);
+            .CompletePasswordAsync(user.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, password, null, CancellationToken.None);
     }
 
     private static string Code(Result result) => result.TypedErrors.Single().Code;
@@ -160,11 +159,11 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
 
         for (var i = 0; i < AccountMax; i++)
         {
-            var bad = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", CancellationToken.None);
+            var bad = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", null, CancellationToken.None);
             Code(bad).Should().Be("identity.security.step-up-invalid");
         }
 
-        var locked = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", CancellationToken.None);
+        var locked = await service.CompleteMfaAsync(_alice.Id, Guid.CreateVersion7(), StepUpPurpose.DisableMfa, "no-such-challenge", "000000", null, CancellationToken.None);
         Code(locked).Should().Be(LoginThrottleErrors.Code);
 
         (await StepUpPasswordAsync(_alice, GoodPassword)).Succeeded.Should().BeTrue("the password budget is a separate counter");
@@ -178,8 +177,8 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
         var throttle = CreateThrottle();
         var handler = new ChangePasswordCommandHandler(
             context, new FakeCurrentRequestContext().AsUser(user.Id), Hasher().Object, Mock.Of<IJwtBlacklistService>(),
-            Mock.Of<IEmailService>(), Clock().Object, NullLogger<ChangePasswordCommandHandler>.Instance,
-            StepUp(context, throttle), throttle, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>());
+            Clock().Object,
+            StepUp(context, throttle), throttle, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>());
         var result = await handler.Handle(
             new ChangePasswordCommand { CurrentPassword = current, NewPassword = "NewPassword123!" }, CancellationToken.None);
         await context.SaveChangesAsync();
@@ -243,7 +242,7 @@ public sealed class AccountSecurityIntegrationTests : IAsyncLifetime
         var current = new FakeCurrentRequestContext().AsUser(actor.Id);
         current.SessionId = currentSessionId;
         var handler = new RevokeSessionCommandHandler(
-            context, current, Mock.Of<IJwtBlacklistService>(), Clock().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), NullLogger<RevokeSessionCommandHandler>.Instance);
+            context, current, Mock.Of<IJwtBlacklistService>(), Clock().Object, Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityNotice>(), NullLogger<RevokeSessionCommandHandler>.Instance);
         var result = await handler.Handle(new RevokeSessionCommand { SessionId = sessionId }, CancellationToken.None);
         await context.SaveChangesAsync();
         return result;
