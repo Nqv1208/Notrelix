@@ -42,6 +42,7 @@ public sealed class RlsPolicyApplier
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.033_member_active_elsewhere.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.034_form_submit_scope.sql",
         "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.035_sso_scope.sql",
+        "Notrelix.Infrastructure.Data.Rls.RlsSqlScripts.036_sso_identity_scope.sql",
     ];
 
     public RlsPolicyApplier(ApplicationDbContext context, ILogger<RlsPolicyApplier> logger)

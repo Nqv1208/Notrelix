@@ -57,7 +57,10 @@ public sealed class VerifySsoDomainCommandHandler : IRequestHandler<VerifySsoDom
             var token = _encryptor.Unprotect(domain.VerificationTokenProtected, AccountSsoSupport.DomainTokenPurpose);
             var records = await _resolver.ResolveTxtAsync(domain.Domain, cancellationToken);
             if (AccountSsoSupport.HasTxtValue(records, token))
+            {
                 domain.Verify(_clock.UtcNow, _currentUser.UserId);
+                await _claims.SaveVerifiedAsync(cancellationToken);
+            }
         }
 
         return Result<SsoDomainDto>.Success(SsoDomainDto.From(domain, _encryptor, claimed: false));

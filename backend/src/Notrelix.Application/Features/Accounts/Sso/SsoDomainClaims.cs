@@ -28,4 +28,23 @@ public sealed class SsoDomainClaims
             : _context.AccountDomains.AsNoTracking().AnyAsync(
                 d => d.Domain == domain && d.AccountId != accountId && d.VerificationStatus == DomainVerificationStatus.Verified,
                 cancellationToken);
+
+    /// <summary>
+    /// Stores the verification now. Two Accounts proving the same domain at the same moment both pass the claimed check;
+    /// the partial unique index on Verified rows lets one win and the loser gets the same refusal as a domain that was
+    /// already claimed.
+    /// </summary>
+    public async Task SaveVerifiedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when ((ex.InnerException?.Message ?? ex.Message).Contains(VerifiedDomainIndex, StringComparison.Ordinal))
+        {
+            throw new ConflictException("Another account has already verified this domain.", AccountSsoErrorCodes.DomainClaimed);
+        }
+    }
+
+    private const string VerifiedDomainIndex = "idx_account_domains_domain_verified";
 }

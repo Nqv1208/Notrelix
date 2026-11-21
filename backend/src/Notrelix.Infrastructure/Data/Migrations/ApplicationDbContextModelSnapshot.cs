@@ -6071,6 +6071,50 @@ namespace Notrelix.Infrastructure.Data.Migrations
                     b.ToTable("user_sessions", "identity");
                 });
 
+            modelBuilder.Entity("Notrelix.Domain.Identity.Sso.SsoIdentity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Issuer")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("issuer");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("subject");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sso_identities");
+
+                    b.HasIndex("AccountId", "Subject")
+                        .IsUnique()
+                        .HasDatabaseName("idx_sso_identities_account_subject");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("idx_sso_identities_user_account");
+
+                    b.ToTable("sso_identities", "identity");
+                });
+
             modelBuilder.Entity("Notrelix.Domain.Identity.Tokens.ApiToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14491,6 +14535,16 @@ namespace Notrelix.Infrastructure.Data.Migrations
 
                     b.Navigation("RefreshTokenHash")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Notrelix.Domain.Identity.Sso.SsoIdentity", b =>
+                {
+                    b.HasOne("Notrelix.Domain.Identity.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sso_identities_users_user_id");
                 });
 
             modelBuilder.Entity("Notrelix.Domain.Identity.Users.User", b =>

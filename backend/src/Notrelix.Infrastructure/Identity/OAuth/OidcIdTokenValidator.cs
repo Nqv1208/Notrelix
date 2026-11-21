@@ -48,7 +48,8 @@ internal static class OidcIdTokenValidator
         string clientId,
         string? expectedNonce,
         DateTimeOffset now,
-        TimeSpan? maxAuthenticationAge = null)
+        TimeSpan? maxAuthenticationAge = null,
+        TimeSpan? clockSkew = null)
     {
         var parts = idToken.Split('.');
         if (parts.Length != 3 || parts[1].Length == 0)
@@ -74,7 +75,7 @@ internal static class OidcIdTokenValidator
 
             RequireIssuer(root, issuers);
             RequireAudience(root, clientId);
-            RequireTimes(root, now);
+            RequireTimes(root, now, clockSkew ?? ClockSkew);
             RequireNonce(root, expectedNonce);
             if (maxAuthenticationAge is { } window)
                 RequireRecentAuthentication(root, now, window);
@@ -167,16 +168,16 @@ internal static class OidcIdTokenValidator
             throw new OidcIdTokenException("authorized party mismatch");
     }
 
-    private static void RequireTimes(JsonElement root, DateTimeOffset now)
+    private static void RequireTimes(JsonElement root, DateTimeOffset now, TimeSpan skew)
     {
         var expiresAt = SecondsClaim(root, "exp") ?? throw new OidcIdTokenException("expiry missing");
         var issuedAt = SecondsClaim(root, "iat") ?? throw new OidcIdTokenException("issue time missing");
 
-        if (expiresAt <= now - ClockSkew)
+        if (expiresAt <= now - skew)
             throw new OidcIdTokenException("id token expired");
-        if (issuedAt > now + ClockSkew)
+        if (issuedAt > now + skew)
             throw new OidcIdTokenException("id token issued in the future");
-        if (issuedAt < now - MaxAge - ClockSkew)
+        if (issuedAt < now - MaxAge - skew)
             throw new OidcIdTokenException("id token too old");
     }
 

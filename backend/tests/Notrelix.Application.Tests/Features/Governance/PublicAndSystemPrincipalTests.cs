@@ -65,11 +65,16 @@ public sealed class PublicAndSystemPrincipalTests
         // added here on purpose (it is public, or it is raised by the system itself).
         requests.Select(t => t.Name).Order().Should().Equal(
             "AcceptInvitationWithRegistrationCommand", "CompleteMfaChallengeCommand", "CompleteOAuthLoginCommand",
-            "CompleteOAuthStepUpCommand", "CompleteRequiredMfaEnrollmentCommand", "ConfirmEmailCommand", "DeclineInvitationByTokenCommand",
+            "CompleteOAuthStepUpCommand", "CompleteRequiredMfaEnrollmentCommand",
+            // Company sign-in callback: anonymous by nature (the browser returns from the provider); it uses up a one-time state and runs in bounded database scopes.
+            "CompleteSsoSignInCommand",
+            "ConfirmEmailCommand", "DeclineInvitationByTokenCommand",
             "ForgotPasswordCommand", "GetInvitationByTokenQuery", "GetPublicFormQuery", "HandleCalendarWebhookCommand", "HandleCallMediaWebhookCommand",
             "IdentifySignInQuery", "LoginCommand", "ProvisionPersonalWorkspaceCommand", "RefreshTokenCommand",
             "RegisterCommand", "ResendEmailVerificationCommand", "ResetPasswordCommand", "ResolveSlugQuery",
             "SendWelcomeEmailCommand", "StartOAuthLoginCommand", "StartRequiredMfaEnrollmentCommand",
+            // Company sign-in start: anonymous (no session yet); routes by the email's verified domain and answers the provider address.
+            "StartSsoSignInCommand",
             // Public form (anonymous principal): both are bound by the database to ONE form from its public key (RLS 034).
             "SubmitPublicFormCommand");
     }

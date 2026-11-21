@@ -95,7 +95,7 @@ public sealed class LoginThrottleIntegrationTests : IAsyncLifetime
 
         var handler = new LoginCommandHandler(
             context, hasher.Object, issuer.Object, Mock.Of<IMfaChallengeStore>(), new Notrelix.Application.Features.Accounts.Security.AccountSecurityPolicyFactsProvider(context), CreateThrottle(), Mock.Of<Notrelix.Application.Features.Identity.Security.Abstractions.ISecurityActivityRecorder>(), time.Object,
-            NullLogger<LoginCommandHandler>.Instance);
+            NullLogger<LoginCommandHandler>.Instance, new Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts());
         var result = await handler.Handle(new LoginCommand { Email = email, Password = password }, CancellationToken.None);
         await context.SaveChangesAsync();
         return result;

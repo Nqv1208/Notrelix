@@ -1,6 +1,8 @@
 using Notrelix.Application.Common.Oidc;
 using Notrelix.Application.Features.Accounts.Abstractions;
+using Notrelix.Application.Features.Identity.Sso;
 using Notrelix.Infrastructure.Accounts.Sso;
+using Notrelix.Infrastructure.Identity.Sso;
 using Notrelix.Infrastructure.Oidc;
 
 namespace Notrelix.Infrastructure;
@@ -17,6 +19,8 @@ public static class SsoRegistration
                 OidcGuardedHttp.CreateHandler(sp.GetRequiredService<IOptions<OidcOutboundOptions>>().Value.AllowPrivateTargets))
             .ConfigureHttpClient(client => client.Timeout = OidcGuardedHttp.Timeout);
         services.AddScoped<IOidcDiscoveryClient, OidcDiscoveryClient>();
+        services.AddScoped<ISsoStateStore, SsoStateStore>();
+        services.AddScoped<ISsoCodeRedeemer, SsoCodeRedeemer>();
 
         services.AddSingleton<IDomainTxtResolver, DnsDomainTxtResolver>();
         services.AddScoped<IAccountSsoScopeReader, AccountSsoScopeReader>();

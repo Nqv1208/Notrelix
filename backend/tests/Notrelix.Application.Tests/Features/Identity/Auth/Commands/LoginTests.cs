@@ -12,6 +12,7 @@ namespace Notrelix.Application.Tests.Features.Identity.Auth.Commands;
 public class LoginTests : IdentityHandlerTestBase
 {
     private readonly Mock<Notrelix.Application.Features.Accounts.Public.Security.IAccountSecurityPolicyFacts> _policy = new();
+    private readonly Notrelix.Testing.Application.Fakes.FakeAccountSsoFacts _sso = new();
 
     private LoginCommandHandler CreateSut() => new(
         IdentityContextMock.Object,
@@ -22,7 +23,8 @@ public class LoginTests : IdentityHandlerTestBase
         Mock.Of<ILoginThrottle>(),
         ActivityMock.Object,
         DateTimeProviderMock.Object,
-        LoginLoggerMock.Object);
+        LoginLoggerMock.Object,
+        _sso);
 
     [Fact]
     public async Task Handle_WhenValidCredentials_ReturnsSuccess()
@@ -89,6 +91,61 @@ public class LoginTests : IdentityHandlerTestBase
         result.Succeeded.Should().BeTrue();
         result.Data!.MfaRequired.Should().BeTrue();
         SessionIssuerMock.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheAccountRequiresSso_ARightPasswordIsRefused_WithNoSessionAndNoSecondFactor()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        var active = UserMfaMethod.Create(TestUserId, MfaMethodType.AuthenticatorApp, TestNow, SecretRef.Create("s"));
+        active.Verify(TestNow);
+        SetupUserMfaMethods(active);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        _sso.Enforcement = new(true, Guid.NewGuid());
+
+        var result = await CreateSut().Handle(
+            new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.TypedErrors.Should().ContainSingle(e =>
+            e.Code == "identity.auth.sso-required" && e.Type == ApplicationErrorType.Forbidden);
+        _sso.EnforcementChecks.Should().ContainSingle().Which.Should().Be((TestEmail, (Guid?)TestUserId, Notrelix.Application.Features.Accounts.Public.Sso.AccountSsoSignInMethod.Password));
+        SessionIssuerMock.Verify(s => s.IssueAsync(It.IsAny<User>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Never);
+        ChallengeStoreMock.Verify(
+            c => c.StoreAsync(It.IsAny<string>(), It.IsAny<MfaChallengePayload>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        ActivityMock.Verify(a => a.Record(TestUserId, SecurityActivityType.SignInFailed, It.IsAny<DateTimeOffset>(), null), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTheAccountRequiresSso_AWrongPasswordStillAnswersInvalidCredentials_WithoutAskingWhetherSsoIsRequired()
+    {
+        SetupUsers(CreateUser());
+        PasswordHasherMock.Setup(h => h.VerifyPassword(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+        _sso.Enforcement = new(true, Guid.NewGuid());
+
+        var result = await CreateSut().Handle(
+            new LoginCommand { Email = TestEmail, Password = "wrong" }, CancellationToken.None);
+
+        result.TypedErrors.Should().ContainSingle(e => e.Code == "identity.auth.invalid-credentials");
+        _sso.EnforcementChecks.Should().BeEmpty("only a correct password may learn that single sign-on is required");
+    }
+
+    [Fact]
+    public async Task Handle_WhenSsoIsNotRequired_APasswordSignInIsUnchanged()
+    {
+        var user = CreateUser();
+        SetupUsers(user);
+        PasswordHasherMock.Setup(h => h.VerifyPassword(TestPassword, TestHashedPassword)).Returns(true);
+        SessionIssuerMock.Setup(s => s.IssueAsync(user, TestNow, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthResult { AccessToken = "a", RefreshToken = "r" });
+
+        var result = await CreateSut().Handle(
+            new LoginCommand { Email = TestEmail, Password = TestPassword }, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        _sso.EnforcementChecks.Should().ContainSingle();
     }
 
     [Fact]

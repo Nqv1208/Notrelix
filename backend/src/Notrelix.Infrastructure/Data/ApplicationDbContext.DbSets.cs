@@ -4,6 +4,7 @@ using Notrelix.Domain.Accounts.Domains;
 using Notrelix.Domain.Accounts.IdentityProviders;
 using Notrelix.Domain.Accounts.Invitations;
 using Notrelix.Domain.Accounts.Members;
+using Notrelix.Domain.Identity.Sso;
 using Notrelix.Domain.Accounts.Regions;
 using Notrelix.Domain.Accounts.Scim;
 using Notrelix.Application.Features.Accounts.Abstractions.Records;
@@ -126,6 +127,7 @@ public partial class ApplicationDbContext
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<UserSession> Sessions => Set<UserSession>();
     public DbSet<OAuthAccount> OAuthAccounts => Set<OAuthAccount>();
+    public DbSet<SsoIdentity> SsoIdentities => Set<SsoIdentity>();
     public DbSet<UserSecuritySettings> UserSecuritySettings => Set<UserSecuritySettings>();
     public DbSet<UserMfaMethod> UserMfaMethods => Set<UserMfaMethod>();
     public DbSet<MfaRecoveryBatch> MfaRecoveryBatches => Set<MfaRecoveryBatch>();
