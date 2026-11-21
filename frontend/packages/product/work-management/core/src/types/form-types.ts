@@ -316,3 +316,42 @@ export interface FormQuestionChanges extends FormQuestionSettings {
   readonly boardFieldId: string | null;
   readonly position: string;
 }
+
+/** Whether a form is open to people who are not signed in; the key is the whole public link (`/f/<key>`). */
+export interface FormPublicAccess {
+  readonly isPublic: boolean;
+  readonly publicKey: string | null;
+}
+
+/** How switching a form public or private ended. */
+export type FormPublicAccessResult =
+  | { readonly ok: true; readonly access: FormPublicAccess }
+  /** `denied`: not a workspace Owner or Admin; `linksOff`: the workspace switched public links off. */
+  | {
+      readonly ok: false;
+      readonly reason: "denied" | "linksOff" | "failed";
+    };
+
+/**
+ * The form an anonymous visitor fills. Questions reuse the member's shape (`id` is the key; there is no board
+ * field behind them), so one question renderer and one answer validator serve both pages.
+ */
+export interface PublicForm {
+  readonly name: string;
+  readonly description: string;
+  /** Null when the server has no captcha configured: it would refuse every send. */
+  readonly captchaSiteKey: string | null;
+  readonly questions: readonly FormQuestion[];
+}
+
+/** How an anonymous send ended. `message` is the server's own sentence (Vietnamese on a rate limit). */
+export type PublicFormSubmitResult =
+  | { readonly ok: true }
+  | {
+      readonly ok: false;
+      /** `missing`: the key opens nothing any more; `captcha`: the token was refused. */
+      readonly reason:
+        "missing" | "validation" | "captcha" | "limited" | "failed";
+      readonly errors?: FormAnswerErrors;
+      readonly message?: string;
+    };

@@ -16,6 +16,7 @@ import { VerifyEmailPage } from "../../routes/verify-email";
 import { HomePage } from "../../routes/home";
 import { InvitePage } from "../../routes/invite/$token";
 import { InviteLinkPage } from "../../routes/invite";
+import { PublicFormRoutePage } from "../../routes/f/$publicKey";
 import { OnboardingPage } from "../../routes/onboarding/onboarding-page";
 import { WelcomePage } from "../../routes/onboarding/welcome-page";
 import { WorkspaceAddressPage } from "../../routes/workspace-address";
@@ -86,6 +87,13 @@ export const inviteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/invite/$token",
   component: InvitePage,
+});
+
+/** A public form: anyone with the link, no sign-in (the address is the form's public key). */
+export const publicFormRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/f/$publicKey",
+  component: PublicFormRoutePage,
 });
 
 export const onboardingRoute = createRoute({

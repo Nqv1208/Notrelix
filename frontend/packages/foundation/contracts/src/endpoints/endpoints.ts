@@ -633,6 +633,7 @@ export const endpoints = {
     questions: (formId: string) => `/forms/${formId}/questions`,
     question: (formId: string, questionId: string) =>
       `/forms/${formId}/questions/${questionId}`,
+    publicAccess: (formId: string) => `/forms/${formId}/public-access`,
     submissions: (formId: string) => `/forms/${formId}/submissions`,
     submissionsPage: (formId: string) => `/forms/${formId}/submissions/page`,
     submissionCounts: (formId: string) => `/forms/${formId}/submissions/counts`,
@@ -644,6 +645,13 @@ export const endpoints = {
     spam: (submissionId: string) => `/form-submissions/${submissionId}/spam`,
     reopen: (submissionId: string) =>
       `/form-submissions/${submissionId}/reopen`,
+  },
+  // WorkManagement.PublicForms.*: the anonymous face of a public form, addressed by its key alone.
+  publicForms: {
+    detail: (publicKey: string) =>
+      `/public/forms/${encodeURIComponent(publicKey)}`,
+    submissions: (publicKey: string) =>
+      `/public/forms/${encodeURIComponent(publicKey)}/submissions`,
   },
   // WorkManagement.BoardPreferences.*: a member's personal state of one view of a board.
   boardPreferences: {

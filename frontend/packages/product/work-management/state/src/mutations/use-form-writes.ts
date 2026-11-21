@@ -4,8 +4,11 @@ import type {
   Form,
   FormDetail,
   FormQuestionChanges,
+  FormPublicAccess,
+  FormPublicAccessResult,
   FormWriteResult,
   NewFormQuestion,
+  PublicFormSubmitResult,
 } from "@notrelix/work-management-core";
 import { conflictOf } from "../queries/use-board-settings";
 import { wmQueryKeys } from "../queries/keys";
@@ -216,5 +219,102 @@ export function useSubmitForm(formId: string, workspaceId: string) {
       }
     },
     [formId, forms, queryClient, workspaceId],
+  );
+}
+
+const PUBLIC_SHARING_OFF = "WorkManagement_Form_PublicSharingDisabled";
+
+/** Why switching a form public or private was refused. */
+export function publicAccessFailure(
+  error: unknown,
+): Extract<FormPublicAccessResult, { ok: false }> {
+  const caught = (error ?? {}) as { status?: number; ruleCode?: string };
+  if (caught.ruleCode === PUBLIC_SHARING_OFF)
+    return { ok: false, reason: "linksOff" };
+  if (caught.status === 403 || caught.status === 404)
+    return { ok: false, reason: "denied" };
+  return { ok: false, reason: "failed" };
+}
+
+/**
+ * Why an anonymous send was refused. A refused captcha token comes as a validation error keyed `captchaToken`:
+ * it is its own reason, and the other keys (question keys) are kept.
+ */
+export function publicSubmitFailure(
+  error: unknown,
+): Extract<PublicFormSubmitResult, { ok: false }> {
+  const caught = (error ?? {}) as {
+    status?: number;
+    message?: string;
+    validationErrors?: Record<string, string[]>;
+  };
+  if (caught.status === 404) return { ok: false, reason: "missing" };
+  if (caught.status === 429)
+    return { ok: false, reason: "limited", message: caught.message };
+  if (
+    (caught.status === 400 || caught.status === 422) &&
+    caught.validationErrors
+  ) {
+    const errors: Record<string, string> = {};
+    for (const [key, messages] of Object.entries(caught.validationErrors))
+      if (messages[0]) errors[key] = messages[0];
+    const captcha = Object.keys(errors).find(
+      (key) => key.toLowerCase() === "captchatoken",
+    );
+    if (captcha) {
+      const { [captcha]: _refused, ...rest } = errors;
+      return { ok: false, reason: "captcha", errors: rest };
+    }
+    return { ok: false, reason: "validation", errors };
+  }
+  return { ok: false, reason: "failed" };
+}
+
+/** Switches a form public or private; the answer replaces the cached state, so the link row follows at once. */
+export function useSetFormPublicAccess(formId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { forms } = useWorkManagementServices();
+  return useCallback(
+    async (enabled: boolean): Promise<FormPublicAccessResult> => {
+      try {
+        const access = await forms.setFormPublicAccess(formId, enabled);
+        queryClient.setQueryData<FormPublicAccess>(
+          wmQueryKeys.formPublicAccess(workspaceId, formId),
+          access,
+        );
+        return { ok: true, access };
+      } catch (caught) {
+        return publicAccessFailure(caught);
+      }
+    },
+    [formId, forms, queryClient, workspaceId],
+  );
+}
+
+/**
+ * Sends an anonymous response. Nothing is cached: the token is single use, so every send is a fresh attempt
+ * and the page resets the captcha after it, whatever the answer.
+ */
+export function useSubmitPublicForm(publicKey: string) {
+  const { forms } = useWorkManagementServices();
+  return useCallback(
+    async (
+      answers: Readonly<Record<string, unknown>>,
+      captchaToken: string,
+      honeypot = "",
+    ): Promise<PublicFormSubmitResult> => {
+      try {
+        await forms.submitPublicForm(
+          publicKey,
+          answers,
+          captchaToken,
+          honeypot,
+        );
+        return { ok: true };
+      } catch (caught) {
+        return publicSubmitFailure(caught);
+      }
+    },
+    [forms, publicKey],
   );
 }

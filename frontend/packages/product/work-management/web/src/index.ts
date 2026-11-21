@@ -198,6 +198,7 @@ export {
   FormBuilderPage,
   FormFillPage,
   FormInboxPage,
+  PublicFormPage,
   formLink,
 } from "./components/forms/forms-containers";
 
