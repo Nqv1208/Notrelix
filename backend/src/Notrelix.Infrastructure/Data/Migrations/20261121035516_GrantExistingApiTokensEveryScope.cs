@@ -10,7 +10,8 @@ namespace Notrelix.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Tokens issued before scopes existed are granted every scope, so none is left without one; idempotent.
+            // Tokens issued before scopes existed are granted all seven scopes, so none is left without one; idempotent.
+            // They still lose the contexts no scope maps (enforcement, not this step); see ApiTokenScopeMigrationSql.
             migrationBuilder.Sql(ApiTokenScopeMigrationSql.Backfill);
         }
 

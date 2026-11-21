@@ -2,10 +2,13 @@ namespace Notrelix.Infrastructure.Data.Identity;
 
 /// <summary>
 /// Existing-data step of migration <c>GrantExistingApiTokensEveryScope</c>: a token issued before scopes existed
-/// carried none (a null column) and was exactly as strong as its issuer inside its workspace. From now on a token
-/// with no scope reaches nothing, so each such token is granted EVERY scope explicitly: its behavior is unchanged
-/// and nothing is lost, and from then on a token only ever narrows. The seven scopes are written out here, not read
-/// from the live vocabulary: migration history is append-only, and a scope added later must not widen a token
+/// carried none (a null column). From now on a token with no scope reaches nothing, so each such token is granted
+/// all seven scopes explicitly, so it keeps working on the work, docs and chat requests and the six
+/// <c>workspace:read</c> queries. It is NOT unchanged: scope enforcement also refuses every token the contexts no
+/// scope maps (Accounts, Analytics, Automation, Billing, Collaboration, Governance, Identity, Integrations,
+/// Notifications, Operators, and Workspaces except those six queries), so an existing token loses access to them
+/// whatever scopes it holds, and a token only ever narrows from here on. The seven scopes are written out here, not
+/// read from the live vocabulary: migration history is append-only, and a scope added later must not widen a token
 /// retroactively.
 /// <para>
 /// Only rows whose scopes are still null are written, so a re-run changes nothing; a row that already holds a list
