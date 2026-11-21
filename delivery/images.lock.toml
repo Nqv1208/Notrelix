@@ -8,8 +8,8 @@ stateful = false
 
 [images.dotnet-aspnet]
 class = "build"
-source = "mcr.microsoft.com/dotnet/aspnet:9.0.21-bookworm-slim"
-ref = "mcr.microsoft.com/dotnet/aspnet:9.0.21-bookworm-slim@sha256:4d94cf3204df98d321e8dbf8d6d06e0b34fd136aa75c945abf4390ee07eb30dd"
+source = "mcr.microsoft.com/dotnet/aspnet:9.0.23-bookworm-slim"
+ref = "mcr.microsoft.com/dotnet/aspnet:9.0.23-bookworm-slim@sha256:22db800f670f4c21327f463df2a0bc8f0947b44f58c13e582ab4ed7e34310f3e"
 stateful = false
 
 [images.node-build]
