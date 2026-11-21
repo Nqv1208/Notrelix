@@ -13,4 +13,5 @@ public sealed record OAuthLoginState(
     Guid? BoundUserId = null,
     Guid? BoundSessionId = null,
     MfaChallengePurpose? StepUpPurpose = null,
-    string? StepUpTarget = null);
+    string? StepUpTarget = null,
+    string? BindingHash = null);
