@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LoaderCircle, Plus } from "lucide-react";
 import { cn } from "@notrelix/ui-web";
 import { markInitialsFor } from "../../core/model/navigation";
 import { ShellLink } from "./shell-link";
@@ -75,12 +75,16 @@ function PageRows({
     const open = tree.expandedIds.has(page.id);
     const active = tree.activeDocId === page.id;
     const destination = { section: "doc", docId: page.id } as const;
+    const pending = tree.isPending?.(page.id) ?? false;
+    const adding = tree.addingChildOf === page.id;
     return (
       <React.Fragment key={page.id}>
         <div
+          aria-busy={pending || undefined}
           className={cn(
             ROW,
-            "pl-[var(--inset)]",
+            "group pl-[var(--inset)]",
+            pending && "opacity-60",
             active &&
               "bg-surface-panel font-semibold text-foreground shadow-[0_0_0_1px_var(--line)] hover:bg-surface-panel",
           )}
@@ -98,15 +102,55 @@ function PageRows({
               onClick={() => tree.onExpandedChange(page.id, !open)}
             />
           )}
-          <ShellLink
-            destination={destination}
-            navigation={navigation}
-            onNavigated={onNavigated}
-            aria-current={active ? "page" : undefined}
-            className="flex h-full min-w-0 flex-1 items-center truncate text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-          >
-            <span className="truncate">{page.title}</span>
-          </ShellLink>
+          {pending ? (
+            <span className="flex h-full min-w-0 flex-1 items-center truncate">
+              <span className="truncate">{page.title}</span>
+            </span>
+          ) : (
+            <ShellLink
+              destination={destination}
+              navigation={navigation}
+              onNavigated={onNavigated}
+              aria-current={active ? "page" : undefined}
+              className="flex h-full min-w-0 flex-1 items-center truncate text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              <span className="truncate">{page.title}</span>
+            </ShellLink>
+          )}
+          {tree.onAddChild && !pending ? (
+            <button
+              type="button"
+              aria-label={formatCopy(
+                adding
+                  ? copy.sidebar.docsAddingChild
+                  : copy.sidebar.docsAddChild,
+                { name: page.title },
+              )}
+              aria-disabled={adding || undefined}
+              title={formatCopy(copy.sidebar.docsAddChild, {
+                name: page.title,
+              })}
+              onClick={() => {
+                if (adding) return;
+                tree.onAddChild?.({ id: page.id, title: page.title });
+              }}
+              className={cn(
+                "grid size-[18px] shrink-0 place-items-center rounded-[4px] p-0 text-inherit outline-none hover:bg-line-strong focus-visible:ring-2 focus-visible:ring-focus-ring",
+                adding
+                  ? "cursor-default"
+                  : "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100",
+              )}
+            >
+              {adding ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="size-3.5 stroke-[1.8] motion-safe:animate-spin"
+                />
+              ) : (
+                <Plus aria-hidden="true" className="size-3.5 stroke-[1.8]" />
+              )}
+            </button>
+          ) : null}
         </div>
         {!leaf && open ? (
           <PageRows pages={page.children} depth={depth + 1} props={props} />

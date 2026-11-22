@@ -157,7 +157,10 @@ export function createPageApi(api: DocsApiClient, endpoints: PageApiEndpoints) {
         {
           title: payload.title,
           parentId: payload.parentId,
-          ...(payload.spaceId ? { spaceId: payload.spaceId } : {}),
+          // A nested page follows its parent's Space; the server refuses both together.
+          ...(payload.spaceId && !payload.parentId
+            ? { spaceId: payload.spaceId }
+            : {}),
         },
         { idempotencyKey: payload.idempotencyKey },
       );
