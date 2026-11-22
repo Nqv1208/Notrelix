@@ -47,6 +47,7 @@ public sealed class ApiTokenScopeMapTests
     [InlineData(typeof(CreateSpaceCommand))]
     [InlineData(typeof(ListApiTokensQuery))]
     [InlineData(typeof(FollowBoardItemCommand))]
+    [InlineData(typeof(GetMentionSuggestionsQuery))]
     public void A_request_of_a_context_no_scope_covers_is_refused_to_every_token(Type requestType)
     {
         ScopeOf(requestType).Should().BeNull();
@@ -62,8 +63,6 @@ public sealed class ApiTokenScopeMapTests
         ScopeFor(pageComment).Should().Be("docs:write");
         ScopeFor(GetCommentsQuery.ForBoardItem(Guid.NewGuid())).Should().Be("work:read");
         ScopeFor(GetCommentsQuery.ForPage(Guid.NewGuid())).Should().Be("docs:read");
-        ScopeFor(GetMentionSuggestionsQuery.ForBoardItem(Guid.NewGuid(), null, null)).Should().Be("work:read");
-        ScopeFor(GetMentionSuggestionsQuery.ForPage(Guid.NewGuid(), null, null)).Should().Be("docs:read");
         ScopeFor(new UploadPageAttachmentCommand(Guid.NewGuid(), "a.txt", Stream.Null)).Should().Be("docs:write");
     }
 

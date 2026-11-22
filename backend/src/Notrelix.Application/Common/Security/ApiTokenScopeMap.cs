@@ -52,13 +52,12 @@ public static class ApiTokenScopeMap
     /// Collaboration requests that name the resource they sit on (a board item or a page) in their own <c>Resource</c>:
     /// their scope follows that resource's kind (<see cref="RequiredScopeForResource"/>). A Collaboration request not
     /// listed here stays refused, among them those keyed by a comment or attachment id (the host is not in the request),
-    /// activity, watchers, notifications and preferences.
+    /// activity, watchers, notifications, preferences and mention suggestions (a UI aid that lists people, not an integration need).
     /// </summary>
     public static readonly IReadOnlySet<string> ResourceHostedRequests = new HashSet<string>(StringComparer.Ordinal)
     {
         "Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment.CreateCommentCommand",
         "Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments.GetCommentsQuery",
-        "Notrelix.Application.Features.Collaboration.Mentions.Queries.GetMentionSuggestions.GetMentionSuggestionsQuery",
         "Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction.AddReactionCommand",
         "Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction.RemoveReactionCommand",
         "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQuery",

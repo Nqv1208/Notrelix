@@ -66,13 +66,14 @@ public sealed class ApiTokenScopeArchitectureTests
     }
 
     /// <summary>
-    /// Collaboration requests a token can still not send, by name: person-level or a feed (activity, watchers, inbox). A new
+    /// Collaboration requests a token can still not send, by name: person-level or a feed (activity, watchers, inbox, mention suggestions). A new
     /// Collaboration request must join this list, <see cref="ApiTokenScopeMap.ResourceHostedRequests"/> (host kind named by
     /// the request) or <see cref="ApiTokenScopeMap.LocatedHostRequests"/> (host kind returned by the resource locator).
     /// </summary>
     private static readonly string[] RefusedCollaborationRequests = [
         "Notrelix.Application.Features.Collaboration.Activity.Queries.GetPageActivity.GetPageActivityQuery",
         "Notrelix.Application.Features.Collaboration.Activity.Queries.GetResourceActivity.GetResourceActivityQuery",
+        "Notrelix.Application.Features.Collaboration.Mentions.Queries.GetMentionSuggestions.GetMentionSuggestionsQuery",
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryDone.MarkInboxEntryDoneCommand",
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryRead.MarkInboxEntryReadCommand",
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkInboxEntryUnread.MarkInboxEntryUnreadCommand",
