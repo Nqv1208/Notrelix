@@ -3,6 +3,7 @@ using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Billing.Public.Seats;
 using Notrelix.Application.Features.Identity.Public.Facts;
+using Notrelix.Application.Features.Identity.Public.InvitedRegistration;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Invitations.Commands.AcceptInvitation;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
@@ -29,6 +30,7 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
     protected readonly Mock<ICurrentTenantContext> TenantMock = new();
     protected readonly Mock<IRlsSessionContext> RlsMock = new();
     protected readonly Mock<IBillingSeatGate> SeatGateMock = new();
+    protected readonly Mock<IInvitedUserRegistrationActions> InvitedRegistrationMock = new();
 
     /// <summary>The token bootstrap: locates the invitation across tenants, then adopts its Workspace scope.</summary>
     protected InvitationTokenScope CreateTokenScope() => new(DbContextMock.Object, TenantMock.Object, RlsMock.Object);
@@ -114,6 +116,7 @@ public abstract class AcceptInvitationHandlerTestBase : WorkspaceHandlerTestBase
             new Mock<Notrelix.Application.Features.Governance.Public.Access.IGuestResourceAccessActions>().Object,
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             CreateTokenScope(),
-            SeatGateMock.Object);
+            SeatGateMock.Object,
+            InvitedRegistrationMock.Object);
     }
 }

@@ -432,6 +432,9 @@ public class UseCaseSecurityClassificationTests
             "WorkspaceId in comments should not be detected as a real property");
     }
 
+    // AcceptInvitation (token path) is deliberately absent: the emailed token proves the invited address and the
+    // handler confirms the email itself. AcceptInvitationById, with no token, stays verified-email gated (listed in the
+    // request-execution baseline).
     [Fact]
     public void WorkspaceMutatingCommands_ShouldRequireVerifiedEmail()
     {
@@ -439,7 +442,6 @@ public class UseCaseSecurityClassificationTests
         {
             "InviteMember.cs",
             "ResendInvitation.cs",
-            "AcceptInvitation.cs",
             "CreateWorkspace.cs",
         };
 

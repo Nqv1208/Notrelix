@@ -2,6 +2,7 @@ using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Tokens;
 using Notrelix.Application.Features.Accounts.Public.Membership;
 using Notrelix.Application.Features.Governance.Public.Access;
+using Notrelix.Application.Features.Identity.Public.InvitedRegistration;
 using Notrelix.Application.Features.Identity.Public.Queries;
 using Notrelix.Application.Features.Workspaces.Invitations.Services;
 using Notrelix.Application.Features.Workspaces.Abstractions;
@@ -22,12 +23,13 @@ public record AcceptInvitationResultDto(
 public record AcceptInvitationCommand(string Token)
     : ICommand<Result<AcceptInvitationResultDto>>,
       IAuthenticatedTokenScopedRequest,
-      IRequireVerifiedEmail,
       IWriteRequest
 {
     TokenPurpose ITokenScopedRequest.TokenPurpose =>
         TokenPurpose.WorkspaceInvitation;
 
+    // Deliberately not IRequireVerifiedEmail: the emailed token proves control of the invited address, so the
+    // handler confirms the sign-in email once the token resolves to an invitation for exactly that address.
 }
 
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<AcceptInvitationResultDto>>
@@ -39,6 +41,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly InvitationAcceptanceService _acceptance;
     private readonly InvitationTokenScope _tokenScope;
+    private readonly IInvitedUserRegistrationActions _identityActions;
 
     public AcceptInvitationCommandHandler(
         IWorkspaceDbContext workspaceContext,
@@ -53,9 +56,11 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         IGuestResourceAccessActions guestResourceAccess,
         IAuditService auditService,
         InvitationTokenScope tokenScope,
-        Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate seatGate)
+        Notrelix.Application.Features.Billing.Public.Seats.IBillingSeatGate seatGate,
+        IInvitedUserRegistrationActions identityActions)
     {
         _tokenScope = tokenScope;
+        _identityActions = identityActions;
         _workspaceContext = workspaceContext;
         _identityUserFacts = identityUserFacts;
         _oneTimeTokenService = oneTimeTokenService;
@@ -91,10 +96,6 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             return Result<AcceptInvitationResultDto>.Failure(
                 "Your account must be active before accepting workspace invitations.");
 
-        if (!currentUser.EmailConfirmed)
-            return Result<AcceptInvitationResultDto>.Failure(
-                "Email must be confirmed before accepting workspace invitations.");
-
         ParsedOneTimeToken presentedHash;
         try
         {
@@ -117,6 +118,10 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         var now = _dateTimeProvider.UtcNow;
 
-        return await _acceptance.AcceptAsync(invitation, currentUserId, currentUser.Email, now, ct);
+        return await _acceptance.AcceptAsync(
+            invitation, currentUserId, currentUser.Email, now, ct,
+            currentUser.EmailConfirmed
+                ? null
+                : token => _identityActions.ConfirmEmailAsync(currentUserId, now, token));
     }
 }

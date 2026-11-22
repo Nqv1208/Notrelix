@@ -50,8 +50,15 @@ public sealed class AccountSuspensionWriteGateArchitectureTests
             .ToList();
 
         open.Should().NotBeEmpty("personal identity writes exist and are classified Global");
+        // Token scope is the one other exception: the tenant is only known once the token resolves inside the handler,
+        // so no facts can load before it. AcceptInvitationCommand is the only such write; its handler refuses every
+        // Account that is not Active or Trialing (AccountMembershipFactsProvider.GetAdmissionAsync) before any change,
+        // and AcceptInvitationCommandHandlerTests.Handle_WhenAccountCannotAdmit proves it.
         open.Should().OnlyContain(
-            d => d.Principal != ApplicationPrincipalKind.Authenticated || d.Scope == ApplicationScopeKind.Global,
-            "the only authenticated writes without facts are personal (Global scope) ones");
+            d => d.Principal != ApplicationPrincipalKind.Authenticated
+                || d.Scope == ApplicationScopeKind.Global
+                || (d.Scope == ApplicationScopeKind.Token
+                    && d.RequestType.Name == "AcceptInvitationCommand"),
+            "the only authenticated writes without facts are personal (Global scope) ones, and the token-scoped invitation acceptance");
     }
 }

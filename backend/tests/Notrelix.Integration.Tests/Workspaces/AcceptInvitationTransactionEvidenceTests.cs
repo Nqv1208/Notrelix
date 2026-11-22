@@ -138,7 +138,8 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
                 context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
-            SeatGates.AlwaysAdmit);
+            SeatGates.AlwaysAdmit,
+            new Mock<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions>().Object);
 
         return (session, context, handler, requestContext);
     }
@@ -226,7 +227,8 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
                 context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
-            SeatGates.AlwaysAdmit);
+            SeatGates.AlwaysAdmit,
+            new Mock<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions>().Object);
 
         var result = await RunInTransactionAsync(session, handler, graph.RawToken);
 
@@ -317,7 +319,8 @@ public sealed class AcceptInvitationTransactionEvidenceTests : IAsyncLifetime
             new Mock<Notrelix.Application.Common.Auditing.IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
                 context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
-            SeatGates.AlwaysAdmit);
+            SeatGates.AlwaysAdmit,
+            new Mock<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions>().Object);
 
         var result = await handler.Handle(new AcceptInvitationCommand(graph.RawToken), CancellationToken.None);
         await context.SaveChangesAsync();
