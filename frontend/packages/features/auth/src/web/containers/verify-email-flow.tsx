@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   IDENTITY_ERROR,
   isThrottled,
   readFlowError,
   type AuthFlowService,
 } from "../../core";
+import { authQueryKeys } from "../../core/query/keys";
 import { useAuthCopy } from "../copy/use-auth-copy";
 import {
   AuthVerifyEmailSurface,
@@ -74,9 +75,18 @@ export function VerifyEmailFlow({
     return () => clearInterval(timer);
   }, [deadline]);
 
+  const queryClient = useQueryClient();
   const confirm = useMutation({
     mutationFn: (value: string) => confirmOnce(service, value),
-    onSuccess: () => setStep({ kind: "done" }),
+    onSuccess: () => {
+      setStep({ kind: "done" });
+      // A signed-in person's cached profile still says unconfirmed: read it again so the
+      // shell's confirm-your-email banner goes away (no observer on this page, so ask directly).
+      void queryClient.refetchQueries({
+        queryKey: authQueryKeys.profile,
+        exact: true,
+      });
+    },
     // Only a link that was valid and ran out says so; an unknown or used one shows the dead-link state.
     onError: (failure) =>
       setStep({
