@@ -55,6 +55,7 @@ export type {
   SessionResult,
 } from "./api/auth-flow.service";
 export {
+  EMAIL_NOT_CONFIRMED_ERROR,
   IDENTITY_ERROR,
   RATE_LIMIT_ERROR_CODE,
   isThrottled,

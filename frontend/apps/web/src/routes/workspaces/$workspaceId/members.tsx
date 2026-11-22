@@ -278,6 +278,15 @@ export function MembersPage() {
             );
             return;
           }
+          // The inviter's own email is not confirmed: say that and offer the link again, not "cannot grant".
+          if (failure.reason === "email-not-confirmed") {
+            toastFailure(
+              formatCopy(copy.toasts.inviteFailed, { email: input.email }),
+              error,
+              hint,
+            );
+            return;
+          }
           // A refusal of an invitation that names Teams or Spaces: the inviter cannot grant one of them.
           if (failure.kind === "forbidden" && input.initialEntries?.length) {
             setInviteError(copy.invitations.entries.refused);
