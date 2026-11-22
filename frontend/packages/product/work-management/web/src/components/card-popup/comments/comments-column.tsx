@@ -456,7 +456,7 @@ function EventEntry({
 }
 
 function Composer() {
-  const { card, data, callbacks, capabilities, copy, readOnly, mode } =
+  const { card, callbacks, capabilities, copy, readOnly, mode } =
     useCardPopup();
   const t = copy.related.comments;
   const [open, setOpen] = useState(false);
