@@ -124,6 +124,28 @@ describe("BoardImportDialog failures", () => {
     expect(text()).not.toContain("Cột 1 trùng đích.");
   });
 
+  it("tells the person the account is suspended when the run was refused for it", async () => {
+    const get = vi.fn().mockResolvedValue({
+      status: "failed",
+      failureCode: "account-suspended",
+      total: 1,
+      processed: 0,
+    });
+    const post = vi
+      .fn()
+      .mockResolvedValueOnce(cleanPreview)
+      .mockResolvedValue({ id: "j1", status: "queued" });
+    await open({ post, get });
+    await act(async () => button(/Tiếp tục/)!.click());
+    await sleep(20);
+    await act(async () => button(/Nhập 1 việc/)!.click());
+    await sleep(1800);
+    const alert = document.querySelector('[role="alert"]')?.textContent ?? "";
+    expect(alert).toContain("Tài khoản đang bị tạm ngưng");
+    expect(alert).toContain("Không việc nào được tạo");
+    expect(alert).not.toContain("Có lỗi ở máy chủ");
+  }, 15_000);
+
   it("stops waiting after three failed polls in a row, and a good poll resets the count", async () => {
     const get = vi
       .fn()

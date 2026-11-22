@@ -1,4 +1,5 @@
 using Notrelix.Application.Common.SystemOperations;
+using Notrelix.Application.Features.Accounts.Public.Status;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.BoardItems.Services;
 using Notrelix.Application.Features.WorkManagement.Common;
@@ -34,6 +35,7 @@ internal sealed class BoardTransferRunner(
     IResourceVisibility visibility,
     IWorkspaceAccessResolver access,
     IActorLookupService actors,
+    IAccountStatusFacts accountStatus,
     ILogger<BoardTransferRunner> logger)
 {
     private static readonly SystemOperationReason Reason = new("WorkManagement", "Run a queued board file import or export for the person who asked");
@@ -88,6 +90,10 @@ internal sealed class BoardTransferRunner(
                 outcome = Failure("board-gone");
             else if (board.IsArchived)
                 outcome = Failure("board-archived", board.UpdatedBy is { } who ? (await actors.FindAsync(who, ct))?.Name : null);
+            // A suspended (or closed) Account is read-only: an import queued before the suspension creates nothing.
+            // The person can run it again once the suspension is lifted.
+            else if (!(await accountStatus.GetAsync(board.AccountId, ct)).IsOperating())
+                outcome = Failure("account-suspended");
             else
             {
                 var data = await ImportJobsRead(options, ct);

@@ -44,14 +44,14 @@ Letters follow the Accounts list in the team spec (section 4).
 | A | Account create | 3 | 2 | 0 | 0 | 0 | 1 | 0 |
 | B | Account read | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | C | Account update | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| D | Account lifecycle transition | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
+| D | Account lifecycle transition | 6 | 1 | 3 | 0 | 0 | 2 | 0 |
 | E | Account-context resolution | 3 | 0 | 2 | 0 | 0 | 1 | 0 |
 | F | Account switch / transition behavior | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | G | Account-scoped frontend state isolation | 3 | 1 | 2 | 0 | 0 | 0 | 0 |
 | H | Account-level administration integration | 20 | 5 | 12 | 1 | 0 | 2 | 0 |
-| | Total | 42 | 15 | 20 | 1 | 2 | 4 | 0 |
+| | Total | 42 | 14 | 21 | 1 | 0 | 6 | 0 |
 
-Four use cases are DONE: A01 and E01 (personal Account provisioning and current-Account resolution), and H10 and H14, built with the company sign-in (UC-IDN-B08): their acceptance lines are proven by tests, by the application-login HTTP stack and by a fake DNS resolver and provider, with no owner check and no Playwright run on the real stack. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
+Six use cases are DONE: A01 and E01 (personal Account provisioning and current-Account resolution), D01 and D02 (suspend and lift a suspension), and H10 and H14, built with the company sign-in (UC-IDN-B08): their acceptance lines are proven by tests, by the application-login HTTP stack and by a fake DNS resolver and provider, with no owner check and no Playwright run on the real stack. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
 
 How "IMPLEMENTING" is used here: for lifecycle, member, invitation, SCIM, region and route use cases the Domain aggregate and its tests exist, but no Application command, query or endpoint exists. They cannot run at all.
 
@@ -122,12 +122,12 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-B03 | See the derived plan label | B | Account member | domain only | no | none | none | DEFINED | Billing fact, no PlanCode writer |
 | UC-ACC-C01 | Rename the Account | C | Account Owner, Admin | yes | no | none | none | IMPLEMENTING | Built: expected version and suspended refusal. Remaining: screen (owner question) |
 | UC-ACC-C02 | Set the legal name (enterprise baseline) | C | Account Owner, Admin | partial | no | none | none | DEFINED | Update operation, command |
-| UC-ACC-D01 | Suspend an Account | D | Platform operator | yes | yes | none | yes | HARDENING | Reactions of other contexts (D06), tenant banner, integrations in the impact preview |
-| UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | HARDENING | Same as D01 |
+| UC-ACC-D01 | Suspend an Account | D | Platform operator | yes | yes | none | yes | DONE | none |
+| UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | DONE | none |
 | UC-ACC-D03 | Close an Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, impact preview, reactions |
 | UC-ACC-D04 | Reopen a closed Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, reactions |
 | UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built. |
-| UC-ACC-D06 | Other contexts react to suspension and closure | D | System | no | no | none | none | DEFINED | Consumers in four contexts |
+| UC-ACC-D06 | Other contexts react to suspension and closure | D | System | partial | partial | none | none | IMPLEMENTING | Outbox fact and consumers not built; sessions not limited |
 | UC-ACC-E01 | Resolve the current Account for a request | E | Any signed-in actor | yes | yes | none | none | DONE | none |
 | UC-ACC-E02 | Deny access to another Account identically | E | Any actor | yes | no | none | none | IMPLEMENTING | Built: cross-tenant rename test. Remaining: FE denied state (owner question) |
 | UC-ACC-E03 | Carry Account context in background work | E | Worker | partial | n/a | none | none | IMPLEMENTING | Per-consumer proof |
@@ -291,13 +291,13 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Preconditions: Account exists and is not Deleted.
 - Input: Account id, reason (required, up to 500 characters), `expectedVersion`.
 - Output: status Suspended, version +1, `AccountSuspended` fact with the previous status and reason, audit record. No content is deleted.
-- Main flow: 1. Operator selects the Account and sees the impact preview (members, Workspaces, integrations). 2. Confirms with the reason. 3. Accounts sets Suspended. 4. Other contexts react (D06).
+- Main flow: 1. Operator selects the Account and sees the impact preview (active members and Workspaces: the two counts of owner decision 2026-10-31, product section 14). 2. Confirms with the reason. 3. Accounts sets Suspended. 4. Other contexts react (D06).
 - No-op / rejection / concurrency / retry: already Suspended is a no-op. Stale version gives 409.
 - UI states: destructive confirmation (impact preview), conflict, pending; members of the Account see a suspended banner and read-only state.
 - Rules: accounts sections 14, 15, 72, ACC-005, ACC-019; IAREQ026, IAREQ030.
 - Acceptance: Given an Active Account, When an operator suspends it, Then status is Suspended, one event is raised and no data is deleted.
 - Evidence: BE `POST /operator/v1/accounts/{accountId}/suspend` (`Operator.Account.Suspend`, `OperatorAccountService`), the `AccountSuspended` access fact and the write refusal in `AccessPolicyEngine` · FE `frontend/apps/operator` (tenant detail, impact preview with two counts, reason dialog) · Design none (the canvas has no operator artboard) · Tests Domain `AccountOperatorLifecycleTests` (+`OperatorAccountTests`, `PlanRevisionTests`: 20 in all), Application `OperatorAccountServiceTests` (10: success, each rejection, no-op without audit, stale version), Integration `OperatorConsoleIntegrationTests` (29 on a real Postgres with the operator login: suspend blocks a workspace-scoped and a resource-scoped tenant write and keeps reads, audit row with actor, reason, before, after and time), Architecture `AccountSuspensionWriteGateArchitectureTests` (every tenant-scoped write loads the facts) · Real e2e `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` (3 real specs passed 2026-11-01)
-- State: HARDENING — Other contexts do not react yet (D06: sessions, integrations, background and automation writes, anonymous form and webhook writes still run on a suspended Account); no suspended banner or read-only presentation in the tenant UI (the refusal shows as the generic error toast with the server message); the impact preview shows members and workspaces only; no design artboard exists for the console.
+- State: DONE — A suspended or closed Account is read-only wherever a write can start, and reads stay open. Authenticated writes are refused with `account.suspended` by the access policy (`AccountSuspensionWriteGateArchitectureTests`: every tenant-scoped write loads the fact; `AccountSuspensionAppRoleTests` on the application login: every write refused, reads open, lifting restores writes, nothing deleted). Automation runs (`AutomationAccountSuspensionTests`), outbound webhooks (`WebhookAccountSuspensionIntegrationTests`), public forms (`PublicFormAppRoleTests`), joining by invitation (`AccountMembershipFactsProviderTests`) and board imports queued before the suspension (`AccountSuspensionAppRoleTests.AnImportQueuedBeforeTheSuspension_IsRefusedAndCreatesNothing_ThenRunsOnceLifted`, shown to the person as "This account is suspended" in the import dialog) all stop or skip with the reason. The tenant UI shows the suspended banner and the read-only state (`AccountReadOnlyBanner`, `AccountSuspensionBridge`). Every other anonymous, system or token-scoped write is reviewed by name for suspension in `NonAuthenticatedWriteSuspensionReviewTests`, so a new one cannot slip past. Decisions: sessions are not cut (reads stay open, product section 14); retention purges of data the tenant already deleted carry on (suspension does not extend retention); the impact preview shows the two counts the owner decision names; the call media and calendar webhooks only reconcile their own bookkeeping and stay allowed. No real e2e (not part of the definition of done since 2026-11-19); the console has no design artboard, so its screens use design-system components. The outbox fact with consumers described in D06 is not built; the reactions read the fact at write time instead.
 
 ### UC-ACC-D02 Lift a suspension
 - Capability: D Account lifecycle transition
@@ -311,7 +311,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts sections 13, 14, 19; ACC-005.
 - Acceptance: Given a Suspended Account, When lifted, Then status is Active and members can write again.
 - Evidence: BE `POST /operator/v1/accounts/{accountId}/lift-suspension` (`Operator.Account.LiftSuspension`) · FE `frontend/apps/operator` tenant detail · Design none · Tests as D01 (a Closed Account can be neither suspended nor reactivated: `AccountOperatorLifecycleTests`; lifting an Active one is a no-op) · Real e2e `frontend/e2e/real/operator-suspension.real.e2e.spec.ts`
-- State: HARDENING — same limits as D01.
+- State: DONE — same proof as D01; `AccountSuspensionAppRoleTests.LiftingTheSuspension_RestoresWrites_AndNothingWasDeleted` shows members write again and nothing was deleted. An import refused during the suspension is not resumed by itself: the person starts it again.
 
 ### UC-ACC-D03 Close an Account
 - Capability: D Account lifecycle transition
@@ -367,7 +367,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts ACC-005, ACC-018, ACC-019; sections 64, 65; IAREQ030; IA-TST-ACCOUNT-INT-002.
 - Acceptance: Given an Account is suspended, When consumers run, Then Workspaces reject writes and no aggregate is mutated by Accounts directly.
 - Evidence: BE `AccountSuspendedDomainEvent`, `AccountArchivedDomainEvent` (raised, no mapper, no consumer) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — public fact contract, four consumers, tests.
+- State: IMPLEMENTING — Built, by reading the Account fact at the moment of a write (`IAccountStatusFacts`) instead of by consuming an event: Workspaces refuse writes (access policy), automation, outbound webhooks, public forms and board imports stop or skip with `account.suspended`, joining by invitation is refused, and the tenant UI shows the banner (tests listed under D01). Not built as written here: the outbox fact with four consumers, Identity limiting sessions, Integrations pausing by event. Remaining: decide whether pause-and-resume semantics are wanted instead of refuse-at-write.
 
 ## E. Account-context resolution
 
