@@ -75,7 +75,7 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
                 .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken);
         var accountMembers = memberRows
             .Select(m => new BootstrapAccountMembership(
-                m.AccountId, m.Role, accountNames.GetValueOrDefault(m.AccountId, string.Empty)))
+                m.AccountId, m.Role == AccountRole.Owner, accountNames.GetValueOrDefault(m.AccountId, string.Empty)))
             .ToList();
 
         var defaultWorkspaceId = await _identityContext.UserProfiles

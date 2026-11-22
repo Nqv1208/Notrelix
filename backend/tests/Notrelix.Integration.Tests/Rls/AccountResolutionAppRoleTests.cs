@@ -127,8 +127,20 @@ public sealed class AccountResolutionAppRoleTests : IAsyncLifetime
         // from the caller's own session); what matters is that an existing Account is answered exactly as an unknown one.
         ofAnotherTenant.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         unknown.StatusCode.Should().Be(ofAnotherTenant.StatusCode);
-        (await ofAnotherTenant.Content.ReadAsStringAsync()).Should().Be(
-            await unknown.Content.ReadAsStringAsync(), "an Account that exists is not told apart from one that does not");
+        // The body echoes the caller's own request path (instance) and per-request trace and correlation ids; every other
+        // field must be the same, so an Account that exists is not told apart from one that does not.
+        var existingBody = await WithoutPerRequestFieldsAsync(ofAnotherTenant);
+        var unknownBody = await WithoutPerRequestFieldsAsync(unknown);
+        existingBody.Should().NotBeEmpty();
+        existingBody.Should().BeEquivalentTo(unknownBody);
+    }
+
+    private static async Task<Dictionary<string, string>> WithoutPerRequestFieldsAsync(HttpResponseMessage response)
+    {
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return document.RootElement.EnumerateObject()
+            .Where(p => p.Name is not ("instance" or "traceId" or "correlationId"))
+            .ToDictionary(p => p.Name, p => p.Value.GetRawText());
     }
 
     [Fact]

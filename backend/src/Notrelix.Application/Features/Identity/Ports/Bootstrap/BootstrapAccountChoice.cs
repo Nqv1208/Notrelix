@@ -1,9 +1,10 @@
-using Notrelix.Domain.Accounts.Members;
-
 namespace Notrelix.Application.Features.Identity.Ports.Bootstrap;
 
-/// <summary>An active Account membership of the member, with the Account's name for ordering.</summary>
-public sealed record BootstrapAccountMembership(Guid AccountId, AccountRole Role, string AccountName);
+/// <summary>
+/// An active Account membership of the member, with the Account's name for ordering. Whether the member owns
+/// the Account is a plain fact here: Identity does not name another context's role type.
+/// </summary>
+public sealed record BootstrapAccountMembership(Guid AccountId, bool IsOwner, string AccountName);
 
 /// <summary>
 /// Chooses the Account a member acts in when the request names none. The choice depends only on the
@@ -34,7 +35,7 @@ public static class BootstrapAccountChoice
     /// <summary>The member's own Account: an owned one first, else any membership, in the stable order above.</summary>
     public static Guid? Own(IReadOnlyCollection<BootstrapAccountMembership> memberships) =>
         memberships
-            .OrderBy(m => m.Role == AccountRole.Owner ? 0 : 1)
+            .OrderBy(m => m.IsOwner ? 0 : 1)
             .ThenBy(m => m.AccountName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(m => m.AccountId)
             .Select(m => (Guid?)m.AccountId)

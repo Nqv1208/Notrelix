@@ -12,7 +12,8 @@ public class BootstrapAccountChoiceTests
     private static readonly Guid LowId = Guid.Parse("00000000-0000-0000-0000-000000000001");
     private static readonly Guid HighId = Guid.Parse("00000000-0000-0000-0000-000000000009");
 
-    private static BootstrapAccountMembership Member(Guid id, AccountRole role, string name) => new(id, role, name);
+    private static BootstrapAccountMembership Member(Guid id, AccountRole role, string name) =>
+        new(id, role == AccountRole.Owner, name);
 
     private static BootstrapWorkspaceProjection Workspace(Guid id, Guid accountId) =>
         new(id, "ws", "ws", accountId);

@@ -1,4 +1,3 @@
-using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Accounts.Provisioning;
 using Notrelix.Application.Features.Identity.Registration.Commands.Register;
 using Notrelix.Domain.Accounts.Accounts;
