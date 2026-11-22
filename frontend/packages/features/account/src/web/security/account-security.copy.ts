@@ -276,7 +276,7 @@ export const en = {
         'Shown on the sign-in page as "Continue with …", for example your company name.',
       issuer: "Issuer URL",
       issuerHint:
-        "The https address of the provider, for example https://login.example.com/tenant/v2.0.",
+        "The https address of the provider, for example https://<provider-host>/<tenant>/v2.0.",
       clientId: "Client ID",
       secret: "Client secret",
       secretSaved: "Secret saved",
@@ -655,7 +655,7 @@ export const vi: AccountSecurityCopy = {
         'Hiện ở trang đăng nhập dạng "Tiếp tục với …", ví dụ tên công ty.',
       issuer: "Địa chỉ issuer",
       issuerHint:
-        "Địa chỉ https của nhà cung cấp, ví dụ https://login.example.com/tenant/v2.0.",
+        "Địa chỉ https của nhà cung cấp, ví dụ https://<provider-host>/<tenant>/v2.0.",
       clientId: "Client ID",
       secret: "Client secret",
       secretSaved: "Đã lưu secret",
