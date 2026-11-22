@@ -187,6 +187,8 @@ services:
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
+      SITE_URL: ${SITE_URL:-}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-}
     depends_on:
       - backend-api
     networks:
