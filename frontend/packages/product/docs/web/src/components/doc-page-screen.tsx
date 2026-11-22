@@ -5,7 +5,9 @@ import {
   AttachmentUploads,
   createAttachmentApi,
   createUseAttachmentContent,
+  createUseCreatePageLink,
   createUseDeletePageAttachment,
+  classifyPageFilesFailure,
   createUsePageAttachments,
   useRememberPageAttachment,
   type DocsFileClient,
@@ -54,7 +56,9 @@ import {
   type PageAttachment,
 } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
+import { useLocale } from "@notrelix/i18n";
 import { useDocPageCopy } from "./use-doc-page-copy";
+import { filesStatusOf, linkHost, toFileEntries } from "./doc-files-mapping";
 import type { UseDocPageHost } from "./doc-page-host";
 import {
   blockText,
@@ -76,6 +80,7 @@ import type {
   DocImportView,
   DocOverlay,
   DocPageCallbacks,
+  DocFilesPanel,
   DocPanelTab,
   DocRelatedDoc,
   DocTaskRef,
@@ -261,6 +266,7 @@ export function createDocPageScreen({
   const attachmentApi = createAttachmentApi(api, endpoints);
   const usePageAttachments = createUsePageAttachments(api, endpoints);
   const useDeletePageAttachment = createUseDeletePageAttachment(api, endpoints);
+  const useCreatePageLink = createUseCreatePageLink(api, endpoints);
   const useAttachmentContent = createUseAttachmentContent(api, endpoints);
   const usePage = createUsePage(api, endpoints);
   const usePageBlocks = createUsePageBlocks(api, endpoints);
@@ -725,7 +731,12 @@ export function createDocPageScreen({
             () => new Map((query.data ?? []).map((file) => [file.id, file])),
             [query.data],
           );
-          return { files, loading: query.isLoading };
+          return {
+            files,
+            loading: query.isLoading,
+            failed: query.isError && query.data === undefined,
+            retry: () => void query.refetch(),
+          };
         },
         useContent: (attachmentId) => {
           const query = useAttachmentContent(workspaceId, pageId, attachmentId);
@@ -756,6 +767,54 @@ export function createDocPageScreen({
         },
       }),
       [pageId, uploads, workspaceId, deleteAttachmentAsync],
+    );
+    // The page's attachments: the Files tab lists them, an editor adds a link.
+    const { locale } = useLocale();
+    const filesQuery = usePageAttachments(workspaceId, pageId);
+    const createLink = useCreatePageLink(workspaceId, pageId);
+    const createLinkAsync = createLink.mutateAsync;
+    const { data: attachments, error: filesError } = filesQuery;
+    const refetchFiles = filesQuery.refetch;
+    const filesPanel = useMemo<DocFilesPanel>(
+      () => ({
+        status: filesStatusOf({
+          isLoading: filesQuery.isLoading,
+          isError: filesQuery.isError,
+          data: attachments,
+          error: filesError,
+        }),
+        entries: toFileEntries(attachments ?? [], locale),
+        canEdit: host.canEdit && !accessLost,
+        onRetry: () => void refetchFiles(),
+        onDownload: async (id) => {
+          const file = attachments?.find((entry) => entry.id === id);
+          if (file) await media.download(file);
+        },
+        onDelete: async (id) => {
+          const file = attachments?.find((entry) => entry.id === id);
+          if (file) await media.remove(file);
+        },
+        onAddLink: async ({ url, name }) => {
+          try {
+            await createLinkAsync({ url, name: name || linkHost(url) });
+            return null;
+          } catch (error) {
+            return classifyPageFilesFailure(error);
+          }
+        },
+      }),
+      [
+        filesQuery.isLoading,
+        filesQuery.isError,
+        attachments,
+        filesError,
+        locale,
+        host.canEdit,
+        accessLost,
+        refetchFiles,
+        media,
+        createLinkAsync,
+      ],
     );
     const richEditor = useDocRichEditor({
       pageId,
@@ -1857,6 +1916,7 @@ export function createDocPageScreen({
         comments={commentViews}
         pendingQuote={pendingAnchor?.quote ?? null}
         panelTab={panelTab}
+        files={filesPanel}
         panelOpen={panelOpen}
         overlay={overlay}
         mentionTasks={mentionTasks}

@@ -70,6 +70,11 @@ export const en = {
     uploadingPlain: "Uploading",
     uploadFailed: "Could not upload",
     cancelUpload: "Cancel the upload of {{name}}",
+    unknownAuthor: "someone",
+    pagesLabel: "Linked documents",
+    filesError: "Could not load the attachments.",
+    filesForbidden: "You no longer have access to this card's attachments.",
+    filesGone: "This card is gone or you can no longer see it.",
   },
   links: {
     title: "Links and dependencies",
@@ -225,6 +230,11 @@ export const vi: RelatedCopy = {
     uploadingPlain: "Đang tải lên",
     uploadFailed: "Chưa tải lên được",
     cancelUpload: "Huỷ tải lên {{name}}",
+    unknownAuthor: "một người",
+    pagesLabel: "Tài liệu liên kết",
+    filesError: "Chưa tải được tệp đính kèm.",
+    filesForbidden: "Bạn không còn quyền xem tệp đính kèm của thẻ này.",
+    filesGone: "Thẻ này đã mất hoặc bạn không còn xem được.",
   },
   links: {
     title: "Liên kết và phụ thuộc",

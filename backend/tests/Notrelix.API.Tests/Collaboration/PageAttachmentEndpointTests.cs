@@ -117,7 +117,7 @@ public sealed class PageAttachmentEndpointTests : IClassFixture<PageAttachmentEn
         using var content = await _fixture.Client.GetAsync($"/api/v1/pages/{page}/attachments/{id}/content");
         using var upload = await Upload(page, "more.png", Png);
         using var link = await _fixture.SendAsync(HttpMethod.Post, $"/api/v1/pages/{page}/attachments",
-            JsonContent.Create(new { filename = "site", url = "https://example.com", sizeBytes = 0, contentType = "text/html" }));
+            JsonContent.Create(new { filename = "site", url = "https://example.com", sizeBytes = 0, contentType = "text/html" }), idempotent: true);
         using var delete = await _fixture.SendAsync(HttpMethod.Delete, $"/api/v1/pages/{page}/attachments/{id}", null);
 
         list.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -143,8 +143,7 @@ public sealed class PageAttachmentEndpointTests : IClassFixture<PageAttachmentEn
 
         foreach (var response in new[] { list, content, upload, delete })
         {
-            response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.Forbidden);
-            response.StatusCode.Should().NotBe(HttpStatusCode.OK);
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
 
@@ -238,6 +237,188 @@ public sealed class PageAttachmentEndpointTests : IClassFixture<PageAttachmentEn
         using var response = await client.GetAsync($"/api/v1/pages/{Guid.NewGuid()}/attachments");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // ---------------------------------------------------------------- link create (UC-COL-B09)
+
+    private Task<HttpResponseMessage> CreateLink(Guid page, object body, string? key = null) =>
+        _fixture.SendAsync(HttpMethod.Post, $"/api/v1/pages/{page}/attachments", JsonContent.Create(body), idempotent: true, key: key);
+
+    private async Task<int> Count(Guid page) =>
+        (await _fixture.Client.GetFromJsonAsync<JsonElement>($"/api/v1/pages/{page}/attachments")).GetArrayLength();
+
+    [Fact]
+    public async Task Link_StoresTheServerOwnedSizeTypeAndSource_WhateverTheClientSends()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+
+        using var response = await CreateLink(page, new
+        {
+            filename = "  Docs \u0000home ",
+            url = "https://example.com/docs",
+            sizeBytes = 9_000_000_000_000L,
+            contentType = "text/html",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var dto = await response.Content.ReadFromJsonAsync<JsonElement>();
+        dto.GetProperty("kind").GetString().Should().Be("Link");
+        dto.GetProperty("filename").GetString().Should().Be("Docs home");
+        dto.GetProperty("sizeBytes").GetInt64().Should().Be(0);
+        dto.GetProperty("contentType").GetString().Should().Be("text/uri-list");
+        dto.GetProperty("source").GetString().Should().Be("Link");
+        dto.GetProperty("resourceId").GetGuid().Should().Be(page);
+    }
+
+    [Fact]
+    public async Task Link_ReplayWithSameKey_ReturnsTheFirstResult_FlagsReplay_AndStoresNoSecondLink()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        var key = Guid.NewGuid().ToString("N");
+        var body = new { filename = "once", url = "https://example.com/once" };
+
+        using var first = await CreateLink(page, body, key);
+        using var second = await CreateLink(page, body, key);
+
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        first.Headers.Contains("Idempotency-Replayed").Should().BeFalse();
+        second.Headers.GetValues("Idempotency-Replayed").Should().Equal("true");
+        (await second.Content.ReadAsStringAsync()).Should().Be(await first.Content.ReadAsStringAsync());
+        (await Count(page)).Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData("once", "https://example.com/other")]
+    [InlineData("renamed", "https://example.com/once")]
+    public async Task Link_SameKeyWithADifferentNameOrUrl_Is409IdempotencyPayloadMismatch(string filename, string url)
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        var key = Guid.NewGuid().ToString("N");
+        (await CreateLink(page, new { filename = "once", url = "https://example.com/once" }, key)).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var response = await CreateLink(page, new { filename, url }, key);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync())
+            .GetProperty("errorCode").GetString().Should().Be("idempotency_payload_mismatch");
+        (await Count(page)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Link_WithoutAnIdempotencyKey_Is400_AndStoresNothing()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+
+        using var response = await _fixture.SendAsync(HttpMethod.Post, $"/api/v1/pages/{page}/attachments",
+            JsonContent.Create(new { filename = "a", url = "https://example.com/a" }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync())
+            .GetProperty("errorCode").GetString().Should().Be("validation.failed");
+        (await Count(page)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Link_BeyondThePageLimit_Is409_FilesAndLinksShareTheCap()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        (await Upload(page, "f.png", Png)).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await CreateLink(page, new { filename = "l", url = "https://example.com/l" })).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var response = await CreateLink(page, new { filename = "l2", url = "https://example.com/l2" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync())
+            .GetProperty("errorCode").GetString().Should().Be("attachment.limit_exceeded");
+        (await Count(page)).Should().Be(MaxPerPage);
+    }
+
+    [Fact]
+    public async Task Link_ByAViewer_Is403WithNoCustomCode()
+    {
+        var page = _fixture.NewPage(PageAccess.Viewer);
+
+        using var response = await CreateLink(page, new { filename = "a", url = "https://example.com/a" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync())
+            .GetProperty("errorCode").GetString().Should().Be("auth.forbidden", "the pipeline's Forbidden carries no attachment-specific code");
+        (await Count(page)).Should().Be(0);
+    }
+
+    // ---------------------------------------------------------------- upload replay, 413, delete (UC-COL-B09, B11)
+
+    [Fact]
+    public async Task Upload_ReplayWithSameKey_ReturnsTheSameBody_FlagsReplay_AndStoresNoSecondObject()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        var key = Guid.NewGuid().ToString("N");
+
+        using var first = await _fixture.SendAsync(HttpMethod.Post, $"/api/v1/pages/{page}/attachments/files", MultipartPng("once.png"), idempotent: true, key: key);
+        var objects = _fixture.Storage.Objects.Count;
+        using var second = await _fixture.SendAsync(HttpMethod.Post, $"/api/v1/pages/{page}/attachments/files", MultipartPng("once.png"), idempotent: true, key: key);
+
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        second.Headers.GetValues("Idempotency-Replayed").Should().Equal("true");
+        (await second.Content.ReadAsStringAsync()).Should().Be(await first.Content.ReadAsStringAsync());
+        _fixture.Storage.Objects.Count.Should().Be(objects);
+        (await Count(page)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Upload_OverTheFileCap_Is413_AndStoresNothing()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        var before = _fixture.Storage.Objects.Count;
+
+        using var response = await Upload(page, "big.png", Png.Concat(new byte[1024 + 100]).ToArray());
+
+        response.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+        JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync())
+            .GetProperty("errorCode").GetString().Should().Be("attachment.payload_too_large");
+        _fixture.Storage.Objects.Count.Should().Be(before);
+        (await Count(page)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task SecondDelete_IsNotFound_AndTheViewerDeleteKeepsTheEditorOnlyCode()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        using var created = await Upload(page, "photo.png", Png);
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        using var kept = await Upload(page, "kept.png", Png);
+        var keptId = (await kept.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var first = await _fixture.SendAsync(HttpMethod.Delete, $"/api/v1/pages/{page}/attachments/{id}", null);
+        using var second = await _fixture.SendAsync(HttpMethod.Delete, $"/api/v1/pages/{page}/attachments/{id}", null);
+        _fixture.SetAccess(page, PageAccess.Viewer);
+        using var viewer = await _fixture.SendAsync(HttpMethod.Delete, $"/api/v1/pages/{page}/attachments/{keptId}", null);
+
+        first.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        second.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        viewer.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        JsonSerializer.Deserialize<JsonElement>(await viewer.Content.ReadAsStringAsync())
+            .GetProperty("errorCode").GetString().Should().Be("collaboration.attachment_editor_only");
+        (await Count(page)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Delete_FreesASlot_SoAnUploadAtTheCapSucceedsAgain()
+    {
+        var page = _fixture.NewPage(PageAccess.Editor);
+        var ids = new List<Guid>();
+        for (var i = 0; i < MaxPerPage; i++)
+        {
+            using var created = await Upload(page, $"f{i}.png", Png);
+            ids.Add((await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+        }
+
+        (await Upload(page, "over.png", Png)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await _fixture.SendAsync(HttpMethod.Delete, $"/api/v1/pages/{page}/attachments/{ids[0]}", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await Upload(page, "again.png", Png)).StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     private static MultipartFormDataContent MultipartPng(string name, byte[]? bytes = null) =>
@@ -368,12 +549,12 @@ public sealed class PageAttachmentEndpointTests : IClassFixture<PageAttachmentEn
             return client;
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, HttpContent? content, bool idempotent = false)
+        public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, HttpContent? content, bool idempotent = false, string? key = null)
         {
             using var request = new HttpRequestMessage(method, path) { Content = content };
             if (idempotent)
             {
-                request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+                request.Headers.Add("Idempotency-Key", key ?? Guid.NewGuid().ToString("N"));
             }
 
             return await Client.SendAsync(request);

@@ -1323,7 +1323,13 @@ export const cardsOperations = [
 
   defineMockOperation<
     { id: string },
-    { filename?: string | null; url?: string | null },
+    {
+      filename?: string | null;
+      url?: string | null;
+      sizeBytes?: number | null;
+      contentType?: string | null;
+      source?: string | null;
+    },
     void
   >({
     id: "cards.attachments.createLink",
@@ -1344,9 +1350,19 @@ export const cardsOperations = [
       const item = store.getCard(params.id);
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
-      if (store.getUploadByKey(params.id, key)) return noContent();
+      // The size, content type and source are the server's: whatever the client sends is ignored.
       const name = body?.filename?.trim();
       const url = body?.url?.trim();
+      // The same key replays the first result; with another payload it is refused.
+      const replay = store.getUploadByKey(params.id, key);
+      if (replay)
+        return replay.filename === name && replay.url === url
+          ? noContent()
+          : attachmentProblem(
+              409,
+              "idempotency_payload_mismatch",
+              "The idempotency key was used with a different payload.",
+            );
       if (!name || !url || !/^https?:\/\/\S+$/i.test(url))
         return attachmentProblem(
           400,

@@ -239,7 +239,7 @@ public sealed class BoardChildAccessIntegrationTests : IAsyncLifetime
             .Should().ThrowAsync<AppForbidden>("a board Viewer cannot upload a file");
         await FluentActions.Awaiting(() => OrgTreeTestHost.SendIdempotentAsync(provider,
                 new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
-                    item, "Spec", "https://example.com/spec", null, null, null)))
+                    item, "Spec", "https://example.com/spec")))
             .Should().ThrowAsync<AppForbidden>("a board Viewer cannot add a link");
         await OrgTreeTestHost.QueryAsync(provider,
             new Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQuery(item));

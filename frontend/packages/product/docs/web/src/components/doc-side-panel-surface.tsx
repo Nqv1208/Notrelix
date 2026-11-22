@@ -13,6 +13,7 @@ import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import {
   isRestrictedTask,
   type DocCommentView,
+  type DocFilesPanel,
   type DocPageCallbacks,
   type DocPanelTab,
   type DocRelatedDoc,
@@ -21,6 +22,7 @@ import {
   type DocTocEntry,
 } from "./doc-page-models";
 import { DocAvatar, DocStatusDot } from "./doc-page-ui";
+import { DocFilesPanelSurface } from "./doc-files-panel-surface";
 
 export interface DocSidePanelSurfaceProps {
   readonly copy: DocPageCopy;
@@ -33,6 +35,8 @@ export interface DocSidePanelSurfaceProps {
   /** The selected text a comment is being written on, when there is one. */
   readonly pendingQuote?: string | null;
   readonly canComment?: boolean;
+  /** The page's attachments; without it the panel has no Files tab. */
+  readonly files?: DocFilesPanel;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -617,6 +621,7 @@ export function DocSidePanelSurface({
   comments,
   pendingQuote,
   canComment = false,
+  files,
   callbacks,
 }: DocSidePanelSurfaceProps) {
   const p = copy.panel;
@@ -625,6 +630,17 @@ export function DocSidePanelSurface({
       id: "links",
       label: `${p.links} ${tasks.length}`,
     },
+    ...(files
+      ? [
+          {
+            id: "files" as const,
+            label:
+              files.status === "ready"
+                ? `${p.files} ${files.entries.length}`
+                : p.files,
+          },
+        ]
+      : []),
     { id: "toc", label: p.toc },
     {
       id: "comments",
@@ -679,6 +695,9 @@ export function DocSidePanelSurface({
       >
         {tab === "links" ? (
           <LinksPanel copy={copy} tasks={tasks} relatedDocs={relatedDocs} />
+        ) : null}
+        {tab === "files" && files ? (
+          <DocFilesPanelSurface copy={copy} files={files} />
         ) : null}
         {tab === "toc" ? (
           <TocPanel copy={copy} toc={toc} callbacks={callbacks} />

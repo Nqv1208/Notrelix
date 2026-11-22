@@ -4,7 +4,6 @@ import type {
   ActivityChange,
   ActivityChangeApi,
   ActivityLogResponseApi,
-  AttachmentDtoApi,
   Board,
   BoardAccess,
   BoardAccessLevel,
@@ -488,31 +487,43 @@ export function mapCommentDtoToCardUpdate(
   };
 }
 
+/**
+ * A stored attachment as the item reads it. `Collaboration.Attachments.Get`
+ * answers the same item as the upload (its OpenAPI response is not typed yet,
+ * so the upload's 201 body names the shape).
+ */
+export type AttachmentDtoApi = OperationResponse<
+  "Collaboration.Attachments.UploadFile",
+  201
+>;
+
 export function mapAttachmentDtoToCardFile(
   dto: AttachmentDtoApi,
   cardId: string,
 ): CardFile {
-  const name = dto.uploadedByName ?? "Unknown";
+  // A missing author stays empty (like the other mappers); the view words it.
+  const name = dto.uploadedByName ?? "";
   // A stored file has no public address: its `url` is empty and it is
   // downloaded through the authorised content route.
   const isFile = dto.kind?.trim().toLowerCase() === "file";
+  const userId = dto.uploadedBy ?? "";
   return {
-    id: dto.id,
+    id: dto.id ?? "",
     cardId,
-    name: dto.filename,
-    size: dto.sizeBytes,
-    contentType: dto.contentType,
+    name: dto.filename ?? "",
+    size: dto.sizeBytes ?? 0,
+    contentType: dto.contentType ?? "",
     url: isFile ? "" : (dto.url ?? ""),
     source: isFile ? "upload" : normalizeFileSource(dto.source ?? ""),
     kind: isFile ? "file" : "link",
     createdBy: {
-      id: `cm-${dto.uploadedBy}`,
-      userId: dto.uploadedBy,
+      id: `cm-${userId}`,
+      userId,
       name,
       initials: getInitials(name),
       color: memberColors[1]!,
     },
-    createdAt: dto.createdAt,
+    createdAt: dto.createdAt ?? "",
   };
 }
 

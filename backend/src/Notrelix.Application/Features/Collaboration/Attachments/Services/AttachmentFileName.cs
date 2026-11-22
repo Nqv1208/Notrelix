@@ -78,6 +78,42 @@ public static class AttachmentFileName
         return cleaned;
     }
 
+    public const int MaxLinkNameLength = 256;
+
+    /// <summary>
+    /// The display name of a link: trimmed, with the control, format (bidi override, zero-width), unassigned, private-use and
+    /// line/paragraph-separator characters dropped exactly as for an uploaded file name. Unlike a file name it keeps path separators
+    /// and punctuation, because it is a title and never reaches a file system. Empty when nothing visible is left.
+    /// </summary>
+    public static string SanitizeLinkName(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder(raw.Length);
+        foreach (var rune in raw.Normalize(NormalizationForm.FormC).EnumerateRunes())
+        {
+            if (Rune.GetUnicodeCategory(rune) is UnicodeCategory.Control
+                or UnicodeCategory.Format
+                or UnicodeCategory.OtherNotAssigned
+                or UnicodeCategory.PrivateUse
+                or UnicodeCategory.Surrogate
+                or UnicodeCategory.LineSeparator
+                or UnicodeCategory.ParagraphSeparator)
+            {
+                continue;
+            }
+
+            builder.Append(rune.ToString());
+        }
+
+        return builder.ToString().Trim();
+    }
+
+    public static bool IsValidLinkName(string? raw) => SanitizeLinkName(raw) is { Length: > 0 and <= MaxLinkNameLength };
+
     /// <summary>Lower-case extension without the dot, or empty.</summary>
     public static string ExtensionOf(string fileName)
     {

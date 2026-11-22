@@ -57,6 +57,7 @@ export function useItemSheetExtras(card: CardDetail): {
     | "onRetryUpload"
     | "onDismissUpload"
     | "onDownloadFile"
+    | "onDismissFileNotice"
     | "onDeleteFile"
     | "onCreateField"
   >;
@@ -129,6 +130,7 @@ export function useItemSheetExtras(card: CardDetail): {
             ),
           );
       },
+      onDismissFileNotice: () => setFileNotice(null),
       onDeleteFile: (file) =>
         deleteFile.mutateAsync(file.id).then(
           () => true,

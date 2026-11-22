@@ -355,13 +355,25 @@ function FileContent({
   deleteNode,
 }: NodeViewProps & { media: DocMediaHost; context: ContextHolder }) {
   const copy = context.current.copy.media.file;
-  const { files, loading } = media.useFiles();
+  const { files, loading, failed, retry } = media.useFiles();
   const [busy, setBusy] = useState(false);
   const attachmentId = (node.attrs.attachmentId as string | null) ?? null;
   const file = attachmentId ? files.get(attachmentId) : undefined;
 
   let body;
-  if (!attachmentId || (!file && !loading)) {
+  if (attachmentId && !file && failed) {
+    body = (
+      <div
+        role="alert"
+        className="flex max-w-[68ch] items-center gap-3 rounded-[10px] border border-line-strong px-3 py-3 text-compact text-meta-foreground"
+      >
+        <span className="min-w-0 flex-1">{copy.listFailed}</span>
+        <button type="button" className={ACTION} onClick={retry}>
+          {copy.retry}
+        </button>
+      </div>
+    );
+  } else if (!attachmentId || (!file && !loading)) {
     body = <Unavailable>{copy.unavailable}</Unavailable>;
   } else if (!file) {
     body = (

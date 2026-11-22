@@ -323,9 +323,9 @@ public sealed class UploadBoardItemAttachmentTests
         var link = CreateLinkHandler(options, requestLock);
 
         await link.Handle(new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
-            ItemId, "doc", "https://x.test/doc", null, null, null), default);
+            ItemId, "doc", "https://x.test/doc"), default);
         var act = () => link.Handle(new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
-            ItemId, "doc2", "https://x.test/doc2", null, null, null), default);
+            ItemId, "doc2", "https://x.test/doc2"), default);
 
         (await act.Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>())
             .Which.RuleCode.Should().Be(Notrelix.Domain.Collaboration.CollaborationRuleCodes.Collaboration_Attachment_MaxAttachmentsExceeded);
@@ -444,7 +444,7 @@ public sealed class UploadBoardItemAttachmentTests
     {
         var upload = new UploadBoardItemAttachmentCommand(ItemId, "a.png", Stream.Null);
         var link = new Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment.CreateBoardItemAttachmentCommand(
-            ItemId, "a", "https://x.test/a", null, null, null);
+            ItemId, "a", "https://x.test/a");
 
         upload.Action.Should().Be(link.Action);
         upload.Resource.Should().Be(link.Resource);

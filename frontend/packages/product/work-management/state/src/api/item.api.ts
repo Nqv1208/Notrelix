@@ -10,7 +10,6 @@ import type {
 } from "@notrelix/contracts";
 import type {
   ActivityLogResponseApi,
-  AttachmentDtoApi,
   CardDetail,
   CardDtoApi,
   CardFile,
@@ -24,6 +23,7 @@ import {
   mapActivityResponse,
   mapAttachmentDtoToCardFile,
   mapCardDto,
+  type AttachmentDtoApi,
 } from "./board-api-mappers";
 
 /** The largest page the history read allows. */
@@ -45,6 +45,8 @@ export interface UploadCardFileOptions {
   readonly signal?: AbortSignal;
   readonly onProgress?: (progress: UploadProgress) => void;
 }
+
+type CreateLinkBody = OperationRequestBody<"Collaboration.Attachments.Create">;
 
 type CreateItemOp = "WorkManagement.BoardItems.Create";
 type CreateItemBody = OperationRequestBody<CreateItemOp>;
@@ -378,7 +380,9 @@ export function createCardApi(client: NotrelixClient) {
       const files = await api.get<AttachmentDtoApi[]>(
         endpoints.boardItems.attachments(cardId),
       );
-      return files.map((file) => mapAttachmentDtoToCardFile(file, cardId));
+      return files
+        .filter((file) => file.id)
+        .map((file) => mapAttachmentDtoToCardFile(file, cardId));
     },
 
     async getCardActivity(cardId: string, page = 1) {
@@ -415,24 +419,18 @@ export function createCardApi(client: NotrelixClient) {
 
     /**
      * Attaches a web link: `POST /board-items/{id}/attachments` with the URL
-     * (`CreateBoardItemAttachment`). One key per user action.
+     * and a display name; the server owns the size, content type and source.
+     * One key per user action, the same one only to retry that action.
      */
     async createCardLink(
       cardId: string,
       link: { url: string; name: string },
       options: { idempotencyKey: string },
     ): Promise<void> {
-      await api.post<void>(
-        endpoints.boardItems.attachments(cardId),
-        {
-          filename: link.name,
-          url: link.url,
-          sizeBytes: 0,
-          contentType: "text/uri-list",
-          source: "link",
-        },
-        { idempotencyKey: options.idempotencyKey },
-      );
+      const body: CreateLinkBody = { filename: link.name, url: link.url };
+      await api.post<void>(endpoints.boardItems.attachments(cardId), body, {
+        idempotencyKey: options.idempotencyKey,
+      });
     },
 
     /** The bytes of a stored file, read with the session (never a URL token). */
@@ -450,7 +448,7 @@ export function createCardApi(client: NotrelixClient) {
     /** `DELETE /board-items/{id}/attachments/{attachmentId}`: removes a stored file. */
     async deleteCardFile(cardId: string, attachmentId: string): Promise<void> {
       await api.delete<void>(
-        `${endpoints.boardItems.attachments(cardId)}/${attachmentId}`,
+        endpoints.boardItems.attachment(cardId, attachmentId),
       );
     },
   };

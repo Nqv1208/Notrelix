@@ -31,7 +31,7 @@ public sealed class AttachmentFileAuthorizationTests
     public void UploadAndLinkRegistration_ShareTheSameAction()
     {
         Upload().Action.Should().Be(PermissionAction.UpdateItem);
-        new CreateBoardItemAttachmentCommand(ItemId, "a", "https://example.com", null, null, null).Action
+        new CreateBoardItemAttachmentCommand(ItemId, "a", "https://example.com").Action
             .Should().Be(Upload().Action);
         new GetBoardItemAttachmentContentQuery(ItemId, Guid.NewGuid()).Action.Should().Be(PermissionAction.ViewBoard);
     }

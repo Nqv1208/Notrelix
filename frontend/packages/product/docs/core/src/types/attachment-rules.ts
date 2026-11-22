@@ -13,6 +13,26 @@ export interface PageAttachment {
   readonly sizeBytes: number;
   readonly contentType: string;
   readonly createdAt: string;
+  /** "link" for an external address the page registered; absent means a stored file. */
+  readonly kind?: "file" | "link";
+  /** The external address of a link attachment (the server keeps it empty for a file). */
+  readonly url?: string;
+  readonly uploadedByName?: string;
+}
+
+/**
+ * Whether a link may be registered on a page: an absolute http or https
+ * address with a host (the server's allow-list; it refuses the rest with 400).
+ */
+export function isWebUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") && !!url.host
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** The most a single file can be: 100 MB. */

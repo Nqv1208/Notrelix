@@ -586,6 +586,8 @@ export const endpoints = {
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
     commentsPage: (itemId: string) => `/board-items/${itemId}/comments/page`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
+    attachment: (itemId: string, attachmentId: string) =>
+      `/board-items/${itemId}/attachments/${attachmentId}`,
     attachmentFiles: (itemId: string) =>
       `/board-items/${itemId}/attachments/files`,
     attachmentContent: (itemId: string, attachmentId: string) =>

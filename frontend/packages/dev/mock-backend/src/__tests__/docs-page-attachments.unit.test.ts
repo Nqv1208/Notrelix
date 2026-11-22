@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createNotrelixClient, endpoints } from "@notrelix/contracts";
 import { createAttachmentApi } from "../../../../product/docs/state/src/index";
 import { defaultConfig } from "../config/mock-config";
@@ -40,13 +40,13 @@ async function failure(promise: Promise<unknown>) {
 }
 
 describe("mock page attachments: Collaboration.PageAttachments.*", () => {
-  it("registers the four operations under their OpenAPI operationIds", () => {
+  it("registers the five operations under their OpenAPI operationIds", () => {
     const ids = buildOperationRegistry()
       .operationMetadata()
       .flatMap((m) =>
         m.contract.kind === "openapi" ? [m.contract.operationId] : [],
       );
-    for (const op of ["Get", "UploadFile", "GetContent", "Delete"]) {
+    for (const op of ["Get", "Create", "UploadFile", "GetContent", "Delete"]) {
       expect(ids).toContain(`Collaboration.PageAttachments.${op}`);
     }
   });
@@ -163,5 +163,99 @@ describe("mock page attachments: Collaboration.PageAttachments.*", () => {
     expect(
       (await failure(attachments.content(PAGE, "mock-erp-item-142"))).status,
     ).toBe(404);
+  });
+
+  describe("registers a link: Collaboration.PageAttachments.Create", () => {
+    const link = (
+      attachments: ReturnType<typeof setup>["attachments"],
+      url = "https://example.com/guide",
+      name = "Hướng dẫn",
+      options = key(),
+    ) => attachments.createLink(PAGE, { url, name }, options);
+
+    it("lists the link newest first with its address, no bytes and no content route", async () => {
+      const { attachments, fetchImpl } = setup();
+      await attachments.upload(PAGE, pdf(), key());
+      await link(attachments);
+      const [first, second] = await attachments.list(PAGE);
+      expect(first).toMatchObject({
+        fileName: "Hướng dẫn",
+        kind: "link",
+        url: "https://example.com/guide",
+      });
+      expect(second?.kind).toBeUndefined();
+      const response = await fetchImpl(
+        `${BASE}/pages/${PAGE}/attachments/${first!.id}/content`,
+      );
+      expect(response.status).toBe(404);
+    });
+
+    it("refuses an address that is not absolute http or https (400) and a blank name", async () => {
+      const { attachments } = setup();
+      for (const bad of [
+        "javascript:alert(1)",
+        "data:text/html,x",
+        "file:///etc/passwd",
+        "mailto:a@b.c",
+        "example.com",
+        "https://",
+      ]) {
+        expect((await failure(link(attachments, bad))).status).toBe(400);
+      }
+      expect((await failure(link(attachments, undefined, " "))).status).toBe(
+        400,
+      );
+      expect(await attachments.list(PAGE)).toEqual([]);
+    });
+
+    it("replays the same Idempotency-Key without a second link", async () => {
+      const { attachments } = setup();
+      const options = key();
+      await link(attachments, undefined, undefined, options);
+      await link(attachments, undefined, undefined, options);
+      expect(await attachments.list(PAGE)).toHaveLength(1);
+    });
+
+    it("requires an Idempotency-Key", async () => {
+      const { fetchImpl } = setup();
+      const response = await fetchImpl(`${BASE}/pages/${PAGE}/attachments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: "a", url: "https://example.com" }),
+      });
+      expect(response.status).toBe(400);
+    });
+
+    it("stops at 50 attachments on the page (409)", async () => {
+      const { attachments } = setup();
+      for (let index = 0; index < 50; index += 1) {
+        await link(attachments, `https://example.com/${index}`);
+      }
+      const refused = await failure(link(attachments, "https://example.com/x"));
+      expect(refused.status).toBe(409);
+      expect(refused.code).toBe("attachment.limit_exceeded");
+      expect(await attachments.list(PAGE)).toHaveLength(50);
+    });
+
+    it("refuses a viewer (403) and hides an unknown page (404)", async () => {
+      const { store, attachments } = setup();
+      expect(
+        (
+          await failure(
+            attachments.createLink(
+              "no-such-page",
+              { url: "https://example.com", name: "a" },
+              key(),
+            ),
+          )
+        ).status,
+      ).toBe(404);
+      vi.spyOn(store, "getCurrentMemberRole").mockReturnValue("guest");
+      const refused = await failure(link(attachments));
+      expect(refused.status).toBe(403);
+      expect(refused.code).toBe("collaboration.attachment_editor_only");
+      vi.restoreAllMocks();
+      expect(await attachments.list(PAGE)).toEqual([]);
+    });
   });
 });

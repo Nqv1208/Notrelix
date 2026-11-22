@@ -10,8 +10,8 @@ public class CreatePageAttachmentCommandValidator : AbstractValidator<CreatePage
             .NotEmpty();
 
         RuleFor(x => x.Filename)
-            .NotEmpty()
-            .MaximumLength(256);
+            .Must(AttachmentFileName.IsValidLinkName)
+            .WithMessage($"A link name must have 1 to {AttachmentFileName.MaxLinkNameLength} visible characters.");
 
         RuleFor(x => x.Url)
             .NotEmpty()

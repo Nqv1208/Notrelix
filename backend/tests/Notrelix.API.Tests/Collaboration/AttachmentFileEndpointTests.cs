@@ -12,6 +12,7 @@ using Notrelix.Application.Common.Requests.Execution;
 using Notrelix.Application.Common.Requests.Security;
 using Notrelix.Application.Common.Storage;
 using Notrelix.Application.Features.Collaboration.Attachments;
+using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
 using Notrelix.Domain.SharedKernel;
 
 namespace Notrelix.API.Tests.Collaboration;
@@ -38,6 +39,9 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
 
     private static readonly Guid UnknownItem = Guid.Parse("00000000-0000-0000-0000-00000000dead");
     private static readonly Guid ViewerOnlyItem = Guid.Parse("00000000-0000-0000-0000-000000000b1e");
+
+    /// <summary>Items a test turned into viewer-only after uploading to them.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> ViewerItems = new();
 
     private static readonly Regex StorageKeyShape =
         new("^a0000000000000000000000000000001/a0000000000000000000000000000001/attachments/[0-9a-f]{32}$");
@@ -476,6 +480,224 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // ---------------------------------------------------------------- link create (UC-COL-B07)
+
+    private static string LinksPath(Guid item) => $"/api/v1/board-items/{item}/attachments";
+
+    private Task<HttpResponseMessage> CreateLink(Guid item, object body, string? key = null) =>
+        _fixture.SendAsync(HttpMethod.Post, LinksPath(item), key ?? NewKey(), JsonContent.Create(body));
+
+    [Fact]
+    public async Task Link_StoresTheServerOwnedSizeTypeAndSource_WhateverTheClientSends()
+    {
+        var item = Guid.NewGuid();
+
+        using var response = await CreateLink(item, new
+        {
+            filename = "  Spec \u0000v2 ",
+            url = "https://example.com/spec",
+            sizeBytes = 9_000_000_000_000L,
+            contentType = "text/html",
+            source = "File",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var dto = await response.Content.ReadFromJsonAsync<JsonElement>();
+        dto.GetProperty("kind").GetString().Should().Be("Link");
+        dto.GetProperty("filename").GetString().Should().Be("Spec v2");
+        dto.GetProperty("sizeBytes").GetInt64().Should().Be(0);
+        dto.GetProperty("contentType").GetString().Should().Be("text/uri-list");
+        dto.GetProperty("source").GetString().Should().Be("Link");
+        dto.GetProperty("url").GetString().Should().Be("https://example.com/spec");
+        var listed = await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item));
+        listed.EnumerateArray().Single().GetProperty("sizeBytes").GetInt64().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Link_ReplayWithSameKey_ReturnsTheFirstResult_FlagsReplay_AndStoresNoSecondLink()
+    {
+        var item = Guid.NewGuid();
+        var key = NewKey();
+        var body = new { filename = "once", url = "https://example.com/once" };
+
+        using var first = await CreateLink(item, body, key);
+        using var second = await CreateLink(item, body, key);
+
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        first.Headers.Contains("Idempotency-Replayed").Should().BeFalse();
+        second.Headers.GetValues("Idempotency-Replayed").Should().Equal("true");
+        (await second.Content.ReadAsStringAsync()).Should().Be(await first.Content.ReadAsStringAsync());
+        var listed = await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item));
+        listed.GetArrayLength().Should().Be(1, "a replay must not store a second link");
+    }
+
+    [Theory]
+    [InlineData("once", "https://example.com/other")]
+    [InlineData("renamed", "https://example.com/once")]
+    public async Task Link_SameKeyWithADifferentNameOrUrl_Is409IdempotencyPayloadMismatch(string filename, string url)
+    {
+        var item = Guid.NewGuid();
+        var key = NewKey();
+        (await CreateLink(item, new { filename = "once", url = "https://example.com/once" }, key)).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var response = await CreateLink(item, new { filename, url }, key);
+
+        await ExpectProblem(response, HttpStatusCode.Conflict, "idempotency_payload_mismatch");
+        (await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item))).GetArrayLength().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Link_SameKeyWithAChangedSizeOrType_IsStillAReplay_BecauseThoseFieldsAreIgnored()
+    {
+        var item = Guid.NewGuid();
+        var key = NewKey();
+        (await CreateLink(item, new { filename = "a", url = "https://example.com/a", sizeBytes = 1, contentType = "x/y" }, key))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var response = await CreateLink(item, new { filename = "a", url = "https://example.com/a", sizeBytes = 2, contentType = "z/w" }, key);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.GetValues("Idempotency-Replayed").Should().Equal("true");
+    }
+
+    [Fact]
+    public async Task Link_WithoutAnIdempotencyKey_Is400_AndStoresNothing()
+    {
+        var item = Guid.NewGuid();
+        using var request = new HttpRequestMessage(HttpMethod.Post, LinksPath(item))
+        {
+            Content = JsonContent.Create(new { filename = "a", url = "https://example.com/a" }),
+        };
+
+        using var response = await _fixture.Client.SendAsync(request);
+
+        await ExpectProblem(response, HttpStatusCode.BadRequest, "validation.failed");
+        (await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item))).GetArrayLength().Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("\u0000\u0007")]
+    public async Task Link_WithNoVisibleName_Is400(string name)
+    {
+        using var response = await CreateLink(Guid.NewGuid(), new { filename = name, url = "https://example.com/a" });
+
+        await ExpectProblem(response, HttpStatusCode.BadRequest, "validation.failed");
+    }
+
+    [Fact]
+    public async Task Link_WithANameOver256_Is400_AndExactly256IsAccepted()
+    {
+        using var over = await CreateLink(Guid.NewGuid(), new { filename = new string('a', 257), url = "https://example.com/a" });
+        using var exact = await CreateLink(Guid.NewGuid(), new { filename = new string('a', 256), url = "https://example.com/a" });
+
+        await ExpectProblem(over, HttpStatusCode.BadRequest, "validation.failed");
+        exact.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("ftp://example.com/x")]
+    public async Task Link_WithANonHttpAddress_Is400(string url)
+    {
+        using var response = await CreateLink(Guid.NewGuid(), new { filename = "a", url });
+
+        await ExpectProblem(response, HttpStatusCode.BadRequest, "validation.failed");
+    }
+
+    [Fact]
+    public async Task Link_ToAVisibleButNotEditableItem_Is403WithNoCustomCode_AndStoresNothing()
+    {
+        using var response = await CreateLink(ViewerOnlyItem, new { filename = "a", url = "https://example.com/a" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var problem = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
+        problem.GetProperty("errorCode").GetString().Should().Be("auth.forbidden", "the pipeline's Forbidden carries no attachment-specific code");
+        (await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(ViewerOnlyItem))).GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Link_BeyondTheItemLimit_Is409LimitExceeded_FilesAndLinksShareTheCap()
+    {
+        var item = Guid.NewGuid();
+        (await Upload(item, Form("f.png", Png))).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await CreateLink(item, new { filename = "l", url = "https://example.com/l" })).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var response = await CreateLink(item, new { filename = "l2", url = "https://example.com/l2" });
+
+        await ExpectProblem(response, HttpStatusCode.Conflict, "attachment.limit_exceeded");
+        (await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item))).GetArrayLength().Should().Be(MaxPerItem);
+    }
+
+    // ---------------------------------------------------------------- list and delete (UC-COL-B08, B11)
+
+    [Fact]
+    public async Task List_ShowsOnlyThisItemsAttachments()
+    {
+        var (item, id) = await UploadOk("mine.png", Png);
+        await UploadOk("theirs.png", Png);
+
+        var listed = await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item));
+
+        listed.EnumerateArray().Select(a => a.GetProperty("id").GetGuid()).Should().Equal(id);
+    }
+
+    [Fact]
+    public async Task Delete_ByAnEditor_Is204_ThenTheListAndTheContentNoLongerShowIt_AndASecondDeleteIs404()
+    {
+        var (item, id) = await UploadOk("gone.png", Png);
+
+        using var first = await _fixture.SendAsync(HttpMethod.Delete, $"{LinksPath(item)}/{id}", null, null);
+        var listed = await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item));
+        using var content = await _fixture.Client.GetAsync(ContentPath(item, id));
+        using var second = await _fixture.SendAsync(HttpMethod.Delete, $"{LinksPath(item)}/{id}", null, null);
+
+        first.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        listed.GetArrayLength().Should().Be(0);
+        content.StatusCode.Should().Be(HttpStatusCode.NotFound, "the content of a deleted attachment is a plain 404, never a 410");
+        second.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Delete_ByAViewer_Is403_AndTheAttachmentStaysListedAndReadable()
+    {
+        var (item, id) = await UploadOk("kept.png", Png);
+        ViewerItems[item] = true;
+
+        using var response = await _fixture.SendAsync(HttpMethod.Delete, $"{LinksPath(item)}/{id}", null, null);
+        var listed = await _fixture.Client.GetFromJsonAsync<JsonElement>(LinksPath(item));
+        using var content = await _fixture.Client.GetAsync(ContentPath(item, id));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var problem = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
+        problem.GetProperty("errorCode").GetString().Should().Be("collaboration.attachment_editor_only");
+        listed.GetArrayLength().Should().Be(1);
+        content.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Delete_FreesASlot_SoAnUploadAtTheCapSucceedsAgain()
+    {
+        var item = Guid.NewGuid();
+        var ids = new List<Guid>();
+        for (var i = 0; i < MaxPerItem; i++)
+        {
+            using var created = await Upload(item, Form($"f{i}.png", Png));
+            created.StatusCode.Should().Be(HttpStatusCode.Created);
+            ids.Add((await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+        }
+
+        using var atCap = await Upload(item, Form("over.png", Png));
+        atCap.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        using var delete = await _fixture.SendAsync(HttpMethod.Delete, $"{LinksPath(item)}/{ids[0]}", null, null);
+        using var again = await Upload(item, Form("again.png", Png));
+
+        delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        again.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private static void AssertHardeningHeaders(HttpResponseMessage response)
@@ -601,6 +823,12 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
         }
     }
 
+    private sealed class FakeItemFacts : IWorkItemNotificationFacts
+    {
+        public Task<WorkItemNotificationFacts?> FindAsync(Guid workspaceId, Guid itemId, Guid? changedFieldId, CancellationToken cancellationToken) =>
+            Task.FromResult<WorkItemNotificationFacts?>(new WorkItemNotificationFacts(Guid.Empty, "item", false, null));
+    }
+
     private sealed class NoopAttachmentTargetLock : Notrelix.Application.Features.Collaboration.Abstractions.IAttachmentTargetLock
     {
         public Task AcquireAsync(ResourceRef target, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -620,7 +848,7 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
             RequestDescriptor descriptor, ExecutionContextSnapshot context, object request, CancellationToken cancellationToken)
         {
             var itemId = (request as IRequirePermission)?.Resource?.ResourceId;
-            var rank = itemId == ViewerOnlyItem ? 1 : 4;
+            var rank = itemId == ViewerOnlyItem || (itemId is { } id && ViewerItems.ContainsKey(id)) ? 1 : 4;
             return Task.FromResult(new AccessFacts(
                 UserExists: true,
                 EmailVerified: true,
@@ -684,6 +912,10 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
                     services.RemoveAll<IAccessFactsProvider>();
                     services.AddSingleton<IAccessFactsProvider, FakeAccessFacts>();
 
+                    // The delete rule asks Work Management whether the item still exists; every fake item does.
+                    services.RemoveAll<IWorkItemNotificationFacts>();
+                    services.AddScoped<IWorkItemNotificationFacts, FakeItemFacts>();
+
                     // A small configured cap and per-item limit; the options are replaced as a whole
                     // because their members are init-only.
                     services.RemoveAll<IOptions<AttachmentUploadOptions>>();
@@ -716,10 +948,14 @@ public sealed class AttachmentFileEndpointTests : IClassFixture<AttachmentFileEn
             return client;
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string idempotencyKey, HttpContent content)
+        public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string? idempotencyKey, HttpContent? content)
         {
             using var request = new HttpRequestMessage(method, path) { Content = content };
-            request.Headers.Add("Idempotency-Key", idempotencyKey);
+            if (idempotencyKey is not null)
+            {
+                request.Headers.Add("Idempotency-Key", idempotencyKey);
+            }
+
             return await Client.SendAsync(request);
         }
 

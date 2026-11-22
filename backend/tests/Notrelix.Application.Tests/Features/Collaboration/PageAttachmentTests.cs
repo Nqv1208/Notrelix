@@ -119,7 +119,7 @@ public sealed class PageAttachmentTests
         new GetPageAttachmentsQuery(PageId).Action.Should().Be(PermissionAction.ViewPage);
         new GetPageAttachmentContentQuery(PageId, attachment).Action.Should().Be(PermissionAction.ViewPage);
         new UploadPageAttachmentCommand(PageId, "a.png", Stream.Null).Action.Should().Be(PermissionAction.UpdatePage);
-        new CreatePageAttachmentCommand(PageId, "a", "https://example.com", null, null).Action.Should().Be(PermissionAction.UpdatePage);
+        new CreatePageAttachmentCommand(PageId, "a", "https://example.com").Action.Should().Be(PermissionAction.UpdatePage);
         new DeletePageAttachmentCommand(PageId, attachment).Action.Should().Be(PermissionAction.ViewPage);
 
         foreach (var resource in new[]
@@ -257,7 +257,7 @@ public sealed class PageAttachmentTests
         var handler = new CreatePageAttachmentCommandHandler(
             Db(), _request, new Clock(), new InMemoryAttachmentTargetLock(), Options.Create(new AttachmentUploadOptions()));
 
-        var result = await handler.Handle(new CreatePageAttachmentCommand(PageId, "site", "https://example.com/x", null, null), default);
+        var result = await handler.Handle(new CreatePageAttachmentCommand(PageId, "site", "https://example.com/x"), default);
 
         result.Succeeded.Should().BeTrue();
         _rows.Single().Target.Kind.Value.Should().Be("documents.page");
@@ -266,7 +266,7 @@ public sealed class PageAttachmentTests
     [Fact]
     public void BoardItemCreate_StillTargetsTheBoardItem()
     {
-        new CreateBoardItemAttachmentCommand(ItemId, "a", "https://example.com", null, null, null).Resource.Kind.Value
+        new CreateBoardItemAttachmentCommand(ItemId, "a", "https://example.com").Resource.Kind.Value
             .Should().Be("work-management.board-item");
     }
 }

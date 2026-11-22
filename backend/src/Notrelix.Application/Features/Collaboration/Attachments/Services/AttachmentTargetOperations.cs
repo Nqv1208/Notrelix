@@ -18,6 +18,9 @@ internal static class AttachmentTargetOperations
     /// <summary>Leading bytes kept for an image header. Covers the frame header of a JPEG behind its EXIF and ICC segments.</summary>
     private const int ImageHeaderCapacity = 64 * 1024;
 
+    /// <summary>The content type every link attachment carries; a link has no content of its own.</summary>
+    public const string LinkContentType = "text/uri-list";
+
     /// <summary>An Ogg page is at most 65307 bytes, so this holds the whole last page.</summary>
     private const int OggLastPageCapacity = 66 * 1024;
 
@@ -96,8 +99,6 @@ internal static class AttachmentTargetOperations
         Guid targetId,
         string filename,
         string url,
-        long? sizeBytes,
-        string? contentType,
         CancellationToken ct)
     {
         // The validator refuses these first (400); this repeats the same allow-list for any caller that skips it.
@@ -115,7 +116,8 @@ internal static class AttachmentTargetOperations
             .CountAsync(a => a.Target.Kind == kind && a.Target.ResourceId == targetId, ct);
         AttachmentRules.EnsureMaxAttachments(currentCount, AttachmentTargets.MaxAttachments(kind, options));
 
-        var metadata = FileMetadata.Create(filename, sizeBytes ?? 0, contentType ?? "application/octet-stream", url: url);
+        // A link has no stored bytes and no client-owned type: size, content type and source are fixed here.
+        var metadata = FileMetadata.Create(AttachmentFileName.SanitizeLinkName(filename), 0, LinkContentType, url: url);
         var attachment = Attachment.Create(requestContext.RequireAccountId(), workspaceId, target, AttachmentType.Link, metadata, requestContext.UserId, now);
 
         context.Attachments.Add(attachment);

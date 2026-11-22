@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   Download,
   ExternalLink,
@@ -27,6 +27,7 @@ import {
   cn,
 } from "@notrelix/ui-web";
 import {
+  isWebUrl,
   useItemLinkedPages,
   type LinkedPageDto,
 } from "@notrelix/work-management-state";
@@ -103,6 +104,7 @@ function Row({
   meta,
   actions,
   busy,
+  metaRole,
 }: {
   tile: ReactNode;
   tone: string;
@@ -111,11 +113,14 @@ function Row({
   meta: ReactNode;
   actions?: ReactNode;
   busy?: boolean;
+  /** An upload's progress is announced politely; its failure at once. */
+  metaRole?: "status" | "alert";
 }) {
   // The new-card sheet lets the note wrap on two 20.3 px lines (Kanban-CardPopup-M-Create).
   const queued = useCardPopup().mode === "create";
   return (
     <div
+      role="listitem"
       aria-busy={busy || undefined}
       className="box-border flex min-h-[60px] items-center gap-3 rounded-[8px] px-2 py-1.5 hover:bg-state-hover-strong"
     >
@@ -138,6 +143,7 @@ function Row({
           </span>
         )}
         <span
+          role={metaRole}
           className={cn(
             "block truncate text-[12.5px] text-meta-foreground",
             queued &&
@@ -175,6 +181,8 @@ function LinkedPageRows({
           <SmallBtn onClick={() => void linked.refetch()}>{t.retry}</SmallBtn>
         </p>
       ) : null}
+      {linked.pages.length + linked.hiddenCount > 0 ? (
+        <div role="list" aria-label={t.pagesLabel}>
       {linked.pages.map((page: LinkedPageDto) => {
         const title = page.title || t.untitled;
         const href = `/workspaces/${card.workspaceId}/docs/${page.pageId}`;
@@ -228,6 +236,8 @@ function LinkedPageRows({
           meta={t.restrictedBody}
         />
       ))}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -260,7 +270,17 @@ export function AttachmentsSection() {
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [failed, setFailed] = useState(false);
   const [working, setWorking] = useState(false);
+  const addButton = useRef<HTMLButtonElement>(null);
+  // A deleted row takes its options button along: focus goes to "Add" instead.
+  const focusAdd = useRef(false);
   const files = data.files;
+  const filesError = data.filesError ?? null;
+  // A refusal or a gone item hides the stale list; any other failure keeps it under a retry.
+  const unreadable = filesError === "forbidden" || filesError === "notFound";
+  const ask = (next: Confirm) => {
+    setFailed(false);
+    setConfirm(next);
+  };
   const uploads = (data.uploads ?? []).filter(
     (upload) => upload.status !== "done",
   );
@@ -272,7 +292,8 @@ export function AttachmentsSection() {
     !data.filesLoading &&
     files.length === 0 &&
     uploads.length === 0 &&
-    !data.fileNotice
+    !data.fileNotice &&
+    !filesError
   )
     return (
       <EmptySection
@@ -282,6 +303,7 @@ export function AttachmentsSection() {
       >
         {canEdit ? (
           <LinkBtn
+            ref={addButton}
             className="max-md:h-11"
             aria-haspopup="dialog"
             aria-label={t.addLabel}
@@ -297,8 +319,9 @@ export function AttachmentsSection() {
   return (
     <PopSection label={t.title} icon={SECTION_ICONS.attachments}>
       <SectionHead title={t.title}>
-        {canEdit ? (
+        {canEdit && !unreadable ? (
           <SmallBtn
+            ref={addButton}
             className="max-md:h-11"
             aria-haspopup="dialog"
             aria-label={t.addLabel}
@@ -319,18 +342,45 @@ export function AttachmentsSection() {
             <span className="block h-[60px] rounded-[8px] bg-state-hover-strong" />
           </div>
         ) : null}
+        {filesError ? (
+          <p
+            role="alert"
+            className="m-0 mb-1.5 flex items-center gap-2 rounded-[8px] bg-danger-subtle px-3 py-2 text-[13px]"
+          >
+            <span className="flex-1">
+              {filesError === "forbidden"
+                ? t.filesForbidden
+                : filesError === "notFound"
+                  ? t.filesGone
+                  : t.filesError}
+            </span>
+            {!unreadable && callbacks.onRefreshFiles ? (
+              <SmallBtn onClick={() => callbacks.onRefreshFiles?.()}>
+                {t.retry}
+              </SmallBtn>
+            ) : null}
+          </p>
+        ) : null}
         {data.fileNotice ? (
           <p
             role="alert"
-            className="m-0 mb-1.5 rounded-[8px] bg-danger-subtle px-3 py-2 text-[13px]"
+            className="m-0 mb-1.5 flex items-center gap-2 rounded-[8px] bg-danger-subtle px-3 py-2 text-[13px]"
           >
-            {data.fileNotice}
+            <span className="flex-1">{data.fileNotice}</span>
+            {callbacks.onDismissFileNotice ? (
+              <SmallBtn onClick={() => callbacks.onDismissFileNotice?.()}>
+                {t.dismiss}
+              </SmallBtn>
+            ) : null}
           </p>
         ) : null}
+        {!unreadable && uploads.length + files.length > 0 ? (
+        <div role="list" aria-label={t.title}>
         {uploads.map((upload) => (
           <Row
             key={upload.id}
             busy={upload.status === "uploading"}
+            metaRole={upload.status === "error" ? "alert" : "status"}
             tile={<FileIcon aria-hidden="true" className="size-5" />}
             tone="bg-state-hover-strong text-muted-foreground"
             name={upload.name}
@@ -354,17 +404,15 @@ export function AttachmentsSection() {
                     {t.retry}
                   </SmallBtn>
                 ) : null}
-                {upload.status === "error" ? (
-                  <IconBtn
-                    small
-                    aria-label={fillPopupCopy(t.cancelUpload, {
-                      name: upload.name,
-                    })}
-                    onClick={() => callbacks.onDismissUpload?.(upload.id)}
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </IconBtn>
-                ) : null}
+                <IconBtn
+                  small
+                  aria-label={fillPopupCopy(t.cancelUpload, {
+                    name: upload.name,
+                  })}
+                  onClick={() => callbacks.onDismissUpload?.(upload.id)}
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </IconBtn>
               </>
             }
           />
@@ -377,14 +425,16 @@ export function AttachmentsSection() {
                 node: <Link2 aria-hidden="true" className="size-5" />,
               }
             : thumbOf(file);
-          const author = file.createdBy.name;
+          const author = file.createdBy.name || t.unknownAuthor;
+          // Only an absolute http(s) address is a link; anything else stays plain text.
+          const webUrl = isLink && isWebUrl(file.url);
           return (
             <Row
               key={file.id}
               tile={tile.node}
               tone={tile.tone}
               name={file.name}
-              nameHref={isLink && mode === "view" ? file.url : undefined}
+              nameHref={webUrl && mode === "view" ? file.url : undefined}
               meta={
                 mode === "create"
                   ? fillPopupCopy(isLink ? t.queuedLink : t.queuedFile, {
@@ -429,11 +479,11 @@ export function AttachmentsSection() {
                         <Download aria-hidden="true" className="size-4" />
                       </IconBtn>
                     ) : null}
-                    {isLink || (canEdit && callbacks.onDeleteFile) ? (
+                    {webUrl || (canEdit && callbacks.onDeleteFile) ? (
                       <OptionsMenu
                         label={fillPopupCopy(t.options, { name: file.name })}
                       >
-                        {isLink ? (
+                        {webUrl ? (
                           <DropdownMenuItem asChild>
                             <a
                               href={file.url}
@@ -449,7 +499,7 @@ export function AttachmentsSection() {
                           <DropdownMenuItem
                             variant="destructive"
                             onSelect={() =>
-                              setConfirm({
+                              ask({
                                 title: fillPopupCopy(t.deleteTitle, {
                                   name: file.name,
                                 }),
@@ -470,14 +520,10 @@ export function AttachmentsSection() {
             />
           );
         })}
+        </div>
+        ) : null}
         {mode === "view" ? (
-          <LinkedPageRows
-            canEdit={canEdit}
-            onConfirm={(c) => {
-              setFailed(false);
-              setConfirm(c);
-            }}
-          />
+          <LinkedPageRows canEdit={canEdit} onConfirm={ask} />
         ) : null}
       </div>
       <AlertDialog
@@ -486,7 +532,14 @@ export function AttachmentsSection() {
           if (!next && !working) setConfirm(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent
+          onCloseAutoFocus={(event) => {
+            if (!focusAdd.current || !addButton.current) return;
+            focusAdd.current = false;
+            event.preventDefault();
+            addButton.current.focus();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>{confirm?.title}</AlertDialogTitle>
             <AlertDialogDescription>{confirm?.body}</AlertDialogDescription>
@@ -510,7 +563,10 @@ export function AttachmentsSection() {
                 void confirm.run().then((ok) => {
                   setWorking(false);
                   setFailed(!ok);
-                  if (ok) setConfirm(null);
+                  if (ok) {
+                    focusAdd.current = true;
+                    setConfirm(null);
+                  }
                 });
               }}
             >

@@ -192,6 +192,12 @@ describe("upload failures", () => {
     expect(classifyUploadFailure(new Error("x"))).toBe("failed");
   });
 
+  it("maps a dropped connection to the failed reason, which can be retried (there is no offline state)", () => {
+    const reason = classifyUploadFailure({ kind: "network" });
+    expect(reason).toBe("failed");
+    expect(canRetryUpload(reason)).toBe(true);
+  });
+
   it("retries only what another attempt can change", () => {
     expect(canRetryUpload("failed")).toBe(true);
     expect(canRetryUpload("limitReached")).toBe(true);

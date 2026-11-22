@@ -18,7 +18,11 @@ import { DocEditorSurface } from "../doc-editor-surface";
 import { EditorToolbar } from "../editor-toolbar";
 import { docToDrafts } from "../block-mapping";
 import { insertMediaFiles } from "../media-commands";
-import type { DocMediaHost } from "../media-host";
+import type {
+  DocMediaContent,
+  DocMediaFiles,
+  DocMediaHost,
+} from "../media-host";
 import { matchSlashItems } from "../slash-menu";
 import { useDocRichEditor } from "../use-doc-rich-editor";
 import { stubLayout } from "./headless-editor";
@@ -62,6 +66,8 @@ function setup(options: {
   drafts?: BlockDraft[];
   upload?: (file: File) => Promise<PageAttachment>;
   editable?: boolean;
+  files?: DocMediaFiles;
+  content?: (id: string | null) => DocMediaContent;
 }) {
   let drafts: BlockDraft[] = [];
   const onRefused = vi.fn();
@@ -82,15 +88,17 @@ function setup(options: {
     onRefused,
     download,
     remove,
-    useFiles: () => ({
-      files: new Map([STORED, REPORT].map((file) => [file.id, file])),
-      loading: false,
-    }),
-    useContent: (id) => ({
-      status: id === "broken" ? "error" : "ready",
-      blob: id === "broken" ? null : new Blob(["x"], { type: "image/png" }),
-      retry: retryContent,
-    }),
+    useFiles: () =>
+      options.files ?? {
+        files: new Map([STORED, REPORT].map((file) => [file.id, file])),
+        loading: false,
+      },
+    useContent: (id) =>
+      options.content?.(id) ?? {
+        status: id === "broken" ? "error" : "ready",
+        blob: id === "broken" ? null : new Blob(["x"], { type: "image/png" }),
+        retry: retryContent,
+      },
   };
   const context = {
     copy: docsCopy,
@@ -150,6 +158,37 @@ function pasteInto(editor: Editor, event: ClipboardEvent): boolean {
   );
   return Boolean(
     plugin?.props.handlePaste?.call(plugin, editor.view, event, null as never),
+  );
+}
+
+/** Runs the media extension's own drop handler; `view` stands in for the editor view's pointer lookup. */
+function dropInto(
+  editor: Editor,
+  files: File[],
+  options: { moved?: boolean; editable?: boolean } = {},
+): boolean {
+  const plugin = editor.view.state.plugins.find((candidate) =>
+    String((candidate as unknown as { key: string }).key).startsWith(
+      "docMediaPaste",
+    ),
+  );
+  const event = new Event("drop", { cancelable: true }) as unknown as DragEvent;
+  Object.defineProperty(event, "dataTransfer", { value: { files } });
+  const view =
+    options.editable === false
+      ? editor.view
+      : ({
+          editable: true,
+          posAtCoords: () => ({ pos: 0, inside: -1 }),
+        } as never);
+  return Boolean(
+    plugin?.props.handleDrop?.call(
+      plugin,
+      view,
+      event,
+      null as never,
+      options.moved ?? false,
+    ),
   );
 }
 
@@ -302,6 +341,17 @@ describe("image block", () => {
     expect(screen.getByText("Hình 1")).toBeTruthy();
   });
 
+  it("shows a loading skeleton while the image's bytes are read", async () => {
+    setup({
+      drafts: [IMAGE],
+      content: () => ({ status: "loading", blob: null, retry: vi.fn() }),
+    });
+    expect(
+      await screen.findByRole("status", { name: docsCopy.media.image.loading }),
+    ).toBeTruthy();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
   it("says so when an image has no attachment or cannot be read", async () => {
     const view = setup({
       drafts: [
@@ -322,6 +372,51 @@ describe("image block", () => {
 });
 
 describe("file block", () => {
+  const FILE_BLOCK: BlockDraft = {
+    id: "f",
+    type: "file",
+    content: richText(),
+    properties: { attachmentId: "att-2" },
+  };
+
+  it("shows a loading skeleton while the page's files are read", async () => {
+    setup({
+      drafts: [FILE_BLOCK],
+      files: { files: new Map(), loading: true },
+    });
+    expect(
+      await screen.findByRole("status", { name: docsCopy.media.file.loading }),
+    ).toBeTruthy();
+    expect(screen.queryByText(docsCopy.media.file.unavailable)).toBeNull();
+  });
+
+  it("says the file list could not be read, with Retry, and not that the file is gone", async () => {
+    const retry = vi.fn();
+    setup({
+      drafts: [FILE_BLOCK],
+      files: { files: new Map(), loading: false, failed: true, retry },
+    });
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain(docsCopy.media.file.listFailed);
+    expect(screen.queryByText(docsCopy.media.file.unavailable)).toBeNull();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: docsCopy.media.file.retry }),
+      );
+    });
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("says a file that is no longer on the page is gone", async () => {
+    setup({
+      drafts: [FILE_BLOCK],
+      files: { files: new Map(), loading: false },
+    });
+    expect(
+      await screen.findByText(docsCopy.media.file.unavailable),
+    ).toBeTruthy();
+  });
+
   it("shows the file's name, size and type and downloads it", async () => {
     const view = setup({
       drafts: [
@@ -434,7 +529,10 @@ describe("uploading", () => {
       insertMediaFiles(view.editor(), [png()]);
     });
     await settle();
-    expect(await screen.findByRole("alert")).toBeTruthy();
+    // A dropped connection is the "failed" reason; there is no separate offline state.
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      docsCopy.media.upload.reasons.failed,
+    );
     expect(view.drafts().some((draft) => draft.type === "image")).toBe(false);
 
     await act(async () => {
@@ -509,6 +607,34 @@ describe("uploading", () => {
     });
     const handled = pasteInto(view.editor(), event);
     expect(handled).toBe(false);
+    expect(view.uploads.snapshot()).toEqual([]);
+  });
+
+  it("uploads a file dropped on the page where it is dropped", async () => {
+    const view = setup({ upload: () => new Promise(() => undefined) });
+    await screen.findByText("Mở đầu");
+    expect(dropInto(view.editor(), [png("tha.png")])).toBe(true);
+    expect(view.uploads.snapshot().map((u) => u.fileName)).toEqual(["tha.png"]);
+  });
+
+  it("leaves a block dragged inside the page, and a drop with no file, to the editor", async () => {
+    const view = setup({ upload: () => new Promise(() => undefined) });
+    await screen.findByText("Mở đầu");
+    expect(dropInto(view.editor(), [png()], { moved: true })).toBe(false);
+    expect(dropInto(view.editor(), [])).toBe(false);
+    expect(view.uploads.snapshot()).toEqual([]);
+  });
+
+  it("ignores a file dropped or pasted by a viewer", async () => {
+    const view = setup({ editable: false });
+    await screen.findByText("Mở đầu");
+    expect(dropInto(view.editor(), [png()], { editable: false })).toBe(false);
+    const event = new Event("paste", { cancelable: true }) as ClipboardEvent;
+    Object.defineProperty(event, "clipboardData", {
+      value: { files: [png()], getData: () => "" },
+    });
+    expect(pasteInto(view.editor(), event)).toBe(false);
+    expect(insertMediaFiles(view.editor(), [png()])).toBe(0);
     expect(view.uploads.snapshot()).toEqual([]);
   });
 
