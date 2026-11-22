@@ -37,4 +37,35 @@ describe("readWebRuntimeEnvironment & parseEnv resilient fallback", () => {
     expect(resolved.realtimeUrl).toBe("ws://localhost:5000/realtime");
     expect(resolved.isDevelopment).toBe(true);
   });
+
+  it("derives same-origin URLs at runtime when no VITE_* value is set", () => {
+    const raw = { MODE: "production" } as unknown as ImportMetaEnv;
+
+    const https = parseEnv(
+      readWebRuntimeEnvironment(raw, "https://demo.notrelix.me"),
+    );
+    expect(https.apiUrl).toBe("https://demo.notrelix.me/api/v1");
+    expect(https.realtimeUrl).toBe("wss://demo.notrelix.me");
+    expect(https.appUrl).toBe("https://demo.notrelix.me");
+
+    const http = parseEnv(
+      readWebRuntimeEnvironment(raw, "http://localhost:5173"),
+    );
+    expect(http.apiUrl).toBe("http://localhost:5173/api/v1");
+    expect(http.realtimeUrl).toBe("ws://localhost:5173");
+  });
+
+  it("lets an explicit VITE_* value win over the origin", () => {
+    const raw = {
+      MODE: "production",
+      VITE_API_URL: "https://api.other.test/api/v1",
+      VITE_WS_URL: "wss://rt.other.test",
+      VITE_APP_URL: "https://app.other.test",
+    } as unknown as ImportMetaEnv;
+
+    const input = readWebRuntimeEnvironment(raw, "https://demo.notrelix.me");
+    expect(input.apiUrl).toBe("https://api.other.test/api/v1");
+    expect(input.realtimeUrl).toBe("wss://rt.other.test");
+    expect(input.appUrl).toBe("https://app.other.test");
+  });
 });

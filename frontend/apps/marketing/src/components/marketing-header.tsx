@@ -17,7 +17,6 @@ import type { Messages } from "../messages/en";
 
 import { MarketingButton } from "./marketing-button";
 import Image from "next/image";
-import { env } from "../config/env";
 
 const productLinkIcons = [LayoutGrid, BookOpen, Workflow, BarChart3];
 
@@ -146,7 +145,7 @@ export function MarketingHeader() {
           <MarketingButton
             variant="ghost"
             size="sm"
-            href={`${env.webAppUrl}/sign-in`}
+            href={"/sign-in"}
             className="header-action-link"
           >
             {t("signIn")}
@@ -154,7 +153,7 @@ export function MarketingHeader() {
           <MarketingButton
             variant="primary"
             size="sm"
-            href={`${env.webAppUrl}/sign-up`}
+            href={"/sign-up"}
             className="header-action-link"
           >
             {t("tryFree")}
@@ -201,7 +200,7 @@ export function MarketingHeader() {
           <MarketingButton
             variant="ghost"
             size="md"
-            href={`${env.webAppUrl}/sign-in`}
+            href={"/sign-in"}
             onClick={() => setMobileOpen(false)}
           >
             {t("signIn")}
@@ -209,7 +208,7 @@ export function MarketingHeader() {
           <MarketingButton
             variant="primary"
             size="md"
-            href={`${env.webAppUrl}/sign-up`}
+            href={"/sign-up"}
             onClick={() => setMobileOpen(false)}
           >
             {t("tryFree")}

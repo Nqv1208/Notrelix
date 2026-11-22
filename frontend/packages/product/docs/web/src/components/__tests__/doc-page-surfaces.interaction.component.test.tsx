@@ -353,6 +353,46 @@ describe("docs web pure surfaces", () => {
     expect(screen.queryByRole("button", { name: "Discuss" })).toBeNull();
   });
 
+  it("FUI[docs.page.bar:add-subpage] adds a subpage from the header, waits while it is added, and is absent when the viewer cannot edit", () => {
+    const onNewSubpage = vi.fn();
+    const ready = renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="saved"
+        callbacks={{ onNewSubpage }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: docsCopy.header.addSubpage }),
+    );
+    expect(onNewSubpage).toHaveBeenCalledTimes(1);
+    ready.unmount();
+
+    const busy = renderPureUi(
+      <DocPageBarSurface
+        copy={docsCopy}
+        header={HEADER}
+        saveState="saved"
+        callbacks={{ onNewSubpage, subpagePending: true }}
+      />,
+    );
+    const waiting = screen.getByRole("button", {
+      name: docsCopy.header.addingSubpage,
+    });
+    expect(waiting.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(waiting);
+    expect(onNewSubpage).toHaveBeenCalledTimes(1);
+    busy.unmount();
+
+    renderPureUi(
+      <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saved" />,
+    );
+    expect(
+      screen.queryByRole("button", { name: docsCopy.header.addSubpage }),
+    ).toBeNull();
+  });
+
   it("FUI[docs.page.bar:saving] shows a spinner while saving and a check only once saved", () => {
     const saving = renderPureUi(
       <DocPageBarSurface copy={docsCopy} header={HEADER} saveState="saving" />,

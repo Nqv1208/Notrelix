@@ -41,17 +41,17 @@ Letters follow the Accounts list in the team spec (section 4).
 
 | Letter | Capability | Use cases | DEFINED | IMPLEMENTING | INTEGRATING | HARDENING | DONE | BLOCKED |
 |---|---|---|---|---|---|---|---|---|
-| A | Account create | 3 | 2 | 0 | 1 | 0 | 0 | 0 |
+| A | Account create | 3 | 2 | 0 | 0 | 0 | 1 | 0 |
 | B | Account read | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | C | Account update | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
-| D | Account lifecycle transition | 6 | 2 | 2 | 0 | 2 | 0 | 0 |
-| E | Account-context resolution | 3 | 0 | 2 | 1 | 0 | 0 | 0 |
+| D | Account lifecycle transition | 6 | 1 | 3 | 0 | 0 | 2 | 0 |
+| E | Account-context resolution | 3 | 0 | 2 | 0 | 0 | 1 | 0 |
 | F | Account switch / transition behavior | 2 | 1 | 1 | 0 | 0 | 0 | 0 |
 | G | Account-scoped frontend state isolation | 3 | 1 | 2 | 0 | 0 | 0 | 0 |
 | H | Account-level administration integration | 20 | 5 | 12 | 1 | 0 | 2 | 0 |
-| | Total | 42 | 15 | 20 | 3 | 2 | 2 | 0 |
+| | Total | 42 | 14 | 21 | 1 | 0 | 6 | 0 |
 
-Two use cases are DONE, H10 and H14, built with the company sign-in (UC-IDN-B08): their acceptance lines are proven by tests, by the application-login HTTP stack and by a fake DNS resolver and provider, with no owner check and no Playwright run on the real stack. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
+Six use cases are DONE: A01 and E01 (personal Account provisioning and current-Account resolution), D01 and D02 (suspend and lift a suspension), and H10 and H14, built with the company sign-in (UC-IDN-B08): their acceptance lines are proven by tests, by the application-login HTTP stack and by a fake DNS resolver and provider, with no owner check and no Playwright run on the real stack. HARDENING is given only to D01 and D02, which `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` runs on the real stack through the operator console (suspend, a refused tenant write with `account.suspended`, reads still open, lift, a write accepted again). No other `frontend/e2e/real` spec exercises an Account use case (`email-confirmation.real.e2e.spec.ts` covers registration, which creates the personal Account as a side effect).
 
 How "IMPLEMENTING" is used here: for lifecycle, member, invitation, SCIM, region and route use cases the Domain aggregate and its tests exist, but no Application command, query or endpoint exists. They cannot run at all.
 
@@ -59,8 +59,8 @@ How "IMPLEMENTING" is used here: for lifecycle, member, invitation, SCIM, region
 
 1. The only Accounts API is `PUT /api/v1/accounts/rename`. There is no way to read an Account, list my Accounts, create a Team Account, or run any lifecycle, member, invitation, domain, SSO, SCIM, region or routing action.
 2. The frontend has no Account administration surface and no Account rename screen. The design canvas has no organization-admin artboard (`Final-Account` and `Final-M-Account` are the personal pages, owned by Identity).
-3. The frontend treats `User.id` as the Account id (`frontend/apps/web/src/providers/app-providers.tsx`, `frontend/packages/foundation/query/src/account-scope.ts`). The backend already returns the real `accountId` in the bootstrap result. Cache isolation is therefore proven against the wrong key.
-4. Server-side current-Account choice at bootstrap is not deterministic: it takes `FirstOrDefault()` over memberships without an order (`backend/src/Notrelix.Infrastructure/CrossContext/Identity/Bootstrap/IdentityBootstrapReadAdapter.cs`).
+3. Closed (2026-11-22, UC-ACC-E01): the frontend takes the Account scope from the bootstrap `accountId` (`frontend/apps/web/src/providers/account-scope-bridge.tsx`), not from `User.id`. Two features still read the bootstrap on their own (`onboarding-api.ts`, `account.service.ts`).
+4. Closed (2026-11-22, UC-ACC-E01): the bootstrap's current-Account choice is deterministic and ordered (`BootstrapAccountChoice`, used by `backend/src/Notrelix.Infrastructure/CrossContext/Identity/Bootstrap/IdentityBootstrapReadAdapter.cs`).
 5. No competing-write protection on Account changes: `RenameAccountCommand` carries no expected version (`ACC-020`).
 6. Account slug is not unique: `idx_account_slug` is a plain index (`backend/src/Notrelix.Infrastructure/Data/Configurations/Account/AccountConfiguration.cs`), and personal Account slugs come from the display name with no collision handling.
 7. Suspension and closure have no enforcement point. A suspended Account can still be renamed, and no other context reacts to the fact (`ACC-005`, `ACC-019`).
@@ -114,7 +114,7 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 
 | ID | Use case | Capability | Actors | BE | FE | Design | Real e2e | State | Gap |
 |---|---|---|---|---|---|---|---|---|---|
-| UC-ACC-A01 | Provision the personal Account at registration | A | New user (system action) | yes | n/a | none | partial | INTEGRATING | No Account assertion in a real spec; slug collision |
+| UC-ACC-A01 | Provision the personal Account at registration | A | New user (system action) | yes | n/a | none | partial | DONE | none |
 | UC-ACC-A02 | Create an additional Team Account (enterprise baseline) | A | Verified user | no | no | none | none | DEFINED | Command, endpoint, screen |
 | UC-ACC-A03 | Reject a duplicate Account identifier | A | Any creator | partial | no | none | none | DEFINED | Unique index, distinct error |
 | UC-ACC-B01 | Read the current Account | B | Account member | no | no | none | none | DEFINED | Query, endpoint, screen |
@@ -122,13 +122,13 @@ Column values: BE and FE say `yes`, `partial`, `domain only` (aggregate and test
 | UC-ACC-B03 | See the derived plan label | B | Account member | domain only | no | none | none | DEFINED | Billing fact, no PlanCode writer |
 | UC-ACC-C01 | Rename the Account | C | Account Owner, Admin | yes | no | none | none | IMPLEMENTING | Built: expected version and suspended refusal. Remaining: screen (owner question) |
 | UC-ACC-C02 | Set the legal name (enterprise baseline) | C | Account Owner, Admin | partial | no | none | none | DEFINED | Update operation, command |
-| UC-ACC-D01 | Suspend an Account | D | Platform operator | yes | yes | none | yes | HARDENING | Reactions of other contexts (D06), tenant banner, integrations in the impact preview |
-| UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | HARDENING | Same as D01 |
+| UC-ACC-D01 | Suspend an Account | D | Platform operator | yes | yes | none | yes | DONE | none |
+| UC-ACC-D02 | Lift a suspension | D | Platform operator | yes | yes | none | yes | DONE | none |
 | UC-ACC-D03 | Close an Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, impact preview, reactions |
 | UC-ACC-D04 | Reopen a closed Account | D | Account Owner | domain only | no | none | none | IMPLEMENTING | Command, reactions |
 | UC-ACC-D05 | Delete and restore an Account | D | Account Owner | domain only | no | none | none | DEFINED | decided 2026-11-01, not built (owner decision 3, §9 of the README): The account Owner deletes the Account; it takes its workspaces; same 30-day recoverable window, then a purge job hard-deletes with an audit fact. Export before deletion is not built. |
-| UC-ACC-D06 | Other contexts react to suspension and closure | D | System | no | no | none | none | DEFINED | Consumers in four contexts |
-| UC-ACC-E01 | Resolve the current Account for a request | E | Any signed-in actor | yes | partial | none | none | INTEGRATING | Non-deterministic bootstrap pick; FE uses User.id |
+| UC-ACC-D06 | Other contexts react to suspension and closure | D | System | partial | partial | none | none | IMPLEMENTING | Outbox fact and consumers not built; sessions not limited |
+| UC-ACC-E01 | Resolve the current Account for a request | E | Any signed-in actor | yes | yes | none | none | DONE | none |
 | UC-ACC-E02 | Deny access to another Account identically | E | Any actor | yes | no | none | none | IMPLEMENTING | Built: cross-tenant rename test. Remaining: FE denied state (owner question) |
 | UC-ACC-E03 | Carry Account context in background work | E | Worker | partial | n/a | none | none | IMPLEMENTING | Per-consumer proof |
 | UC-ACC-F01 | Switch the active Account | F | Multi-Account user | no | no | none | none | DEFINED | List, switcher, reset |
@@ -179,7 +179,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: [accounts](../../product/accounts.md) sections 67, ACC-001, ACC-007; IAREQ024, IAREQ025, IAREQ027; CORE-CERT-004; boundary exception BOUND-TX-004.
 - Acceptance: Given a valid registration, When it commits, Then exactly one Personal Account and one Owner member exist for that user. Given the Accounts step throws, When the request ends, Then no User row exists. Given two users with the same display name, When both register, Then both succeed with different slugs.
 - Evidence: BE `AccountProvisioningService`, `IAccountProvisioningActions` · FE registration flow (Identity) · Design none · Tests `AccountProvisioningServiceTests`, `RegisterTests`, `AccountTests` · Real e2e `email-confirmation.real.e2e.spec.ts` (registers; asserts no Account fact)
-- State: INTEGRATING — slug collision case, an Account assertion in the real spec, and the owner check.
+- State: DONE — Built: the personal slug is the name's slug plus a random 60-bit tail, so two people with the same display name never collide, and `idx_account_slug` is now unique (the migration first renames later duplicates by their own id) as the guarantee behind it; a display name up to 200 characters no longer fails registration (the Account name is cut to 160); one shared rule `PersonalAccountName.For` serves registration, OAuth sign-up and invited registration. Tests: `AccountProvisioningServiceTests` (slug shape, same-name pair, non-Latin name, longest name), `PersonalAccountProvisioningTests` (eight concurrent same-name registrations all commit with distinct slugs and Owners; a retried registration adds no second Account; the index rejects a duplicate slug naming `idx_account_slug`; the longest display name registers), `AccountSlugMigrationTests` (duplicates renamed except the oldest, then the index is unique), `RegistrationProvisioningTransactionEvidenceTests` (rollback leaves no User). No real e2e: the definition of done since 2026-11-19 has none, so the real spec `email-confirmation.real.e2e.spec.ts` still asserts no Account. Not built: a retry loop on the slug (uniqueness is built in, so none is needed), a plain slug without a tail (another Account's slug cannot be read under the registration scope).
 
 ### UC-ACC-A02 Create an additional Team Account (enterprise baseline)
 - Capability: A Account create
@@ -291,13 +291,13 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Preconditions: Account exists and is not Deleted.
 - Input: Account id, reason (required, up to 500 characters), `expectedVersion`.
 - Output: status Suspended, version +1, `AccountSuspended` fact with the previous status and reason, audit record. No content is deleted.
-- Main flow: 1. Operator selects the Account and sees the impact preview (members, Workspaces, integrations). 2. Confirms with the reason. 3. Accounts sets Suspended. 4. Other contexts react (D06).
+- Main flow: 1. Operator selects the Account and sees the impact preview (active members and Workspaces: the two counts of owner decision 2026-10-31, product section 14). 2. Confirms with the reason. 3. Accounts sets Suspended. 4. Other contexts react (D06).
 - No-op / rejection / concurrency / retry: already Suspended is a no-op. Stale version gives 409.
 - UI states: destructive confirmation (impact preview), conflict, pending; members of the Account see a suspended banner and read-only state.
 - Rules: accounts sections 14, 15, 72, ACC-005, ACC-019; IAREQ026, IAREQ030.
 - Acceptance: Given an Active Account, When an operator suspends it, Then status is Suspended, one event is raised and no data is deleted.
 - Evidence: BE `POST /operator/v1/accounts/{accountId}/suspend` (`Operator.Account.Suspend`, `OperatorAccountService`), the `AccountSuspended` access fact and the write refusal in `AccessPolicyEngine` · FE `frontend/apps/operator` (tenant detail, impact preview with two counts, reason dialog) · Design none (the canvas has no operator artboard) · Tests Domain `AccountOperatorLifecycleTests` (+`OperatorAccountTests`, `PlanRevisionTests`: 20 in all), Application `OperatorAccountServiceTests` (10: success, each rejection, no-op without audit, stale version), Integration `OperatorConsoleIntegrationTests` (29 on a real Postgres with the operator login: suspend blocks a workspace-scoped and a resource-scoped tenant write and keeps reads, audit row with actor, reason, before, after and time), Architecture `AccountSuspensionWriteGateArchitectureTests` (every tenant-scoped write loads the facts) · Real e2e `frontend/e2e/real/operator-suspension.real.e2e.spec.ts` (3 real specs passed 2026-11-01)
-- State: HARDENING — Other contexts do not react yet (D06: sessions, integrations, background and automation writes, anonymous form and webhook writes still run on a suspended Account); no suspended banner or read-only presentation in the tenant UI (the refusal shows as the generic error toast with the server message); the impact preview shows members and workspaces only; no design artboard exists for the console.
+- State: DONE — A suspended or closed Account is read-only wherever a write can start, and reads stay open. Authenticated writes are refused with `account.suspended` by the access policy (`AccountSuspensionWriteGateArchitectureTests`: every tenant-scoped write loads the fact; `AccountSuspensionAppRoleTests` on the application login: every write refused, reads open, lifting restores writes, nothing deleted). Automation runs (`AutomationAccountSuspensionTests`), outbound webhooks (`WebhookAccountSuspensionIntegrationTests`), public forms (`PublicFormAppRoleTests`), joining by invitation (`AccountMembershipFactsProviderTests`) and board imports queued before the suspension (`AccountSuspensionAppRoleTests.AnImportQueuedBeforeTheSuspension_IsRefusedAndCreatesNothing_ThenRunsOnceLifted`, shown to the person as "This account is suspended" in the import dialog) all stop or skip with the reason. The tenant UI shows the suspended banner and the read-only state (`AccountReadOnlyBanner`, `AccountSuspensionBridge`). Every other anonymous, system or token-scoped write is reviewed by name for suspension in `NonAuthenticatedWriteSuspensionReviewTests`, so a new one cannot slip past. Decisions: sessions are not cut (reads stay open, product section 14); retention purges of data the tenant already deleted carry on (suspension does not extend retention); the impact preview shows the two counts the owner decision names; the call media and calendar webhooks only reconcile their own bookkeeping and stay allowed. No real e2e (not part of the definition of done since 2026-11-19); the console has no design artboard, so its screens use design-system components. The outbox fact with consumers described in D06 is not built; the reactions read the fact at write time instead.
 
 ### UC-ACC-D02 Lift a suspension
 - Capability: D Account lifecycle transition
@@ -311,7 +311,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts sections 13, 14, 19; ACC-005.
 - Acceptance: Given a Suspended Account, When lifted, Then status is Active and members can write again.
 - Evidence: BE `POST /operator/v1/accounts/{accountId}/lift-suspension` (`Operator.Account.LiftSuspension`) · FE `frontend/apps/operator` tenant detail · Design none · Tests as D01 (a Closed Account can be neither suspended nor reactivated: `AccountOperatorLifecycleTests`; lifting an Active one is a no-op) · Real e2e `frontend/e2e/real/operator-suspension.real.e2e.spec.ts`
-- State: HARDENING — same limits as D01.
+- State: DONE — same proof as D01; `AccountSuspensionAppRoleTests.LiftingTheSuspension_RestoresWrites_AndNothingWasDeleted` shows members write again and nothing was deleted. An import refused during the suspension is not resumed by itself: the person starts it again.
 
 ### UC-ACC-D03 Close an Account
 - Capability: D Account lifecycle transition
@@ -367,7 +367,7 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Rules: accounts ACC-005, ACC-018, ACC-019; sections 64, 65; IAREQ030; IA-TST-ACCOUNT-INT-002.
 - Acceptance: Given an Account is suspended, When consumers run, Then Workspaces reject writes and no aggregate is mutated by Accounts directly.
 - Evidence: BE `AccountSuspendedDomainEvent`, `AccountArchivedDomainEvent` (raised, no mapper, no consumer) · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — public fact contract, four consumers, tests.
+- State: IMPLEMENTING — Built, by reading the Account fact at the moment of a write (`IAccountStatusFacts`) instead of by consuming an event: Workspaces refuse writes (access policy), automation, outbound webhooks, public forms and board imports stop or skip with `account.suspended`, joining by invitation is refused, and the tenant UI shows the banner (tests listed under D01). Not built as written here: the outbox fact with four consumers, Identity limiting sessions, Integrations pausing by event. Remaining: decide whether pause-and-resume semantics are wanted instead of refuse-at-write.
 
 ## E. Account-context resolution
 
@@ -378,20 +378,20 @@ Unless a block says otherwise, every Account admin write follows the Part 5 rule
 - Input: Account id hint from the route (`/api/v1/accounts/{accountId}/...`) or the account header; never from the body.
 - Output: the Account scope for the request, or a rejection.
 - Main flow: 1. Middleware reads the hint. 2. Tenant context records it. 3. The pipeline checks membership (grant projection) before any handler runs. 4. RLS enforces the same boundary in the database.
-- No-op / rejection / concurrency / retry: no hint on an Account-scoped endpoint gives a rejection. A hint for an Account the actor does not belong to gives the same NotFound as an unknown Account. Reads retry safely.
-- UI states: loading (bootstrap), permission denied (NotFound page), offline.
+- No-op / rejection / concurrency / retry: no hint on an Account-scoped endpoint gives a rejection. A hint for an Account the actor does not belong to gives 403 with the same body as an unknown Account (owner decision 16: a wrong-scope id answers 403, and existence must not leak). Reads retry safely.
+- UI states: loading (bootstrap), permission denied, offline.
 - Rules: ACC-002, ACC-017; IAREQ031, IAREQ032, IAREQ033; CORE-CERT-005; IA-TST-ACCOUNT-APP-001.
 - Acceptance: Given a member, When they call an Account-scoped endpoint with their Account id, Then it works. Given a body that names another Account id, When sent, Then the body value is ignored. Given a user with two memberships and no default, When bootstrap runs, Then the same Account is chosen every time.
 - Evidence: BE `HttpRequestContextMiddleware`, `TryGetAccountIdHint`, `IAccountRequest`, `AccountScopedEndpointAttribute`, `IdentityBootstrapReadAdapter`; Workspaces endpoints `GET /api/v1/accounts/{accountId}/workspaces`, `POST /api/v1/accounts/{accountId}/workspaces`, `GET /api/v1/accounts/{accountId}/workspaces/slug-check` · FE `useAccountId`, bootstrap `accountId` unused · Design none · Tests `GetBootstrapTests`, `RenameAccountPipelineAuthorizationTests` · Real e2e none
-- State: INTEGRATING — deterministic choice (order by default Workspace, then Owner role, then name), frontend using the real id, real e2e.
+- State: DONE — Built: the bootstrap choice is deterministic: default Workspace's Account, else an owned Account, else any membership (Owner role first, then Account name ignoring case, then Account id), else the lowest Account id of the member's Workspaces (`BootstrapAccountChoice`, `BootstrapAccountChoiceTests`: one test per tie-break and a permutation test). Under the application role over HTTP (`AccountResolutionAppRoleTests`): the same Account on every call, the default Workspace wins, another tenant's Account is never chosen or revealed, and an Account-scoped route answers a non-member's Account with the same 403 and body as an unknown id (owner decision 16). The web app now takes the Account scope from the bootstrap `accountId`, never `User.id` (`account-scope-bridge.component.test.tsx`: resolved, loading, failed with retry, no Account with retry and sign out, signed out, principal change). No real e2e (not part of the definition of done since 2026-11-19). Next: the two other bootstrap reads (`onboarding-api.ts`, `account.service.ts`) still do their own request.
 
 ### UC-ACC-E02 Deny access to another Account identically
 - Capability: E Account-context resolution
 - Actors and permission: any actor.
 - Preconditions: actor holds no active membership of the target Account.
 - Input: any Account-scoped request naming that Account.
-- Output: the identical NotFound as for an unknown id; no write; no existence leak in message, timing class or headers.
-- Main flow: 1. Pipeline finds no grant. 2. Returns NotFound. 3. Even if a handler bug skipped it, RLS returns zero rows.
+- Output: the identical 403 (status and body) as for an unknown id (owner decision 16); no write; no existence leak in message, timing class or headers.
+- Main flow: 1. Pipeline finds no grant. 2. Returns 403. 3. Even if a handler bug skipped it, RLS returns zero rows.
 - No-op / rejection / concurrency / retry: Suspended and Removed members are denied the same way for writes; Removed also for reads.
 - UI states: permission denied rendered as "not found".
 - Rules: ACC-017; IAREQ033, IAREQ034; IA-TST-ACCOUNT-APP-002.

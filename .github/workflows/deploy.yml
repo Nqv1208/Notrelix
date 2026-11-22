@@ -38,6 +38,30 @@ jobs:
         env: {HOST: '${{ vars.DEPLOY_HOST }}', PORT: '${{ vars.DEPLOY_SSH_PORT }}', USER: '${{ secrets.DEPLOY_SSH_USER }}', RID: '${{ inputs.release_id }}'}
         run: |
           remote="/tmp/notrelix-release-${RID//[^A-Za-z0-9_.-]/-}"; tar -C artifacts/deploy -czf - . | ssh -p "${PORT:-22}" "$USER@$HOST" "rm -rf '$remote' && mkdir -p '$remote' && tar -xzf - -C '$remote'"; echo "REMOTE_BUNDLE=$remote" >> "$GITHUB_ENV"
+      - name: Write app secrets from GitHub Environment
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+          PORT: ${{ vars.DEPLOY_SSH_PORT }}
+          USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_ENABLED: ${{ vars.EMAIL_ENABLED }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          EMAIL_FROM_NAME: ${{ vars.EMAIL_FROM_NAME }}
+          SMTP_ENABLED: ${{ vars.SMTP_ENABLED }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          SMTP_USERNAME: ${{ vars.SMTP_USERNAME }}
+          SMTP_FROM_EMAIL: ${{ vars.SMTP_FROM_EMAIL }}
+          SMTP_FROM_NAME: ${{ vars.SMTP_FROM_NAME }}
+          SMTP_ENABLE_SSL: ${{ vars.SMTP_ENABLE_SSL }}
+        run: |
+          # Allowlist of app-level keys; only non-empty values are written so an unset GitHub value never overrides the host env file.
+          keys=(RESEND_API_KEY SMTP_PASSWORD EMAIL_ENABLED EMAIL_FROM EMAIL_FROM_NAME SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USERNAME SMTP_FROM_EMAIL SMTP_FROM_NAME SMTP_ENABLE_SSL)
+          content=""; for k in "${keys[@]}"; do v="${!k:-}"; [[ -n "$v" ]] || continue; if [[ "$v" == *$'\n'* || "$v" == *$'\r'* ]]; then echo "::error::$k contains a newline"; exit 1; fi; content+="$k=$v"$'\n'; done
+          # Values travel on stdin only, never on the command line.
+          printf '%s' "$content" | ssh -p "${PORT:-22}" "$USER@$HOST" "p='$DEPLOY_PATH'; umask 077; cat > \"\$p/.env.secrets.tmp\" && mv -f \"\$p/.env.secrets.tmp\" \"\$p/.env.secrets\""
       - name: Promote same bytes and verify
         env:
           HOST: ${{ vars.DEPLOY_HOST }}
@@ -64,8 +88,9 @@ jobs:
           log(){ printf '%s release=%s sha=%s actor=%s result=%s images=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$RELEASE_ID" "$RELEASE_SHA" "$actor" "$1" "$(tr '\n' ' ' < "$current/images.env" 2>/dev/null)" >> "$path/deploy.log"; }
           # Custom-format dump taken before migrations; any failure aborts the deploy. Keeps the 5 newest.
           backup(){ local dir="$path/backups/pre-migrate" f; f="$dir/pre-$RELEASE_ID.dump"; umask 077; mkdir -p "$dir"; for _ in $(seq 1 60); do compose exec -T postgres pg_isready -h 127.0.0.1 >/dev/null 2>&1 && break; sleep 2; done; compose exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$f.tmp"; [[ -s "$f.tmp" ]]; mv "$f.tmp" "$f"; ls -1t "$dir"/pre-*.dump | tail -n +6 | xargs -r rm -f; }
-          compose(){ docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@" </dev/null; }
-          rollback(){ rc=$?; trap - ERR; rm -f "$path"/backups/pre-migrate/*.tmp; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then log failed-rollback-blocked; echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; log failed; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull </dev/null || true; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans </dev/null || true; fi; exit "$rc"; }
+          envs=(--env-file "$env_file"); [[ -f "$path/.env.secrets" ]] && envs+=(--env-file "$path/.env.secrets"); envs+=(--env-file "$current/images.env")
+          compose(){ docker compose "${envs[@]}" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@" </dev/null; }
+          rollback(){ rc=$?; trap - ERR; rm -f "$path"/backups/pre-migrate/*.tmp; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then log failed-rollback-blocked; echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; log failed; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose "${envs[@]}" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull </dev/null || true; docker compose "${envs[@]}" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans </dev/null || true; fi; exit "$rc"; }
           trap rollback ERR; compose config >/dev/null; compose pull
           mapfile -t stateful < <(grep -v '^$' "$current/stateful.services" || true); [[ ${#stateful[@]} -eq 0 ]] || compose up -d --no-build "${stateful[@]}"
           if [[ "$RUN_MIGRATIONS" == true && -n "$MIGRATION_SERVICE" ]]; then backup; [[ "$SCHEMA_CHANGE" == true ]] && migration_started=true; while read -r cmd; do [[ -n "$cmd" ]] && compose run --rm -T "$MIGRATION_SERVICE" "$cmd"; done < "$current/migration.commands"; fi

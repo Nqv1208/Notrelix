@@ -300,6 +300,61 @@ describe("WorkspaceSidebarSurface", () => {
     expect(collapse.getAttribute("aria-expanded")).toBe("true");
   });
 
+  it("FUI[workspace.sidebar:docs-add-child] adds a page inside a row, waits while it is added, and shows a pending row without a link", () => {
+    const onAddChild = vi.fn();
+    const base = sidebarDocsTreeFixture();
+    const { unmount } = renderSidebar(
+      {
+        location: { section: "doc", docId: "page-invoice" },
+        docsTree: { ...base, onAddChild },
+      },
+      sidebarMockupScenario(),
+    );
+    const group = screen.getByRole("group", { name: "Tài liệu" });
+    fireEvent.click(
+      within(group).getByRole("button", { name: "Thêm trang vào Quy trình" }),
+    );
+    expect(onAddChild).toHaveBeenCalledWith({
+      id: "page-process",
+      title: "Quy trình",
+    });
+    unmount();
+
+    renderSidebar(
+      {
+        location: { section: "doc", docId: "page-invoice" },
+        docsTree: {
+          ...base,
+          onAddChild,
+          addingChildOf: "page-process",
+          isPending: (id) => id === "page-invoice",
+        },
+      },
+      sidebarMockupScenario(),
+    );
+    onAddChild.mockClear();
+    const busy = screen.getByRole("button", {
+      name: "Đang thêm trang vào Quy trình",
+    });
+    expect(busy.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(busy);
+    expect(onAddChild).not.toHaveBeenCalled();
+    const row = screen.getByText("Nhập hoá đơn đầu vào");
+    expect(row.closest("a")).toBeNull();
+    expect(row.closest("[aria-busy]")).not.toBeNull();
+  });
+
+  it("FUI[workspace.sidebar:docs-add-child] hides the row action when the host gives none", () => {
+    renderSidebar(
+      {
+        location: { section: "doc", docId: "page-invoice" },
+        docsTree: sidebarDocsTreeFixture(),
+      },
+      sidebarMockupScenario(),
+    );
+    expect(screen.queryByRole("button", { name: /Thêm trang vào/ })).toBeNull();
+  });
+
   it("FUI[workspace.sidebar:setup] keeps every workspace setup link in a footer disclosure for owners and admins, in vi and en", () => {
     const cases = [
       {

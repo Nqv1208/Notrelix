@@ -7,6 +7,7 @@
 
 export { createUseLogin, type NavigationDeps } from "./hooks/use-login";
 export { createUseAuthUser } from "./hooks/use-auth-user";
+export { createUseBootstrapAccount } from "./hooks/use-bootstrap-account";
 export { createUseLogout } from "./hooks/use-logout";
 export { createUseForgotPassword } from "./hooks/use-forgot-password";
 export { createUseResetPassword } from "./hooks/use-reset-password";

@@ -529,6 +529,10 @@ export interface DocPageCallbacks {
   readonly onFocusBlock?: (blockId: string | null) => void;
   readonly onOpenFileMenu?: () => void;
   readonly onNewDoc?: () => void;
+  /** Adds an empty page inside the open page; absent when the viewer cannot edit it. */
+  readonly onNewSubpage?: () => void;
+  /** A subpage is being created; the header action waits. */
+  readonly subpagePending?: boolean;
   readonly onToggleDownload?: () => void;
   readonly onDownload?: (format: "pdf" | "markdown" | "html") => void;
   readonly onCloseOverlay?: () => void;

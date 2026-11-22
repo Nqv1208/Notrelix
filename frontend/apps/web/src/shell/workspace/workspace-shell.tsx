@@ -69,6 +69,7 @@ import { useWorkspaceBoards } from "@notrelix/work-management-state";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { useBoardPlacements } from "./board-placement-bridge";
 import { buildSidebarDocs } from "./docs-sidebar-tree";
+import { useAddChildPage } from "./use-add-child-page";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
 import { useSystemRailPreference } from "./use-system-rail-preference";
 import { useTabletSidebarPreference } from "./use-tablet-sidebar-preference";
@@ -288,6 +289,18 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     });
     // `docsRevealKey` covers the reveal list.
   }, [docsRevealKey]);
+  const expandDoc = useCallback(
+    (id: string) =>
+      setDocsExpanded((current) =>
+        current.has(id) ? current : new Set(current).add(id),
+      ),
+    [],
+  );
+  const addChild = useAddChildPage({
+    workspaceId,
+    copy: copy.sidebar,
+    expand: expandDoc,
+  });
   const docsTree = useMemo<SidebarDocsTree | null>(
     () =>
       docsTreeModel
@@ -302,9 +315,19 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                 else next.delete(id);
                 return next;
               }),
+            onAddChild: addChild.onAddChild,
+            addingChildOf: addChild.addingChildOf,
+            isPending: addChild.isPending,
           }
         : null,
-    [activeDocId, docsExpanded, docsTreeModel],
+    [
+      activeDocId,
+      addChild.addingChildOf,
+      addChild.isPending,
+      addChild.onAddChild,
+      docsExpanded,
+      docsTreeModel,
+    ],
   );
 
   // Archived Spaces leave the sidebar; their pages stay reachable by link.

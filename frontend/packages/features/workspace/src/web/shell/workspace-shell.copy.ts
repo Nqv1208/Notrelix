@@ -79,6 +79,15 @@ export const en = {
     docsTree: "Documents",
     docsExpand: "Expand {{name}}",
     docsCollapse: "Collapse {{name}}",
+    docsAddChild: "Add a page inside {{name}}",
+    docsUntitled: "Untitled document",
+    docsAddingChild: "Adding a page inside {{name}}",
+    docsAddChildFailed: "Could not add a page inside {{name}}. Try again.",
+    docsAddChildDenied:
+      "You can not add pages inside {{name}}. Ask an editor of that page.",
+    docsAddChildGone: "{{name}} is no longer available.",
+    docsAddChildTooDeep:
+      "{{name}} is nested as deep as pages can go. Add the page elsewhere.",
     board: "Board",
     doc: "Doc",
     setup: "Workspace setup",
@@ -284,6 +293,15 @@ export const vi: WorkspaceShellCopy = {
     docsTree: "Tài liệu",
     docsExpand: "Mở {{name}}",
     docsCollapse: "Thu gọn {{name}}",
+    docsAddChild: "Thêm trang vào {{name}}",
+    docsUntitled: "Tài liệu chưa đặt tên",
+    docsAddingChild: "Đang thêm trang vào {{name}}",
+    docsAddChildFailed: "Chưa thêm được trang vào {{name}}. Hãy thử lại.",
+    docsAddChildDenied:
+      "Bạn không thể thêm trang vào {{name}}. Hãy nhờ người chỉnh sửa trang đó.",
+    docsAddChildGone: "{{name}} không còn khả dụng.",
+    docsAddChildTooDeep:
+      "{{name}} đã lồng sâu hết mức cho phép. Hãy thêm trang ở nơi khác.",
     board: "Bảng",
     doc: "Tài liệu",
     setup: "Thiết lập workspace",

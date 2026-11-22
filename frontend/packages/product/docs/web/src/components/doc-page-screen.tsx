@@ -53,7 +53,7 @@ import {
   type CommentAnchor,
   type PageAttachment,
 } from "@notrelix/docs-core";
-import { fillDocCopy } from "./doc-page.copy";
+import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import { useDocPageCopy } from "./use-doc-page-copy";
 import type { UseDocPageHost } from "./doc-page-host";
 import {
@@ -175,6 +175,24 @@ function isSubtreeRefusal(error: unknown): boolean {
     (error as { code?: unknown } | null)?.code ===
     "documents.page.subtree-not-permitted"
   );
+}
+
+/** The sentence that says why a subpage was not added, by the kind of refusal. */
+function subpageFailureText(
+  error: unknown,
+  header: DocPageCopy["header"],
+): string {
+  const { status, details } = (error ?? {}) as {
+    status?: number;
+    details?: { ruleCode?: unknown };
+  };
+  return details?.ruleCode === "Documents_PageTree_MaxDepthExceeded"
+    ? header.subpageTooDeep
+    : status === 403
+      ? header.subpageDenied
+      : status === 404
+        ? header.subpageGone
+        : header.subpageFailed;
 }
 
 /** The ids of the pages the list holds below `rootId`, at any depth. */
@@ -1511,6 +1529,23 @@ export function createDocPageScreen({
             );
           }
         : undefined,
+      onNewSubpage: host.canEdit
+        ? () =>
+            createPage.mutate(
+              {
+                title: copy.untitled,
+                workspaceId,
+                parentId: pageId,
+                idempotencyKey: crypto.randomUUID(),
+              },
+              {
+                onSuccess: (created) => host.openPage?.(created.id),
+                onError: (error) =>
+                  host.notify?.(subpageFailureText(error, copy.header)),
+              },
+            )
+        : undefined,
+      subpagePending: createPage.isPending,
       onOpenShare: host.share ? () => setOverlay({ kind: "share" }) : undefined,
       onShareInvite: host.onShareInvite,
       onPanelTab: setPanelTab,

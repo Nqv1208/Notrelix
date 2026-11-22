@@ -42,6 +42,14 @@ export const vi = {
     hidePanel: "Ẩn bảng bên",
     more: "Thêm tuỳ chọn",
     moreUnavailable: "Tuỳ chọn khác chưa khả dụng.",
+    addSubpage: "Thêm trang con",
+    addingSubpage: "Đang thêm trang con",
+    subpageFailed: "Chưa thêm được trang con. Hãy thử lại.",
+    subpageDenied:
+      "Bạn không thể thêm trang con vào trang này. Hãy nhờ người chỉnh sửa trang.",
+    subpageGone: "Trang này không còn khả dụng.",
+    subpageTooDeep:
+      "Trang này đã lồng sâu hết mức cho phép. Hãy thêm trang ở nơi khác.",
   },
   menus: {
     label: "Menu tài liệu",
@@ -897,6 +905,14 @@ export const en: DocPageCopy = {
     hidePanel: "Hide side panel",
     more: "More options",
     moreUnavailable: "More options aren't available yet.",
+    addSubpage: "Add a subpage",
+    addingSubpage: "Adding a subpage",
+    subpageFailed: "Could not add the subpage. Try again.",
+    subpageDenied:
+      "You can not add a subpage to this page. Ask an editor of the page.",
+    subpageGone: "This page is no longer available.",
+    subpageTooDeep:
+      "This page is nested as deep as pages can go. Add the page elsewhere.",
   },
   menus: {
     label: "Document menu",

@@ -245,4 +245,13 @@ export interface SidebarDocsTree {
   /** Expanded node ids (departments and pages); the host persists them. */
   readonly expandedIds: ReadonlySet<string>;
   readonly onExpandedChange: (id: string, expanded: boolean) => void;
+  /**
+   * Adds a page inside this page. Absent hides the row action (nothing to
+   * create with, or the workspace is read-only).
+   */
+  readonly onAddChild?: (page: { id: string; title: string }) => void;
+  /** The page a child is being added to; its row action waits. */
+  readonly addingChildOf?: string | null;
+  /** Ids of rows that exist only until the server answers (not links yet). */
+  readonly isPending?: (id: string) => boolean;
 }

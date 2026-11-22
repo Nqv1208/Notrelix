@@ -72,7 +72,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Re
         _identityContext.Users.Add(user);
 
         // Create personal account through the Accounts-owned public provisioning action
-        var accountName = $"{request.Name}'s Account";
+        var accountName = PersonalAccountName.For(request.Name);
         var provisioning = await _provisioningActions.ProvisionPersonalAccountAsync(
             user.Id,
             request.Name,
