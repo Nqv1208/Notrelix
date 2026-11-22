@@ -4,7 +4,6 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { Messages } from "../messages/en";
 
-import { env } from "../config/env";
 import { Reveal } from "../components/reveal";
 import crops from "./story-crops.json";
 
@@ -13,7 +12,7 @@ type StoryId = keyof typeof crops;
 
 /** The crop each story shows and where its link goes. */
 const storyMeta: Record<StoryId, { card?: number; href: string }> = {
-  inbox: { href: `${env.webAppUrl}/sign-up` },
+  inbox: { href: "/sign-up" },
   sharing: { card: 576, href: "/legal/privacy" },
   departments: { card: 460, href: "#pricing" },
 };

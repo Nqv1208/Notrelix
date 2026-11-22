@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 import type { Messages } from "../messages/en";
 
 import { Badge } from "@notrelix/ui-web/components/ui/badge";
-import { env } from "../config/env";
 import { MarketingButton } from "../components/marketing-button";
 import { Reveal } from "../components/reveal";
 import { HeroOrbit } from "./hero-orbit";
@@ -49,7 +48,7 @@ export async function HeroSection() {
               <MarketingButton
                 variant="primary"
                 size="lg"
-                href={`${env.webAppUrl}/sign-up`}
+                href={"/sign-up"}
                 className="w-full sm:w-auto"
               >
                 {t("ctaPrimary")} <ArrowRight className="size-4" />
