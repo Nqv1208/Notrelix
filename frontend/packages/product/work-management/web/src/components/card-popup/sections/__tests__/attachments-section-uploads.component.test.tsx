@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, within } from "@notrelix/testing";
 import { en as pageCopy } from "../../../item-page/item-page.copy";
 import { showSection, T } from "./attachments-fixtures";
@@ -29,9 +29,7 @@ describe("item attachments: uploads on their way (UC-COL-B06)", () => {
   it("shows the percent as a polite status on a busy row", () => {
     showSection({ data: { uploads: [upload({})] } });
 
-    expect(screen.getByRole("status").textContent).toBe(
-      "Uploading 40%",
-    );
+    expect(screen.getByRole("status").textContent).toBe("Uploading 40%");
     const row = screen.getByText("so-lieu.xlsx").closest("[role=listitem]");
     expect(row?.getAttribute("aria-busy")).toBe("true");
   });

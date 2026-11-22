@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@notrelix/i18n";
-import {
-  createEvent,
-  fireEvent,
-  renderPureUi,
-  screen,
-} from "@notrelix/testing";
+import { fireEvent, renderPureUi, screen } from "@notrelix/testing";
 import { en } from "../card-popup.copy";
 import type { CardPopupModel } from "../card-popup-context";
 import { CardPopupSurface } from "../card-popup-surface";

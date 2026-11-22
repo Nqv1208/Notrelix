@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Notrelix.Application.Common.Idempotency;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Attachments;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;

@@ -24,13 +24,19 @@ public class DeletePageAttachmentCommandHandler : IRequestHandler<DeletePageAtta
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICommentTargetAccess _access;
+    private readonly IAttachmentTargetLock _targetLock;
+    private readonly ICurrentRequestContext _requestContext;
 
     public DeletePageAttachmentCommandHandler(
         ICollaborationDbContext context,
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
-        ICommentTargetAccess access)
+        ICommentTargetAccess access,
+        IAttachmentTargetLock targetLock,
+        ICurrentRequestContext requestContext)
     {
+        _targetLock = targetLock;
+        _requestContext = requestContext;
         _context = context;
         _currentUser = currentUser;
         _dateTimeProvider = dateTimeProvider;
@@ -40,6 +46,9 @@ public class DeletePageAttachmentCommandHandler : IRequestHandler<DeletePageAtta
     public async Task<Result> Handle(DeletePageAttachmentCommand request, CancellationToken ct)
     {
         var page = AttachmentTargets.Page;
+
+        // Same race guard as the board item delete: a concurrent second delete waits for the first commit and finds nothing.
+        await _targetLock.AcquireAsync(ResourceRef.Create(page, request.PageId, _requestContext.RequireWorkspaceId()), ct);
         var attachment = await _context.Attachments
             .FirstOrDefaultAsync(a => a.Id == request.AttachmentId
                 && a.Target.Kind == page

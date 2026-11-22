@@ -183,59 +183,64 @@ function LinkedPageRows({
       ) : null}
       {linked.pages.length + linked.hiddenCount > 0 ? (
         <div role="list" aria-label={t.pagesLabel}>
-      {linked.pages.map((page: LinkedPageDto) => {
-        const title = page.title || t.untitled;
-        const href = `/workspaces/${card.workspaceId}/docs/${page.pageId}`;
-        return (
-          <Row
-            key={page.pageId}
-            tile={<FileText aria-hidden="true" className="size-5" />}
-            tone="bg-brand-subtle text-brand-subtle-foreground"
-            name={title}
-            nameHref={href}
-            meta={fillPopupCopy(t.pageMeta, {
-              date:
-                formatDateTime(page.linkedAt, timeZone)?.split(",")[0] ?? "",
-            })}
-            actions={
-              <OptionsMenu label={fillPopupCopy(t.options, { name: title })}>
-                <DropdownMenuItem asChild>
-                  <a href={href} target="_blank" rel="noreferrer noopener">
-                    {t.openPage}
-                  </a>
-                </DropdownMenuItem>
-                {canEdit ? (
-                  <DropdownMenuItem
-                    onSelect={() =>
-                      onConfirm({
-                        title: fillPopupCopy(t.unlinkTitle, { name: title }),
-                        body: t.unlinkBody,
-                        action: t.unlinkConfirm,
-                        run: () =>
-                          linked.unlink.mutateAsync(page.pageId).then(
-                            () => true,
-                            () => false,
-                          ),
-                      })
-                    }
+          {linked.pages.map((page: LinkedPageDto) => {
+            const title = page.title || t.untitled;
+            const href = `/workspaces/${card.workspaceId}/docs/${page.pageId}`;
+            return (
+              <Row
+                key={page.pageId}
+                tile={<FileText aria-hidden="true" className="size-5" />}
+                tone="bg-brand-subtle text-brand-subtle-foreground"
+                name={title}
+                nameHref={href}
+                meta={fillPopupCopy(t.pageMeta, {
+                  date:
+                    formatDateTime(page.linkedAt, timeZone)?.split(",")[0] ??
+                    "",
+                })}
+                actions={
+                  <OptionsMenu
+                    label={fillPopupCopy(t.options, { name: title })}
                   >
-                    {t.unlinkPage}
-                  </DropdownMenuItem>
-                ) : null}
-              </OptionsMenu>
-            }
-          />
-        );
-      })}
-      {Array.from({ length: linked.hiddenCount }, (_, index) => (
-        <Row
-          key={`hidden-${index}`}
-          tile={<Lock aria-hidden="true" className="size-5" />}
-          tone="bg-state-hover-strong text-muted-foreground"
-          name={t.restricted}
-          meta={t.restrictedBody}
-        />
-      ))}
+                    <DropdownMenuItem asChild>
+                      <a href={href} target="_blank" rel="noreferrer noopener">
+                        {t.openPage}
+                      </a>
+                    </DropdownMenuItem>
+                    {canEdit ? (
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          onConfirm({
+                            title: fillPopupCopy(t.unlinkTitle, {
+                              name: title,
+                            }),
+                            body: t.unlinkBody,
+                            action: t.unlinkConfirm,
+                            run: () =>
+                              linked.unlink.mutateAsync(page.pageId).then(
+                                () => true,
+                                () => false,
+                              ),
+                          })
+                        }
+                      >
+                        {t.unlinkPage}
+                      </DropdownMenuItem>
+                    ) : null}
+                  </OptionsMenu>
+                }
+              />
+            );
+          })}
+          {Array.from({ length: linked.hiddenCount }, (_, index) => (
+            <Row
+              key={`hidden-${index}`}
+              tile={<Lock aria-hidden="true" className="size-5" />}
+              tone="bg-state-hover-strong text-muted-foreground"
+              name={t.restricted}
+              meta={t.restrictedBody}
+            />
+          ))}
         </div>
       ) : null}
     </>
@@ -375,152 +380,155 @@ export function AttachmentsSection() {
           </p>
         ) : null}
         {!unreadable && uploads.length + files.length > 0 ? (
-        <div role="list" aria-label={t.title}>
-        {uploads.map((upload) => (
-          <Row
-            key={upload.id}
-            busy={upload.status === "uploading"}
-            metaRole={upload.status === "error" ? "alert" : "status"}
-            tile={<FileIcon aria-hidden="true" className="size-5" />}
-            tone="bg-state-hover-strong text-muted-foreground"
-            name={upload.name}
-            meta={
-              upload.status === "error"
-                ? (
-                    pageCopy.files[upload.error ?? "failed"] ?? t.uploadFailed
-                  ).replace("{{limit}}", upload.limit ?? "")
-                : upload.progress == null
-                  ? t.uploadingPlain
-                  : fillPopupCopy(t.uploading, {
-                      percent: Math.round(upload.progress),
-                    })
-            }
-            actions={
-              <>
-                {upload.status === "error" && upload.retryable ? (
-                  <SmallBtn
-                    onClick={() => callbacks.onRetryUpload?.(upload.id)}
-                  >
-                    {t.retry}
-                  </SmallBtn>
-                ) : null}
-                <IconBtn
-                  small
-                  aria-label={fillPopupCopy(t.cancelUpload, {
-                    name: upload.name,
-                  })}
-                  onClick={() => callbacks.onDismissUpload?.(upload.id)}
-                >
-                  <X aria-hidden="true" className="size-4" />
-                </IconBtn>
-              </>
-            }
-          />
-        ))}
-        {files.map((file) => {
-          const isLink = file.kind === "link" || file.source === "link";
-          const tile = isLink
-            ? {
-                tone: "bg-state-hover-strong text-muted-foreground",
-                node: <Link2 aria-hidden="true" className="size-5" />,
-              }
-            : thumbOf(file);
-          const author = file.createdBy.name || t.unknownAuthor;
-          // Only an absolute http(s) address is a link; anything else stays plain text.
-          const webUrl = isLink && isWebUrl(file.url);
-          return (
-            <Row
-              key={file.id}
-              tile={tile.node}
-              tone={tile.tone}
-              name={file.name}
-              nameHref={webUrl && mode === "view" ? file.url : undefined}
-              meta={
-                mode === "create"
-                  ? fillPopupCopy(isLink ? t.queuedLink : t.queuedFile, {
-                      host: hostOf(file.url),
-                      size: formatFileSize(file.size, locale),
-                    })
-                  : isLink
-                    ? fillPopupCopy(t.linkMeta, {
-                        host: hostOf(file.url),
-                        date: date(file.createdAt).split(" ")[0] ?? "",
-                        author,
-                      })
-                    : fillPopupCopy(t.addedBy, {
-                        date: date(file.createdAt),
-                        size: formatFileSize(file.size, locale),
-                        author,
-                      })
-              }
-              actions={
-                mode === "create" ? (
-                  // A queued file is not stored yet: it leaves the draft at once.
-                  <IconBtn
-                    small
-                    aria-label={fillPopupCopy(t.removeQueued, {
-                      name: file.name,
-                    })}
-                    onClick={() => void callbacks.onDeleteFile?.(file)}
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </IconBtn>
-                ) : (
+          <div role="list" aria-label={t.title}>
+            {uploads.map((upload) => (
+              <Row
+                key={upload.id}
+                busy={upload.status === "uploading"}
+                metaRole={upload.status === "error" ? "alert" : "status"}
+                tile={<FileIcon aria-hidden="true" className="size-5" />}
+                tone="bg-state-hover-strong text-muted-foreground"
+                name={upload.name}
+                meta={
+                  upload.status === "error"
+                    ? (
+                        pageCopy.files[upload.error ?? "failed"] ??
+                        t.uploadFailed
+                      ).replace("{{limit}}", upload.limit ?? "")
+                    : upload.progress == null
+                      ? t.uploadingPlain
+                      : fillPopupCopy(t.uploading, {
+                          percent: Math.round(upload.progress),
+                        })
+                }
+                actions={
                   <>
-                    {!isLink && callbacks.onDownloadFile ? (
+                    {upload.status === "error" && upload.retryable ? (
+                      <SmallBtn
+                        onClick={() => callbacks.onRetryUpload?.(upload.id)}
+                      >
+                        {t.retry}
+                      </SmallBtn>
+                    ) : null}
+                    <IconBtn
+                      small
+                      aria-label={fillPopupCopy(t.cancelUpload, {
+                        name: upload.name,
+                      })}
+                      onClick={() => callbacks.onDismissUpload?.(upload.id)}
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </IconBtn>
+                  </>
+                }
+              />
+            ))}
+            {files.map((file) => {
+              const isLink = file.kind === "link" || file.source === "link";
+              const tile = isLink
+                ? {
+                    tone: "bg-state-hover-strong text-muted-foreground",
+                    node: <Link2 aria-hidden="true" className="size-5" />,
+                  }
+                : thumbOf(file);
+              const author = file.createdBy.name || t.unknownAuthor;
+              // Only an absolute http(s) address is a link; anything else stays plain text.
+              const webUrl = isLink && isWebUrl(file.url);
+              return (
+                <Row
+                  key={file.id}
+                  tile={tile.node}
+                  tone={tile.tone}
+                  name={file.name}
+                  nameHref={webUrl && mode === "view" ? file.url : undefined}
+                  meta={
+                    mode === "create"
+                      ? fillPopupCopy(isLink ? t.queuedLink : t.queuedFile, {
+                          host: hostOf(file.url),
+                          size: formatFileSize(file.size, locale),
+                        })
+                      : isLink
+                        ? fillPopupCopy(t.linkMeta, {
+                            host: hostOf(file.url),
+                            date: date(file.createdAt).split(" ")[0] ?? "",
+                            author,
+                          })
+                        : fillPopupCopy(t.addedBy, {
+                            date: date(file.createdAt),
+                            size: formatFileSize(file.size, locale),
+                            author,
+                          })
+                  }
+                  actions={
+                    mode === "create" ? (
+                      // A queued file is not stored yet: it leaves the draft at once.
                       <IconBtn
                         small
-                        aria-label={fillPopupCopy(t.downloadFile, {
+                        aria-label={fillPopupCopy(t.removeQueued, {
                           name: file.name,
                         })}
-                        title={t.download}
-                        onClick={() => callbacks.onDownloadFile?.(file)}
+                        onClick={() => void callbacks.onDeleteFile?.(file)}
                       >
-                        <Download aria-hidden="true" className="size-4" />
+                        <X aria-hidden="true" className="size-4" />
                       </IconBtn>
-                    ) : null}
-                    {webUrl || (canEdit && callbacks.onDeleteFile) ? (
-                      <OptionsMenu
-                        label={fillPopupCopy(t.options, { name: file.name })}
-                      >
-                        {webUrl ? (
-                          <DropdownMenuItem asChild>
-                            <a
-                              href={file.url}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                            >
-                              <ExternalLink aria-hidden="true" />
-                              {t.openLink}
-                            </a>
-                          </DropdownMenuItem>
-                        ) : null}
-                        {canEdit && callbacks.onDeleteFile ? (
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() =>
-                              ask({
-                                title: fillPopupCopy(t.deleteTitle, {
-                                  name: file.name,
-                                }),
-                                body: t.deleteBody,
-                                action: t.deleteConfirm,
-                                run: () => callbacks.onDeleteFile!(file),
-                              })
-                            }
+                    ) : (
+                      <>
+                        {!isLink && callbacks.onDownloadFile ? (
+                          <IconBtn
+                            small
+                            aria-label={fillPopupCopy(t.downloadFile, {
+                              name: file.name,
+                            })}
+                            title={t.download}
+                            onClick={() => callbacks.onDownloadFile?.(file)}
                           >
-                            {t.deleteFile}
-                          </DropdownMenuItem>
+                            <Download aria-hidden="true" className="size-4" />
+                          </IconBtn>
                         ) : null}
-                      </OptionsMenu>
-                    ) : null}
-                  </>
-                )
-              }
-            />
-          );
-        })}
-        </div>
+                        {webUrl || (canEdit && callbacks.onDeleteFile) ? (
+                          <OptionsMenu
+                            label={fillPopupCopy(t.options, {
+                              name: file.name,
+                            })}
+                          >
+                            {webUrl ? (
+                              <DropdownMenuItem asChild>
+                                <a
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                >
+                                  <ExternalLink aria-hidden="true" />
+                                  {t.openLink}
+                                </a>
+                              </DropdownMenuItem>
+                            ) : null}
+                            {canEdit && callbacks.onDeleteFile ? (
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() =>
+                                  ask({
+                                    title: fillPopupCopy(t.deleteTitle, {
+                                      name: file.name,
+                                    }),
+                                    body: t.deleteBody,
+                                    action: t.deleteConfirm,
+                                    run: () => callbacks.onDeleteFile!(file),
+                                  })
+                                }
+                              >
+                                {t.deleteFile}
+                              </DropdownMenuItem>
+                            ) : null}
+                          </OptionsMenu>
+                        ) : null}
+                      </>
+                    )
+                  }
+                />
+              );
+            })}
+          </div>
         ) : null}
         {mode === "view" ? (
           <LinkedPageRows canEdit={canEdit} onConfirm={ask} />

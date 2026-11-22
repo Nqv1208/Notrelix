@@ -113,7 +113,10 @@ export interface CardPopupActions {
   /** Deletes a board label (it leaves every card); resolves false when refused. */
   readonly removeLabel?: (labelId: string) => Promise<boolean>;
   /** Attaches a web link (CreateBoardItemAttachment with a URL); says why when refused. */
-  readonly addWebLink?: (url: string, name: string) => Promise<LinkAttachResult>;
+  readonly addWebLink?: (
+    url: string,
+    name: string,
+  ) => Promise<LinkAttachResult>;
   /** Links a Documents page to the card (LinkPageToBoardItem). */
   readonly linkPage?: (pageId: string) => Promise<boolean>;
 }

@@ -2074,6 +2074,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<DeletePageAttachmentCommand, Result>,
             DeletePageAttachmentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<DeleteAttachmentCommand, Result>,
+            DeleteAttachmentCommandHandler>();
+        services.AddScoped<IAttachmentTargetLock, Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<MoveBoardItemUseCase>();

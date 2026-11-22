@@ -227,7 +227,7 @@ public sealed class PageAttachmentTests
     public async Task DeletePage_RemovesOnlyAnAttachmentOfThatPage()
     {
         var row = await UploadAsync(PageId);
-        var handler = new DeletePageAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll());
+        var handler = new DeletePageAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll(), new InMemoryAttachmentTargetLock(), _request);
 
         var wrongPage = () => handler.Handle(new DeletePageAttachmentCommand(OtherPageId, row.Id), default);
         await wrongPage.Should().ThrowAsync<NotFoundException>();
@@ -243,12 +243,33 @@ public sealed class PageAttachmentTests
     public async Task BoardItemDelete_DoesNotRemoveAPageAttachment()
     {
         var row = await UploadAsync(PageId);
-        var handler = new DeleteAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll());
+        var handler = new DeleteAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll(), new InMemoryAttachmentTargetLock(), _request);
 
         var act = () => handler.Handle(new DeleteAttachmentCommand(ItemId, row.Id), default);
 
         await act.Should().ThrowAsync<NotFoundException>();
         row.IsDeleted.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Delete_TakesTheTargetLock_SoAConcurrentSecondDeleteWaitsAndFindsNothing()
+    {
+        var pageRow = await UploadAsync(PageId);
+        var pageLock = new InMemoryAttachmentTargetLock();
+        await new DeletePageAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll(), pageLock, _request)
+            .Handle(new DeletePageAttachmentCommand(PageId, pageRow.Id), default);
+
+        var itemRow = Attachment.CreateStoredFile(
+            AccountId, WorkspaceId, ResourceRef.Create(AttachmentTargets.BoardItem, ItemId, WorkspaceId),
+            AttachmentType.Image, "item.png", Png.Length, "image/png",
+            $"{AccountId:N}/{WorkspaceId:N}/attachments/{Guid.NewGuid():N}", 1024 * 1024, 0, 50, _request.UserId, DateTimeOffset.UtcNow);
+        _rows.Add(itemRow);
+        var itemLock = new InMemoryAttachmentTargetLock();
+        await new DeleteAttachmentCommandHandler(Db(), CurrentUser(), new Clock(), AllowAll(), itemLock, _request)
+            .Handle(new DeleteAttachmentCommand(ItemId, itemRow.Id), default);
+
+        pageLock.Acquired.Should().ContainSingle().Which.Should().Match<ResourceRef>(t => t.Kind == AttachmentTargets.Page && t.ResourceId == PageId);
+        itemLock.Acquired.Should().ContainSingle().Which.Should().Match<ResourceRef>(t => t.Kind == AttachmentTargets.BoardItem && t.ResourceId == ItemId);
     }
 
     [Fact]

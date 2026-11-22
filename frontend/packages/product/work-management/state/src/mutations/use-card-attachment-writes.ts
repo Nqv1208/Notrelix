@@ -79,7 +79,8 @@ export function useCardAttachmentWrites(cardId: string, workspaceId: string) {
     async (url: string, name: string): Promise<LinkAttachResult> => {
       if (!isWebUrl(url)) return { ok: false, reason: "invalid" };
       const action = JSON.stringify([url, name]);
-      const idempotencyKey = linkKeys.current.get(action) ?? crypto.randomUUID();
+      const idempotencyKey =
+        linkKeys.current.get(action) ?? crypto.randomUUID();
       linkKeys.current.set(action, idempotencyKey);
       try {
         await cards.createCardLink(cardId, { url, name }, { idempotencyKey });

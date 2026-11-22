@@ -411,7 +411,7 @@ describe("registering a link (UC-COL-B09)", () => {
     await add("https://example.com/spec");
     await add("https://example.com/other");
     const keys = linkPosts(page).map(
-      (call) => (call as unknown[][])[2] as { idempotencyKey: string },
+      (call) => (call as unknown as unknown[])[2] as { idempotencyKey: string },
     );
     expect(keys).toHaveLength(3);
     expect(keys[1]?.idempotencyKey).toBe(keys[0]?.idempotencyKey);
