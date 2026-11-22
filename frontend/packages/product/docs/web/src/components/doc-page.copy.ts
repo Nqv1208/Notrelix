@@ -589,6 +589,10 @@ export const vi = {
     heading: 'Công việc khớp "{{query}}"',
     footer: "↵ chèn · ⇧↵ tạo việc mới từ chữ đang gõ",
     none: "Không có công việc nào khớp.",
+    peopleLoading: "Đang tải danh sách người…",
+    peopleEmpty: "Không có ai để nhắc",
+    peopleError: "Không tải được danh sách người.",
+    peopleRetry: "Thử lại",
   },
   blockHandle: {
     label: "Kéo để di chuyển khối (Alt+Shift+↑/↓)",
@@ -1441,6 +1445,10 @@ export const en: DocPageCopy = {
     heading: 'Tasks matching "{{query}}"',
     footer: "↵ insert · ⇧↵ create a new task from the typed text",
     none: "No task matches.",
+    peopleLoading: "Loading people…",
+    peopleEmpty: "No people to mention",
+    peopleError: "Could not load people.",
+    peopleRetry: "Try again",
   },
   blockHandle: {
     label: "Drag to move block (Alt+Shift+↑/↓)",

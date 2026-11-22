@@ -3,6 +3,7 @@ import type { BlockType, Page } from "@notrelix/docs-core";
 import type { DocsRealtime } from "@notrelix/docs-collaboration";
 import type {
   DocBoardEmbed,
+  DocMentionPeople,
   DocPerson,
   DocPickerBoardView,
   DocShareView,
@@ -34,8 +35,11 @@ export interface DocPageHost {
   readonly boardChoices?: readonly DocPickerBoardView[];
   /** Tasks matching a typed key or title, for the mention list. */
   readonly suggestTasks: (query: string) => readonly DocTaskRef[];
-  /** Workspace members matching a typed name, for the mention list; omitted offers none. */
-  readonly suggestMembers?: (query: string) => readonly DocPerson[];
+  /**
+   * The people the mention list offers for the text after "@" (the host reads them from the server for the
+   * `mentionQuery` it was given; only people who can view the page); omitted offers none.
+   */
+  readonly mentionPeople?: DocMentionPeople;
   /** The share dialog's facts; `null` keeps Share disabled. */
   readonly share: DocShareView | null;
   /** Why the viewer sees a private department's page, when they do. */

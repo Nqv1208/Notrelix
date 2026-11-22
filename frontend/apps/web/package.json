@@ -26,6 +26,7 @@
     "@notrelix/features-auth": "workspace:*",
     "@notrelix/features-billing": "workspace:*",
     "@notrelix/features-chat": "workspace:*",
+    "@notrelix/features-collaboration": "workspace:*",
     "@notrelix/features-notifications": "workspace:*",
     "@notrelix/features-search": "workspace:*",
     "@notrelix/features-workspace": "workspace:*",

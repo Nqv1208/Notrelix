@@ -8,6 +8,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenCommen
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
+using Notrelix.Application.Features.Collaboration.Mentions.Queries.GetMentionSuggestions;
 using Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
 using Notrelix.Application.Features.Documents.Pages.Commands.PublishPage;
 using Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens;
@@ -61,6 +62,8 @@ public sealed class ApiTokenScopeMapTests
         ScopeFor(pageComment).Should().Be("docs:write");
         ScopeFor(GetCommentsQuery.ForBoardItem(Guid.NewGuid())).Should().Be("work:read");
         ScopeFor(GetCommentsQuery.ForPage(Guid.NewGuid())).Should().Be("docs:read");
+        ScopeFor(GetMentionSuggestionsQuery.ForBoardItem(Guid.NewGuid(), null, null)).Should().Be("work:read");
+        ScopeFor(GetMentionSuggestionsQuery.ForPage(Guid.NewGuid(), null, null)).Should().Be("docs:read");
         ScopeFor(new UploadPageAttachmentCommand(Guid.NewGuid(), "a.txt", Stream.Null)).Should().Be("docs:write");
     }
 

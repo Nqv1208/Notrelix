@@ -16,6 +16,16 @@ export interface DocPerson {
   readonly tone: DocTone;
 }
 
+/**
+ * The people "@" offers for the typed text, as the server answered (only people who can view the page).
+ * `loading`: no answer yet; `error`: the read failed and `onRetry` repeats it.
+ */
+export interface DocMentionPeople {
+  readonly people: readonly DocPerson[];
+  readonly status: "loading" | "error" | "success";
+  readonly onRetry?: () => void;
+}
+
 export type DocTaskStatus = "todo" | "doing" | "review" | "done";
 
 /** How a task's due date reads next to it (the container does the date math). */

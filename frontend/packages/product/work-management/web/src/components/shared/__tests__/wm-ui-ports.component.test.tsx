@@ -23,6 +23,11 @@ describe("Work Management UI ports", () => {
         error: null,
         refetch: () => undefined,
       }),
+      useMentionSuggestions: () => ({
+        people: [],
+        status: "success",
+        retry: () => undefined,
+      }),
     };
     const { container } = renderPureUi(
       <WmUiPortsProvider ports={ports}>

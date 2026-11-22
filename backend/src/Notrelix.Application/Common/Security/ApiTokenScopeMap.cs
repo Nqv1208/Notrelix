@@ -58,6 +58,7 @@ public static class ApiTokenScopeMap
     {
         "Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment.CreateCommentCommand",
         "Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments.GetCommentsQuery",
+        "Notrelix.Application.Features.Collaboration.Mentions.Queries.GetMentionSuggestions.GetMentionSuggestionsQuery",
         "Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction.AddReactionCommand",
         "Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction.RemoveReactionCommand",
         "Notrelix.Application.Features.Collaboration.Attachments.Queries.GetBoardItemAttachments.GetBoardItemAttachmentsQuery",

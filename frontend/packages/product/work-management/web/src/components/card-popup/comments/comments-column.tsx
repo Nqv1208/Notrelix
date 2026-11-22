@@ -35,7 +35,6 @@ import {
   MentionList,
   useMentionField,
 } from "../../item-page/item-page-mention";
-import type { ItemPagePeople } from "../../item-page/item-page-types";
 import { itemPageCopy } from "../../item-page/item-page.copy";
 import { useCardPopup } from "../card-popup-context";
 import { IconBtn, PanelBtn, PersonMark, SmallBtn } from "../popup-ui";
@@ -476,22 +475,11 @@ function Composer() {
       }),
   });
   const pageCopy = itemPageCopy(copy.locale === "vi" ? "vi" : "en");
-  const members = card.members.length > 0 ? card.members : card.watchers;
-  const offered: ItemPagePeople = data.people ?? {
-    people: members.map((m) => ({
-      userId: m.userId,
-      name: m.name,
-      department: null,
-      openCount: null,
-      onBoard: true,
-    })),
-    canInvite: false,
-  };
+  // The people "@" offers come from the server read for this item (only people who can view it).
   const mention = useMentionField({
     draft,
-    people: offered,
-    copy: pageCopy,
-    viewerUserId: data.viewerUserId,
+    workspaceId: card.workspaceId,
+    itemId: card.id,
   });
   // A card that is not created yet has no comments: the composer waits, as the artboard draws it.
   if (mode === "create")
@@ -534,11 +522,13 @@ function Composer() {
       {mention.listOpen ? (
         <MentionList
           candidates={mention.candidates}
+          status={mention.status}
           query={mention.token?.query ?? ""}
           activeIndex={mention.activeIndex}
           copy={pageCopy}
           onPick={mention.pick}
           onHover={mention.setActive}
+          onRetry={mention.retry}
         />
       ) : null}
       <Textarea
@@ -579,7 +569,6 @@ function Composer() {
           small
           aria-label={t.mentionLabel}
           title={t.mentionLabel}
-          disabled={offered.people.length === 0}
           onClick={mention.openAtEnd}
         >
           <AtSign aria-hidden="true" className="size-4" />

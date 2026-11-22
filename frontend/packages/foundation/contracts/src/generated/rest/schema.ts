@@ -2019,6 +2019,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{boardItemId}/mention-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest people to mention on a board item
+         * @description Active, non-Guest workspace members who can see the item's board, never the caller. query matches the start of any word of the name (case and accents ignored, at most 64 characters); limit defaults to 8, at most 20.
+         */
+        get: operations["Collaboration.Mentions.GetBoardItemMentionSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/mention-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest people to mention on a page
+         * @description Active, non-Guest workspace members who can view the page, never the caller. query matches the start of any word of the name (case and accents ignored, at most 64 characters); limit defaults to 8, at most 20.
+         */
+        get: operations["Collaboration.Mentions.GetPageMentionSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/inbox/summary": {
         parameters: {
             query?: never;
@@ -10850,6 +10890,12 @@ export interface components {
             userId?: string;
             name?: string | null;
         };
+        "Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatarUrl?: string | null;
+        };
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
             /** Format: int32 */
             marked?: number;
@@ -19368,6 +19414,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
+                };
+            };
+        };
+    };
+    "Collaboration.Mentions.GetBoardItemMentionSuggestions": {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                boardItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto"][];
+                };
+            };
+        };
+    };
+    "Collaboration.Mentions.GetPageMentionSuggestions": {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto"][];
                 };
             };
         };

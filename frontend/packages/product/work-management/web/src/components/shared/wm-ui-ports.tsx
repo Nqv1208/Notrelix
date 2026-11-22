@@ -15,6 +15,18 @@ export interface RelationTargetView {
   readonly refetch: () => unknown;
 }
 
+/** The people an item's comment can @mention, as the server answered for the typed text. */
+export interface MentionSuggestionsView {
+  readonly people: readonly {
+    readonly userId: string;
+    readonly name: string;
+    readonly avatarUrl: string | null;
+  }[];
+  /** `loading`: no answer yet for this item; `error`: the read failed and `retry` repeats it. */
+  readonly status: "loading" | "error" | "success";
+  readonly retry: () => void;
+}
+
 /**
  * The data pure surfaces need that only the host can read (the pure UI rule forbids the state package):
  * each entry is a hook the host fills with its query. Without a host the surfaces show no image and an
@@ -31,7 +43,19 @@ export interface WmUiPorts {
     boardId: string | undefined,
     workspaceId: string,
   ) => RelationTargetView;
+  /** Who can be mentioned on an item (only people who can view it); `query` is `null` while no "@" is open. */
+  readonly useMentionSuggestions: (
+    workspaceId: string,
+    itemId: string,
+    query: string | null,
+  ) => MentionSuggestionsView;
 }
+
+const NO_SUGGESTIONS: MentionSuggestionsView = {
+  people: [],
+  status: "success",
+  retry: () => undefined,
+};
 
 const NO_TARGET: RelationTargetView = {
   groups: [],
@@ -43,6 +67,8 @@ const NO_TARGET: RelationTargetView = {
 const WmUiPortsContext = createContext<WmUiPorts>({
   useCardImageUrl: () => null,
   useRelationTarget: () => NO_TARGET,
+  // Without a host nobody is offered: a client list of "everyone" would leak people.
+  useMentionSuggestions: () => NO_SUGGESTIONS,
 });
 
 /** The host (see `WorkManagementUiPortsHost`) or a test supplies the ports. */
