@@ -8,7 +8,6 @@ import type { Messages } from "../messages/en";
 import { Reveal } from "../components/reveal";
 import { SectionHeading } from "../components/section-heading";
 import { MarketingButton } from "../components/marketing-button";
-import { env } from "../config/env";
 
 type BillingCycle = "monthly" | "yearly";
 
@@ -111,11 +110,7 @@ export function PricingTeaserSection() {
                         : "secondary"
                   }
                   size="md"
-                  href={
-                    plan.name === "Enterprise"
-                      ? "/contact"
-                      : `${env.webAppUrl}/sign-up`
-                  }
+                  href={plan.name === "Enterprise" ? "/contact" : "/sign-up"}
                   className="mt-7 w-full"
                 >
                   {plan.name === "Enterprise"
