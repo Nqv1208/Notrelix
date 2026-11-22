@@ -50,7 +50,8 @@ jobs:
           ALLOW_STATEFUL: ${{ vars.DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE }}
           ACTOR: ${{ github.actor }}
         run: |
-          ssh -p "${PORT:-22}" "$USER@$HOST" bash -s -- "$DEPLOY_PATH" "$ENV_FILE" "$HEALTH" "$SMOKE" "${ALLOW_STATEFUL:-false}" "$REMOTE_BUNDLE" "$ACTOR" <<'REMOTE'
+          set -o pipefail; out="$(mktemp)"
+          ssh -p "${PORT:-22}" "$USER@$HOST" bash -s -- "$DEPLOY_PATH" "$ENV_FILE" "$HEALTH" "$SMOKE" "${ALLOW_STATEFUL:-false}" "$REMOTE_BUNDLE" "$ACTOR" <<'REMOTE' | tee "$out"
           set -euo pipefail
           path="$1"; env_file="$2"; health="$3"; smoke="$4"; allow_stateful="$5"; incoming="$6"; actor="$7"; cd "$path"; source "$incoming/metadata.env"
           [[ "$ROLLBACK_AFTER_SCHEMA_CHANGE" == manual && "$STATEFUL_IMAGE_CHANGE_POLICY" == explicit-override && "$ROLLOUT_STRATEGY" == rolling ]]
@@ -63,13 +64,16 @@ jobs:
           log(){ printf '%s release=%s sha=%s actor=%s result=%s images=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$RELEASE_ID" "$RELEASE_SHA" "$actor" "$1" "$(tr '\n' ' ' < "$current/images.env" 2>/dev/null)" >> "$path/deploy.log"; }
           # Custom-format dump taken before migrations; any failure aborts the deploy. Keeps the 5 newest.
           backup(){ local dir="$path/backups/pre-migrate" f; f="$dir/pre-$RELEASE_ID.dump"; umask 077; mkdir -p "$dir"; for _ in $(seq 1 60); do compose exec -T postgres pg_isready -h 127.0.0.1 >/dev/null 2>&1 && break; sleep 2; done; compose exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$f.tmp"; [[ -s "$f.tmp" ]]; mv "$f.tmp" "$f"; ls -1t "$dir"/pre-*.dump | tail -n +6 | xargs -r rm -f; }
-          compose(){ docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@"; }
-          rollback(){ rc=$?; trap - ERR; rm -f "$path"/backups/pre-migrate/*.tmp; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then log failed-rollback-blocked; echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; log failed; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull || true; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans || true; fi; exit "$rc"; }
+          compose(){ docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" "$@" </dev/null; }
+          rollback(){ rc=$?; trap - ERR; rm -f "$path"/backups/pre-migrate/*.tmp; if [[ "$stateful_changed" == true || ( "$SCHEMA_CHANGE" == true && "$migration_started" == true ) ]]; then log failed-rollback-blocked; echo 'automatic rollback blocked by stateful/schema transition' >&2; exit "$rc"; fi; log failed; if [[ -d "$previous" ]]; then source "$previous/metadata.env"; git checkout --quiet --detach "$RELEASE_SHA" || true; rm -rf "$current"; cp -a "$previous" "$current"; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" pull </dev/null || true; docker compose --env-file "$env_file" --env-file "$current/images.env" -f docker-compose.yml -f "$COMPOSE_OVERLAY" -f "$current/release.generated.yml" up -d --no-build --remove-orphans </dev/null || true; fi; exit "$rc"; }
           trap rollback ERR; compose config >/dev/null; compose pull
           mapfile -t stateful < <(grep -v '^$' "$current/stateful.services" || true); [[ ${#stateful[@]} -eq 0 ]] || compose up -d --no-build "${stateful[@]}"
-          if [[ "$RUN_MIGRATIONS" == true && -n "$MIGRATION_SERVICE" ]]; then backup; [[ "$SCHEMA_CHANGE" == true ]] && migration_started=true; while read -r cmd; do [[ -n "$cmd" ]] && compose run --rm "$MIGRATION_SERVICE" "$cmd"; done < "$current/migration.commands"; fi
+          if [[ "$RUN_MIGRATIONS" == true && -n "$MIGRATION_SERVICE" ]]; then backup; [[ "$SCHEMA_CHANGE" == true ]] && migration_started=true; while read -r cmd; do [[ -n "$cmd" ]] && compose run --rm -T "$MIGRATION_SERVICE" "$cmd"; done < "$current/migration.commands"; fi
           compose up -d --no-build --remove-orphans; ok=false; for _ in $(seq 1 75); do curl -fsS --max-time 5 "$health" >/dev/null && { ok=true; break; }; sleep 2; done; [[ "$ok" == true ]]; curl -fsS --max-time 10 "$smoke" >/dev/null; rm -rf "$previous" "$incoming"; trap - ERR; log success
+          echo NOTRELIX_DEPLOY_COMPLETE
           REMOTE
+          # A truncated remote script (stdin swallowed) exits 0; only the final marker proves it ran to the end.
+          grep -qx NOTRELIX_DEPLOY_COMPLETE "$out"
       - name: Deploy log line
         if: always()
         env: {HOST: '${{ vars.DEPLOY_HOST }}', PORT: '${{ vars.DEPLOY_SSH_PORT }}', USER: '${{ secrets.DEPLOY_SSH_USER }}', DEPLOY_PATH: '${{ vars.DEPLOY_PATH }}'}

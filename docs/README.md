@@ -239,6 +239,7 @@ docs/
 │
 ├── architecture/
 │   ├── system-overview.md
+│   ├── overview.md
 │   ├── bounded-context-map.md
 │   ├── contract-boundaries.md
 │   ├── data-ownership-and-consistency.md

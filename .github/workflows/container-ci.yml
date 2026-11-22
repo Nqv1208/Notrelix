@@ -13,8 +13,8 @@ permissions:
 
 env:
   TRIVY_SEVERITY: CRITICAL,HIGH
-  # New upstream CVEs in base images block main, release/** and manual runs only; other runs print the findings.
-  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'workflow_dispatch') && '1' || '0' }}
+  # New upstream CVEs in base images block main, release/**, scheduled and manual runs only; other runs print the findings.
+  TRIVY_EXIT_CODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && '1' || '0' }}
   FALLBACK_BACKEND_IMAGE_NAME: notrelix-backend
   FALLBACK_WEB_IMAGE_NAME: notrelix-web
   FALLBACK_MARKETING_IMAGE_NAME: notrelix-marketing
@@ -43,6 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.source_sha || github.sha }}
           fetch-depth: 0
       - id: called
         if: inputs.source_sha != ''
@@ -145,6 +146,7 @@ jobs:
       IMAGE: notrelix-ci/backend:${{ github.sha }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {ref: "${{ inputs.source_sha || github.sha }}"}
       - name: Build backend image with locked build arguments
         env:
           BUILD_ARGS: ${{ needs.changes.outputs.backend_build_args }}
@@ -280,6 +282,7 @@ jobs:
       IMAGE: notrelix-ci/web:${{ github.sha }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {ref: "${{ inputs.source_sha || github.sha }}"}
       - name: Build web image with locked build arguments
         env:
           BUILD_ARGS: ${{ needs.changes.outputs.web_build_args }}
@@ -357,6 +360,7 @@ jobs:
       IMAGE: notrelix-ci/marketing:${{ github.sha }}-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {ref: "${{ inputs.source_sha || github.sha }}"}
       - name: Build marketing image with locked build arguments
         env:
           BUILD_ARGS: ${{ needs.changes.outputs.marketing_build_args }}

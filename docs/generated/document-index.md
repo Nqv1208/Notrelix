@@ -30,13 +30,13 @@ review_on:
 > This file is generated discovery evidence.
 > It does not replace the canonical authority described by each source document.
 
-Document count: 102
+Document count: 103
 
 ## Documents by type
 
 | Value | Count |
 |:---|---:|
-| `architecture` | 22 |
+| `architecture` | 23 |
 | `architecture-decision` | 19 |
 | `architecture-policy` | 1 |
 | `decision-registry` | 3 |
@@ -61,7 +61,7 @@ Document count: 102
 | Value | Count |
 |:---|---:|
 | `Accepted` | 17 |
-| `active` | 80 |
+| `active` | 81 |
 | `generated` | 3 |
 | `Superseded` | 2 |
 
@@ -165,6 +165,7 @@ Document count: 102
 | `SYS-DATA-OWNERSHIP-CONSISTENCY` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `data`, `cross-context-workflows`, `projections`, `caching`, `asynchronous-processing` | [`docs/architecture/data-ownership-and-consistency.md`](../architecture/data-ownership-and-consistency.md) |
 | `SYS-EVENTS-REALTIME-DELIVERY` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `domain-events`, `integration-events`, `messaging`, `realtime`, `activity`, `audit` | [`docs/architecture/events-realtime-and-delivery-boundary.md`](../architecture/events-realtime-and-delivery-boundary.md) |
 | `SYS-OVERVIEW` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `public-contracts`, `runtime` | [`docs/architecture/system-overview.md`](../architecture/system-overview.md) |
+| `SYS-REPO-OVERVIEW` | `architecture` | `active` | `system-architecture` | `repository`, `backend`, `frontend`, `developer-onboarding` | [`docs/architecture/overview.md`](../architecture/overview.md) |
 | `TEMPLATE-ADR` | `template` | `active` | `documentation-governance` | `docs/decisions`, `backend/docs/decisions`, `frontend/docs/decisions` | [`docs/templates/adr-template.md`](../templates/adr-template.md) |
 | `TEMPLATE-ARCHITECTURE-CHANGE` | `template` | `active` | `documentation-governance` | `repository`, `system-architecture`, `backend-architecture`, `frontend-architecture`, `cross-boundary-changes` | [`docs/templates/architecture-change-template.md`](../templates/architecture-change-template.md) |
 | `TEMPLATE-FEATURE-SPEC` | `template` | `active` | `documentation-governance` | `product-features`, `backend-features`, `frontend-features`, `cross-stack-features` | [`docs/templates/feature-spec-template.md`](../templates/feature-spec-template.md) |

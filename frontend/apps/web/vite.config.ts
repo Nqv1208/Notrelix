@@ -17,6 +17,7 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8000",
         changeOrigin: true,
+        ws: true, // /api/v1/realtime upgrades to WebSocket
       },
     },
   },
