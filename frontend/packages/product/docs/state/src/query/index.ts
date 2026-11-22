@@ -30,7 +30,10 @@ export { createUseSharePage } from "./hooks/use-share-page";
 export { createUseConvertTodo } from "./hooks/use-convert-todo";
 export { createUseDocsSearch } from "./hooks/use-docs-search";
 export { createUseDocsFavorites } from "./hooks/use-docs-favorites";
-export { createUseCreatePage } from "./hooks/use-create-page";
+export {
+  createUseCreatePage,
+  PENDING_PAGE_ID_PREFIX,
+} from "./hooks/use-create-page";
 export { createUseUpdatePage } from "./hooks/use-update-page";
 export { createUseMovePage } from "./hooks/use-move-page";
 export { createUseMovePageToSpace } from "./hooks/use-move-page-to-space";

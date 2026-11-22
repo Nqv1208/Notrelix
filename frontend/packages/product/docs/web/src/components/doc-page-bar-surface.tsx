@@ -3,6 +3,7 @@ import {
   CircleAlert,
   LoaderCircle,
   MoreHorizontal,
+  Plus,
   PanelRight,
   WifiOff,
 } from "lucide-react";
@@ -180,6 +181,29 @@ export function DocPageBarSurface({
         </button>
       ) : null}
       {headerAction}
+      {callbacks?.onNewSubpage ? (
+        <button
+          type="button"
+          aria-disabled={callbacks.subpagePending || undefined}
+          onClick={
+            callbacks.subpagePending ? undefined : callbacks.onNewSubpage
+          }
+          className={BUTTON}
+        >
+          {callbacks.subpagePending ? (
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-[13px] shrink-0 stroke-[1.8] motion-safe:animate-spin"
+            />
+          ) : (
+            <Plus
+              aria-hidden="true"
+              className="size-[13px] shrink-0 stroke-[1.8]"
+            />
+          )}
+          {callbacks.subpagePending ? h.addingSubpage : h.addSubpage}
+        </button>
+      ) : null}
       <button
         type="button"
         aria-haspopup="dialog"
