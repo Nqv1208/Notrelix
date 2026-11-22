@@ -4,7 +4,6 @@ import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
   DocPageCallbacks,
   DocMentionPeople,
-  DocPerson,
   DocTaskRef,
 } from "../components/doc-page-models";
 import { DocMentionMenuSurface } from "../components/doc-popups-surface";
