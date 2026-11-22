@@ -5,7 +5,11 @@ import {
   BillingSeatInviteDialog,
   useBillingCopy,
 } from "@notrelix/features-workspace/web";
-import type { WorkspaceRole } from "@notrelix/features-workspace/core";
+import {
+  describeWorkspaceFailure,
+  type WorkspaceRole,
+} from "@notrelix/features-workspace/core";
+import { toastFailure } from "@/shell/workspace/failure-toast";
 import { useWorkspaceContext } from "@/providers/workspace-provider";
 import { billingKeys, useBillingApi, useBillingLinks } from "./use-billing";
 
@@ -48,20 +52,25 @@ export function SeatInviteDialog({
     setSending(true);
     setError(null);
     const failed: string[] = [];
+    let unconfirmed: unknown = null;
     for (const email of emails) {
       try {
         await createInvitation({
           email,
           role,
         });
-      } catch {
+      } catch (failure) {
         failed.push(email);
+        if (describeWorkspaceFailure(failure).reason === "email-not-confirmed")
+          unconfirmed = failure;
       }
     }
     setSending(false);
     if (failed.length > 0) {
       setEmails(failed);
       setError(copy.invite.sendFailed);
+      // Refused because the sender's email is not confirmed: say that, with the way to ask for the link again.
+      if (unconfirmed) toastFailure(copy.invite.sendFailed, unconfirmed, "");
       return;
     }
     toast.success(copy.invite.sent);

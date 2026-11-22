@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  EMAIL_NOT_CONFIRMED_ERROR,
   readFlowError,
   type AuthFlowService,
   type InvitePreview,
@@ -12,6 +13,16 @@ import {
   type AuthInviteView,
 } from "../components/auth-invite-surface";
 import type { AuthFlowNavigation } from "./flow-navigation";
+
+/** Why an accept or decline did not go through, as the surface shows it. */
+type Problem =
+  | { readonly kind: "unreachable" }
+  | { readonly kind: "emailNotConfirmed" }
+  | { readonly kind: "emailMismatch" }
+  | { readonly kind: "refused"; readonly detail: string | null };
+
+const sameEmail = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** "2027-01-31" as "31/01/2027". */
 function formatDay(day: string | null): string | null {
@@ -57,13 +68,44 @@ export function InviteFlow({
     name?: string;
     password?: string;
   }>({});
-  const [unreachable, setUnreachable] = useState(false);
+  const [problem, setProblem] = useState<Problem | null>(null);
 
   const preview = useQuery({
     queryKey: ["auth", "invite", token],
     queryFn: () => service.getInvite(token),
     retry: false,
     staleTime: Infinity,
+  });
+
+  // The invitation is for another address than the account signed in now.
+  const otherAccount =
+    !!signedInEmail &&
+    !!preview.data &&
+    !sameEmail(signedInEmail, preview.data.email ?? "");
+
+  /**
+   * What the producer's refusal means for the person. Only a call that got no answer is "could not
+   * reach"; every other refusal says what it can: confirm the email first, the wrong account, or the
+   * producer's own line.
+   */
+  const explain = (failure: ReturnType<typeof readFlowError>): Problem => {
+    if (failure.code === EMAIL_NOT_CONFIRMED_ERROR)
+      return { kind: "emailNotConfirmed" };
+    if (failure.network || failure.status === null)
+      return { kind: "unreachable" };
+    // A gateway or server error that carries no problem body (502, 503) says nothing about the invitation.
+    if (failure.status >= 500 && !failure.code && !failure.detail)
+      return { kind: "unreachable" };
+    if (failure.status === 400 && otherAccount)
+      return { kind: "emailMismatch" };
+    return { kind: "refused", detail: failure.detail };
+  };
+
+  const resend = useMutation({
+    mutationFn: () =>
+      service.resendEmailVerification(
+        signedInEmail ?? preview.data?.email ?? "",
+      ),
   });
 
   const toSignIn = (redirectTo: string) =>
@@ -91,7 +133,7 @@ export function InviteFlow({
     },
     onError: (error) => {
       const failure = readFlowError(error);
-      setUnreachable(false);
+      setProblem(null);
       setFieldErrors({});
       // 409: the invited email already has an account. 401: no session for the authenticated accept.
       if (failure.status === 409 || failure.status === 401)
@@ -106,15 +148,15 @@ export function InviteFlow({
           name: failure.fieldErrors.name,
           password: failure.fieldErrors.password,
         });
-      else if (failure.status === 400) refreshAfterRefusal();
-      else setUnreachable(true);
+      else if (failure.status === 400) refreshAfterRefusal(explain(failure));
+      else setProblem(explain(failure));
     },
   });
 
-  /** Expired, used or revoked in the meantime: the preview says which. */
-  const refreshAfterRefusal = () => {
+  /** Expired, used or revoked in the meantime: the preview says which; a still valid one shows the reason. */
+  const refreshAfterRefusal = (reason: Problem) => {
     void preview.refetch().then((again) => {
-      if (again.data?.state === "valid") setUnreachable(true);
+      if (again.data?.state === "valid") setProblem(reason);
     });
   };
 
@@ -129,8 +171,8 @@ export function InviteFlow({
       const failure = readFlowError(error);
       if (failure.status === 404)
         setOverride({ kind: "gone", reason: "missing", orgName: null });
-      else if (failure.status === 400) refreshAfterRefusal();
-      else setUnreachable(true);
+      else if (failure.status === 400) refreshAfterRefusal(explain(failure));
+      else setProblem(explain(failure));
     },
   });
 
@@ -152,12 +194,11 @@ export function InviteFlow({
     view = {
       kind: "invite",
       invite: inviteOf(preview.data),
-      error: unreachable ? "unreachable" : null,
+      error: problem ? problem.kind : null,
+      errorDetail: problem?.kind === "refused" ? problem.detail : null,
       fieldErrors,
     };
 
-  const sameEmail = (a: string, b: string) =>
-    a.trim().toLowerCase() === b.trim().toLowerCase();
   const signedInAs =
     view.kind === "invite" &&
     signedInEmail &&
@@ -177,6 +218,17 @@ export function InviteFlow({
       onAccept={(input) => accept.mutate(input)}
       onDecline={() => decline.mutate()}
       onRetry={() => void preview.refetch()}
+      onResendConfirmation={() => resend.mutate()}
+      resendState={
+        resend.isPending
+          ? "sending"
+          : resend.isSuccess
+            ? "sent"
+            : resend.isError
+              ? "failed"
+              : "idle"
+      }
+      resendEmail={signedInEmail ?? preview.data?.email ?? undefined}
       onSignIn={() =>
         navigation.navigate({
           to: "/sign-in",

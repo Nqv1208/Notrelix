@@ -2,6 +2,7 @@ export { parseAuthError } from "./parse-auth-error";
 export type { ParsedAuthError } from "./parse-auth-error";
 export { resolveErrorDisplay } from "./resolve-error-display";
 export {
+  EMAIL_NOT_CONFIRMED_ERROR,
   IDENTITY_ERROR,
   RATE_LIMIT_ERROR_CODE,
   isThrottled,

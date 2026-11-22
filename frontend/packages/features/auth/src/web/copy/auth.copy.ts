@@ -294,6 +294,15 @@ export const en = {
     mismatch:
       "You are signed in as {{current}}; the invitation is for {{invited}}.",
     switchAccount: "Switch account",
+    emailNotConfirmed:
+      "Confirm your email before you accept this invitation. Open the link we sent you, or ask for a new one.",
+    resendEmail: "Resend the confirmation email",
+    resendingEmail: "Sending…",
+    resendSent: "We sent a new confirmation link to {{email}}.",
+    resendFailed:
+      "The confirmation email could not be sent. Try again shortly.",
+    refused:
+      "This invitation could not be accepted. Try again, or ask the person who invited you for a new one.",
     nameLabel: "Full name",
     passwordLabel: "Create a password",
     passwordHint: "At least {{count}} characters.",
@@ -622,6 +631,14 @@ export const vi: AuthCopy = {
     mismatch:
       "Bạn đang đăng nhập là {{current}}; lời mời dành cho {{invited}}.",
     switchAccount: "Đổi tài khoản",
+    emailNotConfirmed:
+      "Hãy xác nhận email của bạn trước khi nhận lời mời này. Mở liên kết chúng tôi đã gửi, hoặc yêu cầu gửi lại.",
+    resendEmail: "Gửi lại email xác nhận",
+    resendingEmail: "Đang gửi…",
+    resendSent: "Đã gửi lại liên kết xác nhận tới {{email}}.",
+    resendFailed: "Chưa gửi được email xác nhận. Hãy thử lại sau ít phút.",
+    refused:
+      "Chưa nhận được lời mời này. Hãy thử lại, hoặc nhờ người đã mời bạn gửi lời mời mới.",
     nameLabel: "Họ và tên",
     passwordLabel: "Tạo mật khẩu",
     passwordHint: "Ít nhất {{count}} ký tự.",

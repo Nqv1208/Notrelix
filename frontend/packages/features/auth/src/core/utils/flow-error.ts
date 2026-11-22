@@ -3,6 +3,8 @@ export interface FlowError {
   readonly status: number | null;
   readonly code: string | null;
   readonly retryAfterSeconds: number | null;
+  /** The producer's own words (`detail` of the problem body), when it sent a non-empty line. */
+  readonly detail: string | null;
   readonly fieldErrors: Readonly<Record<string, string>>;
   /** The call never reached the server. */
   readonly network: boolean;
@@ -54,6 +56,9 @@ export const IDENTITY_ERROR = {
   emailVerificationExpired: "identity.email-verification.token-expired",
 } as const;
 
+/** A confirmed email is needed first (HTTP 403): the way out is the confirmation link, sent again. */
+export const EMAIL_NOT_CONFIRMED_ERROR = "auth.email_not_confirmed";
+
 /** The API's volume limit (HTTP 429): the answer carries how long to wait. */
 export const RATE_LIMIT_ERROR_CODE = "rate_limit.exceeded";
 
@@ -90,6 +95,10 @@ export function readFlowError(error: unknown): FlowError {
     code: errorCodeOf(details),
     retryAfterSeconds:
       num(details.retryAfterSeconds) ?? num(details.retryAfter),
+    detail:
+      typeof details.detail === "string" && details.detail.trim()
+        ? details.detail.trim()
+        : null,
     fieldErrors,
     network: err.kind === "network",
   };

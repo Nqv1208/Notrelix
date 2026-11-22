@@ -48,7 +48,19 @@ export type AuthInviteView =
   | {
       readonly kind: "invite";
       readonly invite: AuthInvite;
-      readonly error?: "unreachable" | null;
+      /**
+       * Why the accept or decline did not go through: no answer from the server (`unreachable`), the
+       * person's email is not confirmed, the signed-in account is not the invited one, or the producer
+       * refused with its own words (`detail`).
+       */
+      readonly error?:
+        | "unreachable"
+        | "emailNotConfirmed"
+        | "emailMismatch"
+        | "refused"
+        | null;
+      /** The producer's one-line reason for `refused`. */
+      readonly errorDetail?: string | null;
       /** Server's word on a field, shown under it. */
       readonly fieldErrors?: {
         readonly name?: string;
@@ -76,6 +88,11 @@ export interface AuthInviteSurfaceProps {
   readonly signedInAs?: string | null;
   readonly onSwitchAccount?: () => void;
   readonly onRetry?: () => void;
+  /** Asks for the confirmation link again (`error: "emailNotConfirmed"`). */
+  readonly onResendConfirmation?: () => void;
+  readonly resendState?: "idle" | "sending" | "sent" | "failed";
+  /** The address the confirmation link goes to. */
+  readonly resendEmail?: string;
 }
 
 export function AuthInviteSurface(props: AuthInviteSurfaceProps) {
@@ -111,6 +128,69 @@ export function AuthInviteSurface(props: AuthInviteSurfaceProps) {
   return <GonePage {...props} view={view} />;
 }
 
+/** The words under the form when accepting or declining did not go through. */
+function InviteError({
+  copy,
+  view,
+  signedInAs,
+  resendState,
+  resendEmail,
+  onResendConfirmation,
+}: {
+  copy: AuthCopy;
+  view: Extract<AuthInviteView, { kind: "invite" }>;
+  signedInAs?: string | null;
+  resendState: "idle" | "sending" | "sent" | "failed";
+  resendEmail: string;
+  onResendConfirmation?: () => void;
+}) {
+  const t = copy.invite;
+  switch (view.error) {
+    case "unreachable":
+      return <FieldError>{t.unreachable}</FieldError>;
+    case "emailMismatch":
+      return (
+        <FieldError>
+          {fillAuthCopy(t.mismatch, {
+            current: signedInAs ?? "",
+            invited: view.invite.email,
+          })}
+        </FieldError>
+      );
+    case "refused":
+      return <FieldError>{view.errorDetail ?? t.refused}</FieldError>;
+    case "emailNotConfirmed":
+      return (
+        <div className="flex flex-col items-start gap-2">
+          <FieldError>{t.emailNotConfirmed}</FieldError>
+          {onResendConfirmation ? (
+            <button
+              type="button"
+              className={LINK_BUTTON_CLASS}
+              disabled={resendState === "sending" || resendState === "sent"}
+              onClick={onResendConfirmation}
+            >
+              {resendState === "sending" ? t.resendingEmail : t.resendEmail}
+            </button>
+          ) : null}
+          {resendState === "sent" ? (
+            <p
+              role="status"
+              className="m-0 text-item-small leading-normal text-meta-foreground"
+            >
+              {fillAuthCopy(t.resendSent, { email: resendEmail })}
+            </p>
+          ) : null}
+          {resendState === "failed" ? (
+            <FieldError>{t.resendFailed}</FieldError>
+          ) : null}
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
 function InviteForm({
   copy,
   view,
@@ -118,6 +198,10 @@ function InviteForm({
   onAccept,
   onDecline,
   onSignIn,
+  signedInAs,
+  onResendConfirmation,
+  resendState = "idle",
+  resendEmail,
 }: AuthInviteSurfaceProps & {
   view: Extract<AuthInviteView, { kind: "invite" }>;
 }) {
@@ -236,9 +320,14 @@ function InviteForm({
           )}
         </div>
       )}
-      {view.error === "unreachable" ? (
-        <FieldError>{t.unreachable}</FieldError>
-      ) : null}
+      <InviteError
+        copy={copy}
+        view={view}
+        signedInAs={signedInAs}
+        resendState={resendState}
+        resendEmail={resendEmail ?? invite.email}
+        onResendConfirmation={onResendConfirmation}
+      />
     </>
   );
   if (mobile) {
@@ -317,9 +406,16 @@ function InviteForm({
           <div className="flex animate-in flex-col gap-4.5 duration-300 fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none">
             {fields}
           </div>
-        ) : view.error === "unreachable" ? (
-          <FieldError>{t.unreachable}</FieldError>
-        ) : null}
+        ) : (
+          <InviteError
+            copy={copy}
+            view={view}
+            signedInAs={signedInAs}
+            resendState={resendState}
+            resendEmail={resendEmail ?? invite.email}
+            onResendConfirmation={onResendConfirmation}
+          />
+        )}
         <div className="flex gap-2.5">
           <button
             type="button"
