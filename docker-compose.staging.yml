@@ -42,9 +42,18 @@ x-backend-environment: &backend-environment
   Operator__Jwt__Audience: ${OPERATOR_JWT_AUDIENCE:-notrelix-operator-console}
   Operator__Seed__Email: ${OPERATOR_SEED_EMAIL:-}
   Operator__Seed__Password: ${OPERATOR_SEED_PASSWORD:-}
+  Email__Enabled: ${EMAIL_ENABLED:-false}
   Email__ApiKey: ${RESEND_API_KEY:-}
-  Email__FromEmail: ${EMAIL_FROM:-noreply@notrelix.app}
+  Email__FromEmail: ${EMAIL_FROM:-}
   Email__FromName: ${EMAIL_FROM_NAME:-Notrelix}
+  Smtp__Enabled: ${SMTP_ENABLED:-false}
+  Smtp__Host: ${SMTP_HOST:-}
+  Smtp__Port: ${SMTP_PORT:-587}
+  Smtp__Username: ${SMTP_USERNAME:-}
+  Smtp__Password: ${SMTP_PASSWORD:-}
+  Smtp__FromEmail: ${SMTP_FROM_EMAIL:-}
+  Smtp__FromName: ${SMTP_FROM_NAME:-Notrelix}
+  Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
   Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost}
   # Browser CSRF enforcement is mandatory outside Development/Testing (ADR-005);
   # not env-overridable, and startup fails if it is disabled here.
