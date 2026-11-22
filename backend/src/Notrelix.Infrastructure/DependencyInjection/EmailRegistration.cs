@@ -55,6 +55,14 @@ public static class EmailRegistration
         }
         else if (emailOptions.Enabled)
         {
+            // ResendEmailService takes IResend, which the SDK does not register on its own (SDK 0.4.0 registration:
+            // AddOptions + typed HttpClient + ResendClientOptions + IResend). The key comes from the bound Email options.
+            services.AddOptions();
+            services.AddHttpClient<ResendClient>();
+            services
+                .AddOptions<ResendClientOptions>()
+                .Configure<IOptions<EmailOptions>>((client, email) => client.ApiToken = email.Value.ApiKey);
+            services.AddTransient<IResend, ResendClient>();
             services.AddTransient<IEmailService, ResendEmailService>();
         }
         else
