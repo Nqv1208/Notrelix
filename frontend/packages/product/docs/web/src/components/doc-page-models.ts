@@ -419,7 +419,44 @@ export interface DocImportView {
   readonly imagesDropped: number;
 }
 
-export type DocPanelTab = "links" | "toc" | "comments";
+export type DocPanelTab = "links" | "files" | "toc" | "comments";
+
+/** One attachment of the page as the Files tab shows it. */
+export interface DocFileEntry {
+  readonly id: string;
+  readonly name: string;
+  /** Size and type, uploader and date, already worded. */
+  readonly detail: string;
+  readonly kind: "file" | "link";
+  /** A link's address, set only when it is an absolute http or https one. */
+  readonly href: string | null;
+}
+
+export type DocFilesStatus =
+  "loading" | "ready" | "error" | "denied" | "notFound";
+
+/** Why a link could not be registered. */
+export type DocLinkFailure =
+  "invalid" | "limitReached" | "forbidden" | "notFound" | "network" | "failed";
+
+/**
+ * The page's attachments (UC-COL-B08 to B10): everyone who can view the page
+ * lists and opens them; editors also add a link and delete.
+ */
+export interface DocFilesPanel {
+  readonly status: DocFilesStatus;
+  readonly entries: readonly DocFileEntry[];
+  readonly canEdit: boolean;
+  readonly onRetry: () => void;
+  /** Saves a stored file to the device (the page words a failure itself). */
+  readonly onDownload: (id: string) => Promise<void>;
+  readonly onDelete: (id: string) => Promise<void>;
+  /** Registers a link; answers why it failed, or null when it is stored. */
+  readonly onAddLink: (link: {
+    readonly url: string;
+    readonly name: string;
+  }) => Promise<DocLinkFailure | null>;
+}
 
 export type DocOverlay =
   | { readonly kind: "none" }

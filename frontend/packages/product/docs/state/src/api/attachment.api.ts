@@ -1,4 +1,7 @@
-import type { OperationResponse } from "@notrelix/contracts";
+import type {
+  OperationRequestBody,
+  OperationResponse,
+} from "@notrelix/contracts";
 import type { PageAttachment } from "@notrelix/docs-core";
 import type {
   DocsApiClient,
@@ -17,6 +20,10 @@ export type PageAttachmentDtoApi = OperationResponse<
   201
 >;
 
+/** `Collaboration.PageAttachments.Create` registers a link: the server owns its size, type and source. */
+type CreateLinkBody =
+  OperationRequestBody<"Collaboration.PageAttachments.Create">;
+
 /** A stored attachment as the page reads it; an entry without an id is dropped. */
 export function mapPageAttachment(
   dto: PageAttachmentDtoApi,
@@ -28,6 +35,9 @@ export function mapPageAttachment(
     sizeBytes: dto.sizeBytes ?? 0,
     contentType: dto.contentType ?? "application/octet-stream",
     createdAt: dto.createdAt ?? "",
+    ...(dto.kind === "Link" ? { kind: "link" as const } : {}),
+    ...(dto.url ? { url: dto.url } : {}),
+    ...(dto.uploadedByName ? { uploadedByName: dto.uploadedByName } : {}),
   };
 }
 
@@ -73,6 +83,23 @@ export function createAttachmentApi(
       const attachment = mapPageAttachment(dto);
       if (!attachment) throw new Error("The upload answered no attachment.");
       return attachment;
+    },
+
+    /**
+     * `Collaboration.PageAttachments.Create`: registers an external link (only
+     * an absolute http or https address). `idempotencyKey` belongs to one user
+     * action; retrying the same link reuses it. The caller shows the failure.
+     */
+    async createLink(
+      pageId: string,
+      link: { readonly url: string; readonly name: string },
+      options: { readonly idempotencyKey: string },
+    ): Promise<void> {
+      const body: CreateLinkBody = { filename: link.name, url: link.url };
+      await api.post<unknown>(endpoints.pageAttachments.list(pageId), body, {
+        idempotencyKey: options.idempotencyKey,
+        skipGlobalErrorToast: true,
+      });
     },
 
     /** `Collaboration.PageAttachments.GetContent`: the bytes, authorised by page view. */

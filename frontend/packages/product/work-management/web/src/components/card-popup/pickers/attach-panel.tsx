@@ -12,8 +12,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  isWebUrl,
   useFullBoard,
   useLinkablePages,
+  type LinkAttachFailure,
 } from "@notrelix/work-management-state";
 import { cn } from "@notrelix/ui-web";
 import { foldForSearch } from "../../item-page/item-pickers";
@@ -84,20 +86,21 @@ function Uploads() {
                   {t.retry}
                 </PanelBtn>
               ) : null}
-              {failed ? (
-                <IconBtn
-                  small
-                  aria-label={fillPopupCopy(t.dismiss, { name: upload.name })}
-                  onClick={() => callbacks.onDismissUpload?.(upload.id)}
-                >
-                  <X aria-hidden="true" className="size-4" />
-                </IconBtn>
-              ) : (
+              {failed ? null : (
                 <Loader2
                   aria-hidden="true"
                   className="size-4 animate-spin text-meta-foreground"
                 />
               )}
+              <IconBtn
+                small
+                aria-label={fillPopupCopy(failed ? t.dismiss : t.cancel, {
+                  name: upload.name,
+                })}
+                onClick={() => callbacks.onDismissUpload?.(upload.id)}
+              >
+                <X aria-hidden="true" className="size-4" />
+              </IconBtn>
             </div>
             {failed ? (
               <p
@@ -132,7 +135,10 @@ function Uploads() {
                     style={{ width: `${Math.round(upload.progress ?? 0)}%` }}
                   />
                 </div>
-                <p className="m-0 mt-1 text-[12.5px] text-meta-foreground">
+                <p
+                  role="status"
+                  className="m-0 mt-1 text-[12.5px] text-meta-foreground"
+                >
                   {upload.progress == null
                     ? t.uploadingPlain
                     : fillPopupCopy(t.uploading, {
@@ -153,18 +159,30 @@ function LinkRow({ url, onClose }: { url: URL; onClose: () => void }) {
   const { copy, actions } = useCardPopup();
   const t = copy.pickers.attach;
   const [name, setName] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "invalid" | "failed">(
+  const [state, setState] = useState<"idle" | "busy" | LinkAttachFailure>(
     "idle",
   );
   const path = url.pathname === "/" ? "" : url.pathname + url.search;
+  const refusal: Record<LinkAttachFailure, string> = {
+    invalid: t.urlInvalid,
+    rejected: t.linkRejected,
+    limitReached: t.linkLimit,
+    forbidden: t.linkForbidden,
+    notFound: t.linkGone,
+    offline: t.linkOffline,
+    failed: t.failed,
+  };
   const submit = async () => {
-    if (!/^https?:$/.test(url.protocol)) return setState("invalid");
+    if (state === "busy") return;
+    if (!isWebUrl(url.href)) return setState("invalid");
     setState("busy");
     const label = name.trim() || url.host + path;
-    const ok = await (actions.addWebLink?.(url.href, label.slice(0, 256)) ??
-      Promise.resolve(false));
-    if (ok) onClose();
-    else setState("failed");
+    const result = (await actions.addWebLink?.(
+      url.href,
+      label.slice(0, 256),
+    )) ?? { ok: false as const, reason: "failed" as const };
+    if (result.ok) onClose();
+    else setState(result.reason);
   };
   return (
     <form
@@ -201,18 +219,14 @@ function LinkRow({ url, onClose }: { url: URL; onClose: () => void }) {
           type="submit"
           variant="primary"
           disabled={state === "busy" || !actions.addWebLink}
+          aria-busy={state === "busy" || undefined}
         >
           {t.linkAction}
         </PanelBtn>
       </div>
-      {state === "invalid" ? (
+      {state !== "idle" && state !== "busy" ? (
         <Hint error className="mt-2">
-          {t.urlInvalid}
-        </Hint>
-      ) : null}
-      {state === "failed" ? (
-        <Hint error className="mt-2">
-          {t.failed}
+          {refusal[state]}
         </Hint>
       ) : null}
     </form>
@@ -230,7 +244,7 @@ interface Hit {
 }
 
 /**
- * The single attach panel: choose a file (25 MB each; dropping or pasting files anywhere on the card
+ * The single attach panel: choose a file (100 MB each; dropping or pasting files anywhere on the card
  * does the same), and one smart field below it. A web address becomes a link row to name and attach;
  * words search the Documents pages and the cards of the board; before anything is typed the field
  * offers recent ones. A card is attached as a "Liên quan" link.

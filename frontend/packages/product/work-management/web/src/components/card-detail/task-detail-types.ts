@@ -194,6 +194,8 @@ export interface TaskDetailData {
   };
   readonly files: readonly CardFile[];
   readonly filesLoading: boolean;
+  /** The files could not be read: a refusal, the item gone, or a failure that Retry can answer. */
+  readonly filesError?: "forbidden" | "notFound" | "failed" | null;
   readonly activity: readonly CardActivity[];
   readonly activityLoading: boolean;
   readonly activityFetching: boolean;
@@ -338,6 +340,10 @@ export interface TaskDetailCallbacks {
   readonly onRefreshActivity: () => void;
   /** Reads the comments again after their read failed. */
   readonly onRefreshUpdates?: () => void;
+  /** Clears the download failure notice. */
+  readonly onDismissFileNotice?: () => void;
+  /** Reads the files again after their read failed. */
+  readonly onRefreshFiles?: () => void;
   /**
    * Posts a comment. `onSuccess` clears the composer; `onSettled` runs after
    * success or failure so the composer can be used again (a failed post keeps

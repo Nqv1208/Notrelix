@@ -287,6 +287,8 @@ export interface MockPageAttachmentRecord {
   uploadedBy: string;
   createdAt: string;
   bytes: Uint8Array;
+  /** Set for a registered link: no bytes are kept, the page opens this address. */
+  url?: string;
 }
 
 /**

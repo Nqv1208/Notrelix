@@ -590,6 +590,8 @@ export const endpoints = {
     mentionSuggestions: (itemId: string) =>
       `/board-items/${itemId}/mention-suggestions`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
+    attachment: (itemId: string, attachmentId: string) =>
+      `/board-items/${itemId}/attachments/${attachmentId}`,
     attachmentFiles: (itemId: string) =>
       `/board-items/${itemId}/attachments/files`,
     attachmentContent: (itemId: string, attachmentId: string) =>

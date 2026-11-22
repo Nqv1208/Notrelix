@@ -524,7 +524,7 @@ export function useCardDraft({
           ...current,
           links: [...current.links, { id: localId(), url, name }],
         }));
-        return Promise.resolve(true);
+        return Promise.resolve({ ok: true as const });
       },
     }),
     [patch, groupLocked],

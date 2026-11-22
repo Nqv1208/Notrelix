@@ -7,6 +7,7 @@
  *
  * Operations:
  *   docs.pageAttachments.list    GET    /pages/:pageId/attachments
+ *   docs.pageAttachments.create  POST   /pages/:pageId/attachments (a link)
  *   docs.pageAttachments.upload  POST   /pages/:pageId/attachments/files
  *   docs.pageAttachments.content GET    /pages/:pageId/attachments/:attachmentId/content
  *   docs.pageAttachments.delete  DELETE /pages/:pageId/attachments/:attachmentId
@@ -37,6 +38,18 @@ const BLOCKED_EXTENSIONS = new Set([
   "html",
   "htm",
 ]);
+
+/** The producer's link allow-list: an absolute http or https address with a host. */
+function isWebUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") && !!url.host
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function isBlocked(name: string): boolean {
   const dot = name.lastIndexOf(".");
@@ -87,11 +100,11 @@ function attachmentDto(file: MockPageAttachmentRecord, store: MockStore) {
     id: file.id,
     resourceId: file.pageId,
     filename: file.filename,
-    url: "",
-    kind: file.contentType.startsWith("image/") ? "Image" : "File",
+    url: file.url ?? "",
+    kind: file.url ? "Link" : "File",
     sizeBytes: file.sizeBytes,
     contentType: file.contentType,
-    source: "upload",
+    source: file.url ? "link" : "upload",
     uploadedBy: file.uploadedBy,
     uploadedByName: store.getUser(file.uploadedBy)?.name ?? null,
     createdAt: file.createdAt,
@@ -121,6 +134,87 @@ export const pageAttachmentsOperations = [
           .getPageAttachments(params.pageId)
           .map((file) => attachmentDto(file, store)),
       };
+    },
+  }),
+
+  defineMockOperation<
+    { pageId: string },
+    { filename?: string | null; url?: string | null },
+    unknown
+  >({
+    id: "docs.pageAttachments.create",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.PageAttachments.Create",
+    },
+    method: "POST",
+    route: "/pages/:pageId/attachments",
+    async handle({
+      params,
+      body,
+      store,
+      request,
+    }): Promise<MockHttpResult<unknown>> {
+      const key = request.headers.get("Idempotency-Key");
+      if (!key) {
+        return problem(
+          400,
+          "validation.failed",
+          "Idempotency-Key is required.",
+        );
+      }
+      const page = pageOf(store, params.pageId);
+      if (!page) return notFound("Page not found");
+      // A viewer (a guest here) can see the page but not add to it.
+      if (store.getCurrentMemberRole(page.workspaceId) === "guest") {
+        return problem(
+          403,
+          "collaboration.attachment_editor_only",
+          "Only editors can add attachments.",
+        );
+      }
+      const replay = store.getPageUploadByKey(params.pageId, key);
+      if (replay) {
+        return {
+          status: 201,
+          headers: { "Idempotency-Replayed": "true" },
+          body: attachmentDto(replay, store),
+        };
+      }
+      const url = body?.url?.trim() ?? "";
+      const filename = body?.filename?.trim() ?? "";
+      if (!isWebUrl(url)) {
+        return problem(
+          400,
+          "validation.failed",
+          "The link must be an absolute http or https address.",
+        );
+      }
+      if (!filename || filename.length > 255) {
+        return problem(
+          400,
+          "validation.failed",
+          "A name of up to 255 characters is required.",
+        );
+      }
+      if (
+        store.getPageAttachments(params.pageId).length >= MOCK_MAX_PAGE_FILES
+      ) {
+        return problem(
+          409,
+          "attachment.limit_exceeded",
+          "The page has the most attachments it can hold.",
+        );
+      }
+      const record = store.addPageAttachment(params.pageId, {
+        filename,
+        contentType: "text/uri-list",
+        bytes: new Uint8Array(),
+        idempotencyKey: key,
+        url,
+      });
+      if (!record) return notFound("Page not found");
+      return { status: 201, body: attachmentDto(record, store) };
     },
   }),
 
@@ -218,7 +312,8 @@ export const pageAttachmentsOperations = [
           params.pageId,
           params.attachmentId,
         );
-        if (!file) return notFound("Attachment not found");
+        // A link has no stored bytes: there is nothing to stream.
+        if (!file || file.url) return notFound("Attachment not found");
         const inline = file.contentType.startsWith("image/");
         return {
           status: 200,

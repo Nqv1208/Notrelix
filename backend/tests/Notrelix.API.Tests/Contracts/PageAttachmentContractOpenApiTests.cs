@@ -39,6 +39,32 @@ public class PageAttachmentContractOpenApiTests
         upload.GetProperty("responses").TryGetProperty("413", out _).Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("/api/v1/pages/{pageId}/attachments")]
+    [InlineData("/api/v1/board-items/{boardItemId}/attachments")]
+    [InlineData("/api/v1/pages/{pageId}/attachments/files")]
+    [InlineData("/api/v1/board-items/{boardItemId}/attachments/files")]
+    public void EveryAttachmentCreate_DeclaresARequiredIdempotencyKeyHeader(string path)
+    {
+        var post = Paths.GetProperty(path).GetProperty("post");
+
+        post.GetProperty("parameters").EnumerateArray()
+            .Should().Contain(p => p.GetProperty("name").GetString() == "Idempotency-Key"
+                && p.GetProperty("in").GetString() == "header"
+                && p.GetProperty("required").GetBoolean());
+    }
+
+    [Theory]
+    [InlineData("/api/v1/pages/{pageId}/attachments/{attachmentId}")]
+    [InlineData("/api/v1/board-items/{boardItemId}/attachments/{attachmentId}")]
+    public void AttachmentDelete_TakesNoIdempotencyKey(string path)
+    {
+        var delete = Paths.GetProperty(path).GetProperty("delete");
+
+        (delete.TryGetProperty("parameters", out var parameters) ? parameters.EnumerateArray() : Enumerable.Empty<JsonElement>())
+            .Should().NotContain(p => p.GetProperty("name").GetString() == "Idempotency-Key");
+    }
+
     [Fact]
     public void AttachmentDto_KeepsItsShape_ForBothTargets()
     {

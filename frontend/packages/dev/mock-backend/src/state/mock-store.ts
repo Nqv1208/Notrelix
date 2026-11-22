@@ -4991,6 +4991,8 @@ export class MockStore {
       contentType: string;
       bytes: Uint8Array;
       idempotencyKey: string;
+      /** A registered link (the producer keeps the address, never bytes). */
+      url?: string;
     },
   ): MockPageAttachmentRecord | undefined {
     if (!this.pagesById.has(pageId)) return undefined;
@@ -5003,6 +5005,7 @@ export class MockStore {
       uploadedBy: this.getCurrentUser().id,
       createdAt: this.clock.isoNow(),
       bytes: file.bytes,
+      ...(file.url ? { url: file.url } : {}),
     };
     const list = this.attachmentsByPageId.get(pageId) ?? [];
     list.push(record);

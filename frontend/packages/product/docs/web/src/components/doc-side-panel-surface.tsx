@@ -13,6 +13,7 @@ import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import {
   isRestrictedTask,
   type DocCommentView,
+  type DocFilesPanel,
   type DocMentionPeople,
   type DocPageCallbacks,
   type DocPerson,
@@ -23,6 +24,7 @@ import {
   type DocTocEntry,
 } from "./doc-page-models";
 import { DocAvatar, DocStatusDot } from "./doc-page-ui";
+import { DocFilesPanelSurface } from "./doc-files-panel-surface";
 import {
   CommentMentionList,
   commentMentionToken,
@@ -40,6 +42,8 @@ export interface DocSidePanelSurfaceProps {
   /** The selected text a comment is being written on, when there is one. */
   readonly pendingQuote?: string | null;
   readonly canComment?: boolean;
+  /** The page's attachments; without it the panel has no Files tab. */
+  readonly files?: DocFilesPanel;
   /** The people "@" offers in a comment field (the host's server read; only people who can view the page); omitted offers none. */
   readonly mentionPeople?: DocMentionPeople;
   readonly callbacks?: DocPageCallbacks;
@@ -728,6 +732,7 @@ export function DocSidePanelSurface({
   comments,
   pendingQuote,
   canComment = false,
+  files,
   mentionPeople,
   callbacks,
 }: DocSidePanelSurfaceProps) {
@@ -737,6 +742,17 @@ export function DocSidePanelSurface({
       id: "links",
       label: `${p.links} ${tasks.length}`,
     },
+    ...(files
+      ? [
+          {
+            id: "files" as const,
+            label:
+              files.status === "ready"
+                ? `${p.files} ${files.entries.length}`
+                : p.files,
+          },
+        ]
+      : []),
     { id: "toc", label: p.toc },
     {
       id: "comments",
@@ -791,6 +807,9 @@ export function DocSidePanelSurface({
       >
         {tab === "links" ? (
           <LinksPanel copy={copy} tasks={tasks} relatedDocs={relatedDocs} />
+        ) : null}
+        {tab === "files" && files ? (
+          <DocFilesPanelSurface copy={copy} files={files} />
         ) : null}
         {tab === "toc" ? (
           <TocPanel copy={copy} toc={toc} callbacks={callbacks} />

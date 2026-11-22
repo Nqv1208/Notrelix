@@ -9,7 +9,7 @@ import { docsQueryKeys } from "../keys";
 
 /**
  * Removes a stored file from a page (`Collaboration.PageAttachments.Delete`, editors only: the server refuses
- * anyone without edit right, and the control is shown to editors alone). A success refreshes the page's files.
+ * anyone without edit right, and the control is shown to editors alone). Success or failure re-reads the page's files.
  */
 export function createUseDeletePageAttachment(
   api: DocsApiClient & DocsFileClient,
@@ -21,7 +21,8 @@ export function createUseDeletePageAttachment(
     return useMutation({
       mutationFn: (attachmentId: string) =>
         attachmentApi.remove(pageId, attachmentId),
-      onSuccess: () => {
+      // A failed delete may still have removed it (a lost answer): read the list again either way.
+      onSettled: () => {
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.attachments(workspaceId, pageId),
         });

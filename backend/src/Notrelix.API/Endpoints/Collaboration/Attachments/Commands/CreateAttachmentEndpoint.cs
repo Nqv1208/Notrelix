@@ -9,6 +9,7 @@ public static class CreateAttachmentEndpoint
     public static IEndpointRouteBuilder MapCreateAttachment(this IEndpointRouteBuilder group)
     {
         group.MapResourcePost("/", HandleAsync)
+            .WithIdempotencyKey()
             .WithName("Collaboration.Attachments.Create")
             .WithTags("Collaboration.Attachments")
             .WithSummary("Register board item attachment metadata");
@@ -17,7 +18,7 @@ public static class CreateAttachmentEndpoint
 
     private static async Task<IResult> HandleAsync(Guid boardItemId, CreateBoardItemAttachmentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreateBoardItemAttachmentCommand(boardItemId, body.Filename, body.Url, body.SizeBytes, body.ContentType, body.Source));
+        var result = await sender.Send(new CreateBoardItemAttachmentCommand(boardItemId, body.Filename, body.Url));
         return result.ToCreatedResult();
     }
 }

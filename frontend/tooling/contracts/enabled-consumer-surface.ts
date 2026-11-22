@@ -2121,6 +2121,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAttachmentApi",
     consumerFile:
       "frontend/packages/product/docs/state/src/api/attachment.api.ts",
+    capability: "Collaboration.PageAttachments.Create",
+    operationId: "Collaboration.PageAttachments.Create",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAttachmentApi",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/attachment.api.ts",
     capability: "Collaboration.PageAttachments.GetContent",
     operationId: "Collaboration.PageAttachments.GetContent",
     mutation: false,

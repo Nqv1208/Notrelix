@@ -149,12 +149,12 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-B03 | Mention a person inside a page block | B | A page editor (Documents UC) | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B04 | Mention a team | B | Any commenter | no | no | no | no | DEFINED | Add a team mention field, fan-out at delivery and the suggestion list. |
 | UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | yes | yes | yes | no | DONE | DONE — Collaboration-owned read returns only people who can view the target; app-role HTTP proof for page and item; refused to API tokens. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). Next: reply composer and page comment panels have no mention picker yet. |
-| UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | HARDENING | Built: cross-tenant negative upload test (an upload to another tenant's item is refused like one to a made-up item). Remains: owner tests by hand; no real e2e. Malware scan is L23, out of this cut. |
-| UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | partial | yes | no | HARDENING | Built: validator allows only absolute http and https links (javascript:, data:, vbscript:, file:, unparseable refused as 400). Remains: owner tests by hand; real e2e none. |
-| UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): UploadPageAttachment.cs, PageAttachmentEndpointTests.cs, doc-page-screen.tsx. Remaining: owner tests by hand. |
-| UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | partial | yes | no | HARDENING | Built: same http and https allow-list as UC-COL-B07 (new page validator). Remains: owner tests by hand; real e2e none. |
-| UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | HARDENING | Built: the item list needs Viewer and a user with no access gets NotFound (AttachmentFileAuthorizationTests). Owner tests by hand. |
-| UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | HARDENING | Built: Delete in a file's options is shown to editors only, after a confirmation (component test). Owner tests by hand. |
+| UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | DONE | DONE — app-role proof of every route and rejection; item sheet progress, Cancel and error states. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
+| UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | DONE | DONE — idempotent link create, server-owned fields, distinct refusal messages, safe rendering. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
+| UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | DONE | DONE — app-role proof; editor media states covered. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
+| UC-COL-B09 | Register a link on a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | DONE | DONE — page Files tab adds links; same server rules as UC-COL-B07. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
+| UC-COL-B10 | List and open attachments of an item or page | B | Anyone who can view the item (ViewBoard) or page (ViewPage) | yes | yes | yes | no | DONE | DONE — app-role proof of list and content; item and page lists with every state. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
+| UC-COL-B11 | Delete an attachment from an item | B | A person with UpdateItem on the item (Lead decision) | yes | yes | yes | no | DONE | DONE — editor-only delete proven; confirmation, pending and failure states; concurrent delete safe. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
 | UC-COL-B12 | Delete an attachment from a page | B | A person with UpdatePage on the page (Lead decision) | yes | partial | yes | no | HARDENING | Built: the page's file block offers Delete to editors only (soft delete; the block stays). Remains: no artboard draws this control, so its placement needs an owner check. Owner tests by hand. |
 | UC-COL-B13 | Follow a board item | B | Anyone who can view the item's board (ViewBoard) | yes | yes | yes | yes | HARDENING | Concurrent calls store one watcher: unique index ux_resource_watchers_user_target (migration AddResourceWatcherUniqueness) plus the watcher lock (see UC-COL-H03). Remaining: real e2e run and design line. |
 | UC-COL-B14 | Unfollow a board item | B | The follower | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
@@ -451,35 +451,35 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 
 ### UC-COL-B06 Attach a file to a board item
 - Capability: B, COL-002 Comment target contract
-- Actors and permission: A person with UpdateItem on the item, whoever uploaded the file. Others who can view the item get 403 `collaboration.attachment_editor_only`; no view access is NotFound.
+- Actors and permission: A person with UpdateItem on the item, whoever uploaded the file. Others who can view the item get 403 `auth.forbidden` (no attachment-specific code; that code belongs to delete); no view access is NotFound; a suspended workspace member gets the same NotFound; a suspended or closed Account gets 403 `account.suspended`; an archived Workspace 403 `workspace.archived`.
 - Preconditions: The item exists; fewer than 50 live attachments.
-- Input: multipart/form-data file, streamed; Idempotency-Key header. Size cap 100 MB, blocked extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm), content type sniffed from the first 512 bytes.
+- Input: multipart/form-data file, streamed; Idempotency-Key header. Size cap 100 MB, blocked extensions (exe, msi, dll, bat, cmd, com, scr, ps1, vbs, sh, jar, apk, js, mjs, html, htm), content type sniffed from the first 4096 bytes.
 - Output: An Attachment (stored file) with sniffed type; object in storage; 201 with the content route. Image types inline only for png, jpeg, gif, webp; all others download.
 - Main flow: 1. Caller picks or drops a file. 2. POST /board-items/{id}/attachments/files. 3. Handler takes the target lock, checks count and policy, streams the object, saves metadata. 4. List refetches.
 - No-op / rejection / concurrency / retry: Over size 413; blocked or executable content 415; over count 409; no access NotFound; replay with the same key returns the first result.
 - UI states: loading, uploading progress, success, validation error, permission denied, failed upload, offline.
 - Rules: Product COL-010, COL-011, Attachment authorization; decision 4; spec DCREQ162 to DCREQ166, DCREQ208.
 - Acceptance: Given an editor, when they upload a PDF, then it lists and downloads; given an .exe, then 415 and nothing is stored; given the same key twice, then one attachment.
-- Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments/files (Collaboration.Attachments.UploadFile), UploadBoardItemAttachmentCommandHandler, AttachmentContentClassifier, IAttachmentTargetLock · FE frontend/packages/product/work-management/state/src/mutations/use-item-file-uploads.ts; frontend/packages/foundation/contracts/src/client/__tests__/upload.unit.test.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/UploadBoardItemAttachmentTests.cs, AttachmentFileAuthorizationTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/AttachmentObjectLifecycleIntegrationTests.cs; backend/tests/Notrelix.Integration.Tests/Rls/CollaborationNonMemberNotFoundTests.cs (cross-tenant upload) · Real e2e none
-- State: HARDENING — Built: the cross-tenant negative upload test (CollaborationNonMemberNotFoundTests) refuses an upload to another tenant's item as it refuses one to a made-up item. Remains: owner tests by hand; no real e2e. A malware scan is L23 and out of this cut (a plain note, not a blocker).
+- Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments/files (Collaboration.Attachments.UploadFile), UploadBoardItemAttachmentCommandHandler, AttachmentContentClassifier, IAttachmentTargetLock · FE frontend/packages/product/work-management/state/src/mutations/use-item-file-uploads.ts; frontend/packages/foundation/contracts/src/client/__tests__/upload.unit.test.ts · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/UploadBoardItemAttachmentTests.cs, AttachmentFileAuthorizationTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Integration.Tests/Collaboration/AttachmentObjectLifecycleIntegrationTests.cs; backend/tests/Notrelix.Integration.Tests/Rls/CollaborationNonMemberNotFoundTests.cs (cross-tenant upload) · Also `CollaborationAttachmentAppRoleTests` (app role over HTTP: item and page, owner, viewer, outsider, other account, suspended member, suspended and closed Account, archived Workspace, replay, cap, concurrent delete), `ApiTokenCollaborationAppRoleTests` (token scope matrix), `AttachmentLinkTests`, `AttachmentContentClassifierTests`, `AttachmentFileEndpointTests`, `PageAttachmentEndpointTests`; WM `attachments-section-uploads`, `attach-panel` and `use-item-file-uploads` component tests · Real e2e none
+- State: DONE — Item file upload proven over HTTP on the app role (success, 413, 415, 409 cap, replay, viewer 403, no access and suspended member NotFound, suspended or closed Account and archived Workspace refused, token scopes); item sheet shows progress, Cancel, each error reason and Retry. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof).
 
 ### UC-COL-B07 Attach a link to a board item
 - Capability: B, COL-002 Comment target contract
 - Actors and permission: Anyone with UpdateItem on the item.
 - Preconditions: As UC-COL-B06.
-- Input: Filename, Url, optional SizeBytes, ContentType, Source.
+- Input: Filename, Url; the Idempotency-Key header is required. SizeBytes, ContentType and Source are ignored: the server stores size 0, `text/uri-list` and source Link. The name is trimmed, control and bidirectional characters are stripped, and it must be 1 to 256 characters. Only absolute http and https URLs are accepted.
 - Output: An Attachment that records a link (metadata only).
 - Main flow: 1. Caller pastes a link. 2. POST /board-items/{id}/attachments.
-- No-op / rejection / concurrency / retry: Invalid input 400; over count 409.
+- No-op / rejection / concurrency / retry: Invalid input 400 (also a missing, empty or repeated Idempotency-Key); over count 409; no view access NotFound; Viewer 403; the same key with the same name and URL returns the first result and stores no second link; the same key with another name or URL is 409 `idempotency_payload_mismatch`.
 - UI states: success, validation error, permission denied.
 - Rules: Product COL-010; spec DCREQ162.
 - Acceptance: Given a valid link, then it lists on the item.
-- Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments (Collaboration.Attachments.Create), CreateBoardItemAttachmentCommandHandler · FE item sheet Files section (WM) · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs · Real e2e none
-- State: HARDENING — Built: CreateBoardItemAttachmentCommandValidator allows only an absolute http or https URL with a host (AttachmentLinkUrl); javascript:, data:, vbscript:, file:, mailto: and unparseable values fail validation (400). The handler repeats the check. Unit tests: AttachmentLinkUrlTests. Remains: owner tests by hand; real e2e none.
+- Evidence: BE POST /api/v1/board-items/{boardItemId}/attachments (Collaboration.Attachments.Create), CreateBoardItemAttachmentCommandHandler · FE item sheet Files section (WM) · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs · Also `AttachmentLinkTests` (server-owned fields, name rule, cap, replay), `CollaborationAttachmentAppRoleTests`; FE the attach panel `LinkRow` in `attach-panel.tsx` (not the Files section), `attach-panel.component.test.tsx`, `use-card-attachment-writes` tests · Real e2e none
+- State: DONE — The link create is idempotent (required key), the server owns size, type and source, and the name is sanitised; refusals each show their own message in the attach panel; only http and https links render as links. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof).
 
 ### UC-COL-B08 Attach a file to a page
 - Capability: B, COL-002 Comment target contract
-- Actors and permission: A person with UpdatePage on the page, whoever uploaded the file. Others who can view the page get 403 `collaboration.attachment_editor_only`; no view access is NotFound.
+- Actors and permission: A person with UpdatePage on the page, whoever uploaded the file. Others who can view the page get 403 `auth.forbidden` (no attachment-specific code); no view access is NotFound; suspended member, suspended or closed Account and archived Workspace as UC-COL-B06.
 - Preconditions: Fewer than 500 live attachments on the page.
 - Input: As UC-COL-B06.
 - Output: An Attachment on the page that an image or file block references by id.
@@ -488,22 +488,22 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: As UC-COL-B06.
 - Rules: Product Attachment authorization (page target); decision 10; spec DCREQ163, DCREQ164.
 - Acceptance: Given a page editor, when they upload an image, then the block shows it; given a viewer, then 403 or NotFound.
-- Evidence: BE POST /api/v1/pages/{pageId}/attachments/files (Collaboration.PageAttachments.UploadFile), backend/src/Notrelix.Application/Features/Collaboration/Attachments/Commands/UploadPageAttachment/UploadPageAttachment.cs · FE frontend/packages/product/docs/web/src/components/doc-page-screen.tsx (attachmentApi.upload); frontend/packages/product/docs/state/src/query/hooks/use-remember-page-attachment.ts · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs (viewer cannot upload; another page's attachment not found); frontend/packages/product/docs/state/src/__tests__/attachment-uploads.unit.test.ts · Real e2e none
-- State: HARDENING — Built (verified by reading code 2026-11-09, not run): UploadPageAttachment.cs, PageAttachmentEndpointTests.cs, doc-page-screen.tsx. Remaining: owner tests by hand.
+- Evidence: BE POST /api/v1/pages/{pageId}/attachments/files (Collaboration.PageAttachments.UploadFile), backend/src/Notrelix.Application/Features/Collaboration/Attachments/Commands/UploadPageAttachment/UploadPageAttachment.cs · FE frontend/packages/product/docs/web/src/components/doc-page-screen.tsx (attachmentApi.upload); frontend/packages/product/docs/state/src/query/hooks/use-remember-page-attachment.ts · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs; backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs (viewer cannot upload; another page's attachment not found); frontend/packages/product/docs/state/src/__tests__/attachment-uploads.unit.test.ts · Also `CollaborationAttachmentAppRoleTests` (app role over HTTP: item and page, owner, viewer, outsider, other account, suspended member, suspended and closed Account, archived Workspace, replay, cap, concurrent delete), `ApiTokenCollaborationAppRoleTests` (token scope matrix), `AttachmentLinkTests`, `AttachmentContentClassifierTests`, `AttachmentFileEndpointTests`, `PageAttachmentEndpointTests`; docs `media.component.test.tsx` · Real e2e none
+- State: DONE — Page file upload proven over HTTP on the app role (same matrix as UC-COL-B06) and by the editor media component tests (progress, Retry, Remove, refused, drop, paste, viewer). Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof).
 
 ### UC-COL-B09 Register a link on a page
 - Capability: B, COL-002 Comment target contract
 - Actors and permission: Anyone with UpdatePage on the page.
 - Preconditions: As UC-COL-B08.
-- Input: Filename, Url.
+- Input: Filename, Url; the Idempotency-Key header is required; server-owned fields and name rule as UC-COL-B07.
 - Output: A link Attachment on the page.
-- Main flow: POST /pages/{id}/attachments.
+- Main flow: 1. An editor opens the Files tab of the page panel and adds a link (address, optional name). 2. POST /pages/{id}/attachments.
 - No-op / rejection / concurrency / retry: As UC-COL-B07.
-- UI states: success, validation error, permission denied.
+- UI states: pending, validation error (not http or https), over the cap, permission denied, offline with Try again, success.
 - Rules: Product COL-010.
 - Acceptance: Given a valid link, then it lists on the page.
-- Evidence: BE POST /api/v1/pages/{pageId}/attachments (Collaboration.PageAttachments.Create), CreatePageAttachmentCommandHandler · FE docs state hooks · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs · Real e2e none
-- State: HARDENING — Built: CreatePageAttachmentCommandValidator (new) applies the same http and https allow-list as UC-COL-B07. Unit tests: AttachmentLinkUrlTests. Remains: owner tests by hand; real e2e none.
+- Evidence: BE POST /api/v1/pages/{pageId}/attachments (Collaboration.PageAttachments.Create), CreatePageAttachmentCommandHandler · FE docs state hooks · Design Final-Docs-2 · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/PageAttachmentTests.cs · Also `AttachmentLinkTests`, `CollaborationAttachmentAppRoleTests`; FE the Files tab in `doc-side-panel-surface.tsx` and `doc-files-panel-surface.tsx`, `use-create-page-link.ts`, `doc-files-panel.component.test.tsx`, `doc-page-attachments.component.test.tsx` · Real e2e none
+- State: DONE — New: the page Files tab adds a link (key reused on retry, each refusal worded), shows it safely, and the server rules match UC-COL-B07. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof).
 
 ### UC-COL-B10 List and open attachments of an item or page
 - Capability: B, COL-002 Comment target contract
@@ -512,12 +512,12 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Input: Target id; for content, attachment id.
 - Output: List of attachment metadata; content is streamed through the API after authorization; there is no public address and no durable signed URL.
 - Main flow: 1. Caller opens Files. 2. GET .../attachments. 3. Caller opens one: GET .../attachments/{id}/content, forced download except safe inline images.
-- No-op / rejection / concurrency / retry: An attachment of another target or Workspace: NotFound. Purged object: gone.
-- UI states: loading, empty, success, permission denied, failed download.
+- No-op / rejection / concurrency / retry: An attachment of another target or Workspace: NotFound. A deleted, purged or missing attachment is a plain NotFound (no 410, no existence oracle). Reads stay open for a suspended or closed Account.
+- UI states: loading, empty, success, permission denied, not found, error with Retry, failed download.
 - Rules: Product COL-011, attachment target kinds; spec DCREQ165.
 - Acceptance: Given a viewer, when they open an attachment, then bytes stream; given a user without access, then the same NotFound as a missing id.
-- Evidence: BE GET /api/v1/board-items/{boardItemId}/attachments and /{attachmentId}/content (Collaboration.Attachments.Get, GetContent); GET /api/v1/pages/{pageId}/attachments and /{attachmentId}/content (Collaboration.PageAttachments.Get, GetContent) · FE frontend/packages/product/docs/state/src/query/hooks/use-attachment-content.ts; WM item sheet · Design WM-Sheet-Files · Tests backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs, AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentFileAuthorizationTests.cs (ListAttachments_NeedsViewer_AndNoAccessIsNotFound) · Real e2e none
-- State: HARDENING — Built: the item list route needs the Viewer level, and a user with no access gets NotFound (policy test, AttachmentFileAuthorizationTests). Real e2e: none; owner tests by hand.
+- Evidence: BE GET /api/v1/board-items/{boardItemId}/attachments and /{attachmentId}/content (Collaboration.Attachments.Get, GetContent); GET /api/v1/pages/{pageId}/attachments and /{attachmentId}/content (Collaboration.PageAttachments.Get, GetContent) · FE frontend/packages/product/docs/state/src/query/hooks/use-attachment-content.ts; WM item sheet · Design WM-Sheet-Files · Tests backend/tests/Notrelix.API.Tests/Collaboration/PageAttachmentEndpointTests.cs, AttachmentFileEndpointTests.cs; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentFileAuthorizationTests.cs (ListAttachments_NeedsViewer_AndNoAccessIsNotFound) · Also `CollaborationAttachmentAppRoleTests`, `ApiTokenCollaborationAppRoleTests`; FE WM `attachments-section-list` tests (loading, empty, error with Retry, permission denied, download notice), docs Files tab · Real e2e none
+- State: DONE — Item and page lists and content proven over HTTP on the app role (same NotFound as a made-up id, reads open for suspended Accounts, deleted content NotFound); item sheet and the new page Files tab show loading, empty, error with Retry, permission denied and failed download. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof).
 
 ### UC-COL-B11 Delete an attachment from an item
 - Capability: B, COL-002 Comment target contract
@@ -526,12 +526,12 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Input: Attachment id.
 - Output: Soft delete; the stored object stays until the retention job purges it (UC-COL-F03).
 - Main flow: 1. Caller removes a file. 2. DELETE /board-items/{id}/attachments/{attachmentId}.
-- No-op / rejection / concurrency / retry: Unknown or other target: NotFound; no right: 403.
+- No-op / rejection / concurrency / retry: Unknown or other target: NotFound; no right: 403 `collaboration.attachment_editor_only`; a Viewer cannot delete even their own upload; a second delete is NotFound and changes nothing; two concurrent deletes give one 204 and one 404 (serialised by the target lock). Delete has no Idempotency-Key and no expected version, deliberately: it is a soft delete and a retry is harmless.
 - UI states: destructive confirmation, success, permission denied.
 - Rules: Product Attachment deletion; decision 10; spec DCREQ166.
 - Acceptance: Given an editor, when they delete, then it leaves the list; given a viewer, then 403.
-- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts (reads the file list again after a refusal); frontend/packages/product/work-management/web/src/components/card-popup/sections/attachments-section.tsx shows Delete only when canEdit and a refused delete sets the section's failure notice · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (editor including the Owner, read-only uploader 403, other member 403, no view access NotFound); frontend/packages/product/work-management/web/src/components/card-popup/sections/__tests__/attachments-section.component.test.tsx (Delete for an editor after confirmation, no options menu for a viewer) · Real e2e none
-- State: HARDENING — Built: Delete in a file's options is editor-only, after a confirmation (attachments-section.component.test). Real e2e: none; owner tests by hand.
+- Evidence: BE DELETE /api/v1/board-items/{boardItemId}/attachments/{attachmentId} (Collaboration.Attachments.Delete), DeleteAttachmentCommandHandler · FE frontend/packages/product/work-management/state/src/mutations/use-delete-card-file.ts (reads the file list again after a refusal); frontend/packages/product/work-management/web/src/components/card-popup/sections/attachments-section.tsx shows Delete only when canEdit and a refused delete sets the section's failure notice · Design WM-Sheet-Files · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Attachments/AttachmentTests.cs ; backend/tests/Notrelix.Application.Tests/Features/Collaboration/AttachmentDeleteAuthorizationTests.cs (editor including the Owner, read-only uploader 403, other member 403, no view access NotFound); frontend/packages/product/work-management/web/src/components/card-popup/sections/__tests__/attachments-section.component.test.tsx (Delete for an editor after confirmation, no options menu for a viewer) · Also `CollaborationAttachmentAppRoleTests` (viewer own-upload 403, second delete 404, concurrent double delete), `GovernanceResourcePermissionFlowTests` (item delete code), `attachments-section-delete` component tests · Real e2e none
+- State: DONE — Delete is editor-only on item and page, a viewer cannot delete their own upload, a second delete is NotFound, and concurrent deletes give one success; the item sheet confirms, shows pending and failure, and does not carry a stale failure to the next file. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof).
 
 ### UC-COL-B12 Delete an attachment from a page
 - Capability: B, COL-002 Comment target contract
@@ -540,7 +540,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Input: Attachment id.
 - Output: Soft delete; deleting a block does not delete the attachment.
 - Main flow: DELETE /pages/{id}/attachments/{attachmentId}.
-- No-op / rejection / concurrency / retry: As UC-COL-B11.
+- No-op / rejection / concurrency / retry: As UC-COL-B11 (viewer cannot delete, second delete NotFound, concurrent deletes one 204 and one 404, no key or version by design).
 - UI states: destructive confirmation, success, permission denied.
 - Rules: Decision 10; product section 90.
 - Acceptance: Given an editor, then the attachment is removed from the page list.

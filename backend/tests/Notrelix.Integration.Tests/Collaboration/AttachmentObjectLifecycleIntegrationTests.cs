@@ -125,7 +125,7 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
             await gate.Task; // links are admitted at the same moment the files finish streaming
             var handler = new CreateBoardItemAttachmentCommandHandler(
                 context, request, new FixedClock(), targetLock, Options.Create(new AttachmentUploadOptions { MaxAttachmentsPerItem = cap }));
-            await handler.Handle(new CreateBoardItemAttachmentCommand(itemId, $"l{i}", $"https://x.test/{i}", null, null, null), ct);
+            await handler.Handle(new CreateBoardItemAttachmentCommand(itemId, $"l{i}", $"https://x.test/{i}"), ct);
         }));
 
         var outcomes = await Task.WhenAll(files.Concat(links));
@@ -148,7 +148,7 @@ public sealed class AttachmentObjectLifecycleIntegrationTests : IAsyncLifetime
         {
             var handler = new CreateBoardItemAttachmentCommandHandler(
                 context, request, new FixedClock(), targetLock, Options.Create(new AttachmentUploadOptions()));
-            await handler.Handle(new CreateBoardItemAttachmentCommand(itemId, "l", "https://x.test/l", null, null, null), ct);
+            await handler.Handle(new CreateBoardItemAttachmentCommand(itemId, "l", "https://x.test/l"), ct);
         }).WaitAsync(TimeSpan.FromSeconds(10)); // would time out if the stream held the lock
 
         linkOutcome.Should().BeNull();

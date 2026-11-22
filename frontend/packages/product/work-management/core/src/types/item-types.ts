@@ -388,21 +388,6 @@ export interface ActivityLogResponseApi {
   pageSize: number;
 }
 
-export interface AttachmentDtoApi {
-  id: string;
-  resourceId: string;
-  filename: string;
-  url: string;
-  sizeBytes: number;
-  contentType: string;
-  source: string;
-  /** "File" or "Link". */
-  kind?: string | null;
-  uploadedBy: string;
-  uploadedByName?: string | null;
-  createdAt: string;
-}
-
 /** The schema change a stale write ran into and who made it: a field the board no longer has, an option it no longer lists, or a field whose type changed. */
 export interface StaleSchemaDetail {
   readonly kind: "field-deleted" | "option-removed" | "type-changed";

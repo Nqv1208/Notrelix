@@ -22,8 +22,8 @@ namespace Notrelix.Integration.Tests.Rls;
 /// outside the Workspace with the same status and the same body whether the id belongs to another tenant or was
 /// never issued. Proven per endpoint over the production graph on the application role, for a person of another
 /// account and a person of the same account who is not in the Workspace. A file upload to another tenant's item
-/// (UC-COL-B06) is refused the same way. The status is not hard-coded: a refusal
-/// is either Forbidden or NotFound, and the two answers must match each other. Request-specific fields
+/// (UC-COL-B06) is a plain NotFound. For the comment, reaction, watcher and inbox routes the status is not hard-coded:
+/// a refusal is either Forbidden or NotFound, and the two answers must match each other. Request-specific fields
 /// (traceId, correlationId, instance) and ids are removed before the bodies are compared.
 /// </summary>
 [Collection("DatabaseAppRole")]
@@ -183,8 +183,8 @@ public sealed class CollaborationNonMemberNotFoundTests : IAsyncLifetime
         {
             var found = await UploadAsync(who, _itemId);
             var made = await UploadAsync(who, Guid.NewGuid());
-            Refusals.Should().Contain(made.Status, "a made-up item is refused as Forbidden or NotFound");
-            found.Status.Should().Be(made.Status, "a person outside the Workspace cannot attach a file to its item");
+            made.Status.Should().Be(HttpStatusCode.NotFound, "a made-up item is NotFound");
+            found.Status.Should().Be(HttpStatusCode.NotFound, "a person outside the Workspace cannot attach a file to its item, and cannot tell it exists");
             found.Body.Should().Be(made.Body, "the refusal does not reveal the item");
         }
     }
