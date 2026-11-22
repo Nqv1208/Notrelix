@@ -3,6 +3,8 @@ export type User = {
   email: string;
   name: string;
   avatarUrl: string | null;
+  /** `false` until the person opens the confirmation link; absent only from older fixtures. */
+  emailConfirmed?: boolean;
 };
 
 export type LoginRequestApi = {

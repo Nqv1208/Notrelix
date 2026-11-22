@@ -78,6 +78,7 @@ import { flattenMyWork, useMyWorkItems } from "./work-management-bridge";
 import { useCommandPaletteData } from "./use-command-palette-data";
 import { AccountReadOnlyBannerHost } from "./account-read-only-banner-host";
 import { ArchivedWorkspaceBannerHost } from "./archived-workspace-banner-host";
+import { EmailNotConfirmedBannerHost } from "./email-not-confirmed-banner-host";
 import { useCommandSearch } from "./use-command-search";
 import { useWorkFeedWrites } from "./work-feed-bridge";
 import { useCreateResource } from "./use-create-resource";
@@ -793,6 +794,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             }
           />
         ) : null}
+        <EmailNotConfirmedBannerHost />
         <AccountReadOnlyBannerHost navigation={navigation} />
         <ArchivedWorkspaceBannerHost />
         {/* The one scroll container of the workspace shell (WX-SHELL-004). */}
