@@ -213,6 +213,7 @@ namespace Notrelix.Infrastructure.Data.Migrations
                         .HasName("pk_accounts");
 
                     b.HasIndex("Slug")
+                        .IsUnique()
                         .HasDatabaseName("idx_account_slug");
 
                     b.ToTable("accounts", "account");

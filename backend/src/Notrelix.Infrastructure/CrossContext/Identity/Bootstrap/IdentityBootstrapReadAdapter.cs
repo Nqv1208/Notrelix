@@ -58,11 +58,25 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
                     workspace.AccountId))
             .ToListAsync(cancellationToken);
 
-        var accountMembers = await _accountContext.AccountMembers
+        var memberRows = await _accountContext.AccountMembers
             .AsNoTracking()
             .Where(m => m.UserId == authenticatedUserId && m.Status == AccountMemberStatus.Active)
             .Select(m => new { m.AccountId, m.Role })
             .ToListAsync(cancellationToken);
+
+        // The Account names only break a tie between memberships, so they are read for these Accounts alone.
+        // A membership whose Account row is not visible keeps its place, with an empty name.
+        var memberAccountIds = memberRows.Select(m => m.AccountId).Distinct().ToList();
+        var accountNames = memberAccountIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _accountContext.Accounts
+                .AsNoTracking()
+                .Where(a => memberAccountIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name, cancellationToken);
+        var accountMembers = memberRows
+            .Select(m => new BootstrapAccountMembership(
+                m.AccountId, m.Role, accountNames.GetValueOrDefault(m.AccountId, string.Empty)))
+            .ToList();
 
         var defaultWorkspaceId = await _identityContext.UserProfiles
             .AsNoTracking()
@@ -70,16 +84,12 @@ public sealed class IdentityBootstrapReadAdapter : IIdentityBootstrapReadPort
             .Select(p => p.DefaultWorkspaceId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        // The Account the member acts in: that of the default Workspace, else the one the member
-        // owns, else any Account membership, else the Account of a Workspace the member was invited to.
-        Guid? accountId =
-            workspaces.FirstOrDefault(w => w.Id == defaultWorkspaceId)?.AccountId
-            ?? accountMembers.FirstOrDefault(m => m.Role == AccountRole.Owner)?.AccountId
-            ?? accountMembers.FirstOrDefault()?.AccountId
-            ?? workspaces.FirstOrDefault()?.AccountId;
+        // The Account the member acts in, chosen by the stable order of BootstrapAccountChoice (default
+        // Workspace's Account, then an owned Account, then any, then a Workspace's Account), never by the
+        // order the rows came back in.
+        var accountId = BootstrapAccountChoice.Choose(defaultWorkspaceId, workspaces, accountMembers);
 
-        var ownAccountId = accountMembers.FirstOrDefault(m => m.Role == AccountRole.Owner)?.AccountId
-            ?? accountMembers.FirstOrDefault()?.AccountId;
+        var ownAccountId = BootstrapAccountChoice.Own(accountMembers);
         Guid? personalWorkspaceId = null;
         if (ownAccountId is not null)
         {

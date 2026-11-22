@@ -54,6 +54,7 @@ import {
 } from "@notrelix/work-management-web";
 import { routerStatesCatalog } from "../router/router-states.catalog";
 import { authGuardCatalog } from "../shell/guards/auth-guard.catalog";
+import { accountScopeCatalog } from "../providers/account-scope-bridge.catalog";
 import { emailConfirmationCatalog } from "../shell/workspace/email-confirmation.catalog";
 
 /**
@@ -110,5 +111,6 @@ export const webCatalogs: readonly MessageCatalog[] = [
   accountWorkspacesCatalog,
   routerStatesCatalog,
   authGuardCatalog,
+  accountScopeCatalog,
   emailConfirmationCatalog,
 ];

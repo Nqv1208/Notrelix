@@ -62,7 +62,7 @@ public sealed class InvitedUserRegistrationActions : IInvitedUserRegistrationAct
             await _registrationScope.EnterAsync(user.Id, cancellationToken);
         _identityContext.Users.Add(user);
 
-        var accountName = $"{name.Trim()}'s Account";
+        var accountName = PersonalAccountName.For(name);
         var provisioning = await _provisioningActions.ProvisionPersonalAccountAsync(
             user.Id,
             name,
