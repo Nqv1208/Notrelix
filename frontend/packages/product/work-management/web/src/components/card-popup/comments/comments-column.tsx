@@ -141,9 +141,11 @@ function CommentEntry({
           {replying ? (
             <ReplyBox
               cardId={card.id}
+              workspaceId={card.workspaceId}
               parentCommentId={update.id}
               authorName={update.author.name}
               copy={sheet.thread}
+              mentionCopy={itemPageCopy(copy.locale === "vi" ? "vi" : "en")}
               onCreateUpdate={callbacks.onCreateUpdate}
               onClose={() => {
                 setReplying(false);

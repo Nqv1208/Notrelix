@@ -114,6 +114,8 @@ export interface DocPageScreenSurfaceProps {
   readonly mentionTasks: readonly DocTaskRef[];
   /** Members the typed "@" may mention. */
   readonly mentionPeople?: DocMentionPeople;
+  /** Members "@" may mention in a comment field of the side panel. */
+  readonly commentMentionPeople?: DocMentionPeople;
   /** Where mention chips and page references in the text lead. */
   readonly markTargets?: DocMarkTargets;
   readonly blockTypes?: readonly BlockType[];
@@ -255,6 +257,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     overlay,
     mentionTasks,
     mentionPeople,
+    commentMentionPeople,
     markTargets,
     blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
@@ -475,6 +478,7 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               comments={comments}
               pendingQuote={pendingQuote}
               canComment={canComment && !readOnly}
+              mentionPeople={commentMentionPeople}
               callbacks={callbacks}
             />
           ) : null}

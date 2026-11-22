@@ -258,6 +258,8 @@ export interface MockCommentRecord {
   attachmentIds?: string[];
   /** The top-level comment this one answers (replies are one level deep). */
   parentId?: string;
+  /** The people the comment mentions (the producer keeps only people who can view the item). */
+  mentionedUserIds?: string[];
   /** Who chose which emoji. */
   reactions?: { emoji: string; userId: string }[];
 }
@@ -339,6 +341,8 @@ export interface MockPageCommentRecord {
   resolvedAt?: string | null;
   /** The quoted range of a block the comment points at (page comments only). */
   anchor?: { blockId: string; quote: string; start: number; end: number };
+  /** The people the comment mentions (the producer keeps only people who can view the page). */
+  mentionedUserIds?: string[];
 }
 
 export interface MockPageHistoryRecord {

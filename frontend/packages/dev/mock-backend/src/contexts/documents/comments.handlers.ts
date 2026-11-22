@@ -79,6 +79,7 @@ export const commentsOperations = [
     {
       contentMd?: string | null;
       parentCommentId?: string | null;
+      mentionedUserIds?: string[] | null;
       anchor?: {
         blockId: string;
         quote: string;
@@ -131,6 +132,7 @@ export const commentsOperations = [
         data.contentMd ?? "",
         undefined,
         anchor,
+        data.mentionedUserIds ?? undefined,
       );
       return created<string>(comment.id);
     },
