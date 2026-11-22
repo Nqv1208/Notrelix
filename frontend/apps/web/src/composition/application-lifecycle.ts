@@ -50,10 +50,9 @@ export interface ApplicationLifecycleDependencies {
 
 export interface ApplicationLifecycle {
   /**
-   * Principal-scope transition. TEMPORARY MODEL: Account equals the
-   * authenticated principal until the backend exposes an Account ID and a
-   * switch signal. A change between two different principals drops the whole
-   * cache and in-flight requests (FE-STATE-038/039).
+   * Account-scope transition, called with the Account ID the bootstrap
+   * resolved for the signed-in person. A change between two different Accounts
+   * drops the whole cache and in-flight requests (FE-STATE-038/039).
    */
   prepareAccountTransition(nextAccountId: string | null): void;
   prepareWorkspaceTransition(nextWorkspaceId: string | null): void;

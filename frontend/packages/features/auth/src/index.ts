@@ -18,7 +18,7 @@ export type {
 
 export { createAuthService } from "./core";
 export { authQueryKeys } from "./core/query/keys";
-export type { AuthApiClient, AuthEndpoints } from "./core";
+export type { AuthApiClient, AuthEndpoints, BootstrapAccount } from "./core";
 
 export {
   loginSchema,
@@ -33,6 +33,7 @@ export { parseAuthError, resolveErrorDisplay } from "./core";
 export {
   createUseLogin,
   createUseAuthUser,
+  createUseBootstrapAccount,
   createUseLogout,
   createUseForgotPassword,
   createUseResetPassword,

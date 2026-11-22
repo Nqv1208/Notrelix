@@ -1,7 +1,6 @@
-import { type ReactNode, useLayoutEffect, useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createAuthProvider, useAuth } from "@notrelix/features-auth";
-import { AccountScopeProvider } from "@notrelix/query";
 import { endpoints } from "@notrelix/contracts";
 import { AppRuntimeProvider } from "@notrelix/runtime-web";
 import { WorkManagementServicesProvider } from "@notrelix/work-management-state";
@@ -19,6 +18,7 @@ import {
 } from "../composition/application-services-context";
 import { GlobalErrorBoundary } from "../components/global-error-boundary";
 import { webCatalogs } from "../i18n/catalogs";
+import { AccountScopeBridge } from "./account-scope-bridge";
 import { AccountSuspensionBridge } from "../shell/workspace/account-suspension-bridge";
 import { EmailConfirmationToastBridge } from "../shell/workspace/email-confirmation-toast-bridge";
 
@@ -30,29 +30,6 @@ function applyDocumentLanguage(locale: string) {
 }
 
 export { useTheme };
-
-/**
- * Feeds the active Account scope from the authenticated principal and runs the
- * principal-change cache transition. Temporary model: Account = principal
- * (`User.id`) until the backend exposes an Account ID and a switch signal.
- */
-function AccountScopeBridge({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const { lifecycle } = useApplicationServices();
-  const accountId = user?.id ?? null;
-
-  // Layout effect: runs before children subscribe their queries, so the reset
-  // never wipes a fetch the new principal just started.
-  useLayoutEffect(() => {
-    lifecycle.prepareAccountTransition(accountId);
-  }, [lifecycle, accountId]);
-
-  return (
-    <AccountScopeProvider accountId={accountId}>
-      {children}
-    </AccountScopeProvider>
-  );
-}
 
 /**
  * Gives the labels the person's colour-blind preference (an account preference) and a way to change it.
@@ -111,14 +88,15 @@ export function AppProviders({
         <AppRuntimeProvider runtime={runtime}>
           <QueryClientProvider client={queryClient}>
             <FeatureAuthProvider>
-              <AccountScopeBridge>
-                <I18nProvider
-                  catalogs={webCatalogs}
-                  storage={runtime.storage}
-                  browserLocales={browserLocales}
-                  onLocaleChange={applyDocumentLanguage}
-                >
-                  <ThemeProvider storage={runtime.storage}>
+              <I18nProvider
+                catalogs={webCatalogs}
+                storage={runtime.storage}
+                browserLocales={browserLocales}
+                onLocaleChange={applyDocumentLanguage}
+              >
+                <ThemeProvider storage={runtime.storage}>
+                  {/* Inside the language and theme providers: its loading and failure screens use both. */}
+                  <AccountScopeBridge>
                     <WorkManagementServicesProvider services={workManagement}>
                       <WorkManagementUiPortsHost>
                         <SignedInColourBlind>{children}</SignedInColourBlind>
@@ -127,9 +105,9 @@ export function AppProviders({
                       <EmailConfirmationToastBridge />
                       <AccountSuspensionBridge />
                     </WorkManagementServicesProvider>
-                  </ThemeProvider>
-                </I18nProvider>
-              </AccountScopeBridge>
+                  </AccountScopeBridge>
+                </ThemeProvider>
+              </I18nProvider>
             </FeatureAuthProvider>
           </QueryClientProvider>
         </AppRuntimeProvider>
