@@ -8,7 +8,7 @@ import {
 import { peopleDirectory } from "../state/mock-people-directory";
 import { MockStore } from "../state/mock-store";
 
-describe("mention suggestions in the mock world (CTR-GAP-COL-MENTION-SUGGESTIONS)", () => {
+describe("mention suggestions in the mock world", () => {
   it("offers only people on the board, never the caller or someone who cannot see it", () => {
     const store = new MockStore({ ...defaultConfig });
     const directory = peopleDirectory(store, mockIds.boards.erp, false)!;
