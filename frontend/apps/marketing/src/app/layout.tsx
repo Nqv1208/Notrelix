@@ -4,6 +4,7 @@ import { getMessages } from "next-intl/server";
 
 import { MarketingFooter } from "../components/marketing-footer";
 import { MarketingHeader } from "../components/marketing-header";
+import { serializeJsonLd } from "../config/json-ld";
 import { getSiteOrigin } from "../config/site-origin";
 import { messages } from "../messages/en";
 import "../styles/globals.css";
@@ -11,7 +12,7 @@ import "../styles/globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = await getSiteOrigin();
   return {
-    metadataBase: new URL(siteUrl),
+    ...(siteUrl && { metadataBase: new URL(siteUrl) }),
     title: {
       default: messages.layout.title,
       template: "%s | Notrelix",
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: messages.layout.description,
       type: "website",
       siteName: "Notrelix",
-      url: siteUrl,
+      ...(siteUrl && { url: siteUrl }),
       locale: "en_US",
     },
     twitter: {
@@ -35,14 +36,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const buildStructuredData = (siteUrl: string) => ({
+const buildStructuredData = (siteUrl: string | undefined) => ({
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "Notrelix",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description: messages.layout.description,
-  url: siteUrl,
+  ...(siteUrl && { url: siteUrl }),
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 });
 
@@ -77,7 +78,9 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={localeMessages}>
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+            dangerouslySetInnerHTML={{
+              __html: serializeJsonLd(structuredData),
+            }}
           />
           <div
             id="header-scroll-sentinel"
