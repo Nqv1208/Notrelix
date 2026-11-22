@@ -40,6 +40,20 @@ class DeployRemoteStdinTest(unittest.TestCase):
         self.assertRegex(wf, r'log success\n\s+echo ' + MARKER + r'\n\s+REMOTE\n(?:.*\n)*?\s+grep -qx ' + MARKER + r' "\$out"')
         self.assertIn('set -o pipefail', wf)
 
+    def test_deploy_recreates_nginx_so_a_replaced_conf_takes_effect(self):
+        wf = (ROOT / '.github/workflows/deploy.yml').read_text()
+        recreate = 'up -d --no-build --no-deps --force-recreate nginx'
+        # Forward path: after the main up, before the health loop, inside the rollback trap.
+        main_up = wf.index('compose up -d --no-build --remove-orphans\n')
+        forward = wf.index('compose ' + recreate)
+        self.assertLess(wf.index('trap rollback ERR'), main_up)
+        self.assertLess(main_up, forward)
+        self.assertLess(forward, wf.index('seq 1 75'))
+        self.assertLess(forward, wf.index('trap - ERR; log success'))
+        # Rollback path: the previous SHA's conf is checked out the same way, so it needs the same recreate.
+        rollback = wf[wf.index('rollback(){'):wf.index('trap rollback ERR')]
+        self.assertRegex(rollback, r'docker compose "\$\{envs\[@\]\}"[^;]*' + recreate + r' </dev/null')
+
 
 def secrets_step() -> str:
     wf = (ROOT / '.github/workflows/deploy.yml').read_text()
