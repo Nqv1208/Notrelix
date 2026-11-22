@@ -43,9 +43,9 @@ public class CreateCommentResourceRefTests
             .ReturnsAsync([_boardId]);
     }
 
-    private (CreateCommentCommandHandler Handler, Mock<DbSet<Comment>> Comments, Mock<DbSet<Mention>> Mentions, Mock<ICollaborationDbContext> ContextMock) CreateSut()
+    private (CreateCommentCommandHandler Handler, Mock<DbSet<Comment>> Comments, Mock<DbSet<Mention>> Mentions, Mock<ICollaborationDbContext> ContextMock) CreateSut(List<Comment>? existingComments = null)
     {
-        var comments = TestDbSet.Create<Comment>();
+        var comments = TestDbSet.Create(existingComments);
         var mentions = TestDbSet.Create<Mention>();
         var contextMock = new Mock<ICollaborationDbContext>();
         contextMock.Setup(c => c.Comments).Returns(comments.Object);
@@ -294,5 +294,101 @@ public class CreateCommentResourceRefTests
             .Should().ThrowAsync<Notrelix.Domain.Common.Exceptions.BusinessRuleException>();
 
         comments.Verify(c => c.Add(It.IsAny<Comment>()), Times.Never);
+    }
+
+    private Comment SeedParent(string kind, Guid resourceId)
+    {
+        var workspaceId = _requestContextMock.Object.RequireWorkspaceId();
+        var accountId = _requestContextMock.Object.RequireAccountId();
+        return Comment.Create(accountId, workspaceId, ResourceRef.Create(ResourceKind.Create(kind), resourceId, workspaceId), "parent", Guid.CreateVersion7(), TestNow);
+    }
+
+    [Fact]
+    public async Task ItemReply_MentionsOnlyThePeopleWhoCanViewTheBoard()
+    {
+        var itemId = Guid.CreateVersion7();
+        var parent = SeedParent("work-management.board-item", itemId);
+        var (sut, comments, mentions, _) = CreateSut([parent]);
+        var outsider = Guid.CreateVersion7();
+        var insider = Guid.CreateVersion7();
+        _visibilityMock
+            .Setup(v => v.VisibleBoardIdsAsync(It.IsAny<Guid>(), outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Guid.CreateVersion7()]);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForBoardItem(itemId, "thanks @outsider @insider", parent.Id, [outsider, insider]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        comments.Verify(c => c.Add(It.Is<Comment>(x => x.ParentId == parent.Id)), Times.Once);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == outsider)), Times.Never);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == insider)), Times.Once);
+    }
+
+    [Fact]
+    public async Task PageReply_MentionsOnlyThePeopleWhoCanViewThePage()
+    {
+        var pageId = Guid.CreateVersion7();
+        var parent = SeedParent("documents.page", pageId);
+        var (sut, comments, mentions, _) = CreateSut([parent]);
+        var outsider = Guid.CreateVersion7();
+        var viewer = Guid.CreateVersion7();
+        _visibilityMock
+            .Setup(v => v.VisiblePageIdsAsync(It.IsAny<Guid>(), outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Guid.CreateVersion7()]);
+        _visibilityMock
+            .Setup(v => v.VisiblePageIdsAsync(It.IsAny<Guid>(), viewer, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([pageId]);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForPage(pageId, "agreed @outsider @viewer", parent.Id, [outsider, viewer]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        comments.Verify(c => c.Add(It.Is<Comment>(x => x.ParentId == parent.Id)), Times.Once);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == outsider)), Times.Never);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == viewer)), Times.Once);
+    }
+
+    [Fact]
+    public async Task PageReply_SelfMentionAndDuplicateIds_CollapseToOneMentionEach()
+    {
+        // The handler does not forbid a self-mention; it only drops empty ids and duplicates.
+        var pageId = Guid.CreateVersion7();
+        var parent = SeedParent("documents.page", pageId);
+        var (sut, _, mentions, _) = CreateSut([parent]);
+        var author = _requestContextMock.Object.UserId;
+        var viewer = Guid.CreateVersion7();
+        _visibilityMock
+            .Setup(v => v.VisiblePageIdsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([pageId]);
+
+        var result = await sut.Handle(
+            CreateCommentCommand.ForPage(pageId, "x", parent.Id, [author, viewer, viewer, Guid.Empty]),
+            CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        mentions.Verify(m => m.Add(It.IsAny<Mention>()), Times.Exactly(2));
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == author)), Times.Once);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == viewer)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ItemReplyToAReply_StillMentionsTheViewer()
+    {
+        var itemId = Guid.CreateVersion7();
+        var top = SeedParent("work-management.board-item", itemId);
+        var workspaceId = _requestContextMock.Object.RequireWorkspaceId();
+        var accountId = _requestContextMock.Object.RequireAccountId();
+        var reply = Comment.CreateReply(accountId, workspaceId, top.Target, "first reply", Guid.CreateVersion7(), TestNow,
+            ParentCommentContext.Create(accountId, workspaceId, top.Id, top.Target, false));
+        var (sut, comments, mentions, _) = CreateSut([top, reply]);
+        var insider = Guid.CreateVersion7();
+
+        var result = await sut.Handle(CreateCommentCommand.ForBoardItem(itemId, "re", reply.Id, [insider]), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        comments.Verify(c => c.Add(It.Is<Comment>(x => x.ParentId == top.Id)), Times.Once);
+        mentions.Verify(m => m.Add(It.Is<Mention>(x => x.MentionedId == insider)), Times.Once);
     }
 }
