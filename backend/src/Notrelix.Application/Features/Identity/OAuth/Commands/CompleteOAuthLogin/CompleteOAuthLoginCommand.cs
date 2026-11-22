@@ -266,7 +266,7 @@ public sealed class CompleteOAuthLoginCommandHandler
             await _registrationScope.EnterAsync(user.Id, cancellationToken);
         _identityContext.Users.Add(user);
 
-        var accountName = $"{displayName}'s Account";
+        var accountName = PersonalAccountName.For(displayName);
         var provisioning = await _provisioningActions.ProvisionPersonalAccountAsync(
             user.Id,
             displayName,

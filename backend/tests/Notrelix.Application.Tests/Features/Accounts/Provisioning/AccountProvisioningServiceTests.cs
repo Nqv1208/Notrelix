@@ -31,6 +31,55 @@ public class AccountProvisioningServiceTests : IdentityHandlerTestBase
             result.AccountId, UserId, AccountRole.Owner, TestNow, CancellationToken.None), Times.Once);
     }
 
+    private async Task<Account> ProvisionAsync(string displayName)
+    {
+        Account? added = null;
+        AccountContextMock.Setup(c => c.Accounts.Add(It.IsAny<Account>()))
+            .Callback<Account>(account => added = account);
+
+        await CreateSut().ProvisionPersonalAccountAsync(UserId, displayName, TestNow, CancellationToken.None);
+
+        return added!;
+    }
+
+    [Fact]
+    public async Task ProvisionPersonalAccountAsync_SlugIsTheNamesSlugWithARandomTail()
+    {
+        var account = await ProvisionAsync("Minh An");
+
+        account.Slug.Should().MatchRegex("^minh-ans-account-[0-9a-f]{16}$");
+    }
+
+    [Fact]
+    public async Task ProvisionPersonalAccountAsync_TwoPeopleWithTheSameDisplayNameGetDifferentSlugs()
+    {
+        var first = await ProvisionAsync("Minh An");
+        var second = await ProvisionAsync("Minh An");
+
+        first.Slug.Should().NotBe(second.Slug);
+        first.Id.Should().NotBe(second.Id);
+    }
+
+    [Fact]
+    public async Task ProvisionPersonalAccountAsync_ANameWithNoLatinLettersStillYieldsAValidSlug()
+    {
+        var account = await ProvisionAsync("李明");
+
+        account.Slug.Should().MatchRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+        account.Slug.Should().MatchRegex("-[0-9a-f]{16}$");
+    }
+
+    [Fact]
+    public async Task ProvisionPersonalAccountAsync_ADisplayNameAtTheLongestAllowedDoesNotFailRegistration()
+    {
+        var account = await ProvisionAsync(new string('a', Notrelix.Domain.Identity.Users.User.MaxNameLength));
+
+        account.Name.Length.Should().BeLessThanOrEqualTo(160);
+        account.Name.Should().EndWith("'s Account");
+        account.Slug.Length.Should().BeLessThanOrEqualTo(128);
+        account.Slug.Should().MatchRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+    }
+
     [Fact]
     public async Task ProvisionPersonalAccountAsync_DoesNotSaveOrCommit()
     {
