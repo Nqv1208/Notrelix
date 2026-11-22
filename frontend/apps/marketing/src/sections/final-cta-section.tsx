@@ -5,7 +5,6 @@ import Logo from "@notrelix/ui-web/assets/logo.svg";
 
 import { Reveal } from "../components/reveal";
 import { MarketingButton } from "../components/marketing-button";
-import { env } from "../config/env";
 
 export async function FinalCtaSection() {
   const t = await getTranslations("finalCta");
@@ -31,7 +30,7 @@ export async function FinalCtaSection() {
                 <MarketingButton
                   variant="inverse"
                   size="lg"
-                  href={`${env.webAppUrl}/sign-up`}
+                  href={"/sign-up"}
                   className="w-full sm:w-auto"
                 >
                   {t("ctaPrimary")} <ArrowRight className="size-4" />
