@@ -4,7 +4,7 @@ import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
   DocMarkTargets,
   DocPageCallbacks,
-  DocPerson,
+  DocMentionPeople,
   DocTaskRef,
 } from "../components/doc-page-models";
 import { BlockHandle } from "./block-handle";
@@ -23,7 +23,7 @@ export interface DocEditorSurfaceProps {
   readonly editor: Editor;
   readonly copy: DocPageCopy;
   readonly mentionTasks: readonly DocTaskRef[];
-  readonly mentionPeople?: readonly DocPerson[];
+  readonly mentionPeople?: DocMentionPeople;
   readonly markTargets?: DocMarkTargets;
   readonly callbacks?: DocPageCallbacks;
 }

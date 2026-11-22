@@ -13,6 +13,10 @@ import { defineMockOperation } from "../../operations/types";
 import { notFound, ok } from "../../transport/create-response";
 import { readBlockBody } from "./block-body";
 import {
+  mentionLimit,
+  pageMentionSuggestions,
+} from "../../state/mock-mention-suggestions";
+import {
   INVOICE_BACKLINKS,
   INVOICE_DOC_ID,
   INVOICE_PERMISSIONS,
@@ -21,6 +25,27 @@ import {
 const GAP = { kind: "gap", gapId: "CTR-GAP-DOCS-PAGE-EXT" } as const;
 
 export const pageExtrasOperations = [
+  // GET /pages/:pageId/mention-suggestions: who a page can mention (only people who see the page).
+  defineMockOperation<{ pageId: string }, never, unknown>({
+    id: "collaboration.pages.mentionSuggestions",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Mentions.GetPageMentionSuggestions",
+    } as any,
+    method: "GET",
+    route: "/pages/:pageId/mention-suggestions",
+    async handle({ params, query, store }) {
+      if (!store.getPage(params.pageId)) return notFound("Page not found");
+      return ok(
+        pageMentionSuggestions(
+          store,
+          query.query ?? "",
+          mentionLimit(query.limit),
+        ),
+      );
+    },
+  }),
+
   defineMockOperation<{ pageId: string }, never, unknown>({
     id: "docs.pages.permissions",
     contract: GAP,

@@ -11,6 +11,22 @@ export const collaborationQueryKeys = {
     ["collaboration", "comments", workspaceId, resourceId] as const,
   mentions: (workspaceId: string) =>
     ["collaboration", "mentions", workspaceId] as const,
+  // The target (kind and id) and the typed text are part of the key: people offered for one target or
+  // one query are never shown for another.
+  mentionSuggestions: (
+    workspaceId: string,
+    kind: "page" | "item",
+    targetId: string,
+    query: string,
+  ) =>
+    [
+      "collaboration",
+      "mention-suggestions",
+      workspaceId,
+      kind,
+      targetId,
+      query,
+    ] as const,
   reactions: (resourceId: string) =>
     ["collaboration", "reactions", resourceId] as const,
   presence: (workspaceId: string) =>

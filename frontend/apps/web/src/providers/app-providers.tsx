@@ -9,6 +9,7 @@ import {
   WorkManagementUiPortsHost,
 } from "@notrelix/work-management-web";
 import { createUsePreferences } from "@notrelix/features-account";
+import { createUseMentionSuggestions } from "@notrelix/features-collaboration";
 import { I18nProvider } from "@notrelix/i18n";
 import { ThemeProvider, Toaster, useTheme } from "@notrelix/ui-web";
 import type { WebApplicationServices } from "../composition/application-services";
@@ -79,6 +80,16 @@ export function AppProviders({
     [runtime.api],
   );
 
+  // The people an item comment can @mention, read from the server (only people who can view the item).
+  const useItemMentionSuggestions = useMemo(() => {
+    const useSuggestions = createUseMentionSuggestions(
+      runtime.api.api,
+      runtime.api.endpoints,
+    );
+    return (workspaceId: string, itemId: string, query: string | null) =>
+      useSuggestions(workspaceId, "item", itemId, query);
+  }, [runtime.api]);
+
   return (
     <GlobalErrorBoundary
       telemetry={runtime.telemetry}
@@ -98,7 +109,9 @@ export function AppProviders({
                   {/* Inside the language and theme providers: its loading and failure screens use both. */}
                   <AccountScopeBridge>
                     <WorkManagementServicesProvider services={workManagement}>
-                      <WorkManagementUiPortsHost>
+                      <WorkManagementUiPortsHost
+                        useMentionSuggestions={useItemMentionSuggestions}
+                      >
                         <SignedInColourBlind>{children}</SignedInColourBlind>
                       </WorkManagementUiPortsHost>
                       <Toaster />

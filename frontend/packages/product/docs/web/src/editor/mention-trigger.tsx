@@ -3,7 +3,7 @@ import { useEditorState, type Editor } from "@tiptap/react";
 import type { DocPageCopy } from "../components/doc-page.copy";
 import type {
   DocPageCallbacks,
-  DocPerson,
+  DocMentionPeople,
   DocTaskRef,
 } from "../components/doc-page-models";
 import { DocMentionMenuSurface } from "../components/doc-popups-surface";
@@ -50,7 +50,7 @@ export function MentionTrigger({
   editor: Editor;
   copy: DocPageCopy;
   tasks: readonly DocTaskRef[];
-  people?: readonly DocPerson[];
+  people?: DocMentionPeople;
   callbacks?: DocPageCallbacks;
 }) {
   const match = useEditorState({

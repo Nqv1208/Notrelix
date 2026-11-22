@@ -274,6 +274,9 @@ export const en = {
       "The board is read-only so the import cannot run. No item was created. Unarchive the board and import again.",
     goneTitle: "The board is gone",
     goneBody: "The board was deleted. No item was created.",
+    suspendedTitle: "This account is suspended",
+    suspendedBody:
+      "A suspended account is read-only, so the import did not run and no item was created. Try again once the suspension is lifted.",
     errorBody: "The server failed. No item was created; try again.",
     limitTitle: "The import would go over the item limit",
     limitBody:
@@ -636,6 +639,9 @@ export const vi: BoardLifecycleCopy = {
       "Board chỉ đọc nên chưa nhập được. Không việc nào được tạo. Bỏ lưu trữ board rồi nhập lại.",
     goneTitle: "Board không còn",
     goneBody: "Board đã bị xoá. Không việc nào được tạo.",
+    suspendedTitle: "Tài khoản đang bị tạm ngưng",
+    suspendedBody:
+      "Tài khoản bị tạm ngưng chỉ đọc nên chưa nhập được. Không việc nào được tạo. Thử lại khi tạm ngưng được gỡ.",
     errorBody: "Có lỗi ở máy chủ. Không việc nào được tạo; thử lại.",
     limitTitle: "Nhập sẽ vượt giới hạn số việc",
     limitBody:

@@ -17,7 +17,7 @@ import {
   type DocOverlay,
   type DocPageCallbacks,
   type DocMarkTargets,
-  type DocPerson,
+  type DocMentionPeople,
   type DocRecoveryView,
   type DocSegment,
   type DocTaskRef,
@@ -616,7 +616,7 @@ export interface DocArticleSurfaceProps {
   readonly compare?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
-  readonly mentionPeople?: readonly DocPerson[];
+  readonly mentionPeople?: DocMentionPeople;
   readonly markTargets?: DocMarkTargets;
   /** The block types the slash menu offers; omitted offers every type. */
   readonly blockTypes?: readonly BlockType[];

@@ -85,7 +85,7 @@ import type {
   DocRelatedDoc,
   DocTaskRef,
   DocTaskResolution,
-  DocPerson,
+  DocMentionPeople,
   DocMarkTargets,
   DocTemplatesView,
 } from "./doc-page-models";
@@ -1151,10 +1151,8 @@ export function createDocPageScreen({
     const focused = blocks.find((block) => block.id === focusedId) ?? null;
     const mentionTasks: readonly DocTaskRef[] =
       overlay.kind === "mention" ? host.suggestTasks(overlay.query) : [];
-    const mentionPeople: readonly DocPerson[] =
-      overlay.kind === "mention" && host.suggestMembers
-        ? host.suggestMembers(overlay.query)
-        : [];
+    const mentionPeople: DocMentionPeople | undefined =
+      overlay.kind === "mention" ? host.mentionPeople : undefined;
 
     const patchBlock = (
       block: Block,

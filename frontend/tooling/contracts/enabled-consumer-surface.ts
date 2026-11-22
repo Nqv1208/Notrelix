@@ -5445,4 +5445,24 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     operationId: "Identity.Auth.Sso.Callback",
     mutation: false,
   },
+  {
+    context: "Collaboration",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMentionService",
+    consumerFile:
+      "frontend/packages/features/collaboration/src/core/api/mention.service.ts",
+    capability: "Suggest people to mention on a page",
+    operationId: "Collaboration.Mentions.GetPageMentionSuggestions",
+    mutation: false,
+  },
+  {
+    context: "Collaboration",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMentionService",
+    consumerFile:
+      "frontend/packages/features/collaboration/src/core/api/mention.service.ts",
+    capability: "Suggest people to mention on a board item",
+    operationId: "Collaboration.Mentions.GetBoardItemMentionSuggestions",
+    mutation: false,
+  },
 ];

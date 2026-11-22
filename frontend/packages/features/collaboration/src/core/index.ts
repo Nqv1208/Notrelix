@@ -18,3 +18,10 @@ export {
   type CollaborationApiClient,
   type CollaborationEndpoints,
 } from "./api/comment.service";
+
+export {
+  createMentionService,
+  type MentionEndpoints,
+  type MentionSuggestion,
+  type MentionTargetKind,
+} from "./api/mention.service";

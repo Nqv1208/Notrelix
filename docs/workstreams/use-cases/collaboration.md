@@ -148,7 +148,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-B02 | Mention a person in a page comment | B | Any page commenter | partial | yes | yes | partial | HARDENING | Built: page mentions need the person to view the page (VisiblePageIdsAsync). Remains: owner tests by hand; real e2e inbox-page-reply not re-run. |
 | UC-COL-B03 | Mention a person inside a page block | B | A page editor (Documents UC) | yes | yes | yes | yes | HARDENING | No recorded owner check or design diff. |
 | UC-COL-B04 | Mention a team | B | Any commenter | no | no | no | no | DEFINED | Add a team mention field, fan-out at delivery and the suggestion list. |
-| UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | partial | partial | yes | no | INTEGRATING | No Collaboration-owned suggestion read; page composer has no suggestion list; no real e2e. |
+| UC-COL-B05 | Suggest people to mention without leaking others | B | Any commenter | yes | yes | yes | no | DONE | DONE — Collaboration-owned read returns only people who can view the target; app-role HTTP proof for page and item; refused to API tokens. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). Next: reply composer and page comment panels have no mention picker yet. |
 | UC-COL-B06 | Attach a file to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | DONE | DONE — app-role proof of every route and rejection; item sheet progress, Cancel and error states. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
 | UC-COL-B07 | Attach a link to a board item | B | Anyone with UpdateItem on the item | yes | yes | yes | no | DONE | DONE — idempotent link create, server-owned fields, distinct refusal messages, safe rendering. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
 | UC-COL-B08 | Attach a file to a page | B | Anyone with UpdatePage on the page | yes | yes | yes | no | DONE | DONE — app-role proof; editor media states covered. Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). |
@@ -446,8 +446,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: loading, empty, success, "will not be notified" mark.
 - Rules: Product Mention privacy (section 73), COL-030; decision 42.
 - Acceptance: Given a user outside the Workspace, then they never appear in the list.
-- Evidence: BE Workspace members and board members reads (owned by Workspaces and Work Management; see [work-management.md](work-management.md)) · FE frontend/packages/product/work-management/web (comment composer) · Design WM-Comments · Tests frontend component tests of the composer · Real e2e none
-- State: INTEGRATING — No Collaboration-owned suggestion read; page composer has no suggestion list; no real e2e.
+- Evidence: BE `GetMentionSuggestionsQuery` (GET /pages/{id}/mention-suggestions and /board-items/{id}/mention-suggestions; same per-person view decision a mention notification makes; refused to API tokens) · FE `use-mention-suggestions.ts` in features/collaboration, WM `item-page-mention.tsx`, docs `mention-trigger.tsx` · Design WM-Comments · Tests `GetMentionSuggestionsTests` (30), `MentionSuggestionsAppRoleTests` (6, app role over HTTP, page and item), `mention-composer.component.test.tsx` (6), `use-mention-suggestions.component.test.tsx` (7), `mention.component.test.tsx` · Real e2e none
+- State: DONE — Viewers only, caller and Guests excluded, cross-tenant never listed, no view access NotFound, token of any scope refused (`MentionSuggestionsAppRoleTests` 6 over HTTP on the app role for page and board item, `ApiTokenCollaborationAppRoleTests`). Accepted by the lead under the 2026-11-19 DoD (no e2e, no pixel proof). Next: the reply composer and page comment panels have no mention picker yet.
 
 ### UC-COL-B06 Attach a file to a board item
 - Capability: B, COL-002 Comment target contract

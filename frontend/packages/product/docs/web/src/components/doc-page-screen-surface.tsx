@@ -23,7 +23,7 @@ import type {
   DocCommentView,
   DocConvertView,
   DocMarkTargets,
-  DocPerson,
+  DocMentionPeople,
   DocPickerPageView,
   DocMovePageView,
   DocTrashConfirmView,
@@ -116,7 +116,7 @@ export interface DocPageScreenSurfaceProps {
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
   /** Members the typed "@" may mention. */
-  readonly mentionPeople?: readonly DocPerson[];
+  readonly mentionPeople?: DocMentionPeople;
   /** Where mention chips and page references in the text lead. */
   readonly markTargets?: DocMarkTargets;
   readonly blockTypes?: readonly BlockType[];

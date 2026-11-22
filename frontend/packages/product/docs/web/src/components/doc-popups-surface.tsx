@@ -22,7 +22,11 @@ import {
 import { cn } from "@notrelix/ui-web";
 import type { BlockType } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
-import type { DocPerson, DocTaskRef } from "./doc-page-models";
+import type {
+  DocMentionPeople,
+  DocPerson,
+  DocTaskRef,
+} from "./doc-page-models";
 import { DocAvatar, DocStatusDot, ICON_CLASS } from "./doc-page-ui";
 
 const POPUP =
@@ -231,8 +235,8 @@ export function DocSlashMenuSurface({
 export interface DocMentionMenuSurfaceProps {
   readonly copy: DocPageCopy;
   readonly query: string;
-  /** Workspace members the typed text may mention; listed before the tasks. */
-  readonly people?: readonly DocPerson[];
+  /** The people the typed text may mention (as the server answered); listed before the tasks. */
+  readonly people?: DocMentionPeople;
   readonly tasks: readonly DocTaskRef[];
   readonly activeIndex?: number;
   readonly className?: string;
@@ -249,7 +253,7 @@ export interface DocMentionMenuSurfaceProps {
 export function DocMentionMenuSurface({
   copy,
   query,
-  people = [],
+  people: peopleState,
   tasks,
   activeIndex,
   className,
@@ -259,6 +263,7 @@ export function DocMentionMenuSurface({
   onClose,
 }: DocMentionMenuSurfaceProps): ReactNode {
   const m = copy.mention;
+  const people = peopleState?.people ?? [];
   const [keyActive, setKeyActive] = usePopupKeys({
     count: people.length + tasks.length,
     onPick: (index) => {
@@ -281,9 +286,33 @@ export function DocMentionMenuSurface({
       style={style}
       className={cn(POPUP, className)}
     >
-      {people.length > 0 ? (
+      {peopleState ? (
         <>
           <span className={HEADING}>{m.people}</span>
+          {people.length === 0 ? (
+            <span
+              role={peopleState.status === "error" ? "alert" : "status"}
+              className={cn(HEADING, "flex items-center justify-between gap-2")}
+            >
+              {peopleState.status === "loading" ? (
+                m.peopleLoading
+              ) : peopleState.status === "error" ? (
+                <>
+                  {m.peopleError}
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={peopleState.onRetry}
+                    className="rounded-[6px] px-2 py-0.5 font-semibold text-brand-subtle-foreground outline-none hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    {m.peopleRetry}
+                  </button>
+                </>
+              ) : (
+                m.peopleEmpty
+              )}
+            </span>
+          ) : null}
           {people.map((person, index) => (
             <button
               key={person.id}

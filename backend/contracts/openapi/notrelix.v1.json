@@ -10049,6 +10049,126 @@
         ]
       }
     },
+    "/api/v1/board-items/{boardItemId}/mention-suggestions": {
+      "get": {
+        "tags": [
+          "Collaboration.Mentions",
+          "Collaboration.Mentions"
+        ],
+        "summary": "Suggest people to mention on a board item",
+        "description": "Active, non-Guest workspace members who can see the item's board, never the caller. query matches the start of any word of the name (case and accents ignored, at most 64 characters); limit defaults to 8, at most 20.",
+        "operationId": "Collaboration.Mentions.GetBoardItemMentionSuggestions",
+        "parameters": [
+          {
+            "name": "boardItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/pages/{pageId}/mention-suggestions": {
+      "get": {
+        "tags": [
+          "Collaboration.Mentions",
+          "Collaboration.Mentions"
+        ],
+        "summary": "Suggest people to mention on a page",
+        "description": "Active, non-Guest workspace members who can view the page, never the caller. query matches the start of any word of the name (case and accents ignored, at most 64 characters); limit defaults to 8, at most 20.",
+        "operationId": "Collaboration.Mentions.GetPageMentionSuggestions",
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          },
+          {
+            "Cookie": [ ]
+          }
+        ]
+      }
+    },
     "/api/v1/inbox/summary": {
       "get": {
         "tags": [
@@ -43632,6 +43752,24 @@
             "format": "uuid"
           },
           "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarUrl": {
             "type": "string",
             "nullable": true
           }

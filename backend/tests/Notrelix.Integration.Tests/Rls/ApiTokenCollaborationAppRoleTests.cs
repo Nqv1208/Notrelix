@@ -256,6 +256,20 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/activity"));
     }
 
+    [Fact]
+    public async Task MentionSuggestions_AreAUiAid_AndRefusedToATokenOfAnyScope_OnAnItemAndOnAPage()
+    {
+        var item = $"/api/v1/board-items/{_itemId}/mention-suggestions?query=a";
+        var page = $"/api/v1/pages/{_pageId}/mention-suggestions?query=a";
+
+        foreach (var scopes in new[] { new[] { "work:read" }, ["docs:read"], ["work:read", "docs:read"], [.. ApiTokenScopes.Vocabulary] })
+        {
+            using var client = await BearerAsync(scopes);
+            await AssertScopeMissingAsync(await client.GetAsync(item));
+            await AssertScopeMissingAsync(await client.GetAsync(page));
+        }
+    }
+
     private static async Task<JsonElement> CommentAsync(HttpClient client, string url, Guid id)
     {
         var body = await client.GetStringAsync(url);
