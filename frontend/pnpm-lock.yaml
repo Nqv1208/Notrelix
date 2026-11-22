@@ -386,6 +386,9 @@ importers:
       '@notrelix/features-chat':
         specifier: workspace:*
         version: link:../../packages/features/chat
+      '@notrelix/features-collaboration':
+        specifier: workspace:*
+        version: link:../../packages/features/collaboration
       '@notrelix/features-notifications':
         specifier: workspace:*
         version: link:../../packages/features/notifications
