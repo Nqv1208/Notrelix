@@ -13,7 +13,9 @@ import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
 import {
   isRestrictedTask,
   type DocCommentView,
+  type DocMentionPeople,
   type DocPageCallbacks,
+  type DocPerson,
   type DocPanelTab,
   type DocRelatedDoc,
   type DocTaskRef,
@@ -21,6 +23,11 @@ import {
   type DocTocEntry,
 } from "./doc-page-models";
 import { DocAvatar, DocStatusDot } from "./doc-page-ui";
+import {
+  CommentMentionList,
+  commentMentionToken,
+  mentionIdsIn,
+} from "./doc-comment-mention";
 
 export interface DocSidePanelSurfaceProps {
   readonly copy: DocPageCopy;
@@ -33,6 +40,8 @@ export interface DocSidePanelSurfaceProps {
   /** The selected text a comment is being written on, when there is one. */
   readonly pendingQuote?: string | null;
   readonly canComment?: boolean;
+  /** The people "@" offers in a comment field (the host's server read; only people who can view the page); omitted offers none. */
+  readonly mentionPeople?: DocMentionPeople;
   readonly callbacks?: DocPageCallbacks;
 }
 
@@ -385,10 +394,11 @@ function CommentsPanel({
   copy,
   comments,
   canComment,
+  mentionPeople,
   callbacks,
 }: Pick<
   DocSidePanelSurfaceProps,
-  "copy" | "comments" | "canComment" | "callbacks"
+  "copy" | "comments" | "canComment" | "mentionPeople" | "callbacks"
 >) {
   const c = copy.comments;
   const [showResolved, setShowResolved] = useState(false);
@@ -456,8 +466,12 @@ function CommentsPanel({
                 label={c.reply}
                 placeholder={c.replyPlaceholder}
                 autoFocus
-                onSend={(body) => {
-                  callbacks?.onCommentCreate?.(body, comment.id);
+                people={mentionPeople}
+                onMentionQuery={callbacks?.onCommentMentionQuery}
+                onSend={(body, mentionIds) => {
+                  if (mentionIds.length > 0)
+                    callbacks?.onCommentCreate?.(body, comment.id, mentionIds);
+                  else callbacks?.onCommentCreate?.(body, comment.id);
                   setReplyingId(null);
                 }}
                 onCancel={() => setReplyingId(null)}
@@ -477,6 +491,8 @@ function CommentField({
   placeholder,
   autoFocus,
   focusKey,
+  people,
+  onMentionQuery,
   onSend,
   onCancel,
 }: Pick<DocSidePanelSurfaceProps, "copy"> & {
@@ -485,7 +501,11 @@ function CommentField({
   autoFocus?: boolean;
   /** A change moves the focus into the field. */
   focusKey?: unknown;
-  onSend: (body: string) => void;
+  /** Who "@" offers; omitted keeps the field plain. */
+  people?: DocMentionPeople;
+  /** The text after "@" while the list is open, else `null` (the host reads the people for it). */
+  onMentionQuery?: (query: string | null) => void;
+  onSend: (body: string, mentionIds: readonly string[]) => void;
   onCancel?: () => void;
 }) {
   const c = copy.comments;
@@ -494,15 +514,59 @@ function CommentField({
   useEffect(() => {
     if (autoFocus || focusKey) field.current?.focus();
   }, [autoFocus, focusKey]);
+  const [token, setToken] = useState<ReturnType<
+    typeof commentMentionToken
+  > | null>(null);
+  const [active, setActive] = useState(0);
+  const [mentions, setMentions] = useState<{ id: string; name: string }[]>([]);
+  const query = people && token ? token.query : null;
+  // The host's callback may change every render: only a change of the query reports.
+  const report = useRef(onMentionQuery);
+  report.current = onMentionQuery;
+  useEffect(() => {
+    report.current?.(query);
+  }, [query]);
+  useEffect(() => () => report.current?.(null), []);
+  const listOpen = people !== undefined && token !== null;
+  const candidates = people?.people ?? [];
+  const activeIndex = Math.min(active, candidates.length - 1);
+  const pick = (person: DocPerson) => {
+    if (!token) return;
+    setDraft(
+      (current) =>
+        `${current.slice(0, token.from)}@${person.name} ${current.slice(token.to)}`,
+    );
+    setMentions((current) => [
+      ...current,
+      { id: person.id, name: person.name },
+    ]);
+    setToken(null);
+    const caret = token.from + person.name.length + 2;
+    requestAnimationFrame(() => {
+      field.current?.focus();
+      field.current?.setSelectionRange(caret, caret);
+    });
+  };
   const over = draft.length - COMMENT_MAX_LENGTH;
   const send = () => {
     const body = draft.trim();
     if (!body || over > 0) return;
-    onSend(body);
+    onSend(body, mentionIdsIn(body, mentions));
     setDraft("");
+    setMentions([]);
+    setToken(null);
   };
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="relative flex flex-col gap-1.5">
+      {listOpen && people ? (
+        <CommentMentionList
+          copy={copy}
+          people={people}
+          activeIndex={activeIndex}
+          onPick={pick}
+          onHover={setActive}
+        />
+      ) : null}
       <textarea
         ref={field}
         rows={2}
@@ -510,8 +574,48 @@ function CommentField({
         aria-label={label}
         aria-invalid={over > 0 ? true : undefined}
         placeholder={placeholder}
-        onChange={(event) => setDraft(event.target.value)}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          setToken(
+            commentMentionToken(
+              event.target.value,
+              event.target.selectionStart ?? event.target.value.length,
+            ),
+          );
+          setActive(0);
+        }}
+        onBlur={() => setToken(null)}
         onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+          if (listOpen) {
+            if (
+              candidates.length > 0 &&
+              (event.key === "ArrowDown" || event.key === "ArrowUp")
+            ) {
+              event.preventDefault();
+              const step = event.key === "ArrowDown" ? 1 : -1;
+              setActive(
+                (current) =>
+                  (current + step + candidates.length) % candidates.length,
+              );
+              return;
+            }
+            if (
+              candidates.length > 0 &&
+              ((event.key === "Enter" && !event.shiftKey) ||
+                event.key === "Tab")
+            ) {
+              event.preventDefault();
+              const chosen = candidates[activeIndex];
+              if (chosen) pick(chosen);
+              return;
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.stopPropagation();
+              setToken(null);
+              return;
+            }
+          }
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             send();
@@ -552,10 +656,11 @@ function CommentComposer({
   copy,
   pendingQuote,
   canComment,
+  mentionPeople,
   callbacks,
 }: Pick<
   DocSidePanelSurfaceProps,
-  "copy" | "pendingQuote" | "canComment" | "callbacks"
+  "copy" | "pendingQuote" | "canComment" | "mentionPeople" | "callbacks"
 >) {
   const c = copy.comments;
   return (
@@ -596,7 +701,13 @@ function CommentComposer({
             label={c.compose}
             placeholder={c.composePlaceholder}
             focusKey={pendingQuote}
-            onSend={(body) => callbacks?.onCommentCreate?.(body)}
+            people={mentionPeople}
+            onMentionQuery={callbacks?.onCommentMentionQuery}
+            onSend={(body, mentionIds) =>
+              mentionIds.length > 0
+                ? callbacks?.onCommentCreate?.(body, undefined, mentionIds)
+                : callbacks?.onCommentCreate?.(body)
+            }
           />
         </>
       )}
@@ -617,6 +728,7 @@ export function DocSidePanelSurface({
   comments,
   pendingQuote,
   canComment = false,
+  mentionPeople,
   callbacks,
 }: DocSidePanelSurfaceProps) {
   const p = copy.panel;
@@ -688,6 +800,7 @@ export function DocSidePanelSurface({
             copy={copy}
             comments={comments}
             canComment={canComment}
+            mentionPeople={mentionPeople}
             callbacks={callbacks}
           />
         ) : null}
@@ -697,6 +810,7 @@ export function DocSidePanelSurface({
           copy={copy}
           pendingQuote={pendingQuote}
           canComment={canComment}
+          mentionPeople={mentionPeople}
           callbacks={callbacks}
         />
       ) : null}

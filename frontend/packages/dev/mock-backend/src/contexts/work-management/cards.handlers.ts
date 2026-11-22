@@ -2040,7 +2040,11 @@ export const cardsOperations = [
 
   defineMockOperation<
     { cardId: string },
-    { contentMd: string; parentCommentId?: string | null },
+    {
+      contentMd: string;
+      parentCommentId?: string | null;
+      mentionedUserIds?: string[] | null;
+    },
     void
   >({
     id: "comments.create",
@@ -2051,7 +2055,11 @@ export const cardsOperations = [
     method: "POST",
     route: "/board-items/:cardId/comments",
     async handle({ params, body, store }) {
-      const data = body as { contentMd: string; parentCommentId?: string };
+      const data = body as {
+        contentMd: string;
+        parentCommentId?: string;
+        mentionedUserIds?: string[] | null;
+      };
       const card = store.getCard(params.cardId);
       if (!card) return notFound("Card not found");
       const user = store.getCurrentUser();
@@ -2060,6 +2068,7 @@ export const cardsOperations = [
         user.id,
         data.contentMd,
         data.parentCommentId ?? undefined,
+        data.mentionedUserIds ?? undefined,
       );
       return ok<void>(undefined);
     },

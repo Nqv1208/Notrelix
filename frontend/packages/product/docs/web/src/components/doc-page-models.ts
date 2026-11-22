@@ -572,7 +572,14 @@ export interface DocPageCallbacks {
   readonly onTemplateDelete?: (id: string) => void;
   readonly onImportOpen?: () => void;
   readonly onImportFile?: (file: File) => void;
-  readonly onCommentCreate?: (body: string, parentId?: string) => void;
+  readonly onCommentCreate?: (
+    body: string,
+    parentId?: string,
+    /** The people the text mentions (only names still in it). */
+    mentionIds?: readonly string[],
+  ) => void;
+  /** The text after "@" in a comment field (`null` when no list is open): the host reads the people for it. */
+  readonly onCommentMentionQuery?: (query: string | null) => void;
   /** Starts a comment on the selected text (the panel then asks for the words). */
   readonly onCommentStart?: () => void;
   /** Drops the selection a comment was being written on. */

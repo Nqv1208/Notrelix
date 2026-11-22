@@ -376,6 +376,11 @@ export function createDocPageScreen({
     );
     const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
+    // The text after "@" in a comment field of the side panel, else null.
+    const [commentMentionQuery, setCommentMentionQuery] = useState<
+      string | null
+    >(null);
+
     const pendingFocus = useRef<string | null>(null);
 
     const { taskIds, boardIds } = useMemo(() => referencesOf(blocks), [blocks]);
@@ -385,7 +390,8 @@ export function createDocPageScreen({
       page,
       taskIds,
       boardIds,
-      mentionQuery: overlay.kind === "mention" ? overlay.query : null,
+      mentionQuery:
+        overlay.kind === "mention" ? overlay.query : commentMentionQuery,
       convertBoardId: overlay.kind === "convertTask" ? overlay.boardId : null,
     });
     const refreshBlocks = useRefreshPageBlocks(workspaceId, pageId);
@@ -1777,20 +1783,25 @@ export function createDocPageScreen({
         deleteComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
         if (id === activeCommentId) setActiveCommentId(null);
       },
-      onCommentCreate: (body, parentId) => {
+      onCommentMentionQuery: setCommentMentionQuery,
+      onCommentCreate: (body, parentId, mentionIds) => {
         const anchor = parentId ? null : pendingAnchor;
+        const mentions = mentionIds?.length
+          ? { mentionIds: [...mentionIds] }
+          : {};
         if (!anchor) {
           createComment.mutate({
             pageId,
             body,
             ...(parentId ? { parentId } : {}),
+            ...mentions,
           });
           return;
         }
         // The block the comment names must be stored before the producer can check it.
         afterSaved(() =>
           createComment.mutate(
-            { pageId, body, anchor },
+            { pageId, body, anchor, ...mentions },
             { onSuccess: () => setPendingAnchor(null) },
           ),
         );
@@ -1859,6 +1870,7 @@ export function createDocPageScreen({
         overlay={overlay}
         mentionTasks={mentionTasks}
         mentionPeople={mentionPeople}
+        commentMentionPeople={host.mentionPeople}
         markTargets={markTargets}
         blockTypes={host.blockTypes}
         toolbar={toolbarCurrent(
