@@ -28,7 +28,10 @@ export const pageExtrasOperations = [
   // GET /pages/:pageId/mention-suggestions: who a page can mention (only people who see the page).
   defineMockOperation<{ pageId: string }, never, unknown>({
     id: "collaboration.pages.mentionSuggestions",
-    contract: { kind: "gap", gapId: "CTR-GAP-COL-MENTION-SUGGESTIONS" },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Mentions.GetPageMentionSuggestions",
+    } as any,
     method: "GET",
     route: "/pages/:pageId/mention-suggestions",
     async handle({ params, query, store }) {

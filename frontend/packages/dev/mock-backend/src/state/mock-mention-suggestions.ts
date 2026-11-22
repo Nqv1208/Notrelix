@@ -1,5 +1,5 @@
 /**
- * The people a page or an item can @mention (gap `CTR-GAP-COL-MENTION-SUGGESTIONS`): only people who can view
+ * The people a page or an item can @mention: only people who can view
  * the target, the caller left out, matched by name, at most `limit`. The mock deems an item's viewers the
  * people on its board and a page's viewers the workspace's people.
  */

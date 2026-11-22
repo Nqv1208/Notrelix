@@ -30,7 +30,10 @@ export const itemStatesOperations = [
   // GET /board-items/:id/mention-suggestions: who an item's comment can mention (only people who see the item).
   defineMockOperation<{ id: string }, never, unknown>({
     id: "collaboration.items.mentionSuggestions",
-    contract: { kind: "gap", gapId: "CTR-GAP-COL-MENTION-SUGGESTIONS" },
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Mentions.GetBoardItemMentionSuggestions",
+    } as any,
     method: "GET",
     route: "/board-items/:id/mention-suggestions",
     async handle({ params, query, store }) {
