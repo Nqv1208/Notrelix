@@ -150,7 +150,8 @@ public sealed class GuestAndEntryInvitationIntegrationTests : IAsyncLifetime
             new Mock<IAuditService>().Object,
             new Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationTokenScope(
                 context, SystemTenant(), new Mock<IRlsSessionContext>().Object),
-            SeatGates.AlwaysAdmit);
+            SeatGates.AlwaysAdmit,
+            new Mock<Notrelix.Application.Features.Identity.Public.InvitedRegistration.IInvitedUserRegistrationActions>().Object);
 
         try
         {

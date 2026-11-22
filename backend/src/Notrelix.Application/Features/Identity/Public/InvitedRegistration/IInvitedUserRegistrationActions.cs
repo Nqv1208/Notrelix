@@ -20,6 +20,14 @@ public interface IInvitedUserRegistrationActions
         string password,
         DateTimeOffset now,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marks the sign-in email of an existing person confirmed. Only a caller that has just checked a valid
+    /// one-time invitation token addressed to exactly this email may call it: opening that link proves control of
+    /// the mailbox. A person whose email is already confirmed is left unchanged. Returns false when no such
+    /// person exists.
+    /// </summary>
+    Task<bool> ConfirmEmailAsync(Guid userId, DateTimeOffset now, CancellationToken cancellationToken);
 }
 
 /// <summary>

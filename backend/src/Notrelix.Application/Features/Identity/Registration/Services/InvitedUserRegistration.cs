@@ -92,4 +92,14 @@ public sealed class InvitedUserRegistrationActions : IInvitedUserRegistrationAct
             session.RefreshToken!,
             session.ExpiresAt!.Value);
     }
+
+    public async Task<bool> ConfirmEmailAsync(Guid userId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var user = await _identityContext.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+            return false;
+
+        user.ConfirmEmail(userId, now);
+        return true;
+    }
 }

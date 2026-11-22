@@ -65,22 +65,158 @@ public class AcceptInvitationCommandHandlerTests : AcceptInvitationHandlerTestBa
             t => t.ParseAndHash(It.IsAny<string>(), It.IsAny<TokenPurpose>()), Times.Never);
     }
 
-    [Fact]
-    public async Task Handle_WhenEmailUnconfirmed_ReturnsConfirmedEmailFailureWithoutTokenLookup()
-    {
+    // The emailed token proves control of the invited address, so for the token path an unconfirmed
+    // sign-in email is confirmed by the acceptance itself (AcceptInvitationById, with no token, stays gated).
+    private void UnconfirmedUser() =>
         IdentityUserFactsMock
             .Setup(f => f.FindByIdAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateUserFact(emailConfirmed: false));
 
-        var sut = CreateSut();
+    private void VerifyEmailNeverConfirmed() =>
+        InvitedRegistrationMock.Verify(
+            r => r.ConfirmEmailAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Never);
 
-        var result = await sut.Handle(Command(), CancellationToken.None);
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheTokenIsForTheirAddress_ConfirmsTheEmailAndAccepts()
+    {
+        UnconfirmedUser();
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers();
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
+        InvitedRegistrationMock.Verify(
+            r => r.ConfirmEmailAsync(TestUserId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailAlreadyConfirmed_DoesNotConfirmAgain()
+    {
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        SetupMembers();
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue(string.Join(";", result.Errors));
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheTokenIsForAnotherAddress_IsRefusedAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        SetupInvitations(CreateInvitation(email: OtherEmail));
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain(
-            "Email must be confirmed before accepting workspace invitations.");
-        OneTimeTokenServiceMock.Verify(
-            t => t.ParseAndHash(It.IsAny<string>(), It.IsAny<TokenPurpose>()), Times.Never);
+        result.Errors.Should().Contain("This invitation belongs to a different email address.");
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheTokenIsUnparseable_IsRefusedAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        OneTimeTokenServiceMock
+            .Setup(t => t.ParseAndHash(It.IsAny<string>(), TokenPurpose.WorkspaceInvitation))
+            .Throws(new InvalidOneTimeTokenException());
+        SetupInvitations(CreateInvitation());
+
+        var result = await CreateSut().Handle(Command("v1.not-a-real-token"), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain("Invalid or expired invitation token.");
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndNoInvitationMatchesTheToken_ThrowsNotFoundAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        SetupInvitations(CreateInvitation());
+        OneTimeTokenServiceMock
+            .Setup(t => t.ParseAndHash(It.IsAny<string>(), TokenPurpose.WorkspaceInvitation))
+            .Returns(new ParsedOneTimeToken(OtherTokenHash, HashVersion: 1));
+
+        var act = () => CreateSut().Handle(Command(), CancellationToken.None);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheInvitationExpired_IsRefusedAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        SetupInvitations(CreateInvitation(createdAt: TestNow.AddDays(-8)));
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain("This invitation has expired.");
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheInvitationWasRevoked_IsRefusedAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        var invitation = CreateInvitation();
+        invitation.Revoke(TestUserId, TestNow);
+        SetupInvitations(invitation);
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain("This invitation is no longer valid.");
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheAccountCannotAdmit_IsRefusedAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId));
+        AccountMembershipFactsMock
+            .Setup(f => f.GetAdmissionAsync(TestAccountId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AccountMembershipAdmissionFact(CanAdmitMember: false));
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheWorkspaceIsInactive_IsRefusedAndConfirmsNothing()
+    {
+        UnconfirmedUser();
+        SetupInvitations(CreateInvitation());
+        SetupWorkspaces(CreateWorkspace(id: TestWorkspaceId, isArchived: true));
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        VerifyEmailNeverConfirmed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenEmailUnconfirmed_AndTheUserCannotParticipate_IsRefusedAndConfirmsNothing()
+    {
+        IdentityUserFactsMock
+            .Setup(f => f.FindByIdAsync(TestUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUserFact(emailConfirmed: false, canParticipate: false));
+
+        var result = await CreateSut().Handle(Command(), CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        VerifyEmailNeverConfirmed();
     }
 
     [Fact]

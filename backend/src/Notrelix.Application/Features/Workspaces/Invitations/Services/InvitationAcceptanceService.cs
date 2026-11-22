@@ -50,7 +50,8 @@ public sealed class InvitationAcceptanceService
         Guid userId,
         string userEmail,
         DateTimeOffset now,
-        CancellationToken ct)
+        CancellationToken ct,
+        Func<CancellationToken, Task>? onAddressProven = null)
     {
         if (now >= invitation.ExpiresAt)
             return Result<AcceptInvitationResultDto>.Failure(
@@ -134,6 +135,12 @@ public sealed class InvitationAcceptanceService
             return Result<AcceptInvitationResultDto>.Failure(
                 "A team or space named by this invitation is no longer available. Ask for a new invitation.");
         }
+
+        // Every check that can refuse has passed and the token was valid, unexpired, pending and addressed to exactly this
+        // user's address: the caller may treat the address as proven. Nothing before this point confirms anything, because
+        // a Failure result is still committed by the data session.
+        if (onAddressProven is not null)
+            await onAddressProven(ct);
 
         if (invitation.ResourceGrant is { } grant)
         {
