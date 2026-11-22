@@ -43,6 +43,10 @@ export function createCommentApi(
           contentMd: payload.body,
           ...(payload.anchor ? { anchor: payload.anchor } : {}),
           ...(payload.parentId ? { parentCommentId: payload.parentId } : {}),
+          // The producer mentions only people who can view the page.
+          ...(payload.mentionIds?.length
+            ? { mentionedUserIds: payload.mentionIds }
+            : {}),
         },
       );
       const now = new Date().toISOString();

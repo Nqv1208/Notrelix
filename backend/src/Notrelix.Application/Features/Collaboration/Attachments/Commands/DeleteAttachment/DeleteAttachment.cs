@@ -18,6 +18,8 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
     private readonly ICurrentUser _currentUser;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICommentTargetAccess _access;
+    private readonly IAttachmentTargetLock _targetLock;
+    private readonly ICurrentRequestContext _requestContext;
     private readonly IBoardRealtimeNotifier? _realtime;
 
     public DeleteAttachmentCommandHandler(
@@ -25,8 +27,12 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
         ICurrentUser currentUser,
         IDateTimeProvider dateTimeProvider,
         ICommentTargetAccess access,
+        IAttachmentTargetLock targetLock,
+        ICurrentRequestContext requestContext,
         IBoardRealtimeNotifier? realtime = null)
     {
+        _targetLock = targetLock;
+        _requestContext = requestContext;
         _realtime = realtime;
         _context = context;
         _currentUser = currentUser;
@@ -46,6 +52,10 @@ public class DeleteAttachmentCommandHandler : IRequestHandler<DeleteAttachmentCo
         // This use case is authorised as a board item attachment; an attachment of any other
         // target (a Documents page) is removed only through that target's own use case.
         var boardItem = AttachmentTargets.BoardItem;
+
+        // Two deletes of one attachment must not race to a concurrency conflict: the target lock (held to commit) makes the
+        // second one load the row only after the first committed, so it sees nothing and answers NotFound like any later delete.
+        await _targetLock.AcquireAsync(ResourceRef.Create(boardItem, request.BoardItemId, _requestContext.RequireWorkspaceId()), ct);
         var attachment = await _context.Attachments
             .FirstOrDefaultAsync(a => a.Id == request.AttachmentId && a.Target.Kind == boardItem && a.Target.ResourceId == request.BoardItemId, ct);
 

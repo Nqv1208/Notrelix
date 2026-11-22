@@ -2121,6 +2121,16 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     consumerSymbol: "createAttachmentApi",
     consumerFile:
       "frontend/packages/product/docs/state/src/api/attachment.api.ts",
+    capability: "Collaboration.PageAttachments.Create",
+    operationId: "Collaboration.PageAttachments.Create",
+    mutation: true,
+  },
+  {
+    context: "Documents",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createAttachmentApi",
+    consumerFile:
+      "frontend/packages/product/docs/state/src/api/attachment.api.ts",
     capability: "Collaboration.PageAttachments.GetContent",
     operationId: "Collaboration.PageAttachments.GetContent",
     mutation: false,
@@ -5433,6 +5443,26 @@ export const ENABLED_CONSUMERS: ConsumerSurfaceRow[] = [
     capability:
       "The company provider's way back (a redirect the browser follows; the mock plays it)",
     operationId: "Identity.Auth.Sso.Callback",
+    mutation: false,
+  },
+  {
+    context: "Collaboration",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMentionService",
+    consumerFile:
+      "frontend/packages/features/collaboration/src/core/api/mention.service.ts",
+    capability: "Suggest people to mention on a page",
+    operationId: "Collaboration.Mentions.GetPageMentionSuggestions",
+    mutation: false,
+  },
+  {
+    context: "Collaboration",
+    classification: "CANONICAL_MOCKED",
+    consumerSymbol: "createMentionService",
+    consumerFile:
+      "frontend/packages/features/collaboration/src/core/api/mention.service.ts",
+    capability: "Suggest people to mention on a board item",
+    operationId: "Collaboration.Mentions.GetBoardItemMentionSuggestions",
     mutation: false,
   },
 ];

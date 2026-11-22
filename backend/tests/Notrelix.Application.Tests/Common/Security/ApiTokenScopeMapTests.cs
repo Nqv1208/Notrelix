@@ -8,6 +8,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenCommen
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
+using Notrelix.Application.Features.Collaboration.Mentions.Queries.GetMentionSuggestions;
 using Notrelix.Application.Features.Collaboration.Watchers.Commands.FollowBoardItem;
 using Notrelix.Application.Features.Documents.Pages.Commands.PublishPage;
 using Notrelix.Application.Features.Identity.ApiTokens.Queries.ListApiTokens;
@@ -46,6 +47,7 @@ public sealed class ApiTokenScopeMapTests
     [InlineData(typeof(CreateSpaceCommand))]
     [InlineData(typeof(ListApiTokensQuery))]
     [InlineData(typeof(FollowBoardItemCommand))]
+    [InlineData(typeof(GetMentionSuggestionsQuery))]
     public void A_request_of_a_context_no_scope_covers_is_refused_to_every_token(Type requestType)
     {
         ScopeOf(requestType).Should().BeNull();

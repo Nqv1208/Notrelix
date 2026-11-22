@@ -14,6 +14,7 @@ using Notrelix.Application.Features.Accounts.Abstractions;
 using Notrelix.Application.Features.Automation.Abstractions;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
+using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
@@ -932,6 +933,43 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         using var ownerProvider = CreateProvider(accountId, ownerId);
         (await SendAsync<Result>(ownerProvider, new DeletePageAttachmentCommand(pageId, byOwner))).Succeeded.Should().BeTrue();
         (await SendAsync<Result>(ownerProvider, new DeletePageAttachmentCommand(pageId, byMember))).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteItemAttachment_ByAnEditor_Succeeds_AndByAViewerWhoUploadedIt_IsEditorOnly()
+    {
+        var (accountId, ownerId, workspaceId, boardId, memberId) = await SeedBoardStackAsync();
+        var itemId = await ResolveBoardItemIdAsync(boardId);
+        await using (var seed = _db.CreateOwnerContext(SystemTenant()))
+        {
+            var board = await seed.Boards.SingleAsync(b => b.Id == boardId);
+            board.ChangeVisibility(BoardVisibility.Private, ownerId, DateTimeOffset.UtcNow);
+            await seed.SaveChangesAsync();
+        }
+
+        var byOwner = await SeedItemLinkAttachmentAsync(accountId, workspaceId, itemId, ownerId);
+        var byMember = await SeedItemLinkAttachmentAsync(accountId, workspaceId, itemId, memberId);
+        await SeedResourcePermissionAsync(accountId, workspaceId, "work-management.board", boardId, memberId, PermissionLevel.Viewer);
+
+        using var memberProvider = CreateProvider(accountId, memberId);
+        var viewerDelete = () => SendAsync<Result>(memberProvider, new DeleteAttachmentCommand(itemId, byMember));
+        (await viewerDelete.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(AttachmentAccessRules.EditorOnlyCode);
+
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        (await SendAsync<Result>(ownerProvider, new DeleteAttachmentCommand(itemId, byOwner))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(ownerProvider, new DeleteAttachmentCommand(itemId, byMember))).Succeeded.Should().BeTrue();
+    }
+
+    private async Task<Guid> SeedItemLinkAttachmentAsync(Guid accountId, Guid workspaceId, Guid itemId, Guid uploaderId)
+    {
+        var row = Attachment.Create(
+            accountId, workspaceId, ResourceRef.Create(ResourceKind.Create("work-management.board-item"), itemId, workspaceId),
+            AttachmentType.Link, FileMetadata.Create("link", 0, "text/uri-list", url: "https://example.com"),
+            uploaderId, DateTimeOffset.UtcNow);
+        await using var seed = _db.CreateOwnerContext(SystemTenant());
+        seed.Attachments.Add(row);
+        await seed.SaveChangesAsync();
+        return row.Id;
     }
 
     private async Task<Guid> SeedLinkAttachmentAsync(Guid accountId, Guid workspaceId, Guid pageId, Guid uploaderId)
@@ -2036,6 +2074,10 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<DeletePageAttachmentCommand, Result>,
             DeletePageAttachmentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<DeleteAttachmentCommand, Result>,
+            DeleteAttachmentCommandHandler>();
+        services.AddScoped<IAttachmentTargetLock, Notrelix.Infrastructure.Data.Collaboration.PostgresAttachmentTargetLock>();
         services.AddScoped<Notrelix.Application.Features.Collaboration.Comments.Services.ICommentTargetAccess,
             Notrelix.Application.Features.Collaboration.Comments.Services.CommentTargetAccess>();
         services.AddScoped<MoveBoardItemUseCase>();

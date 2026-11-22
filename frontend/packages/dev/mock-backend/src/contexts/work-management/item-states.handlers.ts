@@ -14,6 +14,10 @@ import {
   validationError,
 } from "../../transport/create-response";
 import { canReadBoard, canWriteBoardItems } from "./boards.handlers";
+import {
+  itemMentionSuggestions,
+  mentionLimit,
+} from "../../state/mock-mention-suggestions";
 
 interface ItemLifecycleDto {
   readonly archived: { readonly at: string; readonly byName: string } | null;
@@ -23,6 +27,29 @@ interface ItemLifecycleDto {
 const gap = { kind: "gap", gapId: "CTR-GAP-WM-ITEM-STATES" } as const;
 
 export const itemStatesOperations = [
+  // GET /board-items/:id/mention-suggestions: who an item's comment can mention (only people who see the item).
+  defineMockOperation<{ id: string }, never, unknown>({
+    id: "collaboration.items.mentionSuggestions",
+    contract: {
+      kind: "openapi",
+      operationId: "Collaboration.Mentions.GetBoardItemMentionSuggestions",
+    } as any,
+    method: "GET",
+    route: "/board-items/:id/mention-suggestions",
+    async handle({ params, query, store }) {
+      const item = store.getCard(params.id);
+      if (!item || !canReadBoard(item.boardId, store)) return notFound();
+      return ok(
+        itemMentionSuggestions(
+          store,
+          item.boardId,
+          query.query ?? "",
+          mentionLimit(query.limit),
+        ),
+      );
+    },
+  }),
+
   defineMockOperation<{ id: string }, never, ItemLifecycleDto>({
     id: "itemStates.lifecycle",
     contract: gap,

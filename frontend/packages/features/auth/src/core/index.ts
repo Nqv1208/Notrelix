@@ -17,7 +17,11 @@ export type {
 
 // API
 export { createAuthService } from "./api/auth.service";
-export type { AuthApiClient, AuthEndpoints } from "./api/auth.service";
+export type {
+  AuthApiClient,
+  AuthEndpoints,
+  BootstrapAccount,
+} from "./api/auth.service";
 
 // Schemas
 export {

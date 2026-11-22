@@ -26,6 +26,8 @@ public class AccountConfiguration : IEntityTypeConfiguration<Domain.Accounts.Acc
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.Slug).HasDatabaseName("idx_account_slug");
+        // One slug names one Account: generated personal slugs carry a random tail, and a slug asked for
+        // by hand must be free, so the index (not a read-then-write check) is what settles a race.
+        builder.HasIndex(x => x.Slug).IsUnique().HasDatabaseName("idx_account_slug");
     }
 }

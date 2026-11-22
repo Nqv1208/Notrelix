@@ -107,7 +107,7 @@ export const en = {
   attach: {
     title: "Attach",
     chooseFile: "Choose file",
-    limit: "Up to 25 MB per file",
+    limit: "Up to 100 MB per file",
     dropHint: "Drag or paste files anywhere on the card",
     smartLabel: "Paste a link or find a page or card",
     smartPlaceholder: "Paste a link or find a page, a card…",
@@ -118,6 +118,11 @@ export const en = {
     linkAction: "Attach",
     urlInvalid: "Paste an address that starts with http:// or https://.",
     failed: "Could not attach. Try again.",
+    linkRejected: "The server refused this address. Check it and try again.",
+    linkLimit: "This card already has the most attachments it can hold.",
+    linkForbidden: "You can no longer attach to this card.",
+    linkGone: "This card is gone or you can no longer see it.",
+    linkOffline: "No connection. Check the network and try again.",
     pageUntitled: "Untitled page",
     pageLoading: "Loading pages",
     pageError: "Could not load pages.",
@@ -127,6 +132,7 @@ export const en = {
     uploadingPlain: "Uploading",
     uploading: "{{percent}}%",
     dismiss: "Remove {{name}} from the list",
+    cancel: "Cancel the upload of {{name}}",
   },
 };
 export type PickersCopy = typeof en;
@@ -238,7 +244,7 @@ export const vi: PickersCopy = {
   attach: {
     title: "Đính kèm",
     chooseFile: "Chọn tệp",
-    limit: "Tối đa 25 MB mỗi tệp",
+    limit: "Tối đa 100 MB mỗi tệp",
     dropHint: "Kéo thả hoặc dán tệp vào bất kỳ chỗ nào trên thẻ",
     smartLabel: "Dán liên kết hoặc tìm trang, công việc",
     smartPlaceholder: "Dán liên kết hoặc tìm trang, công việc…",
@@ -249,6 +255,11 @@ export const vi: PickersCopy = {
     linkAction: "Gắn",
     urlInvalid: "Dán đường dẫn bắt đầu bằng http:// hoặc https://.",
     failed: "Chưa đính kèm được. Thử lại nhé.",
+    linkRejected: "Máy chủ từ chối đường dẫn này. Kiểm tra rồi thử lại nhé.",
+    linkLimit: "Thẻ này đã đạt số tệp đính kèm tối đa.",
+    linkForbidden: "Bạn không còn quyền đính kèm vào thẻ này.",
+    linkGone: "Thẻ này đã mất hoặc bạn không còn xem được.",
+    linkOffline: "Không có kết nối. Kiểm tra mạng rồi thử lại nhé.",
     pageUntitled: "Trang chưa đặt tên",
     pageLoading: "Đang tải trang",
     pageError: "Chưa tải được trang.",
@@ -258,5 +269,6 @@ export const vi: PickersCopy = {
     uploadingPlain: "Đang tải lên",
     uploading: "{{percent}}%",
     dismiss: "Bỏ {{name}} khỏi danh sách",
+    cancel: "Huỷ tải lên {{name}}",
   },
 };

@@ -7,6 +7,7 @@ import {
   encodeProperties,
 } from "../model/block-wire";
 import { mapBlock } from "../model/block.mapper";
+import { classifyPageFilesFailure } from "../editor/page-attachment-failure";
 import { docsQueryKeys } from "../query/keys";
 import { testEndpoints } from "./test-endpoints";
 
@@ -117,6 +118,44 @@ describe("page attachments api", () => {
     ]);
   });
 
+  it("lists a registered link with its address and the person who added it", async () => {
+    const api = clients();
+    api.get.mockResolvedValue([
+      {
+        id: "l1",
+        filename: "Hướng dẫn",
+        url: "https://example.com/guide",
+        kind: "Link",
+        sizeBytes: 0,
+        contentType: "text/uri-list",
+        uploadedByName: "Lan",
+        createdAt: "2026-10-26T01:00:00Z",
+      },
+    ]);
+    const [link] = await createAttachmentApi(api, testEndpoints).list("p1");
+    expect(link).toMatchObject({
+      id: "l1",
+      kind: "link",
+      url: "https://example.com/guide",
+      uploadedByName: "Lan",
+    });
+  });
+
+  it("registers a link with only its address and name, under the caller's idempotency key", async () => {
+    const api = clients();
+    api.post.mockResolvedValue(undefined);
+    await createAttachmentApi(api, testEndpoints).createLink(
+      "p1",
+      { url: "https://example.com/a", name: "A" },
+      { idempotencyKey: "key-9" },
+    );
+    expect(api.post).toHaveBeenCalledWith(
+      "/pages/p1/attachments",
+      { filename: "A", url: "https://example.com/a" },
+      { idempotencyKey: "key-9", skipGlobalErrorToast: true },
+    );
+  });
+
   it("uploads as multipart part `file` with the caller's idempotency key", async () => {
     const api = clients();
     api.upload.mockResolvedValue({ id: "a2", filename: "a.png" });
@@ -161,5 +200,17 @@ describe("page attachments api", () => {
     expect(docsQueryKeys.attachmentContent("w1", "p1", "a1")).not.toEqual(
       docsQueryKeys.attachmentContent("w1", "p1", "a2"),
     );
+  });
+});
+
+describe("page file failures", () => {
+  it("maps the API's answers to the reason the Files panel shows", () => {
+    expect(classifyPageFilesFailure({ status: 400 })).toBe("invalid");
+    expect(classifyPageFilesFailure({ status: 409 })).toBe("limitReached");
+    expect(classifyPageFilesFailure({ status: 403 })).toBe("forbidden");
+    expect(classifyPageFilesFailure({ status: 404 })).toBe("notFound");
+    expect(classifyPageFilesFailure({ kind: "network" })).toBe("network");
+    expect(classifyPageFilesFailure({ status: 500 })).toBe("failed");
+    expect(classifyPageFilesFailure("boom")).toBe("failed");
   });
 });

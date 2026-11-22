@@ -5,7 +5,9 @@ import {
   AttachmentUploads,
   createAttachmentApi,
   createUseAttachmentContent,
+  createUseCreatePageLink,
   createUseDeletePageAttachment,
+  classifyPageFilesFailure,
   createUsePageAttachments,
   useRememberPageAttachment,
   type DocsFileClient,
@@ -54,7 +56,9 @@ import {
   type PageAttachment,
 } from "@notrelix/docs-core";
 import { fillDocCopy, type DocPageCopy } from "./doc-page.copy";
+import { useLocale } from "@notrelix/i18n";
 import { useDocPageCopy } from "./use-doc-page-copy";
+import { filesStatusOf, linkHost, toFileEntries } from "./doc-files-mapping";
 import type { UseDocPageHost } from "./doc-page-host";
 import {
   blockText,
@@ -76,11 +80,12 @@ import type {
   DocImportView,
   DocOverlay,
   DocPageCallbacks,
+  DocFilesPanel,
   DocPanelTab,
   DocRelatedDoc,
   DocTaskRef,
   DocTaskResolution,
-  DocPerson,
+  DocMentionPeople,
   DocMarkTargets,
   DocTemplatesView,
 } from "./doc-page-models";
@@ -261,6 +266,7 @@ export function createDocPageScreen({
   const attachmentApi = createAttachmentApi(api, endpoints);
   const usePageAttachments = createUsePageAttachments(api, endpoints);
   const useDeletePageAttachment = createUseDeletePageAttachment(api, endpoints);
+  const useCreatePageLink = createUseCreatePageLink(api, endpoints);
   const useAttachmentContent = createUseAttachmentContent(api, endpoints);
   const usePage = createUsePage(api, endpoints);
   const usePageBlocks = createUsePageBlocks(api, endpoints);
@@ -376,6 +382,11 @@ export function createDocPageScreen({
     );
     const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
+    // The text after "@" in a comment field of the side panel, else null.
+    const [commentMentionQuery, setCommentMentionQuery] = useState<
+      string | null
+    >(null);
+
     const pendingFocus = useRef<string | null>(null);
 
     const { taskIds, boardIds } = useMemo(() => referencesOf(blocks), [blocks]);
@@ -385,7 +396,8 @@ export function createDocPageScreen({
       page,
       taskIds,
       boardIds,
-      mentionQuery: overlay.kind === "mention" ? overlay.query : null,
+      mentionQuery:
+        overlay.kind === "mention" ? overlay.query : commentMentionQuery,
       convertBoardId: overlay.kind === "convertTask" ? overlay.boardId : null,
     });
     const refreshBlocks = useRefreshPageBlocks(workspaceId, pageId);
@@ -725,7 +737,12 @@ export function createDocPageScreen({
             () => new Map((query.data ?? []).map((file) => [file.id, file])),
             [query.data],
           );
-          return { files, loading: query.isLoading };
+          return {
+            files,
+            loading: query.isLoading,
+            failed: query.isError && query.data === undefined,
+            retry: () => void query.refetch(),
+          };
         },
         useContent: (attachmentId) => {
           const query = useAttachmentContent(workspaceId, pageId, attachmentId);
@@ -756,6 +773,54 @@ export function createDocPageScreen({
         },
       }),
       [pageId, uploads, workspaceId, deleteAttachmentAsync],
+    );
+    // The page's attachments: the Files tab lists them, an editor adds a link.
+    const { locale } = useLocale();
+    const filesQuery = usePageAttachments(workspaceId, pageId);
+    const createLink = useCreatePageLink(workspaceId, pageId);
+    const createLinkAsync = createLink.mutateAsync;
+    const { data: attachments, error: filesError } = filesQuery;
+    const refetchFiles = filesQuery.refetch;
+    const filesPanel = useMemo<DocFilesPanel>(
+      () => ({
+        status: filesStatusOf({
+          isLoading: filesQuery.isLoading,
+          isError: filesQuery.isError,
+          data: attachments,
+          error: filesError,
+        }),
+        entries: toFileEntries(attachments ?? [], locale),
+        canEdit: host.canEdit && !accessLost,
+        onRetry: () => void refetchFiles(),
+        onDownload: async (id) => {
+          const file = attachments?.find((entry) => entry.id === id);
+          if (file) await media.download(file);
+        },
+        onDelete: async (id) => {
+          const file = attachments?.find((entry) => entry.id === id);
+          if (file) await media.remove(file);
+        },
+        onAddLink: async ({ url, name }) => {
+          try {
+            await createLinkAsync({ url, name: name || linkHost(url) });
+            return null;
+          } catch (error) {
+            return classifyPageFilesFailure(error);
+          }
+        },
+      }),
+      [
+        filesQuery.isLoading,
+        filesQuery.isError,
+        attachments,
+        filesError,
+        locale,
+        host.canEdit,
+        accessLost,
+        refetchFiles,
+        media,
+        createLinkAsync,
+      ],
     );
     const richEditor = useDocRichEditor({
       pageId,
@@ -1092,10 +1157,8 @@ export function createDocPageScreen({
     const focused = blocks.find((block) => block.id === focusedId) ?? null;
     const mentionTasks: readonly DocTaskRef[] =
       overlay.kind === "mention" ? host.suggestTasks(overlay.query) : [];
-    const mentionPeople: readonly DocPerson[] =
-      overlay.kind === "mention" && host.suggestMembers
-        ? host.suggestMembers(overlay.query)
-        : [];
+    const mentionPeople: DocMentionPeople | undefined =
+      overlay.kind === "mention" ? host.mentionPeople : undefined;
 
     const patchBlock = (
       block: Block,
@@ -1779,20 +1842,25 @@ export function createDocPageScreen({
         deleteComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
         if (id === activeCommentId) setActiveCommentId(null);
       },
-      onCommentCreate: (body, parentId) => {
+      onCommentMentionQuery: setCommentMentionQuery,
+      onCommentCreate: (body, parentId, mentionIds) => {
         const anchor = parentId ? null : pendingAnchor;
+        const mentions = mentionIds?.length
+          ? { mentionIds: [...mentionIds] }
+          : {};
         if (!anchor) {
           createComment.mutate({
             pageId,
             body,
             ...(parentId ? { parentId } : {}),
+            ...mentions,
           });
           return;
         }
         // The block the comment names must be stored before the producer can check it.
         afterSaved(() =>
           createComment.mutate(
-            { pageId, body, anchor },
+            { pageId, body, anchor, ...mentions },
             { onSuccess: () => setPendingAnchor(null) },
           ),
         );
@@ -1857,10 +1925,12 @@ export function createDocPageScreen({
         comments={commentViews}
         pendingQuote={pendingAnchor?.quote ?? null}
         panelTab={panelTab}
+        files={filesPanel}
         panelOpen={panelOpen}
         overlay={overlay}
         mentionTasks={mentionTasks}
         mentionPeople={mentionPeople}
+        commentMentionPeople={host.mentionPeople}
         markTargets={markTargets}
         blockTypes={host.blockTypes}
         toolbar={toolbarCurrent(

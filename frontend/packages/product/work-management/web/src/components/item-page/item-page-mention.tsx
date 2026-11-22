@@ -2,15 +2,17 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "@notrelix/ui-web";
 import { personInitials } from "@notrelix/work-management-core";
 import { identityMarkClass } from "../shared/item-display";
-import { fillSheetCopy } from "../card-detail/item-sheet.copy";
+import {
+  useWmUiPorts,
+  type MentionSuggestionsView,
+} from "../shared/wm-ui-ports";
 import type { ItemPageCopy } from "./item-page.copy";
 import { foldForSearch } from "./item-pickers";
-import type { ItemPagePeople } from "./item-page-types";
 
 /**
- * The @mention list of the comment box: people and teams that match what was
- * typed after "@". It says up front who the item reaches: a person who cannot
- * see the item is listed with a warning and is not notified.
+ * The @mention list of the comment box: the people the server offers for what
+ * was typed after "@". The server lists only people who can view the item, so a
+ * mention always reaches the person it names and the list never leaks anyone.
  */
 
 export interface MentionToken {
@@ -30,61 +32,20 @@ export function mentionToken(text: string, caret: number): MentionToken | null {
 
 export interface MentionCandidate {
   readonly key: string;
-  readonly kind: "person" | "team";
   readonly name: string;
   /** Who is notified when this is picked. */
   readonly userIds: readonly string[];
-  readonly note: string | null;
 }
 
-const MAX_CANDIDATES = 6;
-
+/** What the server offered, as list rows. */
 export function mentionCandidates(
-  token: MentionToken | null,
-  people: ItemPagePeople | undefined,
-  copy: ItemPageCopy,
-  viewerUserId?: string,
+  people: MentionSuggestionsView["people"],
 ): MentionCandidate[] {
-  if (!token || !people) return [];
-  const t = copy.composer;
-  const needle = foldForSearch(token.query);
-  const matches = (name: string) =>
-    !needle || foldForSearch(name).includes(needle);
-  // Only people who can view the board are offered: a mention of anyone else would not
-  // notify them, so the list never suggests them.
-  const persons = people.people
-    .filter(
-      (person) =>
-        person.onBoard &&
-        person.userId !== viewerUserId &&
-        matches(person.name),
-    )
-    .map((person): MentionCandidate => {
-      const level = person.level ? t.mentionLevels[person.level] : null;
-      return {
-        key: person.userId,
-        kind: "person",
-        name: person.name,
-        userIds: [person.userId],
-        note: [person.department, level].filter(Boolean).join(" · ") || null,
-      };
-    });
-  const teams = (people.teams ?? [])
-    .filter((team) => matches(team.name))
-    .map((team): MentionCandidate => ({
-      key: team.id,
-      kind: "team",
-      name: team.name,
-      userIds: team.viewableUserIds,
-      note:
-        team.viewableCount === team.memberCount
-          ? fillSheetCopy(t.mentionTeamAll, { count: team.memberCount })
-          : fillSheetCopy(t.mentionTeamSome, {
-              count: team.memberCount,
-              viewable: team.viewableCount,
-            }),
-    }));
-  return [...persons, ...teams].slice(0, MAX_CANDIDATES);
+  return people.map((person) => ({
+    key: person.userId,
+    name: person.name,
+    userIds: [person.userId],
+  }));
 }
 
 /** The draft the field writes to (`useCommentDraft`). */
@@ -105,25 +66,24 @@ interface MentionDraft {
  */
 export function useMentionField({
   draft,
-  people,
-  copy,
-  viewerUserId,
+  workspaceId,
+  itemId,
 }: {
   draft: MentionDraft;
-  people: ItemPagePeople | undefined;
-  copy: ItemPageCopy;
-  viewerUserId?: string | null;
+  workspaceId: string;
+  itemId: string;
 }) {
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const [token, setToken] = useState<MentionToken | null>(null);
   const [active, setActive] = useState(0);
-  const candidates = mentionCandidates(
-    token,
-    people,
-    copy,
-    viewerUserId ?? undefined,
+  const suggestions = useWmUiPorts().useMentionSuggestions(
+    workspaceId,
+    itemId,
+    token ? token.query : null,
   );
-  const listOpen = candidates.length > 0;
+  const candidates = mentionCandidates(suggestions.people);
+  // Open while "@" is being typed: it also says loading, nobody to mention and a failed read.
+  const listOpen = token !== null;
   const activeIndex = Math.min(active, candidates.length - 1);
 
   const pick = (candidate: MentionCandidate) => {
@@ -143,7 +103,10 @@ export function useMentionField({
   /** True when the key was the list's (the caller then skips its own handling). */
   const handleKey = (event: KeyboardEvent<HTMLTextAreaElement>): boolean => {
     if (!listOpen) return false;
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (
+      candidates.length > 0 &&
+      (event.key === "ArrowDown" || event.key === "ArrowUp")
+    ) {
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       setActive(
@@ -152,8 +115,9 @@ export function useMentionField({
       return true;
     }
     if (
-      (event.key === "Enter" && !event.metaKey && !event.ctrlKey) ||
-      event.key === "Tab"
+      candidates.length > 0 &&
+      ((event.key === "Enter" && !event.metaKey && !event.ctrlKey) ||
+        event.key === "Tab")
     ) {
       event.preventDefault();
       const chosen = candidates[activeIndex];
@@ -181,6 +145,8 @@ export function useMentionField({
     fieldRef,
     token,
     candidates,
+    status: suggestions.status,
+    retry: suggestions.retry,
     listOpen,
     activeIndex,
     setActive,
@@ -219,27 +185,57 @@ function Matched({ text, query }: { text: string; query: string }) {
 
 export function MentionList({
   candidates,
+  status,
   query,
   activeIndex,
   copy,
   onPick,
   onHover,
+  onRetry,
 }: {
   candidates: readonly MentionCandidate[];
+  status: MentionSuggestionsView["status"];
   query: string;
   activeIndex: number;
   copy: ItemPageCopy;
   onPick: (candidate: MentionCandidate) => void;
   onHover: (index: number) => void;
+  onRetry: () => void;
 }) {
-  if (candidates.length === 0) return null;
+  const t = copy.composer;
   return (
     <div
       role="listbox"
       id="item-page-mention-list"
-      aria-label={copy.composer.mentionList}
+      aria-label={t.mentionList}
+      aria-busy={status === "loading"}
       className="absolute bottom-full left-0 z-modal mb-2 w-75 overflow-hidden rounded-[10px] border border-line-strong bg-popover p-1.5 shadow-lg"
     >
+      {candidates.length === 0 ? (
+        <div
+          role={status === "error" ? "alert" : "status"}
+          className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-item-ui text-meta-foreground"
+        >
+          {status === "loading" ? (
+            t.mentionLoading
+          ) : status === "error" ? (
+            <>
+              <span>{t.mentionError}</span>
+              <button
+                type="button"
+                // The textarea keeps focus: a click must not blur it first.
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={onRetry}
+                className="shrink-0 rounded-[6px] px-2 py-0.5 font-semibold text-brand-subtle-foreground hover:bg-state-hover-strong focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                {t.mentionRetry}
+              </button>
+            </>
+          ) : (
+            t.mentionEmpty
+          )}
+        </div>
+      ) : null}
       {candidates.map((candidate, index) => (
         <div
           key={candidate.key}
@@ -259,22 +255,13 @@ export function MentionList({
             aria-hidden="true"
             className={cn(
               "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-avatar-xs",
-              candidate.kind === "team"
-                ? "bg-work-status-doing-lane text-work-status-doing-text"
-                : identityMarkClass(candidate.key),
+              identityMarkClass(candidate.key),
             )}
           >
             {personInitials(candidate.name)}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block leading-tight">
-              <Matched text={candidate.name} query={query} />
-            </span>
-            {candidate.note ? (
-              <span className="block text-item-note leading-snug text-meta-foreground">
-                {candidate.note}
-              </span>
-            ) : null}
+          <span className="min-w-0 flex-1 leading-tight">
+            <Matched text={candidate.name} query={query} />
           </span>
         </div>
       ))}

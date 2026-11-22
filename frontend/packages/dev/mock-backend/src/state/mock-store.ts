@@ -3844,6 +3844,7 @@ export class MockStore {
     userId: string,
     contentMd: string,
     parentCommentId?: string,
+    mentionedUserIds?: string[],
   ): MockCommentRecord {
     const card = this.cardsById.get(cardId);
     if (!card) {
@@ -3867,6 +3868,7 @@ export class MockStore {
       contentMd,
       createdAt: this.clock.isoNow(),
       ...(parent ? { parentId: parent.parentId ?? parent.id } : {}),
+      ...(mentionedUserIds?.length ? { mentionedUserIds } : {}),
     };
     this.insertComment(cmt);
     this.feed.noteReplyOn({ itemId: cardId });
@@ -4989,6 +4991,8 @@ export class MockStore {
       contentType: string;
       bytes: Uint8Array;
       idempotencyKey: string;
+      /** A registered link (the producer keeps the address, never bytes). */
+      url?: string;
     },
   ): MockPageAttachmentRecord | undefined {
     if (!this.pagesById.has(pageId)) return undefined;
@@ -5001,6 +5005,7 @@ export class MockStore {
       uploadedBy: this.getCurrentUser().id,
       createdAt: this.clock.isoNow(),
       bytes: file.bytes,
+      ...(file.url ? { url: file.url } : {}),
     };
     const list = this.attachmentsByPageId.get(pageId) ?? [];
     list.push(record);
@@ -5416,6 +5421,7 @@ export class MockStore {
     contentMd: string,
     createdAt?: string,
     anchor?: MockPageCommentRecord["anchor"],
+    mentionedUserIds?: string[],
   ): MockPageCommentRecord {
     const id = this.nextId("pcomment");
     const comment: MockPageCommentRecord = {
@@ -5425,6 +5431,7 @@ export class MockStore {
       contentMd,
       createdAt: createdAt ?? this.clock.isoNow(),
       ...(anchor ? { anchor } : {}),
+      ...(mentionedUserIds?.length ? { mentionedUserIds } : {}),
     };
     this.pageCommentsById.set(id, comment);
     this.feed.noteReplyOn({ docId: pageId });

@@ -1323,7 +1323,13 @@ export const cardsOperations = [
 
   defineMockOperation<
     { id: string },
-    { filename?: string | null; url?: string | null },
+    {
+      filename?: string | null;
+      url?: string | null;
+      sizeBytes?: number | null;
+      contentType?: string | null;
+      source?: string | null;
+    },
     void
   >({
     id: "cards.attachments.createLink",
@@ -1344,9 +1350,19 @@ export const cardsOperations = [
       const item = store.getCard(params.id);
       if (!item) return notFound("Card not found");
       if (!canWriteBoardItems(item.boardId, store)) return forbidden();
-      if (store.getUploadByKey(params.id, key)) return noContent();
+      // The size, content type and source are the server's: whatever the client sends is ignored.
       const name = body?.filename?.trim();
       const url = body?.url?.trim();
+      // The same key replays the first result; with another payload it is refused.
+      const replay = store.getUploadByKey(params.id, key);
+      if (replay)
+        return replay.filename === name && replay.url === url
+          ? noContent()
+          : attachmentProblem(
+              409,
+              "idempotency_payload_mismatch",
+              "The idempotency key was used with a different payload.",
+            );
       if (!name || !url || !/^https?:\/\/\S+$/i.test(url))
         return attachmentProblem(
           400,
@@ -2040,7 +2056,11 @@ export const cardsOperations = [
 
   defineMockOperation<
     { cardId: string },
-    { contentMd: string; parentCommentId?: string | null },
+    {
+      contentMd: string;
+      parentCommentId?: string | null;
+      mentionedUserIds?: string[] | null;
+    },
     void
   >({
     id: "comments.create",
@@ -2051,7 +2071,11 @@ export const cardsOperations = [
     method: "POST",
     route: "/board-items/:cardId/comments",
     async handle({ params, body, store }) {
-      const data = body as { contentMd: string; parentCommentId?: string };
+      const data = body as {
+        contentMd: string;
+        parentCommentId?: string;
+        mentionedUserIds?: string[] | null;
+      };
       const card = store.getCard(params.cardId);
       if (!card) return notFound("Card not found");
       const user = store.getCurrentUser();
@@ -2060,6 +2084,7 @@ export const cardsOperations = [
         user.id,
         data.contentMd,
         data.parentCommentId ?? undefined,
+        data.mentionedUserIds ?? undefined,
       );
       return ok<void>(undefined);
     },

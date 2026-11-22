@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, renderPureUi, screen } from "@notrelix/testing";
 import { type BlockDraft } from "@notrelix/docs-core";
+import type { DocMentionPeople } from "../../components/doc-page-models";
 import { docsCopy } from "../../verification/docs-ui-fixtures";
 import { DocEditorSurface } from "../doc-editor-surface";
 import { useDocRichEditor } from "../use-doc-rich-editor";
@@ -27,7 +28,11 @@ const onDrafts = vi.fn((d: BlockDraft[]) => {
 
 let typed: ((text: string) => void) | null = null;
 
-function Harness() {
+function Harness({
+  mention = { people: PEOPLE, status: "success" },
+}: {
+  mention?: DocMentionPeople;
+}) {
   const { editor } = useDocRichEditor({
     pageId: "p",
     ready: true,
@@ -49,7 +54,7 @@ function Harness() {
       editor={editor}
       copy={docsCopy}
       mentionTasks={[]}
-      mentionPeople={PEOPLE}
+      mentionPeople={mention}
     />
   );
 }
@@ -93,5 +98,46 @@ describe("@ mention of a person", () => {
       text: "@Ân Nguyễn",
       marks: [{ type: "mention", userId: "u-an" }],
     });
+  });
+});
+
+describe("@ mention list states (server read)", () => {
+  const m = docsCopy.mention;
+
+  async function open(mention: DocMentionPeople) {
+    renderPureUi(<Harness mention={mention} />);
+    await screen.findByRole("textbox");
+    await act(async () => {
+      typed?.("@");
+    });
+    await screen.findByRole("listbox");
+  }
+
+  it("lists only the people the host was given", async () => {
+    await open({ people: [PEOPLE[1]!], status: "success" });
+    const names = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(names).toEqual(["BTBình Trần"]);
+    expect(document.body.textContent).not.toContain("Ân Nguyễn");
+  });
+
+  it("says it is loading and offers nobody yet", async () => {
+    await open({ people: [], status: "loading" });
+    expect(screen.getByText(m.peopleLoading)).toBeTruthy();
+    expect(screen.queryAllByRole("option")).toHaveLength(0);
+  });
+
+  it("says there is nobody to mention", async () => {
+    await open({ people: [], status: "success" });
+    expect(screen.getByText(m.peopleEmpty)).toBeTruthy();
+  });
+
+  it("says the read failed and retries it", async () => {
+    const onRetry = vi.fn();
+    await open({ people: [], status: "error", onRetry });
+    expect(screen.getByRole("alert").textContent).toContain(m.peopleError);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: m.peopleRetry }));
+    });
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });

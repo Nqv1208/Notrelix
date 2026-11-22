@@ -127,6 +127,8 @@ export {
   canRetryUpload,
   classifyUploadFailure,
 } from "./editor/attachment-uploads";
+export { classifyPageFilesFailure } from "./editor/page-attachment-failure";
+export type { PageFilesFailure } from "./editor/page-attachment-failure";
 export type {
   AddUploadResult,
   AttachmentUploadsOptions,

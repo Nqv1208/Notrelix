@@ -8,6 +8,9 @@ import type {
 export interface DocMediaFiles {
   readonly files: ReadonlyMap<string, PageAttachment>;
   readonly loading: boolean;
+  /** The list could not be read (not the same as a file that is gone). */
+  readonly failed?: boolean;
+  readonly retry?: () => void;
 }
 
 /** The bytes of one stored file, read through the authorised content route. */

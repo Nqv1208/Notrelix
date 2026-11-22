@@ -46,7 +46,7 @@ public sealed class AttachmentLinkUrlTests
     public void BoardItemLink_WithARefusedUrl_FailsValidationOnTheServer(string url)
     {
         var result = new CreateBoardItemAttachmentCommandValidator()
-            .Validate(new CreateBoardItemAttachmentCommand(Guid.CreateVersion7(), "doc", url, null, null, null));
+            .Validate(new CreateBoardItemAttachmentCommand(Guid.CreateVersion7(), "doc", url));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateBoardItemAttachmentCommand.Url));
@@ -61,7 +61,7 @@ public sealed class AttachmentLinkUrlTests
     public void PageLink_WithARefusedUrl_FailsValidationOnTheServer(string url)
     {
         var result = new CreatePageAttachmentCommandValidator()
-            .Validate(new CreatePageAttachmentCommand(Guid.CreateVersion7(), "site", url, null, null));
+            .Validate(new CreatePageAttachmentCommand(Guid.CreateVersion7(), "site", url));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreatePageAttachmentCommand.Url));
@@ -70,18 +70,18 @@ public sealed class AttachmentLinkUrlTests
     [Fact]
     public void BoardItemLink_WithAnHttpsUrl_PassesValidation() =>
         new CreateBoardItemAttachmentCommandValidator()
-            .Validate(new CreateBoardItemAttachmentCommand(Guid.CreateVersion7(), "doc", "https://example.com/doc", null, null, null))
+            .Validate(new CreateBoardItemAttachmentCommand(Guid.CreateVersion7(), "doc", "https://example.com/doc"))
             .IsValid.Should().BeTrue();
 
     [Fact]
     public void PageLink_WithAnHttpUrl_PassesValidation() =>
         new CreatePageAttachmentCommandValidator()
-            .Validate(new CreatePageAttachmentCommand(Guid.CreateVersion7(), "site", "http://example.com/x", null, null))
+            .Validate(new CreatePageAttachmentCommand(Guid.CreateVersion7(), "site", "http://example.com/x"))
             .IsValid.Should().BeTrue();
 
     [Fact]
     public void PageLink_OverTheLengthLimit_FailsValidation() =>
         new CreatePageAttachmentCommandValidator()
-            .Validate(new CreatePageAttachmentCommand(Guid.CreateVersion7(), "site", "https://example.com/" + new string('a', AttachmentLinkUrl.MaxLength), null, null))
+            .Validate(new CreatePageAttachmentCommand(Guid.CreateVersion7(), "site", "https://example.com/" + new string('a', AttachmentLinkUrl.MaxLength)))
             .IsValid.Should().BeFalse();
 }

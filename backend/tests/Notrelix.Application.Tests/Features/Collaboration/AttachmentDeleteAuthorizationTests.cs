@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePag
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Notrelix.Application.Features.Collaboration.Comments.Services;
 using Notrelix.Domain.Collaboration.Attachments;
+using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Application.Tests.Features.Collaboration;
 
@@ -22,11 +23,13 @@ public class AttachmentDeleteAuthorizationTests
     private readonly Mock<ICurrentUser> _user = new();
     private readonly Mock<IDateTimeProvider> _clock = new();
     private readonly Mock<ICommentTargetAccess> _access = new();
+    private readonly FakeCurrentRequestContext _request = new();
     private bool _canView = true;
     private bool _canEdit;
 
     public AttachmentDeleteAuthorizationTests()
     {
+        _request.Tenant.SetWorkspace(_account, _workspace, _uploader);
         _clock.Setup(c => c.UtcNow).Returns(Now);
         _context.Setup(c => c.Attachments).Returns(TestDbSet.Create(_rows).Object);
         _access.Setup(a => a.HasAsync(It.IsAny<ResourceRef>(), It.IsAny<CommentTargetRight>(), It.IsAny<CancellationToken>()))
@@ -45,9 +48,9 @@ public class AttachmentDeleteAuthorizationTests
     {
         _user.Setup(u => u.UserId).Returns(actor);
         return page
-            ? new DeletePageAttachmentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object)
+            ? new DeletePageAttachmentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object, new InMemoryAttachmentTargetLock(), _request)
                 .Handle(new DeletePageAttachmentCommand(row.Target.ResourceId, row.Id), default)
-            : new DeleteAttachmentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object)
+            : new DeleteAttachmentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object, new InMemoryAttachmentTargetLock(), _request)
                 .Handle(new DeleteAttachmentCommand(row.Target.ResourceId, row.Id), default);
     }
 

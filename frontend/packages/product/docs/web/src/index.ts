@@ -6,6 +6,7 @@ export type {
 } from "./components/doc-page-host";
 export type {
   DocBoardEmbed,
+  DocMentionPeople,
   DocPerson,
   DocPickerBoardView,
   DocShareView,

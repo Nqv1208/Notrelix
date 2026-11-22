@@ -28,6 +28,7 @@ using Notrelix.API.Endpoints.Billing;
 using Notrelix.API.Endpoints.Collaboration.Activity;
 using Notrelix.API.Endpoints.Collaboration.Attachments;
 using Notrelix.API.Endpoints.Collaboration.Comments;
+using Notrelix.API.Endpoints.Collaboration.Mentions;
 using Notrelix.API.Endpoints.Collaboration.Watchers;
 using Notrelix.API.Endpoints.Collaboration.Notifications;
 using Notrelix.API.Endpoints.Collaboration.Preferences;
@@ -177,6 +178,7 @@ public static class EndpointRouteBuilderExtensions
         app.MapAttachmentsEndpoints();
         app.MapPageAttachmentsEndpoints();
         app.MapCommentsEndpoints();
+        app.MapMentionSuggestionsEndpoints();
         app.MapChannelRoutes();
         app.MapChannelMemberRoutes();
         app.MapChannelGroupRoutes();

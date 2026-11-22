@@ -109,6 +109,7 @@ function setup(
   } = {},
 ) {
   const writes = { batchFail: null as number | null, posts: [] as string[] };
+  const hostInputs: { mentionQuery: string | null }[] = [];
   const notify = vi.fn();
   const api = {
     get: vi.fn(async (url: string) => {
@@ -177,7 +178,10 @@ function setup(
   const Screen = createDocPageScreen({
     api: api as never,
     endpoints,
-    useHost: () => host,
+    useHost: (input) => {
+      hostInputs.push(input);
+      return host;
+    },
   });
   const mount = document.createElement("div");
   document.body.appendChild(mount);
@@ -196,7 +200,7 @@ function setup(
       );
     });
   const unmount = () => act(async () => root.unmount());
-  return { api, writes, notify, render, unmount, mount, options };
+  return { api, writes, notify, render, unmount, mount, options, hostInputs };
 }
 
 async function until(assertion: () => void) {
@@ -294,6 +298,70 @@ describe("actions that read the stored page wait for the save", () => {
     );
 
     expect(writesTo(page, "/comments")).toBe(0);
+    await page.unmount();
+  });
+
+  it("posts a page comment, a reply and an anchored comment with the people they mention", async () => {
+    const page = setup();
+    await page.render();
+    await until(() => expect(captured.rich?.initial.length).toBe(1));
+    await until(() => expect(captured.surface?.callbacks).toBeTruthy());
+    const posted = () =>
+      page.api.post.mock.calls
+        .filter(([url]) => url === "/pages/p1/comments")
+        .map(([, body]) => body);
+
+    await act(async () => {
+      captured.surface?.callbacks?.onCommentCreate?.("Hi @Bình", undefined, [
+        "u-binh",
+      ]);
+    });
+    await until(() => expect(posted()).toHaveLength(1));
+    await act(async () => {
+      captured.surface?.callbacks?.onCommentCreate?.("Re @Bình", "c0", [
+        "u-binh",
+      ]);
+    });
+    await until(() => expect(posted()).toHaveLength(2));
+    await act(async () => {
+      captured.surface?.callbacks?.onCommentStart?.();
+    });
+    await act(async () => {
+      captured.surface?.callbacks?.onCommentCreate?.("On @Bình", undefined, [
+        "u-binh",
+      ]);
+    });
+    await until(() => expect(posted()).toHaveLength(3));
+
+    expect(posted()[0]).toEqual({
+      contentMd: "Hi @Bình",
+      mentionedUserIds: ["u-binh"],
+    });
+    expect(posted()[1]).toEqual({
+      contentMd: "Re @Bình",
+      parentCommentId: "c0",
+      mentionedUserIds: ["u-binh"],
+    });
+    expect(posted()[2]).toMatchObject({
+      contentMd: "On @Bình",
+      anchor: expect.objectContaining({ blockId: "b1", quote: "Xin" }),
+      mentionedUserIds: ["u-binh"],
+    });
+    await page.unmount();
+  });
+
+  it('asks the host for the people of the comment field\'s "@" and stops when it closes', async () => {
+    const page = setup();
+    await page.render();
+    await until(() => expect(captured.surface?.callbacks).toBeTruthy());
+    await act(async () => {
+      captured.surface?.callbacks?.onCommentMentionQuery?.("bi");
+    });
+    expect(page.hostInputs.at(-1)?.mentionQuery).toBe("bi");
+    await act(async () => {
+      captured.surface?.callbacks?.onCommentMentionQuery?.(null);
+    });
+    expect(page.hostInputs.at(-1)?.mentionQuery).toBeNull();
     await page.unmount();
   });
 

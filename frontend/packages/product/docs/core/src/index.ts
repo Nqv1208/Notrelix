@@ -71,6 +71,7 @@ export {
   clampImageWidth,
   fileExtension,
   formatFileSize,
+  isWebUrl,
   isPageImage,
   refusePageFile,
   sanitizeCaptionRuns,

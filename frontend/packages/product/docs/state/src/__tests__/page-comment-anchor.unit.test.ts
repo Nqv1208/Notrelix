@@ -33,6 +33,41 @@ describe("page comments with a text anchor", () => {
     });
   });
 
+  it("sends the mentioned people as mentionedUserIds, with a reply's parent and an anchor", async () => {
+    const api = client();
+    api.post.mockResolvedValue("c1");
+    const comments = createCommentApi(api, testEndpoints);
+
+    await comments.create("p1", {
+      pageId: "p1",
+      body: "hi @Bình",
+      mentionIds: ["u-binh"],
+      parentId: "c0",
+    });
+    expect(api.post).toHaveBeenLastCalledWith("/pages/p1/comments", {
+      contentMd: "hi @Bình",
+      parentCommentId: "c0",
+      mentionedUserIds: ["u-binh"],
+    });
+
+    await comments.create("p1", {
+      pageId: "p1",
+      body: "why @Bình",
+      anchor: ANCHOR,
+      mentionIds: ["u-binh"],
+    });
+    expect(api.post).toHaveBeenLastCalledWith("/pages/p1/comments", {
+      contentMd: "why @Bình",
+      anchor: ANCHOR,
+      mentionedUserIds: ["u-binh"],
+    });
+
+    await comments.create("p1", { pageId: "p1", body: "x", mentionIds: [] });
+    expect(api.post).toHaveBeenLastCalledWith("/pages/p1/comments", {
+      contentMd: "x",
+    });
+  });
+
   it("reads the anchor of a comment, and none for a comment without one", async () => {
     const api = client();
     api.get.mockResolvedValue({

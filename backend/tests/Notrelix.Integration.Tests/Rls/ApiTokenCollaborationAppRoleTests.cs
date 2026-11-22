@@ -230,19 +230,19 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         using var worker = await BearerAsync("work:write", "work:read");
         var reacted = await worker.SendAsync(Send(HttpMethod.Put, react));
         reacted.IsSuccessStatusCode.Should().BeTrue(await reacted.Content.ReadAsStringAsync());
-        var attached = await worker.SendAsync(Send(HttpMethod.Post, attachments, link));
+        var attached = await worker.SendAsync(Send(HttpMethod.Post, attachments, link, idempotent: true));
         attached.StatusCode.Should().Be(HttpStatusCode.Created, await attached.Content.ReadAsStringAsync());
         (await worker.GetAsync(attachments)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var reader = await BearerAsync("work:read");
         (await reader.GetAsync(attachments)).StatusCode.Should().Be(HttpStatusCode.OK);
         await AssertScopeMissingAsync(await reader.SendAsync(Send(HttpMethod.Put, react)));
-        await AssertScopeMissingAsync(await reader.SendAsync(Send(HttpMethod.Post, attachments, link)));
+        await AssertScopeMissingAsync(await reader.SendAsync(Send(HttpMethod.Post, attachments, link, idempotent: true)));
 
         using var docs = await BearerAsync("docs:read", "docs:write");
         await AssertScopeMissingAsync(await docs.SendAsync(Send(HttpMethod.Put, react)));
         await AssertScopeMissingAsync(await docs.GetAsync(attachments));
-        await AssertScopeMissingAsync(await docs.SendAsync(Send(HttpMethod.Post, attachments, link)));
+        await AssertScopeMissingAsync(await docs.SendAsync(Send(HttpMethod.Post, attachments, link, idempotent: true)));
     }
 
     [Fact]
@@ -254,6 +254,20 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/following"));
         await AssertScopeMissingAsync(await client.SendAsync(Send(HttpMethod.Put, $"/api/v1/board-items/{_itemId}/following", idempotent: true)));
         await AssertScopeMissingAsync(await client.GetAsync($"/api/v1/board-items/{_itemId}/activity"));
+    }
+
+    [Fact]
+    public async Task MentionSuggestions_AreAUiAid_AndRefusedToATokenOfAnyScope_OnAnItemAndOnAPage()
+    {
+        var item = $"/api/v1/board-items/{_itemId}/mention-suggestions?query=a";
+        var page = $"/api/v1/pages/{_pageId}/mention-suggestions?query=a";
+
+        foreach (var scopes in new[] { new[] { "work:read" }, ["docs:read"], ["work:read", "docs:read"], [.. ApiTokenScopes.Vocabulary] })
+        {
+            using var client = await BearerAsync(scopes);
+            await AssertScopeMissingAsync(await client.GetAsync(item));
+            await AssertScopeMissingAsync(await client.GetAsync(page));
+        }
     }
 
     private static async Task<JsonElement> CommentAsync(HttpClient client, string url, Guid id)
@@ -370,6 +384,105 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         deleted.StatusCode.Should().Be(HttpStatusCode.NoContent, await deleted.Content.ReadAsStringAsync());
     }
 
+
+    // ---------------------------------------------------------------- attachment token scope matrix (UC-COL-B06..B11)
+
+    private static HttpRequestMessage UploadRequest(string baseUrl, string name = "scope.pdf")
+    {
+        var request = Send(HttpMethod.Post, $"{baseUrl}/files", idempotent: true);
+        var file = new ByteArrayContent([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31]);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+        request.Content = new MultipartFormDataContent { { file, "file", name } };
+        return request;
+    }
+
+    private static HttpRequestMessage LinkRequest(string baseUrl) =>
+        Send(HttpMethod.Post, baseUrl, """{"filename":"spec.txt","url":"https://example.com/spec.txt"}""", idempotent: true);
+
+    private async Task<int> LiveAttachmentsAsync(Guid targetId)
+    {
+        var system = new FakeCurrentTenantContext();
+        system.SetSystem();
+        await using var ctx = _fixture.CreateOwnerContext(system);
+        return await ctx.Attachments.CountAsync(a => a.Target.ResourceId == targetId);
+    }
+
+    /// <summary>
+    /// One host kind end to end: the write scope uploads, links and deletes, the read scope lists and downloads but is refused
+    /// every write with the scope-missing code, and a refused write stores and deletes nothing.
+    /// </summary>
+    private async Task AssertScopeMatrixAsync(string baseUrl, Guid targetId, Guid seededAttachmentId, string read, string write)
+    {
+        using var writer = await BearerAsync(write);
+        var uploaded = await writer.SendAsync(UploadRequest(baseUrl));
+        uploaded.StatusCode.Should().Be(HttpStatusCode.Created, await uploaded.Content.ReadAsStringAsync());
+        var uploadedId = JsonNode.Parse(await uploaded.Content.ReadAsStringAsync())!["id"]!.GetValue<Guid>();
+        var linked = await writer.SendAsync(LinkRequest(baseUrl));
+        linked.StatusCode.Should().Be(HttpStatusCode.Created, await linked.Content.ReadAsStringAsync());
+        var linkedId = JsonNode.Parse(await linked.Content.ReadAsStringAsync())!["id"]!.GetValue<Guid>();
+        var live = await LiveAttachmentsAsync(targetId);
+
+        using var reader = await BearerAsync(read);
+        var list = await reader.GetAsync(baseUrl);
+        list.StatusCode.Should().Be(HttpStatusCode.OK, await list.Content.ReadAsStringAsync());
+        JsonNode.Parse(await list.Content.ReadAsStringAsync())!.AsArray().Select(a => a!["id"]!.GetValue<Guid>())
+            .Should().Contain([uploadedId, linkedId, seededAttachmentId]);
+        var content = await reader.GetAsync($"{baseUrl}/{uploadedId}/content");
+        content.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await content.Content.ReadAsByteArrayAsync()).Should().Equal([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31]);
+
+        await AssertScopeMissingAsync(await reader.SendAsync(UploadRequest(baseUrl, "refused.pdf")));
+        await AssertScopeMissingAsync(await reader.SendAsync(LinkRequest(baseUrl)));
+        await AssertScopeMissingAsync(await reader.SendAsync(Send(HttpMethod.Delete, $"{baseUrl}/{uploadedId}")));
+        (await LiveAttachmentsAsync(targetId)).Should().Be(live, "a refused write stores and deletes nothing");
+
+        var deleted = await writer.SendAsync(Send(HttpMethod.Delete, $"{baseUrl}/{uploadedId}"));
+        deleted.StatusCode.Should().Be(HttpStatusCode.NoContent, await deleted.Content.ReadAsStringAsync());
+        (await LiveAttachmentsAsync(targetId)).Should().Be(live - 1);
+    }
+
+    [Fact]
+    public Task AnItemAttachment_NeedsWorkReadToReadAndWorkWriteToUploadLinkAndDelete() =>
+        AssertScopeMatrixAsync($"/api/v1/board-items/{_itemId}/attachments", _itemId, _itemAttachmentId, "work:read", "work:write");
+
+    [Fact]
+    public Task APageAttachment_NeedsDocsReadToReadAndDocsWriteToUploadLinkAndDelete() =>
+        AssertScopeMatrixAsync($"/api/v1/pages/{_pageId}/attachments", _pageId, _pageAttachmentId, "docs:read", "docs:write");
+
+    [Fact]
+    public async Task ATokenOfTheOtherHostKind_IsRefusedEveryAttachmentRoute_AndNothingChanges()
+    {
+        var itemBase = $"/api/v1/board-items/{_itemId}/attachments";
+        var pageBase = $"/api/v1/pages/{_pageId}/attachments";
+        var items = await LiveAttachmentsAsync(_itemId);
+        var pages = await LiveAttachmentsAsync(_pageId);
+
+        using var work = await BearerAsync("work:read", "work:write");
+        foreach (var request in new[]
+        {
+            Send(HttpMethod.Get, pageBase),
+            Send(HttpMethod.Get, $"{pageBase}/{_pageAttachmentId}/content"),
+            LinkRequest(pageBase),
+            UploadRequest(pageBase),
+            Send(HttpMethod.Delete, $"{pageBase}/{_pageAttachmentId}"),
+        })
+            await AssertScopeMissingAsync(await work.SendAsync(request));
+
+        using var docs = await BearerAsync("docs:read", "docs:write");
+        foreach (var request in new[]
+        {
+            Send(HttpMethod.Get, itemBase),
+            Send(HttpMethod.Get, $"{itemBase}/{_itemAttachmentId}/content"),
+            LinkRequest(itemBase),
+            UploadRequest(itemBase),
+            Send(HttpMethod.Delete, $"{itemBase}/{_itemAttachmentId}"),
+        })
+            await AssertScopeMissingAsync(await docs.SendAsync(request));
+
+        (await LiveAttachmentsAsync(_itemId)).Should().Be(items);
+        (await LiveAttachmentsAsync(_pageId)).Should().Be(pages);
+    }
+
     [Fact]
     public async Task AnAttachmentIdOfAnotherHostKindOrWorkspaceOrARandomOne_GetsTheSame404()
     {
@@ -443,7 +556,7 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         yield return new("react", HttpMethod.Put, id => $"/api/v1/board-items/{id}/comments/{_pageCommentId}/reactions/{ThumbsUp}", null);
         yield return new("withdraw reaction", HttpMethod.Delete, id => $"/api/v1/board-items/{id}/comments/{_pageCommentId}/reactions/{ThumbsUp}", null);
         yield return new("list item attachments", HttpMethod.Get, id => $"/api/v1/board-items/{id}/attachments", null);
-        yield return new("link item attachment", HttpMethod.Post, id => $"/api/v1/board-items/{id}/attachments", link);
+        yield return new("link item attachment", HttpMethod.Post, id => $"/api/v1/board-items/{id}/attachments", link, Idempotent: true);
         yield return new("upload item attachment", HttpMethod.Post, id => $"/api/v1/board-items/{id}/attachments/files", null, Idempotent: true, Multipart: true);
         yield return new("read item attachment content", HttpMethod.Get, id => $"/api/v1/board-items/{id}/attachments/{Guid.Empty}/content", null);
     }
@@ -455,7 +568,7 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         yield return new("read page comments", HttpMethod.Get, id => $"/api/v1/pages/{id}/comments", null);
         yield return new("read page comments page", HttpMethod.Get, id => $"/api/v1/pages/{id}/comments/page", null);
         yield return new("list page attachments", HttpMethod.Get, id => $"/api/v1/pages/{id}/attachments", null);
-        yield return new("link page attachment", HttpMethod.Post, id => $"/api/v1/pages/{id}/attachments", link);
+        yield return new("link page attachment", HttpMethod.Post, id => $"/api/v1/pages/{id}/attachments", link, Idempotent: true);
         yield return new("upload page attachment", HttpMethod.Post, id => $"/api/v1/pages/{id}/attachments/files", null, Idempotent: true, Multipart: true);
         yield return new("read page attachment content", HttpMethod.Get, id => $"/api/v1/pages/{id}/attachments/{Guid.Empty}/content", null);
         yield return new("delete page attachment", HttpMethod.Delete, id => $"/api/v1/pages/{id}/attachments/{Guid.Empty}", null);

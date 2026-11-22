@@ -6,7 +6,13 @@ using Notrelix.Application.Features.Collaboration.Abstractions;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.CreateBoardItemAttachment;
 
-public record CreateBoardItemAttachmentCommand(Guid BoardItemId, string Filename, string Url, long? SizeBytes, string? ContentType, string? Source) : ICommand<Result<AttachmentDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission
+/// <summary>
+/// Registers a link on a board item. The size, content type and source of a link are server-owned (size 0,
+/// <c>text/uri-list</c>, source Link), so the command carries only the display name and the address; whatever
+/// a client sends for the others is dropped at the endpoint. Replayable with an Idempotency-Key.
+/// </summary>
+[IdempotencyOperation("collaboration.attachments.create-board-item-attachment.v1")]
+public record CreateBoardItemAttachmentCommand(Guid BoardItemId, string Filename, string Url) : ICommand<Result<AttachmentDto>>, IWriteRequest, IAuthenticatedRequest, IResourceScopedRequest, IRequirePermission, IIdempotentRequest
 {
     public PermissionAction Action => PermissionAction.UpdateItem;
     public ResourceRef Resource => ResourceRef.Create(ResourceKind.Create("work-management.board-item"), BoardItemId);
@@ -48,5 +54,5 @@ public class CreateBoardItemAttachmentCommandHandler : IRequestHandler<CreateBoa
         AttachmentTargetOperations.CreateLinkAsync(
             _context, _requestContext, _dateTimeProvider, _targetLock, _options,
             AttachmentTargets.BoardItem, request.BoardItemId,
-            request.Filename, request.Url, request.SizeBytes, request.ContentType, ct);
+            request.Filename, request.Url, ct);
 }

@@ -28,11 +28,10 @@ public sealed class AccountProvisioningService : IAccountProvisioningActions
         DateTimeOffset occurredAt,
         CancellationToken cancellationToken)
     {
-        var accountName = $"{displayName}'s Account";
-        var accountSlug = Slug.GenerateFromName(accountName);
+        var accountName = PersonalAccountName.For(displayName);
         var account = Account.Create(
             accountName,
-            accountSlug.Value,
+            UniqueSlugFor(accountName),
             AccountType.Personal,
             userId,
             occurredAt);
@@ -50,4 +49,22 @@ public sealed class AccountProvisioningService : IAccountProvisioningActions
 
         return new PersonalAccountProvisioningResult(account.Id);
     }
+
+    /// <summary>
+    /// The slug of a personal Account: the name's slug plus a random tail, so two people with the same display
+    /// name never meet. Another Account's slug cannot be read here (the registration scope sees only the new
+    /// Account), so uniqueness is not checked, it is built in: the tail is 60 random bits. The unique index
+    /// <c>idx_account_slug</c> is the guarantee behind it; a slug asked for by hand takes its conflict from there.
+    /// </summary>
+    internal static string UniqueSlugFor(string accountName)
+    {
+        var tail = Guid.NewGuid().ToString("N")[..16];
+        var baseSlug = Slug.GenerateFromName(accountName).Value;
+        if (baseSlug.Length > MaxBaseLength)
+            baseSlug = baseSlug[..MaxBaseLength].TrimEnd('-');
+        return $"{baseSlug}-{tail}";
+    }
+
+    // 128 characters in the column: the base, a hyphen and the 16-character tail fit with room to spare.
+    private const int MaxBaseLength = 100;
 }

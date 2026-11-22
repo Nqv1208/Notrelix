@@ -2019,6 +2019,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/board-items/{boardItemId}/mention-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest people to mention on a board item
+         * @description Active, non-Guest workspace members who can see the item's board, never the caller. query matches the start of any word of the name (case and accents ignored, at most 64 characters); limit defaults to 8, at most 20.
+         */
+        get: operations["Collaboration.Mentions.GetBoardItemMentionSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{pageId}/mention-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest people to mention on a page
+         * @description Active, non-Guest workspace members who can view the page, never the caller. query matches the start of any word of the name (case and accents ignored, at most 64 characters); limit defaults to 8, at most 20.
+         */
+        get: operations["Collaboration.Mentions.GetPageMentionSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/inbox/summary": {
         parameters: {
             query?: never;
@@ -10850,6 +10890,12 @@ export interface components {
             userId?: string;
             name?: string | null;
         };
+        "Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto": {
+            /** Format: uuid */
+            userId?: string;
+            name?: string | null;
+            avatarUrl?: string | null;
+        };
         "Notrelix.Application.Features.Collaboration.Notifications.Commands.MarkWorkspaceInboxRead.MarkedReadDto": {
             /** Format: int32 */
             marked?: number;
@@ -18813,7 +18859,10 @@ export interface operations {
     "Collaboration.Attachments.Create": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 boardItemId: string;
             };
@@ -18828,11 +18877,27 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -19372,6 +19437,56 @@ export interface operations {
             };
         };
     };
+    "Collaboration.Mentions.GetBoardItemMentionSuggestions": {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                boardItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto"][];
+                };
+            };
+        };
+    };
+    "Collaboration.Mentions.GetPageMentionSuggestions": {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notrelix.Application.Features.Collaboration.Mentions.DTOs.MentionSuggestionDto"][];
+                };
+            };
+        };
+    };
     "Collaboration.Notifications.GetInboxSummary": {
         parameters: {
             query?: never;
@@ -19631,7 +19746,10 @@ export interface operations {
     "Collaboration.PageAttachments.Create": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Client-generated idempotency key (8-128 characters). The same key replayed with the same payload returns the stored response; reusing the key with a different payload returns 409. */
+                "Idempotency-Key": string;
+            };
             path: {
                 pageId: string;
             };
@@ -19646,11 +19764,27 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description true when this response is a replay of a stored result */
+                    "Idempotency-Replayed"?: boolean;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System.Void"];
                 };
+            };
+            /** @description Idempotency key reused with a different payload */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Operation still being processed; retry after the indicated delay */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

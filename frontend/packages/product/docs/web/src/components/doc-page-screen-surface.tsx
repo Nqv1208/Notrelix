@@ -23,7 +23,7 @@ import type {
   DocCommentView,
   DocConvertView,
   DocMarkTargets,
-  DocPerson,
+  DocMentionPeople,
   DocPickerPageView,
   DocMovePageView,
   DocTrashConfirmView,
@@ -34,6 +34,7 @@ import type {
   DocPickerBoardView,
   DocRecoveryView,
   DocPanelTab,
+  DocFilesPanel,
   DocRelatedDoc,
   DocSaveState,
   DocShareView,
@@ -108,12 +109,16 @@ export interface DocPageScreenSurfaceProps {
   /** The selected text a comment is being written on. */
   readonly pendingQuote?: string | null;
   readonly panelTab: DocPanelTab;
+  /** The page's attachments for the side panel's Files tab. */
+  readonly files?: DocFilesPanel;
   /** Whether the side panel shows; the host owns and remembers it. */
   readonly panelOpen?: boolean;
   readonly overlay: DocOverlay;
   readonly mentionTasks: readonly DocTaskRef[];
   /** Members the typed "@" may mention. */
-  readonly mentionPeople?: readonly DocPerson[];
+  readonly mentionPeople?: DocMentionPeople;
+  /** Members "@" may mention in a comment field of the side panel. */
+  readonly commentMentionPeople?: DocMentionPeople;
   /** Where mention chips and page references in the text lead. */
   readonly markTargets?: DocMarkTargets;
   readonly blockTypes?: readonly BlockType[];
@@ -251,10 +256,12 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
     comments,
     pendingQuote,
     panelTab,
+    files,
     panelOpen = true,
     overlay,
     mentionTasks,
     mentionPeople,
+    commentMentionPeople,
     markTargets,
     blockTypes,
     toolbar = DEFAULT_TOOLBAR_CURRENT,
@@ -475,6 +482,8 @@ function DocPageReady(props: DocPageScreenSurfaceProps) {
               comments={comments}
               pendingQuote={pendingQuote}
               canComment={canComment && !readOnly}
+              files={files}
+              mentionPeople={commentMentionPeople}
               callbacks={callbacks}
             />
           ) : null}

@@ -21,7 +21,13 @@ export interface AuthEndpoints {
     forgotPassword: string;
     resetPassword: string;
     profile: string;
+    bootstrap: string;
   };
+}
+
+/** The part of `GET /auth/bootstrap` that names the member's own Account (null: they belong to none). */
+export interface BootstrapAccount {
+  readonly accountId: string | null;
 }
 
 export function createAuthService(
@@ -51,6 +57,13 @@ export function createAuthService(
 
     profile() {
       return api.get<User>(endpoints.auth.profile);
+    },
+
+    async bootstrapAccount(): Promise<BootstrapAccount> {
+      const bootstrap = await api.get<{ accountId?: string | null }>(
+        endpoints.auth.bootstrap,
+      );
+      return { accountId: bootstrap?.accountId || null };
     },
   };
 }

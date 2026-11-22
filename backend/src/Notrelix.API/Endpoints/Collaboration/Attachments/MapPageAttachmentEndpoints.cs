@@ -33,6 +33,7 @@ public static class MapPageAttachmentEndpoints
             .WithSummary("Get page attachments");
 
         group.MapResourcePost("/", CreateAsync)
+            .WithIdempotencyKey()
             .WithName("Collaboration.PageAttachments.Create")
             .WithTags("Collaboration.PageAttachments")
             .WithSummary("Register page attachment metadata (link)");
@@ -73,7 +74,7 @@ public static class MapPageAttachmentEndpoints
 
     private static async Task<IResult> CreateAsync(Guid pageId, CreatePageAttachmentRequest body, ISender sender)
     {
-        var result = await sender.Send(new CreatePageAttachmentCommand(pageId, body.Filename, body.Url, body.SizeBytes, body.ContentType));
+        var result = await sender.Send(new CreatePageAttachmentCommand(pageId, body.Filename, body.Url));
         return result.ToCreatedResult();
     }
 

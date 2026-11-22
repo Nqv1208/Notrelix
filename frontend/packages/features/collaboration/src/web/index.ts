@@ -4,3 +4,8 @@ export {
   createUseCreateComment,
   createUseDeleteComment,
 } from "./query/hooks/use-comments";
+export {
+  createUseMentionSuggestions,
+  type MentionSuggestionsResult,
+  type MentionSuggestionsStatus,
+} from "./query/hooks/use-mention-suggestions";

@@ -23,6 +23,11 @@ const target = vi.hoisted(() => ({
 const ports: WmUiPorts = {
   useCardImageUrl: () => null,
   useRelationTarget: () => target.state as never,
+  useMentionSuggestions: () => ({
+    people: [],
+    status: "success",
+    retry: () => undefined,
+  }),
 };
 
 const visible = (id: string, key: string, title: string): RelationLink => ({

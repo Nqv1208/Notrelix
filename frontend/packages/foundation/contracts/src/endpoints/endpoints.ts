@@ -187,6 +187,8 @@ export const endpoints = {
     blocks: (pageId: string) => `/pages/${pageId}/blocks`,
     comments: (pageId: string) => `/pages/${pageId}/comments`,
     commentsPage: (pageId: string) => `/pages/${pageId}/comments/page`,
+    mentionSuggestions: (pageId: string) =>
+      `/pages/${pageId}/mention-suggestions`,
     history: (pageId: string) => `/pages/${pageId}/history`,
     activity: (pageId: string) => `/pages/${pageId}/activity`,
     search: (workspaceId: string) => `/workspaces/${workspaceId}/pages/search`,
@@ -585,7 +587,11 @@ export const endpoints = {
       `/board-items/${itemId}/values/${fieldId}`,
     comments: (itemId: string) => `/board-items/${itemId}/comments`,
     commentsPage: (itemId: string) => `/board-items/${itemId}/comments/page`,
+    mentionSuggestions: (itemId: string) =>
+      `/board-items/${itemId}/mention-suggestions`,
     attachments: (itemId: string) => `/board-items/${itemId}/attachments`,
+    attachment: (itemId: string, attachmentId: string) =>
+      `/board-items/${itemId}/attachments/${attachmentId}`,
     attachmentFiles: (itemId: string) =>
       `/board-items/${itemId}/attachments/files`,
     attachmentContent: (itemId: string, attachmentId: string) =>

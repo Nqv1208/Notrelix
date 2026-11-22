@@ -10,10 +10,11 @@ import { runSessionReset } from "./session-reset";
 /**
  * Active Account scope for the client cache.
  *
- * TEMPORARY MODEL: Account equals the authenticated principal (`User.id`)
- * until the backend exposes an Account ID and an account-switch signal.
- * The host feeds this provider from its auth state; account-scoped hooks read
- * the ID with `useAccountId()`, which fails loudly when no Account is active.
+ * The Account is the signed-in member's own Account: the `accountId` the
+ * backend returns in `GET /auth/bootstrap`, which is not the `User.id`. The
+ * host resolves it per signed-in person and feeds this provider; account-scoped
+ * hooks read the ID with `useAccountId()`, which fails loudly when no Account is
+ * active, so the host renders them only once it is known.
  */
 const AccountScopeContext = createContext<string | null>(null);
 

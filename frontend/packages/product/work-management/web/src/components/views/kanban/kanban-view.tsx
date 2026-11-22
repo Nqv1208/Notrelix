@@ -34,6 +34,7 @@ import {
   useCard,
   useCardActivity,
   useCardComments,
+  cardFilesFailure,
   useCardFiles,
   useChecklistWrites,
   useItemApprovals,
@@ -1881,6 +1882,7 @@ function KanbanSelectedItemReady({
         detailData={{
           files: files.data ?? card.files,
           filesLoading: files.isLoading,
+          filesError: files.isError ? cardFilesFailure(files.error) : null,
           activity: activity.data ?? card.activity,
           activityLoading: activity.isLoading,
           activityFetching: activity.isFetching,
@@ -1995,6 +1997,9 @@ function KanbanSelectedItemReady({
           },
           onRefreshUpdates: () => {
             void updates.refetch();
+          },
+          onRefreshFiles: () => {
+            void files.refetch();
           },
           // The promise settles even when the sheet closed meanwhile; per-call mutate callbacks would be dropped.
           onCreateUpdate: (input, options) =>
