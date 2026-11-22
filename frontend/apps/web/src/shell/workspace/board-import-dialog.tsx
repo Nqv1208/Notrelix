@@ -453,6 +453,8 @@ export function BoardImportDialog({
   const at = archived ? 3 : shown;
   const hasErrorsFailure = failed && progress?.failureCode === "has-errors";
   const limitFailure = failed && progress?.failureCode === "items-limit";
+  const suspendedFailure =
+    failed && progress?.failureCode === "account-suspended";
   const fileBad =
     (shown === 3 && preview !== null && !clean) || hasErrorsFailure;
   // Errors left of the first three, and the rows they sit in (the rows of the three shown are not counted again).
@@ -1195,7 +1197,9 @@ export function BoardImportDialog({
                         ? copy.goneTitle
                         : limitFailure
                           ? copy.limitTitle
-                          : copy.failedTitle
+                          : suspendedFailure
+                            ? copy.suspendedTitle
+                            : copy.failedTitle
                   }
                   body={
                     archived
@@ -1204,16 +1208,18 @@ export function BoardImportDialog({
                         ? copy.goneBody
                         : limitFailure
                           ? copy.limitJobBody
-                          : refusedAt
-                            ? fill(copy.failedHasErrors, {
-                                row: numberLabel(refusedAt.row ?? 0),
-                                column: refusedAt.column ?? "",
-                                value: refusedAt.value
-                                  ? `“${refusedAt.value}”`
-                                  : "",
-                                reason: reasonText(refusedAt),
-                              })
-                            : copy.errorBody
+                          : suspendedFailure
+                            ? copy.suspendedBody
+                            : refusedAt
+                              ? fill(copy.failedHasErrors, {
+                                  row: numberLabel(refusedAt.row ?? 0),
+                                  column: refusedAt.column ?? "",
+                                  value: refusedAt.value
+                                    ? `“${refusedAt.value}”`
+                                    : "",
+                                  reason: reasonText(refusedAt),
+                                })
+                              : copy.errorBody
                   }
                 />
                 {hasErrorsFailure ? (

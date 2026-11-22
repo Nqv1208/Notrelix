@@ -6,8 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Notrelix.API;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.Workspaces.Members;
+using Notrelix.Infrastructure.BackgroundJobs;
+using Notrelix.Infrastructure.Data;
 using Notrelix.Integration.Tests.Containers;
 using Notrelix.Testing.Application.Fakes;
+using Npgsql;
 
 namespace Notrelix.Integration.Tests.Rls;
 
@@ -108,6 +111,86 @@ public sealed class AccountSuspensionAppRoleTests : IAsyncLifetime
 
         using var boards = await As(_member).GetAsync($"/api/v1/workspaces/{_a.WorkspaceId}/boards");
         boards.StatusCode.Should().Be(HttpStatusCode.OK, "reading boards is not a write");
+    }
+
+    private async Task<Guid> QueueImportAsync()
+    {
+        var jobId = Guid.NewGuid();
+        await using var connection = new NpgsqlConnection(_fixture.OwnerConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            "INSERT INTO ops.import_jobs (id, workspace_id, job_type, target_resource_type, target_resource_id, status, " +
+            "total_records, processed_records, succeeded_records, failed_records, options_json, requested_by_user_id, created_at) " +
+            "VALUES (@id, @workspace, 'board-import', 'Board', @board, 'queued', 1, 0, 0, 0, '{}'::jsonb, @user, now())", connection);
+        command.Parameters.AddWithValue("id", jobId);
+        command.Parameters.AddWithValue("workspace", _a.WorkspaceId);
+        command.Parameters.AddWithValue("board", _a.BoardId);
+        command.Parameters.AddWithValue("user", _a.User.Id);
+        await command.ExecuteNonQueryAsync();
+        return jobId;
+    }
+
+    private async Task<(string Status, string Result)> ImportJobAsync(Guid jobId)
+    {
+        await using var connection = new NpgsqlConnection(_fixture.OwnerConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            "SELECT status, coalesce(result_json::text, '') FROM ops.import_jobs WHERE id = @id", connection);
+        command.Parameters.AddWithValue("id", jobId);
+        await using var reader = await command.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        return (reader.GetString(0), reader.GetString(1));
+    }
+
+    /// <summary>
+    /// The host runs its own transfer loop, which claims the queued job within a couple of seconds; if nothing has
+    /// claimed it after a short wait the runner is driven by hand, in a worker scope like the loop's. Either way the
+    /// same runner code finishes the job, and this returns its final state.
+    /// </summary>
+    private async Task<(string Status, string Result)> FinishedImportAsync(Guid jobId)
+    {
+        for (var attempt = 0; attempt < 60; attempt++)
+        {
+            var job = await ImportJobAsync(jobId);
+            if (job.Status is "failed" or "succeeded")
+                return job;
+            if (job.Status == "queued" && attempt >= 6)
+            {
+                await using var scope = Factory.Services.GetRequiredService<IServiceScopeFactory>().CreateWorkerAsyncScope();
+                await scope.ServiceProvider.GetRequiredService<BoardTransferRunner>().RunNextAsync(CancellationToken.None);
+            }
+
+            await Task.Delay(500);
+        }
+
+        throw new TimeoutException($"The import job {jobId} did not finish.");
+    }
+
+    [Theory]
+    [InlineData("Suspended")]
+    [InlineData("Closed")]
+    public async Task AnImportQueuedBeforeTheSuspension_IsRefusedAndCreatesNothing_ThenRunsOnceLifted(string status)
+    {
+        // Suspended first, queued second: the host's own loop may claim the job the moment it exists.
+        await SetStatusAsync(status);
+        var jobId = await QueueImportAsync();
+
+        var refused = await FinishedImportAsync(jobId);
+        refused.Status.Should().Be("failed");
+        refused.Result.Should().Contain("account-suspended", "a suspended Account is read-only for background work too");
+
+        // Lifted: the same job is picked up and no longer refused for the Account (this one has no file, so it
+        // fails for that reason instead, which proves the suspension check is what stopped the first run).
+        await SetStatusAsync("Active");
+        await using (var connection = new NpgsqlConnection(_fixture.OwnerConnectionString))
+        {
+            await connection.OpenAsync();
+            await using var requeue = new NpgsqlCommand("UPDATE ops.import_jobs SET status = 'queued', result_json = NULL WHERE id = @id", connection);
+            requeue.Parameters.AddWithValue("id", jobId);
+            await requeue.ExecuteNonQueryAsync();
+        }
+
+        (await FinishedImportAsync(jobId)).Result.Should().NotContain("account-suspended");
     }
 
     [Fact]
