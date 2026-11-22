@@ -66,8 +66,8 @@ Trước khi đóng phiên SSH cũ, mở một phiên mới bằng `ssh -i notre
 
 Điền `/opt/notrelix/.env.staging` (owner `deploy`, chmod 600). Chỉ ghi tên biến ở đây; giá trị bí mật sinh ngẫu nhiên trên VM, tuyệt đối không commit hay dán vào log.
 
-- Bí mật: `POSTGRES_PASSWORD`, `NOTRELIX_APP_DB_PASSWORD`, `NOTRELIX_WORKER_DB_PASSWORD`, `REDIS_PASSWORD`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `JWT_SECRET`, và tùy chọn `RESEND_API_KEY`, `OPERATOR_JWT_SIGNING_KEY`, `OPERATOR_SEED_PASSWORD`. Mật khẩu DB không được chứa `;`, `=` hoặc `"`.
-- Không bí mật, đặt theo domain thật: `JWT_ISSUER`, `JWT_AUDIENCE`, `CORS_ORIGIN`, `FRONTEND_APP_BASE_URL` (đều là URL `https://demo.<domain>`), `EMAIL_FROM`.
+- Bí mật: `POSTGRES_PASSWORD`, `NOTRELIX_APP_DB_PASSWORD`, `NOTRELIX_WORKER_DB_PASSWORD`, `REDIS_PASSWORD`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `JWT_SECRET`, và tùy chọn `OPERATOR_JWT_SIGNING_KEY`, `OPERATOR_SEED_PASSWORD`. Mật khẩu DB không được chứa `;`, `=` hoặc `"`.
+- Không bí mật, đặt theo domain thật: `JWT_ISSUER`, `JWT_AUDIENCE`, `CORS_ORIGIN`, `FRONTEND_APP_BASE_URL` (đều là URL `https://demo.<domain>`).
 - Không bí mật, đặt cho kiểu một VM sau Caddy: `HTTP_PORT=127.0.0.1:8080` (cổng nginx chỉ nghe loopback), `NGINX_CONF=nginx.prod.conf` (cấu hình nginx cho TLS ở edge, chuyển tiếp scheme công khai là HTTPS).
 
 ### 2.4. GitHub
@@ -80,6 +80,15 @@ Environment `staging` (không cần người duyệt):
 | Variable | `DEPLOY_HOST`, `DEPLOY_SSH_PORT`, `DEPLOY_PATH`, `DEPLOY_ENV_FILE`, `DEPLOY_HEALTH_URL`, `DEPLOY_SMOKE_URL`, `DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE` |
 
 Gợi ý giá trị không bí mật: `DEPLOY_SSH_USER=deploy`, `DEPLOY_PATH=/opt/notrelix`, `DEPLOY_ENV_FILE=/opt/notrelix/.env.staging`, `DEPLOY_HEALTH_URL=http://127.0.0.1:8080/health/live`, `DEPLOY_SMOKE_URL=http://127.0.0.1:8080/`, `DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE=false`. Health và smoke chạy trên VM qua SSH nên dùng địa chỉ loopback. `DEPLOY_SSH_KNOWN_HOSTS` lấy bằng `ssh-keyscan -t ed25519 <ip>` rồi đối chiếu fingerprint trong Console.
+
+Cấu hình email do GitHub quản lý (không SSH vào VM để sửa). Mỗi lần deploy ghi các khóa dưới đây vào `$DEPLOY_PATH/.env.secrets` (chmod 600, giá trị đi qua stdin của SSH) và compose đọc file này sau `DEPLOY_ENV_FILE`, trước `images.env`. Khóa nào trống ở GitHub thì bị bỏ qua, nên không đè giá trị sẵn có trong `.env.staging`; khóa có giá trị ở GitHub thì thắng `.env.staging`. Giá trị chứa xuống dòng làm bước deploy thất bại.
+
+| Loại | Tên |
+|---|---|
+| Secret | `RESEND_API_KEY`, `SMTP_PASSWORD` (tùy chọn) |
+| Variable | `EMAIL_ENABLED`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `SMTP_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_ENABLE_SSL` |
+
+Xoay khóa: sửa giá trị trong Environment trên GitHub, rồi chạy lại `release.yml` (`workflow_dispatch`) với `ci_run_id` của run `Notrelix CI` đã xanh. File `.env.secrets` được ghi lại toàn bộ mỗi lần deploy; xóa một khóa ở GitHub thì khóa đó biến mất khỏi file và compose quay về giá trị trong `.env.staging`. Danh sách khóa nằm một chỗ: mảng `keys` ở bước `Write app secrets from GitHub Environment` trong `deploy.yml`.
 
 Environment `production`: bật Required reviewers (owner). Chưa cần secret cho đến khi có host production.
 

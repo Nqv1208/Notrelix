@@ -66,7 +66,7 @@ None of the commands above run in `ci.yml`. A Docker-capable environment additio
 
 Create `staging` and `production` environments matching `delivery/environments.toml`. Production should require approval. Keep deployment host secrets at environment scope.
 
-Current Compose/SSH adapter expects values such as deployment host/user/key/known-hosts/path/runtime-env/health/smoke endpoints and optional GHCR credentials. Runtime `.env` files remain outside Git.
+Current Compose/SSH adapter expects values such as deployment host/user/key/known-hosts/path/runtime-env/health/smoke endpoints and optional GHCR credentials. Runtime `.env` files remain outside Git. App-level email settings (`RESEND_API_KEY`, `SMTP_PASSWORD` as secrets; `EMAIL_*` and `SMTP_*` as variables) are written by the deploy job to `.env.secrets` on the host and override the host env file; see the Oracle VM runbook.
 
 ## 6. Release lifecycle
 
