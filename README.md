@@ -2,7 +2,7 @@
 
 **One workspace for structured work, documents and conversation, built for teams that need governance.**
 
-Notrelix is an enterprise work-management platform for teams that outgrow a pile of separate task, wiki and chat tools. Boards, documents and chat share one workspace, one identity and one permission model. Each business fact has a single owner, and Work Management follows one rule: one work model, many views.
+Notrelix is an enterprise work-management platform for teams that outgrow a pile of separate task, wiki and chat tools. Boards, documents and chat share one workspace, one identity and one permission model. A task, its spec page and its discussion stay linked in one place, and a change to the work shows up in every view: Board, Table, Calendar and Timeline.
 
 Live demo (staging): <https://demo.notrelix.me>
 
