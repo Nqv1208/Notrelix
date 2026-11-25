@@ -479,8 +479,35 @@ describe("WorkspaceMembersSurface invitations", () => {
     fireEvent.mouseDown(screen.getByRole("tab", { name: /Invitations/ }));
     fireEvent.click(screen.getByRole("tab", { name: /Invitations/ }));
     expect(props.onTabChange).toHaveBeenCalledWith("invitations");
+  });
+
+  it("FUI[workspace.members:invite-header] one click on the header Invite people opens the invite form from the Members tab", () => {
+    const { props } = renderMembers();
+    expect(screen.getAllByRole("button", { name: copy.invite })).toHaveLength(
+      1,
+    );
+    expect(screen.queryByLabelText(copy.invitations.emailLabel)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: copy.invite }));
-    expect(props.onTabChange).toHaveBeenLastCalledWith("invitations");
+    expect(
+      screen.getByRole("dialog", { name: copy.invitations.formTitle }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText(copy.invitations.emailLabel)).toBeTruthy();
+    expect(props.onTabChange).not.toHaveBeenCalled();
+  });
+
+  it("FUI[workspace.members:invite-header] one click on the header Invite people opens the invite form from the Invitations tab, with one button", () => {
+    const { props } = renderMembers(membersInvitationsScenario(), {
+      tab: "invitations",
+    });
+    expect(screen.getAllByRole("button", { name: copy.invite })).toHaveLength(
+      1,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.invite }));
+    expect(
+      screen.getByRole("dialog", { name: copy.invitations.formTitle }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText(copy.invitations.emailLabel)).toBeTruthy();
+    expect(props.onTabChange).not.toHaveBeenCalled();
   });
 
   it("FUI[workspace.members:invitations-loading] shows a skeleton and no rows while the invitations load", () => {

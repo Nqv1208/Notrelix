@@ -1164,31 +1164,6 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
 
   const invitationsPanel = invitations ? (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          className="max-md:h-touch"
-          onClick={() => setInviteOpen(true)}
-        >
-          <Mail aria-hidden="true" />
-          {copy.invitations.invitePeople}
-        </Button>
-      </div>
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
-          <InviteForm
-            copy={copy}
-            inviting={props.inviting}
-            inviteError={props.inviteError}
-            inviteResetKey={props.inviteResetKey}
-            onInvite={props.onInvite}
-            onInviteMany={props.onInviteMany}
-            entryOptions={props.entryOptions}
-            entryRefusals={props.entryRefusals}
-            onCancel={() => setInviteOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
       <section
         aria-labelledby="pending-invitations"
         className="flex flex-col gap-3"
@@ -1410,10 +1385,10 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
               : copy.descriptionLoading}
           </p>
         </div>
-        {invitations && activeTab === "members" ? (
+        {invitations ? (
           <Button
             size="sm"
-            onClick={() => onTabChange("invitations")}
+            onClick={() => setInviteOpen(true)}
             className="hover:bg-primary/90 max-md:h-touch"
           >
             <UserPlus aria-hidden="true" />
@@ -1463,6 +1438,25 @@ export function WorkspaceMembersSurface(props: WorkspaceMembersSurfaceProps) {
       ) : (
         membersPanel
       )}
+
+      {invitations ? (
+        // One invite dialog for both tabs: the header button opens it from either one.
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+            <InviteForm
+              copy={copy}
+              inviting={props.inviting}
+              inviteError={props.inviteError}
+              inviteResetKey={props.inviteResetKey}
+              onInvite={props.onInvite}
+              onInviteMany={props.onInviteMany}
+              entryOptions={props.entryOptions}
+              entryRefusals={props.entryRefusals}
+              onCancel={() => setInviteOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
 
       <InviteResultsDialog
         copy={copy}
