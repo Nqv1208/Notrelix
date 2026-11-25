@@ -100,7 +100,7 @@ describe("provider sign-in", () => {
   it("hands the second step to a cookie, not to the URL, for the provider whose account has an authenticator", async () => {
     const { call, store } = world();
     store.logoutCurrentUser();
-    const start = await call("GET", "/auth/oauth/microsoft/start");
+    const start = await call("GET", "/auth/oauth/github/start");
     expect(start.body?.redirectTo).toBe("/sign-in?step=mfa");
     expect(JSON.stringify(start.body)).not.toContain("challenge");
     // No session yet.
@@ -120,7 +120,7 @@ describe("provider sign-in", () => {
     const { call } = world();
     const start = await call(
       "GET",
-      "/auth/oauth/microsoft/start?returnUrl=%2Fhome",
+      "/auth/oauth/github/start?returnUrl=%2Fhome",
     );
     expect(start.body?.redirectTo).toBe("/sign-in?step=mfa&returnTo=%2Fhome");
     for (let attempt = 1; attempt <= 4; attempt += 1)

@@ -59,6 +59,17 @@ x-backend-environment: &backend-environment
   Smtp__FromEmail: ${SMTP_FROM_EMAIL:-}
   Smtp__FromName: ${SMTP_FROM_NAME:-Notrelix}
   Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+  # GitHub sign-in is off until OAUTH_GITHUB_ENABLED=true; then the client id, secret and redirect URI are
+  # required (the API refuses to start without them). Values come from the GitHub Environment at deploy time.
+  OAuth__Providers__GitHub__Enabled: ${OAUTH_GITHUB_ENABLED:-false}
+  OAuth__Providers__GitHub__ClientId: ${OAUTH_GITHUB_CLIENT_ID:-}
+  OAuth__Providers__GitHub__ClientSecret: ${OAUTH_GITHUB_CLIENT_SECRET:-}
+  OAuth__Providers__GitHub__AuthorizationEndpoint: https://github.com/login/oauth/authorize
+  OAuth__Providers__GitHub__TokenEndpoint: https://github.com/login/oauth/access_token
+  OAuth__Providers__GitHub__UserInfoEndpoint: https://api.github.com/user
+  OAuth__Providers__GitHub__EmailsEndpoint: https://api.github.com/user/emails
+  OAuth__Providers__GitHub__RedirectUri: ${OAUTH_GITHUB_REDIRECT_URI:-}
+  OAuth__Providers__GitHub__Scopes__0: user:email
   Cors__AllowedOrigins__0: ${CORS_ORIGIN:?CORS_ORIGIN is required}
   # Browser CSRF enforcement is mandatory outside Development/Testing (ADR-005);
   # not env-overridable, and startup fails if it is disabled here.

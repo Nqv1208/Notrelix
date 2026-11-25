@@ -572,7 +572,7 @@ describe("Transfer ownership (hand the workspace over)", () => {
           challengeToken: null,
         })),
         provider: {
-          providers: vi.fn(async () => ["Google", "Microsoft"]),
+          providers: vi.fn(async () => ["Google", "GitHub"]),
           start: vi.fn(async () => undefined),
           resume: vi.fn(() => null),
           claim: vi.fn(async () => "proof-provider"),
@@ -591,7 +591,7 @@ describe("Transfer ownership (hand the workspace over)", () => {
 
       expect(within(dialog).getByText(d.stepUpProviderText)).toBeTruthy();
       expect(
-        within(dialog).getByRole("button", { name: "Confirm with Microsoft" }),
+        within(dialog).getByRole("button", { name: "Confirm with GitHub" }),
       ).toBeTruthy();
       await act(async () => {
         fireEvent.click(
