@@ -22,7 +22,7 @@ review_on:
 
 # Runbook: staging demo trên một VM Oracle Always Free (ARM A1)
 
-Mục tiêu: chạy bản staging của Notrelix trên một VM Ubuntu 24.04 aarch64 (Singapore, khoảng 2 OCPU và 12 GB RAM), voice/video tắt. Phần dưới liệt kê việc owner phải tự làm; phần còn lại do repo lo (workflow, overlay, script bootstrap).
+Mục tiêu: chạy bản staging của Notrelix trên một VM Ubuntu 24.04 aarch64 (Singapore, khoảng 2 OCPU và 12 GB RAM), voice/video chạy qua LiveKit Cloud (không có media server trên VM). Phần dưới liệt kê việc owner phải tự làm; phần còn lại do repo lo (workflow, overlay, script bootstrap).
 
 ## 1. Luồng tổng thể
 
@@ -85,12 +85,14 @@ Cấu hình email và đăng nhập GitHub do GitHub quản lý (không SSH vào
 
 | Loại | Tên |
 |---|---|
-| Secret | `RESEND_API_KEY`, `SMTP_PASSWORD` (tùy chọn), `OAUTH_GITHUB_CLIENT_SECRET` |
-| Variable | `EMAIL_ENABLED`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `SMTP_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_ENABLE_SSL`, `OAUTH_GITHUB_ENABLED`, `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_REDIRECT_URI` |
+| Secret | `RESEND_API_KEY`, `SMTP_PASSWORD` (tùy chọn), `OAUTH_GITHUB_CLIENT_SECRET`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` |
+| Variable | `EMAIL_ENABLED`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `SMTP_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_ENABLE_SSL`, `OAUTH_GITHUB_ENABLED`, `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_REDIRECT_URI`, `CHAT_CALLS_MEDIA_PROVIDER`, `LIVEKIT_API_URL`, `LIVEKIT_CLIENT_URL` |
 
 Xoay khóa: sửa giá trị trong Environment trên GitHub, rồi chạy lại `release.yml` (`workflow_dispatch`) với `ci_run_id` của run `Notrelix CI` đã xanh. File `.env.secrets` được ghi lại toàn bộ mỗi lần deploy; xóa một khóa ở GitHub thì khóa đó biến mất khỏi file và compose quay về giá trị trong `.env.staging`. Danh sách khóa nằm một chỗ: mảng `keys` ở bước `Write app secrets from GitHub Environment` trong `deploy.yml`.
 
 Đăng nhập GitHub: tạo OAuth App trên GitHub với Homepage URL `https://demo.<domain>` và Authorization callback URL `https://demo.<domain>/api/v1/auth/oauth/github/callback`; `OAUTH_GITHUB_REDIRECT_URI` phải trùng đúng URL đó. Đặt `OAUTH_GITHUB_ENABLED=true` chỉ khi đã có đủ client id, secret và redirect URI, vì API từ chối khởi động nếu thiếu.
+
+Gọi thoại/video: media chạy trên LiveKit Cloud, không mở thêm cổng nào trên VM. Tạo project ở cloud.livekit.io, rồi đặt `CHAT_CALLS_MEDIA_PROVIDER=LiveKit`, `LIVEKIT_CLIENT_URL=wss://<project>.livekit.cloud`, `LIVEKIT_API_URL=https://<project>.livekit.cloud` (Variable) và `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (Secret, secret dài ít nhất 32 ký tự). Thiếu một giá trị khi provider là `LiveKit` thì API từ chối khởi động và deploy tự rollback; bỏ trống `CHAT_CALLS_MEDIA_PROVIDER` thì cuộc gọi dùng bản giả lập không kết nối được.
 
 Environment `production`: bật Required reviewers (owner). Chưa cần secret cho đến khi có host production.
 
