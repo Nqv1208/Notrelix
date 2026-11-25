@@ -60,9 +60,14 @@ jobs:
           OAUTH_GITHUB_CLIENT_ID: ${{ vars.OAUTH_GITHUB_CLIENT_ID }}
           OAUTH_GITHUB_REDIRECT_URI: ${{ vars.OAUTH_GITHUB_REDIRECT_URI }}
           OAUTH_GITHUB_CLIENT_SECRET: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+          CHAT_CALLS_MEDIA_PROVIDER: ${{ vars.CHAT_CALLS_MEDIA_PROVIDER }}
+          LIVEKIT_API_URL: ${{ vars.LIVEKIT_API_URL }}
+          LIVEKIT_CLIENT_URL: ${{ vars.LIVEKIT_CLIENT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           # Allowlist of app-level keys; only non-empty values are written so an unset GitHub value never overrides the host env file.
-          keys=(RESEND_API_KEY SMTP_PASSWORD EMAIL_ENABLED EMAIL_FROM EMAIL_FROM_NAME SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USERNAME SMTP_FROM_EMAIL SMTP_FROM_NAME SMTP_ENABLE_SSL OAUTH_GITHUB_ENABLED OAUTH_GITHUB_CLIENT_ID OAUTH_GITHUB_REDIRECT_URI OAUTH_GITHUB_CLIENT_SECRET)
+          keys=(RESEND_API_KEY SMTP_PASSWORD EMAIL_ENABLED EMAIL_FROM EMAIL_FROM_NAME SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USERNAME SMTP_FROM_EMAIL SMTP_FROM_NAME SMTP_ENABLE_SSL OAUTH_GITHUB_ENABLED OAUTH_GITHUB_CLIENT_ID OAUTH_GITHUB_REDIRECT_URI OAUTH_GITHUB_CLIENT_SECRET CHAT_CALLS_MEDIA_PROVIDER LIVEKIT_API_URL LIVEKIT_CLIENT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET)
           content=""; for k in "${keys[@]}"; do v="${!k:-}"; [[ -n "$v" ]] || continue; if [[ "$v" == *$'\n'* || "$v" == *$'\r'* ]]; then echo "::error::$k contains a newline"; exit 1; fi; content+="$k=$v"$'\n'; done
           # Values travel on stdin only, never on the command line.
           printf '%s' "$content" | ssh -p "${PORT:-22}" "$USER@$HOST" "p='$DEPLOY_PATH'; umask 077; cat > \"\$p/.env.secrets.tmp\" && mv -f \"\$p/.env.secrets.tmp\" \"\$p/.env.secrets\""
