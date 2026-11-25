@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import {
   BoardSettingsPage,
@@ -7,6 +7,7 @@ import {
 import { useCurrentUser } from "@notrelix/features-auth";
 import { useFullBoard } from "@notrelix/work-management-state";
 import type { BoardSettingsSearch } from "../../../../router/schemas/board-settings-search-schema";
+import { BoardShareDialog } from "../../../../shell/workspace/board-share-dialog";
 import { useMoveToSpace } from "../../../../shell/workspace/use-move-to-space";
 import { useBoardHeaderData } from "../../../../shell/workspace/use-board-header-data";
 
@@ -22,6 +23,8 @@ export function BoardSettingsRoutePage() {
   const search: BoardSettingsSearch = useSearch({ from: ROUTE });
   const navigate = useNavigate({ from: ROUTE });
   const { board } = useFullBoard(boardId, workspaceId);
+  // Access opens the share dialog over the settings page: the reader stays where they were.
+  const [shareOpen, setShareOpen] = useState(false);
   const headerData = useBoardHeaderData(workspaceId, boardId, board);
   const mover = useMoveToSpace();
   const user = useCurrentUser();
@@ -103,7 +106,7 @@ export function BoardSettingsRoutePage() {
           })
         }
         onBack={() => goToBoard()}
-        onOpenAccess={() => goToBoard({ share: true })}
+        onOpenAccess={() => setShareOpen(true)}
         onLeave={(reason) =>
           // The board left the working set: the page that lists it names the way back.
           void navigate({
@@ -114,6 +117,13 @@ export function BoardSettingsRoutePage() {
         }
       />
       {mover.dialog}
+      <BoardShareDialog
+        workspaceId={workspaceId}
+        boardId={boardId}
+        board={board}
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+      />
     </>
   );
 }
