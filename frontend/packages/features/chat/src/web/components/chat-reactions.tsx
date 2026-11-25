@@ -32,8 +32,9 @@ const PILL_EMOJI = 3;
 
 /**
  * The reaction summary of a message (Messenger style): one pill with up to three distinct emoji and the total count,
- * laid over the bubble's bottom corner (the far corner from the author's side) and hanging 10 px below it, with a ring in
- * the page colour so it reads as sitting on the bubble. Render it inside the bubble's positioned box. It is one button: its
+ * on the bubble's bottom-right corner: it overlaps the bubble by 6 px only and hangs 16 px below it, with a ring in the
+ * page colour so it reads as sitting on the corner. On someone else's message it starts just inside that corner and runs
+ * out to the right; on the caller's own (right-aligned) message it ends at the corner, so it never leaves the column. Render it inside the bubble's positioned box. It is one button: its
  * label lists every emoji with its count, and it opens the "who reacted" popover. It is highlighted when the caller reacted.
  */
 export function ReactionChips({
@@ -63,8 +64,8 @@ export function ReactionChips({
   return (
     <div
       className={cn(
-        "absolute top-full z-10 -mt-3 flex",
-        align === "end" ? "start-2" : "end-2",
+        "absolute top-full z-10 -mt-1.5 flex",
+        align === "end" ? "end-0" : "start-[calc(100%-1.25rem)]",
       )}
       data-testid="chat-reactions"
       data-align={align}

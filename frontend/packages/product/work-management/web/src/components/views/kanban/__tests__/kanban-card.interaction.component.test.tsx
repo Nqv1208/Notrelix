@@ -9,6 +9,7 @@ import {
   memberFixture,
 } from "@notrelix/work-management-testing";
 import { KanbanCard } from "../kanban-card";
+import type { KanbanCardSelection } from "../kanban-selection";
 import { kanbanCardCopy, type KanbanCardCopy } from "../kanban-card.copy";
 
 /** 12/10/2026 10:40 in the runtime's own time zone. */
@@ -39,6 +40,7 @@ function renderCard(
     timeZone?: string;
     now?: Date;
     dragDisabled?: boolean;
+    selection?: KanbanCardSelection;
   } = {},
 ) {
   const card = cardFixture({
@@ -56,6 +58,7 @@ function renderCard(
           copy={props.copy ?? VI}
           selected={props.selected}
           dragDisabled={props.dragDisabled}
+          selection={props.selection}
           onOpenDetails={onOpenDetails}
         />
       </SortableContext>
@@ -233,6 +236,19 @@ describe("KanbanCard top row", () => {
 });
 
 describe("KanbanCard title and states", () => {
+  it("shifts the title for the pick box on hover or keyboard focus only, not on a restored mouse focus", () => {
+    const { article } = renderCard(
+      {},
+      {
+        selection: { selectedIds: new Set(), onToggle: vi.fn() },
+      },
+    );
+    // A click focuses the card and the dialog hands focus back on close: the title must not stay indented.
+    expect(article.innerHTML).toContain("group-hover:pl-[26px]");
+    expect(article.innerHTML).toContain("group-has-[:focus-visible]:pl-[26px]");
+    expect(article.innerHTML).not.toContain("group-focus-within:pl-[26px]");
+  });
+
   it("names only the open control by the title, clamped to three lines", () => {
     const title =
       "Một tiêu đề rất dài để kiểm tra việc xuống dòng và cắt bớt sau ba dòng mà tên truy cập vẫn đầy đủ "

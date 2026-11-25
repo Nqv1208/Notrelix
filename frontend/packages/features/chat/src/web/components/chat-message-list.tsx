@@ -49,7 +49,12 @@ import {
   RowActivityProvider,
   createRowActivityStore,
 } from "./chat-row-activity";
-import { ChatTypingBubble } from "./chat-typing-indicator";
+import {
+  ChatTypingBubble,
+  TYPING_SLOT_MS,
+  type TypingSlot,
+  useTypingSlot,
+} from "./chat-typing-indicator";
 import { useChatHighlight } from "./chat-highlight-context";
 import { animateScrollTo, prefersReducedMotion } from "./animate-scroll";
 import { guardResizeObserverLoop } from "./resize-observer-loop-guard";
@@ -360,7 +365,13 @@ export function ChatMessageList(props: ChatMessageListProps) {
     }
   }
   quietObserverLoopNotice();
-  const hasTyping = typingIds.length > 0;
+  // The newest row and its author: a typing bubble whose author just sent it hands its place to the message.
+  const newestRow = rows[rows.length - 1];
+  const typingSlot = useTypingSlot(typingIds, space, {
+    key: newestRow?.key ?? "",
+    authorId: newestRow?.kind === "message" ? newestRow.message.authorId : null,
+  });
+  const hasTyping = typingSlot.ids.length > 0;
   const allEntries = useMemo<readonly ListEntry[]>(
     () => (hasTyping ? [...rows, TYPING_ENTRY] : rows),
     [rows, hasTyping],
@@ -392,6 +403,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
     props: ChatMessageListProps;
     entries: readonly ListEntry[];
     laidOut: boolean;
+    typing: TypingSlot;
     items: ReactElement[];
     kept: Map<string, KeptItem>;
   } | null>(null);
@@ -524,7 +536,12 @@ export function ChatMessageList(props: ChatMessageListProps) {
     cancelGlide.current = animateScrollTo(
       el,
       () => (end = Math.max(end, el.scrollHeight - el.clientHeight)),
-      { durationMs: 180, gentle: true, reducedMotion: prefersReducedMotion() },
+      {
+        // The typing bubble opens a frame after it mounts and grows for TYPING_SLOT_MS: the follow covers all of it.
+        durationMs: lastKey === TYPING_ENTRY.key ? TYPING_SLOT_MS + 80 : 180,
+        gentle: true,
+        reducedMotion: prefersReducedMotion(),
+      },
     );
   }, [lastKey, space, laidOut]);
 
@@ -1091,7 +1108,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
   const renderEntry = (entry: ListEntry) =>
     entry.kind === "typing" ? (
       <ChatTypingBubble
-        ids={typingIds}
+        ids={typingSlot.ids}
+        leaving={typingSlot.leaving}
         authorName={props.authorName}
         copy={copy}
       />
@@ -1105,7 +1123,8 @@ export function ChatMessageList(props: ChatMessageListProps) {
     reuse &&
     reuse.props === props &&
     reuse.entries === allEntries &&
-    reuse.laidOut === laidOut
+    reuse.laidOut === laidOut &&
+    reuse.typing === typingSlot
   )
     items = reuse.items;
   else {
@@ -1146,7 +1165,14 @@ export function ChatMessageList(props: ChatMessageListProps) {
       if (asProps) kept.set(entry.key, { props: asProps, fresh, el });
       return el;
     });
-    built.current = { props, entries: allEntries, laidOut, items, kept };
+    built.current = {
+      props,
+      entries: allEntries,
+      laidOut,
+      typing: typingSlot,
+      items,
+      kept,
+    };
   }
 
   return (
