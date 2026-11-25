@@ -3,7 +3,7 @@
  * pages, on the backend's own routes and shapes:
  *
  *   POST /auth/identify                     how this email signs in
- *   GET  /auth/oauth/:provider/start        Google or Microsoft sign-in (the real call is a redirect)
+ *   GET  /auth/oauth/:provider/start        Google or GitHub sign-in (the real call is a redirect)
  *   POST /auth/sso/start                    the company sign-in: the provider's authorization address
  *   GET  /auth/sso/callback                 the company provider's way back (the real call is a redirect)
  *   POST /invitations/preview               guest invitation preview
@@ -26,8 +26,8 @@ import type { MockStore } from "../../state/mock-store";
 
 const EMAIL = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 /** The provider whose mock account has an authenticator app: its sign-in goes through the second step. */
-const MFA_PROVIDER = "microsoft";
-const MOCK_PROVIDERS = ["google", "microsoft"];
+const MFA_PROVIDER = "github";
+const MOCK_PROVIDERS = ["google", "github"];
 
 function hasControlCharacter(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
@@ -340,7 +340,7 @@ export const authFlowOperations = [
       // backend callback, which answers with a redirect. The mock plays the
       // round trip and says where that redirect goes (`redirectTo`): the
       // session opens and the host lands on `/auth/callback`, or, for the
-      // provider whose account has an authenticator app (Microsoft), the
+      // provider whose account has an authenticator app (GitHub), the
       // challenge goes into the mock's cookie and the host lands on the
       // second step. A return path travels only when it is an internal one.
       const returnTo = isInternalPath(query.returnUrl) ? query.returnUrl : null;

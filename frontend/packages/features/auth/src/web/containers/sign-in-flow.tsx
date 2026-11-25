@@ -466,7 +466,7 @@ export function SignInFlow({
       step={step}
       pending={pending}
       redirecting={
-        redirecting === "google" || redirecting === "microsoft"
+        redirecting === "google" || redirecting === "github"
           ? redirecting
           : null
       }

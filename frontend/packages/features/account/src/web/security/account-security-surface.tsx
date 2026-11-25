@@ -124,7 +124,7 @@ export type AccountSecurityFlow =
 export interface AccountSecurityData {
   /** The person has a password to sign in with (absent = yes). */
   readonly hasPassword?: boolean;
-  /** The providers the person signed in with ("Google", "Microsoft"); absent = none. */
+  /** The providers the person signed in with ("Google", "GitHub"); absent = none. */
   readonly linkedProviders?: readonly string[];
   /** The single sign-on provider that owns the password; `null` = none. */
   readonly ssoProvider: string | null;

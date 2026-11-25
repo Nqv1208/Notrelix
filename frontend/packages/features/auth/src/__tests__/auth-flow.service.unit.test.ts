@@ -109,8 +109,8 @@ describe("auth flow adapter: provider sign-in", () => {
   it("builds the backend start path for the browser to navigate to, without calling it", () => {
     const { post, get, service } = setup();
     expect(service.oauthStartPath("google")).toBe("/auth/oauth/google/start");
-    expect(service.oauthStartPath("microsoft", "/workspaces/a?b=1")).toBe(
-      "/auth/oauth/microsoft/start?returnUrl=%2Fworkspaces%2Fa%3Fb%3D1",
+    expect(service.oauthStartPath("github", "/workspaces/a?b=1")).toBe(
+      "/auth/oauth/github/start?returnUrl=%2Fworkspaces%2Fa%3Fb%3D1",
     );
     expect(post).not.toHaveBeenCalled();
     expect(get).not.toHaveBeenCalled();

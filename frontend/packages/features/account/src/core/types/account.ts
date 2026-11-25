@@ -47,7 +47,7 @@ export interface AccountSecuritySummary {
   readonly twoFactorEnabled: boolean;
   readonly recoveryCodesLeft: number;
   readonly activeSessionCount: number;
-  /** Sign-in providers linked to the account ("google", "microsoft"). */
+  /** Sign-in providers linked to the account ("google", "github"). */
   readonly linkedProviders: readonly string[];
 }
 
