@@ -61,8 +61,8 @@ export const en = {
   sidebar: {
     workspaceChip: "{{name}}, open the Notrelix system rail",
     workspaceMeta: "{{departments}} · {{members}}",
-    departments_one: "{{count}} department",
-    departments_other: "{{count}} departments",
+    departments_one: "{{count}} space",
+    departments_other: "{{count}} spaces",
     people_one: "{{count}} person",
     people_other: "{{count}} people",
     search: "Search or run a command",
@@ -104,7 +104,7 @@ export const en = {
       guest: "Guest",
     },
     sharedTitle: "Shared with you",
-    departmentAdmin: "{{name}} department admin",
+    departmentAdmin: "{{name}} space admin",
   },
   user: {
     menu: "Account menu for {{name}}",
@@ -186,7 +186,7 @@ export const en = {
   },
   pages: {
     reportsTitle: "Reports",
-    reportsDescription: "Workspace figures across departments and Boards.",
+    reportsDescription: "Workspace figures across spaces and Boards.",
     reportsEmptyTitle: "Reports are not available yet",
     reportsEmptyDescription: "Dashboards arrive with the Reports phase.",
     openPalette: "Find a Board or Doc",
@@ -275,8 +275,8 @@ export const vi: WorkspaceShellCopy = {
   sidebar: {
     workspaceChip: "{{name}}, mở thanh hệ thống Notrelix",
     workspaceMeta: "{{departments}} · {{members}}",
-    departments_one: "{{count}} phòng ban",
-    departments_other: "{{count}} phòng ban",
+    departments_one: "{{count}} không gian",
+    departments_other: "{{count}} không gian",
     people_one: "{{count}} người",
     people_other: "{{count}} người",
     search: "Tìm hoặc chạy lệnh",
@@ -318,7 +318,7 @@ export const vi: WorkspaceShellCopy = {
       guest: "Khách",
     },
     sharedTitle: "Được chia sẻ với bạn",
-    departmentAdmin: "Quản trị Phòng {{name}}",
+    departmentAdmin: "Quản trị không gian {{name}}",
   },
   user: {
     menu: "Menu tài khoản của {{name}}",
@@ -399,7 +399,7 @@ export const vi: WorkspaceShellCopy = {
   },
   pages: {
     reportsTitle: "Báo cáo",
-    reportsDescription: "Số liệu của workspace theo phòng ban và Bảng.",
+    reportsDescription: "Số liệu của workspace theo không gian và Bảng.",
     reportsEmptyTitle: "Báo cáo chưa khả dụng",
     reportsEmptyDescription: "Bảng điều khiển sẽ có cùng giai đoạn Báo cáo.",
     openPalette: "Tìm Bảng hoặc Tài liệu",

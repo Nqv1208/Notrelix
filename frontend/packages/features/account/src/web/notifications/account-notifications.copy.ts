@@ -31,7 +31,7 @@ export const en = {
     mention: "Someone mentions @{{name}} in a comment or page",
     overdue: "Items assigned to you or that you follow",
     watching: "Status, due date or assignee changed",
-    invitation: "To a workspace, department, board or page",
+    invitation: "To a workspace, space, board or page",
     digest:
       "Once a day · items due, items that need you and chat messages you missed",
   },
@@ -72,7 +72,7 @@ export const vi: AccountNotificationsCopy = {
     mention: "Ai đó nhắc @{{name}} trong bình luận hoặc trang",
     overdue: "Việc giao cho bạn hoặc bạn theo dõi",
     watching: "Trạng thái, hạn hoặc người phụ trách đổi",
-    invitation: "Vào workspace, phòng ban, board hoặc trang",
+    invitation: "Vào workspace, không gian, board hoặc trang",
     digest:
       "Mỗi ngày một lần · việc đến hạn, việc cần bạn và tin nhắn trò chuyện bạn đã bỏ lỡ",
   },

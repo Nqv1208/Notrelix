@@ -1514,7 +1514,7 @@ describe("AccountWorkspacesPage container", () => {
     runtime.put = put;
     await mount(<AccountWorkspacesPage />, "vi");
     await until(() => expect(text()).toContain("Mặc định khi mở ứng dụng"));
-    expect(text()).toContain("Quản trị workspace · 86 người · 5 phòng ban");
+    expect(text()).toContain("Quản trị workspace · 86 người · 5 không gian");
     expect(text()).toContain("Thành viên · 18 người");
     // A guest sees no counts; nothing is invented for unread notifications.
     expect(text()).toContain("Khách");

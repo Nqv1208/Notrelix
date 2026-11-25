@@ -8,7 +8,7 @@ export const en = {
   shell: {
     brand: "Notrelix",
     promise:
-      "Every department, every board, one place to see what is waiting on whom.",
+      "Every space, every board, one place to see what is waiting on whom.",
     terms: "Terms",
     privacy: "Privacy",
     help: "Help",
@@ -288,7 +288,7 @@ export const en = {
     },
     until: "until {{date}}",
     seeTitle: "What you will see",
-    seeBody: "This board only. You do not see the other departments or boards.",
+    seeBody: "This board only. You do not see the other spaces or boards.",
     emailLabel: "Invited email",
     emailHint: "The invitation is tied to this email and cannot be changed.",
     mismatch:
@@ -327,7 +327,7 @@ export const en = {
       yourAccess: "Your access",
       boardOnlyTitle: "This board only",
       boardOnlyBody:
-        "You do not see the other boards, departments or members of {{org}}.",
+        "You do not see the other boards, spaces or members of {{org}}.",
       sentTo:
         "The invitation was sent to {{email}}. You have no access until you accept.",
     },
@@ -356,7 +356,7 @@ export type AuthCopy = typeof en;
 export const vi: AuthCopy = {
   shell: {
     brand: "Notrelix",
-    promise: "Mọi phòng ban, mọi board, một chỗ để biết việc gì đang chờ ai.",
+    promise: "Mọi không gian, mọi board, một chỗ để biết việc gì đang chờ ai.",
     terms: "Điều khoản",
     privacy: "Quyền riêng tư",
     help: "Trợ giúp",
@@ -625,7 +625,7 @@ export const vi: AuthCopy = {
     },
     until: "đến {{date}}",
     seeTitle: "Bạn sẽ thấy gì",
-    seeBody: "Chỉ board này. Bạn không thấy các phòng ban hay board khác.",
+    seeBody: "Chỉ board này. Bạn không thấy các không gian hay board khác.",
     emailLabel: "Email được mời",
     emailHint: "Lời mời gắn với email này, không đổi được.",
     mismatch:
@@ -662,7 +662,7 @@ export const vi: AuthCopy = {
       yourAccess: "Quyền của bạn",
       boardOnlyTitle: "Chỉ board này",
       boardOnlyBody:
-        "Bạn không thấy board, phòng ban hay thành viên khác của {{org}}.",
+        "Bạn không thấy board, không gian hay thành viên khác của {{org}}.",
       sentTo:
         "Lời mời gửi tới {{email}}. Bạn chưa có quyền gì cho tới khi chấp nhận.",
     },

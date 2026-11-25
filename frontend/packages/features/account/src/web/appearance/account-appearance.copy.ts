@@ -64,7 +64,7 @@ export const en = {
     changes: "Changes with the accent:",
     changesTo: " primary buttons, links, the selected item. ",
     stays: "Stays the same:",
-    staysTo: " status colors, department colors, overdue warnings.",
+    staysTo: " status colors, space colors, overdue warnings.",
   },
   companyDefault:
     "Workspace admins set the default accent for {{workspace}}: {{accent}}. Your choice takes priority.",
@@ -141,7 +141,7 @@ export const vi: AccountAppearanceCopy = {
     changes: "Đổi theo màu nhấn:",
     changesTo: " nút chính, liên kết, mục đang chọn. ",
     stays: "Giữ nguyên:",
-    staysTo: " màu trạng thái, màu phòng ban, cảnh báo quá hạn.",
+    staysTo: " màu trạng thái, màu không gian, cảnh báo quá hạn.",
   },
   companyDefault:
     "Quản trị workspace đặt màu mặc định cho {{workspace}}: {{accent}}. Lựa chọn của bạn được ưu tiên.",

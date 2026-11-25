@@ -59,10 +59,10 @@ describe("WorkspaceTeamsSurface", () => {
     expect(within(rows[0]!).getByText("4 người")).toBeTruthy();
     expect(within(rows[0]!).getByText("Trần Minh Quân")).toBeTruthy();
     expect(
-      within(rows[0]!).getByText("Phòng Công nghệ · Thành viên"),
+      within(rows[0]!).getByText("Không gian Công nghệ · Thành viên"),
     ).toBeTruthy();
     expect(
-      within(rows[1]!).getByText("Phòng Kế toán · Người xem"),
+      within(rows[1]!).getByText("Không gian Kế toán · Người xem"),
     ).toBeTruthy();
     expect(
       within(rows[2]!).getByText("Board Triển khai ERP Q4 · Có thể xem"),
@@ -106,7 +106,7 @@ describe("WorkspaceTeamsSurface", () => {
       name: "Lưu trữ Nhóm Kỹ sư ERP?",
     });
     expect(
-      within(dialog).getByText(/3 người sẽ mất quyền vào Phòng Công nghệ/),
+      within(dialog).getByText(/3 người sẽ mất quyền vào Không gian Công nghệ/),
     ).toBeTruthy();
     expect(within(dialog).getByText(/Trần Minh Quân vẫn còn/)).toBeTruthy();
     // The workspace the Team belongs to is named in the confirmation.

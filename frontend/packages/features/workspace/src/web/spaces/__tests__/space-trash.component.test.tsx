@@ -106,7 +106,7 @@ describe("Deleted departments", () => {
       />,
     );
     expect(
-      screen.getByText(/Không có phòng ban nào bị xoá trong 30 ngày qua/),
+      screen.getByText(/Chưa có không gian nào bị xoá trong 30 ngày qua/),
     ).toBeTruthy();
     unmount();
 
