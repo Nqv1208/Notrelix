@@ -81,14 +81,16 @@ Environment `staging` (không cần người duyệt):
 
 Gợi ý giá trị không bí mật: `DEPLOY_SSH_USER=deploy`, `DEPLOY_PATH=/opt/notrelix`, `DEPLOY_ENV_FILE=/opt/notrelix/.env.staging`, `DEPLOY_HEALTH_URL=http://127.0.0.1:8080/health/live`, `DEPLOY_SMOKE_URL=http://127.0.0.1:8080/`, `DEPLOY_ALLOW_STATEFUL_IMAGE_CHANGE=false`. Health và smoke chạy trên VM qua SSH nên dùng địa chỉ loopback. `DEPLOY_SSH_KNOWN_HOSTS` lấy bằng `ssh-keyscan -t ed25519 <ip>` rồi đối chiếu fingerprint trong Console.
 
-Cấu hình email do GitHub quản lý (không SSH vào VM để sửa). Mỗi lần deploy ghi các khóa dưới đây vào `$DEPLOY_PATH/.env.secrets` (chmod 600, giá trị đi qua stdin của SSH) và compose đọc file này sau `DEPLOY_ENV_FILE`, trước `images.env`. Khóa nào trống ở GitHub thì bị bỏ qua, nên không đè giá trị sẵn có trong `.env.staging`; khóa có giá trị ở GitHub thì thắng `.env.staging`. Giá trị chứa xuống dòng làm bước deploy thất bại.
+Cấu hình email và đăng nhập GitHub do GitHub quản lý (không SSH vào VM để sửa). Mỗi lần deploy ghi các khóa dưới đây vào `$DEPLOY_PATH/.env.secrets` (chmod 600, giá trị đi qua stdin của SSH) và compose đọc file này sau `DEPLOY_ENV_FILE`, trước `images.env`. Khóa nào trống ở GitHub thì bị bỏ qua, nên không đè giá trị sẵn có trong `.env.staging`; khóa có giá trị ở GitHub thì thắng `.env.staging`. Giá trị chứa xuống dòng làm bước deploy thất bại.
 
 | Loại | Tên |
 |---|---|
-| Secret | `RESEND_API_KEY`, `SMTP_PASSWORD` (tùy chọn) |
-| Variable | `EMAIL_ENABLED`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `SMTP_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_ENABLE_SSL` |
+| Secret | `RESEND_API_KEY`, `SMTP_PASSWORD` (tùy chọn), `OAUTH_GITHUB_CLIENT_SECRET` |
+| Variable | `EMAIL_ENABLED`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `SMTP_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_ENABLE_SSL`, `OAUTH_GITHUB_ENABLED`, `OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_REDIRECT_URI` |
 
 Xoay khóa: sửa giá trị trong Environment trên GitHub, rồi chạy lại `release.yml` (`workflow_dispatch`) với `ci_run_id` của run `Notrelix CI` đã xanh. File `.env.secrets` được ghi lại toàn bộ mỗi lần deploy; xóa một khóa ở GitHub thì khóa đó biến mất khỏi file và compose quay về giá trị trong `.env.staging`. Danh sách khóa nằm một chỗ: mảng `keys` ở bước `Write app secrets from GitHub Environment` trong `deploy.yml`.
+
+Đăng nhập GitHub: tạo OAuth App trên GitHub với Homepage URL `https://demo.<domain>` và Authorization callback URL `https://demo.<domain>/api/v1/auth/oauth/github/callback`; `OAUTH_GITHUB_REDIRECT_URI` phải trùng đúng URL đó. Đặt `OAUTH_GITHUB_ENABLED=true` chỉ khi đã có đủ client id, secret và redirect URI, vì API từ chối khởi động nếu thiếu.
 
 Environment `production`: bật Required reviewers (owner). Chưa cần secret cho đến khi có host production.
 
