@@ -30,8 +30,8 @@ describe("AccountProvidersSurface", () => {
     const props = render();
     fireEvent.click(screen.getByRole("button", { name: "Disconnect Google" }));
     expect(props.onUnlink).toHaveBeenCalledWith("Google");
-    fireEvent.click(screen.getByRole("button", { name: "Connect Microsoft" }));
-    expect(props.onLink).toHaveBeenCalledWith("Microsoft");
+    fireEvent.click(screen.getByRole("button", { name: "Connect GitHub" }));
+    expect(props.onLink).toHaveBeenCalledWith("GitHub");
     expect(screen.queryByRole("button", { name: "Connect Google" })).toBeNull();
   });
 
@@ -45,8 +45,8 @@ describe("AccountProvidersSurface", () => {
   });
 
   it("FUI[account.providers] lets a second provider go when another way remains", () => {
-    render({ hasPassword: false, linkedProviders: ["Google", "Microsoft"] });
-    for (const name of ["Disconnect Google", "Disconnect Microsoft"])
+    render({ hasPassword: false, linkedProviders: ["Google", "GitHub"] });
+    for (const name of ["Disconnect Google", "Disconnect GitHub"])
       expect(
         (screen.getByRole("button", { name }) as HTMLButtonElement).disabled,
       ).toBe(false);

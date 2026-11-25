@@ -12,7 +12,7 @@ import { fillAuthCopy } from "../copy/fill-auth-copy";
 import type { AuthCopy } from "../copy/auth.copy";
 import { AuthQrCode } from "./auth-qr-code";
 import { GoogleMark } from "./google-mark";
-import { MicrosoftMark } from "./microsoft-mark";
+import { GitHubMark } from "./github-mark";
 import {
   AuthHeading,
   BUTTON_CLASS,
@@ -126,11 +126,11 @@ export interface AuthSignInSurfaceProps {
   readonly step: AuthSignInStep;
   readonly pending?: boolean;
   /** The provider the browser is being sent to; its button says so while the page leaves. */
-  readonly redirecting?: "google" | "microsoft" | null;
+  readonly redirecting?: "google" | "github" | null;
   /** The email typed earlier (the email step starts with it). */
   readonly initialEmail?: string;
   readonly onContinue: (email: string) => void;
-  readonly onProvider: (provider: "google" | "microsoft") => void;
+  readonly onProvider: (provider: "google" | "github") => void;
   readonly onCreateWorkspace: () => void;
   readonly onChangeEmail: () => void;
   readonly onSubmitPassword: (password: string) => void;
@@ -497,27 +497,26 @@ function CredentialsStep({
               <button
                 type="button"
                 disabled={pending}
-                aria-busy={redirecting === "microsoft" || undefined}
-                onClick={() => onProvider("microsoft")}
+                aria-busy={redirecting === "github" || undefined}
+                onClick={() => onProvider("github")}
                 className={BUTTON_CLASS.outline}
               >
-                {redirecting === "microsoft" ? (
+                {redirecting === "github" ? (
                   <Loader2
                     aria-hidden="true"
                     className="size-4.5 shrink-0 animate-spin motion-reduce:animate-none"
                   />
                 ) : (
-                  <MicrosoftMark className="size-4.5 shrink-0" />
+                  <GitHubMark className="size-4.5 shrink-0" />
                 )}
-                {redirecting === "microsoft"
-                  ? fillAuthCopy(te.redirecting, { provider: "Microsoft" })
-                  : te.microsoft}
+                {redirecting === "github"
+                  ? fillAuthCopy(te.redirecting, { provider: "GitHub" })
+                  : te.github}
               </button>
               <span role="status" className="sr-only">
                 {redirecting
                   ? fillAuthCopy(te.redirecting, {
-                      provider:
-                        redirecting === "google" ? "Google" : "Microsoft",
+                      provider: redirecting === "google" ? "Google" : "GitHub",
                     })
                   : null}
               </span>

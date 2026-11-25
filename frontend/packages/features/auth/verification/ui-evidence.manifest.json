@@ -24,9 +24,9 @@
         "reason": "Vendor brand mark (Google G, fixed brand colours) rendered inside the sign-in and register surfaces; covered by their stories and exempt from the token gate through VENDOR_MARK_FILES."
       },
       {
-        "path": "src/web/components/microsoft-mark.tsx",
+        "path": "src/web/components/github-mark.tsx",
         "category": "nonvisual-composition",
-        "reason": "Vendor brand mark (Microsoft four squares, fixed brand colours) rendered inside the sign-in surface; covered by its stories and exempt from the token gate through VENDOR_MARK_FILES."
+        "reason": "Vendor brand mark (GitHub Invertocat, one solid colour from currentColor) rendered inside the sign-in surface; covered by its stories."
       },
       {
         "path": "src/web/containers/register-flow.tsx",
