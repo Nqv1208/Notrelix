@@ -4,7 +4,7 @@ import { safeReturnPath } from "@notrelix/features-auth";
 import { SIGN_IN_LANDING_PATH } from "../routing/sign-in-landing";
 
 /**
- * Where the backend sends the browser after a Google or Microsoft sign-in
+ * Where the backend sends the browser after a Google or GitHub sign-in
  * that opened a session (the session is in httpOnly cookies the page never
  * reads). It goes back to where the person was (`?returnTo=`) only when that
  * is an internal path; anything else lands on the home page, whose session

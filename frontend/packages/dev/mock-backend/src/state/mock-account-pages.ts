@@ -68,7 +68,7 @@ export interface SecurityDetails {
   proofs: Map<string, string>;
   /** The provider a person with no password signs in with (`null` = has a password). */
   signInProvider: string | null;
-  /** Every provider linked to the account ("Google", "Microsoft"). */
+  /** Every provider linked to the account ("Google", "GitHub"). */
   linkedProviders: string[];
   /** The proof(s) a provider re-authentication left in the (mock) httpOnly cookie, until claimed. */
   providerProofs: string[] | null;

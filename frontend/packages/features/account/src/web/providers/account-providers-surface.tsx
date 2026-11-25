@@ -23,7 +23,7 @@ export type AccountProvidersFlow = Extract<
 >;
 
 /** The sign-in providers a person can link. */
-const PROVIDERS = ["Google", "Microsoft"] as const;
+const PROVIDERS = ["Google", "GitHub"] as const;
 
 const named = (text: string, provider: string) =>
   text.replaceAll("{{provider}}", provider);
