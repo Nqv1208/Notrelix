@@ -209,7 +209,7 @@ export const en = {
   providers: {
     title: "Connected accounts",
     pageText:
-      "Connect Google or Microsoft to sign in faster. You always need at least one way to sign in.",
+      "Connect Google or GitHub to sign in faster. You always need at least one way to sign in.",
     methodsTitle: "How you sign in",
     passwordTitle: "Password",
     passwordSet: "Set",
@@ -587,7 +587,7 @@ export const vi: AccountSecurityCopy = {
   providers: {
     title: "Tài khoản liên kết",
     pageText:
-      "Liên kết để đăng nhập nhanh bằng tài khoản Google hoặc Microsoft. Bạn luôn cần ít nhất một cách đăng nhập.",
+      "Liên kết để đăng nhập nhanh bằng tài khoản Google hoặc GitHub. Bạn luôn cần ít nhất một cách đăng nhập.",
     methodsTitle: "Cách đăng nhập của bạn",
     passwordTitle: "Mật khẩu",
     passwordSet: "Đã đặt",

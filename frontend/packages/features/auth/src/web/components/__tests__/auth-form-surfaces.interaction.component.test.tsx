@@ -42,7 +42,7 @@ describe("auth sign-in surface", () => {
     expect(onContinue).toHaveBeenCalledWith("ten@congty.vn");
   });
 
-  it("FUI[auth.sign-in:providers] offers Google and Microsoft and a way to create a workspace", () => {
+  it("FUI[auth.sign-in:providers] offers Google and GitHub and a way to create a workspace", () => {
     const onProvider = vi.fn();
     const onCreateWorkspace = vi.fn();
     renderPureUi(
@@ -51,8 +51,8 @@ describe("auth sign-in surface", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: copy.email.google }));
-    fireEvent.click(screen.getByRole("button", { name: copy.email.microsoft }));
-    expect(onProvider.mock.calls).toEqual([["google"], ["microsoft"]]);
+    fireEvent.click(screen.getByRole("button", { name: copy.email.github }));
+    expect(onProvider.mock.calls).toEqual([["google"], ["github"]]);
     fireEvent.click(
       screen.getByRole("button", { name: copy.email.createWorkspace }),
     );
