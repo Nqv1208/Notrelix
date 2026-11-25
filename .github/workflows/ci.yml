@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
       - name: Restore NuGet packages cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/**/Directory.*.props', 'backend/global.json') }}
@@ -172,7 +172,7 @@ jobs:
       - uses: ./.github/actions/setup-backend
       # Same key as the fast checks and as use-backend-build; the test jobs read what this job saves.
       - name: Restore NuGet packages cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj', 'backend/**/Directory.*.props', 'backend/global.json') }}
@@ -185,7 +185,7 @@ jobs:
           set -euo pipefail
           find . -type d \( -name bin -o -name obj \) -prune -print0 | tar --null -T - -cf - | gzip -1 > "$RUNNER_TEMP/backend-build.tgz"
           ls -lh "$RUNNER_TEMP/backend-build.tgz"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-build
           path: ${{ runner.temp }}/backend-build.tgz
@@ -220,7 +220,7 @@ jobs:
           --logger "trx;LogFileName=unit-${{ matrix.project }}.trx" --results-directory "$RUNNER_TEMP/trx"
       # Per-test durations, to split a project further by measured time if it becomes the long pole.
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit-trx-${{ matrix.project }}
           path: ${{ runner.temp }}/trx/*.trx
@@ -293,7 +293,7 @@ jobs:
           --filter "${{ matrix.shard.filter }}"
       # Per-test durations, so the shard split can be rebalanced by measured time (see docs/delivery/ci-cd-architecture.md).
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: integration-trx-${{ matrix.shard.name }}
           path: ${{ runner.temp }}/trx/*.trx
@@ -393,7 +393,7 @@ jobs:
           set -euo pipefail
           python3 -m tools.deliveryctl plan --event-name push --ref "$GITHUB_REF" --source-sha "$GITHUB_SHA" \
             --before-sha "$BEFORE" --output plan/plan.json --github-output
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-plan
           path: plan/plan.json
@@ -427,9 +427,9 @@ jobs:
       contract_json: ${{ steps.build.outputs.contract_json }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: release-plan, path: plan}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: release-image-manifests, path: release-images}
       - id: build
         env:
@@ -443,7 +443,7 @@ jobs:
           python3 -m tools.deliveryctl release-candidate --plan plan/plan.json --evidence-summary evidence-summary.json \
             --images-dir release-images --run-id "$GITHUB_RUN_ID" --output candidate/release-candidate.json
           { echo "images_json=$(jq -c '{images: .images}' candidate/release-candidate.json)"; echo "contract_json=$(jq -c .release_contract candidate/release-candidate.json)"; } >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-candidate-draft
           path: candidate/release-candidate.json
@@ -474,11 +474,11 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: {name: release-candidate-draft, path: candidate}
-      - uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with: {subject-path: candidate/release-candidate.json}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-candidate
           path: candidate/release-candidate.json
