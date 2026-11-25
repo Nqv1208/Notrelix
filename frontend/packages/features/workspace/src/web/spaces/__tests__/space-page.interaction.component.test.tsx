@@ -131,7 +131,7 @@ describe("WorkspaceSpaceSurface", () => {
     expect(items.map((item) => item.textContent)).toEqual([
       expect.stringContaining("Board"),
       expect.stringContaining("Tài liệu"),
-      expect.stringContaining("Phòng ban con"),
+      expect.stringContaining("Không gian con"),
       expect.stringContaining("Từ mẫu"),
     ]);
     // Focus lands on the first item; arrows wrap; Escape returns to the button.
@@ -153,7 +153,7 @@ describe("WorkspaceSpaceSurface", () => {
     expect(props.onCreateDoc).toHaveBeenCalledTimes(1);
     fireEvent.click(
       within(openCreateMenu()).getByRole("menuitem", {
-        name: /^Phòng ban con/,
+        name: /^Không gian con/,
       }),
     );
     expect(props.onCreateChild).toHaveBeenCalledTimes(1);
@@ -215,7 +215,7 @@ describe("WorkspaceSpaceSurface", () => {
         .getAttribute("aria-disabled"),
     ).toBeNull();
     const child = within(menu).getByRole("menuitem", {
-      name: /^Phòng ban con/,
+      name: /^Không gian con/,
     });
     expect(child.getAttribute("aria-disabled")).toBe("true");
     expect(child.getAttribute("title")).toBe(copy.createMenu.childUnavailable);
@@ -391,7 +391,7 @@ describe("WorkspaceSpaceSurface", () => {
       within(menu).getAllByText("Không hạ được: Phúc là quản trị duy nhất"),
     ).toHaveLength(2);
     const remove = within(menu).getByRole("menuitem", {
-      name: /Gỡ khỏi phòng/,
+      name: /Gỡ khỏi không gian/,
     });
     expect(remove.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(roles[1]!);
@@ -399,24 +399,24 @@ describe("WorkspaceSpaceSurface", () => {
     expect(props.onChangeMemberRole).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(
-      within(menu).getByText(/Phòng ban phải còn ít nhất 1 quản trị/),
+      within(menu).getByText(/Không gian phải còn ít nhất 1 quản trị/),
     ).toBeTruthy();
   });
 
   it("FUI[workspace.space-page:members-remove] shows who loses access when a team goes, and confirms", () => {
     const { props } = renderPage(spacePageMembersRemoveScenario());
     const dialog = screen.getByRole("dialog", {
-      name: "Gỡ Nhóm Kỹ sư ERP khỏi phòng?",
+      name: "Gỡ Nhóm Kỹ sư ERP khỏi không gian?",
     });
     // Quân is also added directly, so he stays; the other three lose access.
     expect(
       within(dialog).getByText(
-        /3 người sẽ mất quyền vào phòng; Trần Minh Quân vẫn còn/,
+        /3 người sẽ mất quyền vào không gian; Trần Minh Quân vẫn còn/,
       ),
     ).toBeTruthy();
-    expect(within(dialog).getAllByText("· mất quyền vào phòng")).toHaveLength(
-      3,
-    );
+    expect(
+      within(dialog).getAllByText("· mất quyền vào không gian"),
+    ).toHaveLength(3);
     expect(
       within(dialog).getByText("· vẫn là Thành viên, thêm trực tiếp"),
     ).toBeTruthy();
@@ -435,7 +435,9 @@ describe("WorkspaceSpaceSurface", () => {
     fireEvent.click(
       within(row).getByRole("button", { name: "Thao tác với Vũ Thanh" }),
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: /Gỡ khỏi phòng/ }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /Gỡ khỏi không gian/ }),
+    );
     const dialog = screen.getByRole("dialog", {
       name: "Gỡ Vũ Thanh khỏi Phòng Công nghệ?",
     });
@@ -597,7 +599,7 @@ describe("WorkspaceSpaceSurface", () => {
     expect(archive.getAttribute("aria-disabled")).toBe("true");
     // Archive and Delete both say what is inside.
     expect(
-      screen.getAllByText(/còn 2 phòng ban con, 6 board và 3 tài liệu/),
+      screen.getAllByText(/còn 2 không gian con, 6 board và 3 tài liệu/),
     ).toHaveLength(2);
   });
 

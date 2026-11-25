@@ -393,7 +393,7 @@ export const vi: WorkspaceInboxCopy = {
     permissions: { view: "Chỉ xem", comment: "Bình luận", edit: "Chỉnh sửa" },
     ownerInCharge: "{{name}} phụ trách",
     docContext: "Tài liệu · {{department}}",
-    privateBoard: "Phòng {{department}} · board riêng tư",
+    privateBoard: "Không gian {{department}} · board riêng tư",
     whenOwner: "{{day}} {{time}}",
     followingNote: "bạn đang theo dõi việc này",
     needReply: "cần bạn trả lời",

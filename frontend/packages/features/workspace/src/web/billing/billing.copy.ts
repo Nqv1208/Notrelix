@@ -258,7 +258,7 @@ export const en = {
     keepTitle: "Stays the same",
     keep: {
       data: "No board, document or file is deleted",
-      access: "Members, departments and access rights",
+      access: "Members, spaces and access rights",
       seats: "{{count}} seats owned, until the end of the period",
       back: "Upgrade to Business again and reports become editable and webhooks run again",
     },
@@ -611,7 +611,7 @@ export const vi: BillingCopy = {
     keepTitle: "Giữ nguyên",
     keep: {
       data: "Không board, tài liệu hay tệp nào bị xoá",
-      access: "Thành viên, phòng ban và quyền truy cập",
+      access: "Thành viên, không gian và quyền truy cập",
       seats: "{{count}} chỗ đã mua, tới hết kỳ",
       back: "Nâng lại Business thì báo cáo sửa được và webhook chạy lại",
     },
