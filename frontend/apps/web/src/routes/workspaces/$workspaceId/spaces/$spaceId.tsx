@@ -63,7 +63,12 @@ import {
   useSpaceHooks,
 } from "@/shell/workspace/use-workspace-spaces";
 
-const TABS: readonly SpaceTab[] = ["overview", "members", "settings"];
+const TABS: readonly SpaceTab[] = [
+  "overview",
+  "content",
+  "members",
+  "settings",
+];
 
 /**
  * A Space page (OT-5): composes the Workspaces Space producer (tree,
@@ -275,6 +280,7 @@ export function SpacePage() {
         boardTotal: overview ? overview.boardTotal : boards.length,
         docs: docs.slice(0, 5),
         docTotal: overview ? overview.docTotal : rootDocs.length,
+        allDocs: rootDocs,
       },
     };
   }, [

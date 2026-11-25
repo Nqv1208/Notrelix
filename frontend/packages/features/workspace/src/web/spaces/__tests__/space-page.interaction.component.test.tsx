@@ -188,8 +188,12 @@ describe("WorkspaceSpaceSurface", () => {
       tab: "settings",
     });
     const tabs = screen.getByRole("navigation", { name: "Phòng Công nghệ" });
-    const content = within(tabs).getByText(copy.page.tabs.content);
-    expect(content.getAttribute("aria-disabled")).toBe("true");
+    // Boards and Docs is a real tab: a link to the department's full list of Boards and Docs.
+    const content = within(tabs).getByText(copy.page.tabs.content).closest("a");
+    expect(content?.getAttribute("aria-disabled")).toBeNull();
+    expect(content?.getAttribute("href")).toBe(
+      "/workspaces/ws-product/spaces/sp-cong-nghe?tab=content",
+    );
   });
 
   it("FUI[workspace.space-page:permission] offers only what the access level allows", () => {

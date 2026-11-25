@@ -492,6 +492,56 @@ export function WorkspaceSpaceSurface(props: WorkspaceSpaceSurfaceProps) {
               </aside>
             ) : null}
           </>
+        ) : tab === "content" ? (
+          <div
+            data-f="col"
+            className="flex min-w-0 flex-1 flex-col gap-7 overflow-auto px-7 pt-[22px] pb-8 max-md:flex-none max-md:overflow-visible max-md:px-4"
+          >
+            {props.content.status === "loading" ? (
+              <ContentSkeleton label={copy.overview.loading} />
+            ) : props.content.status === "error" ? (
+              <div
+                role="alert"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-popover px-4 py-3 dark:bg-card"
+              >
+                <p className="m-0 text-body text-muted-foreground">
+                  {copy.overview.error}
+                </p>
+                <button
+                  type="button"
+                  onClick={props.onRetryContent}
+                  className={cn(BTN_SM, FOCUS)}
+                >
+                  {copy.page.retry}
+                </button>
+              </div>
+            ) : (
+              // Every Board and Doc of the Space: the overview shows the same sections, cut to the newest five Docs.
+              <>
+                <BoardsSection
+                  copy={copy}
+                  navigation={navigation}
+                  now={props.now}
+                  rows={props.content.data.boards}
+                  total={props.content.data.boardTotal}
+                  libraryHref={LIBRARY}
+                  note={
+                    props.content.data.boards.some((b) => b.isPrivate)
+                      ? copy.overview.boardNote
+                      : null
+                  }
+                />
+                <DocsSection
+                  copy={copy}
+                  navigation={navigation}
+                  now={props.now}
+                  rows={props.content.data.allDocs ?? props.content.data.docs}
+                  total={props.content.data.docTotal}
+                  libraryHref={LIBRARY}
+                />
+              </>
+            )}
+          </div>
         ) : tab === "members" ? (
           <SpaceMembersView
             copy={copy}
