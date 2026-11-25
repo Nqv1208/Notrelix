@@ -89,11 +89,19 @@ export function useTypingPeople(
     seenMessage.current = latestMessage.id;
     typing.clear(spaceId, latestMessage.authorId);
   }, [typing, spaceId, latestMessage]);
-  return useMemo(
-    () => (spaceId ? typing.typingIn(spaceId) : []),
+  // The store is cleared after the paint; until then the author of the new message is left out here, so the frame
+  // that shows their message never also shows their typing bubble under it (the bubble hands over to the message).
+  const sender =
+    latestMessage && seenMessage.current !== latestMessage.id
+      ? latestMessage.authorId
+      : null;
+  return useMemo(() => {
+    const ids = spaceId ? typing.typingIn(spaceId) : [];
+    return sender && ids.includes(sender)
+      ? ids.filter((id) => id !== sender)
+      : ids;
     // `version` changes whenever the store does; the expiry timer bumps it too.
-    [typing, spaceId, version],
-  );
+  }, [typing, spaceId, version, sender]);
 }
 
 /** The presence of a person; offline when unknown or expired. */
