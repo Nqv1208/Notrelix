@@ -3,7 +3,7 @@ import { isSafeReturnPath } from "../utils/safe-return-path";
 
 /**
  * The calls behind the sign-in pages that go past the plain login: which way
- * an email signs in, the second step, the Google/Microsoft round trip, the
+ * an email signs in, the second step, the Google/GitHub round trip, the
  * guest invitation. The backend answers are read into the pages' models in
  * this one file; the pages never see a wire shape.
  */
@@ -374,7 +374,7 @@ export function createAuthFlowService(api: AuthFlowApiClient) {
       };
     },
     /**
-     * Where the browser goes to sign in with Google or Microsoft (path under
+     * Where the browser goes to sign in with Google or GitHub (path under
      * the API base). The provider's page and the way back are the backend's:
      * it sets the session cookies and redirects to the web `/auth/callback`
      * (with `?returnTo=` when the path is safe), to `/sign-in?step=mfa` when a
