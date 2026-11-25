@@ -307,7 +307,8 @@ function KanbanCardContent({
         "transition-[padding] duration-150 ease-out motion-reduce:transition-none",
         reservePick
           ? "pl-[26px]"
-          : hoverLeft && "group-hover:pl-[26px] group-focus-within:pl-[26px]",
+          : hoverLeft &&
+              "group-hover:pl-[26px] group-has-[:focus-visible]:pl-[26px]",
       )
     : undefined;
   // A row that appears on a card already drawn (a label was added) grows in, pushing the title down smoothly.
