@@ -49,10 +49,10 @@ function renderMembers(
     ...overrides,
   };
   renderPureUi(<WorkspaceMembersSurface {...props} />);
-  if (props.invitations)
-    fireEvent.click(
-      screen.getByRole("button", { name: copy.invitations.invitePeople }),
-    );
+  // The invite form is a modal dialog; open it only when the test starts on the Invitations tab, since an open
+  // modal hides the member table from the members tests.
+  if (props.tab === "invitations")
+    fireEvent.click(screen.getByRole("button", { name: copy.invite }));
   return props;
 }
 
