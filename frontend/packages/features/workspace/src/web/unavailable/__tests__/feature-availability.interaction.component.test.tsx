@@ -179,7 +179,7 @@ describe("Feature availability", () => {
     );
     choose(screen.getByLabelText("Board"), "Roadmap");
     expect(onBoard).toHaveBeenCalledWith("b1");
-    choose(screen.getByLabelText("Department"), "Engineering");
+    choose(screen.getByLabelText("Space"), "Engineering");
     expect(onSpace).toHaveBeenCalledWith("s1");
     choose(screen.getByLabelText("Period"), "Last 26 weeks");
     expect(onWeeks).toHaveBeenCalledWith(26);
@@ -194,7 +194,7 @@ describe("Feature availability", () => {
         state={{ status: "forbidden" }}
       />,
     );
-    expect(screen.queryByLabelText("Department")).toBeNull();
+    expect(screen.queryByLabelText("Space")).toBeNull();
     expect(screen.getByText("This report is not open to you")).toBeTruthy();
   });
 });

@@ -72,7 +72,7 @@ export function CreateSpaceDialog({
   onSubmit,
 }: CreateSpaceDialogProps) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<SpaceType>("Department");
+  const [type, setType] = useState<SpaceType>("Folder");
   const [visibility, setVisibility] = useState<SpaceVisibility | null>(null);
   const [touched, setTouched] = useState(false);
   const nameId = useId();
@@ -84,7 +84,7 @@ export function CreateSpaceDialog({
   useEffect(() => {
     if (!open) {
       setName("");
-      setType("Department");
+      setType("Folder");
       setVisibility(null);
       setTouched(false);
     }

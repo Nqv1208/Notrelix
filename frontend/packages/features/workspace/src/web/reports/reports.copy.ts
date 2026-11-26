@@ -21,7 +21,7 @@ export const en = {
     },
     unnamed: "Untitled report",
     source: "Source: board {{board}}",
-    sourceMany: "Source: boards in several departments",
+    sourceMany: "Source: boards in several spaces",
     widgets: "{{count}} widgets",
     sharedWith: "shared with {{names}}",
     sharedWithYou: "shared with {{names}} and you",
@@ -86,12 +86,12 @@ export const en = {
     assignee: "Assignee:",
     until: "until {{day}}",
     week: "week {{range}}",
-    sourceBoards: "boards in {{count}} departments",
+    sourceBoards: "boards in {{count}} spaces",
     basis: "Weeks start on Monday · time zone (GMT+7) Hanoi",
     onlyOption:
       "This report reads one board and one period; pick them when you build the report.",
     sourcesNote:
-      "This report counts boards of these departments. Boards you may not see are left out.",
+      "This report counts boards of these spaces. Boards you may not see are left out.",
   },
   summary: {
     label: "Summary of board {{board}}, numbers as of {{asOf}}",
@@ -128,8 +128,8 @@ export const en = {
       priority: "By priority",
       due: "Due in 7 days",
       workload: "Workload by assignee",
-      deptDone: "Items done by department",
-      deptOverdue: "Overdue items by department",
+      deptDone: "Items done by space",
+      deptOverdue: "Overdue items by space",
       note: "Note",
       erpProgress: "Progress of {{board}}",
       overdueByPerson: "Overdue items by person",
@@ -192,9 +192,8 @@ export const en = {
       doneFoot: "0 means no item was finished, not that numbers are missing.",
       overdueSubtitle:
         "Unfinished items past their due moment · at the time of the numbers",
-      doneAria: "Items done in week {{range}} by department: {{parts}}",
-      overdueAria:
-        "Overdue items by department, numbers as of {{asOf}}: {{parts}}",
+      doneAria: "Items done in week {{range}} by space: {{parts}}",
+      overdueAria: "Overdue items by space, numbers as of {{asOf}}: {{parts}}",
       stale: "Recomputing",
       staleBody: " · numbers as of {{asOf}}, older than the rest of the report",
     },
@@ -396,14 +395,14 @@ export const en = {
   },
   share: {
     title: "Share report",
-    sub: "Choose the departments that can open this report. Each viewer only sees numbers from what they may see.",
+    sub: "Choose the spaces that can open this report. Each viewer only sees numbers from what they may see.",
     save: "Save",
     cancel: "Cancel",
     saved: "Sharing saved.",
     failed: "Sharing was not saved. Try again.",
     readOnly:
       "Only people who can edit the report change who it is shared with.",
-    loading: "Loading departments",
+    loading: "Loading spaces",
   },
   remove: {
     title: "Delete this report?",
@@ -464,7 +463,7 @@ export const vi: ReportsCopy = {
     },
     unnamed: "Báo cáo chưa đặt tên",
     source: "Nguồn: board {{board}}",
-    sourceMany: "Nguồn: board ở nhiều phòng ban",
+    sourceMany: "Nguồn: board ở nhiều không gian",
     widgets: "{{count}} widget",
     sharedWith: "chia sẻ với {{names}}",
     sharedWithYou: "chia sẻ với {{names}} và bạn",
@@ -529,12 +528,12 @@ export const vi: ReportsCopy = {
     assignee: "Người phụ trách:",
     until: "đến {{day}}",
     week: "tuần {{range}}",
-    sourceBoards: "board ở {{count}} phòng ban",
+    sourceBoards: "board ở {{count}} không gian",
     basis: "Tuần bắt đầu Thứ Hai · múi giờ (GMT+7) Hà Nội",
     onlyOption:
       "Báo cáo này đọc một board và một mốc thời gian; chọn chúng khi bạn dựng báo cáo.",
     sourcesNote:
-      "Báo cáo này tính board của các phòng ban này. Board bạn không có quyền xem được bỏ ra.",
+      "Báo cáo này tính board của các không gian này. Board bạn không có quyền xem được bỏ ra.",
   },
   summary: {
     label: "Tóm tắt board {{board}}, số liệu đến {{asOf}}",
@@ -571,8 +570,8 @@ export const vi: ReportsCopy = {
       priority: "Theo mức ưu tiên",
       due: "Đến hạn trong 7 ngày",
       workload: "Khối lượng theo người phụ trách",
-      deptDone: "Việc hoàn thành theo phòng",
-      deptOverdue: "Việc quá hạn theo phòng",
+      deptDone: "Việc hoàn thành theo không gian",
+      deptOverdue: "Việc quá hạn theo không gian",
       note: "Ghi chú",
       erpProgress: "Tiến độ {{board}}",
       overdueByPerson: "Việc quá hạn theo người",
@@ -636,8 +635,9 @@ export const vi: ReportsCopy = {
         "0 nghĩa là không có việc nào hoàn thành, không phải thiếu số liệu.",
       overdueSubtitle:
         "Việc chưa hoàn thành đã qua hạn · tại thời điểm số liệu",
-      doneAria: "Việc hoàn thành tuần {{range}} theo phòng: {{parts}}",
-      overdueAria: "Việc quá hạn theo phòng, số liệu đến {{asOf}}: {{parts}}",
+      doneAria: "Việc hoàn thành tuần {{range}} theo không gian: {{parts}}",
+      overdueAria:
+        "Việc quá hạn theo không gian, số liệu đến {{asOf}}: {{parts}}",
       stale: "Đang tính lại",
       staleBody: " · số liệu đến {{asOf}}, cũ hơn phần còn lại của báo cáo",
     },
@@ -843,13 +843,13 @@ export const vi: ReportsCopy = {
   },
   share: {
     title: "Chia sẻ báo cáo",
-    sub: "Chọn phòng ban được mở báo cáo này. Mỗi người xem chỉ thấy số liệu từ những gì họ được xem.",
+    sub: "Chọn không gian được mở báo cáo này. Mỗi người xem chỉ thấy số liệu từ những gì họ được xem.",
     save: "Lưu",
     cancel: "Huỷ",
     saved: "Đã lưu chia sẻ.",
     failed: "Chưa lưu được chia sẻ. Hãy thử lại.",
     readOnly: "Chỉ người có thể sửa báo cáo mới đổi được người xem.",
-    loading: "Đang tải danh sách phòng ban",
+    loading: "Đang tải danh sách không gian",
   },
   remove: {
     title: "Xoá báo cáo này?",

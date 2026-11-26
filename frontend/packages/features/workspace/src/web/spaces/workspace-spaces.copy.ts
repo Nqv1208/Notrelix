@@ -7,14 +7,14 @@ import { spacePageEn, spacePageVi } from "./space-page.copy";
 
 export const en = {
   tree: {
-    title: "Departments",
-    label: "Departments",
-    create: "Create department",
+    title: "Spaces",
+    label: "Spaces",
+    create: "Create space",
     loading: "Loading Spaces",
     error: "Spaces couldn't load.",
     retry: "Try again",
     empty: "No Spaces yet.",
-    emptyManager: "Group work by department or team with a Space.",
+    emptyManager: "Group work by team or area with a Space.",
     private: "Private",
     archived: "Archived",
     keyboardHint:
@@ -61,7 +61,7 @@ export const en = {
     title: "New Space",
     childTitle: "New Space in {{parent}}",
     description:
-      "A Space groups Boards, Docs and people — for example one per department.",
+      "A Space groups Boards, Docs and people — for example one per team.",
     nameLabel: "Name",
     namePlaceholder: "e.g. Accounting",
     nameRequired: "Enter a name for the Space.",
@@ -139,18 +139,18 @@ export type WorkspaceSpacesCopy = typeof en;
 
 export const vi: WorkspaceSpacesCopy = {
   tree: {
-    title: "Phòng ban",
-    label: "Phòng ban",
-    create: "Tạo phòng ban",
-    loading: "Đang tải phòng ban",
-    error: "Chưa tải được phòng ban.",
+    title: "Không gian",
+    label: "Không gian",
+    create: "Tạo không gian",
+    loading: "Đang tải không gian",
+    error: "Chưa tải được không gian.",
     retry: "Thử lại",
-    empty: "Chưa có phòng ban nào.",
-    emptyManager: "Nhóm công việc theo từng phòng ban hoặc nhóm.",
+    empty: "Chưa có không gian nào.",
+    emptyManager: "Nhóm công việc theo từng không gian hoặc nhóm.",
     private: "Riêng tư",
     archived: "Đã lưu trữ",
     keyboardHint:
-      "Dùng phím mũi tên để di chuyển giữa các phòng ban; phím Phải để mở, phím Trái để thu gọn.",
+      "Dùng phím mũi tên để di chuyển giữa các không gian; phím Phải để mở, phím Trái để thu gọn.",
   },
   types: {
     Department: "Phòng ban",
@@ -170,9 +170,9 @@ export const vi: WorkspaceSpacesCopy = {
   },
   visibilityHelp: {
     Private:
-      "Chỉ thành viên của phòng ban này — cùng chủ sở hữu và quản trị viên workspace — mới tìm thấy nó và nội dung bên trong.",
+      "Chỉ thành viên của không gian này — cùng chủ sở hữu và quản trị viên workspace — mới tìm thấy nó và nội dung bên trong.",
     Workspace:
-      "Mọi người vào được phòng ban cha đều tìm thấy nó. Ở cấp cao nhất, đó là mọi thành viên workspace (trừ khách).",
+      "Mọi người vào được không gian cha đều tìm thấy nó. Ở cấp cao nhất, đó là mọi thành viên workspace (trừ khách).",
   },
   roles: {
     Admin: "Quản trị",
@@ -180,52 +180,52 @@ export const vi: WorkspaceSpacesCopy = {
     Viewer: "Người xem",
   },
   roleHelp: {
-    Admin: "Quản lý phòng ban, thành viên và các phòng ban bên trong.",
-    Member: "Tạo và chỉnh sửa Bảng và Tài liệu trong phòng ban.",
-    Viewer: "Xem phòng ban cùng Bảng và Tài liệu của nó.",
+    Admin: "Quản lý không gian, thành viên và các không gian bên trong.",
+    Member: "Tạo và chỉnh sửa Bảng và Tài liệu trong không gian.",
+    Viewer: "Xem không gian cùng Bảng và Tài liệu của nó.",
   },
   access: {
-    Manager: "Bạn quản lý phòng ban này",
+    Manager: "Bạn quản lý không gian này",
     Editor: "Bạn có thể thêm Bảng và Tài liệu",
-    Viewer: "Bạn có thể xem phòng ban này",
+    Viewer: "Bạn có thể xem không gian này",
   },
   create: {
-    title: "Phòng ban mới",
-    childTitle: "Phòng ban mới trong {{parent}}",
+    title: "Không gian mới",
+    childTitle: "Không gian mới trong {{parent}}",
     description:
-      "Phòng ban gom Bảng, Tài liệu và mọi người lại với nhau — ví dụ IT hay Kế toán.",
+      "Không gian gom Bảng, Tài liệu và mọi người lại với nhau — ví dụ IT hay Kế toán.",
     nameLabel: "Tên",
     namePlaceholder: "ví dụ: Kế toán",
-    nameRequired: "Nhập tên cho phòng ban.",
+    nameRequired: "Nhập tên cho không gian.",
     typeLabel: "Loại",
     visibilityLabel: "Ai có thể tìm thấy",
     locationLabel: "Vị trí",
     locationRoot: "Cấp cao nhất của {{workspace}}",
     cancel: "Hủy",
-    submit: "Tạo phòng ban",
+    submit: "Tạo không gian",
     submitting: "Đang tạo…",
   },
   move: {
     spaceTitle: "Di chuyển {{name}}",
-    boardTitle: "Chuyển {{name}} vào một phòng ban",
-    pageTitle: "Chuyển {{name}} vào một phòng ban",
+    boardTitle: "Chuyển {{name}} vào một không gian",
+    pageTitle: "Chuyển {{name}} vào một không gian",
     description:
       "Chọn nơi đến. Bạn chỉ chọn được những nơi bạn có quyền thêm vào.",
     pageDescription:
       "Tài liệu được chuyển cùng các trang bên trong. Bạn chỉ chọn được những nơi bạn có quyền thêm vào.",
     spaceDescription:
-      "Phòng ban được chuyển cùng mọi thứ bên trong. Bạn chỉ chọn được phòng ban bạn quản lý.",
-    searchLabel: "Tìm phòng ban",
-    searchPlaceholder: "Tìm phòng ban",
+      "Không gian được chuyển cùng mọi thứ bên trong. Bạn chỉ chọn được không gian bạn quản lý.",
+    searchLabel: "Tìm không gian",
+    searchPlaceholder: "Tìm không gian",
     root: "Cấp cao nhất của {{workspace}}",
-    rootBoard: "Không thuộc phòng ban nào (cấp workspace)",
+    rootBoard: "Không nằm trong không gian nào (cấp workspace)",
     current: "Vị trí hiện tại",
     currentShort: "Hiện tại",
     unavailable: "Bạn không thể thêm vào đây",
     unavailableShort: "Không có quyền",
     descendant: "Không thể chuyển vào chính nó",
     descendantShort: "Bên trong",
-    noMatches: "Không có phòng ban nào khớp.",
+    noMatches: "Không có không gian nào khớp.",
     cancel: "Hủy",
     submit: "Chuyển đến đây",
     submitting: "Đang chuyển…",
@@ -235,10 +235,10 @@ export const vi: WorkspaceSpacesCopy = {
   ...spaceMembersVi,
   toasts: {
     created: "Đã tạo {{name}}.",
-    createFailed: "Chưa tạo được phòng ban.",
+    createFailed: "Chưa tạo được không gian.",
     moved: "Đã di chuyển {{name}}.",
     moveFailed: "Chưa di chuyển được {{name}}.",
-    saved: "Đã lưu cài đặt phòng ban.",
+    saved: "Đã lưu cài đặt không gian.",
     saveFailed: "Chưa lưu được thay đổi.",
     archived: "Đã lưu trữ {{name}}.",
     archiveFailed: "Chưa lưu trữ được {{name}}.",
@@ -256,11 +256,11 @@ export const vi: WorkspaceSpacesCopy = {
     memberRemoved: "Đã xóa {{name}}.",
     memberRemoveFailed: "Chưa xóa được {{name}}.",
     conflict:
-      "Có người vừa thay đổi phòng ban này cùng lúc. Phiên bản mới nhất đã được tải; hãy thử lại.",
+      "Có người vừa thay đổi không gian này cùng lúc. Phiên bản mới nhất đã được tải; hãy thử lại.",
     forbidden: "Bạn không có quyền làm việc này ở đây.",
     pageSubtreeRefused:
       "Bạn không có quyền với một số trang bên dưới, nên chưa di chuyển gì cả.",
-    notFound: "Phòng ban hoặc mục đó không còn khả dụng.",
+    notFound: "Không gian hoặc mục đó không còn khả dụng.",
     network: "Không kết nối được máy chủ. Chưa có gì thay đổi; hãy thử lại.",
     unknown: "Máy chủ gặp sự cố. Chưa có gì thay đổi; hãy thử lại.",
   },

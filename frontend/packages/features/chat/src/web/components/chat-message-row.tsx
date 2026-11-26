@@ -199,7 +199,8 @@ const LONG_PRESS_MS = 450;
 const LONG_PRESS_SLOP_PX = 10;
 
 /** The avatar column of someone else's messages; rows without the avatar keep the gutter so the bubbles line up. */
-const GUTTER = "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-3";
+const GUTTER =
+  "w-7 shrink-0 group-has-[[data-testid=chat-reactions]]/row:mb-[18px]";
 
 /** A message the server stored: a bubble, a tombstone, or a system line. */
 function ChatMessageRowBase({
@@ -696,8 +697,8 @@ function ChatMessageRowBase({
           className={cn(
             "flex max-w-full items-center gap-1",
             isOwn ? "flex-row-reverse" : "flex-row",
-            // The reaction pill hangs 10 px below the bubble: reserve that overhang (plus 2 for its ring), no more.
-            showReactions && "mb-3",
+            // The reaction pill hangs 16 px below the bubble: reserve that overhang (plus 2 for its ring), no more.
+            showReactions && "mb-[18px]",
           )}
         >
           <div

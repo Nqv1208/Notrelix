@@ -276,7 +276,9 @@ export function ItemDueButton({
           <PanelBtn
             key={label}
             small
-            className="flex-1"
+            // Each preset is as wide as its label (never wrapped: the button has a fixed height), and the row shares
+            // what is left; equal thirds of the 300 px popover were too narrow for "Next week".
+            className="flex-auto px-2 whitespace-nowrap"
             onClick={() => write(addDays(today, days))}
           >
             {label}

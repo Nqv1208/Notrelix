@@ -56,15 +56,15 @@ export const en = {
     group: "Who can open the Board",
     bySpace: "Through {{name}}",
     bySpaceHint:
-      "{{count}} people in the department can open it, with the permission of their department role.",
+      "{{count}} people in the space can open it, with the permission of their space role.",
     bySpaceHintUnknown:
-      "The people of the department can open it, with the permission of their department role.",
+      "The people of the space can open it, with the permission of their space role.",
     byWorkspace: "Through the workspace",
     byWorkspaceHint:
       "Every workspace member can open it, with the permission of their workspace role.",
     private: "Private",
     privateHint:
-      "Only people and teams added to the Board. Department roles don't open it, department admins included. Workspace admins also need to be added; only the workspace owner can always open it.",
+      "Only people and teams added to the Board. Space roles don't open it, space admins included. Workspace admins also need to be added; only the workspace owner can always open it.",
     mapAdmin: "Admin → Manager",
     mapMember: "Member → Edit",
     mapViewer: "Viewer → View",
@@ -144,7 +144,7 @@ export const en = {
     currentHint: "In use",
     privateTitle: "Private",
     privateHint:
-      "Only people and teams added to the Board. Department roles no longer open it, department admins included. Workspace admins also need to be added; only the workspace owner can always open it.",
+      "Only people and teams added to the Board. Space roles no longer open it, space admins included. Workspace admins also need to be added; only the workspace owner can always open it.",
     warn: "{{count}} people in {{name}} will no longer see the Board.",
     warnWork:
       " {{work}} of them have items that aren't done. Add them to the Board before switching so the work isn't left behind.",
@@ -173,14 +173,14 @@ export const en = {
     },
     addLevelLabel: "Permission when adding",
     peopleCount: "{{count}} people",
-    accessRoles: "Permission by department role: ",
+    accessRoles: "Permission by space role: ",
     accessChange: ". Change who can open the board",
     searchEmpty: "No workspace member matches.",
     added: "Added {{name}} · {{level}}",
     undo: "Undo",
     linkCopied: "Link copied · only people with access can open it",
     privateDesc:
-      "Only people and teams added to the board can open it. Department roles no longer open this board, department admins included.",
+      "Only people and teams added to the board can open it. Space roles no longer open this board, space admins included.",
     privateNote:
       "Workspace admins also need to be added; only the workspace owner can always open it. Items of people who lose access stay as they are.",
     warnWork: " {{work}} of them have items that aren't done here.",
@@ -305,15 +305,15 @@ export const vi: BoardShareCopy = {
     group: "Ai vào được board",
     bySpace: "Theo {{name}}",
     bySpaceHint:
-      "{{count}} người trong phòng vào được, quyền theo vai trò ở phòng ban.",
+      "{{count}} người trong không gian vào được, quyền theo vai trò ở không gian.",
     bySpaceHintUnknown:
-      "Người trong phòng vào được, quyền theo vai trò ở phòng ban.",
+      "Người trong không gian vào được, quyền theo vai trò ở không gian.",
     byWorkspace: "Theo workspace",
     byWorkspaceHint:
       "Mọi thành viên workspace vào được, quyền theo vai trò ở workspace.",
     private: "Riêng tư",
     privateHint:
-      "Chỉ người và nhóm được thêm vào board. Vai trò ở phòng ban không còn mở được board này, kể cả Quản trị phòng. Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được.",
+      "Chỉ người và nhóm được thêm vào board. Vai trò ở không gian không còn mở được board này, kể cả Quản trị không gian. Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được.",
     mapAdmin: "Quản trị → Quản lý",
     mapMember: "Thành viên → Sửa",
     mapViewer: "Người xem → Xem",
@@ -392,7 +392,7 @@ export const vi: BoardShareCopy = {
     currentHint: "Đang dùng",
     privateTitle: "Riêng tư",
     privateHint:
-      "Chỉ người và nhóm được thêm vào board. Vai trò ở phòng ban không còn mở được board này, kể cả Quản trị phòng. Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được.",
+      "Chỉ người và nhóm được thêm vào board. Vai trò ở không gian không còn mở được board này, kể cả Quản trị không gian. Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được.",
     warn: "{{count}} người trong {{name}} sẽ không còn thấy board.",
     warnWork:
       " Trong đó {{work}} người đang được giao việc chưa xong. Thêm họ vào board trước khi chuyển để việc không bị bỏ dở.",
@@ -421,14 +421,14 @@ export const vi: BoardShareCopy = {
     },
     addLevelLabel: "Quyền khi thêm",
     peopleCount: "{{count}} người",
-    accessRoles: "Quyền theo vai trò ở phòng ban: ",
+    accessRoles: "Quyền theo vai trò ở không gian: ",
     accessChange: ". Đổi ai vào được board",
     searchEmpty: "Không có thành viên workspace nào khớp.",
     added: "Đã thêm {{name}} · {{level}}",
     undo: "Hoàn tác",
     linkCopied: "Đã sao chép liên kết · chỉ người có quyền mở được",
     privateDesc:
-      "Chỉ người và nhóm được thêm vào board vào được. Vai trò ở phòng ban không còn mở được board này, kể cả Quản trị phòng.",
+      "Chỉ người và nhóm được thêm vào board vào được. Vai trò ở không gian không còn mở được board này, kể cả Quản trị không gian.",
     privateNote:
       "Quản trị workspace cũng cần được thêm riêng; chỉ chủ sở hữu workspace luôn vào được. Việc của người mất quyền vẫn còn nguyên.",
     warnWork: " {{work}} người trong đó đang có việc chưa xong ở đây.",

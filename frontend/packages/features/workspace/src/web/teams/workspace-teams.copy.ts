@@ -10,7 +10,7 @@ export const en = {
       general: "General",
       members: "Members",
       teams: "Teams",
-      departments: "Departments",
+      departments: "Spaces",
       sharing: "Sharing and security",
       integrations: "Integrations",
       billing: "Plans and billing",
@@ -19,7 +19,7 @@ export const en = {
   page: {
     title: "Teams",
     description:
-      "Teams gather people so you can add them to a department, Board or page in one step. Only workspace admins create and edit Teams.",
+      "Teams gather people so you can add them to a space, Board or page in one step. Only workspace admins create and edit Teams.",
     new: "New Team",
     searchLabel: "Find a Team",
     searchPlaceholder: "Search by Team name or person",
@@ -87,7 +87,7 @@ export const en = {
   },
   deny: {
     title: "Only workspace admins manage Teams.",
-    text: "To create a Team, change who is in one or archive it, message one of the people below. You keep working in your departments and Boards as usual.",
+    text: "To create a Team, change who is in one or archive it, message one of the people below. You keep working in your spaces and Boards as usual.",
     adminsLabel: "Admins of {{workspace}}",
     owner: "Workspace owner",
     admin: "Workspace admin",
@@ -133,10 +133,10 @@ export const en = {
     usageNoteAfter:
       ". They lose it right away when they leave it or the Team is archived, unless they have it another way.",
     usageNoteChange:
-      "Change the Team's role in a department on that department's Members page.",
+      "Change the Team's role in a space on that space's Members page.",
     leadTitle: "What a Team lead is",
     leadText:
-      "The person in charge in the Team. It is not a workspace or department role, so it grants no access anywhere. A Team always keeps at least 1 Team lead.",
+      "The person in charge in the Team. It is not a workspace or space role, so it grants no access anywhere. A Team always keeps at least 1 Team lead.",
     archive: "Archive Team",
     archivedBanner:
       "This Team is archived. Restore it to change its people or details.",
@@ -163,7 +163,7 @@ export const en = {
     membersPlaceholder: "Type a name or email",
     membersHint:
       "Only active members of {{workspace}}. The Team lead is in the Team already.",
-    info: "A new Team has no access anywhere yet. Add it to a department, Board or page from that place's Members or Share.",
+    info: "A new Team has no access anywhere yet. Add it to a space, Board or page from that place's Members or Share.",
     footer: "{{count}} people · {{lead}} is the Team lead",
     footerNoLead: "{{count}} people",
     cancel: "Cancel",
@@ -227,7 +227,7 @@ export const en = {
     },
     guests: {
       title: "Invite guests to Boards and pages",
-      text: "People who manage a Board or page can invite guests by email. A guest only sees the Board or page they were invited to, not departments or Teams.",
+      text: "People who manage a Board or page can invite guests by email. A guest only sees the Board or page they were invited to, not spaces or Teams.",
       note: "A guest's access is at most Can edit; Manager can't be chosen for a guest.",
       count_one: "{{count}} guest now",
       count_other: "{{count}} guests now",
@@ -415,7 +415,7 @@ export const vi: WorkspaceTeamsCopy = {
       general: "Chung",
       members: "Thành viên",
       teams: "Nhóm",
-      departments: "Phòng ban",
+      departments: "Không gian",
       sharing: "Chia sẻ và bảo mật",
       integrations: "Tích hợp",
       billing: "Gói và thanh toán",
@@ -424,7 +424,7 @@ export const vi: WorkspaceTeamsCopy = {
   page: {
     title: "Nhóm",
     description:
-      "Nhóm gom người để thêm một lần vào phòng ban, board hoặc trang. Chỉ quản trị workspace tạo và sửa nhóm.",
+      "Nhóm gom người để thêm một lần vào không gian, board hoặc trang. Chỉ quản trị workspace tạo và sửa nhóm.",
     new: "Tạo nhóm",
     searchLabel: "Tìm nhóm",
     searchPlaceholder: "Tìm theo tên nhóm hoặc tên người",
@@ -465,7 +465,7 @@ export const vi: WorkspaceTeamsCopy = {
       commenter: "Có thể bình luận",
       viewer: "Có thể xem",
     },
-    departmentName: "Phòng {{name}}",
+    departmentName: "Không gian {{name}}",
   },
   deleted: {
     viewLabel: "Hiển thị nhóm",
@@ -495,7 +495,7 @@ export const vi: WorkspaceTeamsCopy = {
   },
   deny: {
     title: "Chỉ quản trị workspace quản lý nhóm.",
-    text: "Cần tạo nhóm, đổi người trong nhóm hay lưu trữ nhóm, nhắn một trong những người dưới đây. Bạn vẫn làm việc ở các phòng ban và board của mình như bình thường.",
+    text: "Cần tạo nhóm, đổi người trong nhóm hay lưu trữ nhóm, nhắn một trong những người dưới đây. Bạn vẫn làm việc ở các không gian và board của mình như bình thường.",
     adminsLabel: "Quản trị {{workspace}}",
     owner: "Chủ sở hữu workspace",
     admin: "Quản trị workspace",
@@ -541,10 +541,10 @@ export const vi: WorkspaceTeamsCopy = {
     usageNoteAfter:
       ". Rời nhóm, hoặc nhóm bị lưu trữ, thì mất ngay, trừ khi họ có quyền bằng cách khác.",
     usageNoteChange:
-      "Đổi vai trò của nhóm ở phòng ban tại màn Thành viên của phòng đó.",
+      "Đổi vai trò của nhóm ở không gian tại màn Thành viên của không gian đó.",
     leadTitle: "Trưởng nhóm là gì",
     leadText:
-      "Người phụ trách trong nhóm. Đây không phải vai trò workspace hay phòng ban, nên không cho thêm quyền ở đâu. Nhóm phải luôn còn ít nhất 1 trưởng nhóm.",
+      "Người phụ trách trong nhóm. Đây không phải vai trò workspace hay không gian, nên không cho thêm quyền ở đâu. Nhóm phải luôn còn ít nhất 1 trưởng nhóm.",
     archive: "Lưu trữ nhóm",
     archivedBanner:
       "Nhóm này đã lưu trữ. Khôi phục để đổi người hoặc thông tin của nhóm.",
@@ -571,7 +571,7 @@ export const vi: WorkspaceTeamsCopy = {
     membersPlaceholder: "Gõ tên hoặc email",
     membersHint:
       "Chỉ thành viên đang hoạt động của {{workspace}}. Trưởng nhóm tự có trong nhóm.",
-    info: "Nhóm mới chưa có quyền ở đâu. Thêm nhóm vào phòng ban, board hoặc trang từ màn Thành viên hoặc Chia sẻ của nơi đó.",
+    info: "Nhóm mới chưa có quyền ở đâu. Thêm nhóm vào không gian, board hoặc trang từ màn Thành viên hoặc Chia sẻ của nơi đó.",
     footer: "{{count}} người · {{lead}} là trưởng nhóm",
     footerNoLead: "{{count}} người",
     cancel: "Huỷ",
@@ -595,14 +595,14 @@ export const vi: WorkspaceTeamsCopy = {
   deleteDialog: {
     action: "Xoá nhóm",
     title: "Xoá {{team}}?",
-    text: "{{team}} không còn được dùng ở phòng ban nào. Mọi người trong nhóm giữ nguyên các quyền khác. Bạn khôi phục được nhóm sau khi xoá.",
+    text: "{{team}} không còn được dùng ở không gian nào. Mọi người trong nhóm giữ nguyên các quyền khác. Bạn khôi phục được nhóm sau khi xoá.",
     confirm: "Xoá nhóm",
     confirming: "Đang xoá…",
     cancel: "Huỷ",
     refusedTitle: "Chưa xoá được {{team}}",
     refusedText:
-      "Nhóm vẫn được dùng ở các phòng ban dưới đây. Gỡ nhóm khỏi chúng trước, rồi xoá lại.",
-    spaceKind: "Phòng ban",
+      "Nhóm vẫn được dùng ở các không gian dưới đây. Gỡ nhóm khỏi chúng trước, rồi xoá lại.",
+    spaceKind: "Không gian",
     others: "và các mục khác bạn không có quyền xem",
     understood: "Đã hiểu",
     conflict: "Nhóm vừa thay đổi. Tải lại để xem bản mới, rồi xoá lại.",
@@ -634,7 +634,7 @@ export const vi: WorkspaceTeamsCopy = {
     },
     guests: {
       title: "Mời khách vào board và trang",
-      text: "Người quản lý board hoặc trang được mời khách bằng email. Khách chỉ thấy đúng board hoặc trang được mời, không vào phòng ban hay nhóm.",
+      text: "Người quản lý board hoặc trang được mời khách bằng email. Khách chỉ thấy đúng board hoặc trang được mời, không vào không gian hay nhóm.",
       note: "Quyền của khách cao nhất là Có thể sửa; không chọn được Quản lý cho khách.",
       count_one: "{{count}} khách đang có",
       count_other: "{{count}} khách đang có",
@@ -660,7 +660,7 @@ export const vi: WorkspaceTeamsCopy = {
   list: {
     title: "Nhóm",
     description:
-      "Các nhóm người mà phòng ban và chia sẻ có thể nhắm tới cùng lúc.",
+      "Các nhóm người mà không gian và chia sẻ có thể nhắm tới cùng lúc.",
     new: "Nhóm mới",
     filterLabel: "Hiển thị nhóm",
     filter: { active: "Đang hoạt động", archived: "Đã lưu trữ" },
@@ -671,7 +671,7 @@ export const vi: WorkspaceTeamsCopy = {
     empty: {
       title: "Chưa có nhóm nào",
       description:
-        "Nhóm gom mọi người lại để bạn thêm họ vào một phòng ban chỉ bằng một bước.",
+        "Nhóm gom mọi người lại để bạn thêm họ vào một không gian chỉ bằng một bước.",
       archivedTitle: "Không có nhóm nào đã lưu trữ",
       archivedDescription: "Những nhóm bạn lưu trữ sẽ nằm ở đây.",
     },

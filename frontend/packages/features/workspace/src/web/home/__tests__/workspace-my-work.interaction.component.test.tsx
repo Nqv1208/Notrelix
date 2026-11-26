@@ -57,7 +57,7 @@ describe("WorkspaceMyWorkSurface", () => {
       screen.getByRole("heading", { level: 1, name: "Việc của tôi" }),
     ).toBeTruthy();
     expect(
-      screen.getByText("7 việc đang mở trên 3 phòng ban · cập nhật 10:40"),
+      screen.getByText("7 việc đang mở trên 3 không gian · cập nhật 10:40"),
     ).toBeTruthy();
     const tabs = screen.getAllByRole("tab");
     expect(tabs.map((tab) => tab.textContent)).toEqual([
@@ -119,9 +119,9 @@ describe("WorkspaceMyWorkSurface", () => {
       .filter((heading) => heading.id.startsWith("g-"))
       .map((heading) => heading.textContent);
     expect(headings).toEqual([
-      "CNTriển khai ERP Q44Phòng Công nghệ",
-      "KTĐóng sổ tháng 102Phòng Kế toán",
-      "MRa mắt sản phẩm Q41Phòng Marketing",
+      "CNTriển khai ERP Q44Không gian Công nghệ",
+      "KTĐóng sổ tháng 102Không gian Kế toán",
+      "MRa mắt sản phẩm Q41Không gian Marketing",
     ]);
     // Grouped by Board, a row leaves its Board out.
     expect(rowOf("ERP-142").textContent).not.toContain("Triển khai ERP Q4 ·");
@@ -162,9 +162,9 @@ describe("WorkspaceMyWorkSurface", () => {
       { target: { value: "" } },
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /^Phòng ban/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Không gian/ }));
     fireEvent.click(
-      within(screen.getByRole("listbox", { name: "Phòng ban" })).getByRole(
+      within(screen.getByRole("listbox", { name: "Không gian" })).getByRole(
         "option",
         { name: "Kế toán" },
       ),
@@ -445,7 +445,7 @@ describe("WorkspaceMyWorkSurface", () => {
       screen.getByRole("dialog", { name: copy.list.addTitle }),
     ).toBeTruthy();
     // No filters and no rail without items.
-    expect(screen.queryByRole("button", { name: /^Phòng ban/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Không gian/ })).toBeNull();
     expect(
       screen.queryByRole("complementary", { name: copy.list.rail.label }),
     ).toBeNull();

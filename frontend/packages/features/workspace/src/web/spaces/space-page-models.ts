@@ -69,6 +69,8 @@ export interface SpaceContentView {
   readonly boardTotal: number;
   readonly docs: readonly SpaceDocRowView[];
   readonly docTotal: number;
+  /** Every top-level Doc of the Space, newest first, for the Boards and Docs tab (`docs` keeps the overview's five). */
+  readonly allDocs?: readonly SpaceDocRowView[];
 }
 
 export interface SpaceChildView {

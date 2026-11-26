@@ -705,16 +705,7 @@ export function SpaceTabs({
       className="flex items-end gap-0.5 border-b border-line px-7 pt-3.5"
     >
       {tabLink("overview", copy.page.tabs.overview, null)}
-      <span
-        data-f="tab"
-        role="link"
-        aria-disabled="true"
-        title={copy.page.tabUnavailable}
-        className={cn(base, "cursor-default hover:text-muted-foreground")}
-      >
-        {copy.page.tabs.content}
-        {count(contentCount)}
-      </span>
+      {tabLink("content", copy.page.tabs.content, contentCount)}
       {tabLink("members", copy.page.tabs.members, membersCount)}
       {showSettings ? tabLink("settings", copy.page.tabs.settings, null) : null}
     </nav>

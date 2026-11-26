@@ -179,7 +179,7 @@ describe("ReportDashboardSurface: view", () => {
       ),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sửa" })).toBeNull();
-    const over = widgetOf("Việc quá hạn theo phòng");
+    const over = widgetOf("Việc quá hạn theo không gian");
     expect(over.getAttribute("aria-busy")).toBe("true");
     expect(within(over).getByRole("status").textContent).toContain(
       "Đang tính lại · số liệu đến 10:20, cũ hơn phần còn lại của báo cáo",
@@ -187,7 +187,7 @@ describe("ReportDashboardSurface: view", () => {
     fireEvent.click(within(over).getByRole("button", { name: "Tải lại" }));
     expect(onReload).toHaveBeenCalledTimes(1);
     expect(
-      within(widgetOf("Việc hoàn thành theo phòng")).getByText(
+      within(widgetOf("Việc hoàn thành theo không gian")).getByText(
         "0 nghĩa là không có việc nào hoàn thành, không phải thiếu số liệu.",
       ),
     ).toBeTruthy();
@@ -738,7 +738,7 @@ describe("ReportListSurface", () => {
       "Nguồn: board Đóng sổ tháng 10 · chia sẻ với Phòng Kế toán và bạn",
     );
     expect(table.textContent).toContain(
-      "Nguồn: board ở nhiều phòng ban · không tính 1 board bạn không có quyền xem",
+      "Nguồn: board ở nhiều không gian · không tính 1 board bạn không có quyền xem",
     );
     expect(within(table).getAllByText("Chỉ xem")).toHaveLength(2);
     expect(within(table).getByText("Có thể sửa")).toBeTruthy();

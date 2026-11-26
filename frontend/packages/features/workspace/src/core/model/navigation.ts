@@ -145,7 +145,7 @@ export type WorkspaceDestination =
     };
 
 /** Sections of a Space page (OT-5). */
-export type SpaceTab = "overview" | "members" | "settings";
+export type SpaceTab = "overview" | "content" | "members" | "settings";
 
 export type WorkspaceSection = WorkspaceDestination["section"];
 

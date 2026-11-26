@@ -367,8 +367,8 @@ export const vi = {
   },
   meta: {
     chipScope: "{{space}} · {{visibility}}",
-    department: "Phòng {{name}}",
-    departmentInline: "phòng {{name}}",
+    department: "Không gian {{name}}",
+    departmentInline: "không gian {{name}}",
     private: "Riêng tư",
     workspaceVisible: "Cả workspace",
     effective: "Áp dụng từ {{date}}",
@@ -849,7 +849,7 @@ export const vi = {
     accessLabel: "Ai vào được trang",
     accessBySpace: "Theo {{space}}",
     accessBySpaceHint:
-      "{{count}} người trong phòng vào được, quyền theo vai trò ở phòng ban.",
+      "{{count}} người trong không gian vào được, quyền theo vai trò ở không gian.",
     mapAdmin: "Quản trị → Quản lý",
     mapMember: "Thành viên → Sửa",
     mapViewer: "Người xem → Xem",
@@ -1269,8 +1269,8 @@ export const en: DocPageCopy = {
   },
   meta: {
     chipScope: "{{space}} · {{visibility}}",
-    department: "{{name}} department",
-    departmentInline: "{{name}} department",
+    department: "{{name}} space",
+    departmentInline: "{{name}} space",
     private: "Private",
     workspaceVisible: "Whole workspace",
     effective: "Effective from {{date}}",
@@ -1752,7 +1752,7 @@ export const en: DocPageCopy = {
     accessLabel: "Who can open this page",
     accessBySpace: "Follows {{space}}",
     accessBySpaceHint:
-      "{{count}} people in the department can open it, with the access of their department role.",
+      "{{count}} people in the space can open it, with the access of their space role.",
     mapAdmin: "Admin → Manage",
     mapMember: "Member → Edit",
     mapViewer: "Viewer → View",
