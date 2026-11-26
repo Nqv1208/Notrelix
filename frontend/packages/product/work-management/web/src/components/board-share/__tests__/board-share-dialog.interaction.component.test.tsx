@@ -49,7 +49,7 @@ describe("BoardShareDialogSurface", () => {
     });
     expect(within(general).getByText("Theo Phòng Công nghệ")).toBeTruthy();
     expect(
-      within(general).getByText(/24 người trong phòng vào được/),
+      within(general).getByText(/24 người trong không gian vào được/),
     ).toBeTruthy();
     expect(within(general).getByText("Quản trị → Quản lý")).toBeTruthy();
     expect(
