@@ -331,11 +331,11 @@ export const vi: WorkspaceMembersCopy = {
   invitations: {
     entries: {
       label: "Vào cùng",
-      hint: "Tuỳ chọn. Họ vào các nhóm và phòng ban này khi nhận lời mời.",
-      add: "Thêm nhóm hoặc phòng ban",
-      addLabel: "Chọn nhóm hoặc phòng ban để thêm",
+      hint: "Tuỳ chọn. Họ vào các nhóm và không gian này khi nhận lời mời.",
+      add: "Thêm nhóm hoặc không gian",
+      addLabel: "Chọn nhóm hoặc không gian để thêm",
       team: "Nhóm",
-      space: "Phòng ban",
+      space: "Không gian",
       remove: "Bỏ {{name}}",
       roleLabel: "Vai trò trong {{name}}",
       teamRoles: { member: "Thành viên", lead: "Trưởng nhóm" },
@@ -347,10 +347,10 @@ export const vi: WorkspaceMembersCopy = {
       teamsDenied:
         "Bạn không thêm người vào nhóm được nên không có nhóm nào để chọn.",
       spacesDenied:
-        "Bạn không thêm người vào phòng ban được nên không có phòng ban nào để chọn.",
-      guestNote: "Khách không tham gia được nhóm hay làm quản trị phòng ban.",
+        "Bạn không thêm người vào không gian được nên không có không gian nào để chọn.",
+      guestNote: "Khách không tham gia được nhóm hay làm quản trị không gian.",
       refused:
-        "Nhóm hoặc phòng ban bạn chọn không nhận được người này. Bỏ mục đó hoặc nhờ chủ sở hữu.",
+        "Nhóm hoặc không gian bạn chọn không nhận được người này. Bỏ mục đó hoặc nhờ chủ sở hữu.",
       notActive:
         "{{name}} không còn hoạt động nên không nhận được người này. Bỏ mục đó hoặc chọn mục khác.",
       guestTooPrivileged:
@@ -403,7 +403,7 @@ export const vi: WorkspaceMembersCopy = {
       invalid: "Địa chỉ hoặc vai trò không hợp lệ",
       guestInvitesOff: "Lời mời khách đang tắt",
       entryRefused:
-        "Nhóm hoặc phòng ban chọn cho địa chỉ này không nhận được họ. Hãy mời riêng.",
+        "Nhóm hoặc không gian chọn cho địa chỉ này không nhận được họ. Hãy mời riêng.",
       refused: "Bị từ chối",
       done: "Xong",
     },

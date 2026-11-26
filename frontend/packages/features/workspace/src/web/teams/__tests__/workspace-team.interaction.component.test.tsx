@@ -60,7 +60,7 @@ describe("WorkspaceTeamSurface", () => {
       screen.getByText("quan.tran@minhan.vn · Kỹ sư dữ liệu"),
     ).toBeTruthy();
     expect(screen.getByText("từ 15/09")).toBeTruthy();
-    expect(screen.getByText("Phòng Công nghệ")).toBeTruthy();
+    expect(screen.getByText("Không gian Công nghệ")).toBeTruthy();
     expect(screen.getByText("Vai trò Thành viên · thêm 01/09")).toBeTruthy();
     expect(screen.getByText("Trưởng nhóm là gì")).toBeTruthy();
   });

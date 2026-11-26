@@ -18,11 +18,11 @@ export const spaceMembersEn = {
     viaTeam: "Whole team",
     summary: "{{admins}} · {{members}} · {{viewers}}",
     summaryInvites: "{{count}} invitation waiting",
-    creator: "department creator",
+    creator: "space creator",
     activeNow: "active now",
     head: {
       who: "Person or team",
-      role: "Role in the department",
+      role: "Role in the space",
       via: "Joined through",
       activity: "Activity",
     },
@@ -42,7 +42,7 @@ export const spaceMembersEn = {
     collapse: "Collapse {{name}}",
     alsoDirect: "also added directly",
     teamHint:
-      "Anyone who joins the team joins the department; leaving the team loses access at once. Change who is in a team in ",
+      "Anyone who joins the team joins the space; leaving the team loses access at once. Change who is in a team in ",
     teamHintLink: "Workspace settings › Teams",
     teamHintEnd: " (workspace admins).",
     teamLoading: "Loading the team",
@@ -50,7 +50,7 @@ export const spaceMembersEn = {
     teamEmpty: "No one is in this team.",
     rowActions: "Actions for {{name}}",
     moreRows: "Show {{count}} more",
-    empty: "No one has been added to this department yet.",
+    empty: "No one has been added to this space yet.",
     noMatches: "No one matches.",
     noMatchesLoaded:
       "No one among the {{count}} people loaded matches. Search covers only the people loaded so far.",
@@ -62,28 +62,28 @@ export const spaceMembersEn = {
     retry: "Try again",
     pending: "Saving…",
     invitePending:
-      "Waiting for the workspace invitation · joins the department on accepting",
+      "Waiting for the workspace invitation · joins the space on accepting",
     inviteSent: "invited {{when}}",
     inviteResend: "Resend",
     inviteRevoke: "Revoke",
-    inviteUnavailable: "Invitations are not tied to a department yet.",
+    inviteUnavailable: "Invitations are not tied to a space yet.",
     readOnly:
-      "Only department admins and workspace admins can change members. You can see them here.",
+      "Only space admins and workspace admins can change members. You can see them here.",
     roleMenu: {
       label: "Change the role of {{name}}",
       Admin: "Admin",
       AdminHint:
-        "Add and remove people, switch Private or Open, manage every sub-department",
+        "Add and remove people, switch Private or Open, manage every sub-space",
       Member: "Member",
-      MemberHint: "Create and edit Boards, Docs and items in the department",
+      MemberHint: "Create and edit Boards, Docs and items in the space",
       Viewer: "Viewer",
       ViewerHint: "View only, no editing and no comments",
       lastAdminRole: "Can't lower: {{name}} is the only admin",
-      remove: "Remove from the department",
+      remove: "Remove from the space",
       removeHint: "Removes only what was added directly",
       removeBlocked: "Make someone else an admin first",
       noteLast:
-        "A department keeps at least one admin. To change the role of {{name}}, raise someone else to Admin first.",
+        "A space keeps at least one admin. To change the role of {{name}}, raise someone else to Admin first.",
       noteAlso:
         "{{name}} also joins through {{team}} as {{role}}. Lowering the role here keeps {{role}}, because the system uses the highest role.",
       noteHighest:
@@ -91,9 +91,9 @@ export const spaceMembersEn = {
     },
     aside: {
       guests: "Guests of single Boards ({{count}})",
-      guestsSub: "not department members",
+      guestsSub: "not space members",
       guestsNote:
-        "People outside the department added to a Board on their own are shown in that Board's Share.",
+        "People outside the space added to a Board on their own are shown in that Board's Share.",
       guestOutside: "Outside the company",
       guestInside: "In the company",
       guestLevel: {
@@ -104,28 +104,27 @@ export const spaceMembersEn = {
       },
       guestLine: "{{company}} · {{level}} in {{board}}",
       label: "What the roles mean",
-      roles: "Roles in the department",
+      roles: "Roles in the space",
       adminHint:
-        "Everything a Member can do, plus: add and remove people, change roles, switch Private or Open, create and manage every sub-department.",
+        "Everything a Member can do, plus: add and remove people, change roles, switch Private or Open, create and manage every sub-space.",
       memberHint:
-        "Create Boards and Docs in the department; edit, assign and comment on every item in the department's open Boards.",
+        "Create Boards and Docs in the space; edit, assign and comment on every item in the space's open Boards.",
       viewerHint:
-        "See the department's open Boards and Docs. No editing, no comments.",
-      map: "On the department's open Boards: Admin → Board manager · Member → Edit · Viewer → View.",
-      mapAdmins:
-        "Workspace admins see every department without being on the list.",
+        "See the space's open Boards and Docs. No editing, no comments.",
+      map: "On the space's open Boards: Admin → Board manager · Member → Edit · Viewer → View.",
+      mapAdmins: "Workspace admins see every space without being on the list.",
       misread:
-        "Two things people often misread. A private Board inside the department still needs its own people added; a department role does not open it. Someone who joins in several ways (directly and through a team) uses the highest role.",
+        "Two things people often misread. A private Board inside the space still needs its own people added; a space role does not open it. Someone who joins in several ways (directly and through a team) uses the highest role.",
       misreadLead: "Two things people often misread.",
       misreadText:
-        " A private Board inside the department still needs its own people added; a department role does not open it. Someone who joins in several ways (directly and through a team) uses the highest role.",
-      inherit: "Sub-departments inherit",
+        " A private Board inside the space still needs its own people added; a space role does not open it. Someone who joins in several ways (directly and through a team) uses the highest role.",
+      inherit: "Sub-spaces inherit",
       inheritOpen: "Members here join {{names}} automatically.",
       inheritPrivate:
         "{{names}} is Private and keeps its own list; only admins here join it automatically.",
       inheritPrivatePlural:
         "{{names}} are Private and keep their own lists; only admins here join them automatically.",
-      inheritNone: "This department has no sub-departments.",
+      inheritNone: "This space has no sub-spaces.",
     },
     add: {
       title: "Add to {{name}}",
@@ -136,20 +135,20 @@ export const spaceMembersEn = {
       suggestions: "Suggestions",
       none: "No one matches.",
       remove: "Remove {{name}}",
-      roleLabel: "Role in the department",
+      roleLabel: "Role in the space",
       outsider:
-        "{{email}} isn't a workspace member. A department only adds workspace members.",
+        "{{email}} isn't a workspace member. A space only adds workspace members.",
       outsiderGuest:
-        "{{name}} is a guest of the Board {{board}} and not a workspace member. A department only adds workspace members.",
+        "{{name}} is a guest of the Board {{board}} and not a workspace member. A space only adds workspace members.",
       outsiderLink: "Invite to the workspace",
       preview: "{{count}} people will see it at once",
       previewOne: "1 person will see it at once",
       previewOpen: "{{boards}} open Boards and {{docs}} Docs of {{name}}",
-      previewChildren: "Sub-departments {{names}}",
+      previewChildren: "Sub-spaces {{names}}",
       previewHidden: "They won't see {{names}} (private)",
       hiddenAnd: " and ",
       hiddenBoard: "the Board {{name}}",
-      foot: "They see the department as soon as they are added.",
+      foot: "They see the space as soon as they are added.",
       cancel: "Cancel",
       submit: "Add {{count}} people",
       submitOne: "Add 1 person",
@@ -159,16 +158,16 @@ export const spaceMembersEn = {
       teamPeople: "{{count}} people",
     },
     remove: {
-      teamTitle: "Remove {{name}} from the department?",
+      teamTitle: "Remove {{name}} from the space?",
       userTitle: "Remove {{name}} from {{space}}?",
       userText:
-        "They lose the access this department gives them. Boards and Docs they were granted directly keep that access.",
-      teamText: "{{lose}} people will lose access to the department.",
+        "They lose the access this space gives them. Boards and Docs they were granted directly keep that access.",
+      teamText: "{{lose}} people will lose access to the space.",
       teamNoCount:
-        "Everyone who joined through this team loses access to the department.",
+        "Everyone who joined through this team loses access to the space.",
       teamTextKeep:
-        "{{lose}} people will lose access to the department; {{keep}} stays because they were added directly.",
-      loses: "· loses access to the department",
+        "{{lose}} people will lose access to the space; {{keep}} stays because they were added directly.",
+      loses: "· loses access to the space",
       keeps: "· stays a {{role}}, added directly",
       note: "Items assigned to them keep their assignee. The team stays in the workspace.",
       cancel: "Cancel",
@@ -194,11 +193,11 @@ export const spaceMembersVi: SpaceMembersCopy = {
     viaTeam: "Cả nhóm",
     summary: "{{admins}} · {{members}} · {{viewers}}",
     summaryInvites: "{{count}} lời mời chờ",
-    creator: "người tạo phòng",
+    creator: "người tạo không gian",
     activeNow: "đang hoạt động",
     head: {
       who: "Người hoặc nhóm",
-      role: "Vai trò trong phòng",
+      role: "Vai trò trong không gian",
       via: "Vào qua",
       activity: "Hoạt động",
     },
@@ -218,7 +217,7 @@ export const spaceMembersVi: SpaceMembersCopy = {
     collapse: "Thu gọn {{name}}",
     alsoDirect: "cũng được thêm trực tiếp",
     teamHint:
-      "Ai vào nhóm thì vào phòng, rời nhóm thì mất quyền ngay. Đổi người trong nhóm ở ",
+      "Ai vào nhóm thì vào không gian, rời nhóm thì mất quyền ngay. Đổi người trong nhóm ở ",
     teamHintLink: "Thiết lập workspace › Nhóm",
     teamHintEnd: " (quản trị workspace).",
     teamLoading: "Đang tải nhóm",
@@ -226,7 +225,7 @@ export const spaceMembersVi: SpaceMembersCopy = {
     teamEmpty: "Nhóm chưa có ai.",
     rowActions: "Thao tác với {{name}}",
     moreRows: "Hiện {{count}} người khác",
-    empty: "Phòng ban này chưa có ai được thêm.",
+    empty: "Không gian này chưa có ai được thêm.",
     noMatches: "Không có ai khớp.",
     noMatchesLoaded:
       "Không ai trong {{count}} người đã tải khớp. Tìm kiếm chỉ chạy trên những người đã tải.",
@@ -237,28 +236,29 @@ export const spaceMembersVi: SpaceMembersCopy = {
     error: "Chưa tải được thành viên.",
     retry: "Thử lại",
     pending: "Đang lưu…",
-    invitePending: "Chờ nhận lời mời vào workspace · vào phòng khi nhận lời",
+    invitePending:
+      "Chờ nhận lời mời vào workspace · vào không gian khi nhận lời",
     inviteSent: "mời {{when}}",
     inviteResend: "Gửi lại",
     inviteRevoke: "Thu hồi",
-    inviteUnavailable: "Lời mời chưa gắn với phòng ban.",
+    inviteUnavailable: "Lời mời chưa gắn với không gian.",
     readOnly:
-      "Chỉ quản trị phòng và quản trị workspace đổi được thành viên. Bạn xem được danh sách này.",
+      "Chỉ quản trị không gian và quản trị workspace đổi được thành viên. Bạn xem được danh sách này.",
     roleMenu: {
       label: "Đổi vai trò của {{name}}",
       Admin: "Quản trị",
       AdminHint:
-        "Thêm bớt người, đổi Riêng tư hay Mở, quản lý mọi phòng ban con",
+        "Thêm bớt người, đổi Riêng tư hay Mở, quản lý mọi không gian con",
       Member: "Thành viên",
-      MemberHint: "Tạo và sửa board, tài liệu, công việc trong phòng",
+      MemberHint: "Tạo và sửa board, tài liệu, công việc trong không gian",
       Viewer: "Người xem",
       ViewerHint: "Chỉ xem, không sửa và không bình luận",
       lastAdminRole: "Không hạ được: {{name}} là quản trị duy nhất",
-      remove: "Gỡ khỏi phòng",
+      remove: "Gỡ khỏi không gian",
       removeHint: "Chỉ gỡ phần thêm trực tiếp",
       removeBlocked: "Cần đặt người khác làm quản trị trước",
       noteLast:
-        "Phòng ban phải còn ít nhất 1 quản trị. Muốn đổi vai trò của {{name}}, nâng một người khác lên Quản trị trước.",
+        "Không gian phải còn ít nhất 1 quản trị. Muốn đổi vai trò của {{name}}, nâng một người khác lên Quản trị trước.",
       noteAlso:
         "{{name}} còn vào qua {{team}} với vai trò {{role}}. Hạ xuống ở đây thì {{name}} vẫn là {{role}}, vì hệ thống dùng vai trò cao nhất.",
       noteHighest:
@@ -266,9 +266,9 @@ export const spaceMembersVi: SpaceMembersCopy = {
     },
     aside: {
       guests: "Khách ở từng board ({{count}})",
-      guestsSub: "không phải thành viên phòng",
+      guestsSub: "không phải thành viên không gian",
       guestsNote:
-        "Người ngoài phòng được thêm riêng vào board xem ở Chia sẻ của từng board.",
+        "Người ngoài không gian được thêm riêng vào board xem ở Chia sẻ của từng board.",
       guestOutside: "Ngoài công ty",
       guestInside: "Trong công ty",
       guestLevel: {
@@ -279,28 +279,28 @@ export const spaceMembersVi: SpaceMembersCopy = {
       },
       guestLine: "{{company}} · {{level}} ở {{board}}",
       label: "Giải thích vai trò",
-      roles: "Vai trò trong phòng ban",
+      roles: "Vai trò trong không gian",
       adminHint:
-        "Mọi quyền của Thành viên, thêm: thêm bớt người, đổi vai trò, đổi Riêng tư hay Mở, tạo và quản lý mọi phòng ban con.",
+        "Mọi quyền của Thành viên, thêm: thêm bớt người, đổi vai trò, đổi Riêng tư hay Mở, tạo và quản lý mọi không gian con.",
       memberHint:
-        "Tạo board và tài liệu trong phòng; sửa, giao, bình luận mọi việc trong các board mở của phòng.",
+        "Tạo board và tài liệu trong không gian; sửa, giao, bình luận mọi việc trong các board mở của không gian.",
       viewerHint:
-        "Xem board và tài liệu mở của phòng. Không sửa, không bình luận.",
-      map: "Ở các board mở của phòng: Quản trị → Quản lý board · Thành viên → Sửa · Người xem → Xem.",
+        "Xem board và tài liệu mở của không gian. Không sửa, không bình luận.",
+      map: "Ở các board mở của không gian: Quản trị → Quản lý board · Thành viên → Sửa · Người xem → Xem.",
       mapAdmins:
-        "Quản trị workspace thấy mọi phòng ban, không cần có trong danh sách.",
+        "Quản trị workspace thấy mọi không gian, không cần có trong danh sách.",
       misread:
-        "Hai điều hay bị hiểu nhầm. Board riêng tư trong phòng vẫn phải thêm người riêng; vai trò phòng ban không mở được nó. Một người vào bằng nhiều cách (trực tiếp và qua nhóm) thì dùng vai trò cao nhất.",
+        "Hai điều hay bị hiểu nhầm. Board riêng tư trong không gian vẫn phải thêm người riêng; vai trò không gian không mở được nó. Một người vào bằng nhiều cách (trực tiếp và qua nhóm) thì dùng vai trò cao nhất.",
       misreadLead: "Hai điều hay bị hiểu nhầm.",
       misreadText:
-        " Board riêng tư trong phòng vẫn phải thêm người riêng; vai trò phòng ban không mở được nó. Một người vào bằng nhiều cách (trực tiếp và qua nhóm) thì dùng vai trò cao nhất.",
-      inherit: "Phòng ban con thừa hưởng",
+        " Board riêng tư trong không gian vẫn phải thêm người riêng; vai trò không gian không mở được nó. Một người vào bằng nhiều cách (trực tiếp và qua nhóm) thì dùng vai trò cao nhất.",
+      inherit: "Không gian con thừa hưởng",
       inheritOpen: "Thành viên ở đây tự vào {{names}}.",
       inheritPrivate:
         "{{names}} là Riêng tư nên có danh sách riêng; chỉ Quản trị ở đây là tự vào được.",
       inheritPrivatePlural:
         "{{names}} là Riêng tư nên có danh sách riêng; chỉ Quản trị ở đây là tự vào được.",
-      inheritNone: "Phòng ban này chưa có phòng ban con.",
+      inheritNone: "Không gian này chưa có không gian con.",
     },
     add: {
       title: "Thêm vào {{name}}",
@@ -311,20 +311,20 @@ export const spaceMembersVi: SpaceMembersCopy = {
       suggestions: "Gợi ý",
       none: "Không có ai khớp.",
       remove: "Bỏ {{name}}",
-      roleLabel: "Vai trò trong phòng",
+      roleLabel: "Vai trò trong không gian",
       outsider:
-        "{{email}} chưa là thành viên workspace. Phòng ban chỉ thêm được thành viên workspace.",
+        "{{email}} chưa là thành viên workspace. Không gian chỉ thêm được thành viên workspace.",
       outsiderGuest:
-        "{{name}} đang là khách của board {{board}}, chưa là thành viên workspace. Phòng ban chỉ thêm được thành viên workspace.",
+        "{{name}} đang là khách của board {{board}}, chưa là thành viên workspace. Không gian chỉ thêm được thành viên workspace.",
       outsiderLink: "Mời vào workspace",
       preview: "{{count}} người sẽ thấy ngay",
       previewOne: "1 người sẽ thấy ngay",
       previewOpen: "{{boards}} board mở và {{docs}} tài liệu của {{name}}",
-      previewChildren: "Phòng ban con {{names}}",
+      previewChildren: "Không gian con {{names}}",
       previewHidden: "Không thấy {{names}} (riêng tư)",
       hiddenAnd: " và ",
       hiddenBoard: "board {{name}}",
-      foot: "Họ thấy phòng ban này ngay sau khi được thêm.",
+      foot: "Họ thấy không gian này ngay sau khi được thêm.",
       cancel: "Huỷ",
       submit: "Thêm {{count}} người",
       submitOne: "Thêm 1 người",
@@ -334,15 +334,16 @@ export const spaceMembersVi: SpaceMembersCopy = {
       teamPeople: "{{count}} người",
     },
     remove: {
-      teamTitle: "Gỡ {{name}} khỏi phòng?",
+      teamTitle: "Gỡ {{name}} khỏi không gian?",
       userTitle: "Gỡ {{name}} khỏi {{space}}?",
       userText:
-        "Họ mất quyền mà phòng ban này cấp. Board và tài liệu họ được thêm trực tiếp vẫn giữ quyền đó.",
-      teamText: "{{lose}} người sẽ mất quyền vào phòng.",
-      teamNoCount: "Mọi người vào phòng qua nhóm này sẽ mất quyền vào phòng.",
+        "Họ mất quyền mà không gian này cấp. Board và tài liệu họ được thêm trực tiếp vẫn giữ quyền đó.",
+      teamText: "{{lose}} người sẽ mất quyền vào không gian.",
+      teamNoCount:
+        "Mọi người vào không gian qua nhóm này sẽ mất quyền vào không gian.",
       teamTextKeep:
-        "{{lose}} người sẽ mất quyền vào phòng; {{keep}} vẫn còn vì được thêm trực tiếp.",
-      loses: "· mất quyền vào phòng",
+        "{{lose}} người sẽ mất quyền vào không gian; {{keep}} vẫn còn vì được thêm trực tiếp.",
+      loses: "· mất quyền vào không gian",
       keeps: "· vẫn là {{role}}, thêm trực tiếp",
       note: "Việc đang giao cho họ vẫn giữ người phụ trách. Nhóm vẫn còn trong workspace.",
       cancel: "Huỷ",

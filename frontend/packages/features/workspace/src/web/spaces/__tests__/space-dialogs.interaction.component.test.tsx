@@ -63,15 +63,13 @@ function renderMove(
 }
 
 describe("CreateSpaceDialog", () => {
-  it("FUI[workspace.create-space:submit] creates a Department Private by default (WSP-023)", () => {
+  it("FUI[workspace.create-space:submit] creates a Folder open to the workspace by default, and a Department Private (WSP-023)", () => {
     const props = renderCreate();
     const dialog = screen.getByRole("dialog", { name: copy.create.title });
     expect(
-      (
-        within(dialog).getByRole("radio", {
-          name: /Private/,
-        }) as HTMLButtonElement
-      ).getAttribute("aria-checked"),
+      within(dialog)
+        .getByRole("radio", { name: /Open/ })
+        .getAttribute("aria-checked"),
     ).toBe("true");
     fireEvent.change(within(dialog).getByLabelText(copy.create.nameLabel), {
       target: { value: "  Accounting " },
@@ -81,9 +79,26 @@ describe("CreateSpaceDialog", () => {
     );
     expect(props.onSubmit).toHaveBeenCalledWith({
       name: "Accounting",
-      type: "Department",
-      visibility: "Private",
+      type: "Folder",
+      visibility: "Workspace",
     });
+  });
+
+  it("FUI[workspace.create-space:department-private] starts a Department Private once that type is picked", () => {
+    renderCreate();
+    const dialog = screen.getByRole("dialog", { name: copy.create.title });
+    fireEvent.keyDown(
+      within(dialog).getByRole("combobox", { name: copy.create.typeLabel }),
+      { key: "Enter" },
+    );
+    fireEvent.click(
+      screen.getByRole("option", { name: copy.types.Department }),
+    );
+    expect(
+      within(dialog)
+        .getByRole("radio", { name: /Private/ })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
   });
 
   it("FUI[workspace.create-space:defaults] follows the type's default visibility until the member picks one", () => {

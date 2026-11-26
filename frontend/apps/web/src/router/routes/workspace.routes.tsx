@@ -120,7 +120,7 @@ export const reportsRoute = createRoute({
 });
 
 const spaceSearchSchema = z.object({
-  tab: z.enum(["overview", "members", "settings"]).optional(),
+  tab: z.enum(["overview", "content", "members", "settings"]).optional(),
   /** `member`: a manager previews the page as a department member. */
   as: z.enum(["member"]).optional(),
 });

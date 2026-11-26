@@ -195,8 +195,8 @@ describe("WorkspaceSidebarSurface", () => {
 
   it("FUI[workspace.sidebar:departments] heads the Space tree with Departments and offers Create department only to managers, in vi and en", () => {
     const text = {
-      vi: { title: "Phòng ban", create: "Tạo phòng ban" },
-      en: { title: "Departments", create: "Create department" },
+      vi: { title: "Không gian", create: "Tạo không gian" },
+      en: { title: "Spaces", create: "Create space" },
     } as const;
     for (const locale of LOCALES) {
       const spaces = {
@@ -231,7 +231,7 @@ describe("WorkspaceSidebarSurface", () => {
       { spaces: sidebarDepartmentsFixture() },
       sidebarMockupScenario(),
     );
-    const tree = screen.getByRole("tree", { name: "Phòng ban" });
+    const tree = screen.getByRole("tree", { name: "Không gian" });
     const items = within(tree).getAllByRole("treeitem");
     expect(items.slice(0, 7).map((node) => node.textContent?.trim())).toEqual([
       "CNCông nghệ, Riêng tư",
@@ -403,7 +403,7 @@ describe("WorkspaceSidebarSurface", () => {
     const { props } = renderSidebar({}, sidebarMockupScenario());
     const chip = screen.getByRole("button", { name: /^Minh An Group/ });
     expect(chip.textContent).toContain("Minh An Group");
-    expect(chip.textContent).toContain("5 phòng ban · 86 người");
+    expect(chip.textContent).toContain("5 không gian · 86 người");
 
     fireEvent.click(chip);
 
@@ -465,12 +465,12 @@ describe("WorkspaceSidebarSurface", () => {
     const text = {
       vi: {
         heading: "Ghim",
-        departments: "Phòng ban",
+        departments: "Không gian",
         unpin: "Bỏ ghim Triển khai ERP Q4",
       },
       en: {
         heading: "Pinned",
-        departments: "Departments",
+        departments: "Spaces",
         unpin: "Unpin Triển khai ERP Q4",
       },
     } as const;

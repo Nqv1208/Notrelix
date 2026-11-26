@@ -175,7 +175,9 @@ describe("onboarding: departments step", () => {
       target: { value: "Bán hàng" },
     });
     expect(onDraft.mock.calls.at(-1)?.[0].departments[0].name).toBe("Bán hàng");
-    fireEvent.click(screen.getByRole("button", { name: "Bỏ phòng Nhân sự" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Bỏ không gian Nhân sự" }),
+    );
     expect(onDraft.mock.calls.at(-1)?.[0].departments).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: copy.departments.add }));
     expect(onDraft.mock.calls.at(-1)?.[0].departments).toHaveLength(5);
@@ -193,7 +195,7 @@ describe("onboarding: departments step", () => {
         {...onboardingScenario({ step: "departments", onNext })}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Tạo 4 phòng ban" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tạo 4 không gian" }));
     expect(onNext).toHaveBeenCalledTimes(1);
     rerender(
       <OnboardingSurface
@@ -209,7 +211,7 @@ describe("onboarding: departments step", () => {
         })}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Tạo 2 phòng ban" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tạo 2 không gian" }));
     expect(onNext).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("alert").textContent).toContain("trùng tên");
   });
@@ -356,7 +358,7 @@ describe("onboarding: board step", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.board.create }));
     expect(onNext).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByText(/Thành viên phòng Sản xuất sẽ thấy board này/),
+      screen.getByText(/Thành viên không gian Sản xuất sẽ thấy board này/),
     ).toBeTruthy();
   });
 });
@@ -380,7 +382,7 @@ describe("onboarding: done", () => {
     expect(
       within(list).getByText("saomai.notrelix.vn", { exact: false }),
     ).toBeTruthy();
-    expect(within(list).getByText("4 phòng ban")).toBeTruthy();
+    expect(within(list).getByText("4 không gian")).toBeTruthy();
     expect(within(list).getByText("3 lời mời đã gửi")).toBeTruthy();
     expect(
       within(list).getByText("Board Ra mắt nước chấm Sao Mai"),
