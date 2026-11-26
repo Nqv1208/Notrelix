@@ -202,7 +202,7 @@ describe("buildAccessViewFromSummary", () => {
       [
         "Khách ở board",
         "Đặng Minh Tuấn",
-        "chỉ board Triển khai ERP Q4, không thuộc phòng",
+        "chỉ board Triển khai ERP Q4, không thuộc không gian",
       ],
     ]);
     // A single guest on a single Board opens that Board.
