@@ -11,6 +11,7 @@ using Notrelix.Application.Features.Documents.Pages.Commands.MovePageToSpace;
 using Notrelix.Application.Features.Documents.Pages.Commands.PublishPage;
 using Notrelix.Application.Features.Documents.Pages.Commands.RestorePage;
 using Notrelix.Application.Features.Documents.Pages.Commands.SetPageDeadline;
+using Notrelix.Application.Features.Documents.Pages.Queries.AuthorizePageRealtimeSubscription;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPage;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBacklinks;
 using Notrelix.Application.Features.Documents.Pages.Queries.GetPageBreadcrumb;
@@ -155,6 +156,7 @@ public sealed class ResourceLevelEnforcementMatrixTests
             (new GetPageQuery(page), PermissionAction.ViewPage),
             (new GetPageBlocksQuery(page), PermissionAction.ViewPage),
             (new GetPageBacklinksQuery(page), PermissionAction.ViewPage),
+            (new AuthorizePageRealtimeSubscriptionQuery(page), PermissionAction.ViewPage),
             (new GetPageHistoryQuery(page), PermissionAction.ViewPage),
             (new GetPageBreadcrumbQuery(page), PermissionAction.ViewPage),
             (new GetPageVersionQuery(page, version), PermissionAction.ViewPage),

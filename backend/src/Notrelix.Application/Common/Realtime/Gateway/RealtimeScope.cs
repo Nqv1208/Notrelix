@@ -13,6 +13,8 @@ public enum RealtimeScopeKind
     Channel,
     /// <summary>The caller's own per-user stream (unread badges). The id must be the caller's user id.</summary>
     User,
+    /// <summary>A Documents page. The id is the page id; the subscription is authorized by Documents' query (ViewPage).</summary>
+    Page,
 }
 
 /// <summary>A subscription target: a scope kind plus the resource id it names.</summary>
@@ -22,6 +24,7 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
     public const string BoardWireKind = "board";
     public const string ChannelWireKind = "channel";
     public const string UserWireKind = "user";
+    public const string PageWireKind = "page";
 
     public string WireKind => Kind switch
     {
@@ -29,6 +32,7 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
         RealtimeScopeKind.Board => BoardWireKind,
         RealtimeScopeKind.Channel => ChannelWireKind,
         RealtimeScopeKind.User => UserWireKind,
+        RealtimeScopeKind.Page => PageWireKind,
         _ => throw new InvalidOperationException($"Unsupported realtime scope kind {Kind}."),
     };
 
@@ -39,6 +43,7 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
         RealtimeScopeKind.Board => new RealtimeTopic("board", "Board", Id),
         RealtimeScopeKind.Channel => new RealtimeTopic("chat", "Channel", Id),
         RealtimeScopeKind.User => new RealtimeTopic("user", "notifications", Id),
+        RealtimeScopeKind.Page => new RealtimeTopic("page", "Page", Id),
         _ => throw new InvalidOperationException($"Unsupported realtime scope kind {Kind}."),
     };
 
@@ -66,6 +71,9 @@ public readonly record struct RealtimeScope(RealtimeScopeKind Kind, Guid Id)
                 return true;
             case UserWireKind:
                 scope = new RealtimeScope(RealtimeScopeKind.User, parsed);
+                return true;
+            case PageWireKind:
+                scope = new RealtimeScope(RealtimeScopeKind.Page, parsed);
                 return true;
             default:
                 return false;

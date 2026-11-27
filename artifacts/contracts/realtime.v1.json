@@ -259,7 +259,7 @@
         "type": "object",
         "description": "A subscribe scope. The kind is the wire value; the stream key is {namespace}:{ResourceKind}:{id N}. channel is ChatChannel (stream chat:Channel:<spaceId>), user is the caller's own per-user stream (stream user:notifications:<userId>).",
         "properties": {
-          "kind": { "type": "string", "enum": ["workspace", "board", "channel", "user"] },
+          "kind": { "type": "string", "enum": ["workspace", "board", "channel", "user", "page"] },
           "id": { "type": "string", "format": "uuid" }
         },
         "required": ["kind", "id"]

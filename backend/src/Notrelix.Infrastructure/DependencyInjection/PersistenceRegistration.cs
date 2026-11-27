@@ -59,6 +59,7 @@ public static class PersistenceRegistration
 
         // Interceptors (resolved inside AddDbContext below).
         services.AddScoped<AuditableEntityInterceptor>();
+        services.AddScoped<PageRealtimeInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
 
         // The application login (ConnectionStrings:NotrelixDb) serves requests; the background login
@@ -73,6 +74,7 @@ public static class PersistenceRegistration
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
+            options.AddInterceptors(sp.GetRequiredService<PageRealtimeInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
             ConfigureNpgsql(options, sp.GetRequiredService<DatabasePrincipal>().ResolveConnectionString());
         });

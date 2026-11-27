@@ -1,5 +1,6 @@
 using Notrelix.Application.Common.Requests;
 using Notrelix.Domain.Accounts.Accounts;
+using Notrelix.Domain.Documents.Pages;
 using Notrelix.Domain.Identity.Users;
 using Notrelix.Domain.WorkManagement.Boards;
 using Notrelix.Domain.Workspaces.Invitations;
@@ -12,7 +13,7 @@ using Notrelix.Testing.Application.Fakes;
 
 namespace Notrelix.Integration.Tests.Rls;
 
-/// <summary>One tenant of the application-role suites: a user who owns an account, a workspace and a board.</summary>
+/// <summary>One tenant of the application-role suites: a user who owns an account, a workspace, a board and a page.</summary>
 internal sealed record AppRoleTenant(
     User User,
     Guid AccountId,
@@ -21,7 +22,8 @@ internal sealed record AppRoleTenant(
     string InvitationToken,
     string InvitationEmail,
     string InvitationTokenHash,
-    int InvitationHashVersion);
+    int InvitationHashVersion,
+    Guid PageId = default);
 
 /// <summary>Seeds tenants as the owner so suites can assert what the application role does and does not see.</summary>
 internal static class AppRoleTenants
@@ -36,6 +38,7 @@ internal static class AppRoleTenants
             $"{name} Co", $"{name.ToLowerInvariant()}-{Guid.NewGuid():N}"[..20], AccountType.Team, user.Id, now);
         var workspace = Workspace.Create(account.Id, user.Id, $"{name} WS", $"ws-{Guid.NewGuid():N}"[..16], now);
         var board = Board.Create(account.Id, workspace.Id, user.Id, $"{name} Roadmap", null, now);
+        var page = Page.Create(account.Id, workspace.Id, $"{name} Notes", user.Id, now);
         var issued = new OneTimeTokenService().Generate(TokenPurpose.WorkspaceInvitation);
 
         var tenant = new FakeCurrentTenantContext();
@@ -45,6 +48,7 @@ internal static class AppRoleTenants
         ctx.Accounts.Add(account);
         ctx.Workspaces.Add(workspace);
         ctx.Boards.Add(board);
+        ctx.Pages.Add(page);
         ctx.WorkspaceMembers.Add(WorkspaceMember.Create(account.Id, workspace.Id, user.Id, WorkspaceRole.Owner, user.Id, now));
         ctx.AccessGrants.Add(new AccessGrant(
             accountId: account.Id, workspaceId: workspace.Id, userId: user.Id, sourceContext: "Workspace",
@@ -56,7 +60,7 @@ internal static class AppRoleTenants
             InvitationTokenHash.Create(issued.TokenHash), issued.HashVersion, user.Id, now.AddMinutes(-5)));
         await ctx.SaveChangesAsync();
 
-        return new AppRoleTenant(user, account.Id, workspace.Id, board.Id, issued.RawToken, inviteeEmail, issued.TokenHash, issued.HashVersion);
+        return new AppRoleTenant(user, account.Id, workspace.Id, board.Id, issued.RawToken, inviteeEmail, issued.TokenHash, issued.HashVersion, page.Id);
     }
 }
 

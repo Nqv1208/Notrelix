@@ -318,6 +318,7 @@ export function deriveSubscriptionScope(
 ): RealtimeSubscriptionScope {
   if (filter.boardId) return { kind: "board", id: filter.boardId };
   if (filter.channelId) return { kind: "channel", id: filter.channelId };
+  if (filter.pageId) return { kind: "page", id: filter.pageId };
   if (filter.userId) return { kind: "user", id: filter.userId };
   return { kind: "workspace", id: filter.workspaceId };
 }

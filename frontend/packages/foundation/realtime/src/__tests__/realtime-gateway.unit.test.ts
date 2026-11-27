@@ -375,6 +375,40 @@ describe("RealtimeClient gateway protocol v1", () => {
       });
     });
 
+    it("subscribes one Documents page on its own wire stream and routes only its frames", async () => {
+      const client = makeClient();
+      const pageListener = vi.fn();
+      const wsListener = vi.fn();
+      client.subscribe({ workspaceId: "ws-1" }, wsListener);
+      client.subscribe({ workspaceId: "ws-1", pageId: "page-1" }, pageListener);
+      const socket = await connect(client);
+
+      expect(socket.sentFrames()).toContainEqual({
+        type: "subscribe",
+        subscriptionId: "page:page-1",
+        scope: { kind: "page", id: "page-1" },
+      });
+      ackSubscriptions(socket);
+      socket.onmessage?.({
+        data: eventFrame({
+          eventId: "page-1-e1",
+          subscriptionId: "page:page-1",
+          streamKey: "page:Page:page-1",
+          streamVersion: 1,
+          eventType: "page.page",
+          resourceKind: "Page",
+          resourceId: "page-1",
+        }),
+      });
+
+      expect(pageListener).toHaveBeenCalledTimes(1);
+      expect(wsListener).not.toHaveBeenCalled();
+      expect(pageListener.mock.calls[0]![0]).toMatchObject({
+        eventType: "page.page",
+        resourceId: "page-1",
+      });
+    });
+
     it("tracks streams independently per subscription and streamKey", async () => {
       const client = makeClient();
       const wsListener = vi.fn();

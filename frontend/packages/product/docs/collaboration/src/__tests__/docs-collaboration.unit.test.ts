@@ -41,7 +41,7 @@ describe("createDocsCollaborationAdapter", () => {
     });
 
     expect(mockRealtime.subscribe).toHaveBeenCalledWith(
-      { workspaceId: "ws-1" },
+      { workspaceId: "ws-1", pageId: "doc-1" },
       expect.any(Function),
     );
 
@@ -49,7 +49,7 @@ describe("createDocsCollaborationAdapter", () => {
     getHandler()?.(forDocument);
     expect(onEvent).toHaveBeenCalledWith(forDocument);
 
-    // Frames about other resources of the Workspace stream are not delivered.
+    // A frame about another resource is never delivered to this page.
     getHandler()?.({ eventId: "evt-2", resourceId: "doc-other" });
     expect(onEvent).toHaveBeenCalledTimes(1);
 

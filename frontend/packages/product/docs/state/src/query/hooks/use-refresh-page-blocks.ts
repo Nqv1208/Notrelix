@@ -6,7 +6,7 @@ import { docsQueryKeys } from "../keys";
 const COALESCE_MS = 250;
 
 /**
- * Refetches the open page's blocks and detail from the producer (changes made
+ * Refetches the open page's blocks, detail and comments from the producer (changes made
  * elsewhere, a reconnect). Calls close together share one refetch; the saver
  * merges the refetched blocks without touching blocks being edited.
  */
@@ -31,6 +31,9 @@ export function useRefreshPageBlocks(workspaceId: string, pageId: string) {
       });
       void queryClient.invalidateQueries({
         queryKey: docsQueryKeys.detail(workspaceId, pageId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: docsQueryKeys.comments(workspaceId, pageId),
       });
     }, COALESCE_MS);
   }, [queryClient, workspaceId, pageId]);
