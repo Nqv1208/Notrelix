@@ -9,6 +9,7 @@ import {
   createChatRealtimeAdapter,
   createChatService,
 } from "@notrelix/features-chat";
+import { createInboxRealtimeAdapter } from "../realtime/inbox-realtime-adapter";
 import { ModuleAdapterRegistry } from "../realtime/module-adapter-registry";
 import { getActiveWorkspaceIdFromPathname } from "../realtime/active-workspace";
 import { getActiveBoardIdFromPathname } from "../realtime/active-board";
@@ -44,8 +45,10 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
     next.register(workspaceRealtimeAdapter);
     next.register(workManagementRealtimeAdapter);
     next.register(chatAdapter);
+    // The per-user stream also says when the person's Inbox changed (UC-COL-E02).
+    next.register(createInboxRealtimeAdapter(accountId));
     return next;
-  }, [chatAdapter]);
+  }, [chatAdapter, accountId]);
 
   useEffect(() => {
     if (!isAuthenticated || !sessionGeneration) {

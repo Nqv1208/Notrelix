@@ -56,18 +56,18 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | B | COL-002 Comment target contract | 18 | 2 | 0 | 2 | 14 | 0 | 0 |
 | C | COL-003 Comment authorization | 6 | 0 | 0 | 2 | 1 | 2 | 1 |
 | D | COL-004 Comment activity/events | 14 | 5 | 1 | 2 | 6 | 0 | 0 |
-| E | COL-005 Collaboration realtime | 5 | 3 | 1 | 0 | 0 | 0 | 1 |
+| E | COL-005 Collaboration realtime | 5 | 1 | 2 | 0 | 1 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
 | H | COL-008 Collaboration hardening | 8 | 3 | 0 | 0 | 3 | 0 | 2 |
-| | Total | 85 | 19 | 5 | 9 | 40 | 7 | 5 |
+| | Total | 85 | 17 | 6 | 9 | 41 | 7 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
 ### 1.2 The ten most important gaps
 
 1. Fixed: edit, delete, resolve and reopen of a comment, and delete of an attachment, were authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve, so only the workspace Owner passed. They now pass a membership gate and the handler decides from the target: author for edit and delete, thread starter or editor for resolve and reopen, editor of the target for attachment delete. Still open: expected version, moderator delete (UC-COL-C02), a real e2e.
-2. No Collaboration fact is published to realtime: comments, reactions, Inbox counts and presence all need a manual refetch (UC-COL-E01 to E03).
+2. Partly fixed: an Inbox change is announced on its recipient's own stream and the badge and list refetch (UC-COL-E02); item comments and reactions reach an open card through the Board stream (UC-COL-E01, items). Page comments and presence still need a manual refetch (UC-COL-E01 pages, E03).
 3. Competing writes: comment create has no idempotency key, and resolve and reopen have no expected version (UC-COL-H01, H02). Edit and delete now carry an expected version (UC-COL-A05, A06). Reactions and watchers have unique indexes (UC-COL-H03).
 4. Pages are second-class: no page reactions, no page followers, no page notifications, no page activity (UC-COL-A11, B17, D09, D12).
 5. Target deletion has no Collaboration rule: no purge, no restore link, no test (UC-COL-F01, F02, F05).
@@ -182,8 +182,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-D12 | A page comment notifies page followers (enterprise baseline) | D | System | no | partial | partial | no | DEFINED | Needs page watchers. |
 | UC-COL-D13 | Email a notification (enterprise baseline) | D | System | no | partial | yes | no | DEFINED | Needs a Platform or Integrations provider decision; Lead decision L14 keeps it out of the current cut. |
 | UC-COL-D14 | Daily digest (enterprise baseline) | D | System | no | partial | yes | no | DEFINED | Depends on UC-COL-D13. |
-| UC-COL-E01 | See new comments live on an open item or page | E | Anyone with view access to the open target | no | no | partial | no | DEFINED | Add mappers for comment create, edit, delete, resolve and reaction; the client refetches on notify. |
-| UC-COL-E02 | Inbox unread count updates live | E | The recipient | no | no | yes | no | DEFINED | Publisher missing. |
+| UC-COL-E01 | See new comments live on an open item or page | E | Anyone with view access to the open target | partial | partial | partial | no | IMPLEMENTING | Items: comment and reaction writes notify the Board stream and the open card refetches; pages have no stream yet. |
+| UC-COL-E02 | Inbox unread count updates live | E | The recipient | yes | yes | yes | no | HARDENING | inbox.changed on the per-user stream; badge and list refetch. No real e2e. |
 | UC-COL-E03 | See who else is viewing a page or item (presence) | E | Anyone with view access | partial | partial | no | no | IMPLEMENTING | Decide storage (Lead decision L16: gateway memory or Redis, not the PresenceSession table); build the topic, authorization and client. |
 | UC-COL-E04 | Typing and cursor indicators | E | Editors of a page | no | no | no | no | BLOCKED | Waits for the live co-editing ADR that decision 3 leaves open (Documents owns it). |
 | UC-COL-E05 | Recover after reconnect, gap or revoked access | E | Any connected client | partial | partial | yes | no | DEFINED | Gateway exists for board streams; no Collaboration stream to recover. |
@@ -197,7 +197,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-G01 | List the comments of an item or page | G | ViewBoard on the item or view on the page | yes | yes | yes | partial | HARDENING | Built: page comments have cursor paging (default 50, max 200) under the ViewPage action; the page view follows nextCursor until done. The unpaged GET routes remain without a UI caller. Real e2e: owner tests by hand. |
 | UC-COL-G02 | Comment counts on cards and lists | G | Anyone who can see the card | yes | yes | yes | no | INTEGRATING | Owner question: which comments does the card count? Code counts live comments (replies and resolved threads included, deleted ones not); proposed: keep that rule and write it into the product text. Not changed. |
 | UC-COL-G03 | Open the Inbox list | G | Any active member | yes | yes | yes | yes | HARDENING | Design line holds: design-fidelity-inbox mock spec (2 passed). Remaining: the list handler still lives in the Work Management feature (a move, no behaviour change); real e2e not run. |
-| UC-COL-G04 | Unread count per workspace (bell) | G | Any signed-in person | yes | yes | yes | no | INTEGRATING | Count is not live (depends on UC-COL-E02, DEFINED); no real e2e. |
+| UC-COL-G04 | Unread count per workspace (bell) | G | Any signed-in person | yes | yes | yes | no | INTEGRATING | Count is live through UC-COL-E02 (HARDENING); no real e2e. |
 | UC-COL-G05 | Mark one notification read | G | The recipient | yes | yes | yes | yes | DONE | Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Real line holds: collab-inbox-notifications.real.e2e.spec.ts third test 1 of 1 passed on the real stack 2026-11-15 (3 of 3 in the file), each step checked in the screen and after a reload (mark read). |
 | UC-COL-G06 | Mark every notification read | G | The recipient | yes | yes | yes | no | HARDENING | Built (verified by reading code 2026-11-09, not run): MapInboxEndpoints.cs, InboxStatesIntegrationTests.cs, the inbox route. Remaining: owner tests by hand. |
 | UC-COL-G07 | Mark done and take back into the Inbox | G | The recipient | yes | yes | yes | yes | DONE | Design line holds 2026-11-15: frontend/e2e/mock/design-fidelity-inbox.mock.e2e.spec.ts (2 passed, 1440 light and dark, boxes within 1 px of Final-Inbox) and the Inbox copy follows Col-Inbox (Đã xử lý, Đưa về Hộp thư). Real line holds: collab-inbox-notifications.real.e2e.spec.ts third test 1 of 1 passed on the real stack 2026-11-15 (3 of 3 in the file), each step checked in the screen and after a reload (done, Done filter, move back). |
@@ -928,8 +928,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: live update, offline, reconnect, conflict free.
 - Rules: Product COL-024, Realtime (sections 76 to 79); decision 59 (no push in the first cut); spec DCREQ059 to DCREQ065, DCREQ061.
 - Acceptance: Given two members on one item, when one comments, then the other sees it within seconds without reload.
-- Evidence: BE none: no Collaboration command implements IRealtimeChangeMapper; channel names exist in RealtimeChannelResolver (Item, Page) · FE frontend/packages/foundation/realtime (no comment events) · Design BC-Realtime-1440 (board realtime only) · Tests none · Real e2e none
-- State: DEFINED — Add mappers for comment create, edit, delete, resolve and reaction; the client refetches on notify.
+- Evidence: BE items: CreateComment, UpdateComment, DeleteComment, ResolveComment, ReopenComment, AddReaction, RemoveReaction and the attachment commands call IBoardRealtimeNotifier, so an item comment notifies its Board stream (a page comment notifies nothing) · FE work-management-realtime-adapter.ts invalidates the "cards" query family on a board frame, which holds cardComments; every item route sits under /boards/$boardId, so the open card is subscribed · Design BC-Realtime-1440 (board realtime only) · Tests none specific to comments · Real e2e none
+- State: IMPLEMENTING — Items converge through the Board stream; pages need a page stream (scope kind, authorization by Documents) and a client adapter.
 
 ### UC-COL-E02 Inbox unread count updates live
 - Capability: E, COL-005 Collaboration realtime
@@ -942,8 +942,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: badge, list.
 - Rules: Product COL-024; spec DCREQ061.
 - Acceptance: Given a new mention, then the badge rises without reload.
-- Evidence: BE none: RealtimeChannelResolver.UserNotifications is defined and unused · FE InboxBell (polling by query) · Design Final-Inbox · Tests none · Real e2e none
-- State: DEFINED — Publisher missing.
+- Evidence: BE backend/src/Notrelix.Infrastructure/Data/Interceptors/InboxRealtimeInterceptor.cs enrolls one InboxRealtime.Changed fact (inbox.changed, contract inbox.changed.v1, payload workspaceId) per recipient and Workspace whenever a NotificationRecipientRecord is added or changed; it runs ahead of DomainEventInterceptor, so the fact is written to the outbox in the same transaction as the entry and covers every producer (mention, followed item, form response, chat handoff, board transfer) · Contract artifacts/contracts/realtime.v1.json user/{userId} InboxChanged · FE apps/web/src/realtime/inbox-realtime-adapter.ts invalidates the account Inbox summary (badges) and, for the open Workspace, its Inbox lists; registered in providers/realtime-lifecycle.tsx on the per-user subscription · Design Final-Inbox · Tests backend/tests/Notrelix.Infrastructure.Tests/Data/InboxRealtimeInterceptorTests.cs (one frame per recipient on their own stream, one per person and Workspace, a tracked change announces, nothing without entries); apps/web/src/realtime/__tests__/inbox-realtime-adapter.unit.test.ts (only inbox.changed, badge plus open list, another Workspace refreshes only the badge, no person no work) · Real e2e none
+- State: HARDENING — Built and unit-proved for new entries. Read, unread, done, reopen and snooze are written by PostgresNotificationInbox with ExecuteUpdate, which no interceptor sees: the tab that acted refetches itself, the person's other tabs catch up on their next read. Owner check pending.
 
 ### UC-COL-E03 See who else is viewing a page or item (presence)
 - Capability: E, COL-005 Collaboration realtime
@@ -1143,7 +1143,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-014, COL-015 (count derived from recipient rows).
 - Acceptance: Given 3 unread in one Workspace, then the summary says 3.
 - Evidence: BE GET /api/v1/inbox/summary (Collaboration.Notifications.GetInboxSummary), GetInboxSummaryQueryHandler, PostgresNotificationInbox · FE frontend/packages/features/notifications/src/web/components/inbox-bell.tsx; apps/web/src/shell/workspace/workspace-shell.tsx · Design Final-Inbox, Final-M-Inbox · Tests backend/tests/Notrelix.Application.Tests/Features/Collaboration/GetInboxSummaryTests.cs; frontend inbox-bell.component.test.tsx · Real e2e none
-- State: INTEGRATING — Count is not live (depends on UC-COL-E02, DEFINED); no real e2e.
+- State: INTEGRATING — Count is live through UC-COL-E02 (HARDENING); no real e2e.
 
 ### UC-COL-G05 Mark one notification read
 - Capability: G, COL-007 Collaboration query/state
