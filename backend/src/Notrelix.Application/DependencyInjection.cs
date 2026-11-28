@@ -123,6 +123,13 @@ public static class DependencyInjection
             Notrelix.Application.Features.Chat.RateLimits.IChatRateLimiter,
             Notrelix.Application.Features.Chat.RateLimits.ChatRateLimiter>();
 
+        // Collaboration write limits (UC-COL-H05, L15): one person in one Workspace, on the shared limiter store.
+        services.AddOptions<Notrelix.Application.Features.Collaboration.RateLimits.CollaborationRateLimitOptions>()
+            .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Collaboration.RateLimits.CollaborationRateLimitOptions.SectionName));
+        services.AddScoped<
+            Notrelix.Application.Features.Collaboration.RateLimits.ICollaborationRateLimiter,
+            Notrelix.Application.Features.Collaboration.RateLimits.CollaborationRateLimiter>();
+
         // Invitation email limits: per workspace and per inviter, on the shared limiter store.
         services.AddOptions<Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimitOptions>()
             .Bind(builder.Configuration.GetSection(Notrelix.Application.Features.Workspaces.Invitations.Services.InvitationRateLimitOptions.SectionName));

@@ -5,6 +5,7 @@ using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 using global::Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.RateLimits;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadBoardItemAttachment;
 
@@ -45,6 +46,7 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
     private readonly IAttachmentTargetLock _targetLock;
     private readonly AttachmentUploadOptions _options;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly ICollaborationRateLimiter? _rateLimits;
 
     public UploadBoardItemAttachmentCommandHandler(
         ICollaborationDbContext context,
@@ -54,9 +56,11 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
         IRequestRollbackCompensations compensations,
         IAttachmentTargetLock targetLock,
         IOptions<AttachmentUploadOptions> options,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        ICollaborationRateLimiter? rateLimits = null)
     {
         _realtime = realtime;
+        _rateLimits = rateLimits;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -68,6 +72,9 @@ public class UploadBoardItemAttachmentCommandHandler : IRequestHandler<UploadBoa
 
     public async Task<Result<AttachmentDto>> Handle(UploadBoardItemAttachmentCommand request, CancellationToken ct)
     {
+        // 20 uploads a minute for one person in one Workspace (UC-COL-H05), counted before the file is stored.
+        if (_rateLimits is not null)
+            await _rateLimits.RequireAsync(CollaborationRateLimitPolicy.Upload, _requestContext.RequireWorkspaceId(), _requestContext.UserId, ct);
         var response = await HandleCore(request, ct);
         if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
         return response;

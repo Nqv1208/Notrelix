@@ -1848,11 +1848,13 @@ export function createDocPageScreen({
           ?.scrollIntoView?.({ block: "nearest" });
       },
       onCommentResolve: (id) => {
-        resolveComment.mutate(id);
+        const version = commentsQuery.data?.find((c) => c.id === id)?.version;
+        resolveComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
         if (id === activeCommentId) setActiveCommentId(null);
       },
       onCommentReopen: (id) => {
-        reopenComment.mutate(id);
+        const version = commentsQuery.data?.find((c) => c.id === id)?.version;
+        reopenComment.mutate({ commentId: id, expectedVersion: version ?? 0 });
       },
       onCommentDelete: (id) => {
         const version = commentsQuery.data?.find((c) => c.id === id)?.version;

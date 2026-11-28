@@ -407,7 +407,11 @@ function Bubble({
                 className={TEXT_ACTION}
                 aria-pressed={update.resolved ? true : undefined}
                 onClick={() =>
-                  callbacks.onSetUpdateResolved?.(update.id, !update.resolved)
+                  callbacks.onSetUpdateResolved?.(
+                    update.id,
+                    !update.resolved,
+                    update.version ?? 0,
+                  )
                 }
               >
                 {update.resolved ? sheet.thread.reopen : sheet.thread.resolve}

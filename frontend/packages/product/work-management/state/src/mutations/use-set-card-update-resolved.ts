@@ -11,8 +11,16 @@ export function useSetCardUpdateResolved(cardId: string, workspaceId: string) {
   const { comments } = useWorkManagementServices();
 
   return useMutation({
-    mutationFn: (input: { updateId: string; resolved: boolean }) =>
-      comments.setCardUpdateResolved(input.updateId, input.resolved),
+    mutationFn: (input: {
+      updateId: string;
+      resolved: boolean;
+      expectedVersion: number;
+    }) =>
+      comments.setCardUpdateResolved(
+        input.updateId,
+        input.resolved,
+        input.expectedVersion,
+      ),
     onSettled: () =>
       queryClient.invalidateQueries({
         queryKey: wmQueryKeys.cardUpdates(workspaceId, cardId),

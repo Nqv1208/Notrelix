@@ -24,7 +24,11 @@ public static class RateLimitTestSettings
         "ApiKeyAuthenticated",
     ];
 
-    public static IReadOnlyDictionary<string, string?> Generous { get; } = PolicyNames.ToDictionary(
-        name => $"RateLimiting:Policies:{name}:PermitLimit",
-        name => (string?)GenerousPermitLimit);
+    /// <summary>The Collaboration write limits (UC-COL-H05): one test user writes far more than 30 comments or 20 uploads a minute.</summary>
+    public static readonly string[] CollaborationLimitNames = ["Comment", "React", "Upload"];
+
+    public static IReadOnlyDictionary<string, string?> Generous { get; } = PolicyNames
+        .Select(name => $"RateLimiting:Policies:{name}:PermitLimit")
+        .Concat(CollaborationLimitNames.Select(name => $"RateLimiting:Collaboration:{name}:PermitLimit"))
+        .ToDictionary(key => key, _ => (string?)GenerousPermitLimit);
 }

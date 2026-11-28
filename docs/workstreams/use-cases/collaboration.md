@@ -59,8 +59,8 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | E | COL-005 Collaboration realtime | 5 | 0 | 0 | 1 | 3 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
-| H | COL-008 Collaboration hardening | 8 | 3 | 0 | 0 | 3 | 0 | 2 |
-| | Total | 85 | 16 | 4 | 10 | 43 | 7 | 5 |
+| H | COL-008 Collaboration hardening | 8 | 0 | 0 | 0 | 6 | 0 | 2 |
+| | Total | 85 | 13 | 4 | 10 | 46 | 7 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -210,11 +210,11 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-G14 | Unread comment markers (read state) | G | Any viewer | partial | no | no | no | IMPLEMENTING | No Application or API; decide before building (Lead decision L17). |
 | UC-COL-G15 | Switch workspace or account without leaking collaboration state | G | Any signed-in person | no | yes | no | no | HARDENING | Built: the collaboration comment keys carry the workspace, so a late response for the old one lands under its own key (unit test). The docs and Work Management comment keys already carried it. Owner tests by hand. |
 | UC-COL-G16 | Search comments (enterprise baseline) | G | Anyone, limited to targets they can view | no | no | partial | no | DEFINED | Owned together with Search; not built. |
-| UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | no | no | no | no | DEFINED | Backend and client both missing. |
-| UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | no | no | no | no | DEFINED | Add version to the DTO, commands and UI conflict state. |
+| UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | yes | yes | no | no | HARDENING | Create routes take an Idempotency-Key; items and pages send one key per comment the person posts. No e2e run. |
+| UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | yes | yes | no | no | HARDENING | Edit, delete, resolve and reopen carry ExpectedVersion; a stale one is 412 and the list is read again. No e2e run. |
 | UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | yes | no | no | no | HARDENING | Built: unique indexes exist for reactions and watchers (no migration needed); a watcher lock makes a racing follow a no-op, as the reaction lock does. Remains: owner tests by hand. |
 | UC-COL-H04 | Comment content is safe to render | H | Any reader | yes | partial | no | no | HARDENING | Built: one limit (Comment.MaxContentLength, 10,000) for the Domain and both validators (the validators allowed 50,000); XSS and URL-scheme tests on the renderers. Remains: comments render as plain text, so no link chips; owner tests by hand. |
-| UC-COL-H05 | Rate limits and abuse controls | H | Any caller | no | no | no | no | DEFINED | Policies not attached. |
+| UC-COL-H05 | Rate limits and abuse controls | H | Any caller | yes | none | no | no | HARDENING | Comment, reaction and upload handlers count one person in one Workspace (30, 60, 20 a minute) and answer 429 with Retry-After. No e2e run. |
 | UC-COL-H06 | A mention retry notifies once | H | System | yes | no | no | no | HARDENING | Built: a delivery that loses the insert race on the deduplication key is a no-op; unique index in baseline. Remains: owner tests by hand. |
 | UC-COL-H07 | Provider comment sync maps through Collaboration operations | H | An integration (provider adapter) | no | no | no | no | BLOCKED | Needs the integration execution principal ([automation-integrations.md](automation-integrations.md)); a security-principal decision. |
 | UC-COL-H08 | Guest and public comments | H | Anonymous or public-link visitors | no | no | no | no | BLOCKED | Anonymous principal and abuse controls are an owner decision. |
@@ -1327,8 +1327,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: pending state disables Send; offline retry is safe.
 - Rules: Product COL-008, COL-025; team COL-008; spec DCREQ159, DCREQ219.
 - Acceptance: Given a double click, then one comment exists.
-- Evidence: BE none: CreateCommentEndpoint has no WithIdempotencyKey; the command is not IIdempotentRequest · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Backend and client both missing.
+- Evidence: BE `CreateCommentEndpoint` maps both create routes `.WithIdempotencyKey()` and `CreateCommentCommand` is `IIdempotentRequest`, so a key replays the first result · FE items: `update-composer.tsx` keeps one key per draft for two minutes; pages: `useCreateComment` takes its key from `createCommentActionKeys` (one key per text, place, reply target and mentions until a success) · Design none · Tests `comment-draft.component.test.tsx` (items), `comment-action-keys.unit.test.ts` (pages: a repeat reuses the key, a success forgets it, another text is another action, the key is sent) · Real e2e none
+- State: HARDENING — Built on both targets (pages on 2026-11-28); no e2e run. Owner check: double-click Send on a page comment and see one comment.
 
 ### UC-COL-H02 Competing edits carry an expected version
 - Capability: H, COL-008 Collaboration hardening
@@ -1341,8 +1341,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: conflict state with the current text.
 - Rules: Product Comment edit; RULE concurrency (NRX); team COL-008.
 - Acceptance: Given two edits from version 3, then the second gets 412.
-- Evidence: BE none: UpdateCommentCommand has no ExpectedVersion; Comment has a version that is incremented only · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Add version to the DTO, commands and UI conflict state.
+- Evidence: BE `UpdateCommentCommand`, `DeleteCommentCommand`, `ResolveCommentCommand` and `ReopenCommentCommand` are `IExpectedVersionRequest` (resolve and reopen take `expectedVersion` in the query since 2026-11-28; `ExpectedVersionTargetMap` binds all four to `collaboration.comment`); `CommentDto.Version` is read by the clients · FE docs (`comment.api.ts`, `use-resolve-comment`, `use-reopen-comment`, read again on settle) and items (`setCardUpdateResolved`, `comments-column.tsx` passes `update.version`) send the version they read · Design none · Tests `CommentExpectedVersionTests`, `ExpectedVersionArchitectureTests`, `GovernanceResourcePermissionFlowTests.ResolveThenReopen_FromTheSameVersion_TheSecondIsRefusedAsStale_AndTheThreadStaysResolved` (PostgreSQL), `page-comment-resolve.unit.test.ts`, `item-comment-resolve.unit.test.ts`, `comment-resolve.component.test.tsx` · Real e2e none
+- State: HARDENING — All four writes refuse a stale version with 412; no e2e run. Owner check: resolve a thread in one tab, reopen it from a second tab that has not refreshed, and see the refusal and the current state.
 
 ### UC-COL-H03 Concurrent reactions and follows do not duplicate
 - Capability: H, COL-008 Collaboration hardening
@@ -1383,8 +1383,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: toast with wait time.
 - Rules: Product Abuse controls (97); spec DCREQ216.
 - Acceptance: Given 31 comments in a minute, then the 31st gets 429.
-- Evidence: BE none: the API has a rate limit framework (backend/src/Notrelix.API/RateLimiting/) but no Collaboration route uses it · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Policies not attached.
+- Evidence: BE `CollaborationRateLimiter` (`Features/Collaboration/RateLimits/`) on the shared `IRateLimitService`, partition `person:{user}:workspace:{workspace}`, defaults bound from `RateLimiting:Collaboration` (Comment 30, React 60, Upload 20 per 60 s), fail open when the store cannot answer; called first in `CreateCommentCommandHandler`, `AddReactionCommandHandler`, `UploadBoardItemAttachmentCommandHandler` and `UploadPageAttachmentCommandHandler` (a keyed replay is answered by the pipeline and not counted); `TooManyRequestsException` maps to 429 with Retry-After and rule code `rate-limited` · FE none: the composers keep the text on a failed send · Design none · Tests `CollaborationRateLimiterTests` (policy names, L15 limits, partition, refusal with the store's wait, fail open), `CommentReactionTests` (a refused comment or reaction stores nothing; an allowed one is counted once), `CollaborationRateLimitWiringTests` (the API container builds all four handlers with the limiter); the API suite raises the limits through `RateLimitTestSettings.Generous` after the shipped 20-upload limit refused the 21st upload of `AttachmentFileEndpointTests` · Real e2e none
+- State: HARDENING — Built 2026-11-28; no e2e run. Owner check: post 31 comments in a minute on one item and see the 31st refused with a wait.
 
 ### UC-COL-H06 A mention retry notifies once
 - Capability: H, COL-008 Collaboration hardening

@@ -35,20 +35,24 @@ export function createCommentApi(
     async create(
       pageId: string,
       payload: CreateCommentPayload,
+      options: { readonly idempotencyKey?: string } = {},
     ): Promise<PageComment> {
       // `Collaboration.Comments.CreatePageComment` takes `contentMd`.
-      const created = await api.post<CommentDtoApi | string>(
-        endpoints.pages.comments(pageId),
-        {
-          contentMd: payload.body,
-          ...(payload.anchor ? { anchor: payload.anchor } : {}),
-          ...(payload.parentId ? { parentCommentId: payload.parentId } : {}),
-          // The producer mentions only people who can view the page.
-          ...(payload.mentionIds?.length
-            ? { mentionedUserIds: payload.mentionIds }
-            : {}),
-        },
-      );
+      const body = {
+        contentMd: payload.body,
+        ...(payload.anchor ? { anchor: payload.anchor } : {}),
+        ...(payload.parentId ? { parentCommentId: payload.parentId } : {}),
+        // The producer mentions only people who can view the page.
+        ...(payload.mentionIds?.length
+          ? { mentionedUserIds: payload.mentionIds }
+          : {}),
+      };
+      const url = endpoints.pages.comments(pageId);
+      const created = options.idempotencyKey
+        ? await api.post<CommentDtoApi | string>(url, body, {
+            idempotencyKey: options.idempotencyKey,
+          })
+        : await api.post<CommentDtoApi | string>(url, body);
       const now = new Date().toISOString();
       return typeof created === "string"
         ? {
@@ -67,13 +71,20 @@ export function createCommentApi(
     },
 
     /** `Collaboration.Comments.Resolve`. */
-    async resolve(commentId: string): Promise<void> {
-      await api.post<void>(endpoints.comments.resolve(commentId), {});
+    async resolve(commentId: string, expectedVersion: number): Promise<void> {
+      // The version the reader saw; a thread changed since is refused (412, UC-COL-H02).
+      await api.post<void>(
+        `${endpoints.comments.resolve(commentId)}?expectedVersion=${expectedVersion}`,
+        {},
+      );
     },
 
     /** `Collaboration.Comments.Reopen`: makes a resolved thread active again. */
-    async reopen(commentId: string): Promise<void> {
-      await api.post<void>(endpoints.comments.reopen(commentId), {});
+    async reopen(commentId: string, expectedVersion: number): Promise<void> {
+      await api.post<void>(
+        `${endpoints.comments.reopen(commentId)}?expectedVersion=${expectedVersion}`,
+        {},
+      );
     },
 
     /** `Collaboration.Comments.Delete`: the version the reader saw goes in the query. */

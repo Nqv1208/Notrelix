@@ -23,19 +23,19 @@ describe("Collaboration.Comments.Reopen on the mock backend", () => {
     const { store, comments } = setup();
     const comment = store.createPageComment(INVOICE_DOC_ID, "usr-m-00001", "x");
 
-    await comments.resolve(comment.id);
+    await comments.resolve(comment.id, 1);
     expect(comment.resolvedAt).toBeTruthy();
 
-    await comments.reopen(comment.id);
+    await comments.reopen(comment.id, 1);
     expect(comment.resolvedAt).toBeNull();
 
-    await comments.reopen(comment.id);
+    await comments.reopen(comment.id, 1);
     expect(comment.resolvedAt).toBeNull();
   });
 
   it("answers not found for a thread that is not there", async () => {
     const { comments } = setup();
-    await expect(comments.reopen("missing")).rejects.toMatchObject({
+    await expect(comments.reopen("missing", 1)).rejects.toMatchObject({
       kind: "not_found",
     });
   });

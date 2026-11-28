@@ -40,7 +40,7 @@ public class ReopenCommentTests
 
     private Task<Result> Reopen(Guid id) =>
         new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object)
-            .Handle(new ReopenCommentCommand(id), CancellationToken.None);
+            .Handle(new ReopenCommentCommand(id, 1), CancellationToken.None);
 
     [Fact]
     public async Task Reopening_AResolvedThread_MakesItActiveAndRaisesTheEvent()
@@ -98,8 +98,8 @@ public class ReopenCommentTests
     public void Reopen_RequiresTheSamePermissionOnTheSameResourceAsResolve()
     {
         var id = Guid.CreateVersion7();
-        var reopen = new ReopenCommentCommand(id);
-        var resolve = new ResolveCommentCommand(id);
+        var reopen = new ReopenCommentCommand(id, 1);
+        var resolve = new ResolveCommentCommand(id, 1);
 
         reopen.Should().BeAssignableTo<IRequirePermission>();
         reopen.Should().BeAssignableTo<IResourceScopedRequest>();

@@ -12,10 +12,17 @@ describe("page comment resolve and delete", () => {
   it("resolves and deletes through the Collaboration comment routes", async () => {
     const api = client();
     const comments = createCommentApi(api, testEndpoints);
-    await comments.resolve("c1");
-    expect(api.post).toHaveBeenCalledWith("/comments/c1/resolve", {});
-    await comments.reopen("c1");
-    expect(api.post).toHaveBeenCalledWith("/comments/c1/reopen", {});
+    // The version the reader saw goes in the query (UC-COL-H02).
+    await comments.resolve("c1", 4);
+    expect(api.post).toHaveBeenCalledWith(
+      "/comments/c1/resolve?expectedVersion=4",
+      {},
+    );
+    await comments.reopen("c1", 5);
+    expect(api.post).toHaveBeenCalledWith(
+      "/comments/c1/reopen?expectedVersion=5",
+      {},
+    );
     await comments.delete("c1", 3);
     expect(api.delete).toHaveBeenCalledWith("/comments/c1?expectedVersion=3");
   });

@@ -17,6 +17,7 @@ using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateCommen
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeleteAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Commands.DeletePageAttachment;
 using Notrelix.Application.Features.Collaboration.Attachments.Services;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Application.Features.Collaboration.Comments.Services;
@@ -899,7 +900,25 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var commentId = (await SendAsync<Result<Guid>>(ownerProvider, CreateCommentCommand.ForPage(pageId, "Owner's thread", null))).Data;
 
         using var memberProvider = CreateProvider(accountId, memberId);
-        (await SendAsync<Result>(memberProvider, new ResolveCommentCommand(commentId))).Succeeded.Should().BeTrue();
+        (await SendAsync<Result>(memberProvider, new ResolveCommentCommand(commentId, 1))).Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ResolveThenReopen_FromTheSameVersion_TheSecondIsRefusedAsStale_AndTheThreadStaysResolved()
+    {
+        var (accountId, ownerId, workspaceId, pageId, memberId) = await SeedPageStackAsync();
+        await SeedResourcePermissionAsync(accountId, workspaceId, "documents.page", pageId, memberId, PermissionLevel.Editor);
+        using var ownerProvider = CreateProvider(accountId, ownerId);
+        var commentId = (await SendAsync<Result<Guid>>(ownerProvider, CreateCommentCommand.ForPage(pageId, "Owner's thread", null))).Data;
+        using var memberProvider = CreateProvider(accountId, memberId);
+
+        // Both read version 1: the owner resolves, then the member's reopen from that same read is stale (UC-COL-H02).
+        (await SendAsync<Result>(ownerProvider, new ResolveCommentCommand(commentId, 1))).Succeeded.Should().BeTrue();
+        var stale = () => SendAsync<Result>(memberProvider, new ReopenCommentCommand(commentId, 1));
+
+        await stale.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>();
+        // The refused reopen changed nothing: the resolve made version 2, and a reopen that names it goes through.
+        (await SendAsync<Result>(memberProvider, new ReopenCommentCommand(commentId, 2))).Succeeded.Should().BeTrue();
     }
 
     [Fact]
@@ -912,7 +931,7 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         var commentId = (await SendAsync<Result<Guid>>(ownerProvider, CreateCommentCommand.ForPage(pageId, "Owner's thread", null))).Data;
 
         using var memberProvider = CreateProvider(accountId, memberId);
-        var act = () => SendAsync<Result>(memberProvider, new ResolveCommentCommand(commentId));
+        var act = () => SendAsync<Result>(memberProvider, new ResolveCommentCommand(commentId, 1));
 
         (await act.Should().ThrowAsync<AppForbidden>()).Which.Code.Should().Be(CommentAccessRules.ThreadStarterOrEditorCode);
     }
@@ -2071,6 +2090,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<ResolveCommentCommand, Result>,
             ResolveCommentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<ReopenCommentCommand, Result>,
+            ReopenCommentCommandHandler>();
         services.AddScoped<
             IRequestHandler<DeletePageAttachmentCommand, Result>,
             DeletePageAttachmentCommandHandler>();

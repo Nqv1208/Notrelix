@@ -28,6 +28,8 @@ using Notrelix.Application.Features.Analytics.Dashboards.Commands.RestoreDashboa
 using Notrelix.Application.Features.Analytics.Dashboards.Commands.RenameDashboard;
 using Notrelix.Domain.Analytics.Dashboards;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.DeleteComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.ReopenComment;
+using Notrelix.Application.Features.Collaboration.Comments.Commands.ResolveComment;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.UpdateComment;
 using Notrelix.Domain.Accounts.Accounts;
 using Notrelix.Domain.Collaboration.Comments;
@@ -379,6 +381,8 @@ public sealed class ExpectedVersionTargetMap
         // Collaboration — comment edit and delete quote the comment version the reader saw (UC-COL-A05, A06, C01)
         [typeof(UpdateCommentCommand)] = new(CommentKind, typeof(Comment)),
         [typeof(DeleteCommentCommand)] = new(CommentKind, typeof(Comment)),
+        [typeof(ResolveCommentCommand)] = new(CommentKind, typeof(Comment)),
+        [typeof(ReopenCommentCommand)] = new(CommentKind, typeof(Comment)),
 
         // Chat — channel and sidebar group edits quote the version the client read (UC-CHT-A02, A03, A08)
         [typeof(UpdateChannelCommand)] = new(ChatChannelKind, typeof(Notrelix.Domain.Chat.Spaces.Space)),

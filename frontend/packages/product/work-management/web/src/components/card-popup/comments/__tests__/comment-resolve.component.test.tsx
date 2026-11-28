@@ -79,7 +79,7 @@ describe("comment thread resolve and reopen (UC-COL-A07, A08)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Resolve" }));
 
-    expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", true);
+    expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", true, 1);
   });
 
   it("lets an editor resolve a thread they did not start", () => {
@@ -90,7 +90,7 @@ describe("comment thread resolve and reopen (UC-COL-A07, A08)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Resolve" }));
 
-    expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", true);
+    expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", true, 1);
   });
 
   it("gives a viewer who did not start the thread no resolve control", () => {
@@ -113,7 +113,7 @@ describe("comment thread resolve and reopen (UC-COL-A07, A08)", () => {
     expect(screen.getByText(/Resolved$/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Reopen" }));
 
-    expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", false);
+    expect(onSetUpdateResolved).toHaveBeenCalledWith("c-1", false, 1);
   });
 
   it("hides a resolved thread until Show resolved is on, and counts it", () => {
