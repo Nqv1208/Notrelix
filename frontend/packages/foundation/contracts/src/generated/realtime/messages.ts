@@ -121,6 +121,10 @@ export interface ChatUnreadChangedPayload {
   "unread": number;
 }
 
+export interface InboxChangedPayload {
+  "workspaceId": string;
+}
+
 export interface RealtimePresenceClientFrame {
   "state": "online" | "idle" | "offline";
   "type": "presence";
@@ -158,6 +162,7 @@ export type GeneratedRealtimeMessage =
   | { eventType: "chat.message.updated"; payload: ChatMessageUpdatedPayload }
   | { eventType: "chat.reaction.changed"; payload: ChatReactionChangedPayload }
   | { eventType: "chat.space.changed"; payload: ChatSpaceChangedPayload }
-  | { eventType: "chat.unread.changed"; payload: ChatUnreadChangedPayload };
+  | { eventType: "chat.unread.changed"; payload: ChatUnreadChangedPayload }
+  | { eventType: "inbox.changed"; payload: InboxChangedPayload };
 
 export type RealtimeEventMessage = GeneratedRealtimeMessage;

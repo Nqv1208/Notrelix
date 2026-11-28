@@ -59,6 +59,7 @@ public static class PersistenceRegistration
 
         // Interceptors (resolved inside AddDbContext below).
         services.AddScoped<AuditableEntityInterceptor>();
+        services.AddScoped<InboxRealtimeInterceptor>();
         services.AddScoped<PageRealtimeInterceptor>();
         services.AddScoped<DomainEventInterceptor>();
 
@@ -74,6 +75,8 @@ public static class PersistenceRegistration
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
+            // Ahead of the domain event interceptor, which writes what they enroll to the outbox in the same save.
+            options.AddInterceptors(sp.GetRequiredService<InboxRealtimeInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<PageRealtimeInterceptor>());
             options.AddInterceptors(sp.GetRequiredService<DomainEventInterceptor>());
             ConfigureNpgsql(options, sp.GetRequiredService<DatabasePrincipal>().ResolveConnectionString());
