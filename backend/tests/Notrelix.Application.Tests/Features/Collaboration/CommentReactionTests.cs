@@ -2,6 +2,7 @@ using Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
 using Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 using Notrelix.Application.Features.Collaboration.Comments.Queries.GetComments;
+using Notrelix.Application.Features.Collaboration.RateLimits;
 using Notrelix.Application.Features.Collaboration.Reactions;
 using Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction;
 using Notrelix.Application.Features.Collaboration.Reactions.Commands.RemoveReaction;
@@ -264,5 +265,52 @@ public class CommentReactionTests
 
         result.Succeeded.Should().BeTrue();
         _comments.Single(c => c.Id == result.Data).ParentId.Should().Be(top.Id);
+    }
+
+    private Mock<ICollaborationRateLimiter> Refusing(CollaborationRateLimitPolicy policy)
+    {
+        var limiter = new Mock<ICollaborationRateLimiter>();
+        limiter.Setup(l => l.RequireAsync(policy, _workspace, _me, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new TooManyRequestsException("Too many requests.", CollaborationRateLimiter.RuleCode, TimeSpan.FromSeconds(30)));
+        return limiter;
+    }
+
+    [Fact]
+    public async Task A_comment_over_the_limit_is_refused_and_nothing_is_stored()
+    {
+        var handler = new CreateCommentCommandHandler(_context.Object, _request.Object, _clock.Object,
+            new Mock<IPageBlockFacts>().Object, new Mock<IWorkItemNotificationFacts>().Object, new Mock<IResourceVisibility>().Object,
+            rateLimits: Refusing(CollaborationRateLimitPolicy.Comment).Object);
+
+        var act = () => handler.Handle(CreateCommentCommand.ForBoardItem(_item, "the 31st", null), CancellationToken.None);
+
+        await act.Should().ThrowAsync<TooManyRequestsException>();
+        _comments.Should().BeEmpty("UC-COL-H05: the 31st comment in a minute gets 429 and stores nothing");
+    }
+
+    [Fact]
+    public async Task A_reaction_over_the_limit_is_refused_and_nothing_is_stored()
+    {
+        var comment = OnItem();
+        var handler = new AddReactionCommandHandler(_context.Object, _request.Object, _clock.Object, _reactionLock.Object,
+            rateLimits: Refusing(CollaborationRateLimitPolicy.React).Object);
+
+        var act = () => handler.Handle(new AddReactionCommand(_item, comment.Id, "👍"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<TooManyRequestsException>();
+        _reactions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Under_the_limit_a_comment_is_counted_once_for_the_person_in_the_workspace()
+    {
+        var limiter = new Mock<ICollaborationRateLimiter>();
+        var handler = new CreateCommentCommandHandler(_context.Object, _request.Object, _clock.Object,
+            new Mock<IPageBlockFacts>().Object, new Mock<IWorkItemNotificationFacts>().Object, new Mock<IResourceVisibility>().Object,
+            rateLimits: limiter.Object);
+
+        (await handler.Handle(CreateCommentCommand.ForBoardItem(_item, "fine", null), CancellationToken.None)).Succeeded.Should().BeTrue();
+
+        limiter.Verify(l => l.RequireAsync(CollaborationRateLimitPolicy.Comment, _workspace, _me, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

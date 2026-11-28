@@ -5,6 +5,7 @@ using Notrelix.Application.Features.Collaboration.Notifications;
 using Notrelix.Application.Features.Documents.Public.PageBlocks;
 using Notrelix.Application.Features.Governance.Public.Visibility;
 using Notrelix.Application.Features.WorkManagement.Public.ItemNotifications;
+using Notrelix.Application.Features.Collaboration.RateLimits;
 
 namespace Notrelix.Application.Features.Collaboration.Comments.Commands.CreateComment;
 
@@ -35,6 +36,7 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
     private readonly IWorkItemNotificationFacts _itemFacts;
     private readonly IResourceVisibility _visibility;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly ICollaborationRateLimiter? _rateLimits;
 
     public CreateCommentCommandHandler(
         ICollaborationDbContext context,
@@ -43,9 +45,11 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         IPageBlockFacts pageBlocks,
         IWorkItemNotificationFacts itemFacts,
         IResourceVisibility visibility,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        ICollaborationRateLimiter? rateLimits = null)
     {
         _realtime = realtime;
+        _rateLimits = rateLimits;
         _itemFacts = itemFacts;
         _visibility = visibility;
         _context = context;
@@ -56,6 +60,9 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
     public async Task<Result<Guid>> Handle(CreateCommentCommand request, CancellationToken ct)
     {
+        // 30 comments a minute for one person in one Workspace (UC-COL-H05); a keyed replay never reaches here.
+        if (_rateLimits is not null)
+            await _rateLimits.RequireAsync(CollaborationRateLimitPolicy.Comment, _requestContext.RequireWorkspaceId(), _requestContext.UserId, ct);
         var response = await HandleCore(request, ct);
         if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
         return response;

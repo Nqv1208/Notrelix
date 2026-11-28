@@ -220,7 +220,13 @@ test("a viewer reads item and page comments and every write is refused with 403"
         ).status,
       ).toBe(403);
       expect(
-        (await apiWrite(viewer, "POST", `/comments/${id}/resolve`)).status,
+        (
+          await apiWrite(
+            viewer,
+            "POST",
+            `/comments/${id}/resolve?expectedVersion=1`,
+          )
+        ).status,
       ).toBe(403);
     }
     expect(

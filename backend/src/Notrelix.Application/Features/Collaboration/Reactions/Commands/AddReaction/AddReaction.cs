@@ -1,5 +1,6 @@
 using global::Notrelix.Application.Common.Models;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.RateLimits;
 
 namespace Notrelix.Application.Features.Collaboration.Reactions.Commands.AddReaction;
 
@@ -27,15 +28,18 @@ public class AddReactionCommandHandler : IRequestHandler<AddReactionCommand, Res
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IReactionWriteLock _reactionLock;
     private readonly IBoardRealtimeNotifier? _realtime;
+    private readonly ICollaborationRateLimiter? _rateLimits;
 
     public AddReactionCommandHandler(
         ICollaborationDbContext context,
         ICurrentRequestContext requestContext,
         IDateTimeProvider dateTimeProvider,
         IReactionWriteLock reactionLock,
-        IBoardRealtimeNotifier? realtime = null)
+        IBoardRealtimeNotifier? realtime = null,
+        ICollaborationRateLimiter? rateLimits = null)
     {
         _realtime = realtime;
+        _rateLimits = rateLimits;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -44,6 +48,9 @@ public class AddReactionCommandHandler : IRequestHandler<AddReactionCommand, Res
 
     public async Task<Result> Handle(AddReactionCommand request, CancellationToken ct)
     {
+        // 60 reactions a minute for one person in one Workspace (UC-COL-H05).
+        if (_rateLimits is not null)
+            await _rateLimits.RequireAsync(CollaborationRateLimitPolicy.React, _requestContext.RequireWorkspaceId(), _requestContext.UserId, ct);
         var response = await HandleCore(request, ct);
         if (_realtime is not null) await _realtime.NotifyAsync(request, response, ct);
         return response;

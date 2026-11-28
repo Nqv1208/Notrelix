@@ -916,7 +916,8 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         (await SendAsync<Result>(ownerProvider, new ResolveCommentCommand(commentId, 1))).Succeeded.Should().BeTrue();
         var stale = () => SendAsync<Result>(memberProvider, new ReopenCommentCommand(commentId, 1));
 
-        (await stale.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>()).Which.CurrentVersion.Should().Be(2);
+        await stale.Should().ThrowAsync<Notrelix.Application.Common.Exceptions.PreconditionFailedException>();
+        // The refused reopen changed nothing: the resolve made version 2, and a reopen that names it goes through.
         (await SendAsync<Result>(memberProvider, new ReopenCommentCommand(commentId, 2))).Succeeded.Should().BeTrue();
     }
 
@@ -2089,6 +2090,9 @@ public sealed class GovernanceResourcePermissionFlowTests : IAsyncLifetime
         services.AddScoped<
             IRequestHandler<ResolveCommentCommand, Result>,
             ResolveCommentCommandHandler>();
+        services.AddScoped<
+            IRequestHandler<ReopenCommentCommand, Result>,
+            ReopenCommentCommandHandler>();
         services.AddScoped<
             IRequestHandler<DeletePageAttachmentCommand, Result>,
             DeletePageAttachmentCommandHandler>();

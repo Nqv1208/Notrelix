@@ -101,8 +101,8 @@ public sealed class CollaborationNonMemberNotFoundTests : IAsyncLifetime
         yield return ("comments page of an item", HttpMethod.Get, i => $"/api/v1/board-items/{i.Item}/comments/page", null);
         yield return ("edit a comment", HttpMethod.Patch, i => $"/api/v1/comments/{i.Comment}", "{\"contentMd\":\"x\",\"expectedVersion\":1}");
         yield return ("delete a comment", HttpMethod.Delete, i => $"/api/v1/comments/{i.Comment}?expectedVersion=1", null);
-        yield return ("resolve a comment", HttpMethod.Post, i => $"/api/v1/comments/{i.Comment}/resolve", null);
-        yield return ("reopen a comment", HttpMethod.Post, i => $"/api/v1/comments/{i.Comment}/reopen", null);
+        yield return ("resolve a comment", HttpMethod.Post, i => $"/api/v1/comments/{i.Comment}/resolve?expectedVersion=1", null);
+        yield return ("reopen a comment", HttpMethod.Post, i => $"/api/v1/comments/{i.Comment}/reopen?expectedVersion=1", null);
         yield return ("react to a comment", HttpMethod.Put, i => $"/api/v1/board-items/{i.Item}/comments/{i.Comment}/reactions/{ThumbsUp}", null);
         yield return ("withdraw a reaction", HttpMethod.Delete, i => $"/api/v1/board-items/{i.Item}/comments/{i.Comment}/reactions/{ThumbsUp}", null);
         yield return ("read who follows an item", HttpMethod.Get, i => $"/api/v1/board-items/{i.Item}/following", null);

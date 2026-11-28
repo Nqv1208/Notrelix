@@ -146,8 +146,18 @@ test("a comment on a board item goes through its whole life and every outsider i
   await other.close();
 
   // Resolve hides the thread in the item until Show resolved is on; Reopen brings it back.
+  // Resolve and reopen name the version the caller read (UC-COL-H02).
+  const beforeResolve = (await list(page, root)).find(
+    (c) => c.id === commentId,
+  )!.version;
   expect(
-    (await apiWrite(page, "POST", `/comments/${commentId}/resolve`)).status,
+    (
+      await apiWrite(
+        page,
+        "POST",
+        `/comments/${commentId}/resolve?expectedVersion=${beforeResolve}`,
+      )
+    ).status,
   ).toBeLessThan(300);
   const url = `/workspaces/${workspace.id}/boards/${board.id}/items/${itemId}`;
   await page.goto(url);
@@ -181,7 +191,7 @@ test("a comment on a board item goes through its whole life and every outsider i
       contentMd: "x",
       expectedVersion: 1,
     }),
-    await probe("POST", `/comments/${commentId}/resolve`),
+    await probe("POST", `/comments/${commentId}/resolve?expectedVersion=1`),
     await probe("DELETE", `/comments/${commentId}?expectedVersion=1`),
   ];
   const absent = [
@@ -189,7 +199,7 @@ test("a comment on a board item goes through its whole life and every outsider i
       contentMd: "x",
       expectedVersion: 1,
     }),
-    await probe("POST", `/comments/${madeUp}/resolve`),
+    await probe("POST", `/comments/${madeUp}/resolve?expectedVersion=1`),
     await probe("DELETE", `/comments/${madeUp}?expectedVersion=1`),
   ];
   expect(hidden).toEqual([404, 404, 404]);
@@ -262,14 +272,28 @@ test("a comment on a page is read by a member and refused to a guest until the p
     parentCommentId: commentId,
   });
   expect(reply.status).toBeLessThan(300);
+  const pageVersion = async () =>
+    (await list(page, root)).find((c) => c.id === commentId)!.version;
   expect(
-    (await apiWrite(page, "POST", `/comments/${commentId}/resolve`)).status,
+    (
+      await apiWrite(
+        page,
+        "POST",
+        `/comments/${commentId}/resolve?expectedVersion=${await pageVersion()}`,
+      )
+    ).status,
   ).toBeLessThan(300);
   expect(
     (await list(page, root)).find((c) => c.id === commentId)!.resolvedAt,
   ).not.toBeNull();
   expect(
-    (await apiWrite(page, "POST", `/comments/${commentId}/reopen`)).status,
+    (
+      await apiWrite(
+        page,
+        "POST",
+        `/comments/${commentId}/reopen?expectedVersion=${await pageVersion()}`,
+      )
+    ).status,
   ).toBeLessThan(300);
 
   // A guest without a grant meets the same NotFound a made-up page gives.

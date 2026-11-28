@@ -5,6 +5,7 @@ using global::Notrelix.Application.Features.Collaboration.Attachments.DTOs;
 using global::Notrelix.Application.Features.Collaboration.Attachments.Services;
 using Microsoft.Extensions.Options;
 using Notrelix.Application.Features.Collaboration.Abstractions;
+using Notrelix.Application.Features.Collaboration.RateLimits;
 
 namespace Notrelix.Application.Features.Collaboration.Attachments.Commands.UploadPageAttachment;
 
@@ -43,6 +44,7 @@ public class UploadPageAttachmentCommandHandler : IRequestHandler<UploadPageAtta
     private readonly IRequestRollbackCompensations _compensations;
     private readonly IAttachmentTargetLock _targetLock;
     private readonly AttachmentUploadOptions _options;
+    private readonly ICollaborationRateLimiter? _rateLimits;
 
     public UploadPageAttachmentCommandHandler(
         ICollaborationDbContext context,
@@ -51,8 +53,10 @@ public class UploadPageAttachmentCommandHandler : IRequestHandler<UploadPageAtta
         IStorageService storage,
         IRequestRollbackCompensations compensations,
         IAttachmentTargetLock targetLock,
-        IOptions<AttachmentUploadOptions> options)
+        IOptions<AttachmentUploadOptions> options,
+        ICollaborationRateLimiter? rateLimits = null)
     {
+        _rateLimits = rateLimits;
         _context = context;
         _requestContext = requestContext;
         _dateTimeProvider = dateTimeProvider;
@@ -62,8 +66,13 @@ public class UploadPageAttachmentCommandHandler : IRequestHandler<UploadPageAtta
         _options = options.Value;
     }
 
-    public Task<Result<AttachmentDto>> Handle(UploadPageAttachmentCommand request, CancellationToken ct) =>
-        AttachmentTargetOperations.UploadFileAsync(
+    public async Task<Result<AttachmentDto>> Handle(UploadPageAttachmentCommand request, CancellationToken ct)
+    {
+        // 20 uploads a minute for one person in one Workspace (UC-COL-H05), counted before the file is stored.
+        if (_rateLimits is not null)
+            await _rateLimits.RequireAsync(CollaborationRateLimitPolicy.Upload, _requestContext.RequireWorkspaceId(), _requestContext.UserId, ct);
+        return await AttachmentTargetOperations.UploadFileAsync(
             _context, _requestContext, _dateTimeProvider, _storage, _compensations, _targetLock, _options,
             AttachmentTargets.Page, request.PageId, request.FileName, request.Content, ct);
+    }
 }

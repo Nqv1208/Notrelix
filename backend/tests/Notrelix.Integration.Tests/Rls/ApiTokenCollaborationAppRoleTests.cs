@@ -283,9 +283,9 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
     private static HttpRequestMessage Remove(Guid commentId, long version) =>
         Send(HttpMethod.Delete, $"/api/v1/comments/{commentId}?expectedVersion={version}");
 
-    private static HttpRequestMessage Resolve(Guid commentId) => Send(HttpMethod.Post, $"/api/v1/comments/{commentId}/resolve");
+    private static HttpRequestMessage Resolve(Guid commentId, long version = 1) => Send(HttpMethod.Post, $"/api/v1/comments/{commentId}/resolve?expectedVersion={version}");
 
-    private static HttpRequestMessage Reopen(Guid commentId) => Send(HttpMethod.Post, $"/api/v1/comments/{commentId}/reopen");
+    private static HttpRequestMessage Reopen(Guid commentId, long version = 1) => Send(HttpMethod.Post, $"/api/v1/comments/{commentId}/reopen?expectedVersion={version}");
 
     /// <summary>Edits, resolves, reopens and deletes one comment through its own id and checks each step landed.</summary>
     private static async Task WriteLifecycleAsync(HttpClient client, string commentsUrl, Guid commentId, string text)
@@ -296,11 +296,11 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
         var afterEdit = await CommentAsync(client, commentsUrl, commentId);
         afterEdit.GetProperty("contentMd").GetString().Should().Be(text);
 
-        var resolved = await client.SendAsync(Resolve(commentId));
+        var resolved = await client.SendAsync(Resolve(commentId, afterEdit.GetProperty("version").GetInt64()));
         resolved.IsSuccessStatusCode.Should().BeTrue(await resolved.Content.ReadAsStringAsync());
         (await CommentAsync(client, commentsUrl, commentId)).GetProperty("resolvedAt").ValueKind.Should().NotBe(JsonValueKind.Null);
 
-        var reopened = await client.SendAsync(Reopen(commentId));
+        var reopened = await client.SendAsync(Reopen(commentId, (await CommentAsync(client, commentsUrl, commentId)).GetProperty("version").GetInt64()));
         reopened.IsSuccessStatusCode.Should().BeTrue(await reopened.Content.ReadAsStringAsync());
         (await CommentAsync(client, commentsUrl, commentId)).GetProperty("resolvedAt").ValueKind.Should().Be(JsonValueKind.Null);
 
@@ -511,7 +511,7 @@ public sealed class ApiTokenCollaborationAppRoleTests : IAsyncLifetime
     {
         using var client = await BearerAsync("work:write", "work:read");
 
-        foreach (var write in new Func<Guid, HttpRequestMessage>[] { id => Edit(id, "x", 1), id => Remove(id, 1), Resolve, Reopen })
+        foreach (var write in new Func<Guid, HttpRequestMessage>[] { id => Edit(id, "x", 1), id => Remove(id, 1), id => Resolve(id), id => Reopen(id) })
         {
             var missing = await client.SendAsync(write(Guid.NewGuid()));
             var other = await client.SendAsync(write(_otherWorkspaceCommentId));
