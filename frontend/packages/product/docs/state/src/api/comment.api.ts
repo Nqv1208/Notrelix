@@ -71,13 +71,20 @@ export function createCommentApi(
     },
 
     /** `Collaboration.Comments.Resolve`. */
-    async resolve(commentId: string): Promise<void> {
-      await api.post<void>(endpoints.comments.resolve(commentId), {});
+    async resolve(commentId: string, expectedVersion: number): Promise<void> {
+      // The version the reader saw; a thread changed since is refused (412, UC-COL-H02).
+      await api.post<void>(
+        `${endpoints.comments.resolve(commentId)}?expectedVersion=${expectedVersion}`,
+        {},
+      );
     },
 
     /** `Collaboration.Comments.Reopen`: makes a resolved thread active again. */
-    async reopen(commentId: string): Promise<void> {
-      await api.post<void>(endpoints.comments.reopen(commentId), {});
+    async reopen(commentId: string, expectedVersion: number): Promise<void> {
+      await api.post<void>(
+        `${endpoints.comments.reopen(commentId)}?expectedVersion=${expectedVersion}`,
+        {},
+      );
     },
 
     /** `Collaboration.Comments.Delete`: the version the reader saw goes in the query. */

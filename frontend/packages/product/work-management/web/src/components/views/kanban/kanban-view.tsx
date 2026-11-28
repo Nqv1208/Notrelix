@@ -2016,10 +2016,10 @@ function KanbanSelectedItemReady({
             updateUpdate.mutate({ updateId, body, expectedVersion }),
           onDeleteUpdate: (updateId, expectedVersion) =>
             deleteUpdate.mutate({ updateId, expectedVersion }),
-          onSetUpdateResolved: (updateId, resolved) =>
+          onSetUpdateResolved: (updateId, resolved, expectedVersion) =>
             // mutateAsync: a per-call onError is dropped when another resolve on the same hook starts first.
             setUpdateResolved
-              .mutateAsync({ updateId, resolved })
+              .mutateAsync({ updateId, resolved, expectedVersion })
               .catch((error) =>
                 toast.error(threadRefusalMessage(error, linksCopy.thread)),
               ),

@@ -68,8 +68,8 @@ public class CommentAuthorizationTests
         {
             "edit" => new UpdateCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new UpdateCommentCommand(commentId, "Changed", 1), default),
             "delete" => new DeleteCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new DeleteCommentCommand(commentId, 1), default),
-            "resolve" => new ResolveCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ResolveCommentCommand(commentId), default),
-            _ => new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ReopenCommentCommand(commentId), default),
+            "resolve" => new ResolveCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ResolveCommentCommand(commentId, 1), default),
+            _ => new ReopenCommentCommandHandler(_context.Object, _user.Object, _clock.Object, _access.Object).Handle(new ReopenCommentCommand(commentId, 1), default),
         };
     }
 

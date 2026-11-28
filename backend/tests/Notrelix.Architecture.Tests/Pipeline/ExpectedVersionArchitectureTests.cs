@@ -33,6 +33,8 @@ public static class ExpectedVersionInventory
             ["DeleteBoardGroupCommand"] = "work-management.board-group",
             ["UpdateCommentCommand"] = "collaboration.comment",
             ["DeleteCommentCommand"] = "collaboration.comment",
+            ["ResolveCommentCommand"] = "collaboration.comment",
+            ["ReopenCommentCommand"] = "collaboration.comment",
             ["UpdateChannelCommand"] = "chat.channel",
             ["ArchiveChannelCommand"] = "chat.channel",
             ["DeleteChannelCommand"] = "chat.channel",

@@ -369,7 +369,11 @@ export interface TaskDetailCallbacks {
   ) => void;
   readonly onDeleteUpdate: (updateId: string, expectedVersion: number) => void;
   /** Resolves (`resolved`) or reopens a top-level thread; absent: threads cannot be resolved here. */
-  readonly onSetUpdateResolved?: (updateId: string, resolved: boolean) => void;
+  readonly onSetUpdateResolved?: (
+    updateId: string,
+    resolved: boolean,
+    expectedVersion: number,
+  ) => void;
   readonly onSelectTab: (tab: CardDetailTab) => void;
   /** Copies the item link; the button is disabled without it. */
   readonly onCopyLink?: (cardId: string) => void;

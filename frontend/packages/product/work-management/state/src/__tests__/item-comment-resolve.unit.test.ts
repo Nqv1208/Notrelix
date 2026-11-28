@@ -29,17 +29,24 @@ describe("item comment resolve and reopen (UC-COL-A07, A08)", () => {
   it("resolves a thread with POST /comments/{id}/resolve", async () => {
     const { api, post } = clientWith();
 
-    await api.setCardUpdateResolved("c-1", true);
+    await api.setCardUpdateResolved("c-1", true, 3);
 
-    expect(post).toHaveBeenCalledWith("/comments/c-1/resolve", {});
+    // The version the list returned goes in the query (UC-COL-H02).
+    expect(post).toHaveBeenCalledWith(
+      "/comments/c-1/resolve?expectedVersion=3",
+      {},
+    );
   });
 
   it("reopens a thread with POST /comments/{id}/reopen", async () => {
     const { api, post } = clientWith();
 
-    await api.setCardUpdateResolved("c-1", false);
+    await api.setCardUpdateResolved("c-1", false, 4);
 
-    expect(post).toHaveBeenCalledWith("/comments/c-1/reopen", {});
+    expect(post).toHaveBeenCalledWith(
+      "/comments/c-1/reopen?expectedVersion=4",
+      {},
+    );
   });
 
   it("maps resolvedAt onto the comment's resolved flag", () => {

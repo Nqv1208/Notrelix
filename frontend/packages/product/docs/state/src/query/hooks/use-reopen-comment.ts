@@ -11,8 +11,10 @@ export function createUseReopenComment(
   return function useReopenComment(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: commentApi.reopen,
-      onSuccess: () => {
+      mutationFn: (input: { commentId: string; expectedVersion: number }) =>
+        commentApi.reopen(input.commentId, input.expectedVersion),
+      // Also after a refusal: a stale thread is read again as the server holds it.
+      onSettled: () => {
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.comments(workspaceId, pageId),
         });

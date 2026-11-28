@@ -11,8 +11,10 @@ export function createUseResolveComment(
   return function useResolveComment(workspaceId: string, pageId: string) {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: commentApi.resolve,
-      onSuccess: () => {
+      mutationFn: (input: { commentId: string; expectedVersion: number }) =>
+        commentApi.resolve(input.commentId, input.expectedVersion),
+      // Also after a refusal: a stale thread is read again as the server holds it.
+      onSettled: () => {
         queryClient.invalidateQueries({
           queryKey: docsQueryKeys.comments(workspaceId, pageId),
         });

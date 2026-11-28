@@ -59,8 +59,8 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | E | COL-005 Collaboration realtime | 5 | 1 | 2 | 0 | 1 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
-| H | COL-008 Collaboration hardening | 8 | 1 | 0 | 1 | 4 | 0 | 2 |
-| | Total | 85 | 15 | 6 | 10 | 42 | 7 | 5 |
+| H | COL-008 Collaboration hardening | 8 | 1 | 0 | 0 | 5 | 0 | 2 |
+| | Total | 85 | 15 | 6 | 9 | 43 | 7 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -211,7 +211,7 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-G15 | Switch workspace or account without leaking collaboration state | G | Any signed-in person | no | yes | no | no | HARDENING | Built: the collaboration comment keys carry the workspace, so a late response for the old one lands under its own key (unit test). The docs and Work Management comment keys already carried it. Owner tests by hand. |
 | UC-COL-G16 | Search comments (enterprise baseline) | G | Anyone, limited to targets they can view | no | no | partial | no | DEFINED | Owned together with Search; not built. |
 | UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | yes | yes | no | no | HARDENING | Create routes take an Idempotency-Key; items and pages send one key per comment the person posts. No e2e run. |
-| UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | partial | partial | no | no | INTEGRATING | Edit and delete carry ExpectedVersion (412 when stale); resolve and reopen take none. |
+| UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | yes | yes | no | no | HARDENING | Edit, delete, resolve and reopen carry ExpectedVersion; a stale one is 412 and the list is read again. No e2e run. |
 | UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | yes | no | no | no | HARDENING | Built: unique indexes exist for reactions and watchers (no migration needed); a watcher lock makes a racing follow a no-op, as the reaction lock does. Remains: owner tests by hand. |
 | UC-COL-H04 | Comment content is safe to render | H | Any reader | yes | partial | no | no | HARDENING | Built: one limit (Comment.MaxContentLength, 10,000) for the Domain and both validators (the validators allowed 50,000); XSS and URL-scheme tests on the renderers. Remains: comments render as plain text, so no link chips; owner tests by hand. |
 | UC-COL-H05 | Rate limits and abuse controls | H | Any caller | no | no | no | no | DEFINED | Policies not attached. |
@@ -1340,8 +1340,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: conflict state with the current text.
 - Rules: Product Comment edit; RULE concurrency (NRX); team COL-008.
 - Acceptance: Given two edits from version 3, then the second gets 412.
-- Evidence: BE `UpdateCommentCommand` and `DeleteCommentCommand` are `IExpectedVersionRequest`; `CommentDto.Version` is read by the clients · FE docs and items send the version they read on edit and delete · Design none · Tests `CommentExpectedVersionTests`, `ExpectedVersionArchitectureTests` · Real e2e none
-- State: INTEGRATING — Edit and delete refuse a stale version with 412. Missing: resolve and reopen take no version, and no UI conflict state is proven.
+- Evidence: BE `UpdateCommentCommand`, `DeleteCommentCommand`, `ResolveCommentCommand` and `ReopenCommentCommand` are `IExpectedVersionRequest` (resolve and reopen take `expectedVersion` in the query since 2026-11-28; `ExpectedVersionTargetMap` binds all four to `collaboration.comment`); `CommentDto.Version` is read by the clients · FE docs (`comment.api.ts`, `use-resolve-comment`, `use-reopen-comment`, read again on settle) and items (`setCardUpdateResolved`, `comments-column.tsx` passes `update.version`) send the version they read · Design none · Tests `CommentExpectedVersionTests`, `ExpectedVersionArchitectureTests`, `GovernanceResourcePermissionFlowTests.ResolveThenReopen_FromTheSameVersion_TheSecondIsRefusedAsStale_AndTheThreadStaysResolved` (PostgreSQL), `page-comment-resolve.unit.test.ts`, `item-comment-resolve.unit.test.ts`, `comment-resolve.component.test.tsx` · Real e2e none
+- State: HARDENING — All four writes refuse a stale version with 412; no e2e run. Owner check: resolve a thread in one tab, reopen it from a second tab that has not refreshed, and see the refusal and the current state.
 
 ### UC-COL-H03 Concurrent reactions and follows do not duplicate
 - Capability: H, COL-008 Collaboration hardening

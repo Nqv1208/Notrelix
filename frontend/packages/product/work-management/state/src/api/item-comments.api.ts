@@ -112,13 +112,13 @@ export function createCommentApi(client: NotrelixClient) {
     async setCardUpdateResolved(
       updateId: string,
       resolved: boolean,
+      expectedVersion: number,
     ): Promise<void> {
-      await api.post<void>(
-        resolved
-          ? endpoints.comments.resolve(updateId)
-          : endpoints.comments.reopen(updateId),
-        {},
-      );
+      // The version the list returned; a thread changed since is refused (412, UC-COL-H02).
+      const path = resolved
+        ? endpoints.comments.resolve(updateId)
+        : endpoints.comments.reopen(updateId);
+      await api.post<void>(`${path}?expectedVersion=${expectedVersion}`, {});
     },
   };
 }
