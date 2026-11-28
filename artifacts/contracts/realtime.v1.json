@@ -40,7 +40,8 @@
       "subscribe": {
         "message": {
           "oneOf": [
-            { "$ref": "#/components/messages/ChatUnreadChanged" }
+            { "$ref": "#/components/messages/ChatUnreadChanged" },
+            { "$ref": "#/components/messages/InboxChanged" }
           ]
         }
       }
@@ -224,6 +225,19 @@
             "detailsOmitted": { "type": "boolean" }
           },
           "required": ["messageId", "change", "attachmentId", "detailsOmitted"]
+        }
+      },
+      "InboxChanged": {
+        "name": "inbox.changed",
+        "title": "This person's Inbox changed in one Workspace",
+        "description": "Sent on the person's own stream when one of their Inbox entries is created or changes (UC-COL-E02). Notify-only in meaning: the client reads the badge and the Inbox list again over REST.",
+        "x-payloadContract": "inbox.changed.v1",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "workspaceId": { "type": "string", "format": "uuid", "description": "The Workspace whose Inbox changed." }
+          },
+          "required": ["workspaceId"]
         }
       },
       "ChatUnreadChanged": {

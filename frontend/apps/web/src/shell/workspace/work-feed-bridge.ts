@@ -463,6 +463,9 @@ export const homeFeedQueryKey = (workspaceId: string) =>
   workspaceQueryKey(workspaceId, "workspace-feed", "home");
 export const inboxQueryKey = (workspaceId: string) =>
   workspaceQueryKey(workspaceId, "workspace-feed", "inbox");
+/** Unread Inbox entries of the signed-in person per workspace and in total. */
+export const inboxSummaryQueryKey = (accountId: string) =>
+  accountQueryKey(accountId, "workspace-feed", "inbox-summary");
 
 /** Which list of the inbox the page shows: the default one or the done entries. */
 export type InboxListView = "inbox" | "done" | "snoozed";
@@ -506,7 +509,7 @@ export function useInboxSummary() {
   const { api: client } = useAppRuntime();
   const accountId = useAccountId();
   return useQuery({
-    queryKey: accountQueryKey(accountId, "workspace-feed", "inbox-summary"),
+    queryKey: inboxSummaryQueryKey(accountId),
     enabled: Boolean(accountId),
     staleTime: 15_000,
     queryFn: async () =>
