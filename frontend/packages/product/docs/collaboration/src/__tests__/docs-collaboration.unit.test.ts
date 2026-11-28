@@ -17,6 +17,7 @@ function makeMockRealtime() {
       return unsubscribeMock;
     }),
     subscribeEphemeral: vi.fn(),
+    subscribePagePresence: vi.fn(),
     sendTyping: vi.fn(),
     sendPresence: vi.fn(),
     subscribeState: vi.fn(),
@@ -41,7 +42,7 @@ describe("createDocsCollaborationAdapter", () => {
     });
 
     expect(mockRealtime.subscribe).toHaveBeenCalledWith(
-      { workspaceId: "ws-1" },
+      { workspaceId: "ws-1", pageId: "doc-1" },
       expect.any(Function),
     );
 
@@ -49,7 +50,7 @@ describe("createDocsCollaborationAdapter", () => {
     getHandler()?.(forDocument);
     expect(onEvent).toHaveBeenCalledWith(forDocument);
 
-    // Frames about other resources of the Workspace stream are not delivered.
+    // A frame about another resource is never delivered to this page.
     getHandler()?.({ eventId: "evt-2", resourceId: "doc-other" });
     expect(onEvent).toHaveBeenCalledTimes(1);
 
@@ -94,6 +95,7 @@ describe("createDocsCollaborationAdapter", () => {
       disconnect: vi.fn(),
       subscribe: vi.fn(() => (callCount++ === 0 ? unsubscribe1 : unsubscribe2)),
       subscribeEphemeral: vi.fn(),
+      subscribePagePresence: vi.fn(),
       sendTyping: vi.fn(),
       sendPresence: vi.fn(),
       subscribeState: vi.fn(),

@@ -20,6 +20,7 @@ internal static class RealtimeFrameMapping
         "board" => new RealtimeScope(RealtimeScopeKind.Board, change.ResourceId),
         "chat" => new RealtimeScope(RealtimeScopeKind.Channel, change.ResourceId),
         "user" => new RealtimeScope(RealtimeScopeKind.User, change.ResourceId),
+        "page" => new RealtimeScope(RealtimeScopeKind.Page, change.ResourceId),
         _ => null,
     };
 

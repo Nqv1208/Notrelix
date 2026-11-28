@@ -2,6 +2,7 @@ using System.Text.Json;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Features.Chat.Realtime;
+using Notrelix.Application.Features.Documents.Realtime;
 using Notrelix.Infrastructure.Realtime;
 
 namespace Notrelix.Infrastructure.Tests.Realtime;
@@ -69,6 +70,11 @@ public class ChatRealtimeTransportTests
             JsonSerializer.SerializeToElement(new { }));
         RealtimeFrameMapping.PayloadOf(board).Should().BeNull("existing frames never carry resource data");
         RealtimeFrameMapping.EventTypeOf(board).Should().Be("board.board");
+
+        var page = PageRealtime.Changed(Guid.NewGuid(), WorkspaceId, SpaceId, UserId, null, null, Now);
+        RealtimeFrameMapping.ScopeOf(page).Should().Be(new RealtimeScope(RealtimeScopeKind.Page, SpaceId));
+        RealtimeFrameMapping.PayloadOf(page).Should().BeNull("a page frame is notify-only");
+        RealtimeFrameMapping.EventTypeOf(page).Should().Be("page.page");
     }
 
     [Fact]

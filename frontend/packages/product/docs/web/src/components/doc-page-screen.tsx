@@ -1,4 +1,5 @@
 import { useDocLive } from "./use-doc-live";
+import { useDocPresence } from "./use-doc-presence";
 import { useOnline } from "./use-online";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -401,11 +402,21 @@ export function createDocPageScreen({
       convertBoardId: overlay.kind === "convertTask" ? overlay.boardId : null,
     });
     const refreshBlocks = useRefreshPageBlocks(workspaceId, pageId);
+    // A reread refused with 404 or 403 after the page was shown: the person lost
+    // the page while it was open (UC-DCT-I07, UC-COL-E05). Live updates stop.
+    const pageGone =
+      (pageQuery.isError && isGone(pageQuery.error)) ||
+      (blocksQuery.isError && isGone(blocksQuery.error));
     useDocLive({
-      realtime: host.realtime,
+      realtime: pageGone ? undefined : host.realtime,
       workspaceId,
       pageId,
       refresh: refreshBlocks,
+    });
+    const livePresence = useDocPresence({
+      realtime: pageGone ? undefined : host.realtime,
+      workspaceId,
+      pageId,
     });
     const [panelOpen, setPanelOpen] = useDocPanelOpen(host.viewerId ?? null);
     const viewPrefs = useDocViewPrefs(host.viewerId ?? null);
@@ -1048,7 +1059,13 @@ export function createDocPageScreen({
         />
       );
     }
-    if (!page || (blocksQuery.isError && !blocksQuery.data)) {
+    // Lost while open: the stored copy on screen is no longer the person's to
+    // read. Unsent text keeps the page up, read-only, until it is copied.
+    if (
+      !page ||
+      (blocksQuery.isError && !blocksQuery.data) ||
+      (pageGone && !accessLost && !unsavedRef.current)
+    ) {
       return (
         <DocPageScreenSurface
           status="notFound"
@@ -1084,7 +1101,7 @@ export function createDocPageScreen({
         : latest
           ? latest.time
           : null,
-      presence: page.metadata.activeUserIds
+      presence: [...new Set([...livePresence, ...page.metadata.activeUserIds])]
         .filter((id) => id !== host.viewerId)
         .map(host.personFor),
     };

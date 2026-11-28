@@ -3,6 +3,12 @@ import type { RealtimeTransport } from "@notrelix/realtime";
 /** The realtime transport a host hands to the document page. */
 export type DocsRealtime = RealtimeTransport;
 
+export {
+  REALTIME_PRESENCE_HEARTBEAT_MS as DOC_PRESENCE_HEARTBEAT_MS,
+  type RealtimePagePresenceEvent as DocPresenceEvent,
+  type RealtimePresenceState as DocPresenceState,
+} from "@notrelix/realtime";
+
 export interface DocsCollaborationSubscription {
   dispose(): void;
 }
@@ -37,13 +43,16 @@ export function createDocsCollaborationAdapter(
         activeSubscriptions.delete(key);
       }
 
-      // The gateway has no document scope: listen on the Workspace stream and
-      // keep only frames about this document. Frames carry no payload, so the
-      // consumer receives the envelope as a change notification.
-      const unsubscribe = realtime.subscribe({ workspaceId }, (envelope) => {
-        if (envelope.resourceId !== documentId) return;
-        onEvent(envelope);
-      });
+      // The page's own stream (`page:<id>`), authorized by ViewPage on the
+      // gateway. Frames carry no payload, so the consumer receives the
+      // envelope as a change notification and refetches over REST.
+      const unsubscribe = realtime.subscribe(
+        { workspaceId, pageId: documentId },
+        (envelope) => {
+          if (envelope.resourceId !== documentId) return;
+          onEvent(envelope);
+        },
+      );
 
       const subscription: DocsCollaborationSubscription = {
         dispose() {

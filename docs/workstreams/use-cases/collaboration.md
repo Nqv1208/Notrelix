@@ -56,25 +56,25 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | B | COL-002 Comment target contract | 18 | 2 | 0 | 2 | 14 | 0 | 0 |
 | C | COL-003 Comment authorization | 6 | 0 | 0 | 2 | 1 | 2 | 1 |
 | D | COL-004 Comment activity/events | 14 | 5 | 1 | 2 | 6 | 0 | 0 |
-| E | COL-005 Collaboration realtime | 5 | 1 | 2 | 0 | 1 | 0 | 1 |
+| E | COL-005 Collaboration realtime | 5 | 0 | 0 | 1 | 3 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
 | H | COL-008 Collaboration hardening | 8 | 1 | 0 | 0 | 5 | 0 | 2 |
-| | Total | 85 | 15 | 6 | 9 | 43 | 7 | 5 |
+| | Total | 85 | 14 | 4 | 10 | 45 | 7 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
 ### 1.2 The ten most important gaps
 
 1. Fixed: edit, delete, resolve and reopen of a comment, and delete of an attachment, were authorized as `UpdateItem` on the kinds `collaboration.comment` and `collaboration.attachment`, which Governance does not resolve, so only the workspace Owner passed. They now pass a membership gate and the handler decides from the target: author for edit and delete, thread starter or editor for resolve and reopen, editor of the target for attachment delete. Still open: expected version, moderator delete (UC-COL-C02), a real e2e.
-2. Partly fixed: an Inbox change is announced on its recipient's own stream and the badge and list refetch (UC-COL-E02); item comments and reactions reach an open card through the Board stream (UC-COL-E01, items). Page comments and presence still need a manual refetch (UC-COL-E01 pages, E03).
+2. Mostly fixed: an Inbox change is announced on its recipient's own stream (UC-COL-E02); item comments reach an open card through the Board stream and page comments an open page through the page stream (UC-COL-E01); who has a page open is shown live (UC-COL-E03, pages). Presence on an open item is still missing (UC-COL-E03, items).
 3. Competing writes: comment create has no idempotency key, and resolve and reopen have no expected version (UC-COL-H01, H02). Edit and delete now carry an expected version (UC-COL-A05, A06). Reactions and watchers have unique indexes (UC-COL-H03).
 4. Pages are second-class: no page reactions, no page followers, no page notifications, no page activity (UC-COL-A11, B17, D09, D12).
 5. Target deletion has no Collaboration rule: no purge, no restore link, no test (UC-COL-F01, F02, F05).
 6. Fixed: page comments have cursor paging and are authorized under ViewPage (UC-COL-G01); the unpaged GET routes remain.
 7. Mention privacy is incomplete: page-comment mentions skip the view check, and no mention re-checks access at delivery (UC-COL-B02, D04).
 8. Email, digest, quiet hours do not exist; the preference matrix is read by only one producer (UC-COL-D13, D14, G12, G13).
-9. Presence, read state and unread markers are Domain-only classes with no use case (UC-COL-E03, G14).
+9. Read state and unread markers are Domain-only classes with no use case (UC-COL-G14). Presence is the gateway's, in memory, on the page stream (UC-COL-E03); the Domain PresenceSession class stays unused.
 10. Identity anonymization, Workspace deletion and moderator delete wait for owner or sibling-context decisions (UC-COL-F04, F05, C02).
 
 ### 1.3 Defects in shipped code
@@ -121,7 +121,7 @@ Products compared and what they show:
 | Notify on reply to my comment | Missing | UC-COL-D11 |
 | Follow a page | Missing | UC-COL-B17 |
 | Email and digest for notifications | Missing | UC-COL-D13, D14 |
-| Live comment updates and presence | Missing | UC-COL-E01, E03 |
+| Live comment updates and presence | Partial: comments live on items and pages, presence on pages only | UC-COL-E01, E03 |
 | Per-type, per-channel preferences | Built (one producer reads it) | UC-COL-G11, G12 |
 | Search comments | Missing | UC-COL-G16 |
 
@@ -182,11 +182,11 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-D12 | A page comment notifies page followers (enterprise baseline) | D | System | no | partial | partial | no | DEFINED | Needs page watchers. |
 | UC-COL-D13 | Email a notification (enterprise baseline) | D | System | no | partial | yes | no | DEFINED | Needs a Platform or Integrations provider decision; Lead decision L14 keeps it out of the current cut. |
 | UC-COL-D14 | Daily digest (enterprise baseline) | D | System | no | partial | yes | no | DEFINED | Depends on UC-COL-D13. |
-| UC-COL-E01 | See new comments live on an open item or page | E | Anyone with view access to the open target | partial | partial | partial | no | IMPLEMENTING | Items: comment and reaction writes notify the Board stream and the open card refetches; pages have no stream yet. |
+| UC-COL-E01 | See new comments live on an open item or page | E | Anyone with view access to the open target | yes | yes | partial | no | HARDENING | Items through the Board stream, pages through the page stream (`page:<id>`, ViewPage); no e2e run.  |
 | UC-COL-E02 | Inbox unread count updates live | E | The recipient | yes | yes | yes | no | HARDENING | inbox.changed on the per-user stream; badge and list refetch. No real e2e. |
-| UC-COL-E03 | See who else is viewing a page or item (presence) | E | Anyone with view access | partial | partial | no | no | IMPLEMENTING | Decide storage (Lead decision L16: gateway memory or Redis, not the PresenceSession table); build the topic, authorization and client. |
+| UC-COL-E03 | See who else is viewing a page or item (presence) | E | Anyone with view access | partial | partial | no | no | INTEGRATING | Pages: presence on the page stream, in gateway memory (L16); items: not built. No e2e run.  |
 | UC-COL-E04 | Typing and cursor indicators | E | Editors of a page | no | no | no | no | BLOCKED | Waits for the live co-editing ADR that decision 3 leaves open (Documents owns it). |
-| UC-COL-E05 | Recover after reconnect, gap or revoked access | E | Any connected client | partial | partial | yes | no | DEFINED | Gateway exists for board streams; no Collaboration stream to recover. |
+| UC-COL-E05 | Recover after reconnect, gap or revoked access | E | Any connected client | yes | yes | yes | no | HARDENING | Board and page streams refetch on ack, gap, reset, reconnect and revocation; a lost page shows no access. No e2e run.  |
 | UC-COL-F01 | Item deleted or archived: comments follow the item | F | System | partial | no | partial | no | IMPLEMENTING | Owner question: no purge event exists (the delete event fires at trash time, when comments must stay); which event should the purge consumer use? Not built. |
 | UC-COL-F02 | Page removed or block deleted: comments stay as history | F | System | partial | yes | yes | no | IMPLEMENTING | Owner question: no page purge event and no block-deleted event exist (page.archived fires at archive time); which Documents event should the lifecycle consumer use? Not built. |
 | UC-COL-F03 | Purge attachment objects after retention | F | System (background job) | yes | no | no | no | INTEGRATING | Owner question: retention default is 30 days in code (AttachmentRetentionOptions) and product section 90 gives no number; operator doc not checked. |
@@ -929,7 +929,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - Rules: Product COL-024, Realtime (sections 76 to 79); decision 59 (no push in the first cut); spec DCREQ059 to DCREQ065, DCREQ061.
 - Acceptance: Given two members on one item, when one comments, then the other sees it within seconds without reload.
 - Evidence: BE items: CreateComment, UpdateComment, DeleteComment, ResolveComment, ReopenComment, AddReaction, RemoveReaction and the attachment commands call IBoardRealtimeNotifier, so an item comment notifies its Board stream (a page comment notifies nothing) · FE work-management-realtime-adapter.ts invalidates the "cards" query family on a board frame, which holds cardComments; every item route sits under /boards/$boardId, so the open card is subscribed · Design BC-Realtime-1440 (board realtime only) · Tests none specific to comments · Real e2e none
-- State: IMPLEMENTING — Items converge through the Board stream; pages need a page stream (scope kind, authorization by Documents) and a client adapter.
+- Evidence (pages, 2026-11-27): BE `PageRealtimeInterceptor` enrolls one `page.changed` fact per page when a save writes the page, one of its blocks or a comment whose target is `documents.page`; the gateway grants `page:<id>` only with ViewPage (`AuthorizePageRealtimeSubscriptionQuery`) · FE `watchDocumentChanges` subscribes `{ workspaceId, pageId }`; `useRefreshPageBlocks` rereads blocks, detail and comments · Tests `PageRealtimeInterceptorTests`, `MediatorRealtimeSubscriptionAuthorizerTests`, `NonMemberDisclosureTests` (page scope), `realtime-gateway.unit.test.ts`, `docs-collaboration.unit.test.ts`
+- State: HARDENING — Items converge through the Board stream, pages through the page stream; built and unit-proved, no e2e run. Owner check pending: two browsers on one item and on one page.
 
 ### UC-COL-E02 Inbox unread count updates live
 - Capability: E, COL-005 Collaboration realtime
@@ -956,8 +957,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: avatar stack, away, offline, reconnect.
 - Rules: Product COL-012, COL-013, Presence scope, status and cleanup; spec DCREQ167 to DCREQ170; decision 19 (auto-snapshot waits for this signal).
 - Acceptance: Given two members on a page, then each sees the other; given one closes the tab, then the avatar is gone within 45 seconds; presence never grants access.
-- Evidence: BE Domain only: PresenceSession and PresenceUpdatedDomainEvent, table configured; no use case, endpoint or gateway topic · FE foundation realtime has a board.presence event type only; docs and item panels use a local placeholder · Design none for the stack; docs toolbar shows collaborators · Tests backend/tests/Notrelix.Domain.Tests/Collaboration/Presence/PresenceExperimentalTests.cs, PresenceIsolationTests.cs · Real e2e none
-- State: IMPLEMENTING — Decide storage (Lead decision L16: gateway memory or Redis, not the PresenceSession table); build the topic, authorization and client.
+- Evidence: BE `RealtimeConnection` carries presence (not typing) on page subscriptions over the ephemeral bus, in gateway memory (L16: no table); a page subscription is authorized by ViewPage; leaving the page announces offline to its other readers at once, a silent person expires after the TTL; the Domain PresenceSession class is not used · FE `RealtimeTransport.subscribePagePresence`; `useDocPresence` reports online, idle after a minute or a hidden tab, a heartbeat every 30 s, and lists the others; the docs toolbar shows them · Design docs toolbar collaborators · Tests `RealtimeTypingPresenceTests` (page presence reaches page readers, closing announces offline, no typing on a page, never reaches a chat channel), `realtime-ephemeral.unit.test.ts` (page presence routing, stop on leave), `use-doc-presence.component.test.tsx` · Real e2e none
+- State: INTEGRATING — Pages built and unit-proved on 2026-11-27. Items: no presence yet (an item has no stream of its own; the Board stream would show the board, not the item).
 
 ### UC-COL-E04 Typing and cursor indicators
 - Capability: E, COL-005 Collaboration realtime
@@ -984,8 +985,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: offline banner, reconnecting, permission denied.
 - Rules: Product COL-024, sections 78 and 79; spec DCREQ063 to DCREQ065, DCREQ190.
 - Acceptance: Given a dropped connection, then after reconnect the comment list equals the server list.
-- Evidence: BE backend/src/Notrelix.API/Realtime/ (gateway, RealtimeAuthorization.cs) · FE frontend/packages/foundation/realtime · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests backend/tests/Notrelix.API.Tests (gateway tests, not specific to Collaboration) · Real e2e none
-- State: DEFINED — Gateway exists for board streams; no Collaboration stream to recover.
+- Evidence: BE gateway versions each stream and re-authorizes subscriptions (periodic and on access signals), revoking with `subscription_revoked` · FE the client emits recovery on ack, gap, duplicate, reset and permission loss; board and workspace scopes revalidate `["workspace", id]` (item comments included); an open page rereads its blocks, detail and comments (`watchDocumentChanges`) and its recovery never revalidates the whole workspace; a page whose reread is 404 or 403 shows the no-access state and stops its live and presence subscriptions · Design BC-Realtime-1440, BC-Realtime-768-320 · Tests `realtime-lifecycle.component.test.tsx` (gap, revocation, page recovery stays on the page), `doc-page-lost-while-open.component.test.tsx`, gateway tests in `Notrelix.API.Tests` · Real e2e none
+- State: HARDENING — Built and unit-proved on 2026-11-27; no e2e run. Owner check pending: drop the network on an open card and an open page, come back, and see the stored comments.
 
 ### Capability F: COL-006 Target deletion/retention
 

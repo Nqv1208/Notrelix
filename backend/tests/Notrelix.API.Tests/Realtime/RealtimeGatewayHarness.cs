@@ -136,7 +136,16 @@ internal sealed class RealtimeGatewayHarness : IAsyncDisposable
     public async Task<JsonElement> SubscribeAsync(string subscriptionId, string kind, Guid id)
     {
         await SendAsync(new { type = "subscribe", subscriptionId, scope = new { kind, id } });
-        return await ReceiveAsync();
+        // The server's keepalive pings (every 200 ms here) can come before the answer on a slow runner; they are
+        // not the answer, so they are skipped. Every other frame is returned for the caller to assert on.
+        while (true)
+        {
+            var frame = await ReceiveAsync();
+            if (frame.GetProperty("type").GetString() != "ping")
+            {
+                return frame;
+            }
+        }
     }
 
     public static RealtimeNotification Notification(

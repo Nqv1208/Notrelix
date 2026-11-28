@@ -13,6 +13,7 @@ import {
   REALTIME_TYPING_MIN_INTERVAL_MS,
   type RealtimeEphemeralEvent,
   type RealtimeEphemeralListener,
+  type RealtimePagePresenceListener,
   type RealtimePresenceState,
 } from "@notrelix/realtime";
 import type {
@@ -230,6 +231,14 @@ export class MockRealtimeTransport implements RealtimeTransport {
     return () => {
       this.subscriptions.delete(id);
     };
+  }
+
+  /** The mock has no other readers of a page: nobody else is ever present. */
+  subscribePagePresence(
+    _filter: { readonly workspaceId: string; readonly pageId: string },
+    _listener: RealtimePagePresenceListener,
+  ): () => void {
+    return () => {};
   }
 
   subscribeEphemeral(

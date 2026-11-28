@@ -120,6 +120,18 @@ export type RealtimeRecoveryListener = (signal: RealtimeRecoverySignal) => void;
 /** Receives the typing and presence signals of one Chat channel (never events). */
 export type RealtimeEphemeralListener = (event: RealtimeEphemeralEvent) => void;
 
+/** Another person's presence on one open Documents page (UC-COL-E03). Nothing is stored or replayed. */
+export interface RealtimePagePresenceEvent {
+  readonly pageId: string;
+  readonly userId: string;
+  readonly state: RealtimePresenceState;
+  readonly ttlMs: number;
+}
+
+export type RealtimePagePresenceListener = (
+  event: RealtimePagePresenceEvent,
+) => void;
+
 export interface RealtimeTelemetry {
   track(event: string, properties?: Record<string, unknown>): void;
   reportError(error: unknown, context?: Record<string, unknown>): void;
@@ -168,6 +180,15 @@ export interface RealtimeClientOptions {
 export interface RealtimeTransport {
   connect(context: RealtimeConnectContext): Promise<void>;
   disconnect(reason?: string): void;
+  /**
+   * Presence of the other people who have one Documents page open: holds the
+   * page subscription like `subscribe` does. The caller reports its own state
+   * with `sendPresence`; closing the page tells the others at once.
+   */
+  subscribePagePresence(
+    filter: { readonly workspaceId: string; readonly pageId: string },
+    listener: RealtimePagePresenceListener,
+  ): () => void;
   subscribe(
     filter: RealtimeSubscriptionFilter,
     listener: RealtimeEventListener,
@@ -318,6 +339,7 @@ export function deriveSubscriptionScope(
 ): RealtimeSubscriptionScope {
   if (filter.boardId) return { kind: "board", id: filter.boardId };
   if (filter.channelId) return { kind: "channel", id: filter.channelId };
+  if (filter.pageId) return { kind: "page", id: filter.pageId };
   if (filter.userId) return { kind: "user", id: filter.userId };
   return { kind: "workspace", id: filter.workspaceId };
 }
@@ -369,6 +391,12 @@ export class RealtimeClient implements RealtimeTransport {
     readonly workspaceId: string;
     readonly channelId: string;
     readonly listener: RealtimeEphemeralListener;
+  }>();
+  private readonly pagePresenceListeners = new Set<{
+    readonly wireId: string;
+    readonly workspaceId: string;
+    readonly pageId: string;
+    readonly listener: RealtimePagePresenceListener;
   }>();
   private readonly wireSubscriptions = new Map<string, WireSubscription>();
   private readonly checkpoints = new StreamCheckpointTracker();
@@ -614,7 +642,13 @@ export class RealtimeClient implements RealtimeTransport {
   /** Typing and presence: delivered to the listeners of an active channel subscription, no dedupe or checkpoint. */
   private handleEphemeralFrame(frame: RealtimeEphemeralFrame): void {
     const wire = this.wireSubscriptions.get(frame.subscriptionId);
-    if (!wire || wire.status !== "active" || wire.scope.kind !== "channel") {
+    if (!wire || wire.status !== "active") return;
+    if (wire.scope.kind === "page") {
+      // A page carries presence only (who else has it open); typing never.
+      if (frame.type === "presence") this.dispatchPagePresence(wire, frame);
+      return;
+    }
+    if (wire.scope.kind !== "channel") {
       return;
     }
     const event: RealtimeEphemeralEvent =
@@ -640,6 +674,28 @@ export class RealtimeClient implements RealtimeTransport {
         entry.listener(event);
       } catch (err) {
         this.telemetry?.reportError(err, { context: "ephemeralListener" });
+      }
+    });
+  }
+
+  private dispatchPagePresence(
+    wire: WireSubscription,
+    frame: Extract<RealtimeEphemeralFrame, { type: "presence" }>,
+  ): void {
+    const event: RealtimePagePresenceEvent = {
+      pageId: wire.scope.id,
+      userId: frame.userId,
+      state: frame.state,
+      ttlMs: frame.ttlMs,
+    };
+    this.pagePresenceListeners.forEach((entry) => {
+      if (entry.wireId !== wire.id || entry.workspaceId !== wire.workspaceId) {
+        return;
+      }
+      try {
+        entry.listener(event);
+      } catch (err) {
+        this.telemetry?.reportError(err, { context: "pagePresenceListener" });
       }
     });
   }
@@ -1093,6 +1149,31 @@ export class RealtimeClient implements RealtimeTransport {
       if (released) return;
       released = true;
       this.ephemeralListeners.delete(entry);
+      release();
+    };
+  }
+
+  public subscribePagePresence(
+    filter: { readonly workspaceId: string; readonly pageId: string },
+    listener: RealtimePagePresenceListener,
+  ): () => void {
+    // The page subscription is shared with the change listeners of the same page.
+    const release = this.subscribe(
+      { workspaceId: filter.workspaceId, pageId: filter.pageId },
+      () => {},
+    );
+    const entry = {
+      wireId: `page:${filter.pageId}`,
+      workspaceId: filter.workspaceId,
+      pageId: filter.pageId,
+      listener,
+    };
+    this.pagePresenceListeners.add(entry);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.pagePresenceListeners.delete(entry);
       release();
     };
   }
