@@ -59,8 +59,8 @@ Dates: this catalog was written on 2026-10-30. No use case has a recorded owner 
 | E | COL-005 Collaboration realtime | 5 | 1 | 2 | 0 | 1 | 0 | 1 |
 | F | COL-006 Target deletion/retention | 7 | 3 | 2 | 1 | 0 | 0 | 1 |
 | G | COL-007 Collaboration query/state | 16 | 2 | 1 | 2 | 11 | 0 | 0 |
-| H | COL-008 Collaboration hardening | 8 | 3 | 0 | 0 | 3 | 0 | 2 |
-| | Total | 85 | 17 | 6 | 9 | 41 | 7 | 5 |
+| H | COL-008 Collaboration hardening | 8 | 1 | 0 | 1 | 4 | 0 | 2 |
+| | Total | 85 | 15 | 6 | 10 | 42 | 7 | 5 |
 
 Collaboration has no dedicated capability for inbox, preferences, attachments, watchers or presence in the team spec. They sit in the nearest capability: attachments and watchers under B (target contract), notifications production under D, presence under E, Inbox, preferences and read state under G.
 
@@ -210,8 +210,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 | UC-COL-G14 | Unread comment markers (read state) | G | Any viewer | partial | no | no | no | IMPLEMENTING | No Application or API; decide before building (Lead decision L17). |
 | UC-COL-G15 | Switch workspace or account without leaking collaboration state | G | Any signed-in person | no | yes | no | no | HARDENING | Built: the collaboration comment keys carry the workspace, so a late response for the old one lands under its own key (unit test). The docs and Work Management comment keys already carried it. Owner tests by hand. |
 | UC-COL-G16 | Search comments (enterprise baseline) | G | Anyone, limited to targets they can view | no | no | partial | no | DEFINED | Owned together with Search; not built. |
-| UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | no | no | no | no | DEFINED | Backend and client both missing. |
-| UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | no | no | no | no | DEFINED | Add version to the DTO, commands and UI conflict state. |
+| UC-COL-H01 | Duplicate comment submit has one effect | H | Any commenter | yes | yes | no | no | HARDENING | Create routes take an Idempotency-Key; items and pages send one key per comment the person posts. No e2e run. |
+| UC-COL-H02 | Competing edits carry an expected version | H | Author, resolver | partial | partial | no | no | INTEGRATING | Edit and delete carry ExpectedVersion (412 when stale); resolve and reopen take none. |
 | UC-COL-H03 | Concurrent reactions and follows do not duplicate | H | Any person | yes | no | no | no | HARDENING | Built: unique indexes exist for reactions and watchers (no migration needed); a watcher lock makes a racing follow a no-op, as the reaction lock does. Remains: owner tests by hand. |
 | UC-COL-H04 | Comment content is safe to render | H | Any reader | yes | partial | no | no | HARDENING | Built: one limit (Comment.MaxContentLength, 10,000) for the Domain and both validators (the validators allowed 50,000); XSS and URL-scheme tests on the renderers. Remains: comments render as plain text, so no link chips; owner tests by hand. |
 | UC-COL-H05 | Rate limits and abuse controls | H | Any caller | no | no | no | no | DEFINED | Policies not attached. |
@@ -1326,8 +1326,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: pending state disables Send; offline retry is safe.
 - Rules: Product COL-008, COL-025; team COL-008; spec DCREQ159, DCREQ219.
 - Acceptance: Given a double click, then one comment exists.
-- Evidence: BE none: CreateCommentEndpoint has no WithIdempotencyKey; the command is not IIdempotentRequest · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Backend and client both missing.
+- Evidence: BE `CreateCommentEndpoint` maps both create routes `.WithIdempotencyKey()` and `CreateCommentCommand` is `IIdempotentRequest`, so a key replays the first result · FE items: `update-composer.tsx` keeps one key per draft for two minutes; pages: `useCreateComment` takes its key from `createCommentActionKeys` (one key per text, place, reply target and mentions until a success) · Design none · Tests `comment-draft.component.test.tsx` (items), `comment-action-keys.unit.test.ts` (pages: a repeat reuses the key, a success forgets it, another text is another action, the key is sent) · Real e2e none
+- State: HARDENING — Built on both targets (pages on 2026-11-28); no e2e run. Owner check: double-click Send on a page comment and see one comment.
 
 ### UC-COL-H02 Competing edits carry an expected version
 - Capability: H, COL-008 Collaboration hardening
@@ -1340,8 +1340,8 @@ Letter to capability map (team spec [documents-collaboration.md](../teams/docume
 - UI states: conflict state with the current text.
 - Rules: Product Comment edit; RULE concurrency (NRX); team COL-008.
 - Acceptance: Given two edits from version 3, then the second gets 412.
-- Evidence: BE none: UpdateCommentCommand has no ExpectedVersion; Comment has a version that is incremented only · FE none · Design none · Tests none · Real e2e none
-- State: DEFINED — Add version to the DTO, commands and UI conflict state.
+- Evidence: BE `UpdateCommentCommand` and `DeleteCommentCommand` are `IExpectedVersionRequest`; `CommentDto.Version` is read by the clients · FE docs and items send the version they read on edit and delete · Design none · Tests `CommentExpectedVersionTests`, `ExpectedVersionArchitectureTests` · Real e2e none
+- State: INTEGRATING — Edit and delete refuse a stale version with 412. Missing: resolve and reopen take no version, and no UI conflict state is proven.
 
 ### UC-COL-H03 Concurrent reactions and follows do not duplicate
 - Capability: H, COL-008 Collaboration hardening

@@ -35,20 +35,24 @@ export function createCommentApi(
     async create(
       pageId: string,
       payload: CreateCommentPayload,
+      options: { readonly idempotencyKey?: string } = {},
     ): Promise<PageComment> {
       // `Collaboration.Comments.CreatePageComment` takes `contentMd`.
-      const created = await api.post<CommentDtoApi | string>(
-        endpoints.pages.comments(pageId),
-        {
-          contentMd: payload.body,
-          ...(payload.anchor ? { anchor: payload.anchor } : {}),
-          ...(payload.parentId ? { parentCommentId: payload.parentId } : {}),
-          // The producer mentions only people who can view the page.
-          ...(payload.mentionIds?.length
-            ? { mentionedUserIds: payload.mentionIds }
-            : {}),
-        },
-      );
+      const body = {
+        contentMd: payload.body,
+        ...(payload.anchor ? { anchor: payload.anchor } : {}),
+        ...(payload.parentId ? { parentCommentId: payload.parentId } : {}),
+        // The producer mentions only people who can view the page.
+        ...(payload.mentionIds?.length
+          ? { mentionedUserIds: payload.mentionIds }
+          : {}),
+      };
+      const url = endpoints.pages.comments(pageId);
+      const created = options.idempotencyKey
+        ? await api.post<CommentDtoApi | string>(url, body, {
+            idempotencyKey: options.idempotencyKey,
+          })
+        : await api.post<CommentDtoApi | string>(url, body);
       const now = new Date().toISOString();
       return typeof created === "string"
         ? {
