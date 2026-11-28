@@ -237,6 +237,7 @@ public sealed class NonMemberDisclosureTests : IAsyncLifetime
             {
                 (RealtimeScopeKind.Workspace, _a.WorkspaceId),
                 (RealtimeScopeKind.Board, _a.BoardId),
+                (RealtimeScopeKind.Page, _a.PageId),
             })
             {
                 var found = await authorizer.AuthorizeAsync(principal, new RealtimeScope(kind, existing), default);

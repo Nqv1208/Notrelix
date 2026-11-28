@@ -70,7 +70,8 @@ function parseScope(value: unknown): RealtimeSubscriptionScope | null {
     (scope.kind === "workspace" ||
       scope.kind === "board" ||
       scope.kind === "channel" ||
-      scope.kind === "user") &&
+      scope.kind === "user" ||
+      scope.kind === "page") &&
     isNonEmptyString(scope.id)
   ) {
     return { kind: scope.kind, id: scope.id };

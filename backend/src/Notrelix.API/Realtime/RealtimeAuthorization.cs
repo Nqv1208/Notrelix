@@ -2,6 +2,7 @@ using System.Security.Claims;
 
 using Notrelix.Application.Common.Realtime.Gateway;
 using Notrelix.Application.Features.Chat.Channels.Queries.AuthorizeChannelRealtimeSubscription;
+using Notrelix.Application.Features.Documents.Pages.Queries.AuthorizePageRealtimeSubscription;
 using Notrelix.Application.Features.WorkManagement.Boards.Queries.AuthorizeBoardRealtimeSubscription;
 using Notrelix.Application.Features.Workspaces.Workspaces.Queries.AuthorizeWorkspaceRealtimeSubscription;
 using Notrelix.Infrastructure.Auth.Jwt;
@@ -119,6 +120,8 @@ public sealed class MediatorRealtimeSubscriptionAuthorizer : IRealtimeSubscripti
                     new AuthorizeBoardRealtimeSubscriptionQuery(scope.Id), cancellationToken),
                 RealtimeScopeKind.Channel => await sender.Send(
                     new AuthorizeChannelRealtimeSubscriptionQuery(scope.Id), cancellationToken),
+                RealtimeScopeKind.Page => await sender.Send(
+                    new AuthorizePageRealtimeSubscriptionQuery(scope.Id), cancellationToken),
                 _ => null,
             };
 

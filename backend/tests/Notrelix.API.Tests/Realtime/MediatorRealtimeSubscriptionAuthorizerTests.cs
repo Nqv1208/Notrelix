@@ -2,7 +2,9 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Notrelix.API.Realtime;
+using Notrelix.Application.Common.Models;
 using Notrelix.Application.Common.Realtime.Gateway;
+using Notrelix.Application.Features.Documents.Pages.Queries.AuthorizePageRealtimeSubscription;
 
 namespace Notrelix.API.Tests.Realtime;
 
@@ -53,5 +55,37 @@ public sealed class MediatorRealtimeSubscriptionAuthorizerTests
 
         result.Outcome.Should().Be(RealtimeAuthorizationOutcome.Denied);
         sender.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task A_page_stream_is_decided_by_the_documents_query_for_that_page()
+    {
+        var pageId = Guid.NewGuid();
+        var grant = new RealtimeSubscriptionGrant(Guid.NewGuid(), Guid.NewGuid());
+        var sender = new Mock<ISender>(MockBehavior.Strict);
+        sender.Setup(s => s.Send(
+                It.Is<AuthorizePageRealtimeSubscriptionQuery>(q => q.PageId == pageId), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RealtimeSubscriptionGrant>.Success(grant));
+        var authorizer = Create(sender);
+
+        var result = await authorizer.AuthorizeAsync(
+            Principal(), new RealtimeScope(RealtimeScopeKind.Page, pageId), CancellationToken.None);
+
+        result.Outcome.Should().Be(RealtimeAuthorizationOutcome.Granted);
+        result.Grant.Should().Be(grant);
+    }
+
+    [Fact]
+    public async Task A_page_the_person_cannot_view_is_denied()
+    {
+        var sender = new Mock<ISender>(MockBehavior.Strict);
+        sender.Setup(s => s.Send(It.IsAny<AuthorizePageRealtimeSubscriptionQuery>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ForbiddenException("no"));
+        var authorizer = Create(sender);
+
+        var result = await authorizer.AuthorizeAsync(
+            Principal(), new RealtimeScope(RealtimeScopeKind.Page, Guid.NewGuid()), CancellationToken.None);
+
+        result.Outcome.Should().Be(RealtimeAuthorizationOutcome.Denied);
     }
 }

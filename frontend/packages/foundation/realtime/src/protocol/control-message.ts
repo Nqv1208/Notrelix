@@ -8,7 +8,7 @@
  * `chat:Channel:<id>`); `user` is the caller's own per-user stream (`user:notifications:<id>`).
  */
 export type RealtimeSubscriptionScopeKind =
-  "workspace" | "board" | "channel" | "user";
+  "workspace" | "board" | "channel" | "user" | "page";
 
 export interface RealtimeSubscriptionScope {
   readonly kind: RealtimeSubscriptionScopeKind;
