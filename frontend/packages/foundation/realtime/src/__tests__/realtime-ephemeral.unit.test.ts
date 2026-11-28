@@ -177,4 +177,82 @@ describe("typing and presence frames (protocol v1.1, ephemeral)", () => {
       { type: "presence", state: "idle" },
     ]);
   });
+
+  it("delivers presence of one open page to its listeners only, and never typing (UC-COL-E03)", async () => {
+    const client = makeClient();
+    const onPage = vi.fn();
+    const onChannel = vi.fn();
+    client.subscribePagePresence(
+      { workspaceId: "ws-1", pageId: "page-1" },
+      onPage,
+    );
+    client.subscribeEphemeral(
+      { workspaceId: "ws-1", channelId: "space-1" },
+      onChannel,
+    );
+    const socket = await connectAndReady(client, () => kit.last());
+    expect(kit.last().sentFrames()).toContainEqual({
+      type: "subscribe",
+      subscriptionId: "page:page-1",
+      scope: { kind: "page", id: "page-1" },
+    });
+    socket.onmessage?.({ data: channelAck });
+    socket.onmessage?.({
+      data: JSON.stringify({
+        type: "subscribed",
+        subscriptionId: "page:page-1",
+        scope: { kind: "page", id: "page-1" },
+        streamKey: "page:Page:page-1",
+      }),
+    });
+
+    socket.onmessage?.({
+      data: JSON.stringify({
+        type: "typing",
+        subscriptionId: "page:page-1",
+        userId: "bob",
+        expiresInMs: 5000,
+      }),
+    });
+    socket.onmessage?.({
+      data: JSON.stringify({
+        type: "presence",
+        subscriptionId: "page:page-1",
+        userId: "bob",
+        state: "online",
+        ttlMs: 75000,
+      }),
+    });
+
+    expect(onPage.mock.calls.map(([event]) => event)).toEqual([
+      { pageId: "page-1", userId: "bob", state: "online", ttlMs: 75000 },
+    ]);
+    expect(onChannel).not.toHaveBeenCalled();
+  });
+
+  it("stops page presence when the page listener leaves", async () => {
+    const client = makeClient();
+    const onPage = vi.fn();
+    const stop = client.subscribePagePresence(
+      { workspaceId: "ws-1", pageId: "page-1" },
+      onPage,
+    );
+    const socket = await connectAndReady(client, () => kit.last());
+    stop();
+
+    expect(kit.last().sentFrames()).toContainEqual({
+      type: "unsubscribe",
+      subscriptionId: "page:page-1",
+    });
+    socket.onmessage?.({
+      data: JSON.stringify({
+        type: "presence",
+        subscriptionId: "page:page-1",
+        userId: "bob",
+        state: "online",
+        ttlMs: 75000,
+      }),
+    });
+    expect(onPage).not.toHaveBeenCalled();
+  });
 });

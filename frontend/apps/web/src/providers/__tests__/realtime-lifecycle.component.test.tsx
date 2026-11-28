@@ -276,6 +276,42 @@ describe("RealtimeLifecycle", () => {
     expect(sockets).toHaveLength(1);
   });
 
+  it("opening a Documents page or losing it never revalidates the whole workspace: the page rereads its own state (UC-COL-E05)", async () => {
+    const key = ["workspace", "ws-a", "workspace", "detail"];
+    const socket = await openSocket(0);
+    await act(async () => {
+      socket.onmessage?.(subscribed("ws-a"));
+    });
+    await flush();
+    queryClient.setQueryData(key, { name: "fresh" });
+
+    const stop = realtime.subscribe(
+      { workspaceId: "ws-a", pageId: "page-1" },
+      () => {},
+    );
+    await act(async () => {
+      socket.onmessage?.(
+        frame({
+          type: "subscribed",
+          subscriptionId: "page:page-1",
+          scope: { kind: "page", id: "page-1" },
+          streamKey: "page:Page:page-1",
+        }),
+      );
+      socket.onmessage?.(
+        frame({
+          type: "subscription-error",
+          subscriptionId: "page:page-1",
+          code: "subscription_revoked",
+        }),
+      );
+    });
+    await flush();
+
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(false);
+    stop();
+  });
+
   it("after a member is revoked the app's own socket stops delivering that workspace and never subscribes it again (UC-WSP-I04)", async () => {
     const key = ["workspace", "ws-a", "workspace", "detail"];
     const socket = await openSocket(0);

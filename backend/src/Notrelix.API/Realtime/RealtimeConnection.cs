@@ -409,7 +409,8 @@ public sealed class RealtimeConnection
         subscription.Handle = await _source.SubscribeAsync(
             message.Scope, notification => OnNotification(subscription, notification), token).ConfigureAwait(false);
 
-        if (_ephemeral is not null && message.Scope.Kind == RealtimeScopeKind.Channel)
+        // A Chat channel carries typing and presence; a Documents page carries presence only (who has it open, UC-COL-E03).
+        if (_ephemeral is not null && message.Scope.Kind is RealtimeScopeKind.Channel or RealtimeScopeKind.Page)
         {
             subscription.EphemeralHandle = await _ephemeral.SubscribeAsync(
                 message.Scope, signal => OnEphemeral(subscription, signal), token).ConfigureAwait(false);
@@ -528,6 +529,13 @@ public sealed class RealtimeConnection
             {
                 return false;
             }
+        }
+
+        // Presence on a page means "has it open": closing the page tells its other readers at once, not after the TTL.
+        if (subscription.EphemeralHandle is not null && subscription.Scope.Kind == RealtimeScopeKind.Page && !subscription.WorkspaceArchived)
+        {
+            PublishEphemeral(subscription.Scope, new RealtimeEphemeralSignal(
+                RealtimeEphemeralKinds.Presence, subscription.WorkspaceId, _principal.UserId, RealtimePresenceStates.Offline));
         }
 
         subscription.Cancelled = true;

@@ -27,6 +27,8 @@ export {
   type RealtimeRecoverySignal,
   type RealtimeEventListener,
   type RealtimeEphemeralListener,
+  type RealtimePagePresenceEvent,
+  type RealtimePagePresenceListener,
   type RealtimeStateListener,
   type RealtimeRecoveryListener,
   type RealtimeTransport,

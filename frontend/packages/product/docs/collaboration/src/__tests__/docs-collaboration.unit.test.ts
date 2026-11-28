@@ -17,6 +17,7 @@ function makeMockRealtime() {
       return unsubscribeMock;
     }),
     subscribeEphemeral: vi.fn(),
+    subscribePagePresence: vi.fn(),
     sendTyping: vi.fn(),
     sendPresence: vi.fn(),
     subscribeState: vi.fn(),
@@ -94,6 +95,7 @@ describe("createDocsCollaborationAdapter", () => {
       disconnect: vi.fn(),
       subscribe: vi.fn(() => (callCount++ === 0 ? unsubscribe1 : unsubscribe2)),
       subscribeEphemeral: vi.fn(),
+      subscribePagePresence: vi.fn(),
       sendTyping: vi.fn(),
       sendPresence: vi.fn(),
       subscribeState: vi.fn(),

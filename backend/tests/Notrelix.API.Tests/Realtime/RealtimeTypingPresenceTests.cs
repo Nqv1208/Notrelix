@@ -331,4 +331,67 @@ public sealed class RealtimeTypingPresenceTests
 
         (await alice.ReceiveAsync("pong")).GetProperty("type").GetString().Should().Be("pong");
     }
+
+    private static readonly Guid PageId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+
+    private static async Task<RealtimeGatewayHarness> OpenPageAsync(RealtimeEphemeralBus bus, Guid user)
+    {
+        var harness = new RealtimeGatewayHarness(null, null, ephemeralBus: bus, userId: user);
+        await harness.ReceiveAsync("ready");
+        var ack = await harness.SubscribeAsync("pg", "page", PageId);
+        ack.GetProperty("type").GetString().Should().Be("subscribed");
+        return harness;
+    }
+
+    [Fact]
+    public async Task People_with_one_page_open_see_each_others_presence_on_it()
+    {
+        var bus = NewBus();
+        await using var alice = await OpenPageAsync(bus, Alice);
+        await using var bob = await OpenPageAsync(bus, Bob);
+
+        await bob.SendAsync(new { type = "presence", state = "online" });
+
+        var frame = await PresenceUntilAsync(alice, "online");
+        frame.GetProperty("subscriptionId").GetString().Should().Be("pg");
+        frame.GetProperty("userId").GetGuid().Should().Be(Bob);
+    }
+
+    [Fact]
+    public async Task Closing_a_page_tells_its_other_readers_at_once()
+    {
+        var bus = NewBus();
+        await using var alice = await OpenPageAsync(bus, Alice);
+        await using var bob = await OpenPageAsync(bus, Bob);
+        await bob.SendAsync(new { type = "presence", state = "online" });
+        await PresenceUntilAsync(alice, "online");
+
+        await bob.SendAsync(new { type = "unsubscribe", subscriptionId = "pg" });
+
+        (await PresenceUntilAsync(alice, "offline")).GetProperty("userId").GetGuid().Should().Be(Bob);
+    }
+
+    [Fact]
+    public async Task A_page_carries_no_typing()
+    {
+        var bus = NewBus();
+        await using var alice = await OpenPageAsync(bus, Alice);
+        await using var bob = await OpenPageAsync(bus, Bob);
+
+        await bob.SendAsync(new { type = "typing", subscriptionId = "pg" });
+
+        (await NothingArrivesAsync(alice, "typing")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Presence_on_a_page_never_reaches_a_chat_channel_reader()
+    {
+        var bus = NewBus();
+        await using var channelReader = await JoinAsync(bus, Alice);
+        await using var pageReader = await OpenPageAsync(bus, Bob);
+
+        await pageReader.SendAsync(new { type = "presence", state = "online" });
+
+        (await NothingArrivesAsync(channelReader, "presence")).Should().BeTrue();
+    }
 }

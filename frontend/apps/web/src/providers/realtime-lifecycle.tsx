@@ -123,6 +123,10 @@ export function RealtimeLifecycle({ children }: { children: React.ReactNode }) {
       }
       if (signal.reason === "access-changed")
         setAccessEpoch((epoch) => epoch + 1);
+      // An open Documents page rereads its own blocks, detail and comments on
+      // any recovery of its stream (watchDocumentChanges, UC-COL-E05): opening
+      // a page never revalidates the whole workspace.
+      if (signal.scope.kind === "page") return;
       void handleWorkspaceRecovery({
         workspaceId,
         accountId,
