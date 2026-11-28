@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Notrelix.Application.Common.Context;
 using Notrelix.Application.Common.Realtime;
 using Notrelix.Application.Features.Documents.Realtime;
 using Notrelix.Domain.Collaboration.Comments;
@@ -123,12 +122,10 @@ public class PageRealtimeInterceptorTests
     {
         var time = new Mock<IDateTimeProvider>();
         time.Setup(x => x.UtcNow).Returns(Now);
-        var execution = new Mock<IExecutionContextReader>();
-        execution.Setup(x => x.UserId).Returns(Author);
         var collector = new IntegrationEventCollector();
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"Notrelix-page-realtime-{Guid.NewGuid():N}")
-            .AddInterceptors(new PageRealtimeInterceptor(collector, execution.Object, time.Object))
+            .AddInterceptors(new PageRealtimeInterceptor(collector, time.Object))
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
         return (new TestApplicationDbContext(options), collector);

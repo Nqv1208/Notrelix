@@ -11,19 +11,19 @@ namespace Notrelix.Infrastructure.Data.Interceptors;
 /// <see cref="PageRealtime.Changed"/> fact per page in the scope's collector. It is registered ahead of
 /// <see cref="DomainEventInterceptor"/>, which writes the collector to the outbox in the same transaction, so a frame
 /// goes out only for a committed change. Writes made with ExecuteUpdate or ExecuteDelete are not seen.
+/// It depends only on services every host that registers persistence has (the worker has no execution context), so
+/// the frame names no actor: the client rereads over REST and never needs one.
 /// </summary>
 public sealed class PageRealtimeInterceptor : SaveChangesInterceptor
 {
     private const string PageKind = "documents.page";
 
     private readonly IIntegrationEventCollector _events;
-    private readonly IExecutionContextReader _context;
     private readonly IDateTimeProvider _time;
 
-    public PageRealtimeInterceptor(IIntegrationEventCollector events, IExecutionContextReader context, IDateTimeProvider time)
+    public PageRealtimeInterceptor(IIntegrationEventCollector events, IDateTimeProvider time)
     {
         _events = events;
-        _context = context;
         _time = time;
     }
 
@@ -67,7 +67,7 @@ public sealed class PageRealtimeInterceptor : SaveChangesInterceptor
         foreach (var (accountId, workspaceId, pageId) in changed)
         {
             _events.Add(PageRealtime.Changed(
-                accountId, workspaceId, pageId, _context.UserId, _context.CorrelationId, _context.CausationId, now));
+                accountId, workspaceId, pageId, actorUserId: null, correlationId: null, causationId: null, now));
         }
     }
 
