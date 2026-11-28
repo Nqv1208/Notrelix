@@ -3,6 +3,12 @@ import type { RealtimeTransport } from "@notrelix/realtime";
 /** The realtime transport a host hands to the document page. */
 export type DocsRealtime = RealtimeTransport;
 
+export {
+  REALTIME_PRESENCE_HEARTBEAT_MS as DOC_PRESENCE_HEARTBEAT_MS,
+  type RealtimePagePresenceEvent as DocPresenceEvent,
+  type RealtimePresenceState as DocPresenceState,
+} from "@notrelix/realtime";
+
 export interface DocsCollaborationSubscription {
   dispose(): void;
 }
